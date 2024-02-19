@@ -253,14 +253,14 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         } else {
             when (group) {
                 LibraryGroup.BY_TRACK_STATUS -> {
-                    val trackingExtra = groupExtra?.toLongOrNull() ?: -1L
+                    val trackingExtra = groupExtra?.toIntOrNull() ?: -1
                     val tracks = getTracks.await().groupBy { it.mangaId }
 
                     libraryManga.filter { (manga) ->
                         val status = tracks[manga.id]?.firstNotNullOfOrNull { track ->
                             TrackStatus.parseTrackerStatus(trackerManager, track.trackerId, track.status)
                         } ?: TrackStatus.OTHER
-                        status.long == trackingExtra
+                        status.int == trackingExtra
                     }
                 }
 

@@ -11,14 +11,14 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.sy.SYMR
 
-enum class TrackStatus(val long: Long, val res: StringResource) {
-    WATCHING(11L, AYMR.strings.watching),
-    REWATCHING(17L, AYMR.strings.repeating_anime),
-    PLAN_TO_WATCH(16L, AYMR.strings.plan_to_watch),
-    PAUSED(4L, MR.strings.on_hold),
-    COMPLETED(5L, MR.strings.completed),
-    DROPPED(6L, MR.strings.dropped),
-    OTHER(7L, SYMR.strings.not_tracked),
+enum class TrackStatus(val int: Int, val res: StringResource) {
+    WATCHING(11, AYMR.strings.watching),
+    REWATCHING(17, AYMR.strings.repeating_anime),
+    PLAN_TO_WATCH(16, AYMR.strings.plan_to_watch),
+    PAUSED(4, MR.strings.on_hold),
+    COMPLETED(5, MR.strings.completed),
+    DROPPED(6, MR.strings.dropped),
+    OTHER(7, SYMR.strings.not_tracked),
     ;
 
     companion object {

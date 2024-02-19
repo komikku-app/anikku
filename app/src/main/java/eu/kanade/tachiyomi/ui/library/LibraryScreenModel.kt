@@ -1298,16 +1298,16 @@ class LibraryScreenModel(
                         TrackStatus.parseTrackerStatus(trackerManager, track.trackerId, track.status)
                     } ?: TrackStatus.OTHER
 
-                    status.long
+                    status.int
                 }.mapKeys { (id) ->
                     Category(
-                        id = id,
+                        id = id.toLong(),
                         name = TrackStatus.entries
-                            .find { it.long == id }
+                            .find { it.int == id }
                             .let { it ?: TrackStatus.OTHER }
                             .let { context.stringResource(it.res) },
                         order = TrackStatus.entries.indexOfFirst {
-                            it.long == id
+                            it.int == id
                         }.takeUnless { it == -1 }?.toLong() ?: TrackStatus.OTHER.ordinal.toLong(),
                         flags = 0,
                         // KMK -->
