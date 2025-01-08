@@ -73,7 +73,7 @@ enum class TrackStatus(val long: Long, val res: StringResource) {
                         Bangumi.ON_HOLD -> PAUSED
                         Bangumi.PLAN_TO_WATCH -> PLAN_TO_WATCH
                         Bangumi.DROPPED -> DROPPED
-                        else -> null
+                        else -> WATCHING
                     }
                 }
                 trackerManager.simkl.id -> {
