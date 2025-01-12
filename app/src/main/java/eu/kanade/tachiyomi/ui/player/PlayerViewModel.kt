@@ -42,6 +42,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.episode.model.toDbEpisode
+import eu.kanade.domain.source.interactor.GetIncognitoState
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.screen.player.custombutton.CustomButtonFetchState
@@ -171,6 +172,9 @@ class PlayerViewModel @JvmOverloads constructor(
     private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
     private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId = Injekt.get(),
     // SY <--
+    // ANK -->
+    private val getIncognitoState: GetIncognitoState = Injekt.get(),
+    // ANK <--
 ) : ViewModel() {
 
     private val _currentPlaylist = MutableStateFlow<List<Episode>>(emptyList())
@@ -1049,7 +1053,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val eventChannel = Channel<Event>()
     val eventFlow = eventChannel.receiveAsFlow()
 
-    val incognitoMode = basePreferences.incognitoMode().get()
+    val incognitoMode: Boolean by lazy { getIncognitoState.await(currentSource.value?.id) }
     private val downloadAheadAmount = downloadPreferences.autoDownloadWhileReading().get()
 
     internal val relativeTime = uiPreferences.relativeTime().get()
