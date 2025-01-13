@@ -80,6 +80,7 @@ import tachiyomi.domain.episode.interactor.GetEpisode
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -383,7 +384,7 @@ private fun QualityOptions(
 
         )
         ClickableRow(
-            text = stringResource(MR.strings.action_cast), // Texto para la nueva opción
+            text = stringResource(TLMR.strings.action_cast), // Texto para la nueva opción
             icon = Icons.Outlined.Cast, // Icono para la nueva opción
             onClick = {
                 onCastClicked()

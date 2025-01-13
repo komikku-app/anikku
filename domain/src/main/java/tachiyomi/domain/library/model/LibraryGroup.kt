@@ -3,6 +3,7 @@ package tachiyomi.domain.library.model
 import dev.icerock.moko.resources.StringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
+import tachiyomi.i18n.tail.TLMR
 
 object LibraryGroup {
 
@@ -18,7 +19,7 @@ object LibraryGroup {
             BY_STATUS -> MR.strings.status
             BY_SOURCE -> MR.strings.label_sources
             BY_TRACK_STATUS -> SYMR.strings.tracking_status
-            BY_TAG -> MR.strings.tag
+            BY_TAG -> TLMR.strings.tag
             UNGROUPED -> SYMR.strings.ungrouped
             else -> if (hasCategories) MR.strings.categories else SYMR.strings.ungrouped
         }

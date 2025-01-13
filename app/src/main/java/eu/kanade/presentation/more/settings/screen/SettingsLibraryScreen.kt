@@ -39,6 +39,7 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_NETW
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_ONLY_ON_WIFI
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -208,7 +209,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 // SY -->
                 Preference.PreferenceItem.ListPreference(
                     pref = libraryPreferences.groupLibraryUpdateType(),
-                    title = stringResource(MR.strings.anime_library_group_updates),
+                    title = stringResource(TLMR.strings.anime_library_group_updates),
                     entries = persistentMapOf(
                         GroupLibraryMode.GLOBAL to stringResource(
                             MR.strings.library_group_updates_global,

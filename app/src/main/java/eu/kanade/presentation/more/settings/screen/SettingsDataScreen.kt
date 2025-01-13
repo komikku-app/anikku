@@ -76,6 +76,8 @@ import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -325,7 +327,7 @@ object SettingsDataScreen : SearchableSettings {
                 // AM (FILE_SIZE) -->
                 Preference.PreferenceItem.SwitchPreference(
                     pref = storagePreferences.showEpisodeFileSize(),
-                    title = stringResource(MR.strings.pref_show_downloaded_episode_file_size),
+                    title = stringResource(TLMR.strings.pref_show_downloaded_episode_file_size),
                 ),
                 // <-- AM (FILE_SIZE)
 
@@ -367,15 +369,15 @@ object SettingsDataScreen : SearchableSettings {
     private fun getSyncPreferences(syncPreferences: SyncPreferences, syncService: Int): List<Preference> {
         return listOf(
             Preference.PreferenceGroup(
-                title = stringResource(MR.strings.pref_sync_service_category),
+                title = stringResource(SYMR.strings.pref_sync_service_category),
                 preferenceItems = persistentListOf(
                     Preference.PreferenceItem.ListPreference(
                         pref = syncPreferences.syncService(),
-                        title = stringResource(MR.strings.pref_sync_service),
+                        title = stringResource(SYMR.strings.pref_sync_service),
                         entries = persistentMapOf(
                             SyncManager.SyncService.NONE.value to stringResource(MR.strings.off),
-                            SyncManager.SyncService.SYNCYOMI.value to stringResource(MR.strings.syncyomi),
-                            SyncManager.SyncService.GOOGLE_DRIVE.value to stringResource(MR.strings.google_drive),
+                            SyncManager.SyncService.SYNCYOMI.value to stringResource(SYMR.strings.syncyomi),
+                            SyncManager.SyncService.GOOGLE_DRIVE.value to stringResource(SYMR.strings.google_drive),
                         ),
                         onValueChanged = { true },
                     ),
@@ -420,7 +422,7 @@ object SettingsDataScreen : SearchableSettings {
         val googleDriveSync = Injekt.get<GoogleDriveService>()
         return listOf(
             Preference.PreferenceItem.TextPreference(
-                title = stringResource(MR.strings.pref_google_drive_sign_in),
+                title = stringResource(SYMR.strings.pref_google_drive_sign_in),
                 onClick = {
                     val intent = googleDriveSync.getSignInIntent()
                     context.startActivity(intent)
@@ -445,19 +447,19 @@ object SettingsDataScreen : SearchableSettings {
                         val result = googleDriveSync.deleteSyncDataFromGoogleDrive()
                         when (result) {
                             GoogleDriveSyncService.DeleteSyncDataStatus.NOT_INITIALIZED -> context.toast(
-                                MR.strings.google_drive_not_signed_in,
+                                SYMR.strings.google_drive_not_signed_in,
                                 duration = 5000,
                             )
                             GoogleDriveSyncService.DeleteSyncDataStatus.NO_FILES -> context.toast(
-                                MR.strings.google_drive_sync_data_not_found,
+                                SYMR.strings.google_drive_sync_data_not_found,
                                 duration = 5000,
                             )
                             GoogleDriveSyncService.DeleteSyncDataStatus.SUCCESS -> context.toast(
-                                MR.strings.google_drive_sync_data_purged,
+                                SYMR.strings.google_drive_sync_data_purged,
                                 duration = 5000,
                             )
                             GoogleDriveSyncService.DeleteSyncDataStatus.ERROR -> context.toast(
-                                MR.strings.google_drive_sync_data_purge_error,
+                                SYMR.strings.google_drive_sync_data_purge_error,
                                 duration = 10000,
                             )
                         }
@@ -468,7 +470,7 @@ object SettingsDataScreen : SearchableSettings {
         }
 
         return Preference.PreferenceItem.TextPreference(
-            title = stringResource(MR.strings.pref_google_drive_purge_sync_data),
+            title = stringResource(SYMR.strings.pref_google_drive_purge_sync_data),
             onClick = { showPurgeDialog = true },
         )
     }
@@ -480,8 +482,8 @@ object SettingsDataScreen : SearchableSettings {
     ) {
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(text = stringResource(MR.strings.pref_purge_confirmation_title)) },
-            text = { Text(text = stringResource(MR.strings.pref_purge_confirmation_message)) },
+            title = { Text(text = stringResource(SYMR.strings.pref_purge_confirmation_title)) },
+            text = { Text(text = stringResource(SYMR.strings.pref_purge_confirmation_message)) },
             dismissButton = {
                 TextButton(onClick = onDismissRequest) {
                     Text(text = stringResource(MR.strings.action_cancel))
@@ -500,8 +502,8 @@ object SettingsDataScreen : SearchableSettings {
         val scope = rememberCoroutineScope()
         return listOf(
             Preference.PreferenceItem.EditTextPreference(
-                title = stringResource(MR.strings.pref_sync_host),
-                subtitle = stringResource(MR.strings.pref_sync_host_summ),
+                title = stringResource(SYMR.strings.pref_sync_host),
+                subtitle = stringResource(SYMR.strings.pref_sync_host_summ),
                 pref = syncPreferences.clientHost(),
                 onValueChanged = { newValue ->
                     scope.launch {
@@ -514,8 +516,8 @@ object SettingsDataScreen : SearchableSettings {
                 },
             ),
             Preference.PreferenceItem.EditTextPreference(
-                title = stringResource(MR.strings.pref_sync_api_key),
-                subtitle = stringResource(MR.strings.pref_sync_api_key_summ),
+                title = stringResource(SYMR.strings.pref_sync_api_key),
+                subtitle = stringResource(SYMR.strings.pref_sync_api_key_summ),
                 pref = syncPreferences.clientAPIKey(),
             ),
         )
@@ -525,12 +527,12 @@ object SettingsDataScreen : SearchableSettings {
     private fun getSyncNowPref(): Preference.PreferenceGroup {
         val navigator = LocalNavigator.currentOrThrow
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_sync_now_group_title),
+            title = stringResource(SYMR.strings.pref_sync_now_group_title),
             preferenceItems = persistentListOf(
                 getSyncOptionsPref(),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_sync_now),
-                    subtitle = stringResource(MR.strings.pref_sync_now_subtitle),
+                    title = stringResource(SYMR.strings.pref_sync_now),
+                    subtitle = stringResource(SYMR.strings.pref_sync_now_subtitle),
                     onClick = {
                         navigator.push(SyncSettingsSelector())
                     },
@@ -543,8 +545,8 @@ object SettingsDataScreen : SearchableSettings {
     private fun getSyncOptionsPref(): Preference.PreferenceItem.TextPreference {
         val navigator = LocalNavigator.currentOrThrow
         return Preference.PreferenceItem.TextPreference(
-            title = stringResource(MR.strings.pref_sync_options),
-            subtitle = stringResource(MR.strings.pref_sync_options_summ),
+            title = stringResource(SYMR.strings.pref_sync_options),
+            subtitle = stringResource(SYMR.strings.pref_sync_options_summ),
             onClick = { navigator.push(SyncTriggerOptionsScreen()) },
         )
     }
@@ -557,16 +559,16 @@ object SettingsDataScreen : SearchableSettings {
         val lastSync by syncPreferences.lastSyncTimestamp().collectAsState()
 
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_sync_automatic_category),
+            title = stringResource(SYMR.strings.pref_sync_automatic_category),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
                     pref = syncIntervalPref,
-                    title = stringResource(MR.strings.pref_sync_interval),
+                    title = stringResource(SYMR.strings.pref_sync_interval),
                     entries = persistentMapOf(
                         0 to stringResource(MR.strings.off),
-                        30 to stringResource(MR.strings.update_30min),
-                        60 to stringResource(MR.strings.update_1hour),
-                        180 to stringResource(MR.strings.update_3hour),
+                        30 to stringResource(SYMR.strings.update_30min),
+                        60 to stringResource(SYMR.strings.update_1hour),
+                        180 to stringResource(SYMR.strings.update_3hour),
                         360 to stringResource(MR.strings.update_6hour),
                         720 to stringResource(MR.strings.update_12hour),
                         1440 to stringResource(MR.strings.update_24hour),
@@ -579,7 +581,7 @@ object SettingsDataScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.InfoPreference(
-                    stringResource(MR.strings.last_synchronization, relativeTimeSpanString(lastSync)),
+                    stringResource(SYMR.strings.last_synchronization, relativeTimeSpanString(lastSync)),
                 ),
             ),
         )

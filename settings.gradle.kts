@@ -55,6 +55,9 @@ include(":flagkit")
 // SY -->
 include(":i18n-sy")
 // SY <--
+// TAIL -->
+include(":i18n-tail")
+// TAIL <--
 include(":macrobenchmark")
 include(":presentation-core")
 include(":presentation-widget")

@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -30,7 +31,7 @@ fun ResetInfoAnimeDialog(
             }
         },
         title = {
-            Text(text = stringResource(MR.strings.reset_info))
+            Text(text = stringResource(SYMR.strings.reset_info))
         },
         text = {
             Text(text = stringResource(MR.strings.are_you_sure))

@@ -4,7 +4,6 @@ on:
     paths:
       - '**'
       - '!**.md'
-      - '!i18n/src/main/res/**/strings-animetail.xml'
       - '!i18n/src/commonMain/moko-resources/base/strings-aniyomi.xml'
       - '!i18n/src/commonMain/moko-resources/base/strings.xml'
       - '!i18n/src/commonMain/moko-resources/base/plurals-aniyomi.xml'
@@ -13,6 +12,8 @@ on:
       - '!i18n-sy/src/commonMain/moko-resources/base/plurals.xml'
       - '!i18n-kmk/src/commonMain/moko-resources/base/strings.xml'
       - '!i18n-kmk/src/commonMain/moko-resources/base/plurals.xml'
+      - 'i18n-tail/src/commonMain/moko-resources/base/strings.xml'
+      - 'i18n-tail/src/commonMain/moko-resources/base/plurals.xml'
 
 
 concurrency:
