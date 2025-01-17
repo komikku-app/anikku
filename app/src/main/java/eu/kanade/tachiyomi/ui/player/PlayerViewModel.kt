@@ -1015,6 +1015,7 @@ class PlayerViewModel @JvmOverloads constructor(
         if (isLoadingEpisode.value) return
         val currentEp = currentEpisode.value ?: return
         if (episodeId == -1L) return
+        if (duration == 0) return
 
         val seconds = position * 1000L
         val totalSeconds = duration * 1000L
