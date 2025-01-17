@@ -50,6 +50,7 @@ import eu.kanade.presentation.anime.components.SetIntervalDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.theme.TachiyomiTheme
+import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsGesturesScreen.SkipIntroLengthDialog
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.formatEpisodeNumber
@@ -482,17 +483,14 @@ class AnimeScreen(
                         screenModel.setAnimeViewerFlags.awaitSetSkipIntroLength(mangaId, newLength)
                     }
                 }
-                // TODO(custombuttons)
-                /*
                 SkipIntroLengthDialog(
-                    currentSkipIntroLength = successState.anime.skipIntroLength,
-                    defaultSkipIntroLength = screenModel.gesturePreferences.defaultIntroLength().get(),
-                    fromPlayer = false,
-                    updateSkipIntroLength = ::updateSkipIntroLength,
+                    initialSkipIntroLength = successState.anime.skipIntroLength,
                     onDismissRequest = onDismissRequest,
+                    onValueChanged = {
+                        updateSkipIntroLength(it.toLong())
+                        onDismissRequest()
+                    },
                 )
-
-                 */
             }
             is AnimeScreenModel.Dialog.ShowQualities -> {
                 EpisodeOptionsDialogScreen.onDismissDialog = onDismissRequest
