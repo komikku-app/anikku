@@ -29,7 +29,7 @@
     <string name="pref_connection_summary">Discord, Cross Sync, more to come..</string>
     <string name="connection_info">Special Services that are unique and enhance the way you use the app</string>
     <string name="connection_discord">Discord</string>
-    <string name="connection_discord_info">This Discord Service works through token logging. Use at your own risk. Your token is stored locally and Animiru does not share it anywhere else</string>
+    <string name="connection_discord_info">This Discord Service works through token logging. Use at your own risk. Your token is stored locally and Anikku does not share it anywhere else</string>
     <string name="pref_discord_rpc">Discord Rich Presence</string>
     <string name="pref_enable_discord_rpc">Enable Discord Rich Presence</string>
     <string name="pref_discord_status">Discord Status</string>

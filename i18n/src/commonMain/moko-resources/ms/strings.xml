@@ -774,7 +774,7 @@
     <string name="information_empty_repos">Anda tidak mempunyai set repo.</string>
     <string name="action_add_repo">Tambah repo</string>
     <string name="label_add_repo_input">URL Repo</string>
-    <string name="action_add_repo_message">Tambahkan repo tambahan pada Aniyomi. Ini mestilah URL yang berakhir dengan \"index.min.json\".</string>
+    <string name="action_add_repo_message">Tambahkan repo tambahan pada Anikku. Ini mestilah URL yang berakhir dengan \"index.min.json\".</string>
     <string name="error_repo_exists">Repo ini sudah wujud!</string>
     <string name="action_delete_repo">Padam repo</string>
     <string name="invalid_repo_name">URL repo tidak sah</string>

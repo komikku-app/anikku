@@ -589,7 +589,7 @@
     <string name="theme_lavender">Lavanda</string>
     <string name="description_placeholder">Sin descripción</string>
     <string name="delete_category">Borrar categoría</string>
-    <string name="delete_category_confirmation">¿Quieres borrar la categoría «%s»\?</string>
+    <string name="delete_category_confirmation">¿Quieres borrar la categoría «%s»?</string>
     <string name="internal_error">ErrorInterno: Mira el registro de depuración para más información</string>
     <string name="pref_user_agent_string">Identificarse como otro navegador web («user agent»)</string>
     <string name="pref_reset_user_agent_string">Volver a la identificación de navegador («user agent») original</string>
@@ -634,7 +634,7 @@
     <string name="track_remove_start_date_conf_text">Al hacer esto %s ya no aparecerá como empezado ese día</string>
     <string name="track_remove_date_conf_title">¿Quieres quitar esta fecha\?</string>
     <string name="track_remove_finish_date_conf_text">Al hacer esto %s ya no aparecerá como terminado ese día</string>
-    <string name="pref_invalidate_download_cache">Reconstruir el índice de descargas</string>
+    <string name="pref_invalidate_download_cache">Reindexar descargas</string>
     <string name="label_started">Empezados</string>
     <string name="label_local">En el dispositivo</string>
     <string name="label_completed_titles">Leídos del todo</string>
@@ -816,7 +816,6 @@
     <string name="action_play">Reproducir</string>
     <string name="action_next_episode">Siguiente episodio</string>
     <string name="action_screen_fit">Modo ajustar a pantalla</string>
-    <string name="action_player_pip">Modo imagen-en-imagen</string>
     <string name="action_show_manga">Mostrar manga</string>
     <string name="action_show_anime">Mostrar anime</string>
     <string name="action_display_download_badge_anime">Episodios descargados</string>
@@ -826,7 +825,6 @@
     <string name="action_order_by_episode_number">Por número de episodio</string>
     <string name="action_start_download_externally">Usar descargador externo</string>
     <string name="action_start_download_internally">Usar descargador interno</string>
-    <string name="pref_player_summary">Control de progreso, reproductor interno, reproductor externo</string>
     <string name="pref_bottom_nav_style">Estilo inferior de navegación</string>
     <string name="pref_update_only_completely_read">Saltar entradas con episodio(s) no visto(s)/capítulo(s) no leído(s)</string>
     <string name="default_manga_category">Categoría predeterminada de manga</string>
@@ -837,16 +835,9 @@
     <string name="rotation_reverse_landscape">Paisaje invertido</string>
     <string name="rotation_sensor_portrait">Retrato del sensor</string>
     <string name="rotation_sensor_landscape">Paisaje de sensores</string>
-    <string name="pref_category_player">Reproductor</string>
-    <string name="pref_category_progress">Progreso</string>
     <string name="pref_progress_mark_as_seen">A qué punto marcar el episodio como visto</string>
     <string name="pref_preserve_watching_position">Obtener la posición de reproducción en los episodios vistos</string>
     <string name="pref_category_player_orientation">Orientación</string>
-    <string name="pref_default_player_orientation">Orientación por defecto</string>
-    <string name="pref_adjust_orientation_video_dimensions">Ajustar la orientación basado en las dimensiones del video</string>
-    <string name="pref_default_portrait_orientation">Retrato por defecto</string>
-    <string name="pref_default_landscape_orientation">Paisaje por defecto</string>
-    <string name="pref_category_internal_player">Reproductor interno</string>
     <string name="pref_default_intro_length">Duración predeterminada de salto de introducción</string>
     <string name="pref_intro_length">Duración de salto para la introducción</string>
     <string name="pref_skip_length">Duración de salto con doble toque</string>
@@ -861,7 +852,6 @@
     <string name="pref_category_external_player">Reproductor externo</string>
     <string name="pref_always_use_external_player">Siempre usar reproductor externo</string>
     <string name="pref_external_player_preference">Preferencia de reproductor externo</string>
-    <string name="player_title">%1$s - %2$s</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_category_delete_chapters">Borrar capítulos/episodios</string>
     <string name="pref_remove_after_marked_as_read">Tras marcarlos como leídos/vistos de forma manual</string>
@@ -921,14 +911,9 @@
     <string name="share_screenshot_info">%1$s: %2$s, %3$s</string>
     <string name="episode_progress">Progreso: %1$s/%2$s</string>
     <string name="episode_progress_no_total">Progreso: %1$s</string>
-    <string name="screenshot_header">Hacer una captura de pantalla</string>
     <string name="screenshot_show_subs">Mostrar subtítulos en captura de pantalla</string>
     <string name="enable_volume_brightness_gestures">Gestos para cambiar el volumen y el brillo</string>
     <string name="enable_horizontal_seek_gesture">Alternar con el gesto de la búsqueda horizontal</string>
-    <string name="toggle_player_statistics_page">Página de las estadísticas</string>
-    <string name="player_statistics_page_1">Página 1</string>
-    <string name="player_statistics_page_2">Página 2</string>
-    <string name="player_statistics_page_3">Página 3</string>
     <string name="recent_anime_time">Episodio %1$s - %2$s</string>
     <string name="download_insufficient_space">No se pudo descargar ningún capítulo, queda muy poco espacio</string>
     <string name="download_queue_size_warning">Advertencia: Las descargas grandes pueden llevar a que las fuentes se vuelvan cada vez más lentas y en casos extremos que los servidores limiten o impidan el acceso a Anikku. Toca aquí para más información.</string>
@@ -940,26 +925,16 @@
     <string name="download_notifier_download_paused_chapters">Descarga pausada</string>
     <string name="download_notifier_download_paused_episodes">Descarga del episodio en pausa</string>
     <string name="channel_new_chapters_episodes">Nuevos episodios y capítulos</string>
-    <string name="player_controls_skip_intro_text">+%1$d s</string>
     <string name="no_next_episode">¡Próximo episodio no encontrado!</string>
     <string name="label_history">Manga</string>
     <string name="label_anime_history">Anime</string>
     <string name="label_updates">Manga</string>
     <string name="label_anime_updates">Anime</string>
-    <string name="player_overlay_back">Atrás</string>
     <string name="enable_auto_play">Reproducción automática activada</string>
     <string name="disable_auto_play">Reproducción automática desactivada</string>
     <string name="video_fit_screen">Ajustar a la pantalla</string>
     <string name="video_crop_screen">Recortado a la pantalla</string>
     <string name="video_stretch_screen">Extender a la pantalla</string>
-    <string name="playback_speed_dialog_title">Cambiar la velocidad de reproducción:</string>
-    <string name="playback_speed_dialog_reset">Restablecer</string>
-    <string name="quality_dialog_header">Calidad del video</string>
-    <string name="subtitle_dialog_header">Subtitular</string>
-    <string name="audio_dialog_header">Audio</string>
-    <string name="playback_options_speed">Velocidad de reproducción</string>
-    <string name="playback_options_quality">Calidad del vídeo</string>
-    <string name="playback_options_title">Opciones de la reproducción</string>
     <string name="action_change_intro_length">Cambiar la duración de la introducción</string>
     <string name="player_aniskip_op">Omitir introducción</string>
     <string name="player_aniskip_ed">Omitir el final</string>
@@ -1005,7 +980,6 @@
     <string name="action_global_manga_search">Búsqueda global del manga</string>
     <string name="pref_search_pinned_anime_sources_only">Buscar solo fuentes del anime incrustadas en la búsqueda global</string>
     <string name="unofficial_anime_extension_message">Esta extensión no pertenece a la lista oficial de extensiones de Anikku.</string>
-    <string name="pref_category_volume_brightness">Volumen y Brillo</string>
     <string name="pref_category_pip">Imagen en imagen (PiP)</string>
     <string name="pref_enable_pip">Habilitar el uso del modo PiP</string>
     <string name="pref_hide_in_manga_library_items">Ocultar las entradas del manga que ya están en la biblioteca</string>
@@ -1013,8 +987,6 @@
     <string name="copied_video_link_to_clipboard">Enlace de calidad del video copiado al portapapeles</string>
     <string name="choose_video_quality">Elige la calidad del vídeo:</string>
     <string name="extension_settings">Configuración de las extensiones</string>
-    <string name="action_save_screenshot">Guardar la captura de pantalla</string>
-    <string name="chapter_dialog_header">Ir al capítulo</string>
     <string name="pref_episode_swipe">Pasar episodio</string>
     <string name="pref_episode_swipe_end">Deslizar a la derecha</string>
     <string name="data_saver_exclude">Excluir del protector de datos</string>
@@ -1039,14 +1011,6 @@
     <string name="bandwidth_data_saver_server">Servidor de Bandwidth Hero Proxy</string>
     <string name="data_saver_server_summary">Poner la URL del servidor de Bandwith Hero Proxy aquí</string>
     <string name="pref_show_next_episode_airing_time">Mostrar la hora de emisión del próximo episodio</string>
-    <string name="pref_media_control_chapter_seeking">Buscar los capítulos con los controles multimedia</string>
-    <string name="go_to_next_chapter">Siguiente capítulo</string>
-    <string name="pref_media_control_chapter_seeking_summary">Si se activa, al utilizar siguiente se invocará el botón de omitir la introducción si no se encuentra ningún capítulo</string>
-    <string name="go_to_previous_chapter">Capítulo anterior</string>
-    <string name="go_to_after_opening">Omitir la introducción</string>
-    <string name="pref_category_player_advanced">Ajustes avanzados del reproductor</string>
-    <string name="pref_category_player_advanced_subtitle">Debanding, mpv.conf… etc</string>
-    <string name="pref_debanding_disabled">Desactivado</string>
     <string name="pref_debanding_gpu">GPU</string>
     <string name="pref_debanding_cpu">CPU</string>
     <string name="pref_debanding_title">Debanding</string>
@@ -1056,77 +1020,23 @@
     <string name="label_recent_anime_updates">Actualizaciones del anime</string>
     <string name="theme_cottoncandy">Algodón de azúcar</string>
     <string name="download_slots_info">Solo se descargará simultáneamente desde las fuentes autoalojadas o sin contador</string>
-    <string name="player_subtitle_settings_font_tab">Fuente</string>
-    <string name="player_subtitle_settings">Ajustes de los subtítulos</string>
-    <string name="player_subtitle_settings_color_tab">Color</string>
     <string name="dialog_with_checkbox_reset">Restablecer todos los capítulos de este manga</string>
-    <string name="settings_dialog_header">Ajustes del reproductor</string>
-    <string name="player_audio_delay">Retraso del audio</string>
-    <string name="player_audio_remember_delay">Recordar el retardo del audio</string>
-    <string name="player_track_delay_text_field">Retraso(s)</string>
     <string name="label_all">Todo</string>
     <string name="label_category">Categoría</string>
-    <string name="player_add_external_audio">Añadir audio externo</string>
-    <string name="player_subtitle_font_text_field">Nombre de la fuente</string>
-    <string name="player_subtitle_empty_warning">No tiene efecto porque no hay ninguna pista de subtítulos en este vídeo</string>
-    <string name="player_add_external_subtitles">Añadir subtítulos externos</string>
-    <string name="player_add_external_subtitles_intent">Seleccionar un archivo de subtítulos.</string>
     <string name="label_storage">Almacenamiento</string>
-    <string name="player_font_size_text_field">Tamaño de la fuente</string>
     <string name="unlock_app_title">Desbloquear Anikku</string>
     <string name="pref_pip_replace_with_previous">Sustituir la opción saltar 10 segundos por episodio anterior</string>
     <string name="pref_reset_mpv_conf">Restablecer el archivo de configuración MPV</string>
     <string name="pref_anime_storage_usage">Uso del espacio de almacenamiento del anime</string>
     <string name="pref_manga_storage_usage">Uso del espacio de almacenamiento del manga</string>
     <string name="delete_confirmation">¿Seguro que desea borrar \"%s\"?</string>
-    <string name="video_custom_screen">Relación del aspecto personalizada</string>
-    <string name="player_subtitle_settings_example">Lorem ipsum dolor sit amet.</string>
-    <string name="player_subtitle_delay">Retraso de los subtítulos</string>
-    <string name="player_subtitle_remember_delay">Recordar el retraso de los subtítulos</string>
-    <string name="player_subtitle_text_color">Texto</string>
     <string name="dialog_with_checkbox_reset_anime">Restablecer todos los episodios de este anime</string>
     <string name="pref_mpv_input">Editar el archivo de entrada MPV para la configuración de la asignación del teclado</string>
-    <string name="player_subtitle_settings_delay_tab">Retraso</string>
-    <string name="player_add_external_audio_intent">Selecciona un archivo de audio.</string>
-    <string name="player_override_ass_subtitles">Sobreponer los subtítulos ASS</string>
-    <string name="player_reset_subtitles">Restablecer subtítulos a valores predeterminados</string>
-    <string name="player_subtitle_background_color">Fondo</string>
     <string name="unseen">Sin ver</string>
-    <!-- Connections section -->
-    <string name="special_services">Servicios Especiales</string>
-    <string name="pref_category_connections">Conexiones</string>
-    <string name="pref_connections_summary">Discord, más por venir...</string>
-    <string name="connections_info">Servicios especiales que son exclusivos de Anikku y mejoran la forma en que utilizas la aplicación.</string>
-    <string name="connections_discord">Discord</string>
-    <string name="connections_discord_info">Este servicio de Discord funciona a través del registro de tokens. Úsalo bajo tu propio riesgo. Tu token se almacena localmente y Anikku no lo comparte en ningún otro lugar.</string>
-    <string name="pref_discord_rpc">Discord Rich Presence</string>
-    <string name="show_chapters_titles_title">Muestra los Títulos de los Episodios/Capítulos.</string>
-    <string name="show_chapters_titles_subtitle">Muestra el título del episodio/capítulo que estás leyendo.</string>
-    <string name="pref_enable_discord_rpc">Habilitar Discord Rich Presence</string>
-    <string name="pref_discord_status">Discord Status</string>
-    <string name="pref_discord_dnd">⛔ No Molestar</string>
-    <string name="pref_discord_idle">🌙 Ausente</string>
-    <string name="pref_discord_online">🟢 Online</string>
-    <string name="pref_category_discord_incognito">RPC Incognito</string>
-    <string name="pref_discord_incognito">Discord en Modo Incógnito</string>
-    <string name="pref_discord_incognito_summary">Anulado cuando el modo incógnito está habilitado</string>
-    <string name="pref_discord_incognito_categories_details">Las entradas en las categorías incluidas no se mostrarán en Discord</string>
-
-    <!-- Discord section -->
-    <string name="browsing">Navegando</string>
-    <string name="scrolling">Desplazandose por</string>
-    <string name="messing">Jugando con</string>
-    <string name="video">Video</string>
-    <string name="comic">Manga</string>
     <string name="label_anime_extension_repos">Repositorios de extensiones de anime</string>
     <string name="label_manga_extension_repos">Repositorios de extensiones de manga</string>
     <string name="pref_update_anime_release_grace_period">Período de gracia previsto para el lanzamiento del anime</string>
-    <string name="player_subtitle_border_color">Borde</string>
     <string name="pref_library_update_show_tab_badge">Mostrar el recuento de no vistos/no leídos en el icono actualizaciones</string>
-    <string name="multi_thread_download_threads_number_summary">La cantidad de subprocesos a usar para la descarga puede bloquear su IP si es demasiado alta; generalmente 4 es un buen número para evitar una carga pesada en los servidores de origen.</string>
-    <string name="multi_thread_download">Descarga multiproceso para anime</string>
-    <string name="multi_thread_download_summary">Habilite la descarga de anime usando subprocesos múltiples</string>
-    <string name="multi_thread_download_threads_number">Número de hilos</string>
     <string name="onboarding_storage_action_create_folder">Crear carpeta de Anikku por defecto</string>
     <string name="theme_matrix">Matrix</string>
     <string name="theme_doom">Doom</string>
@@ -1179,8 +1089,6 @@
     <string name="pref_flash_style_black">Negro</string>
     <string name="pref_flash_style_white">Blanco</string>
     <string name="anime_interval_expected_update_null">Este anime ya está finalizado o no hay fecha de estreno prevista.</string>
-    <string name="player_filters_brightness">Brillo</string>
-    <string name="player_filters_saturation">Saturación</string>
     <string name="relative_time_now">Ahora</string>
     <string name="pref_flash_duration">Duración del flash</string>
     <string name="pref_flash_duration_summary">%1$s ms</string>
@@ -1188,186 +1096,74 @@
     <string name="manga_interval_expected_update_null">Este manga está finalizado o no hay fecha de lanzamiento prevista.</string>
     <string name="pref_flash_style_white_black">Blanco y negro</string>
     <string name="file_picker_uri_permission_unsupported">No se pudo obtener acceso permanente a la carpeta. La aplicación puede comportarse de manera inesperada.</string>
-    <string name="pref_sub_select_conf">Editar la configuración de selección de pistas de subtítulos avanzadas</string>
-    <string name="player_subtitle_settings_filters">Filtros</string>
-    <string name="player_filters_contrast">Contraste</string>
-    <string name="player_filters_gamma">Gama</string>
-    <string name="player_filters_hue">Matiz</string>
-    <string name="player_filters_warning">Es posible que algunos filtros no funcionen con su controlador de video actual</string>
-    <!-- Solo cosas en Anikku -->
-
-    <!-- Agrupación de la Biblioteca -->
-    <string name="tracking_status">Estado de seguimiento</string>
-    <string name="tag">Etiquetas</string>
-    <string name="ungrouped">Sin agrupar</string>
-    <string name="not_tracked">No seguido</string>
-
-    <!-- Menú de más información -->
-    <string name="group">Agrupar</string>
-
-    <!-- Configuraciones de la Biblioteca -->
-    <string name="anime_library_group_updates">Actualizaciones dinámicas de categorías de la biblioteca de anime</string>
-    <string name="manga_library_group_updates">Actualizaciones dinámicas de categorías de la biblioteca de manga</string>
-    <string name="library_group_updates_global">Lanzar siempre actualizaciones globales</string>
-    <string name="library_group_updates_all_but_ungrouped">Lanzar actualizaciones globales solo para no agrupados, actualizaciones de categorías para otros</string>
-    <string name="library_group_updates_all">Lanzar actualizaciones de categorías todo el tiempo</string>
-
-    <!-- Edición de información de la entrada -->
-    <string name="reset_tags">Restablecer etiquetas</string>
-    <string name="add_tag">Agregar etiqueta</string>
-    <string name="title_hint">Título: %1$s</string>
-    <string name="description_hint">Descripción: %1$s</string>
-    <string name="author_hint">Autor: %1$s</string>
-    <string name="artist_hint">Artista: %1$s</string>
-    <string name="custom_entry_info">Información de entrada personalizada</string>
-    <string name="reset_info">Restablecer información</string>
-
-    <!-- Preferencias -->
-    <string name="pref_category_cast">Configuraciones de Cast</string>
-    <string name="pref_enable_cast">Habilitar o deshabilitar Cast</string>
-    <string name="action_cast">Enviar a Cast</string>
-    <string name="pref_show_downloaded_episode_file_size">Mostrar el tamaño del archivo de episodios descargados</string>
-
-    <!-- Subsecciones -->
-    <string name="pref_category_fork">Configuraciones de Fork</string>
-
-    <!-- Acciones -->
-    <string name="action_edit_info">Editar información</string>
-
-    <!-- Sección de Conexiones -->
-    <string name="special_services">Servicios Especiales</string>
-    <string name="pref_category_connections">Conexiones</string>
-    <string name="pref_connections_summary">Discord, más por venir...</string>
-    <string name="connections_info">Servicios Especiales únicos de Anikku que mejoran el uso de la aplicación</string>
-    <string name="connections_discord">Discord</string>
-    <string name="connections_discord_info">Este servicio de Discord funciona a través de registro de tokens. Úsalo bajo tu propio riesgo. Tu token se almacena localmente y Anikku no lo comparte en ningún otro lugar</string>
-    <string name="pref_discord_rpc">Discord Rich Presence</string>
-    <string name="show_chapters_titles_title">Mostrar Títulos de Episodios/Capítulos</string>
-    <string name="show_chapters_titles_subtitle">Mostrar el título del episodio/capítulo que estás leyendo</string>
-    <string name="pref_enable_discord_rpc">Habilitar Discord Rich Presence</string>
-    <string name="pref_discord_status">Estado de Discord</string>
-    <string name="pref_discord_dnd">⛔ No Molestar</string>
-    <string name="pref_discord_idle">🌙 Ausente</string>
-    <string name="pref_discord_online">🟢 En línea</string>
-    <string name="pref_category_discord_incognito">RPC Incógnito</string>
-    <string name="pref_discord_incognito">Modo Incógnito de Discord</string>
-    <string name="pref_discord_incognito_summary">Sobrescrito cuando el Modo Incógnito está habilitado</string>
-    <string name="pref_discord_incognito_categories_details">Las entradas en las categorías incluidas no se mostrarán en Discord</string>
-
-    <!-- Sección de Discord -->
-    <string name="browsing">Navegando</string>
-    <string name="scrolling">Desplazándose por</string>
-    <string name="messing">Trasteando con</string>
-    <string name="video">Video</string>
-    <string name="comic">Cómic</string>
-
-    <!-- Torrent -->
-    <string name="install_amnis">Se necesita instalar el reproductor Amnis</string>
-    <string name="pref_category_torrentserver">Preferencias del Servidor Torrent</string>
-    <string name="pref_torrentserver_port">Puerto del Servidor Torrent</string>
-    <string name="torrentserver_is_running">El Servidor Torrent está en funcionamiento</string>
-    <string name="pref_torrent_trackers">Rastreadores de Torrent</string>
-    <string name="pref_reset_torrent_trackers_string">Restablecer la cadena predeterminada de rastreadores de torrent</string>
-
-    <!-- Preferencias -->
-    <string name="pref_page_preload_amount">Cantidad de pre-carga de página</string>
-
-    <!-- Lector -->
-    <!-- Configuraciones del lector -->
-    <string name="preserve_reading_position">Preservar la posición de lectura en entradas leídas</string>
-    <string name="reader_bottom_buttons">Botones Inferiores del Lector</string>
-    <string name="reader_bottom_buttons_summary">Personaliza qué botones aparecen en la parte inferior del lector</string>
-
-    <!-- Acciones del lector -->
-    <string name="action_set_first_page_cover">Establecer la primera página como portada</string>
-    <string name="action_set_second_page_cover">Establecer la segunda página como portada</string>
-    <string name="action_save_first_page">Guardar primera página</string>
-    <string name="action_save_second_page">Guardar segunda página</string>
-    <string name="action_share_first_page">Compartir primera página</string>
-    <string name="action_share_second_page">Compartir segunda página</string>
-    <string name="action_save_combined_page">Guardar página combinada</string>
-    <string name="action_share_combined_page">Compartir página combinada</string>
-
-    <!-- Compartir desde el lector -->
-    <string name="share_pages_info">%1$s: %2$s, páginas %3$s</string>
-
-    <!-- Doble página -->
-    <string name="page_layout">Diseño de página</string>
-    <string name="shift_double_pages">Desplazar una página</string>
-    <string name="double_pages">Doble página</string>
-    <string name="single_page">Página sencilla</string>
-    <string name="automatic_orientation">Automático (basado en la orientación)</string>
-    <string name="automatic_can_still_switch">Mientras uses el diseño automático de página, aún puedes cambiar entre diseños sin sobrescribir esta configuración</string>
-    <string name="invert_double_pages">Invertir doble página</string>
-
-    <!-- Margen central -->
-    <string name="center_margin">Margen central</string>
-    <string name="center_margin_none">Ninguno</string>
-    <string name="center_margin_double_page">Agregar a página doble</string>
-    <string name="center_margin_wide_page">Agregar a página ancha</string>
-    <string name="center_margin_double_and_wide_page">Agregar a ambas</string>
-    <string name="pref_center_margin">Tipo de margen central</string>
-    <string name="pref_center_margin_summary">Insertar espaciador para acomodar el espacio muerto en dispositivos plegables</string>
-
-    <!-- Selector de Color Personalizado -->
-    <string name="pref_custom_color">Selector de Color Personalizado</string>
-    <string name="custom_color_description">Elige un color para el tema personalizado</string>
-    <string name="theme_custom">Tema Personalizado</string>
-
-    <!-- Sincronización entre Dispositivos -->
-    <string name="label_backup">Respaldo</string>
-    <string name="label_sync">Sincronizar</string>
-    <string name="label_triggers">Disparadores</string>
-    <string name="pref_backup_and_sync_summary">Respaldo y sincronización manual &amp; automática</string>
-    <string name="update_30min">Cada 30 minutos</string>
-    <string name="update_1hour">Cada hora</string>
-    <string name="update_3hour">Cada 3 horas</string>
-    <string name="sync_error">Error al sincronizar la biblioteca</string>
-    <string name="sync_complete">Sincronización de la biblioteca completa</string>
-    <string name="sync_in_progress">La sincronización ya está en progreso</string>
-    <string name="pref_sync_host">Host</string>
-    <string name="pref_sync_host_summ">Ingresa la dirección del host para sincronizar tu biblioteca</string>
-    <string name="pref_sync_api_key">Clave API</string>
-    <string name="pref_sync_api_key_summ">Ingresa la clave API para sincronizar tu biblioteca</string>
-    <string name="pref_sync_now_group_title">Acciones de Sincronización</string>
-    <string name="pref_sync_now">Sincronizar ahora</string>
-    <string name="pref_sync_confirmation_title">Confirmación de sincronización</string>
-    <string name="pref_sync_now_subtitle">Iniciar sincronización inmediata de tus datos</string>
-    <string name="pref_sync_confirmation_message">La sincronización sobrescribirá tu biblioteca local con la biblioteca remota. ¿Estás seguro de que deseas continuar?</string>
-    <string name="pref_sync_service">Servicio</string>
-    <string name="pref_sync_service_summ">Selecciona el servicio para sincronizar tu biblioteca</string>
-    <string name="pref_sync_service_category">Sincronizar</string>
-    <string name="pref_sync_automatic_category">Sincronización Automática</string>
-    <string name="pref_sync_interval">Frecuencia de sincronización</string>
-    <string name="pref_choose_what_to_sync">Elige qué sincronizar</string>
-    <string name="success_reset_sync_timestamp">Marca de tiempo de la última sincronización restablecida</string>
-    <string name="syncyomi">SyncYomi</string>
-    <string name="sync_completed_message">Terminado en %1$s</string>
-    <string name="last_synchronization">Última Sincronización: %1$s</string>
-    <string name="google_drive">Google Drive</string>
-    <string name="pref_google_drive_sign_in">Iniciar sesión</string>
-    <string name="google_drive_sign_in_success">Inicio de sesión exitoso</string>
-    <string name="google_drive_sign_in_failed">Error al iniciar sesión</string>
-    <string name="authentication">Autenticación</string>
-    <string name="pref_google_drive_purge_sync_data">Borrar datos de sincronización de Google Drive</string>
-    <string name="google_drive_sync_data_purged">Datos de sincronización borrados de Google Drive</string>
-    <string name="google_drive_sync_data_not_found">No se encontraron datos de sincronización en Google Drive</string>
-    <string name="google_drive_sync_data_purge_error">Error al borrar los datos de sincronización de Google Drive. Intenta iniciar sesión nuevamente.</string>
-    <string name="google_drive_login_success">Conectado a Google Drive</string>
-    <string name="google_drive_login_failed">Error al iniciar sesión en Google Drive: %s</string>
-    <string name="google_drive_not_signed_in">No has iniciado sesión en Google Drive</string>
-    <string name="error_uploading_sync_data">Error al subir los datos de sincronización a Google Drive</string>
-    <string name="error_deleting_google_drive_lock_file">Error al eliminar el archivo de bloqueo de Google Drive</string>
-    <string name="error_before_sync_gdrive">Error antes de la sincronización: %s</string>
-    <string name="pref_purge_confirmation_title">Confirmación de purga</string>
-    <string name="pref_purge_confirmation_message">Purgar los datos de sincronización eliminará todos tus datos de sincronización de Google Drive. ¿Estás seguro de que deseas continuar?</string>
-    <string name="pref_sync_options">Crear disparadores de sincronización</string>
-    <string name="pref_sync_options_summ">Se puede usar para establecer disparadores de sincronización</string>
-    <string name="sync_on_chapter_read">Sincronizar al leer un capítulo</string>
-    <string name="sync_on_chapter_open">Sincronizar al abrir un capítulo</string>
-    <string name="sync_on_episode_seen">Sincronizar al ver un episodio</string>
-    <string name="sync_on_episode_open">Sincronizar al abrir un episodio</string>
-    <string name="sync_on_app_start">Sincronizar al iniciar la aplicación</string>
-    <string name="sync_on_app_resume">Sincronizar al reanudar la aplicación</string>
-    <string name="sync_library">Sincronizar biblioteca</string>
+    <string name="action_copy_link">Copiar enlace</string>
+    <string name="ext_confirm_remove">¿Quitar extensión?</string>
+    <string name="add_repo_confirmation">¿Desea añadir el repositorio \" %s \"?</string>
+    <string name="invalid_backup_file_json">Copia de seguridad JSON no compatible</string>
+    <string name="extensionRepo_settings">Repositorios de extensiones</string>
+    <string name="non_library_settings">Todas las entradas leídas/miradas</string>
+    <string name="trackers_updated_summary_anime">Rastreadores actualizados al episodio %d</string>
+    <string name="pref_download_new_unread_chapters_only">Omitir la descarga de capítulos leídos y duplicados</string>
+    <string name="confirm_tracker_update">¿Actualizar rastreadores al capítulo %d ?</string>
+    <string name="confirm_tracker_update_anime">¿Actualizar rastreadores al episodio %d ?</string>
+    <string name="pref_download_new_unseen_episodes_only">Omitir la descarga de episodios vistos duplicados</string>
+    <string name="pref_auto_update_manga_on_mark_read">Actualizar el progreso cuando se marca como leído/visto</string>
+    <string name="action_sort_random">Aleatorio</string>
+    <string name="ext_remove">Quitar</string>
+    <string name="remove_private_extension_message">¿Realmente desea quitar la extensión \" %s \"?</string>
+    <string name="invalid_backup_file_unknown">La copia de seguridad está dañada</string>
+    <string name="trackers_updated_summary_manga">Rastreadores actualizados al capítulo %d</string>
+    <string name="label_player_settings">Ajustes del reproductor</string>
+    <string name="action_search_player_settings">Buscar ajustes del reproductor</string>
+    <string name="pref_player_internal">Reproductor interno</string>
+    <string name="pref_player_gestures">Gestos</string>
+    <string name="pref_category_double_tap">Pulsación doble</string>
+    <string name="pref_left_double_tap">Doble toque (izquierda)</string>
+    <string name="pref_center_double_tap">Doble toque (centro)</string>
+    <string name="pref_right_double_tap">Doble toque (derecha)</string>
+    <string name="single_action_seek">Buscar</string>
+    <string name="single_action_playpause">Reproducir/Pausar</string>
+    <string name="single_action_switch">Cambiar episodio</string>
+    <string name="single_action_custom">Personalizado</string>
+    <string name="pref_media_playpause">Reproducir/Pausar</string>
+    <string name="pref_player_decoder">Descodificador</string>
+    <string name="pref_debanding_none">Ninguna</string>
+    <string name="pref_use_yuv420p_title">Utilice el formato de píxeles YUV420P</string>
+    <string name="pref_player_subtitle">Subtítulos</string>
+    <string name="pref_player_subtitle_summary">Idiomas preferidos, lista blanca, lista negra</string>
+    <string name="pref_player_subtitle_lang">Idiomas preferidos</string>
+    <string name="pref_use_yuv420p_subtitle">Puede arreglar las pantallas negras en algunos códecs de vídeo, también puede mejorar el rendimiento a costa de la calidad</string>
+    <string name="pref_player_subtitle_whitelist">Lista blanca</string>
+    <string name="pref_player_subtitle_blacklist">Lista negra</string>
+    <string name="pref_player_subtitle_blacklist_info">Lista negra de subtítulos. Si se define una lista negra, se filtrarán todos los subtítulos que contengan una palabra de la lista negra. Los valores múltiples pueden delimitarse con una coma.</string>
+    <string name="pref_player_audio">Audio</string>
+    <string name="pref_player_audio_summary">Idiomas preferidos, corrección de tono, canales de audio</string>
+    <string name="pref_player_audio_lang">Idiomas preferidos</string>
+    <string name="pref_player_audio_boost_cap">Límite de aumento de volumen</string>
+    <string name="pref_player_advanced">Avanzado</string>
+    <string name="pref_player_internal_summary">Progreso, controles, orientación</string>
+    <string name="pref_player_gestures_summary">Búsqueda, doble toque, controles multimedia</string>
+    <string name="pref_double_tap_info">Cuando un gesto de toque se configura como personalizado, se puede vincular a través de input.conf. Los códigos de tecla son 0x10001 para izquierda, 0x10002 para centro y 0x10003 para derecha.</string>
+    <string name="single_action_none">Ninguna</string>
+    <string name="pref_category_media_controls">Controles de medios</string>
+    <string name="pref_media_previous">Anterior</string>
+    <string name="pref_media_next">Siguiente</string>
+    <string name="pref_try_hw">Pruebe la decodificación de hardware</string>
+    <string name="pref_media_info">Cuando un control multimedia está configurado como Personalizado, se puede vincular a través de input.conf. Los códigos de tecla son 0x10004 para anterior, 0x10005 para reproducir/pausar y 0x10006 para siguiente.</string>
+    <string name="pref_player_subtitle_lang_info">Idioma(s) de subtítulo(s) a seleccionar por defecto en un vídeo con múltiples subtítulos, funcionan códigos de idioma de dos o tres letras. Los valores múltiples pueden delimitarse con una coma.</string>
+    <string name="pref_player_subtitle_whitelist_info">Lista blanca de subtítulos. Si se define una lista blanca, se utilizará el primer subtítulo que contenga una palabra de la lista blanca. Los valores múltiples pueden delimitarse con una coma.</string>
+    <string name="pref_player_audio_lang_info">Idioma(s) de audio a seleccionar por defecto en un vídeo con múltiples flujos de audio, Funcionan códigos de idioma de dos o tres letras. Los valores múltiples pueden delimitarse con una coma.</string>
+    <string name="pref_player_audio_pitch_correction">Activar la corrección del tono de audio</string>
+    <string name="pref_player_audio_pitch_correction_summary">Evita que el audio se vuelva agudo a velocidades más rápidas y grave a velocidades más lentas</string>
+    <string name="pref_player_advanced_summary">Scripts, mpv.conf, input.conf</string>
+    <string name="pref_player_decoder_summary">Descodificación por hardware, formato de píxel, debanding</string>
+    <string name="pref_controls_display_volume_percentage">Mostrar el volumen como porcentaje</string>
+    <string name="rotation_video">Video</string>
+    <string name="pref_category_controls">Controles</string>
+    <string name="pref_controls_allow_gestures_in_panels">Permitir gestos en paneles</string>
+    <string name="pref_controls_show_loading">Mostrar círculo de carga</string>
+    <string name="pref_controls_show_chapter_indicator">Mostrar indicador de capítulo actual</string>
+    <string name="pref_controls_show_chapter_indicator_info">Solo aparece si el vídeo tiene capítulos</string>
+    <string name="pref_show_system_bar">Mostrar la barra de estado del sistema con controles</string>
+    <string name="pref_reduce_motion">Reducir la animación del reproductor</string>
 </resources>
