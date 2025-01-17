@@ -210,7 +210,7 @@ private fun ColumnScope.SortPage(
         }
         listOfNotNull(
             MR.strings.action_sort_alpha to LibrarySort.Type.Alphabetical,
-            MR.strings.action_sort_total to LibrarySort.Type.TotalEpisodes,
+            MR.strings.action_sort_total_episodes to LibrarySort.Type.TotalEpisodes,
             MR.strings.action_sort_last_seen to LibrarySort.Type.LastSeen,
             MR.strings.action_sort_last_anime_update to LibrarySort.Type.LastUpdate,
             MR.strings.action_sort_unseen_count to LibrarySort.Type.UnseenCount,
