@@ -1,5 +1,6 @@
 package eu.kanade.domain.anime.interactor
 
+import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeUpdate
 import tachiyomi.domain.anime.repository.AnimeRepository
@@ -14,7 +15,10 @@ class SetAnimeViewerFlags(
         animeRepository.update(
             AnimeUpdate(
                 id = id,
-                viewerFlags = anime.viewerFlags.setFlag(flag, Anime.ANIME_INTRO_MASK),
+                viewerFlags = anime.viewerFlags
+                    .setFlag(flag, Anime.ANIME_INTRO_MASK)
+                    // Disable skip intro button if length is set to 0
+                    .setFlag((flag == 0L).toLong(), Anime.ANIME_INTRO_DISABLE_MASK),
             ),
         )
     }
