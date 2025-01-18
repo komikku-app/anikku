@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Estado del seguimiento</string>
+  <string name="tracking_status" comment="tracking_status Only Stuff in Anikku Library Grouping">Estado del seguimiento</string>
   <string name="tag">Etiquetas</string>
   <string name="ungrouped">No agrupado</string>
   <string name="not_tracked">No rastreado</string>
@@ -27,9 +27,9 @@
   <string name="special_services" comment="special_services Connections section">Servicios Especiales</string>
   <string name="pref_category_connections">Conexiones</string>
   <string name="pref_connections_summary">Discord, más por venir…</string>
-  <string name="connections_info">Servicios especiales exclusivos de Animetail que mejoran la forma en que usas la app</string>
+  <string name="connections_info">Servicios especiales exclusivos de Anikku que mejoran la forma en que usas la app</string>
   <string name="connections_discord">Discord</string>
-  <string name="connections_discord_info">Este servicio de Discord funciona a través de inicio de sesión con token. Úsalo bajo tu propio riesgo. Tu token se guarda localmente y Animetail no lo comparte en ningún otro lugar</string>
+  <string name="connections_discord_info">Este servicio de Discord funciona a través de inicio de sesión con token. Úsalo bajo tu propio riesgo. Tu token se guarda localmente y Anikku no lo comparte en ningún otro lugar</string>
   <string name="pref_discord_rpc">Discord Rica Presence</string>
   <string name="show_chapters_titles_title">Mostrar títulos de episodios/capítulos</string>
   <string name="show_chapters_titles_subtitle">Mostrar el título del episodio/capítulo que estás leyendo</string>
@@ -156,10 +156,19 @@
   <string name="pref_flare_solverr_url_summary">URL de la instancia de FlareSolverr a utilizar, por ejemplo: http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Probar FlareSolverr y actualizar el agente de usuario</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Pruebe FlareSolverr para actualizar el agente de usuario. Solo es necesario una vez; luego cambie según sea necesario.</string>
-  <string name="title_cast_quality">Elige calidad/proveedor de transmisión</string>
+  <string-array name="title_cast_quality">
+    <item>Elige calidad/proveedor de transmisión</item>
+    <item>Seleccionar Calidad</item>
+  </string-array>
   <string name="cast_not_connected">Transmisión no establecida</string>
-  <string name="cast_video_added_to_queue">Vídeo añadido a la cola</string>
-  <string name="cast_error_loading">Error al cargar el video desde el Cast</string>
+  <string-array name="cast_video_added_to_queue">
+    <item>Vídeo añadido a la cola</item>
+    <item>Vídeo añadido a la cola</item>
+  </string-array>
+  <string-array name="cast_error_loading">
+    <item>Error al cargar el video desde el Cast</item>
+    <item>Error al cargar el video</item>
+  </string-array>
   <string name="server_local_notification_casting">El servidor local está en ejecución. Toca para detenerlo.</string>
   <string name="server_local_notification_channel_description">Canal de notificación del servidor local</string>
   <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">AutoScroll</string>
@@ -184,4 +193,80 @@
   </plurals>
   <string name="pref_category_castserver">Cast Server</string>
   <string name="pref_cast_server_port">Puerto para el Servidor Cast</string>
+  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Personalizar Discord</string>
+  <string name="pref_discord_custom_message">Mensaje personalizado</string>
+  <string name="pref_discord_custom_message_summary">Mensaje personalizado que se mostrará en Discord</string>
+  <string name="pref_discord_show_progress">Mostrar barra de progreso</string>
+  <string name="pref_discord_show_progress_summary">Mostrar el progreso actual del episodio/capítulo</string>
+  <string name="pref_discord_show_timestamp">Mostrar Tiempo</string>
+  <string name="pref_discord_show_timestamp_summary">Mostrar el tiempo transcurrido/restante</string>
+  <string name="pref_discord_show_buttons">Mostrar Botones</string>
+  <string name="pref_discord_show_buttons_summary">Mostrar botones para descargar la aplicación o unirse al servidor de Discord</string>
+  <string name="pref_discord_show_download_button">Mostrar el botón de descarga</string>
+  <string name="pref_discord_show_download_button_summary">Muestra un botón para descargar la aplicación</string>
+  <string name="pref_discord_show_discord_button">Mostrar el botón de Discord</string>
+  <string name="pref_discord_show_discord_button_summary">Muestra un botón para unirse al servidor de Discord</string>
+  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Cola de Reproducción</string>
+  <string name="action_clear_queue">Vaciar Cola</string>
+  <string name="cast_remove_from_queue">Quitar de la cola</string>
+  <string name="move_to_top">Mover al principio</string>
+  <string name="move_to_position">Mover a la posición</string>
+  <string name="position">Posición</string>
+  <string name="select_position">Seleccionar posición</string>
+  <string name="remove_from_queue_confirmation">¿Quitar de la cola?</string>
+  <string name="clear_queue_confirmation">Vaciar Cola</string>
+  <string name="clear_queue_confirmation_message">¿Estás seguro de que quieres vaciar toda la cola?</string>
+  <string name="queue">Cola de Reproducción</string>
+  <string name="move_to_bottom">Mover hacia abajo</string>
+  <string name="action_end_session">Finalizar Sesión Cast</string>
+  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Dispositivos Disponibles</string>
+  <string name="cast_media_info">Media info</string>
+  <string name="cast_previous_video">Video Anterior</string>
+  <string name="cast_next_video">Siguiente Video</string>
+  <string name="cast_play">Reproducir</string>
+  <string name="cast_pause">Pausar</string>
+  <string name="cast_rewind_30s">Rebobinar 30s</string>
+  <string name="cast_forward_30s">Avanzar 30s</string>
+  <string name="cast_volume">Volumen</string>
+  <string name="cast_end_session">Finalizar Sesión Cast</string>
+  <string name="empty_queue">La cola está vacía</string>
+  <string name="cast_end_session_message">¿Seguro que quieres finalizar la transmisión actual?</string>
+  <string name="cast_end_session_confirm">Terminar sesión</string>
+  <string name="cast_end_session_cancel">Cancelar</string>
+  <string name="playback_speed">Velocidad de reproducción</string>
+  <string-array name="cast_subtitle_settings">
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Configuración de subtítulos</item>
+    <item>Configuración de subtítulos</item>
+  </string-array>
+  <string name="cast_subtitle_font_size">Tamaño de fuente</string>
+  <string name="cast_subtitle_text_color">Color del texto</string>
+  <string name="cast_subtitle_background">Fondo</string>
+  <string name="cast_subtitle_shadow">Sombras</string>
+  <string name="cast_subtitle_apply">Aplicar</string>
+  <string name="cast_subtitle_reset">Restablecer valores predeterminados</string>
+  <string name="cast_subtitle_shadow_None">Nada</string>
+  <string name="cast_subtitle_shadow_Light">Claro</string>
+  <string name="cast_subtitle_shadow_Medium">Mediano</string>
+  <string name="cast_subtitle_shadow_Strong">Negrita</string>
+  <string name="cast_subtitle_preview">Vista previa del texto あ漢</string>
+  <string name="cast_tracks">Seleccionar Subtítulo/Audio</string>
+  <string name="cast_volume_down">Bajar Volumen</string>
+  <string name="cast_volume_up">Subir Volumen</string>
+  <string name="cast_subtitles">Subtítulos</string>
+  <string name="cast_audio_tracks">Audio</string>
+  <string name="cast_no_subtitles">Sin subtítulos</string>
+  <string name="cast_close">Cerrar</string>
+  <string name="cast_subtitle_font_family">Familia de la fuente</string>
+  <string name="cast_subtitle_border_style">Estilo del borde</string>
+  <string name="cast_subtitle_border_none">Nada</string>
+  <string name="cast_subtitle_border_outline">Contorno</string>
+  <string name="cast_subtitle_border_drop_shadow">Sombra paralela</string>
+  <string name="cast_subtitle_border_drop_shadow_soft">Sombra Suave</string>
+  <string name="cast_subtitle_border_raised">Elevado</string>
+  <string name="cast_subtitle_border_depressed">Melancólico</string>
+  <string name="cast_connection_error">Error de Conexión</string>
+  <string name="discord_accounts">Cuentas de Discord</string>
+  <string name="active_account">Cuenta Activa</string>
+  <string name="no_accounts_found">No se encontraron cuentas</string>
+  <string name="login_failed">No se ha podido iniciar sesión</string>
 </resources>

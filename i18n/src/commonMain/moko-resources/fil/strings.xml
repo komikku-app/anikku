@@ -826,7 +826,7 @@
     <string name="unofficial_extension_message_aniyomi">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Anikku.</string>
     <string name="rotation_sensor_portrait">Sensor na portrait</string>
     <string name="rotation_sensor_landscape">Sensor na landscape</string>
-    <string name="unofficial_anime_extension_message">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Aniyomi.</string>
+    <string name="unofficial_anime_extension_message">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Anikku.</string>
     <string name="pref_category_player_seeking">Pagse-seek</string>
     <string name="pref_default_intro_length">Default na laktawan ang haba ng intro</string>
     <string name="pref_intro_length">Laktawan ang haba ng intro</string>
@@ -1055,7 +1055,7 @@
     <string name="pref_gpu_next_title">Paganahin ang gpu-next</string>
     <string name="label_manga_extension_repos">Extension repo ng manga</string>
     <string name="download_slots_info">Magda-download lang nang sabay-sabay mula sa self-host o hindi nasusukat na mga source</string>
-    <string name="onboarding_storage_action_create_folder">Lumikha ng default na Aniyomi folder</string>
+    <string name="onboarding_storage_action_create_folder">Lumikha ng default na Anikku folder</string>
     <string name="safe_download">Ligtas na download mode para sa anime</string>
     <string name="safe_download_summary">Paganahin ang isahang thread at walang range na download mode</string>
     <string name="download_threads_number">Bilang ng thread</string>

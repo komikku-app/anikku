@@ -816,7 +816,7 @@
     <string name="default_anime_category">Categoria de anime padrão</string>
     <string name="pref_manga_library_update_categories_details">Os mangás nas categorias excluídas não serão atualizados, mesmo que também estejam nas categorias incluídas.</string>
     <string name="pref_anime_library_update_categories_details">Os animes nas categorias excluídas não serão atualizados, mesmo que também estejam nas categorias incluídas.</string>
-    <string name="unofficial_extension_message_aniyomi">Esta extensão não está na lista oficial de extensões do Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Esta extensão não está na lista oficial de extensões do Anikku.</string>
     <string name="pref_progress_mark_as_seen">Em que ponto marcar o episódio como visto</string>
     <string name="pref_preserve_watching_position">Lembrar a posição de reprodução nos episódios vistos</string>
     <string name="pref_category_player_orientation">Orientação</string>
@@ -955,7 +955,7 @@
     <string name="pref_remember_brightness">Lembrar e mudar para o último brilho usado</string>
     <string name="pref_remember_volume">Lembrar e mudar para o último volume usado</string>
     <string name="pref_mpv_conf">Editar o arquivo de configuração do MPV para obter mais configurações do reprodutor</string>
-    <string name="unofficial_anime_extension_message">Esta extensão não está na lista oficial de extensões do Aniyomi.</string>
+    <string name="unofficial_anime_extension_message">Esta extensão não está na lista oficial de extensões do Anikku.</string>
     <string name="pref_player_fullscreen">Mostrar conteúdo no recorte de exibição</string>
     <string name="enable_volume_brightness_gestures">Ativar Gestos de Volume e Brilho</string>
     <string name="pref_default_intro_length">Duração padrão do pulo de abertura</string>
@@ -997,7 +997,7 @@
     <string name="data_saver_image_format_summary_off">O tamanho do arquivo JPEG é consideravelmente menor que o Webp (o que significa que mais dados são salvos), mas também faz com que as imagens percam mais qualidade.
 \nAtualmente compacta para Webp</string>
     <string name="label_all">Todos</string>
-    <string name="onboarding_storage_action_create_folder">Crie a pasta Aniyomi padrão</string>
+    <string name="onboarding_storage_action_create_folder">Crie a pasta Anikku padrão</string>
     <string name="pref_debanding_gpu">GPU</string>
     <string name="action_hide">Esconder</string>
     <string name="label_category">Categoria</string>

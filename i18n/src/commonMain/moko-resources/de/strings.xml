@@ -1030,6 +1030,8 @@
     <string name="data_saver_ignore_jpeg">Jpeg-Bilder ignorieren</string>
     <string name="theme_cottoncandy">Zuckerwatte</string>
     <string name="onboarding_storage_action_create_folder">Standard-Anikku-Ordner erstellen</string>
+    <string name="multi_thread_download_summary">Multithreading für Anime-Downloads aktivieren</string>
+    <string name="multi_thread_download_threads_number">Anzahl der Threads</string>
     <string name="label_manga_extension_repos">Manga-Erweiterungs-Bibliotheken</string>
     <string name="label_anime_extension_repos">Anime-Erweiterungs-Bibliotheken</string>
     <string name="download_speed_limit_hint">Auf 0 setzen, um Geschwindigkeitsbegrenzung zu deaktivieren.</string>

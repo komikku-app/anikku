@@ -1032,7 +1032,7 @@
     <string name="pref_relative_format_summary">\"%1$s\" em vez de \"%2$s\"</string>
     <string name="information_empty_repos">Você não tem repositórios definidos.</string>
     <string name="action_add_repo">Adicionar repositório</string>
-    <string name="action_add_repo_message">Adicione repositórios adicionais ao Aniyomi. Este deve ser um URL que termina com “index.min.json”.</string>
+    <string name="action_add_repo_message">Adicione repositórios adicionais ao Anikku. Este deve ser um URL que termina com “index.min.json”.</string>
     <string name="action_delete_repo">Deletar repositório</string>
     <string name="invalid_repo_name">URL de repositório inválido</string>
     <string name="delete_repo_confirmation">Deseja excluir o repositório \"%s\"?</string>

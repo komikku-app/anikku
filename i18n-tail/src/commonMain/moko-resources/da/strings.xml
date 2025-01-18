@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Status for sporing</string>
+  <string name="tracking_status" comment="tracking_status Only Stuff in Anikku Library Grouping">Status for sporing</string>
   <string name="tag">Mærker</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">Ikke sporet</string>
@@ -27,9 +27,9 @@
   <string name="special_services" comment="special_services Connections section">Særlige Tjenester</string>
   <string name="pref_category_connections">Forbindelser</string>
   <string name="pref_connections_summary">Discord, mere at komme.</string>
-  <string name="connections_info">Særlige tjenester, der er unikke for Animetail og forbedre den måde, du bruger appen</string>
+  <string name="connections_info">Særlige tjenester, der er unikke for Anikku og forbedre den måde, du bruger appen</string>
   <string name="connections_discord">Uenighed</string>
-  <string name="connections_discord_info">Denne Discord Service fungerer gennem token logning. Bruges på egen risiko. Dit token gemmes lokalt, og Animetail deler det ikke andre steder</string>
+  <string name="connections_discord_info">Denne Discord Service fungerer gennem token logning. Bruges på egen risiko. Dit token gemmes lokalt, og Anikku deler det ikke andre steder</string>
   <string name="pref_discord_rpc">Discord Rig Tilstedeværelse</string>
   <string name="show_chapters_titles_title">Vis Episoder/Kapitler Titler</string>
   <string name="show_chapters_titles_subtitle">Vis titlen på episoden/kapitlet du læser</string>
@@ -156,10 +156,19 @@
   <string name="pref_flare_solverr_url_summary">URL for FlareSolverr instans der skal bruges for eksempel http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Test FlareSolverr og opdater brugeragent</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Test FlareSolverr for at opdatere brugeragent. Kun påkrævet én gang, og skift derefter efter behov.</string>
-  <string name="title_cast_quality">Vælg Medvirkende Kvalitet/Udbyder</string>
+  <string-array name="title_cast_quality">
+    <item>Vælg Medvirkende Kvalitet/Udbyder</item>
+    <item>Vælg Kvalitet</item>
+  </string-array>
   <string name="cast_not_connected">Cast ikke forbundet</string>
-  <string name="cast_video_added_to_queue">Video tilføjet til kø</string>
-  <string name="cast_error_loading">Fejl ved indlæsning af video fra Cast</string>
+  <string-array name="cast_video_added_to_queue">
+    <item>Video tilføjet til kø</item>
+    <item>Video tilføjet til kø</item>
+  </string-array>
+  <string-array name="cast_error_loading">
+    <item>Fejl ved indlæsning af video fra Cast</item>
+    <item>Fejl under indlæsning af video</item>
+  </string-array>
   <string name="server_local_notification_casting">Den lokale server kører. Tryk for at stoppe den.</string>
   <string name="server_local_notification_channel_description">Lokal server notifikationskanal</string>
   <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">AutoRul</string>
@@ -184,4 +193,80 @@
   </plurals>
   <string name="pref_category_castserver">Cast Server</string>
   <string name="pref_cast_server_port">Cast Server Port</string>
+  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Discord Tilpasning</string>
+  <string name="pref_discord_custom_message">Brugerdefineret Besked</string>
+  <string name="pref_discord_custom_message_summary">Brugerdefineret besked, der vil blive vist på Discord</string>
+  <string name="pref_discord_show_progress">Vis Fremskridt</string>
+  <string name="pref_discord_show_progress_summary">Vis den aktuelle episode/kapitelfremgang</string>
+  <string name="pref_discord_show_timestamp">Vis Tid</string>
+  <string name="pref_discord_show_timestamp_summary">Vis forløb/resterende tid</string>
+  <string name="pref_discord_show_buttons">Vis Knapper</string>
+  <string name="pref_discord_show_buttons_summary">Vis knapper til at downloade appen, eller deltag i Discord serveren</string>
+  <string name="pref_discord_show_download_button">Vis Download-Knap</string>
+  <string name="pref_discord_show_download_button_summary">Viser en knap til download af appen</string>
+  <string name="pref_discord_show_discord_button">Vis Discord Knap</string>
+  <string name="pref_discord_show_discord_button_summary">Viser en knap til at deltage i Discord serveren</string>
+  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Afspilnings Kø</string>
+  <string name="action_clear_queue">Ryd Kø</string>
+  <string name="cast_remove_from_queue">Fjern fra kø</string>
+  <string name="move_to_top">Flyt til toppen</string>
+  <string name="move_to_position">Flyt til position</string>
+  <string name="position">Placering</string>
+  <string name="select_position">Vælg Position</string>
+  <string name="remove_from_queue_confirmation">Fjern fra køen?</string>
+  <string name="clear_queue_confirmation">Ryd Kø</string>
+  <string name="clear_queue_confirmation_message">Er du sikker på, at du vil rydde hele køen?</string>
+  <string name="queue">Kø</string>
+  <string name="move_to_bottom">Flyt til bunden</string>
+  <string name="action_end_session">Afslut Cast Session</string>
+  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Tilgængelige Enheder</string>
+  <string name="cast_media_info">Medie Info</string>
+  <string name="cast_previous_video">Forrige Video</string>
+  <string name="cast_next_video">Næste Video</string>
+  <string name="cast_play">Afspil</string>
+  <string name="cast_pause">Pause</string>
+  <string name="cast_rewind_30s">Genvind 30s</string>
+  <string name="cast_forward_30s">Fremad 30s</string>
+  <string name="cast_volume">Lydstyrke</string>
+  <string name="cast_end_session">Afslut Cast Session</string>
+  <string name="empty_queue">Kø er tom</string>
+  <string name="cast_end_session_message">Er du sikker på, at du vil afslutte den nuværende cast- session?</string>
+  <string name="cast_end_session_confirm">Afslut Session</string>
+  <string name="cast_end_session_cancel">Annuller</string>
+  <string name="playback_speed">Afspilningshastighed</string>
+  <string-array name="cast_subtitle_settings">
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Indstillinger For Undertekster</item>
+    <item>Indstillinger For Undertekster</item>
+  </string-array>
+  <string name="cast_subtitle_font_size">Font Size</string>
+  <string name="cast_subtitle_text_color">Tekst Farve</string>
+  <string name="cast_subtitle_background">Baggrund</string>
+  <string name="cast_subtitle_shadow">Skygge</string>
+  <string name="cast_subtitle_apply">Anvend</string>
+  <string name="cast_subtitle_reset">Nulstil til standard</string>
+  <string name="cast_subtitle_shadow_None">Ingen</string>
+  <string name="cast_subtitle_shadow_Light">Lys</string>
+  <string name="cast_subtitle_shadow_Medium">Mellem</string>
+  <string name="cast_subtitle_shadow_Strong">Stærk</string>
+  <string name="cast_subtitle_preview">Forhåndsvisning Af Tekst...</string>
+  <string name="cast_tracks">Vælg Undertekst/Lydspor</string>
+  <string name="cast_volume_down">Lydstyrke Ned</string>
+  <string name="cast_volume_up">Lydstyrke Op</string>
+  <string name="cast_subtitles">Undertekster</string>
+  <string name="cast_audio_tracks">Lyd Spor</string>
+  <string name="cast_no_subtitles">Ingen Undertekster</string>
+  <string name="cast_close">Luk</string>
+  <string name="cast_subtitle_font_family">Skrifttype Familie</string>
+  <string name="cast_subtitle_border_style">Kant Stil</string>
+  <string name="cast_subtitle_border_none">Ingen</string>
+  <string name="cast_subtitle_border_outline">Kontur</string>
+  <string name="cast_subtitle_border_drop_shadow">Drop Skygge</string>
+  <string name="cast_subtitle_border_drop_shadow_soft">Skygge Til Blød Drop</string>
+  <string name="cast_subtitle_border_raised">Aktiveret</string>
+  <string name="cast_subtitle_border_depressed">Depresseret</string>
+  <string name="cast_connection_error">Forbindelsesfejl</string>
+  <string name="discord_accounts">Discord Konti</string>
+  <string name="active_account">Aktiv Konto</string>
+  <string name="no_accounts_found">Ingen konti fundet</string>
+  <string name="login_failed">Kunne ikke logge ind</string>
 </resources>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Stav sledování</string>
+  <string name="tracking_status" comment="tracking_status Only Stuff in Anikku Library Grouping">Stav sledování</string>
   <string name="tag">Štítky</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">Nesledováno</string>
@@ -27,9 +27,9 @@
   <string name="special_services" comment="special_services Connections section">Speciální služby</string>
   <string name="pref_category_connections">Kontakty</string>
   <string name="pref_connections_summary">Discord, více k nám.</string>
-  <string name="connections_info">Speciální služby, které jsou unikátní pro animetail a vylepšují způsob, jakým používáte aplikaci</string>
+  <string name="connections_info">Speciální služby, které jsou unikátní pro Anikku a vylepšují způsob, jakým používáte aplikaci</string>
   <string name="connections_discord">Discord</string>
-  <string name="connections_discord_info">Tato Discord služba funguje pomocí logování tokenů. Použijte na vlastní riziko. Tvůj token je uložen lokálně a Animetail ji nesdílejí nikde jinde</string>
+  <string name="connections_discord_info">Tato Discord služba funguje pomocí logování tokenů. Použijte na vlastní riziko. Tvůj token je uložen lokálně a Anikku ji nesdílejí nikde jinde</string>
   <string name="pref_discord_rpc">Discord Rich Presence</string>
   <string name="show_chapters_titles_title">Zobrazit názvy epizod/kapitol</string>
   <string name="show_chapters_titles_subtitle">Zobrazit název epizody/kapitoly, kterou čtete</string>
@@ -156,10 +156,19 @@
   <string name="pref_flare_solverr_url_summary">Adresa URL instance FlareSolverr pro použití například http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Otestuj FlareSolverr a aktualizuj uživatelské agenta</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Otestujte FlareSolverr pro aktualizaci uživatelského agenta. Vyžadováno pouze jednou; poté přepněte podle potřeby.</string>
-  <string name="title_cast_quality">Vybrat kvalifikaci/poskytovatele obsazení</string>
+  <string-array name="title_cast_quality">
+    <item>Vybrat kvalifikaci/poskytovatele obsazení</item>
+    <item>Vybrat kvalitu</item>
+  </string-array>
   <string name="cast_not_connected">Vysílání není připojeno</string>
-  <string name="cast_video_added_to_queue">Video přidáno do fronty</string>
-  <string name="cast_error_loading">Chyba při načítání videa z vysílání</string>
+  <string-array name="cast_video_added_to_queue">
+    <item>Video přidáno do fronty</item>
+    <item>Video přidáno do fronty</item>
+  </string-array>
+  <string-array name="cast_error_loading">
+    <item>Chyba při načítání videa z vysílání</item>
+    <item>Chyba při načítání videa</item>
+  </string-array>
   <string name="server_local_notification_casting">Místní server je spuštěn. Klepnutím ho zastavíte.</string>
   <string name="server_local_notification_channel_description">Indikační kanál místního serveru</string>
   <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">Automatický posun</string>
@@ -186,4 +195,80 @@
   </plurals>
   <string name="pref_category_castserver">Vysílající server</string>
   <string name="pref_cast_server_port">Port serveru odeslání</string>
+  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Přizpůsobení Discordu</string>
+  <string name="pref_discord_custom_message">Vlastní zpráva</string>
+  <string name="pref_discord_custom_message_summary">Vlastní zpráva, která bude zobrazena na Discordu</string>
+  <string name="pref_discord_show_progress">Zobrazit průběh</string>
+  <string name="pref_discord_show_progress_summary">Zobrazit aktuální epizodu/kapitolu</string>
+  <string name="pref_discord_show_timestamp">Zobrazit čas</string>
+  <string name="pref_discord_show_timestamp_summary">Zobrazení uplynulého/zbývajícího času</string>
+  <string name="pref_discord_show_buttons">Zobrazit tlačítka</string>
+  <string name="pref_discord_show_buttons_summary">Zobrazit tlačítka ke stažení aplikace nebo se připojit k Discord serveru</string>
+  <string name="pref_discord_show_download_button">Zobrazit tlačítko Stahování</string>
+  <string name="pref_discord_show_download_button_summary">Zobrazí tlačítko ke stažení aplikace</string>
+  <string name="pref_discord_show_discord_button">Zobrazit Discord tlačítko</string>
+  <string name="pref_discord_show_discord_button_summary">Zobrazí tlačítko pro připojení k Discord serveru</string>
+  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Fronta přehrávání</string>
+  <string name="action_clear_queue">Vymazat frontu</string>
+  <string name="cast_remove_from_queue">Odebrat z fronty</string>
+  <string name="move_to_top">Přesunout nahoru</string>
+  <string name="move_to_position">Přesunout na pozici</string>
+  <string name="position">Pozice</string>
+  <string name="select_position">Vybrat pozici</string>
+  <string name="remove_from_queue_confirmation">Odstranit z fronty?</string>
+  <string name="clear_queue_confirmation">Vymazat frontu</string>
+  <string name="clear_queue_confirmation_message">Jste si jisti, že chcete vymazat celou frontu?</string>
+  <string name="queue">Fronta</string>
+  <string name="move_to_bottom">Přesunout dolů</string>
+  <string name="action_end_session">Ukončit relaci</string>
+  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Dostupná zařízení</string>
+  <string name="cast_media_info">Informace o médiích</string>
+  <string name="cast_previous_video">Předchozí video</string>
+  <string name="cast_next_video">Další video</string>
+  <string name="cast_play">Hrát</string>
+  <string name="cast_pause">Pozastavit</string>
+  <string name="cast_rewind_30s">Převrátit 30 s</string>
+  <string name="cast_forward_30s">Přeposlat 30 s</string>
+  <string name="cast_volume">Objem</string>
+  <string name="cast_end_session">Ukončit relaci</string>
+  <string name="empty_queue">Fronta je prázdná</string>
+  <string name="cast_end_session_message">Jste si jisti, že chcete ukončit aktuální relaci?</string>
+  <string name="cast_end_session_confirm">Ukončit relaci</string>
+  <string name="cast_end_session_cancel">Zrušit</string>
+  <string name="playback_speed">Rychlost přehrávání</string>
+  <string-array name="cast_subtitle_settings">
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Nastavení titulků</item>
+    <item>Nastavení titulků</item>
+  </string-array>
+  <string name="cast_subtitle_font_size">Font Size</string>
+  <string name="cast_subtitle_text_color">Barva textu</string>
+  <string name="cast_subtitle_background">Pozadí</string>
+  <string name="cast_subtitle_shadow">Stín</string>
+  <string name="cast_subtitle_apply">Použít</string>
+  <string name="cast_subtitle_reset">Obnovit výchozí</string>
+  <string name="cast_subtitle_shadow_None">Nic</string>
+  <string name="cast_subtitle_shadow_Light">Světlý</string>
+  <string name="cast_subtitle_shadow_Medium">Střední</string>
+  <string name="cast_subtitle_shadow_Strong">Silný</string>
+  <string name="cast_subtitle_preview">Náhled textu &lt;unk&gt; &lt;unk&gt;</string>
+  <string name="cast_tracks">Vybrat stopu titulků/zvuku</string>
+  <string name="cast_volume_down">Hlasitost dolů</string>
+  <string name="cast_volume_up">Hlasitost nahoru</string>
+  <string name="cast_subtitles">Titulky</string>
+  <string name="cast_audio_tracks">Zvukové stopy</string>
+  <string name="cast_no_subtitles">Žádné titulky</string>
+  <string name="cast_close">Zavřít</string>
+  <string name="cast_subtitle_font_family">Rodina písma</string>
+  <string name="cast_subtitle_border_style">Styl rámečku</string>
+  <string name="cast_subtitle_border_none">Nic</string>
+  <string name="cast_subtitle_border_outline">Obrys</string>
+  <string name="cast_subtitle_border_drop_shadow">Zahodit stín</string>
+  <string name="cast_subtitle_border_drop_shadow_soft">Měkký shadow</string>
+  <string name="cast_subtitle_border_raised">Aktivováno</string>
+  <string name="cast_subtitle_border_depressed">Deprimováno</string>
+  <string name="cast_connection_error">Chyba připojení</string>
+  <string name="discord_accounts">Discord účty</string>
+  <string name="active_account">Aktivní účet</string>
+  <string name="no_accounts_found">Nebyly nalezeny žádné účty</string>
+  <string name="login_failed">Přihlášení se nezdařilo</string>
 </resources>

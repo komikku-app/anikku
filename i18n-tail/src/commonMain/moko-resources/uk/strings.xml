@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Статус відстеження</string>
+  <string name="tracking_status" comment="tracking_status Only Stuff in Anikku Library Grouping">Статус відстеження</string>
   <string name="tag">Мітки</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">Без відстеження</string>
@@ -27,7 +27,7 @@
   <string name="special_services" comment="special_services Connections section">Спеціальні послуги</string>
   <string name="pref_category_connections">З\'єднання</string>
   <string name="pref_connections_summary">Discord, ще більше...</string>
-  <string name="connections_info">Спеціальні послуги, які унікальні для Animetail та підвищують спосіб використання додатку</string>
+  <string name="connections_info">Спеціальні послуги, які унікальні для Anikku та підвищують спосіб використання додатку</string>
   <string name="connections_discord">Discord</string>
   <string name="connections_discord_info">Цей сервіс Discord працює з використанням протоколу жетонів. Використовуйте на ваш власний ризик. Ваш токен зберігається в місцевому та аніметрі не поширює його більше ніде</string>
   <string name="pref_discord_rpc">Rich Presence Discord</string>
@@ -156,10 +156,19 @@
   <string name="pref_flare_solverr_url_summary">URL-адреса екземпляра FlareSolverr, наприклад, http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Тест FlareSolverr та оновлення користувацького агента</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Тест FlareSolverr для оновлення користувацького агента. Потрібно лише один раз; потім ввімкнути як необхідно.</string>
-  <string name="title_cast_quality">Вибрати кількість запису і провайдера</string>
+  <string-array name="title_cast_quality">
+    <item>Вибрати кількість запису і провайдера</item>
+    <item>Вибрати якість</item>
+  </string-array>
   <string name="cast_not_connected">Трансляція не підключена</string>
-  <string name="cast_video_added_to_queue">Відео додано в чергу</string>
-  <string name="cast_error_loading">Помилка при завантаженні відео з Cast</string>
+  <string-array name="cast_video_added_to_queue">
+    <item>Відео додано в чергу</item>
+    <item>Відео додано в чергу</item>
+  </string-array>
+  <string-array name="cast_error_loading">
+    <item>Помилка при завантаженні відео з Cast</item>
+    <item>Помилка при завантаженні відео</item>
+  </string-array>
   <string name="server_local_notification_casting">Локальний сервер працює. Торкніться, щоб зупинити його.</string>
   <string name="server_local_notification_channel_description">Канал сповіщень локального сервера</string>
   <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">Автопрокрутка</string>
@@ -186,4 +195,80 @@
   </plurals>
   <string name="pref_category_castserver">Сервер Трансляції</string>
   <string name="pref_cast_server_port">Порт сервера Cast</string>
+  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Налаштування Discord</string>
+  <string name="pref_discord_custom_message">Повідомлення при вимкненому сайті</string>
+  <string name="pref_discord_custom_message_summary">Користувацькі повідомлення, які будуть відображатися в Discord</string>
+  <string name="pref_discord_show_progress">Показувати поступ</string>
+  <string name="pref_discord_show_progress_summary">Відображати поточний стан епізодів/розділу</string>
+  <string name="pref_discord_show_timestamp">Відображати час</string>
+  <string name="pref_discord_show_timestamp_summary">Відображення elapsed/Залишилося часу</string>
+  <string name="pref_discord_show_buttons">Показати кнопки</string>
+  <string name="pref_discord_show_buttons_summary">Показувати кнопки для завантаження програми або приєднання до сервера Discord</string>
+  <string name="pref_discord_show_download_button">Показувати кнопку завантаження</string>
+  <string name="pref_discord_show_download_button_summary">Відображає кнопку для завантаження програми</string>
+  <string name="pref_discord_show_discord_button">Показувати кнопку Discord</string>
+  <string name="pref_discord_show_discord_button_summary">Відображає кнопку для приєднання до серверу Discord</string>
+  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Черга відтворення</string>
+  <string name="action_clear_queue">Очистити чергу</string>
+  <string name="cast_remove_from_queue">Видалити з черги</string>
+  <string name="move_to_top">Нагору</string>
+  <string name="move_to_position">Перемістити на позицію</string>
+  <string name="position">Позиція</string>
+  <string name="select_position">Виберіть позицію</string>
+  <string name="remove_from_queue_confirmation">Видалити з черги?</string>
+  <string name="clear_queue_confirmation">Очистити чергу</string>
+  <string name="clear_queue_confirmation_message">Ви впевнені, що хочете очистити всю чергу?</string>
+  <string name="queue">Черга</string>
+  <string name="move_to_bottom">Донизу</string>
+  <string name="action_end_session">Кінцева сесія</string>
+  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Доступні пристрої</string>
+  <string name="cast_media_info">Інформація про медіа</string>
+  <string name="cast_previous_video">Попереднє відео</string>
+  <string name="cast_next_video">Наступне відео</string>
+  <string name="cast_play">Відтворити</string>
+  <string name="cast_pause">Пауза</string>
+  <string name="cast_rewind_30s">Перемотати 30-ті роки</string>
+  <string name="cast_forward_30s">Переслати 30-ті</string>
+  <string name="cast_volume">Об\'єм</string>
+  <string name="cast_end_session">Кінцева сесія</string>
+  <string name="empty_queue">Черга порожня</string>
+  <string name="cast_end_session_message">Ви дійсно бажаєте завершити поточний сеанс?</string>
+  <string name="cast_end_session_confirm">Завершити сеанс</string>
+  <string name="cast_end_session_cancel">Скасувати</string>
+  <string name="playback_speed">Швидкість відтворення</string>
+  <string-array name="cast_subtitle_settings">
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Параметри субтитрів</item>
+    <item>Параметри субтитрів</item>
+  </string-array>
+  <string name="cast_subtitle_font_size">Font Size</string>
+  <string name="cast_subtitle_text_color">Колір тексту</string>
+  <string name="cast_subtitle_background">Фон</string>
+  <string name="cast_subtitle_shadow">Тінь</string>
+  <string name="cast_subtitle_apply">Прийняти</string>
+  <string name="cast_subtitle_reset">Відновити за замовчуванням</string>
+  <string name="cast_subtitle_shadow_None">Без ефекту</string>
+  <string name="cast_subtitle_shadow_Light">Світла</string>
+  <string name="cast_subtitle_shadow_Medium">Медіум</string>
+  <string name="cast_subtitle_shadow_Strong">Сильний</string>
+  <string name="cast_subtitle_preview">Попередній перегляд тексту &lt;unk&gt;</string>
+  <string name="cast_tracks">Виберіть Subtitle/звукову доріжку</string>
+  <string name="cast_volume_down">Зменшити гучність</string>
+  <string name="cast_volume_up">Збільшити гучність</string>
+  <string name="cast_subtitles">Субтитри</string>
+  <string name="cast_audio_tracks">Аудіотреки</string>
+  <string name="cast_no_subtitles">Без субтитрів</string>
+  <string name="cast_close">Закрити</string>
+  <string name="cast_subtitle_font_family">Шрифт</string>
+  <string name="cast_subtitle_border_style">Стиль рамки</string>
+  <string name="cast_subtitle_border_none">Без ефекту</string>
+  <string name="cast_subtitle_border_outline">Контур</string>
+  <string name="cast_subtitle_border_drop_shadow">Тінь</string>
+  <string name="cast_subtitle_border_drop_shadow_soft">М\'які рідини</string>
+  <string name="cast_subtitle_border_raised">Піднятий</string>
+  <string name="cast_subtitle_border_depressed">Скорочений</string>
+  <string name="cast_connection_error">Помилка підключення</string>
+  <string name="discord_accounts">Облікові записи Discord</string>
+  <string name="active_account">Активний обліковий запис</string>
+  <string name="no_accounts_found">Рахунків не знайдено</string>
+  <string name="login_failed">Не вдалося увійти</string>
 </resources>

@@ -1022,7 +1022,7 @@
     <string name="label_storage">Depolama</string>
     <string name="pref_reset_mpv_conf">MPV yapılandırma dosyasını sıfırla</string>
     <string name="delete_confirmation">\"%s\" dosyasını silmek istediğinize emin misiniz?</string>
-    <string name="unlock_app_title">Aniyomi\'nin kilidini aç</string>
+    <string name="unlock_app_title">Anikku\'nin kilidini aç</string>
     <string name="pref_pip_replace_with_previous">10 saniye atlama seçeneğini önceki bölüme geç seçeneği ile değiştirir</string>
     <string name="pref_anime_storage_usage">Anime Depolama kullanımı</string>
     <string name="pref_manga_storage_usage">Manga Depolama kullanımı</string>
@@ -1040,7 +1040,7 @@
     <string name="pref_download_slots">Maksimum indirme sayısı</string>
     <string name="local_source_badge">Yerel</string>
     <string name="anime_interval_expected_update">Yeni bölümlerin %1$s içinde yayınlanacağı tahmin ediliyor. %2$s aralıklarla ediliyor.</string>
-    <string name="onboarding_storage_action_create_folder">Varsayılan Aniyomi klasörünü oluştur</string>
+    <string name="onboarding_storage_action_create_folder">Varsayılan Anikku klasörünü oluştur</string>
     <string name="download_speed_limit">İndirme hızı sınırı</string>
     <string name="download_speed_limit_hint">Hız sınırını devre dışı bırakmak için 0 olarak ayarlayın.</string>
     <string name="download_notifier_download_finish">İndirme tamamlandı</string>

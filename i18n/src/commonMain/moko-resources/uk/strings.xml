@@ -1010,7 +1010,7 @@
     <string name="information_empty_repos">У вас немає встановлених репозиторіїв.</string>
     <string name="action_add_repo">Додати репозиторій</string>
     <string name="label_add_repo_input">URL-адреса репозиторію</string>
-    <string name="action_add_repo_message">Додайте додаткові репозиторії до Aniyomi. Це повинні бути URL-адреси, що закінчуються на \"index.min.json\".</string>
+    <string name="action_add_repo_message">Додайте додаткові репозиторії до Anikku. Це повинні бути URL-адреси, що закінчуються на \"index.min.json\".</string>
     <string name="action_delete_repo">Видалити репозиторій</string>
     <string name="invalid_repo_name">Неправильна URL-адреса репозиторія</string>
     <string name="delete_repo_confirmation">Бажаєте видалити репозиторій \"%s\"?</string>
@@ -1046,7 +1046,7 @@
     <string name="safe_download_summary">Увімкнути режим завантаження одного потоку та без діапазону</string>
     <string name="pref_right_double_tap">Двічі торкніться (праворуч)</string>
     <string name="pref_player_subtitle_lang_info">Мови субтитрів, які вибираються за замовчуванням у відео з декількома субтитрами. Дво- або трибуквені коди мов працюють. Кілька значень можна розділити комою.</string>
-    <string name="onboarding_storage_action_create_folder">Створіть папку Aniyomi за замовчуванням</string>
+    <string name="onboarding_storage_action_create_folder">Створіть папку Anikku за замовчуванням</string>
     <string name="anime_interval_expected_update">Очікується, що нові епізоди вийдуть приблизно через %1$s, перевіряються кожні %2$s.</string>
     <string name="pref_player_subtitle">субтитри</string>
     <string name="label_player_settings">Налаштування плеєра</string>
