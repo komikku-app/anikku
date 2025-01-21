@@ -59,7 +59,6 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
-import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.isSourceForTorrents
@@ -342,7 +341,7 @@ class MangaScreen(
             onMigrateClicked = { migrateManga(navigator, screenModel.manga!!) }.takeIf { successState.manga.favorite },
             onEditInfoClicked = screenModel::showEditMangaInfoDialog,
             onRecommendClicked = {
-                openRecommends(context, navigator, screenModel.source, successState.manga)
+                openRecommends(navigator, screenModel.source, successState.manga)
             },
             onMergedSettingsClicked = screenModel::showEditMergedSettingsDialog,
             onMergeClicked = { openSmartSearch(navigator, successState.manga) },
@@ -848,11 +847,9 @@ class MangaScreen(
     // EXH <--
 
     // AZ -->
-    private fun openRecommends(context: Context, navigator: Navigator, source: Source?, manga: Manga) {
+    private fun openRecommends(navigator: Navigator, source: Source?, manga: Manga) {
         source ?: return
-        if (source is CatalogueSource) {
-            navigator.push(RecommendsScreen(manga.id, source.id))
-        }
+        navigator.push(RecommendsScreen(manga.id, source.id))
     }
     // AZ <--
 }
