@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -267,7 +268,6 @@ class PlayerActivity : BaseActivity() {
         viewModel.viewModelScope.launchUI {
             // AM (DISCORD) -->
             updateDiscordRPC(exitingPlayer = false)
-
             // <-- AM (DISCORD)
         }
 
@@ -1110,7 +1110,7 @@ class PlayerActivity : BaseActivity() {
 
         // check if link is from localSource
         if (videoUrl.startsWith("content://")) {
-            val videoInputStream = applicationContext.contentResolver.openInputStream(Uri.parse(videoUrl))
+            val videoInputStream = applicationContext.contentResolver.openInputStream(videoUrl.toUri())
             val torrent = TorrentServerApi.uploadTorrent(videoInputStream!!, quality, "", "", false)
             val torrentUrl = TorrentServerUtils.getTorrentPlayLink(torrent, 0)
             MPVLib.command(arrayOf("loadfile", torrentUrl))
@@ -1144,7 +1144,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun parseVideoUrl(videoUrl: String?): String? {
-        return Uri.parse(videoUrl).resolveUri(this)
+        return videoUrl?.toUri()?.resolveUri(this)
             ?: videoUrl
     }
 
@@ -1481,7 +1481,7 @@ class PlayerActivity : BaseActivity() {
         val movieMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
             putString(MediaMetadata.KEY_TITLE, currentAnime.title)
             putString(MediaMetadata.KEY_SUBTITLE, cuarenteEpisode.name)
-            addImage(WebImage(Uri.parse(currentAnime.thumbnailUrl)))
+            currentAnime.thumbnailUrl?.let { addImage(WebImage(it.toUri())) }
         }
         val videoUrl = currentvideo.videoUrl ?: throw IllegalStateException("Video URL not available")
 
