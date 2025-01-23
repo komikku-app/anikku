@@ -51,7 +51,7 @@ class RecommendsScreen(val mangaId: Long, val sourceId: Long) : Screen() {
         val haptic = LocalHapticFeedback.current
 
         BackHandler(enabled = bulkFavoriteState.selectionMode) {
-            bulkFavoriteScreenModel.toggleSelectionMode()
+            bulkFavoriteScreenModel.backHandler()
         }
         // KMK <--
 
@@ -112,9 +112,7 @@ class RecommendsScreen(val mangaId: Long, val sourceId: Long) : Screen() {
                 }
             },
             // KMK -->
-            // bulkFavoriteScreenModel = bulkFavoriteScreenModel,
-            // displayMode = screenModel.displayMode,
-            // onDisplayModeChange = { screenModel.displayMode = it },
+            bulkFavoriteScreenModel = bulkFavoriteScreenModel,
             // KMK <--
         )
 

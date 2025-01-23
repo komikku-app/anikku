@@ -158,7 +158,7 @@ class MangaScreen(
 
         BackHandler(enabled = bulkFavoriteState.selectionMode || showingRelatedMangasScreen.value) {
             when {
-                bulkFavoriteState.selectionMode -> bulkFavoriteScreenModel.toggleSelectionMode()
+                bulkFavoriteState.selectionMode -> bulkFavoriteScreenModel.backHandler()
                 showingRelatedMangasScreen.value -> showingRelatedMangasScreen.value = false
             }
         }
