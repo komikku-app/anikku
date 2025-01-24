@@ -21,7 +21,7 @@ import uy.kohesive.injekt.injectLazy
  * General class for recommendation sources.
  */
 abstract class RecommendationPagingSource(
-    source: CatalogueSource,
+    source: CatalogueSource?,
     protected val manga: Manga,
 ) : SourcePagingSource(source) {
     // Display name
@@ -39,7 +39,7 @@ abstract class RecommendationPagingSource(
     open val associatedSourceId: Long? = null
 
     companion object {
-        fun createSources(manga: Manga, source: CatalogueSource): List<RecommendationPagingSource> {
+        fun createSources(manga: Manga, source: CatalogueSource?): List<RecommendationPagingSource> {
             return buildList {
                 add(AniListPagingSource(manga, source))
                 add(MyAnimeListPagingSource(manga, source))
@@ -53,7 +53,7 @@ abstract class RecommendationPagingSource(
  */
 abstract class TrackerRecommendationPagingSource(
     protected val endpoint: String,
-    source: CatalogueSource,
+    source: CatalogueSource?,
     manga: Manga,
 ) : RecommendationPagingSource(source, manga) {
     private val getTracks: GetTracks by injectLazy()
