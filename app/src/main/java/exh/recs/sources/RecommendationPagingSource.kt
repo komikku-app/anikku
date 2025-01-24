@@ -12,6 +12,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.source.NoResultsException
 import tachiyomi.data.source.SourcePagingSource
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -39,7 +40,15 @@ abstract class RecommendationPagingSource(
     open val associatedSourceId: Long? = null
 
     companion object {
-        fun createSources(manga: Manga, source: CatalogueSource?): List<RecommendationPagingSource> {
+        internal fun createSources(
+            manga: Manga,
+            // KMK -->
+            sourceCatalogue: SourceCatalogue,
+            // KMK <--
+        ): List<RecommendationPagingSource> {
+            // KMK -->
+            val source = sourceCatalogue.source
+            // KMK <--
             return buildList {
                 add(AniListPagingSource(manga, source))
                 add(MyAnimeListPagingSource(manga, source))
@@ -95,3 +104,13 @@ abstract class TrackerRecommendationPagingSource(
         return MangasPage(recs, false)
     }
 }
+
+// KMK -->
+internal class SourceCatalogue(
+    internal val sourceId: Long,
+    sourceManager: SourceManager = Injekt.get(),
+) {
+    val source = sourceManager.get(sourceId)
+        ?.let { it as CatalogueSource }
+}
+// KMK <--
