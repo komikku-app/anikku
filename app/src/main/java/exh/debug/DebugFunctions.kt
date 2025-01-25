@@ -116,6 +116,14 @@ object DebugFunctions {
         }
     }
 
+    fun fixPlayerViewerBackupBug() {
+        runBlocking { handler.await { ehQueries.fixPlayerViewerBackupBug() } }
+    }
+
+    fun resetPlayerViewerForAllAnime() {
+        runBlocking { handler.await { ehQueries.resetPlayerViewerForAllAnime() } }
+    }
+
     fun exportProtobufScheme() = ProtoBufSchemaGenerator.generateSchemaText(Backup.serializer().descriptor)
 
     fun killSyncJobs() {

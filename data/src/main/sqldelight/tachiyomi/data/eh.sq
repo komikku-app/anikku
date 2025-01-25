@@ -9,16 +9,11 @@ WHERE source = :oldId;
 getEpisodesByAnimeIds:
 SELECT * FROM episodes WHERE anime_id IN :animeIds;
 
-migrateAllNhentaiToOtherLang:
-UPDATE animes
-SET source = :nh
-WHERE favorite = 1 AND source IN :sources;
-
-resetReaderViewerForAllAnime:
+resetPlayerViewerForAllAnime:
 UPDATE animes
 SET viewer = 0;
 
-fixReaderViewerBackupBug:
+fixPlayerViewerBackupBug:
 UPDATE animes
 SET viewer = 0
 WHERE viewer = -1;

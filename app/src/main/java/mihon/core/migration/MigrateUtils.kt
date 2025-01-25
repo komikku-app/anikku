@@ -1,7 +1,9 @@
 package mihon.core.migration
 
+import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.preference.PreferenceStore
+import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.data.DatabaseHandler
 
 object MigrateUtils {
@@ -10,6 +12,18 @@ object MigrateUtils {
         runBlocking {
             handler.await { ehQueries.migrateSource(newId, oldId) }
         }
+
+        // KMK -->
+        // Also update pin
+        val preferences = migrationContext.get<SourcePreferences>() ?: return
+        val isPinned = oldId.toString() in preferences.pinnedSources().get()
+        if (isPinned) {
+            preferences.pinnedSources().getAndSet { pinned ->
+                pinned.minus(oldId.toString())
+                    .plus(newId.toString())
+            }
+        }
+        // KMK <--
     }
 
     @Suppress("UNCHECKED_CAST")
