@@ -162,16 +162,12 @@ open class FeedScreenModel(
     // KMK -->
     fun openActionsDialog(
         feed: FeedItemUI,
-        canMoveUp: Boolean,
-        canMoveDown: Boolean,
     ) {
         screenModelScope.launchIO {
             mutableState.update { state ->
                 state.copy(
                     dialog = Dialog.FeedActions(
                         feedItem = feed,
-                        canMoveUp = canMoveUp,
-                        canMoveDown = canMoveDown,
                     ),
                 )
             }
@@ -222,15 +218,9 @@ open class FeedScreenModel(
     }
 
     // KMK -->
-    fun moveUp(feed: FeedSavedSearch) {
+    fun changeOrder(feed: FeedSavedSearch, newOrder: Int) {
         screenModelScope.launch {
-            reorderFeed.moveUp(feed)
-        }
-    }
-
-    fun moveDown(feed: FeedSavedSearch) {
-        screenModelScope.launch {
-            reorderFeed.moveDown(feed)
+            reorderFeed.changeOrder(feed, newOrder)
         }
     }
 
@@ -393,8 +383,6 @@ open class FeedScreenModel(
         // KMK -->
         data class FeedActions(
             val feedItem: FeedItemUI,
-            val canMoveUp: Boolean,
-            val canMoveDown: Boolean,
         ) : Dialog()
 
         data object SortAlphabetically : Dialog()
