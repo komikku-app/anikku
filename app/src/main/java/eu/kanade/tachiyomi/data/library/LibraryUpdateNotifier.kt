@@ -8,11 +8,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import coil3.asDrawable
 import coil3.imageLoader
 import coil3.request.ImageRequest
-import coil3.request.transformations
-import coil3.transform.CircleCropTransformation
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
@@ -68,7 +67,7 @@ class LibraryUpdateNotifier(
      * Bitmap of the app for notifications.
      */
     private val notificationBitmap by lazy {
-        BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
+        BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_foreground)
     }
 
     /**
@@ -78,6 +77,7 @@ class LibraryUpdateNotifier(
         context.notificationBuilder(Notifications.CHANNEL_LIBRARY_PROGRESS) {
             setContentTitle(context.stringResource(MR.strings.app_name))
             setSmallIcon(R.drawable.ic_refresh_24dp)
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
             setLargeIcon(notificationBitmap)
             setOngoing(true)
             setOnlyAlertOnce(true)
@@ -157,6 +157,7 @@ class LibraryUpdateNotifier(
                 NotificationCompat.BigTextStyle().bigText(context.stringResource(MR.strings.notification_size_warning)),
             )
             setSmallIcon(R.drawable.ic_warning_white_24dp)
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
             setTimeoutAfter(Downloader.WARNING_NOTIF_TIMEOUT_MS)
             setContentIntent(NotificationHandler.openUrl(context, HELP_WARNING_URL))
         }
@@ -178,7 +179,8 @@ class LibraryUpdateNotifier(
         ) {
             setContentTitle(context.stringResource(MR.strings.notification_update_error, failed))
             setContentText(context.stringResource(MR.strings.action_show_errors))
-            setSmallIcon(R.mipmap.ic_launcher)
+            setSmallIcon(R.drawable.ic_launcher_monochrome)
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
 
             setContentIntent(NotificationReceiver.openErrorLogPendingActivity(context))
         }
@@ -218,7 +220,8 @@ class LibraryUpdateNotifier(
                 }
             }
 
-            setSmallIcon(R.mipmap.ic_launcher)
+            setSmallIcon(R.drawable.ic_launcher_monochrome)
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
             setLargeIcon(notificationBitmap)
 
             setGroup(Notifications.GROUP_NEW_EPISODES)
@@ -252,12 +255,23 @@ class LibraryUpdateNotifier(
 
             val description = getNewChaptersDescription(chapters)
             setContentText(description)
-            setStyle(NotificationCompat.BigTextStyle().bigText(description))
 
-            setSmallIcon(R.mipmap.ic_launcher)
+            setSmallIcon(R.drawable.ic_launcher_monochrome)
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
 
             if (icon != null) {
                 setLargeIcon(icon)
+                // KMK -->
+                setStyle(
+                    NotificationCompat.BigPictureStyle()
+                        .bigPicture(icon)
+                        .bigLargeIcon(notificationBitmap)
+                        .setBigContentTitle(manga.title)
+                        .setSummaryText(description),
+                )
+                // KMK <--
+            } else {
+                setStyle(NotificationCompat.BigTextStyle().bigText(description))
             }
 
             setGroup(Notifications.GROUP_NEW_EPISODES)
@@ -316,8 +330,10 @@ class LibraryUpdateNotifier(
     private suspend fun getMangaIcon(manga: Manga): Bitmap? {
         val request = ImageRequest.Builder(context)
             .data(manga)
-            .transformations(CircleCropTransformation())
-            .size(NOTIF_ICON_SIZE)
+            // KMK -->
+            // .transformations(CircleCropTransformation())
+            // .size(NOTIF_ICON_SIZE)
+            // KMK <--
             .build()
         val drawable = context.imageLoader.execute(request).image?.asDrawable(context.resources)
         return drawable?.getBitmapOrNull()
