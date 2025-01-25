@@ -153,15 +153,9 @@ open class SourceFeedScreenModel(
     }
 
     // KMK -->
-    fun moveUp(feed: FeedSavedSearch) {
+    fun changeOrder(feed: FeedSavedSearch, newOrder: Int) {
         screenModelScope.launch {
-            reorderFeed.moveUp(feed, false)
-        }
-    }
-
-    fun moveDown(feed: FeedSavedSearch) {
-        screenModelScope.launch {
-            reorderFeed.moveDown(feed, false)
+            reorderFeed.changeOrder(feed, newOrder, false)
         }
     }
 
@@ -380,16 +374,12 @@ open class SourceFeedScreenModel(
     // KMK -->
     fun openActionsDialog(
         feed: SourceFeedUI.SourceSavedSearch,
-        canMoveUp: Boolean,
-        canMoveDown: Boolean,
     ) {
         screenModelScope.launchIO {
             mutableState.update { state ->
                 state.copy(
                     dialog = Dialog.FeedActions(
                         feedItem = feed,
-                        canMoveUp = canMoveUp,
-                        canMoveDown = canMoveDown,
                     ),
                 )
             }
@@ -421,8 +411,6 @@ open class SourceFeedScreenModel(
         // KMK -->
         data class FeedActions(
             val feedItem: SourceFeedUI.SourceSavedSearch,
-            val canMoveUp: Boolean,
-            val canMoveDown: Boolean,
         ) : Dialog()
 
         data object SortAlphabetically : Dialog()
