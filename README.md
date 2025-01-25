@@ -99,7 +99,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 <details><summary>Issues</summary>
 
-1. **Before reporting a new issue, take a look at the [FAQ](https://mihon.app/docs/faq/general), the [changelog](https://github.com/komikku-app/anikku/releases) and the already opened [issues](https://github.com/komikku-app/anikku/issues).**
+1. **Before reporting a new issue, take a look at the [FAQ](https://anikku-app.github.io/docs/faq/general), the [changelog](https://github.com/komikku-app/anikku/releases) and the already opened [issues](https://github.com/komikku-app/anikku/issues).**
 2. If you are unsure, ask here: [![Discord](https://img.shields.io/discord/1195734228319617024.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/Nft8MxpR)
 
 </details>

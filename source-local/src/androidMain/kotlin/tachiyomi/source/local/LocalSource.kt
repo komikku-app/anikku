@@ -316,7 +316,7 @@ actual class LocalSource(
 
     companion object {
         const val ID = 0L
-        const val HELP_URL = "https://anikku-app.github.io/help/guides/local-anime/"
+        const val HELP_URL = "https://anikku-app.github.io/docs/guides/local-anime-source"
 
         private const val DEFAULT_COVER_NAME = "cover.jpg"
         private val LATEST_THRESHOLD = TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS)

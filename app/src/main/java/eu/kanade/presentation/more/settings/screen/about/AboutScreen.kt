@@ -244,7 +244,7 @@ class AboutScreen : Screen() {
                 item {
                     TextPreferenceWidget(
                         title = stringResource(MR.strings.privacy_policy),
-                        onPreferenceClick = { uriHandler.openUri("https://mihon.app/privacy/") },
+                        onPreferenceClick = { uriHandler.openUri("https://anikku-app.github.io/privacy") },
                     )
                 }
 
