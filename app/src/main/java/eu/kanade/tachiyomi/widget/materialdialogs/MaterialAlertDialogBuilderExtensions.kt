@@ -16,8 +16,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.getSystemService
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import eu.kanade.presentation.theme.colorscheme.AndroidViewColorScheme
 import eu.kanade.tachiyomi.databinding.DialogStubTextinputBinding
-import eu.kanade.tachiyomi.ui.manga.EditMangaDialogColors
 
 // KMK -->
 @Suppress("UnusedReceiverParameter")
@@ -74,7 +74,7 @@ fun DialogStubTextinputBinding.setTextEdit(prefill: String? = null): DialogStubT
     return this
 }
 
-fun DialogStubTextinputBinding.setColors(colors: EditMangaDialogColors): DialogStubTextinputBinding {
+fun DialogStubTextinputBinding.setColors(colors: AndroidViewColorScheme): DialogStubTextinputBinding {
     textField.boxStrokeColor = colors.iconColor
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
