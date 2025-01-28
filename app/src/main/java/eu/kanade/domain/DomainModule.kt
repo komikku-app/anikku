@@ -20,6 +20,7 @@ import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.interactor.SyncEpisodeProgressWithTrack
 import eu.kanade.domain.track.interactor.TrackEpisode
+import eu.kanade.tachiyomi.util.TrackSelect
 import mihon.data.repository.ExtensionRepoRepositoryImpl
 import mihon.domain.episode.interactor.FilterEpisodesForDownload
 import mihon.domain.extensionrepo.interactor.CreateExtensionRepo
@@ -209,5 +210,7 @@ class DomainModule : InjektModule {
         addFactory { UpdateCustomButton(get()) }
         addFactory { ReorderCustomButton(get()) }
         addFactory { ToggleFavoriteCustomButton(get()) }
+
+        addFactory { TrackSelect(get(), get()) }
     }
 }
