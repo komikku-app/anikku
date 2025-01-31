@@ -17,6 +17,8 @@ import tachiyomi.presentation.core.util.plus
 @Composable
 internal fun LibraryList(
     items: List<LibraryItem>,
+    entries: Int,
+    containerHeight: Int,
     contentPadding: PaddingValues,
     selection: List<LibraryAnime>,
     onClick: (LibraryAnime) -> Unit,
@@ -75,6 +77,8 @@ internal fun LibraryList(
                 } else {
                     null
                 },
+                entries = entries,
+                containerHeight = containerHeight,
             )
         }
     }

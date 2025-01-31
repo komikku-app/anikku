@@ -36,13 +36,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.anime.components.AnimeCover
-import eu.kanade.presentation.anime.components.AnimeCoverHide
 import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.BadgeGroup
@@ -415,10 +415,13 @@ fun AnimeListItem(
     isSelected: Boolean = false,
     coverAlpha: Float = 1f,
     onClickContinueWatching: (() -> Unit)? = null,
+    entries: Int = -1,
+    containerHeight: Int = 0,
     // KMK -->
     libraryColored: Boolean = true,
     // KMK <--
 ) {
+    val density = LocalDensity.current
     // KMK -->
     val bgColor = coverData.dominantCoverColors?.first?.let { Color(it) }.takeIf { libraryColored }
     val onBgColor = coverData.dominantCoverColors?.second.takeIf { libraryColored }
@@ -426,15 +429,21 @@ fun AnimeListItem(
     Row(
         modifier = Modifier
             .selectedBackground(isSelected)
-            .height(56.dp)
+            .height(
+                when (entries) {
+                    -1 -> 76.dp
+                    0 -> with(density) { (containerHeight / 7).toDp() } - (3 / 7).dp
+                    else -> with(density) { (containerHeight / entries).toDp() } - (3 / entries).dp
+                },
+            )
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AnimeCover.Square(
+        AnimeCover.Book(
             modifier = Modifier
                     // KMK -->
                     // .alpha(coverAlpha)
@@ -453,7 +462,6 @@ fun AnimeListItem(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .weight(1f),
-            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
         )
