@@ -94,8 +94,6 @@ body:
           required: true
         - label: I have written a short but informative title.
           required: true
-        - label: If this is an issue with an extension, I should be opening an issue in the extension's repository.
-          required: true
         - label: I have gone through the [FAQ](https://anikku-app.github.io/docs/faq/general) and [troubleshooting guide](https://anikku-app.github.io/docs/guides/troubleshooting/).
           required: true
         - label: I have updated the app to **[latest version](https://github.com/komikku-app/anikku/releases/latest)**.
