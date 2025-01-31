@@ -132,7 +132,10 @@ class PlayerActivity : BaseActivity() {
     private val storageManager: StorageManager = Injekt.get()
 
     // Cast -->
-    private lateinit var castManager: CastManager
+    val castManager: CastManager by lazy {
+        CastManager(context = this, activity = this)
+    }
+    // <-- Cast
 
     private var audioFocusRequest: AudioFocusRequestCompat? = null
     private var restoreAudioFocus: () -> Unit = {}
@@ -260,6 +263,9 @@ class PlayerActivity : BaseActivity() {
             updateDiscordRPC(exitingPlayer = false)
             // <-- AM (DISCORD)
         }
+        // Cast -->
+        castManager
+        // <-- Cast
 
         binding.controls.setContent {
             TachiyomiTheme {
@@ -286,10 +292,6 @@ class PlayerActivity : BaseActivity() {
                 )
             }
         }
-
-        // Cast -->
-        castManager = CastManager(this, this)
-        // <-- Cast
 
         onNewIntent(this.intent)
     }
@@ -623,6 +625,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     override fun onResume() {
+        // Cast -->
         castManager.apply {
             // Update CAST Context after short pauses
             refreshCastContext()
@@ -632,6 +635,7 @@ class PlayerActivity : BaseActivity() {
                 updateCastState(CastManager.CastState.CONNECTED)
             }
         }
+        // <-- Cast
         super.onResume()
 
         viewModel.currentVolume.update {
@@ -897,6 +901,7 @@ class PlayerActivity : BaseActivity() {
                     }
 
                     override fun onPause() {
+                        // Cast -->
                         castManager.apply {
                             // Release resources only if not in PIP
                             if (!isInPictureInPictureMode) {
@@ -908,6 +913,7 @@ class PlayerActivity : BaseActivity() {
                                 maintainCastSessionBackground()
                             }
                         }
+                        //
                         when (playAction) {
                             SingleActionGesture.None -> {}
                             SingleActionGesture.Seek -> {}
