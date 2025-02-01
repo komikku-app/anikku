@@ -81,6 +81,8 @@ import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
+import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -462,7 +464,11 @@ fun PlayerControls(
                             if (activity.castManager.castState.value == CastManager.CastState.CONNECTED) {
                                 activity.castManager.handleQualitySelection()
                             } else {
-                                Toast.makeText(activity, "Cast is not connected", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    activity,
+                                    activity.stringResource(TLMR.strings.cast_not_connected),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
                             }
                         },
                     )
