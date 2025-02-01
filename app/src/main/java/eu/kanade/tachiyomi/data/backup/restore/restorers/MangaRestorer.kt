@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.data.backup.models.BackupHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupMergedMangaReference
 import eu.kanade.tachiyomi.data.backup.models.BackupTracking
+import exh.source.MERGED_SOURCE_ID
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.UpdateStrategyColumnAdapter
 import tachiyomi.data.manga.MangaMapper
@@ -58,7 +59,10 @@ class MangaRestorer(
 
         return backupMangas
             .sortedWith(
-                compareBy<BackupManga> { it.url in urlsBySource[it.source].orEmpty() }
+                // KMK -->
+                compareBy<BackupManga> { it.source == MERGED_SOURCE_ID }
+                    // KMK <--
+                    .then(compareBy { it.url in urlsBySource[it.source].orEmpty() })
                     .then(compareByDescending { it.lastModifiedAt }),
             )
     }
