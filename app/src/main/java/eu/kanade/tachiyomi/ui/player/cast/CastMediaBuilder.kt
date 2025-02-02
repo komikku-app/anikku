@@ -6,20 +6,28 @@ import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.common.images.WebImage
+import eu.kanade.tachiyomi.data.torrentServer.TorrentServerApi
+import eu.kanade.tachiyomi.data.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.LocalHttpServerService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.URLEncoder
 
-class CastMediaBuilder(private val viewModel: PlayerViewModel, private val activity: PlayerActivity) {
+class CastMediaBuilder(
+    private val viewModel: PlayerViewModel,
+    private val activity: PlayerActivity,
+) {
+
     private val player by lazy { activity.player }
 
-    fun buildMediaInfo(index: Int): MediaInfo {
+    suspend fun buildMediaInfo(index: Int): MediaInfo = withContext(Dispatchers.IO) {
         val video = viewModel.videoList.value.getOrNull(index)
             ?: throw IllegalStateException("Invalid video index: $index")
 
@@ -27,10 +35,14 @@ class CastMediaBuilder(private val viewModel: PlayerViewModel, private val activ
         var videoUrl = video.videoUrl ?: throw IllegalStateException("Video URL is null")
         logcat(LogPriority.DEBUG) { "Video URL: $videoUrl" }
 
-        // If it is a local uri, convert it to URL accessible via http
-        if (videoUrl.startsWith("content://")) {
-            videoUrl = getLocalServerUrl(videoUrl)
-            logcat(LogPriority.DEBUG) { "Local Server URL: $videoUrl" }
+        videoUrl = when {
+            // If it is a local uri, convert it to URL accessible via http
+            videoUrl.startsWith("content://") -> getLocalServerUrl(videoUrl)
+            videoUrl.startsWith(
+                "magnet",
+            ) ||
+                videoUrl.endsWith(".torrent") -> torrentLinkHandler(videoUrl, video.quality)
+            else -> videoUrl
         }
 
         val contentType = when {
@@ -39,13 +51,36 @@ class CastMediaBuilder(private val viewModel: PlayerViewModel, private val activ
             else -> "video/mp4"
         }
 
-        return MediaInfo.Builder(videoUrl)
+        MediaInfo.Builder(videoUrl)
             .setContentType(contentType)
             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-            .apply { addMetadata() }
-            .apply { addTracks(index) }
+            .addMetadata()
+            .addTracks(index)
             .setStreamDuration((player.duration ?: 0).toLong() * 1000)
             .build()
+    }
+
+    private fun torrentLinkHandler(videoUrl: String, quality: String): String {
+        var index = 0
+
+        if (videoUrl.startsWith("content://")) {
+            val videoInputStream = activity.applicationContext.contentResolver.openInputStream(videoUrl.toUri())
+                ?: throw IllegalStateException("Unable to open InputStream for content: $videoUrl")
+            val torrent = TorrentServerApi.uploadTorrent(videoInputStream, quality, "", "", false)
+            return TorrentServerUtils.getTorrentPlayLink(torrent, 0)
+        }
+
+        if (videoUrl.startsWith("magnet") && videoUrl.contains("index=")) {
+            index = try {
+                videoUrl.substringAfter("index=").toInt()
+            } catch (e: NumberFormatException) {
+                0
+            }
+        }
+
+        val currentTorrent = TorrentServerApi.addTorrent(videoUrl, quality, "", "", false)
+        logcat(LogPriority.DEBUG) { "Torrent URL: $videoUrl" }
+        return TorrentServerUtils.getTorrentPlayLink(currentTorrent, index)
     }
 
     private fun MediaInfo.Builder.addMetadata(): MediaInfo.Builder {
@@ -59,21 +94,21 @@ class CastMediaBuilder(private val viewModel: PlayerViewModel, private val activ
         return setMetadata(metadata)
     }
 
-    private fun addSubtitlesToCast(index: Int): List<MediaTrack> {
+    private fun MediaInfo.Builder.addTracks(index: Int): MediaInfo.Builder {
+        val subtitleTracks = buildSubtitleTracks(index)
+        val audioTracks = buildAudioTracks(index, subtitleTracks.size)
+        return setMediaTracks(subtitleTracks + audioTracks)
+    }
+
+    private fun buildSubtitleTracks(index: Int): List<MediaTrack> {
         return viewModel.videoList.value[index].subtitleTracks.mapIndexed { trackIndex, sub ->
+            logcat(LogPriority.DEBUG) { "Subtitle URL: ${sub.url}" }
             MediaTrack.Builder(trackIndex.toLong(), MediaTrack.TYPE_TEXT)
                 .setContentId(sub.url)
                 .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
                 .setName(sub.lang)
                 .build()
         }
-    }
-
-    private fun MediaInfo.Builder.addTracks(index: Int): MediaInfo.Builder {
-        val subtitleTracks = addSubtitlesToCast(index)
-        val subtitleCount = subtitleTracks.size
-        val audioTracks = buildAudioTracks(index, subtitleCount)
-        return setMediaTracks(subtitleTracks + audioTracks)
     }
 
     private fun buildAudioTracks(index: Int, idOffset: Int): List<MediaTrack> {
@@ -86,10 +121,6 @@ class CastMediaBuilder(private val viewModel: PlayerViewModel, private val activ
         }
     }
 
-    /**
-     * If a local URI (content://) is detected, the local server is started (if not already started)
-     * and an accessible HTTP URL for the Cast device is constructed.
-     */
     private fun getLocalServerUrl(contentUri: String): String {
         val context = activity.applicationContext
         context.startService(Intent(context, LocalHttpServerService::class.java))
@@ -97,11 +128,6 @@ class CastMediaBuilder(private val viewModel: PlayerViewModel, private val activ
         val encodedUri = URLEncoder.encode(contentUri, "UTF-8")
         return "http://$ip:${LocalHttpServerHolder.PORT}/file?uri=$encodedUri"
     }
-
-    /**
-     * Gets the local IP address (IPv4) of the device.
-     * Make sure that the network allows the connection from the Cast device.
-     */
 
     private fun getLocalIpAddress(): String {
         try {
