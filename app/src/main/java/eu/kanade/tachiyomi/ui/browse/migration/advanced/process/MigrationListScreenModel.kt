@@ -194,8 +194,8 @@ class MigrationListScreenModel(
                                 if (localManga != null) {
                                     val source = sourceManager.get(localManga.source) as? CatalogueSource
                                     if (source != null) {
-                                        val chapters = source.getChapterList(localManga.toSManga())
                                         try {
+                                            val chapters = source.getChapterList(localManga.toSManga())
                                             syncChaptersWithSource.await(chapters, localManga, source)
                                         } catch (_: Exception) {
                                         }
