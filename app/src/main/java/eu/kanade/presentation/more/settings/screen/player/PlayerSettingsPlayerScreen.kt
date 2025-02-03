@@ -28,6 +28,8 @@ import eu.kanade.tachiyomi.ui.player.VLC_PLAYER
 import eu.kanade.tachiyomi.ui.player.WEB_VIDEO_CASTER
 import eu.kanade.tachiyomi.ui.player.X_PLAYER
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.util.LocalHttpServerHolder
+import eu.kanade.tachiyomi.util.LocalHttpServerService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
@@ -41,6 +43,7 @@ import uy.kohesive.injekt.api.get
 import java.text.NumberFormat
 
 object PlayerSettingsPlayerScreen : SearchableSettings {
+    private fun readResolve(): Any = PlayerSettingsPlayerScreen
 
     @ReadOnlyComposable
     @Composable
@@ -52,6 +55,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
         val basePreferences = remember { Injekt.get<BasePreferences>() }
         val torrentServerPreferences = remember { Injekt.get<TorrentServerPreferences>() }
         val deviceSupportsPip = basePreferences.deviceHasPip()
+        val localHttpServerHolder = remember { Injekt.get<LocalHttpServerHolder>() }
 
         return listOfNotNull(
             Preference.PreferenceItem.ListPreference(
@@ -87,6 +91,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 basePreferences = basePreferences,
             ),
             getTorrentServerGroup(torrentServerPreferences),
+            geCastServerGroup(localHttpServerHolder),
         )
     }
 
@@ -220,7 +225,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
         )
     }
 
-    // habilita o desabilita el uso de cast que habilitarlo o deshabilitarlo sea con switch
+    // enable or destabilizes the use of cast that enable or disable it either with switch
     @Composable
     private fun getCastGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
         val enableCast = playerPreferences.enableCast()
@@ -317,6 +322,30 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                     onClick = {
                         trackersPref.delete()
                         context.stringResource(MR.strings.requires_app_restart)
+                    },
+                ),
+            ),
+        )
+    }
+
+    @Composable
+    private fun geCastServerGroup(
+        localHttpServerHolder: LocalHttpServerHolder,
+    ): Preference.PreferenceGroup {
+        return Preference.PreferenceGroup(
+            title = stringResource(TLMR.strings.pref_category_castserver),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.EditTextPreference(
+                    pref = localHttpServerHolder.port(),
+                    title = stringResource(TLMR.strings.pref_cast_server_port),
+                    onValueChanged = {
+                        try {
+                            Integer.parseInt(it)
+                            LocalHttpServerService.stop()
+                            true
+                        } catch (e: Exception) {
+                            false
+                        }
                     },
                 ),
             ),
