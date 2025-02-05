@@ -155,6 +155,9 @@
     <string name="onboarding_permission_crashlytics_description">Send anonymized crash logs to the developers.</string>
     <string name="pref_firebase">Analytics and Crash logs</string>
     <string name="firebase_summary">Sending crash logs and analytics will allow us to identify and fix issues, improve performance, and make future updates more relevant to your needs</string>
+    <string name="label_auto">Auto</string>
+    <string name="pref_library_items_per_row">Items per row</string>
+    <string name="pref_library_items_per_screen">Items per screen</string>
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->

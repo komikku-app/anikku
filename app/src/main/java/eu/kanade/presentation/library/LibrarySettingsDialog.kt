@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -47,7 +48,6 @@ import tachiyomi.presentation.core.components.SettingsChipRow
 import tachiyomi.presentation.core.components.SliderItem
 import tachiyomi.presentation.core.components.SortItem
 import tachiyomi.presentation.core.components.TriStateItem
-import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
@@ -319,27 +319,29 @@ private fun ColumnScope.DisplayPage(
     val columns by columnPreference.collectAsState()
     if (displayMode == LibraryDisplayMode.List) {
         SliderItem(
-            label = stringResource(MR.strings.pref_library_rows),
+            label = stringResource(AMR.strings.pref_library_items_per_screen),
             max = 10,
             value = columns,
             valueText = if (columns > 0) {
-                pluralStringResource(MR.plurals.pref_library_entries_in_column, columns, columns)
+                columns.toString()
             } else {
                 stringResource(MR.strings.label_default)
             },
             onChange = columnPreference::set,
+            pillColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
     } else {
         SliderItem(
-            label = stringResource(MR.strings.pref_library_columns),
+            label = stringResource(AMR.strings.pref_library_items_per_row),
             max = 10,
             value = columns,
             valueText = if (columns > 0) {
-                stringResource(MR.strings.pref_library_columns_per_row, columns)
+                columns.toString()
             } else {
-                stringResource(MR.strings.label_default)
+                stringResource(AMR.strings.label_auto)
             },
             onChange = columnPreference::set,
+            pillColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
     }
 
