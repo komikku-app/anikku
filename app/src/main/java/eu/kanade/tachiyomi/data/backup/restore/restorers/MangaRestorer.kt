@@ -396,8 +396,10 @@ class MangaRestorer(
             val item = history.getHistoryImpl()
 
             if (dbHistory == null) {
-                val chapter = handler.awaitList { episodesQueries.getEpisodeByUrl(history.url) }
-                    .find { it.anime_id == manga.id }
+                // KMK -->
+                val chapter = handler.awaitList { episodesQueries.getEpisodeByUrlAndAnimeId(history.url, manga.id) }
+                    .firstOrNull()
+                // KMK <--
                 return@mapNotNull if (chapter == null) {
                     // Chapter doesn't exist; skip
                     null
