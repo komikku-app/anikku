@@ -60,7 +60,7 @@ import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
 import com.hippo.unifile.UniFile
-import eu.kanade.domain.connection.service.ConnectionPreferences
+import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
@@ -178,7 +178,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     // AM (CONNECTIONS) -->
-    private val connectionPreferences: ConnectionPreferences = Injekt.get()
+    private val connectionsPreferences: ConnectionsPreferences = Injekt.get()
     // <-- AM (CONNECTIONS)
 
     @SuppressLint("MissingSuperCall")
@@ -1368,7 +1368,7 @@ class PlayerActivity : BaseActivity() {
 
     // AM (DISCORD) -->
     private fun updateDiscordRPC(exitingPlayer: Boolean) {
-        if (connectionPreferences.enableDiscordRPC().get()) {
+        if (connectionsPreferences.enableDiscordRPC().get()) {
             viewModel.viewModelScope.launchIO {
                 if (!exitingPlayer) {
                     val currentPosition = (player.timePos!!).toLong() * 1000
@@ -1388,7 +1388,7 @@ class PlayerActivity : BaseActivity() {
                             animeId = viewModel.currentAnime.value?.id ?: -1,
                             animeTitle = viewModel.currentAnime.value?.ogTitle ?: "",
                             thumbnailUrl = viewModel.currentAnime.value?.thumbnailUrl ?: "",
-                            episodeNumber = if (connectionPreferences.useChapterTitles().get()) {
+                            episodeNumber = if (connectionsPreferences.useChapterTitles().get()) {
                                 viewModel.currentEpisode.value?.name.toString()
                             } else {
                                 viewModel.currentEpisode.value?.episode_number.toString()
