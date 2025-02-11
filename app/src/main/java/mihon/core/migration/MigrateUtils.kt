@@ -11,9 +11,13 @@ object MigrateUtils {
         val handler = migrationContext.get<DatabaseHandler>() ?: return
         runBlocking {
             handler.await { ehQueries.migrateSource(newId, oldId) }
+            // KMK -->
+            handler.await { ehQueries.migrateMergedSource(newId, oldId) }
+            // Migrate saved searches & feeds
+            handler.await { ehQueries.migrateSourceSavedSearch(newId, oldId) }
+            handler.await { ehQueries.migrateSourceFeed(newId, oldId) }
         }
 
-        // KMK -->
         // Also update pin
         val preferences = migrationContext.get<SourcePreferences>() ?: return
         val isPinned = oldId.toString() in preferences.pinnedSources().get()

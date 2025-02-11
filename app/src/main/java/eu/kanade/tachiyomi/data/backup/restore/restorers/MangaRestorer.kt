@@ -358,6 +358,7 @@ class MangaRestorer(
 
     /**
      * Restores the categories a manga is in.
+     * Only if [backupCategories] is provided and user chooses to restore it.
      *
      * @param manga the manga whose categories have to be restored.
      * @param categories the categories to restore.
