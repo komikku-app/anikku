@@ -1,17 +1,13 @@
 package eu.kanade.tachiyomi.torrentutils
 
-import eu.kanade.tachiyomi.data.torrentServer.TorrentServerApi
+import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
 import eu.kanade.tachiyomi.torrentutils.model.DeadTorrentException
 import eu.kanade.tachiyomi.torrentutils.model.TorrentFile
 import eu.kanade.tachiyomi.torrentutils.model.TorrentInfo
 import java.net.SocketTimeoutException
 
-/**
- * Used by extensions.
- */
-@Suppress("UNUSED")
 object TorrentUtils {
-    suspend fun getTorrentInfo(
+    fun getTorrentInfo(
         url: String,
         title: String,
     ): TorrentInfo {

@@ -64,4 +64,11 @@ dependencies {
     implementation(sylibs.xlog)
     implementation(sylibs.exifinterface)
     // SY <--
+
+    // TAIL
+    implementation(libs.injekt)
+    implementation(libs.torrentserver)
+
+    // Tests
+    testImplementation(libs.bundles.test)
 }
