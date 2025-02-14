@@ -272,6 +272,7 @@ class PlayerActivity : BaseActivity() {
             TachiyomiTheme {
                 PlayerControls(
                     viewModel = viewModel,
+                    castManager = castManager, // Pass the castManager instance
                     onBackPress = {
                         if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
                             enterPictureInPictureMode(createPipParams())
@@ -322,6 +323,8 @@ class PlayerActivity : BaseActivity() {
     }
 
     override fun onPause() {
+        // Mantener sesión Cast activa
+        castManager.maintainCastSessionBackground()
         if (!isInPictureInPictureMode) {
             viewModel.pause()
         }
@@ -626,17 +629,11 @@ class PlayerActivity : BaseActivity() {
     }
 
     override fun onResume() {
-        // Cast -->
+        // Reconnect cast if it was active
         castManager.apply {
-            // Update CAST Context after short pauses
-            refreshCastContext()
-
-            // If you are in cast mode, synchronize UI controls
-            if (castState.value == CastManager.CastState.CONNECTED) {
-                updateCastState(CastManager.CastState.CONNECTED)
-            }
+            reconnect()
+            registerSessionListener()
         }
-        // <-- Cast
         super.onResume()
 
         viewModel.currentVolume.update {

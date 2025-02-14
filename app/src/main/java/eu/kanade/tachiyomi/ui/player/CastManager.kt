@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.cast.MediaLoadRequestData
@@ -58,6 +57,30 @@ class CastManager(
     private val mediaQueue = LinkedList<MediaQueueItem>()
     private var isLoadingMedia = false
 
+    private val _queueItems = MutableStateFlow<List<MediaQueueItem>>(emptyList())
+    val queueItems: StateFlow<List<MediaQueueItem>> = _queueItems.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _availableDevices = MutableStateFlow<List<CastDevice>>(emptyList())
+    val availableDevices: StateFlow<List<CastDevice>> = _availableDevices.asStateFlow()
+
+    private val _currentMedia = MutableStateFlow<CastMedia?>(null)
+    val currentMedia: StateFlow<CastMedia?> = _currentMedia.asStateFlow()
+
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+
+    private val _volume = MutableStateFlow(1f)
+    val volume: StateFlow<Float> = _volume.asStateFlow()
+
+    data class CastMedia(
+        val title: String,
+        val subtitle: String,
+        val thumbnail: String?,
+    )
+
     init {
         initializeCast()
     }
@@ -86,11 +109,6 @@ class CastManager(
         }
     }
 
-    fun refreshCastContext() {
-        castSession = castContext?.sessionManager?.currentCastSession
-        if (castSession?.isConnected == true) updateCastState(CastState.CONNECTED)
-    }
-
     fun cleanup() {
         unregisterSessionListener()
         castSession = null
@@ -101,6 +119,25 @@ class CastManager(
         castSession = session
         updateCastState(CastState.CONNECTED)
         startTrackingCastProgress()
+        updateCurrentMedia()
+        updateQueueItems()
+
+        session.remoteMediaClient?.registerCallback(
+            object : RemoteMediaClient.Callback() {
+                override fun onStatusUpdated() {
+                    updateCurrentMedia()
+                    updateQueueItems()
+                }
+
+                override fun onQueueStatusUpdated() {
+                    updateQueueItems()
+                }
+
+                override fun onPreloadStatusUpdated() {
+                    updateQueueItems()
+                }
+            },
+        )
     }
 
     fun onSessionEnded() {
@@ -125,181 +162,39 @@ class CastManager(
                 val hasQueueItems = (castSession?.remoteMediaClient?.mediaQueue?.itemCount ?: 0) > 0
                 val hasMultipleQualities = videos.size > 1
 
-                when {
-                    hasQueueItems || hasMultipleQualities -> activity.runOnUiThread { showQualitySelectionDialog() }
-                    else -> loadRemoteMedia()
+                if (!hasQueueItems && !hasMultipleQualities) {
+                    loadRemoteMedia()
                 }
             }
             .launchIn(viewModel.viewModelScope)
     }
 
-    // Queue Management
-    private fun getQueueItems(): List<MediaQueueItem> {
-        return castSession?.remoteMediaClient?.mediaQueue?.let { queue ->
-            (0 until queue.itemCount).mapNotNull { index ->
-                queue.getItemAtIndex(index)
-            }
-        } ?: emptyList()
-    }
-
-    private fun removeQueueItem(itemId: Int) {
+    fun removeQueueItem(itemId: Int) {
         castSession?.remoteMediaClient?.queueRemoveItem(itemId, null)
+        updateQueueItems()
     }
 
-    private fun moveQueueItem(itemId: Int, newIndex: Int) {
+    fun moveQueueItem(itemId: Int, newIndex: Int) {
         castSession?.remoteMediaClient?.queueMoveItemToNewIndex(itemId, newIndex, null)
-    }
-
-    private fun clearQueue() {
-        mediaQueue.clear() // Clean local queue
-        castSession?.remoteMediaClient?.let { client ->
-            client.stop()
-            client.load(
-                MediaLoadRequestData.Builder()
-                    .setMediaInfo(mediaBuilder.buildEmptyMediaInfo())
-                    .setAutoplay(false)
-                    .build(),
-            )
-        }
-    }
-
-    // Dialogs
-    private fun showQualitySelectionDialog() {
-        activity.runOnUiThread {
-            val currentQuality = viewModel.selectedVideoIndex.value
-            val qualities = viewModel.videoList.value.mapIndexed { index, video ->
-                val isSelected = index == currentQuality
-                val qualityText = StringBuilder().apply {
-                    append(video.quality)
-                    if (isSelected) append(" ✓")
-                }.toString()
-                qualityText
-            }.toTypedArray()
-
-            AlertDialog.Builder(context)
-                .setTitle(context.stringResource(TLMR.strings.title_cast_quality))
-                .setItems(qualities) { dialog, which ->
-                    viewModel.setVideoIndex(which)
-                    dialog.dismiss()
-                    loadRemoteMedia()
-                }
-                .setPositiveButton(context.stringResource(TLMR.strings.cast_queue_title)) { _, _ ->
-                    showQueueManagementDialog()
-                }
-                .setNeutralButton(android.R.string.cancel, null)
-                .show()
-        }
-    }
-
-    private fun showQueueManagementDialog() {
-        val queueItems = getQueueItems()
-        if (queueItems.isEmpty()) return
-
-        val displayItems = queueItems.mapIndexed { index, item ->
-            val metadata = item.media?.metadata
-            val title = metadata?.getString(MediaMetadata.KEY_TITLE) ?: "Unknown"
-            val subtitle = metadata?.getString(MediaMetadata.KEY_SUBTITLE) ?: ""
-            val position = index + 1
-            "$position. $title - $subtitle"
-        }.toTypedArray()
-
-        activity.runOnUiThread {
-            AlertDialog.Builder(context)
-                .setTitle(context.stringResource(TLMR.strings.cast_queue_title))
-                .setItems(displayItems) { _, which ->
-                    showQueueItemOptionsDialog(queueItems[which], which)
-                }
-                .setPositiveButton(context.stringResource(TLMR.strings.action_clear_queue)) { _, _ ->
-                    showClearQueueConfirmationDialog()
-                }
-                .setNeutralButton(android.R.string.cancel, null)
-                .show()
-        }
-    }
-
-    private fun showQueueItemOptionsDialog(item: MediaQueueItem, currentPos: Int) {
-        activity.runOnUiThread {
-            val title = item.media?.metadata?.getString(MediaMetadata.KEY_TITLE) ?: "Unknown"
-            val options = arrayOf(
-                context.stringResource(TLMR.strings.cast_remove_from_queue),
-                context.stringResource(TLMR.strings.move_to_top),
-                context.stringResource(TLMR.strings.move_to_position),
-            )
-
-            AlertDialog.Builder(context)
-                .setTitle(title)
-                .setItems(options) { _, which ->
-                    when (which) {
-                        0 -> showRemoveConfirmationDialog(item)
-                        1 -> moveQueueItem(item.itemId, 0)
-                        2 -> showMoveToPositionDialog(item, currentPos)
-                    }
-                }
-                .setNeutralButton(android.R.string.cancel, null)
-                .show()
-        }
-    }
-
-    private fun showMoveToPositionDialog(item: MediaQueueItem, currentPos: Int) {
-        val queueSize = castSession?.remoteMediaClient?.mediaQueue?.itemCount ?: return
-        val positions = Array(queueSize) { index ->
-            "${context.stringResource(TLMR.strings.position)} ${index + 1}"
-        }
-
-        activity.runOnUiThread {
-            AlertDialog.Builder(context)
-                .setTitle(context.stringResource(TLMR.strings.select_position))
-                .setSingleChoiceItems(positions, currentPos) { dialog, newPos ->
-                    if (newPos != currentPos) {
-                        moveQueueItem(item.itemId, newPos)
-                    }
-                    dialog.dismiss()
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
-        }
-    }
-
-    private fun showRemoveConfirmationDialog(item: MediaQueueItem) {
-        activity.runOnUiThread {
-            AlertDialog.Builder(context)
-                .setTitle(context.stringResource(TLMR.strings.remove_from_queue_confirmation))
-                .setMessage(item.media?.metadata?.getString(MediaMetadata.KEY_TITLE))
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    removeQueueItem(item.itemId)
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
-        }
-    }
-
-    private fun showClearQueueConfirmationDialog() {
-        activity.runOnUiThread {
-            AlertDialog.Builder(context)
-                .setTitle(context.stringResource(TLMR.strings.clear_queue_confirmation))
-                .setMessage(context.stringResource(TLMR.strings.clear_queue_confirmation_message))
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    clearQueue()
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
-        }
+        updateQueueItems()
     }
 
     // Media Loading & Progress Tracking
     @SuppressLint("SuspiciousIndentation")
-    private fun loadRemoteMedia() {
+    fun loadRemoteMedia() {
         if (!isCastApiAvailable || isLoadingMedia) return
         val remoteMediaClient = castSession?.remoteMediaClient ?: return
 
         activity.lifecycleScope.launch {
             try {
                 isLoadingMedia = true
+                _isLoading.value = true
                 val selectedIndex = viewModel.selectedVideoIndex.value
                 val mediaInfo = mediaBuilder.buildMediaInfo(selectedIndex)
                 val currentLocalPosition = (player.timePos ?: 0).toLong()
 
-                // If there is already a video placed then add to the tail
+                // Update queue before and after loading new medium
+                updateQueueItems()
                 if (remoteMediaClient.mediaQueue.itemCount > 0) {
                     // Optimization: Pre-construct queue item
                     val queueItem = MediaQueueItem.Builder(mediaInfo)
@@ -308,15 +203,8 @@ class CastManager(
 
                     // Add to local queue
                     mediaQueue.add(queueItem)
-
-                    // Optimize batch size
-                    if (mediaQueue.size >= BATCH_SIZE) {
-                        loadQueueBatch(remoteMediaClient)
-                    } else {
-                        // Individual loading if there are not enough items
-                        remoteMediaClient.queueAppendItem(queueItem, null)
-                        showAddedToQueueToast()
-                    }
+                    remoteMediaClient.queueAppendItem(queueItem, null)
+                    showAddedToQueueToast()
                 } else {
                     // First load: optimize metadata
                     remoteMediaClient.load(
@@ -324,10 +212,10 @@ class CastManager(
                             .setMediaInfo(mediaInfo)
                             .setAutoplay(autoplayEnabled)
                             .setCurrentTime(currentLocalPosition * 1000)
-                            .setCustomData(null) // Optimization: Do not send unnecessary data
                             .build(),
                     )
                 }
+                updateQueueItems()
                 _castState.value = CastState.CONNECTED
             } catch (e: Exception) {
                 // _castState.value = CastState.DISCONNECTED
@@ -335,16 +223,9 @@ class CastManager(
                 showLoadErrorToast()
             } finally {
                 isLoadingMedia = false
+                _isLoading.value = false
             }
         }
-    }
-
-    private fun loadQueueBatch(remoteMediaClient: RemoteMediaClient) {
-        val batchItems = mediaQueue.take(BATCH_SIZE).toTypedArray()
-        mediaQueue.removeAll(batchItems.toSet())
-
-        remoteMediaClient.queueInsertItems(batchItems, MediaQueueItem.INVALID_ITEM_ID, null)
-        showAddedToQueueToast()
     }
 
     private fun showAddedToQueueToast() {
@@ -383,15 +264,243 @@ class CastManager(
     }
 
     fun maintainCastSessionBackground() {
-        castSession?.remoteMediaClient?.let { client ->
-            if (client.isPlaying) {
-                client.pause()
+        castSession?.let { session ->
+            if (session.isConnected) {
+                session.remoteMediaClient?.pause()
+                _isPlaying.value = false
             }
         }
     }
 
-    companion object {
-        private const val BATCH_SIZE = 5 // Optimal batch size
+    private fun updateQueueItems() {
+        _queueItems.value = castSession?.remoteMediaClient?.mediaQueue?.let { queue ->
+            (0 until queue.itemCount).mapNotNull { index ->
+                queue.getItemAtIndex(index)
+            }
+        } ?: emptyList()
+    }
+
+    fun reset() {
+        mediaQueue.clear()
+        _queueItems.value = emptyList()
+        _isLoading.value = false
+        _castState.value = CastState.DISCONNECTED
+        castProgressJob?.cancel()
+        castSession = null
+    }
+
+    fun reconnect() {
+        if (!isCastApiAvailable) return
+        try {
+            castContext = CastContext.getSharedInstance(context.applicationContext)
+            castSession = castContext?.sessionManager?.currentCastSession
+            if (castSession?.isConnected == true) {
+                updateCastState(CastState.CONNECTED)
+                startTrackingCastProgress()
+                updateQueueItems()
+                updateCurrentMedia()
+
+                castSession?.remoteMediaClient?.registerCallback(
+                    object : RemoteMediaClient.Callback() {
+                        override fun onStatusUpdated() {
+                            updateCurrentMedia()
+                            updateQueueItems()
+                        }
+
+                        override fun onQueueStatusUpdated() {
+                            updateQueueItems()
+                        }
+
+                        override fun onPreloadStatusUpdated() {
+                            updateQueueItems()
+                        }
+                    },
+                )
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+        }
+    }
+
+    private val mediaRouter by lazy {
+        androidx.mediarouter.media.MediaRouter.getInstance(context)
+    }
+
+    fun startDeviceDiscovery() {
+        if (!isCastApiAvailable) return
+
+        try {
+            castContext?.let { castContext ->
+                if (_castState.value != CastState.CONNECTED) {
+                    _castState.value = CastState.CONNECTING
+                }
+
+                val currentSession = castContext.sessionManager?.currentCastSession
+                val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
+                    .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_LIVE_VIDEO)
+                    .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_REMOTE_PLAYBACK)
+                    .build()
+
+                val callback = object : androidx.mediarouter.media.MediaRouter.Callback() {
+                    override fun onRouteAdded(
+                        router: androidx.mediarouter.media.MediaRouter,
+                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    ) {
+                        updateDevicesList(currentSession)
+                    }
+
+                    override fun onRouteRemoved(
+                        router: androidx.mediarouter.media.MediaRouter,
+                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    ) {
+                        updateDevicesList(currentSession)
+                    }
+
+                    override fun onRouteChanged(
+                        router: androidx.mediarouter.media.MediaRouter,
+                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    ) {
+                        updateDevicesList(currentSession)
+                    }
+                }
+
+                mediaRouter.addCallback(selector, callback)
+                updateDevicesList(currentSession)
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+            if (_castState.value != CastState.CONNECTED) {
+                _castState.value = CastState.DISCONNECTED
+            }
+        }
+    }
+
+    private fun updateDevicesList(currentSession: CastSession?) {
+        val devices = mediaRouter.routes.mapNotNull { route ->
+            if (!route.isDefault) {
+                CastDevice(
+                    id = route.id,
+                    name = route.name,
+                    isConnected = route.id == currentSession?.castDevice?.deviceId,
+                )
+            } else {
+                null
+            }
+        }
+
+        _availableDevices.value = devices
+
+        if (devices.any { it.isConnected }) {
+            if (_castState.value != CastState.CONNECTED) {
+                _castState.value = CastState.CONNECTED
+            }
+        } else if (devices.isEmpty() && _castState.value != CastState.DISCONNECTED) {
+            _castState.value = CastState.DISCONNECTED
+        }
+    }
+
+    fun connectToDevice(deviceId: String) {
+        try {
+            val route = mediaRouter.routes.find { it.id == deviceId }
+            if (route != null) {
+                if (route.id == castSession?.castDevice?.deviceId) {
+                    return
+                }
+                mediaRouter.selectRoute(route)
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+        }
+    }
+
+    data class CastDevice(
+        val id: String,
+        val name: String,
+        val isConnected: Boolean = false,
+    )
+
+    fun playPause() {
+        castSession?.remoteMediaClient?.let { client ->
+            if (client.isPlaying) client.pause() else client.play()
+            _isPlaying.value = !_isPlaying.value
+        }
+    }
+
+    fun stop() {
+        castSession?.remoteMediaClient?.stop()
+        _isPlaying.value = false
+    }
+
+    fun setVolume(volume: Float) {
+        try {
+            castSession?.let { session ->
+                val newVolume = volume.coerceIn(0f, 1f)
+                session.volume = newVolume.toDouble()
+                _volume.value = newVolume
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+        }
+    }
+
+    private fun updateCurrentMedia() {
+        castSession?.remoteMediaClient?.let { client ->
+            val mediaInfo = client.mediaInfo
+            val metadata = mediaInfo?.metadata
+
+            _currentMedia.value = CastMedia(
+                title = metadata?.getString(MediaMetadata.KEY_TITLE)
+                    ?: viewModel.mediaTitle.value,
+                subtitle = metadata?.getString(MediaMetadata.KEY_SUBTITLE)
+                    ?: viewModel.currentEpisode.value?.name ?: "",
+                thumbnail = metadata?.images?.firstOrNull()?.url?.toString()
+                    ?: viewModel.currentAnime.value?.thumbnailUrl,
+            )
+            _isPlaying.value = !client.isPaused
+            _volume.value = castSession?.volume?.toFloat() ?: 1f
+        }
+    }
+
+    fun seekRelative(offset: Int) {
+        castSession?.remoteMediaClient?.let { client ->
+            val newPosition = client.approximateStreamPosition + (offset * 1000)
+            client.seek(newPosition)
+        }
+    }
+
+    fun nextVideo() {
+        castSession?.remoteMediaClient?.let { client ->
+            val queue = client.mediaQueue
+            val currentItemId = client.currentItem?.itemId ?: return@let
+            val currentIndex = (0 until queue.itemCount).find {
+                queue.getItemAtIndex(it)?.itemId == currentItemId
+            } ?: return@let
+
+            if (currentIndex < queue.itemCount - 1) {
+                client.queueJumpToItem(queue.getItemAtIndex(currentIndex + 1)?.itemId ?: return@let, null)
+            }
+        }
+    }
+
+    fun previousVideo() {
+        castSession?.remoteMediaClient?.let { client ->
+            val queue = client.mediaQueue
+            val currentItemId = client.currentItem?.itemId ?: return@let
+            val currentIndex = (0 until queue.itemCount).find {
+                queue.getItemAtIndex(it)?.itemId == currentItemId
+            } ?: return@let
+
+            if (currentIndex > 0) {
+                client.queueJumpToItem(queue.getItemAtIndex(currentIndex - 1)?.itemId ?: return@let, null)
+            }
+        }
+    }
+
+    fun endSession() {
+        val mSessionManager = castContext!!.sessionManager
+        mSessionManager.endCurrentSession(true)
+        reset()
+        _castState.value = CastState.DISCONNECTED
     }
 
     enum class CastState {

@@ -17,7 +17,6 @@
 
 package eu.kanade.tachiyomi.ui.player.controls
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -66,6 +65,7 @@ import eu.kanade.tachiyomi.ui.player.PlayerUpdates
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.VideoAspect
+import eu.kanade.tachiyomi.ui.player.cast.components.CastSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
@@ -81,8 +81,6 @@ import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
-import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -95,9 +93,13 @@ val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
 @Composable
 fun PlayerControls(
     viewModel: PlayerViewModel,
+    castManager: CastManager,
     onBackPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showCastSheet by remember { mutableStateOf(false) }
+    val castState by castManager.castState.collectAsState()
+
     val spacing = MaterialTheme.padding
     val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
     val gesturePreferences = remember { Injekt.get<GesturePreferences>() }
@@ -170,13 +172,13 @@ fun PlayerControls(
                     )
                     .padding(horizontal = MaterialTheme.padding.medium),
             ) {
-                val (topLeftControls, topRightControls) = createRefs()
-                val (volumeSlider, brightnessSlider) = createRefs()
-                val unlockControlsButton = createRef()
-                val (bottomRightControls, bottomLeftControls) = createRefs()
-                val centerControls = createRef()
-                val seekbar = createRef()
-                val (playerUpdates) = createRefs()
+                val (
+                    topLeftControls, topRightControls, castButton,
+                    volumeSlider, brightnessSlider,
+                    unlockControlsButton,
+                    bottomRightControls, bottomLeftControls,
+                    centerControls, seekbar, playerUpdates,
+                ) = createRefs()
 
                 val hasPreviousEpisode by viewModel.hasPreviousEpisode.collectAsState()
                 val hasNextEpisode by viewModel.hasNextEpisode.collectAsState()
@@ -443,7 +445,6 @@ fun PlayerControls(
                         end.linkTo(parent.end)
                     },
                 ) {
-                    val activity = LocalContext.current as PlayerActivity
                     TopRightPlayerControls(
                         autoPlayEnabled = autoPlayEnabled,
                         onToggleAutoPlay = { viewModel.setAutoPlay(it) },
@@ -459,18 +460,9 @@ fun PlayerControls(
                         isEpisodeOnline = isEpisodeOnline,
                         onMoreClick = { viewModel.showSheet(Sheets.More) },
                         onMoreLongClick = { viewModel.showPanel(Panels.VideoFilters) },
+                        castState = castState,
+                        onCastClick = { showCastSheet = true },
                         isCastEnabled = { playerPreferences.enableCast().get() },
-                        onCastLongClick = {
-                            if (activity.castManager.castState.value == CastManager.CastState.CONNECTED) {
-                                activity.castManager.handleQualitySelection()
-                            } else {
-                                Toast.makeText(
-                                    activity,
-                                    activity.stringResource(TLMR.strings.cast_not_connected),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            }
-                        },
                     )
                 }
                 // Bottom right controls
@@ -639,6 +631,14 @@ fun PlayerControls(
 
         BrightnessOverlay(
             brightness = currentBrightness,
+        )
+    }
+
+    if (showCastSheet) {
+        CastSheet(
+            castManager = castManager,
+            viewModel = viewModel,
+            onDismissRequest = { showCastSheet = false },
         )
     }
 }
