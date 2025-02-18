@@ -186,7 +186,14 @@ class DownloadManager(
      */
     fun buildVideo(source: Source, anime: Anime, episode: Episode): Video {
         val episodeDir =
-            provider.findChapterDir(episode.name, episode.scanlator, /* SY --> */ anime.ogTitle /* SY <-- */, source)
+            provider.findChapterDir(
+                episode.name,
+                episode.scanlator,
+                // SY -->
+                anime.ogTitle,
+                // SY <--
+                source,
+            )
         val files = episodeDir?.listFiles().orEmpty()
             .filter { "video" in it.type.orEmpty() }
 

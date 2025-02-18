@@ -124,7 +124,12 @@ data class DummyTracker(
     override suspend fun getMangaMetadata(
         track: Track,
     ) = TrackMangaMetadata(
-        0, "test", "test", "test", "test", "test",
+        0,
+        "test",
+        "test",
+        "test",
+        "test",
+        "test",
     )
 
     // KMK -->
