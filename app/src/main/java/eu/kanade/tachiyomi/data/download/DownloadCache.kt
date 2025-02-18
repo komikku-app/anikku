@@ -274,7 +274,9 @@ class DownloadCache(
             val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
             val mangaDir = sourceDir.mangaDirs[
                 provider.getMangaDirName(
-                    /* SY --> */ manga.ogTitle, /* SY <-- */
+                    // SY -->
+                    manga.ogTitle,
+                    // SY <--
                 ),
             ] ?: return
             provider.getValidChapterDirNames(chapter.name, chapter.scanlator).forEach {
@@ -313,7 +315,9 @@ class DownloadCache(
             val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
             val mangaDir = sourceDir.mangaDirs[
                 provider.getMangaDirName(
-                    /* SY --> */ manga.ogTitle, /* SY <-- */
+                    // SY -->
+                    manga.ogTitle,
+                    // SY <--
                 ),
             ] ?: return
             chapters.forEach { chapter ->

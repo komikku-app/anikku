@@ -66,7 +66,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     /**
      * Headers used for requests.
      */
-    open val headers: Headers by lazy { headersBuilder().build() }
+    /* SY --> */ open /* SY <-- */ val headers: Headers by lazy { headersBuilder().build() }
 
     /**
      * Default network client for doing requests.
@@ -559,7 +559,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         tries: Int,
     ): Long {
         val headers = Headers.Builder().addAll(video.headers ?: headers).add("Range", "bytes=0-1").build()
-        val request = GET(video.videoUrl!!, headers)
+        val request = GET(video.videoUrl, headers)
         val response = client.newCall(request).execute()
         // parse the response headers to get the size of the video, in particular the content-range header
         val contentRange = response.header("Content-Range")
@@ -598,7 +598,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
                 // logcat(LogPriority.ERROR) { "Error: end-start is less than 0" }
                 null
             }
-        return GET(video.videoUrl!!, newHeaders ?: headers)
+        return GET(video.videoUrl, newHeaders ?: headers)
     }
 
     /**
@@ -612,7 +612,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     fun safeVideoRequest(
         video: Video,
     ): Request {
-        return GET(video.videoUrl!!, video.headers ?: headers)
+        return GET(video.videoUrl, video.headers ?: headers)
     }
 
     /**
