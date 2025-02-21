@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -58,10 +57,9 @@ fun CastSheet(
     // Just look for devices when we are in state CONNECTING
     LaunchedEffect(castState) {
         if (castState == CastManager.CastState.CONNECTING) {
-            while (true) {
-                delay(2000)
-                castManager.startDeviceDiscovery()
-            }
+            delay(2000)
+        } else {
+            castManager.startDeviceDiscovery()
         }
     }
 
@@ -84,7 +82,18 @@ fun CastSheet(
                 ) {
                     items(devices) { device ->
                         ListItem(
-                            headlineContent = { Text(device.name) },
+                            headlineContent = {
+                                Text(
+                                    text = device.name,
+                                    style = if (device.isConnected) {
+                                        MaterialTheme.typography.bodyLarge.copy(
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    } else {
+                                        MaterialTheme.typography.bodyLarge
+                                    },
+                                )
+                            },
                             leadingContent = {
                                 Icon(
                                     if (device.isConnected) {
@@ -93,12 +102,12 @@ fun CastSheet(
                                         Icons.Default.Cast
                                     },
                                     contentDescription = null,
+                                    tint = if (device.isConnected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
                                 )
-                            },
-                            trailingContent = {
-                                if (device.isConnected) {
-                                    Icon(Icons.Default.Check, null)
-                                }
                             },
                             modifier = Modifier.clickable {
                                 if (device.isConnected) {
