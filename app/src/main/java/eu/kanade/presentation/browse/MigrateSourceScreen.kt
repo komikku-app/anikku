@@ -152,6 +152,7 @@ private fun MigrateSourceList(
                         style = MaterialTheme.typography.header,
                     )
 
+                    // KMK -->
                     IconButton(onClick = { filterObsoleteSource = !filterObsoleteSource }) {
                         Icon(
                             Icons.Outlined.NewReleases,
@@ -160,13 +161,13 @@ private fun MigrateSourceList(
                                 .takeIf { filterObsoleteSource } ?: LocalContentColor.current,
                         )
                     }
+                    // KMK <--
                     IconButton(onClick = onToggleSortingMode) {
                         when (sortingMode) {
                             SetMigrateSorting.Mode.ALPHABETICAL -> Icon(
                                 Icons.Outlined.SortByAlpha,
                                 contentDescription = stringResource(MR.strings.action_sort_alpha),
                             )
-
                             SetMigrateSorting.Mode.TOTAL -> Icon(
                                 Icons.Outlined.Numbers,
                                 contentDescription = stringResource(MR.strings.action_sort_count),
@@ -179,7 +180,6 @@ private fun MigrateSourceList(
                                 Icons.Outlined.ArrowUpward,
                                 contentDescription = stringResource(MR.strings.action_asc),
                             )
-
                             SetMigrateSorting.Direction.DESCENDING -> Icon(
                                 Icons.Outlined.ArrowDownward,
                                 contentDescription = stringResource(MR.strings.action_desc),
@@ -190,7 +190,10 @@ private fun MigrateSourceList(
             }
 
             items(
-                items = list.filter { !filterObsoleteSource || it.first.installedExtension?.isObsolete != false },
+                items = list
+                    // KMK -->
+                    .filter { !filterObsoleteSource || it.first.installedExtension?.isObsolete != false },
+                // KMK <--
                 key = { (source, _) -> "migrate-${source.id}" },
             ) { (source, count) ->
                 MigrateSourceItem(
