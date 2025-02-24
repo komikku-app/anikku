@@ -19,6 +19,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsAdvancedScreen : SearchableSettings {
+    private fun readResolve(): Any = PlayerSettingsAdvancedScreen
 
     @ReadOnlyComposable
     @Composable
@@ -36,9 +37,9 @@ object PlayerSettingsAdvancedScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
+                preference = enableScripts,
                 title = stringResource(MR.strings.pref_mpv_scripts),
                 subtitle = stringResource(MR.strings.pref_mpv_scripts_summary),
-                pref = enableScripts,
                 onValueChanged = {
                     // Ask for external storage permission
                     if (it) {
@@ -52,14 +53,14 @@ object PlayerSettingsAdvancedScreen : SearchableSettings {
                 },
             ),
             Preference.PreferenceItem.MPVConfPreference(
-                pref = mpvConf,
+                preference = mpvConf,
                 title = stringResource(MR.strings.pref_mpv_conf),
                 fileName = "mpv.conf",
                 scope = scope,
                 context = context,
             ),
             Preference.PreferenceItem.MPVConfPreference(
-                pref = mpvInput,
+                preference = mpvInput,
                 title = stringResource(MR.strings.pref_mpv_input),
                 fileName = "input.conf",
                 scope = scope,

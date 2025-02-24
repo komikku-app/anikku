@@ -22,6 +22,7 @@ import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 object PlayerSettingsCustomButtonScreen : Screen() {
+    private fun readResolve(): Any = PlayerSettingsCustomButtonScreen
 
     @Composable
     override fun Content() {

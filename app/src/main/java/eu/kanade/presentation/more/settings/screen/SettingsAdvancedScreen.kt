@@ -125,7 +125,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                 },
             ),
             Preference.PreferenceItem.SwitchPreference(
-                pref = networkPreferences.verboseLogging(),
+                preference = networkPreferences.verboseLogging(),
                 title = stringResource(MR.strings.pref_verbose_logging),
                 subtitle = stringResource(MR.strings.pref_verbose_logging_summary),
                 onValueChanged = {
@@ -152,15 +152,15 @@ object SettingsAdvancedScreen : SearchableSettings {
             ),
             // KMK -->
             Preference.PreferenceItem.MultiSelectListPreference(
-                pref = unsortedPreferences.appShouldAutoUpdate(),
-                title = stringResource(KMR.strings.auto_update_app),
-                subtitle = stringResource(MR.strings.restrictions),
+                preference = unsortedPreferences.appShouldAutoUpdate(),
                 entries = persistentMapOf(
                     AppUpdatePolicy.DEVICE_ONLY_ON_WIFI to stringResource(MR.strings.connected_to_wifi),
                     AppUpdatePolicy.DEVICE_NETWORK_NOT_METERED to stringResource(MR.strings.network_not_metered),
                     AppUpdatePolicy.DEVICE_CHARGING to stringResource(MR.strings.charging),
                     AppUpdatePolicy.DISABLE_AUTO_DOWNLOAD to stringResource(KMR.strings.auto_update_app_disable_auto_download),
                 ),
+                title = stringResource(KMR.strings.auto_update_app),
+                subtitle = stringResource(MR.strings.restrictions),
                 onValueChanged = {
                     // Post to event looper to allow the preference to be updated.
                     ContextCompat.getMainExecutor(context).execute { AppUpdateJob.setupTask(context) }
@@ -287,8 +287,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    pref = networkPreferences.dohProvider(),
-                    title = stringResource(MR.strings.pref_dns_over_https),
+                    preference = networkPreferences.dohProvider(),
                     entries = persistentMapOf(
                         -1 to stringResource(MR.strings.disabled),
                         PREF_DOH_CLOUDFLARE to "Cloudflare",
@@ -305,13 +304,14 @@ object SettingsAdvancedScreen : SearchableSettings {
                         PREF_DOH_SHECAN to "Shecan",
                         PREF_DOH_LIBREDNS to "LibreDNS",
                     ),
+                    title = stringResource(MR.strings.pref_dns_over_https),
                     onValueChanged = {
                         context.toast(MR.strings.requires_app_restart)
                         true
                     },
                 ),
                 Preference.PreferenceItem.EditTextPreference(
-                    pref = userAgentPref,
+                    preference = userAgentPref,
                     title = stringResource(MR.strings.pref_user_agent_string),
                     onValueChanged = {
                         try {
@@ -357,7 +357,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                 ),
                 // KMK -->
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = uiPreferences.preloadLibraryColor(),
+                    preference = uiPreferences.preloadLibraryColor(),
                     title = stringResource(KMR.strings.preload_library_cover_color),
                 ),
                 // KMK <--
@@ -419,8 +419,7 @@ object SettingsAdvancedScreen : SearchableSettings {
             title = stringResource(MR.strings.label_extensions),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    pref = extensionInstallerPref,
-                    title = stringResource(MR.strings.ext_installer_pref),
+                    preference = extensionInstallerPref,
                     entries = extensionInstallerPref.entries
                         .filter {
                             // TODO: allow private option in stable versions once URL handling is more fleshed out
@@ -432,6 +431,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                         }
                         .associateWith { stringResource(it.titleRes) }
                         .toImmutableMap(),
+                    title = stringResource(MR.strings.ext_installer_pref),
                     onValueChanged = {
                         if (it == BasePreferences.ExtensionInstaller.SHIZUKU &&
                             !context.isShizukuInstalled
@@ -598,14 +598,14 @@ object SettingsAdvancedScreen : SearchableSettings {
             title = stringResource(SYMR.strings.developer_tools),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    pref = unsortedPreferences.logLevel(),
-                    title = stringResource(SYMR.strings.log_level),
-                    subtitle = stringResource(SYMR.strings.log_level_summary),
+                    preference = unsortedPreferences.logLevel(),
                     entries = EHLogLevel.entries.mapIndexed { index, ehLogLevel ->
                         index to "${context.stringResource(ehLogLevel.nameRes)} (${
                             context.stringResource(ehLogLevel.description)
                         })"
                     }.toMap().toImmutableMap(),
+                    title = stringResource(SYMR.strings.log_level),
+                    subtitle = stringResource(SYMR.strings.log_level_summary),
                 ),
                 kotlin.run {
                     var enableEncryptDatabase by rememberSaveable { mutableStateOf(false) }
@@ -643,8 +643,8 @@ object SettingsAdvancedScreen : SearchableSettings {
                         )
                     }
                     Preference.PreferenceItem.SwitchPreference(
+                        preference = securityPreferences.encryptDatabase(),
                         title = stringResource(SYMR.strings.encrypt_database),
-                        pref = securityPreferences.encryptDatabase(),
                         subtitle = stringResource(SYMR.strings.encrypt_database_subtitle),
                         onValueChanged = {
                             if (it) {

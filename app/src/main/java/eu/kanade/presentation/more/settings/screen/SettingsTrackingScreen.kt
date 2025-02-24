@@ -129,23 +129,23 @@ object SettingsTrackingScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
-                pref = trackPreferences.autoUpdateTrack(),
+                preference = trackPreferences.autoUpdateTrack(),
                 title = stringResource(AMR.strings.pref_auto_update_anime_sync),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                pref = trackPreferences.showNextChapterAiringTime(),
+                preference = trackPreferences.showNextChapterAiringTime(),
                 title = stringResource(MR.strings.pref_show_next_episode_airing_time),
             ),
             Preference.PreferenceItem.ListPreference(
-                pref = trackPreferences.autoUpdateTrackOnMarkRead(),
-                title = stringResource(AMR.strings.pref_auto_update_anime_on_mark_seen),
+                preference = trackPreferences.autoUpdateTrackOnMarkRead(),
                 entries = AutoTrackState.entries
                     .associateWith { stringResource(it.titleRes) }
                     .toPersistentMap(),
+                title = stringResource(AMR.strings.pref_auto_update_anime_on_mark_seen),
             ),
             // KMK -->
             Preference.PreferenceItem.SwitchPreference(
-                pref = trackPreferences.autoSyncProgressFromTrackers(),
+                preference = trackPreferences.autoSyncProgressFromTrackers(),
                 title = stringResource(KMR.strings.pref_auto_sync_progress_from_trackers),
             ),
             // KMK <--
@@ -153,31 +153,26 @@ object SettingsTrackingScreen : SearchableSettings {
                 title = stringResource(MR.strings.services),
                 preferenceItems = persistentListOf(
                     Preference.PreferenceItem.TrackerPreference(
-                        title = trackerManager.myAnimeList.name,
                         tracker = trackerManager.myAnimeList,
                         login = { context.openInBrowser(MyAnimeListApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.myAnimeList) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        title = trackerManager.aniList.name,
                         tracker = trackerManager.aniList,
                         login = { context.openInBrowser(AnilistApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.aniList) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        title = trackerManager.kitsu.name,
                         tracker = trackerManager.kitsu,
                         login = { dialog = LoginDialog(trackerManager.kitsu, MR.strings.email) },
                         logout = { dialog = LogoutDialog(trackerManager.kitsu) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        title = trackerManager.shikimori.name,
                         tracker = trackerManager.shikimori,
                         login = { context.openInBrowser(ShikimoriApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.shikimori) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        title = trackerManager.simkl.name,
                         tracker = trackerManager.simkl,
                         login = {
                             context.openInBrowser(
@@ -188,7 +183,6 @@ object SettingsTrackingScreen : SearchableSettings {
                         logout = { dialog = LogoutDialog(trackerManager.simkl) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        title = trackerManager.bangumi.name,
                         tracker = trackerManager.bangumi,
                         login = { context.openInBrowser(BangumiApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.bangumi) },
@@ -202,7 +196,6 @@ object SettingsTrackingScreen : SearchableSettings {
                     enhancedTrackers.first
                         .map { service ->
                             Preference.PreferenceItem.TrackerPreference(
-                                title = service.name,
                                 tracker = service,
                                 login = { (service as EnhancedTracker).loginNoop() },
                                 logout = service::logout,
