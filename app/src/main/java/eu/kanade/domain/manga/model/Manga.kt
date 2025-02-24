@@ -11,7 +11,7 @@ import uy.kohesive.injekt.api.get
 // TODO: move these into the domain model
 val Manga.downloadedFilter: TriState
     get() {
-        if (forceDownloaded()) return TriState.ENABLED_IS
+        if (Injekt.get<BasePreferences>().downloadedOnly().get()) return TriState.ENABLED_IS
         return when (downloadedFilterRaw) {
             Manga.EPISODE_SHOW_DOWNLOADED -> TriState.ENABLED_IS
             Manga.EPISODE_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
@@ -25,9 +25,6 @@ fun Manga.chaptersFiltered(): Boolean {
         // AM (FILLERMARK) -->
         fillermarkedFilter != TriState.DISABLED
     // <-- AM (FILLERMARK)
-}
-fun Manga.forceDownloaded(): Boolean {
-    return favorite && Injekt.get<BasePreferences>().downloadedOnly().get()
 }
 
 fun Manga.toSManga(): SManga = SManga.create().also {
