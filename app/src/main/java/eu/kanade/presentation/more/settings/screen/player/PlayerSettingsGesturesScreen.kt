@@ -59,11 +59,11 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
             title = stringResource(MR.strings.pref_category_player_sliders),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = enableVolumeBrightnessGestures,
+                    preference = enableVolumeBrightnessGestures,
                     title = stringResource(MR.strings.enable_volume_brightness_gestures),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = swapVol,
+                    preference = swapVol,
                     title = stringResource(MR.strings.pref_controls_swap_vol_brightness),
                 ),
             ),
@@ -95,11 +95,11 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
             title = stringResource(MR.strings.pref_category_player_seeking),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = enableHorizontalSeekGesture,
+                    preference = enableHorizontalSeekGesture,
                     title = stringResource(MR.strings.enable_horizontal_seek_gesture),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = showSeekbar,
+                    preference = showSeekbar,
                     title = stringResource(MR.strings.pref_show_seekbar),
                 ),
                 Preference.PreferenceItem.TextPreference(
@@ -108,8 +108,7 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                     onClick = { showDialog = true },
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    pref = skipLengthPreference,
-                    title = stringResource(MR.strings.pref_skip_length),
+                    preference = skipLengthPreference,
                     entries = persistentMapOf(
                         30 to stringResource(MR.strings.pref_skip_30),
                         20 to stringResource(MR.strings.pref_skip_20),
@@ -118,9 +117,10 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                         3 to stringResource(MR.strings.pref_skip_3),
                         0 to stringResource(MR.strings.pref_skip_disable),
                     ),
+                    title = stringResource(MR.strings.pref_skip_length),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = playerSmoothSeek,
+                    preference = playerSmoothSeek,
                     title = stringResource(MR.strings.pref_player_smooth_seek),
                     subtitle = stringResource(MR.strings.pref_player_smooth_seek_summary),
                 ),
@@ -138,28 +138,27 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
             title = stringResource(MR.strings.pref_category_double_tap),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    pref = leftDoubleTap,
+                    preference = leftDoubleTap,
+                    entries = listOf(
+                        SingleActionGesture.None,
+                        SingleActionGesture.Seek,
+                        SingleActionGesture.PlayPause,
+                        SingleActionGesture.Switch,
+                        SingleActionGesture.Custom,
+                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                     title = stringResource(MR.strings.pref_left_double_tap),
-                    entries = listOf(
-                        SingleActionGesture.None,
-                        SingleActionGesture.Seek,
-                        SingleActionGesture.PlayPause,
-                        SingleActionGesture.Switch,
-                        SingleActionGesture.Custom,
-                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    pref = centerDoubleTap,
+                    preference = centerDoubleTap,
+                    entries = listOf(
+                        SingleActionGesture.None,
+                        SingleActionGesture.PlayPause,
+                        SingleActionGesture.Custom,
+                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                     title = stringResource(MR.strings.pref_center_double_tap),
-                    entries = listOf(
-                        SingleActionGesture.None,
-                        SingleActionGesture.PlayPause,
-                        SingleActionGesture.Custom,
-                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    pref = rightDoubleTap,
-                    title = stringResource(MR.strings.pref_right_double_tap),
+                    preference = rightDoubleTap,
                     entries = listOf(
                         SingleActionGesture.None,
                         SingleActionGesture.Seek,
@@ -167,6 +166,7 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                         SingleActionGesture.Switch,
                         SingleActionGesture.Custom,
                     ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
+                    title = stringResource(MR.strings.pref_right_double_tap),
                 ),
                 Preference.PreferenceItem.InfoPreference(
                     title = stringResource(MR.strings.pref_double_tap_info),
@@ -185,28 +185,27 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
             title = stringResource(MR.strings.pref_category_media_controls),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    pref = mediaPrevious,
+                    preference = mediaPrevious,
+                    entries = listOf(
+                        SingleActionGesture.None,
+                        SingleActionGesture.Seek,
+                        SingleActionGesture.PlayPause,
+                        SingleActionGesture.Switch,
+                        SingleActionGesture.Custom,
+                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                     title = stringResource(MR.strings.pref_media_previous),
-                    entries = listOf(
-                        SingleActionGesture.None,
-                        SingleActionGesture.Seek,
-                        SingleActionGesture.PlayPause,
-                        SingleActionGesture.Switch,
-                        SingleActionGesture.Custom,
-                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    pref = mediaPlayPause,
+                    preference = mediaPlayPause,
+                    entries = listOf(
+                        SingleActionGesture.None,
+                        SingleActionGesture.PlayPause,
+                        SingleActionGesture.Custom,
+                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                     title = stringResource(MR.strings.pref_media_playpause),
-                    entries = listOf(
-                        SingleActionGesture.None,
-                        SingleActionGesture.PlayPause,
-                        SingleActionGesture.Custom,
-                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    pref = mediaNext,
-                    title = stringResource(MR.strings.pref_media_next),
+                    preference = mediaNext,
                     entries = listOf(
                         SingleActionGesture.None,
                         SingleActionGesture.Seek,
@@ -214,6 +213,7 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                         SingleActionGesture.Switch,
                         SingleActionGesture.Custom,
                     ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
+                    title = stringResource(MR.strings.pref_media_next),
                 ),
                 Preference.PreferenceItem.InfoPreference(
                     title = stringResource(MR.strings.pref_media_info),

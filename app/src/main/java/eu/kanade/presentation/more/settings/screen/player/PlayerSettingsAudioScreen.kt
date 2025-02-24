@@ -34,21 +34,21 @@ object PlayerSettingsAudioScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.EditTextInfoPreference(
-                pref = prefLangs,
+                preference = prefLangs,
                 title = stringResource(MR.strings.pref_player_audio_lang),
                 dialogSubtitle = stringResource(MR.strings.pref_player_audio_lang_info),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                pref = pitchCorrection,
+                preference = pitchCorrection,
                 title = stringResource(MR.strings.pref_player_audio_pitch_correction),
                 subtitle = stringResource(MR.strings.pref_player_audio_pitch_correction_summary),
             ),
             Preference.PreferenceItem.ListPreference(
-                pref = audioChannels,
-                title = stringResource(MR.strings.pref_player_audio_channels),
+                preference = audioChannels,
                 entries = AudioChannels.entries.associateWith {
                     stringResource(it.titleRes)
                 }.toImmutableMap(),
+                title = stringResource(MR.strings.pref_player_audio_channels),
             ),
             Preference.PreferenceItem.SliderPreference(
                 value = boostCap,

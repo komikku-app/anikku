@@ -14,6 +14,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsDecoderScreen : SearchableSettings {
+    private fun readResolve(): Any = PlayerSettingsDecoderScreen
 
     @ReadOnlyComposable
     @Composable
@@ -30,24 +31,24 @@ object PlayerSettingsDecoderScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
-                pref = tryHw,
+                preference = tryHw,
                 title = stringResource(MR.strings.pref_try_hw),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                pref = useGpuNext,
+                preference = useGpuNext,
                 title = stringResource(MR.strings.pref_gpu_next_title),
                 subtitle = stringResource(MR.strings.pref_gpu_next_subtitle),
             ),
             Preference.PreferenceItem.ListPreference(
-                pref = debanding,
-                title = stringResource(MR.strings.pref_debanding_title),
+                preference = debanding,
                 entries = Debanding.entries.associateWith {
                     it.name
                     // stringResource(it.)
                 }.toImmutableMap(),
+                title = stringResource(MR.strings.pref_debanding_title),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                pref = yuv420p,
+                preference = yuv420p,
                 title = stringResource(MR.strings.pref_use_yuv420p_title),
                 subtitle = stringResource(MR.strings.pref_use_yuv420p_subtitle),
             ),

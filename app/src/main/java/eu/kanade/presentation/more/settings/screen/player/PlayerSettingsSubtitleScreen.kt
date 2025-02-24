@@ -12,6 +12,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsSubtitleScreen : SearchableSettings {
+    private fun readResolve(): Any = PlayerSettingsSubtitleScreen
 
     @ReadOnlyComposable
     @Composable
@@ -27,17 +28,17 @@ object PlayerSettingsSubtitleScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.EditTextInfoPreference(
-                pref = langPref,
+                preference = langPref,
                 title = stringResource(MR.strings.pref_player_subtitle_lang),
                 dialogSubtitle = stringResource(MR.strings.pref_player_subtitle_lang_info),
             ),
             Preference.PreferenceItem.EditTextInfoPreference(
-                pref = whitelist,
+                preference = whitelist,
                 title = stringResource(MR.strings.pref_player_subtitle_whitelist),
                 dialogSubtitle = stringResource(MR.strings.pref_player_subtitle_whitelist_info),
             ),
             Preference.PreferenceItem.EditTextInfoPreference(
-                pref = blacklist,
+                preference = blacklist,
                 title = stringResource(MR.strings.pref_player_subtitle_blacklist),
                 dialogSubtitle = stringResource(MR.strings.pref_player_subtitle_blacklist_info),
             ),

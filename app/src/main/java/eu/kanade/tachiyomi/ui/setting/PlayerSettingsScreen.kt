@@ -21,6 +21,8 @@ import eu.kanade.presentation.util.isTabletUi
 import tachiyomi.presentation.core.components.TwoPanelBox
 
 object PlayerSettingsScreen : Screen() {
+    private fun readResolve(): Any = PlayerSettingsScreen
+
     @Composable
     override fun Content() {
         val parentNavigator = LocalNavigator.currentOrThrow
