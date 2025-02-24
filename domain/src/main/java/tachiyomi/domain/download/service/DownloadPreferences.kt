@@ -33,38 +33,29 @@ class DownloadPreferences(
     fun notDownloadFillermarkedItems() = preferenceStore.getBoolean("pref_no_download_fillermarked", false)
     // <-- AM (FILLERMARK)
 
-    fun removeExcludeCategories() = preferenceStore.getStringSet(
-        // KMK -->
-        REMOVE_EXCLUDE_CATEGORIES_PREF_KEY,
-        // KMK <--
-        emptySet(),
-    )
+    fun removeExcludeCategories() = preferenceStore.getStringSet(REMOVE_EXCLUDE_CATEGORIES_PREF_KEY, emptySet())
 
     fun downloadNewChapters() = preferenceStore.getBoolean("download_new_episode", false)
 
-    fun downloadNewChapterCategories() = preferenceStore.getStringSet(
-        // KMK -->
-        DOWNLOAD_NEW_CATEGORIES_PREF_KEY,
-        // KMK <--
-        emptySet(),
-    )
+    fun downloadNewChapterCategories() = preferenceStore.getStringSet(DOWNLOAD_NEW_CATEGORIES_PREF_KEY, emptySet())
 
-    fun downloadNewChapterCategoriesExclude() = preferenceStore.getStringSet(
-        // KMK -->
-        DOWNLOAD_NEW_CATEGORIES_EXCLUDE_PREF_KEY,
-        // KMK <--
-        emptySet(),
-    )
+    fun downloadNewChapterCategoriesExclude() =
+        preferenceStore.getStringSet(DOWNLOAD_NEW_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
 
     fun downloadNewUnreadChaptersOnly() = preferenceStore.getBoolean("download_new_unread_episodes_only", false)
 
     // KMK -->
     fun downloadCacheRenewInterval() = preferenceStore.getInt("download_cache_renew_interval", 1)
+    // KMK <--
 
     companion object {
-        const val REMOVE_EXCLUDE_CATEGORIES_PREF_KEY = "remove_exclude_anime_categories"
-        const val DOWNLOAD_NEW_CATEGORIES_PREF_KEY = "download_new_anime_categories"
-        const val DOWNLOAD_NEW_CATEGORIES_EXCLUDE_PREF_KEY = "download_new_anime_categories_exclude"
+        private const val REMOVE_EXCLUDE_CATEGORIES_PREF_KEY = "remove_exclude_anime_categories"
+        private const val DOWNLOAD_NEW_CATEGORIES_PREF_KEY = "download_new_anime_categories"
+        private const val DOWNLOAD_NEW_CATEGORIES_EXCLUDE_PREF_KEY = "download_new_anime_categories_exclude"
+        val categoryPreferenceKeys = setOf(
+            REMOVE_EXCLUDE_CATEGORIES_PREF_KEY,
+            DOWNLOAD_NEW_CATEGORIES_PREF_KEY,
+            DOWNLOAD_NEW_CATEGORIES_EXCLUDE_PREF_KEY,
+        )
     }
-    // KMK <--
 }
