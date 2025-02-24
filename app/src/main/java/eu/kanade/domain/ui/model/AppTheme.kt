@@ -4,6 +4,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.util.system.isDevFlavor
 import eu.kanade.tachiyomi.util.system.isPreviewBuildType
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 
 enum class AppTheme(val titleRes: StringResource?) {
@@ -29,6 +30,7 @@ enum class AppTheme(val titleRes: StringResource?) {
     TIDAL_WAVE(MR.strings.theme_tidalwave),
     YINYANG(MR.strings.theme_yinyang),
     YOTSUBA(MR.strings.theme_yotsuba),
+    MONOCHROME(AMR.strings.theme_monochrome),
 
     // Aniyomi themes
     CLOUDFLARE(KMR.strings.theme_cloudflare),
