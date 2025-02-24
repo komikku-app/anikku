@@ -129,12 +129,7 @@ class BackupRestorer(
             }
             // SY <--
             if (options.appSettings) {
-                restoreAppPreferences(
-                    backup.backupPreferences,
-                    // KMK ->
-                    if (options.categories) backup.backupCategories else emptyList(),
-                    // KMK <--
-                )
+                restoreAppPreferences(backup.backupPreferences, backup.backupCategories.takeIf { options.categories })
             }
             if (options.sourceSettings) {
                 restoreSourcePreferences(backup.backupSourcePreferences)
@@ -215,16 +210,12 @@ class BackupRestorer(
 
     private fun CoroutineScope.restoreAppPreferences(
         preferences: List<BackupPreference>,
-        // KMK -->
-        backupCategories: List<BackupCategory>,
-        // KMK <--
+        categories: List<BackupCategory>?,
     ) = launch {
         ensureActive()
         preferenceRestorer.restoreApp(
             preferences,
-            // KMK -->
-            backupCategories,
-            // KMK <--
+            categories,
         )
 
         restoreProgress += 1

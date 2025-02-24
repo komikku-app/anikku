@@ -153,12 +153,7 @@ class LibraryPreferences(
 
     // region Category
 
-    fun defaultCategory() = preferenceStore.getInt(
-        // KMK -->
-        DEFAULT_CATEGORY_PREF_KEY,
-        // KMK <--
-        -1,
-    )
+    fun defaultCategory() = preferenceStore.getInt(DEFAULT_CATEGORY_PREF_KEY, -1)
 
     fun lastUsedCategory() = preferenceStore.getInt(Preference.appStateKey("last_used_anime_category"), 0)
 
@@ -172,19 +167,9 @@ class LibraryPreferences(
     fun showHiddenCategories() = preferenceStore.getBoolean("show_hidden_categories", false)
     // KMK <--
 
-    fun updateCategories() = preferenceStore.getStringSet(
-        // KMK -->
-        LIBRARY_UPDATE_CATEGORIES_PREF_KEY,
-        // KMK <--
-        emptySet(),
-    )
+    fun updateCategories() = preferenceStore.getStringSet(LIBRARY_UPDATE_CATEGORIES_PREF_KEY, emptySet())
 
-    fun updateCategoriesExclude() = preferenceStore.getStringSet(
-        // KMK -->
-        LIBRARY_UPDATE_CATEGORIES_EXCLUDE_PREF_KEY,
-        // KMK <--
-        emptySet(),
-    )
+    fun updateCategoriesExclude() = preferenceStore.getStringSet(LIBRARY_UPDATE_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
 
     // Mixture Item
 
@@ -282,10 +267,13 @@ class LibraryPreferences(
         const val ANIME_NON_SEEN = "anime_started"
         const val ANIME_OUTSIDE_RELEASE_PERIOD = "anime_outside_release_period"
 
-        // KMK -->
         const val DEFAULT_CATEGORY_PREF_KEY = "default_anime_category"
-        const val LIBRARY_UPDATE_CATEGORIES_PREF_KEY = "animelib_update_categories"
-        const val LIBRARY_UPDATE_CATEGORIES_EXCLUDE_PREF_KEY = "animelib_update_categories_exclude"
-        // KMK <--
+        private const val LIBRARY_UPDATE_CATEGORIES_PREF_KEY = "animelib_update_categories"
+        private const val LIBRARY_UPDATE_CATEGORIES_EXCLUDE_PREF_KEY = "animelib_update_categories_exclude"
+        val categoryPreferenceKeys = setOf(
+            DEFAULT_CATEGORY_PREF_KEY,
+            LIBRARY_UPDATE_CATEGORIES_PREF_KEY,
+            LIBRARY_UPDATE_CATEGORIES_EXCLUDE_PREF_KEY,
+        )
     }
 }
