@@ -271,7 +271,7 @@ class MangaScreen(
             // AM (FILE_SIZE) -->
             showFileSize = screenModel.showFileSize,
             // <-- AM (FILE_SIZE)
-            onBackClicked = navigator::pop,
+            navigateUp = navigator::pop,
             onChapterClicked = { chapter, alt ->
                 scope.launchIO {
                     if (successState.source is MergedSource &&
