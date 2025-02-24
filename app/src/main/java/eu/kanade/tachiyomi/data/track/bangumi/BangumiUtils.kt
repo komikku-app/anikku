@@ -3,10 +3,10 @@ package eu.kanade.tachiyomi.data.track.bangumi
 import eu.kanade.tachiyomi.data.database.models.Track
 
 fun Track.toApiStatus() = when (status) {
-    Bangumi.WATCHING -> "do"
-    Bangumi.COMPLETED -> "collect"
-    Bangumi.ON_HOLD -> "on_hold"
-    Bangumi.DROPPED -> "dropped"
-    Bangumi.PLAN_TO_WATCH -> "wish"
-    else -> "do"
+    Bangumi.PLAN_TO_WATCH -> 1
+    Bangumi.COMPLETED -> 2
+    Bangumi.WATCHING -> 3
+    Bangumi.ON_HOLD -> 4
+    Bangumi.DROPPED -> 5
+    else -> 3
 }

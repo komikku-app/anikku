@@ -49,27 +49,23 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     }
 
     override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
-        val statusTrack = api.statusLibAnime(track)
-        val remoteTrack = api.findLibAnime(track)
+        val statusTrack = api.statusLibAnime(track, getUsername())
         return if (statusTrack != null) {
-            track.copyPersonalFrom(remoteTrack)
-            track.library_id = remoteTrack.library_id
-
+            track.copyPersonalFrom(statusTrack)
+            track.library_id = statusTrack.library_id
+            track.score = statusTrack.score
+            track.last_episode_seen = statusTrack.last_episode_seen
+            track.total_episodes = statusTrack.total_episodes
             if (track.status != COMPLETED) {
                 track.status = if (hasReadChapters) WATCHING else statusTrack.status
             }
 
-            // track.status = statusTrack.status
-            track.score = statusTrack.score
-            track.last_episode_seen = statusTrack.last_episode_seen
-            track.total_episodes = remoteTrack.total_episodes
-            refresh(track)
+            track
         } else {
             // Set default fields if it's not found in the list
             track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
-            update(track)
         }
     }
 
@@ -82,11 +78,8 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     }
 
     override suspend fun refresh(track: Track): Track {
-        val remoteStatusTrack = api.statusLibAnime(track) ?: throw Exception("Could not find anime")
+        val remoteStatusTrack = api.statusLibAnime(track, getUsername()) ?: throw Exception("Could not find manga")
         track.copyPersonalFrom(remoteStatusTrack)
-        api.findLibAnime(track).let { remoteTrack ->
-            track.total_episodes = remoteTrack.total_episodes
-        }
         return track
     }
 
@@ -118,9 +111,13 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     suspend fun login(code: String) {
         try {
             val oauth = api.accessToken(code)
+            // Users can set a 'username' (not nickname) once which effectively
+            // replaces the stringified ID in certain queries.
+            // If no username is set, the API returns the user ID as a strings
+            val username = api.getUsername()
             interceptor.newAuth(oauth)
-            saveCredentials(oauth.userId.toString(), oauth.accessToken)
-        } catch (e: Throwable) {
+            saveCredentials(username, oauth.accessToken)
+        } catch (_: Throwable) {
             logout()
         }
     }
@@ -132,7 +129,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     fun restoreToken(): BGMOAuth? {
         return try {
             json.decodeFromString<BGMOAuth>(trackPreferences.trackToken(this).get())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -144,11 +141,11 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     }
 
     companion object {
-        const val WATCHING = 3L
+        const val PLAN_TO_WATCH = 1L
         const val COMPLETED = 2L
+        const val WATCHING = 3L
         const val ON_HOLD = 4L
         const val DROPPED = 5L
-        const val PLAN_TO_WATCH = 1L
 
         private val SCORE_LIST = IntRange(0, 10)
             .map(Int::toString)
