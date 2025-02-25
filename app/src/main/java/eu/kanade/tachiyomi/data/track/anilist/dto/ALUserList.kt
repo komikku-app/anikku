@@ -28,6 +28,7 @@ data class ALUserListItem(
     val startedAt: ALFuzzyDate,
     val completedAt: ALFuzzyDate,
     val media: ALSearchItem,
+    val private: Boolean,
 ) {
     fun toALUserAnime(): ALUserAnime {
         return ALUserAnime(
@@ -38,6 +39,7 @@ data class ALUserListItem(
             startDateFuzzy = startedAt.toEpochMilli(),
             completedDateFuzzy = completedAt.toEpochMilli(),
             anime = media.toALAnime(),
+            private = private,
         )
     }
 }

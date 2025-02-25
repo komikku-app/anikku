@@ -159,6 +159,9 @@
     <string name="pref_library_items_per_row">Items per row</string>
     <string name="pref_library_items_per_screen">Items per screen</string>
     <string name="theme_monochrome">Monochrome</string>
+    <string name="tracked_privately">Tracked privately</string>
+    <string name="action_toggle_private_on">Track privately</string>
+    <string name="action_toggle_private_off">Track publicly</string>
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->

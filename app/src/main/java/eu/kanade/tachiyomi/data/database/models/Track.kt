@@ -32,12 +32,15 @@ interface Track : Serializable {
 
     var tracking_url: String
 
-    fun copyPersonalFrom(other: Track) {
+    var private: Boolean
+
+    fun copyPersonalFrom(other: Track, copyRemotePrivate: Boolean = true) {
         last_episode_seen = other.last_episode_seen
         score = other.score
         status = other.status
         started_watching_date = other.started_watching_date
         finished_watching_date = other.finished_watching_date
+        if (copyRemotePrivate) private = other.private
     }
 
     companion object {

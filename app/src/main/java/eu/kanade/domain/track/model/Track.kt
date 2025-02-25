@@ -10,6 +10,7 @@ fun Track.copyPersonalFrom(other: Track): Track {
         status = other.status,
         startDate = other.startDate,
         finishDate = other.finishDate,
+        private = other.private,
     )
 }
 
@@ -26,6 +27,7 @@ fun Track.toDbTrack(): DbTrack = DbTrack.create(trackerId).also {
     it.tracking_url = remoteUrl
     it.started_watching_date = startDate
     it.finished_watching_date = finishDate
+    it.private = private
 }
 
 fun DbTrack.toDomainTrack(idRequired: Boolean = true): Track? {
@@ -44,5 +46,6 @@ fun DbTrack.toDomainTrack(idRequired: Boolean = true): Track? {
         remoteUrl = tracking_url,
         startDate = started_watching_date,
         finishDate = finished_watching_date,
+        private = private,
     )
 }
