@@ -60,7 +60,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
                 track.status = if (hasReadChapters) WATCHING else statusTrack.status
             }
 
-            track
+            update(track)
         } else {
             // Set default fields if it's not found in the list
             track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
