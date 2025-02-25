@@ -50,6 +50,7 @@ class BangumiApi(
                 put("type", track.toApiStatus())
                 put("rate", track.score.toInt().coerceIn(0, 10))
                 put("ep_status", track.last_episode_seen.toInt())
+                put("private", track.private)
             }
                 .toString()
                 .toRequestBody()
@@ -67,6 +68,7 @@ class BangumiApi(
                 put("type", track.toApiStatus())
                 put("rate", track.score.toInt().coerceIn(0, 10))
                 put("ep_status", track.last_episode_seen.toInt())
+                put("private", track.private)
             }
                 .toString()
                 .toRequestBody()
