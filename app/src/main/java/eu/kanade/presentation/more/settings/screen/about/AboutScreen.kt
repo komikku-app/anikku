@@ -36,7 +36,7 @@ import eu.kanade.tachiyomi.ui.more.WhatsNewScreen
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.lang.toDateTimestampString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import eu.kanade.tachiyomi.util.system.isDevFlavor
+import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.launch
@@ -181,7 +181,7 @@ class AboutScreen : Screen() {
                     )
                 }
 
-                if (isReleaseBuildType || isDevFlavor) {
+                if (isReleaseBuildType || isDebugBuildType) {
                     item {
                         TextPreferenceWidget(
                             title = stringResource(KMR.strings.whats_coming),

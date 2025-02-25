@@ -4,17 +4,20 @@ on:
   pull_request:
     types: [opened]
 
+permissions:
+  contents: write
+
 jobs:
   label_pr:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check PR and Add Label
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
             const prAuthor = context.payload.pull_request.user.login;
-            
+
             if (prAuthor === 'weblate') {
               const labels = ['Translations'];
               await github.issues.addLabels({

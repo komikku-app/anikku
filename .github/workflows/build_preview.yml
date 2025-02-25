@@ -1,5 +1,5 @@
 name: Preview Builder
-# Manually build a standard preview on master
+# Manually build a preview on master
 
 on:
   # Dispatch or Manual triggers
@@ -58,20 +58,16 @@ jobs:
       - name: Curren commit
         id: current_commit
         run: |
-          set -e
-
           commit_count=$(git rev-list --count HEAD)
+          current_sha=$(git rev-parse --short HEAD)
           echo "COMMIT_COUNT=$commit_count"
           echo "COMMIT_COUNT=$commit_count" >> $GITHUB_OUTPUT
-          current_sha=$(git rev-parse --short HEAD)
           echo "CURRENT_SHA=$current_sha"
           echo "CURRENT_SHA=$current_sha" >> $GITHUB_OUTPUT
 
       - name: Previous commit
         id: previous_commit
         run: |
-          set -e
-
           commit_count_diff=$(git rev-list --count "${{ steps.last_release.outputs.tag_name }}"..HEAD)
 
           # Fake at least 1 commits (to avoid no changes)
@@ -89,10 +85,8 @@ jobs:
       - name: Prepare env
         id: prepare_env
         run: |
-          set -e
-
           tag_prefix=r
-          artifacts_prefix=standard/preview/app-standard
+          artifacts_prefix=preview/app
           build_type_name=Preview
 
           echo "TAG_NAME=${tag_prefix}${{ steps.current_commit.outputs.COMMIT_COUNT }}"
@@ -105,8 +99,6 @@ jobs:
       - name: Commit logs
         id: commit_logs
         run: |
-          set -e
-
           echo "COMMIT_LOGS<<{delimiter}
           $(curl -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/komikku-app/anikku/compare/${{ steps.previous_commit.outputs.PREV_RELEASE_SHA }}...${{ steps.current_commit.outputs.CURRENT_SHA }}" \
@@ -123,10 +115,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-
-      - name: Setup Android SDK
-        run: |
-          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "build-tools;29.0.3"
 
       - name: Set up JDK
         uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b # v4.6.0
@@ -155,10 +143,10 @@ jobs:
         run: ./gradlew spotlessCheck
 
       - name: Build app
-        run: ./gradlew assembleStandardPreview
+        run: ./gradlew assemblePreview
 
       - name: Run unit tests
-        run: ./gradlew testReleaseUnitTest testStandardPreviewUnitTest
+        run: ./gradlew testReleaseUnitTest
 
       - name: Upload artifacts
         uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
@@ -177,14 +165,10 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Setup Android SDK
-        run: |
-          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "build-tools;29.0.3"
-
       - name: Sign APK
         uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
         with:
-          releaseDirectory: app/build/outputs/apk/standard/preview
+          releaseDirectory: app/build/outputs/apk/preview
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -195,23 +179,23 @@ jobs:
         run: |
           set -e
 
-          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-universal-preview-unsigned-signed.apk Anikku-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-universal-preview-signed.apk Anikku-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
           sha=`sha256sum Anikku-${{ needs.prepare-build.outputs.TAG_NAME }}.apk | awk '{ print $1 }'`
           echo "APK_UNIVERSAL_SHA=$sha" >> $GITHUB_OUTPUT
 
-          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-arm64-v8a-preview-unsigned-signed.apk Anikku-arm64-v8a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-arm64-v8a-preview-signed.apk Anikku-arm64-v8a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
           sha=`sha256sum Anikku-arm64-v8a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk | awk '{ print $1 }'`
           echo "APK_ARM64_V8A_SHA=$sha" >> $GITHUB_OUTPUT
 
-          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-armeabi-v7a-preview-unsigned-signed.apk Anikku-armeabi-v7a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-armeabi-v7a-preview-signed.apk Anikku-armeabi-v7a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
           sha=`sha256sum Anikku-armeabi-v7a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk | awk '{ print $1 }'`
           echo "APK_ARMEABI_V7A_SHA=$sha" >> $GITHUB_OUTPUT
 
-          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-x86-preview-unsigned-signed.apk Anikku-x86-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-x86-preview-signed.apk Anikku-x86-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
           sha=`sha256sum Anikku-x86-${{ needs.prepare-build.outputs.TAG_NAME }}.apk | awk '{ print $1 }'`
           echo "APK_X86_SHA=$sha" >> $GITHUB_OUTPUT
 
-          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-x86_64-preview-unsigned-signed.apk Anikku-x86_64-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+          mv app/build/outputs/apk/${{ needs.prepare-build.outputs.ARTIFACTS_PREFIX }}-x86_64-preview-signed.apk Anikku-x86_64-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
           sha=`sha256sum Anikku-x86_64-${{ needs.prepare-build.outputs.TAG_NAME }}.apk | awk '{ print $1 }'`
           echo "APK_X86_64_SHA=$sha" >> $GITHUB_OUTPUT
 
