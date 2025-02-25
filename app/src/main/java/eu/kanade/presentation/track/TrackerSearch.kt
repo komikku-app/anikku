@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -74,6 +75,7 @@ import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
@@ -91,8 +93,9 @@ fun TrackerSearch(
     queryResult: Result<List<TrackSearch>>?,
     selected: TrackSearch?,
     onSelectedChange: (TrackSearch) -> Unit,
-    onConfirmSelection: () -> Unit,
+    onConfirmSelection: (private: Boolean) -> Unit,
     onDismissRequest: () -> Unit,
+    supportsPrivateTracking: Boolean,
 ) {
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
@@ -165,15 +168,31 @@ fun TrackerSearch(
                 enter = fadeIn() + slideInVertically { it / 2 },
                 exit = slideOutVertically { it / 2 } + fadeOut(),
             ) {
-                Button(
-                    onClick = { onConfirmSelection() },
+                Row(
                     modifier = Modifier
-                        .padding(12.dp)
+                        .padding(MaterialTheme.padding.small)
                         .windowInsetsPadding(WindowInsets.navigationBars)
                         .fillMaxWidth(),
-                    elevation = ButtonDefaults.elevatedButtonElevation(),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
                 ) {
-                    Text(text = stringResource(MR.strings.action_track))
+                    Button(
+                        onClick = { onConfirmSelection(false) },
+                        modifier = Modifier.weight(1f),
+                        elevation = ButtonDefaults.elevatedButtonElevation(),
+                    ) {
+                        Text(text = stringResource(MR.strings.action_track))
+                    }
+                    if (supportsPrivateTracking) {
+                        Button(
+                            onClick = { onConfirmSelection(true) },
+                            elevation = ButtonDefaults.elevatedButtonElevation(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.VisibilityOff,
+                                contentDescription = stringResource(AMR.strings.action_toggle_private_on),
+                            )
+                        }
+                    }
                 }
             }
         },
