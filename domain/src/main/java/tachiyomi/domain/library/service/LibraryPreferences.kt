@@ -119,8 +119,6 @@ class LibraryPreferences(
         "pref_filter_library_lewd_v2",
         TriState.DISABLED,
     )
-
-    fun libraryReadDuplicateChapters() = preferenceStore.getBoolean("pref_library_mark_duplicate_chapters", false)
     // SY <--
 
     fun filterTracking(id: Int) = preferenceStore.getEnum(
@@ -162,6 +160,8 @@ class LibraryPreferences(
     fun categoryNumberOfItems() = preferenceStore.getBoolean("display_number_of_items", false)
 
     fun categorizedDisplaySettings() = preferenceStore.getBoolean("categorized_display", false)
+
+    fun markDuplicateEpisodeSeen() = preferenceStore.getBoolean("mark_duplicate_episode_seen", false)
 
     // KMK -->
     fun showHiddenCategories() = preferenceStore.getBoolean("show_hidden_categories", false)

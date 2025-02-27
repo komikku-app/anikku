@@ -19,6 +19,7 @@ import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.chapter.model.toChapterUpdate
 import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.chapter.service.ChapterRecognition
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.source.local.isLocal
 import java.lang.Long.max
@@ -33,6 +34,7 @@ class SyncChaptersWithSource(
     private val updateManga: UpdateManga,
     private val updateChapter: UpdateChapter,
     private val getChaptersByMangaId: GetChaptersByMangaId,
+    private val libraryPreferences: LibraryPreferences,
 ) {
 
     /**
@@ -151,11 +153,17 @@ class SyncChaptersWithSource(
             return emptyList()
         }
 
-        val reAdded = mutableListOf<Chapter>()
+        val changedOrDuplicateReadUrls = mutableSetOf<String>()
 
         val deletedChapterNumbers = TreeSet<Double>()
         val deletedReadChapterNumbers = TreeSet<Double>()
         val deletedBookmarkedChapterNumbers = TreeSet<Double>()
+
+        val readChapterNumbers = dbChapters
+            .asSequence()
+            .filter { it.read && it.isRecognizedNumber }
+            .map { it.chapterNumber }
+            .toSet()
 
         removedChapters.forEach { chapter ->
             if (chapter.read) deletedReadChapterNumbers.add(chapter.chapterNumber)
@@ -166,11 +174,18 @@ class SyncChaptersWithSource(
         val deletedChapterNumberDateFetchMap = removedChapters.sortedByDescending { it.dateFetch }
             .associate { it.chapterNumber to it.dateFetch }
 
+        val markDuplicateAsRead = libraryPreferences.markDuplicateEpisodeSeen().get()
+
         // Date fetch is set in such a way that the upper ones will have bigger value than the lower ones
         // Sources MUST return the chapters from most to less recent, which is common.
         var itemCount = newChapters.size
         var updatedToAdd = newChapters.map { toAddItem ->
             var chapter = toAddItem.copy(dateFetch = nowMillis + itemCount--)
+
+            if (chapter.chapterNumber in readChapterNumbers && markDuplicateAsRead) {
+                changedOrDuplicateReadUrls.add(chapter.url)
+                chapter = chapter.copy(read = true)
+            }
 
             if (!chapter.isRecognizedNumber || chapter.chapterNumber !in deletedChapterNumbers) return@map chapter
 
@@ -184,7 +199,7 @@ class SyncChaptersWithSource(
                 chapter = chapter.copy(dateFetch = it)
             }
 
-            reAdded.add(chapter)
+            changedOrDuplicateReadUrls.add(chapter.url)
 
             chapter
         }
@@ -208,10 +223,6 @@ class SyncChaptersWithSource(
         // Note that last_update actually represents last time the chapter list changed at all
         updateManga.awaitUpdateLastUpdate(manga.id)
 
-        val reAddedUrls = reAdded.map { it.url }.toHashSet()
-
-        return updatedToAdd.filterNot {
-            it.url in reAddedUrls
-        }
+        return updatedToAdd.filterNot { it.url in changedOrDuplicateReadUrls }
     }
 }

@@ -175,6 +175,8 @@
     <string name="non_library_watched_settings">All watched entries</string>
     <string name="channel_new_episodes">Episode updates</string>
     <string name="pref_incognito_watching_mode_extension_summary">Pause watching history for extension</string>
+    <string name="pref_library_update_show_tab_badge">Show unseen count on Updates icon</string>
+    <string name="pref_mark_duplicate_episode_seen">Mark new duplicate seen episodes as seen</string>
 
         <!-- SY -->
     <string name="sync_on_episode_seen">Sync on Episode Seen</string>

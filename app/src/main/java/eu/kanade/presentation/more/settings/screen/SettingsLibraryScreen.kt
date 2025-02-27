@@ -231,6 +231,10 @@ object SettingsLibraryScreen : SearchableSettings {
                     preference = libraryPreferences.newShowUpdatesCount(),
                     title = stringResource(AMR.strings.pref_library_update_show_tab_badge_episode),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.markDuplicateEpisodeSeen(),
+                    title = stringResource(AMR.strings.pref_mark_duplicate_episode_seen),
+                ),
                 // KMK -->
                 Preference.PreferenceItem.SwitchPreference(
                     preference = libraryPreferences.showUpdatingProgressBanner(),
