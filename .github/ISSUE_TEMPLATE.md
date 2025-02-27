@@ -17,7 +17,7 @@ Note that the issue will be automatically closed if you do not fill out the titl
 ---
 
 ## Device information
-* Kuukiyomi version: ?
+* Anikku version: ?
 * Android version: ?
 * Device: ?
 

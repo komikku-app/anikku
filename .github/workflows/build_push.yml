@@ -30,7 +30,7 @@ permissions:
 jobs:
   build:
     name: Build app
-    runs-on: ubuntu-latest
+    runs-on: 'ubuntu-24.04'
 
     steps:
       - name: Clone repo
@@ -115,7 +115,7 @@ jobs:
         run: ./gradlew testReleaseUnitTest
 
       - name: Sign APK
-        uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
+        uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
         with:
           releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
