@@ -67,7 +67,7 @@ import androidx.compose.ui.util.fastMap
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeSource
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.RelatedMangaTitle
@@ -584,9 +584,7 @@ private fun MangaScreenSmallImpl(
             .onGloballyPositioned { coordinates ->
                 layoutSize = coordinates.size
             }
-            .haze(
-                state = hazeState,
-            ),
+            .hazeSource(state = hazeState),
         // KMK <--
     ) { contentPadding ->
         val topPadding = contentPadding.calculateTopPadding()
@@ -1044,9 +1042,7 @@ private fun MangaScreenLargeImpl(
             .onGloballyPositioned { coordinates ->
                 layoutSize = coordinates.size
             }
-            .haze(
-                state = hazeState,
-            ),
+            .hazeSource(state = hazeState),
         // KMK <--
     ) { contentPadding ->
         PullRefresh(
