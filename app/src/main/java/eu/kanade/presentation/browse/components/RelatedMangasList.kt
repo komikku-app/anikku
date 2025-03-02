@@ -104,6 +104,7 @@ fun RelatedMangasList(
                         entries = entries,
                         containerHeight = containerHeight,
                         isSelected = selection.fastAny { selected -> selected.id == manga.id },
+                        metadata = null,
                     )
                 }
             }

@@ -14,6 +14,7 @@ import tachiyomi.data.source.NoResultsException
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
+import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
@@ -22,14 +23,14 @@ import uy.kohesive.injekt.injectLazy
  * General class for recommendation sources.
  */
 abstract class RecommendationPagingSource(
-    source: CatalogueSource?,
     protected val manga: Manga,
+    source: CatalogueSource? = null,
 ) : BaseSourcePagingSource(source) {
     // Display name
     abstract val name: String
 
     // Localized category name
-    abstract val category: StringResource
+    open val category: StringResource = SYMR.strings.similar_titles
 
     /**
      * Recommendation sources that display results from a source extension,
@@ -46,12 +47,9 @@ abstract class RecommendationPagingSource(
             sourceCatalogue: SourceCatalogue,
             // KMK <--
         ): List<RecommendationPagingSource> {
-            // KMK -->
-            val source = sourceCatalogue.source
-            // KMK <--
             return buildList {
-                add(AniListPagingSource(manga, source))
-                add(MyAnimeListPagingSource(manga, source))
+                add(AniListPagingSource(manga))
+                add(MyAnimeListPagingSource(manga))
             }.sortedWith(compareBy({ it.name }, { it.category.resourceId }))
         }
     }
@@ -62,9 +60,8 @@ abstract class RecommendationPagingSource(
  */
 abstract class TrackerRecommendationPagingSource(
     protected val endpoint: String,
-    source: CatalogueSource?,
     manga: Manga,
-) : RecommendationPagingSource(source, manga) {
+) : RecommendationPagingSource(manga) {
     private val getTracks: GetTracks by injectLazy()
 
     protected val trackerManager: TrackerManager by injectLazy()
@@ -78,7 +75,7 @@ abstract class TrackerRecommendationPagingSource(
      * the remote id will be used to directly identify the manga on the tracker.
      * Otherwise, a search will be performed using the manga title.
      */
-    protected abstract val associatedTrackerId: Long?
+    abstract val associatedTrackerId: Long?
 
     abstract suspend fun getRecsBySearch(search: String): List<SManga>
     abstract suspend fun getRecsById(id: String): List<SManga>
@@ -97,7 +94,10 @@ abstract class TrackerRecommendationPagingSource(
 
             results.ifEmpty { throw NoResultsException() }
         } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { name }
+            // 'No results' should not be logged as it happens frequently and is expected
+            if (e !is NoResultsException) {
+                logcat(LogPriority.ERROR, e) { name }
+            }
             throw e
         }
 

@@ -36,6 +36,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
 import eu.kanade.tachiyomi.util.removeCovers
+import exh.recs.batch.RecommendationSearchHelper
 import exh.search.Namespace
 import exh.search.QueryComponent
 import exh.search.SearchEngine
@@ -49,6 +50,7 @@ import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.cancellable
@@ -144,6 +146,12 @@ class LibraryScreenModel(
 ) : StateScreenModel<LibraryScreenModel.State>(State()) {
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory().asState(screenModelScope)
+
+    // SY -->
+    val recommendationSearch = RecommendationSearchHelper(preferences.context)
+
+    private var recommendationSearchJob: Job? = null
+    // SY <--
 
     init {
         screenModelScope.launchIO {
@@ -973,6 +981,11 @@ class LibraryScreenModel(
     }
 
     // SY -->
+    fun showRecommendationSearchDialog() {
+        val mangaList = state.value.selection.map { it.manga }
+        mutableState.update { it.copy(dialog = Dialog.RecommendationSearchSheet(mangaList)) }
+    }
+
     fun getCategoryName(
         context: Context,
         category: Category?,
@@ -1248,6 +1261,10 @@ class LibraryScreenModel(
         ) : Dialog
         data class DeleteManga(val manga: List<Manga>) : Dialog
         data class ResetInfoManga(val manga: List<Manga>) : Dialog
+
+        // SY -->
+        data class RecommendationSearchSheet(val manga: List<Manga>) : Dialog
+        // SY <--
     }
 
     // SY -->
@@ -1368,6 +1385,16 @@ class LibraryScreenModel(
                 }
             }
         }.toSortedMap(compareBy { it.order })
+    }
+
+    fun runRecommendationSearch(selection: List<Manga>) {
+        recommendationSearch.runSearch(screenModelScope, selection)?.let {
+            recommendationSearchJob = it
+        }
+    }
+
+    fun cancelRecommendationSearch() {
+        recommendationSearchJob?.cancel()
     }
     // SY <--
 

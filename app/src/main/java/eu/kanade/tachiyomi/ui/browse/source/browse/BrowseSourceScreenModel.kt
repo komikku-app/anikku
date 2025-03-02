@@ -29,15 +29,19 @@ import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.util.removeCovers
+import exh.metadata.metadata.RaisedSearchMetadata
 import exh.source.LOCAL_SOURCE_PACKAGE
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -45,7 +49,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import tachiyomi.core.common.preference.CheckboxState
@@ -53,7 +56,6 @@ import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withUIContext
-import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
@@ -81,7 +83,8 @@ import java.time.Instant
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as SourceModelFilter
 
 open class BrowseSourceScreenModel(
-    private val sourceId: Long,
+    /* KMK --> */
+    protected /* KMK <-- */ val sourceId: Long,
     listingQuery: String?,
     // SY -->
     private val filtersJson: String? = null,
@@ -106,7 +109,6 @@ open class BrowseSourceScreenModel(
     // KMK <--
 
     // SY -->
-    unsortedPreferences: UnsortedPreferences = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
     private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),
     private val insertSavedSearch: InsertSavedSearch = Injekt.get(),
@@ -226,12 +228,15 @@ open class BrowseSourceScreenModel(
                 createSourcePagingSource(listing.query ?: "", listing.filters)
                 // SY <--
             }.flow.map { pagingData ->
-                pagingData.map { manga ->
+                pagingData.map { (manga, metadata) ->
                     getManga.subscribe(manga.url, manga.source)
                         .map { it ?: manga }
+                        // SY -->
+                        .combineMetadata(metadata)
+                        // SY <--
                         .stateIn(ioCoroutineScope)
                 }
-                    .filter { !hideInLibraryItems || !it.value.favorite }
+                    .filter { !hideInLibraryItems || !it.value.first.favorite }
             }
                 .cachedIn(ioCoroutineScope)
         }
@@ -256,6 +261,14 @@ open class BrowseSourceScreenModel(
             libraryPreferences.portraitColumns()
         }.get()
     }
+
+    // SY -->
+    open fun Flow<Manga>.combineMetadata(metadata: RaisedSearchMetadata?): Flow<Pair<Manga, RaisedSearchMetadata?>> {
+        return flatMapLatest { manga ->
+            flowOf(manga to null)
+        }
+    }
+    // SY <--
 
     fun resetFilters() {
         // KMK -->

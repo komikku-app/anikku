@@ -2,6 +2,7 @@ package eu.kanade.presentation.browse.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,14 +17,17 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import eu.kanade.presentation.library.components.CommonMangaItemDefaults
 import eu.kanade.presentation.library.components.MangaListItem
+import exh.metadata.metadata.RaisedSearchMetadata
+import exh.metadata.metadata.RankedSearchMetadata
 import kotlinx.coroutines.flow.StateFlow
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
+import tachiyomi.presentation.core.components.Badge
 import tachiyomi.presentation.core.util.plus
 
 @Composable
 fun BrowseSourceList(
-    mangaList: LazyPagingItems<StateFlow<Manga>>,
+    mangaList: LazyPagingItems<StateFlow</* SY --> */Pair<Manga, RaisedSearchMetadata?>/* SY <-- */>>,
     entries: Int,
     topBarHeight: Int,
     contentPadding: PaddingValues,
@@ -48,10 +52,17 @@ fun BrowseSourceList(
         }
 
         items(count = mangaList.itemCount) { index ->
-            val manga by mangaList[index]?.collectAsState() ?: return@items
+            // SY -->
+            val pair by mangaList[index]?.collectAsState() ?: return@items
+            val manga = pair.first
+            val metadata = pair.second
+            // SY <--
 
             BrowseSourceListItem(
                 manga = manga,
+                // SY -->
+                metadata = metadata,
+                // SY <--
                 onClick = { onMangaClick(manga) },
                 onLongClick = { onMangaLongClick(manga) },
                 entries = entries,
@@ -73,6 +84,9 @@ fun BrowseSourceList(
 @Composable
 internal fun BrowseSourceListItem(
     manga: Manga,
+    // SY -->
+    metadata: RaisedSearchMetadata?,
+    // SY <--
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = onClick,
     entries: Int,
@@ -96,6 +110,17 @@ internal fun BrowseSourceListItem(
         coverAlpha = if (manga.favorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         badge = {
             InLibraryBadge(enabled = manga.favorite)
+            // SY -->
+            if (metadata is RankedSearchMetadata) {
+                metadata.rank?.let {
+                    Badge(
+                        text = "+$it",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        textColor = MaterialTheme.colorScheme.onTertiary,
+                    )
+                }
+            }
+            // SY <--
         },
         onLongClick = onLongClick,
         onClick = onClick,

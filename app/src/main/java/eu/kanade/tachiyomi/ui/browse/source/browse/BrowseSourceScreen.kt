@@ -198,12 +198,12 @@ data class BrowseSourceScreen(
                             onChangeCategoryClick = bulkFavoriteScreenModel::addFavorite,
                             onSelectAll = {
                                 mangaList.itemSnapshotList.items
-                                    .map { it.value }
+                                    .map { it.value.first }
                                     .forEach { bulkFavoriteScreenModel.select(it) }
                             },
                             onReverseSelection = {
                                 mangaList.itemSnapshotList.items
-                                    .map { it.value }
+                                    .map { it.value.first }
                                     .let { bulkFavoriteScreenModel.reverseSelection(it) }
                             },
                         )

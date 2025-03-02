@@ -340,6 +340,7 @@ fun LibraryBottomActionMenu(
     onDeleteClicked: () -> Unit,
     // SY -->
     onClickMigrate: (() -> Unit)?,
+    onClickCollectRecommendations: (() -> Unit)?,
     onClickResetInfo: (() -> Unit)?,
     // SY <--
     // KMK -->
@@ -377,8 +378,9 @@ fun LibraryBottomActionMenu(
             val showOverflow = onClickResetInfo != null ||
                 // KMK -->
                 onClickMigrate != null ||
-                onClickMerge != null
-            // KMK <--
+                onClickMerge != null ||
+                // KMK <--
+                onClickCollectRecommendations != null
             val configuration = LocalConfiguration.current
             val isTabletUi = remember { configuration.isTabletUi() }
             var overFlowOpen by remember { mutableStateOf(false) }
@@ -489,6 +491,12 @@ fun LibraryBottomActionMenu(
                                 )
                             }
                             // KMK <--
+                        }
+                        if (onClickCollectRecommendations != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(SYMR.strings.rec_search_short)) },
+                                onClick = onClickCollectRecommendations,
+                            )
                         }
                         if (onClickResetInfo != null) {
                             DropdownMenuItem(
