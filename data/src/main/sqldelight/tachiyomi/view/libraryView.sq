@@ -1,3 +1,4 @@
+-- NOTE: must update MERGED_SOURCE_ID (6969) here
 CREATE VIEW libraryView AS
 SELECT
     A.*,
@@ -82,7 +83,7 @@ LEFT JOIN(
     WHERE ex_scanlator IS NULL
     GROUP BY ME.merge_id
 ) AS EP
-ON A._id = EP.merge_id
+ON A._id = EP.merge_id  -- ON ME.merge_id = EP.merge_id
 LEFT JOIN animes_categories AS AC
 ON AC.anime_id = A._id
 WHERE A.source = 6969;

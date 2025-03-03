@@ -1,3 +1,4 @@
+-- NOTE: must update MERGED_SOURCE_ID (6969) here
 CREATE VIEW updatesView AS
 SELECT
     animes._id AS animeId,
@@ -50,7 +51,7 @@ LEFT JOIN (
 ) AS ME
 ON ME.merge_id = animes._id
 JOIN episodes
-ON animes._id = episodes.anime_id
+ON ME.anime_id = episodes.anime_id
 WHERE favorite = 1 AND source = 6969
 AND date_fetch > date_added
 ORDER BY datefetch DESC;
