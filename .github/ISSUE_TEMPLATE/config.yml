@@ -3,6 +3,9 @@ contact_links:
   - name: 🧑‍💻 Anikku help discord
     url: https://discord.gg/85jB7V5AJR
     about: Common questions are answered here
+  - name: ❌ Help with Extensions
+    url: https://anikku-app.github.io/docs/faq/browse/extensions
+    about: For extension-related questions/issues
   - name: 🖥️ Anikku website
     url: https://anikku-app.github.io/
     about: Guides, troubleshooting, and answers to common questions
