@@ -143,6 +143,19 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 |Page (perPage: 50) {
                     |media(search: ${'$'}query, type: ANIME) {
                         |id
+                        |staff {
+                            |edges {
+                                |role
+                                |id
+                                |node {
+                                    |name {
+                                        |full
+                                        |userPreferred
+                                        |native
+                                    |}
+                                |}
+                            |}
+                        |}
                         |title {
                             |userPreferred
                         |}
@@ -222,6 +235,19 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                 |year
                                 |month
                                 |day
+                            |}
+                            |staff {
+                                |edges {
+                                    |role
+                                    |id
+                                    |node {
+                                        |name {
+                                            |full
+                                            |userPreferred
+                                            |native
+                                        |}
+                                    |}
+                                |}
                             |}
                         |}
                     |}
@@ -315,9 +341,12 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     |staff {
                         |edges {
                             |role
+                            |id
                             |node {
                                 |name {
+                                    |full
                                     |userPreferred
+                                    |native
                                 |}
                             |}
                         |}
@@ -358,7 +387,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                                 it.role.contains("Script", true) ||
                                                 it.role.contains("Writer", true)
                                         }
-                                        .map { it.node.name.userPreferred }
+                                        .mapNotNull { it.node.name.userPreferred }
                                 )
                                 .joinToString()
                                 .ifEmpty { null },
@@ -372,7 +401,8 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                         it.role.contains("Music", true) ||
                                         it.role.contains("Song", true)
                                 }
-                                .joinToString { it.node.name.userPreferred }
+                                .mapNotNull { it.node.name.userPreferred }
+                                .joinToString()
                                 .ifEmpty { null },
                         )
                     }
