@@ -33,19 +33,3 @@ data class ALStudios(
 data class ALStudioNode(
     val name: String,
 )
-
-@Serializable
-data class ALStaff(
-    val edges: List<ALStaffEdge>,
-)
-
-@Serializable
-data class ALStaffEdge(
-    val role: String,
-    val node: ALStaffNode,
-)
-
-@Serializable
-data class ALStaffNode(
-    val name: ALItemTitle,
-)

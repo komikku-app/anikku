@@ -143,6 +143,24 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 |Page (perPage: 50) {
                     |media(search: ${'$'}query, type: ANIME) {
                         |id
+                        |studios {
+                            |nodes {
+                                |name
+                            |}
+                        |}
+                        |staff {
+                            |edges {
+                                |role
+                                |id
+                                |node {
+                                    |name {
+                                        |full
+                                        |userPreferred
+                                        |native
+                                    |}
+                                |}
+                            |}
+                        |}
                         |title {
                             |userPreferred
                         |}
@@ -222,6 +240,24 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                 |year
                                 |month
                                 |day
+                            |}
+                            |studios {
+                                |nodes {
+                                    |name
+                                |}
+                            |}
+                            |staff {
+                                |edges {
+                                    |role
+                                    |id
+                                    |node {
+                                        |name {
+                                            |full
+                                            |userPreferred
+                                            |native
+                                        |}
+                                    |}
+                                |}
                             |}
                         |}
                     |}
@@ -315,9 +351,12 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     |staff {
                         |edges {
                             |role
+                            |id
                             |node {
                                 |name {
+                                    |full
                                     |userPreferred
+                                    |native
                                 |}
                             |}
                         |}
@@ -349,30 +388,13 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                             thumbnailUrl = anime.coverImage.large,
                             description = anime.description?.htmlDecode()?.ifEmpty { null },
                             authors = (
-                                anime.studios.nodes
-                                    .map { it.name } +
-                                    anime.staff.edges
-                                        .filter {
-                                            it.role.contains("Story", true) ||
-                                                it.role.contains("Creator", true) ||
-                                                it.role.contains("Script", true) ||
-                                                it.role.contains("Writer", true)
-                                        }
-                                        .map { it.node.name.userPreferred }
+                                anime.studios.nodes.map { it.name } +
+                                    anime.staff.edges.mapNotNull { it.getAuthorName() }
                                 )
                                 .joinToString()
                                 .ifEmpty { null },
-                            artists = anime.staff.edges
-                                .filter {
-                                    it.role.contains("Producer", true) ||
-                                        it.role.contains("Director", true) ||
-                                        it.role.contains("Animation", true) ||
-                                        it.role.contains("Art", true) ||
-                                        it.role.contains("Design", true) ||
-                                        it.role.contains("Music", true) ||
-                                        it.role.contains("Song", true)
-                                }
-                                .joinToString { it.node.name.userPreferred }
+                            artists = anime.staff.edges.mapNotNull { it.getArtistName() }
+                                .joinToString()
                                 .ifEmpty { null },
                         )
                     }
