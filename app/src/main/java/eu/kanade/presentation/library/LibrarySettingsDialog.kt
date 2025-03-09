@@ -319,9 +319,9 @@ private fun ColumnScope.DisplayPage(
     val columns by columnPreference.collectAsState()
     if (displayMode == LibraryDisplayMode.List) {
         SliderItem(
-            label = stringResource(AMR.strings.pref_library_items_per_screen),
-            max = 10,
             value = columns,
+            valueRange = 0..10,
+            label = stringResource(AMR.strings.pref_library_items_per_screen),
             valueText = if (columns > 0) {
                 columns.toString()
             } else {
@@ -332,9 +332,9 @@ private fun ColumnScope.DisplayPage(
         )
     } else {
         SliderItem(
-            label = stringResource(AMR.strings.pref_library_items_per_row),
-            max = 10,
             value = columns,
+            valueRange = 0..10,
+            label = stringResource(AMR.strings.pref_library_items_per_row),
             valueText = if (columns > 0) {
                 columns.toString()
             } else {

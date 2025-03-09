@@ -16,6 +16,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsAudioScreen : SearchableSettings {
+    private fun readResolve(): Any = PlayerSettingsAudioScreen
 
     @ReadOnlyComposable
     @Composable
@@ -51,10 +52,10 @@ object PlayerSettingsAudioScreen : SearchableSettings {
             ),
             Preference.PreferenceItem.SliderPreference(
                 value = boostCap,
+                valueRange = 0..200,
+                steps = 0,
                 title = stringResource(MR.strings.pref_player_audio_boost_cap),
                 subtitle = boostCap.toString(),
-                min = 0,
-                max = 200,
                 onValueChanged = {
                     boostCapPref.set(it)
                     true

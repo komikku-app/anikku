@@ -211,10 +211,10 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.SliderPreference(
                     value = panelOpacity,
+                    valueRange = 0..100,
+                    steps = 0,
                     title = stringResource(MR.strings.pref_panel_opacity),
                     subtitle = numberFormat.format(panelOpacity / 100f),
-                    min = 0,
-                    max = 100,
                     onValueChanged = {
                         panelOpacityPref.set(it)
                         true
