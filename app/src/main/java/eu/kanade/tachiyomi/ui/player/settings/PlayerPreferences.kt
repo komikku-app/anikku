@@ -24,6 +24,8 @@ class PlayerPreferences(
 
     fun skipDupe() = preferenceStore.getBoolean("skip_dupe", false)
 
+    fun markDuplicateSeenEpisodeAsSeen() = preferenceStore.getBoolean("mark_duplicate_episode_seen", false)
+
     // Controls
 
     fun allowGestures() = preferenceStore.getBoolean("pref_allow_gestures_in_panels", false)

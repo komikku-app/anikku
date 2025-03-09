@@ -161,8 +161,6 @@ class LibraryPreferences(
 
     fun categorizedDisplaySettings() = preferenceStore.getBoolean("categorized_display", false)
 
-    fun markDuplicateEpisodeSeen() = preferenceStore.getBoolean("mark_duplicate_episode_seen", false)
-
     // KMK -->
     fun showHiddenCategories() = preferenceStore.getBoolean("show_hidden_categories", false)
     // KMK <--

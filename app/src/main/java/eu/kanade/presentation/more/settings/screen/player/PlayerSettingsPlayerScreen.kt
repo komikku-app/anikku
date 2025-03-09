@@ -141,6 +141,10 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                     preference = playerPreferences.skipDupe(),
                     title = stringResource(AMR.strings.pref_skip_dupe_episodes),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.markDuplicateSeenEpisodeAsSeen(),
+                    title = stringResource(AMR.strings.pref_mark_duplicate_seen_episode_seen),
+                ),
             ),
         )
     }

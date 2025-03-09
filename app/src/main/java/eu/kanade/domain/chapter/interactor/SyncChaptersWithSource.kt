@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.prepareNewChapter
+import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import tachiyomi.data.chapter.ChapterSanitizer
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.ShouldUpdateDbChapter
@@ -19,7 +20,6 @@ import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.chapter.model.toChapterUpdate
 import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.chapter.service.ChapterRecognition
-import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.source.local.isLocal
 import java.lang.Long.max
@@ -34,7 +34,7 @@ class SyncChaptersWithSource(
     private val updateManga: UpdateManga,
     private val updateChapter: UpdateChapter,
     private val getChaptersByMangaId: GetChaptersByMangaId,
-    private val libraryPreferences: LibraryPreferences,
+    private val playerPreferences: PlayerPreferences,
 ) {
 
     /**
@@ -174,7 +174,7 @@ class SyncChaptersWithSource(
         val deletedChapterNumberDateFetchMap = removedChapters.sortedByDescending { it.dateFetch }
             .associate { it.chapterNumber to it.dateFetch }
 
-        val markDuplicateAsRead = libraryPreferences.markDuplicateEpisodeSeen().get()
+        val markDuplicateAsRead = playerPreferences.markDuplicateSeenEpisodeAsSeen().get()
 
         // Date fetch is set in such a way that the upper ones will have bigger value than the lower ones
         // Sources MUST return the chapters from most to less recent, which is common.

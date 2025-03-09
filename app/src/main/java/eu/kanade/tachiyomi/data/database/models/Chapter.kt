@@ -54,6 +54,9 @@ interface Chapter : SChapter, Serializable {
         }
 }
 
+val Chapter.isRecognizedNumber: Boolean
+    get() = chapter_number >= 0f
+
 fun Chapter.toDomainChapter(): DomainChapter? {
     if (id == null || manga_id == null) return null
     return DomainChapter(

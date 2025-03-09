@@ -54,6 +54,7 @@ import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.toHost
 import eu.kanade.tachiyomi.animesource.model.TimeStamp
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.database.models.Episode
+import eu.kanade.tachiyomi.data.database.models.isRecognizedNumber
 import eu.kanade.tachiyomi.data.database.models.toDomainEpisode
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -1617,6 +1618,25 @@ class PlayerViewModel @JvmOverloads constructor(
             currentEp.seen = true
             updateTrackEpisodeSeen(currentEp)
             deleteEpisodeIfNeeded(currentEp)
+
+            val duplicateUnseenEpisodes = currentPlaylist.value
+                .mapNotNull { episode ->
+                    if (
+                        !episode.seen &&
+                        episode.isRecognizedNumber &&
+                        episode.episode_number == currentEp.episode_number
+                    ) {
+                        EpisodeUpdate(id = episode.id!!, read = true)
+                    } else {
+                        null
+                    }
+                }
+
+            if (duplicateUnseenEpisodes.isNotEmpty()) {
+                viewModelScope.launchNonCancellable {
+                    updateEpisode.awaitAll(duplicateUnseenEpisodes)
+                }
+            }
         }
 
         saveWatchingProgress(currentEp)
