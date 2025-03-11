@@ -222,5 +222,4 @@ jobs:
             Anikku-x86_64-${{ needs.prepare-build.outputs.VERSION_TAG }}.apk
           draft: true
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
