@@ -1,5 +1,7 @@
 package eu.kanade.domain.ui
 
+import androidx.compose.material3.FabPosition
+import com.materialkolor.PaletteStyle
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.NavStyle
 import eu.kanade.domain.ui.model.StartScreen
@@ -28,15 +30,65 @@ class UiPreferences(
         },
     )
 
-    fun colorTheme() = preferenceStore.getInt("pref_color_theme", 0)
-
     fun themeDarkAmoled() = preferenceStore.getBoolean("pref_theme_dark_amoled_key", false)
+
+    // KMK -->
+    fun colorTheme() = preferenceStore.getInt("pref_color_theme", 0xFFDF0090.toInt())
+
+    fun customThemeStyle() = preferenceStore.getEnum("pref_custom_theme_style_key", PaletteStyle.Fidelity)
+
+    fun themeCoverBased() = preferenceStore.getBoolean("pref_theme_cover_based_key", true)
+
+    fun themeCoverBasedStyle() = preferenceStore.getEnum("pref_theme_cover_based_style_key", PaletteStyle.Vibrant)
+
+    fun preloadLibraryColor() = preferenceStore.getBoolean("pref_preload_library_color_key", true)
+    // KMK <--
 
     fun relativeTime() = preferenceStore.getBoolean("relative_time_v2", true)
 
     fun dateFormat() = preferenceStore.getString("app_date_format", "")
 
     fun tabletUiMode() = preferenceStore.getEnum("tablet_ui_mode", TabletUiMode.AUTOMATIC)
+
+    // SY -->
+
+    fun expandFilters() = preferenceStore.getBoolean("eh_expand_filters", false)
+
+    fun hideFeedTab() = preferenceStore.getBoolean("hide_latest_tab", false)
+
+    fun feedTabInFront() = preferenceStore.getBoolean("latest_tab_position", false)
+
+    // KMK -->
+    fun expandRelatedAnimes() = preferenceStore.getBoolean("expand_related_mangas", true)
+
+    fun relatedAnimesInOverflow() = preferenceStore.getBoolean("related_mangas_in_overflow", false)
+
+    fun showHomeOnRelatedAnimes() = preferenceStore.getBoolean("show_home_on_related_mangas", true)
+
+    fun watchButtonPosition() = preferenceStore.getString("reading_button_position", FabPosition.End.toString())
+
+    fun usePanoramaCoverFlow() = preferenceStore.getBoolean("use_panorama_cover_flow", false)
+
+    fun usePanoramaCoverAlways() = preferenceStore.getBoolean("use_panorama_cover_grid", true)
+
+    fun usePanoramaCoverAnimeInfo() = preferenceStore.getBoolean("use_panorama_cover_manga_info", false)
+    // KMK <--
+
+    fun recommendsInOverflow() = preferenceStore.getBoolean("recommends_in_overflow", false)
+
+    fun mergeInOverflow() = preferenceStore.getBoolean("merge_in_overflow", true)
+
+    fun previewsRowCount() = preferenceStore.getInt("pref_previews_row_count", 4)
+
+    fun useNewSourceNavigation() = preferenceStore.getBoolean("use_new_source_navigation", true)
+
+    fun bottomBarLabels() = preferenceStore.getBoolean("pref_show_bottom_bar_labels", true)
+
+    fun showNavUpdates() = preferenceStore.getBoolean("pref_show_updates_button", true)
+
+    fun showNavHistory() = preferenceStore.getBoolean("pref_show_history_button", true)
+
+    // SY <--
 
     fun startScreen() = preferenceStore.getEnum("start_screen", StartScreen.ANIME)
 

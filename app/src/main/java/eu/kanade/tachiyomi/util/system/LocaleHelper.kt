@@ -2,6 +2,8 @@ package eu.kanade.tachiyomi.util.system
 
 import android.content.Context
 import androidx.core.os.LocaleListCompat
+import eu.kanade.tachiyomi.ui.browse.source.SourcesScreenModel.Companion.LAST_USED_KEY
+import eu.kanade.tachiyomi.ui.browse.source.SourcesScreenModel.Companion.PINNED_KEY
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import java.util.Locale
@@ -80,6 +82,3 @@ object LocaleHelper {
         return LocaleListCompat.getDefault()[0]!!.displayLanguage
     }
 }
-
-internal const val PINNED_KEY = "pinned"
-internal const val LAST_USED_KEY = "last_used"

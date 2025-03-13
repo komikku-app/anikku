@@ -11,10 +11,13 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.domain.source.model.installedExtension
+import eu.kanade.presentation.browse.SourceCategoriesDialog
 import eu.kanade.presentation.browse.SourceOptionsDialog
 import eu.kanade.presentation.browse.SourcesScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
+import eu.kanade.tachiyomi.ui.browse.extension.details.ExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import kotlinx.collections.immutable.persistentListOf
@@ -54,20 +57,52 @@ fun Screen.sourcesTab(): TabContent {
                 onLongClickItem = screenModel::showSourceDialog,
             )
 
-            state.dialog?.let { dialog ->
-                val source = dialog.source
-                SourceOptionsDialog(
-                    source = source,
-                    onClickPin = {
-                        screenModel.togglePin(source)
-                        screenModel.closeDialog()
-                    },
-                    onClickDisable = {
-                        screenModel.toggleSource(source)
-                        screenModel.closeDialog()
-                    },
-                    onDismiss = screenModel::closeDialog,
-                )
+            when (val dialog = state.dialog) {
+                is SourcesScreenModel.Dialog.SourceLongClick -> {
+                    val source = dialog.source
+                    SourceOptionsDialog(
+                        source = source,
+                        onClickPin = {
+                            screenModel.togglePin(source)
+                            screenModel.closeDialog()
+                        },
+                        onClickDisable = {
+                            screenModel.toggleSource(source)
+                            screenModel.closeDialog()
+                        },
+                        // SY -->
+                        onClickSetCategories = {
+                            screenModel.showSourceCategoriesDialog(source)
+                        }.takeIf { state.categories.isNotEmpty() },
+                        onClickToggleDataSaver = {
+                            screenModel.toggleExcludeFromDataSaver(source)
+                            screenModel.closeDialog()
+                        }.takeIf { state.dataSaverEnabled },
+                        // SY <--
+                        onDismiss = screenModel::closeDialog,
+                        // KMK -->
+                        onClickSettings = {
+                            if (source.installedExtension !== null) {
+                                navigator.push(ExtensionDetailsScreen(source.installedExtension!!.pkgName))
+                            }
+                            screenModel.closeDialog()
+                        },
+                        // KMK <--
+                    )
+                }
+                is SourcesScreenModel.Dialog.SourceCategories -> {
+                    val source = dialog.source
+                    SourceCategoriesDialog(
+                        source = source,
+                        categories = state.categories,
+                        onClickCategories = { categories ->
+                            screenModel.setSourceCategories(source, categories)
+                            screenModel.closeDialog()
+                        },
+                        onDismissRequest = screenModel::closeDialog,
+                    )
+                }
+                null -> Unit
             }
 
             val internalErrString = stringResource(MR.strings.internal_error)

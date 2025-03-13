@@ -60,7 +60,7 @@ class SourcePreferences(
 
     fun animeExtensionUpdatesCount() = preferenceStore.getInt("animeext_updates_count", 0)
 
-    fun hideInAnimeLibraryItems() = preferenceStore.getBoolean(
+    fun hideInLibraryItems() = preferenceStore.getBoolean(
         "browse_hide_in_anime_library_items",
         false,
     )
@@ -69,11 +69,11 @@ class SourcePreferences(
 
     // fun enableSourceBlacklist() = preferenceStore.getBoolean("eh_enable_source_blacklist", true)
 
-    // fun sourcesTabCategories() = preferenceStore.getStringSet("sources_tab_categories", mutableSetOf())
+     fun sourcesTabCategories() = preferenceStore.getStringSet("sources_tab_categories", mutableSetOf())
 
-    // fun sourcesTabCategoriesFilter() = preferenceStore.getBoolean("sources_tab_categories_filter", false)
+     fun sourcesTabCategoriesFilter() = preferenceStore.getBoolean("sources_tab_categories_filter", false)
 
-    // fun sourcesTabSourcesInCategories() = preferenceStore.getStringSet("sources_tab_source_categories", mutableSetOf())
+     fun sourcesTabSourcesInCategories() = preferenceStore.getStringSet("sources_tab_source_categories", mutableSetOf())
 
     fun dataSaver() = preferenceStore.getEnum("data_saver", DataSaver.NONE)
 

@@ -9,6 +9,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
+import eu.kanade.tachiyomi.ui.category.biometric.TimeRange
 import eu.kanade.tachiyomi.ui.security.UnlockActivity
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.isAuthenticationSupported
@@ -19,11 +20,25 @@ import kotlinx.coroutines.flow.onEach
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
+import java.util.Calendar
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 interface SecureActivityDelegate {
     fun registerSecureActivity(activity: AppCompatActivity)
 
     companion object {
+        // SY -->
+        const val LOCK_SUNDAY = 0x40
+        const val LOCK_MONDAY = 0x20
+        const val LOCK_TUESDAY = 0x10
+        const val LOCK_WEDNESDAY = 0x8
+        const val LOCK_THURSDAY = 0x4
+        const val LOCK_FRIDAY = 0x2
+        const val LOCK_SATURDAY = 0x1
+        const val LOCK_ALL_DAYS = 0x7F
+        // SY <--
+
         /**
          * Set to true if we need the first activity to authenticate.
          *
@@ -45,6 +60,35 @@ interface SecureActivityDelegate {
             }
         }
 
+        // SY -->
+        private fun canLockNow(preferences: SecurityPreferences): Boolean {
+            val today: Calendar = Calendar.getInstance()
+            val timeRanges = preferences.authenticatorTimeRanges().get()
+                .mapNotNull { TimeRange.fromPreferenceString(it) }
+            val canLockNow = if (timeRanges.isNotEmpty()) {
+                val now = today.get(Calendar.HOUR_OF_DAY).hours + today.get(Calendar.MINUTE).minutes
+                timeRanges.any { now in it }
+            } else {
+                true
+            }
+
+            val lockedDays = preferences.authenticatorDays().get()
+            val canLockToday = lockedDays == LOCK_ALL_DAYS ||
+                when (today.get(Calendar.DAY_OF_WEEK)) {
+                    Calendar.SUNDAY -> (lockedDays and LOCK_SUNDAY) == LOCK_SUNDAY
+                    Calendar.MONDAY -> (lockedDays and LOCK_MONDAY) == LOCK_MONDAY
+                    Calendar.TUESDAY -> (lockedDays and LOCK_TUESDAY) == LOCK_TUESDAY
+                    Calendar.WEDNESDAY -> (lockedDays and LOCK_WEDNESDAY) == LOCK_WEDNESDAY
+                    Calendar.THURSDAY -> (lockedDays and LOCK_THURSDAY) == LOCK_THURSDAY
+                    Calendar.FRIDAY -> (lockedDays and LOCK_FRIDAY) == LOCK_FRIDAY
+                    Calendar.SATURDAY -> (lockedDays and LOCK_SATURDAY) == LOCK_SATURDAY
+                    else -> false
+                }
+
+            return canLockNow && canLockToday
+        }
+        // SY <--
+
         /**
          * Checks if unlock is needed when app comes foreground.
          */
@@ -56,11 +100,13 @@ interface SecureActivityDelegate {
 
             // `requireUnlock` can be true on process start or if app was closed in locked state
             if (!AuthenticatorUtil.isAuthenticating && !requireUnlock) {
-                requireUnlock = when (val lockDelay = preferences.lockAppAfter().get()) {
-                    -1 -> false // Never
-                    0 -> true // Always
-                    else -> lastClosedPref.get() + lockDelay * 60_000 <= System.currentTimeMillis()
-                }
+                requireUnlock =
+                    /* SY --> */ canLockNow(preferences) &&
+                    /* SY <-- */ when (val lockDelay = preferences.lockAppAfter().get()) {
+                        -1 -> false // Never
+                        0 -> true // Always
+                        else -> lastClosedPref.get() + lockDelay * 60_000 <= System.currentTimeMillis()
+                    }
             }
 
             lastClosedPref.delete()
@@ -97,8 +143,7 @@ class SecureActivityDelegateImpl : SecureActivityDelegate, DefaultLifecycleObser
         val incognitoModeFlow = preferences.incognitoMode().changes()
         combine(secureScreenFlow, incognitoModeFlow) { secureScreen, incognitoMode ->
             secureScreen == SecurityPreferences.SecureScreenMode.ALWAYS ||
-                secureScreen == SecurityPreferences.SecureScreenMode.INCOGNITO &&
-                incognitoMode
+                (secureScreen == SecurityPreferences.SecureScreenMode.INCOGNITO && incognitoMode)
         }
             .onEach(activity.window::setSecureScreen)
             .launchIn(activity.lifecycleScope)

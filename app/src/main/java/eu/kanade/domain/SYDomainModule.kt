@@ -1,6 +1,17 @@
 package eu.kanade.domain
 
 import android.app.Application
+import eu.kanade.domain.anime.interactor.CreateSortTag
+import eu.kanade.domain.anime.interactor.DeleteSortTag
+import eu.kanade.domain.anime.interactor.GetSortTag
+import eu.kanade.domain.anime.interactor.ReorderSortTag
+import eu.kanade.domain.source.interactor.CreateSourceCategory
+import eu.kanade.domain.source.interactor.DeleteSourceCategory
+import eu.kanade.domain.source.interactor.GetShowLatest
+import eu.kanade.domain.source.interactor.GetSourceCategories
+import eu.kanade.domain.source.interactor.RenameSourceCategory
+import eu.kanade.domain.source.interactor.SetSourceCategories
+import eu.kanade.domain.source.interactor.ToggleExcludeFromDataSaver
 import tachiyomi.data.anime.AnimeMergeRepositoryImpl
 import tachiyomi.data.anime.CustomAnimeRepositoryImpl
 import tachiyomi.data.source.FeedSavedSearchRepositoryImpl
@@ -48,9 +59,9 @@ import uy.kohesive.injekt.api.get
 class SYDomainModule : InjektModule {
 
     override fun InjektRegistrar.registerInjectables() {
-//        addFactory { GetShowLatest(get()) }
-//        addFactory { ToggleExcludeFromDataSaver(get()) }
-//        addFactory { SetSourceCategories(get()) }
+        addFactory { GetShowLatest(get()) }
+        addFactory { ToggleExcludeFromDataSaver(get()) }
+        addFactory { SetSourceCategories(get()) }
         addFactory { GetAllAnime(get()) }
         addFactory { GetAnimeBySource(get()) }
         addFactory { DeleteEpisodes(get()) }
@@ -58,14 +69,14 @@ class SYDomainModule : InjektModule {
 //        addFactory { FilterSerializer() }
         addFactory { GetHistoryByAnimeId(get()) }
         addFactory { GetEpisodeByUrl(get()) }
-//        addFactory { GetSourceCategories(get()) }
-//        addFactory { CreateSourceCategory(get()) }
-//        addFactory { RenameSourceCategory(get(), get()) }
-//        addFactory { DeleteSourceCategory(get()) }
-//        addFactory { GetSortTag(get()) }
-//        addFactory { CreateSortTag(get(), get()) }
-//        addFactory { DeleteSortTag(get(), get()) }
-//        addFactory { ReorderSortTag(get(), get()) }
+        addFactory { GetSourceCategories(get()) }
+        addFactory { CreateSourceCategory(get()) }
+        addFactory { RenameSourceCategory(get(), get()) }
+        addFactory { DeleteSourceCategory(get()) }
+        addFactory { GetSortTag(get()) }
+        addFactory { CreateSortTag(get(), get()) }
+        addFactory { DeleteSortTag(get(), get()) }
+        addFactory { ReorderSortTag(get(), get()) }
 //        addFactory { GetPagePreviews(get(), get()) }
 //        addFactory { SearchEngine() }
 //        addFactory { IsTrackUnfollowed() }

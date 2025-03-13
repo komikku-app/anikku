@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
@@ -17,16 +19,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.presentation.browse.components.BaseSourceItem
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.util.system.LocaleHelper
+import exh.source.EH_SOURCE_ID
+import exh.source.EXH_SOURCE_ID
+import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.source.model.Pin
 import tachiyomi.domain.source.model.Source
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
+import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
 import tachiyomi.presentation.core.components.material.padding
@@ -36,6 +46,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.theme.header
 import tachiyomi.presentation.core.util.plus
+import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.isLocal
 
 @Composable
@@ -169,7 +180,14 @@ fun SourceOptionsDialog(
     source: Source,
     onClickPin: () -> Unit,
     onClickDisable: () -> Unit,
+    // SY -->
+    onClickSetCategories: (() -> Unit)?,
+    onClickToggleDataSaver: (() -> Unit)?,
+    // SY <--
     onDismiss: () -> Unit,
+    // KMK -->
+    onClickSettings: (() -> Unit)? = null,
+    // KMK <--
 ) {
     AlertDialog(
         title = {
@@ -194,6 +212,44 @@ fun SourceOptionsDialog(
                             .padding(vertical = 16.dp),
                     )
                 }
+                // SY -->
+                if (onClickSetCategories != null) {
+                    Text(
+                        text = stringResource(MR.strings.categories),
+                        modifier = Modifier
+                            .clickable(onClick = onClickSetCategories)
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                    )
+                }
+                if (onClickToggleDataSaver != null) {
+                    Text(
+                        text = if (source.isExcludedFromDataSaver) {
+                            stringResource(SYMR.strings.data_saver_stop_exclude)
+                        } else {
+                            stringResource(SYMR.strings.data_saver_exclude)
+                        },
+                        modifier = Modifier
+                            .clickable(onClick = onClickToggleDataSaver)
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                    )
+                }
+                // SY <--
+                // KMK -->
+                if (onClickSettings != null &&
+                    source.installedExtension !== null &&
+                    !source.isLocal()
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.label_extension_info),
+                        modifier = Modifier
+                            .clickable(onClick = onClickSettings)
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                    )
+                }
+                // KMK <--
             }
         },
         onDismissRequest = onDismiss,
@@ -203,5 +259,47 @@ fun SourceOptionsDialog(
 
 sealed interface SourceUiModel {
     data class Item(val source: Source) : SourceUiModel
-    data class Header(val language: String) : SourceUiModel
+    data class Header(val language: String, val isCategory: Boolean) : SourceUiModel
 }
+
+// SY -->
+@Composable
+fun SourceCategoriesDialog(
+    source: Source,
+    categories: ImmutableList<String>,
+    onClickCategories: (List<String>) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    val newCategories = remember(source) {
+        mutableStateListOf<String>().also { it += source.categories }
+    }
+    AlertDialog(
+        title = {
+            Text(text = source.visualName)
+        },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                categories.forEach { category ->
+                    LabeledCheckbox(
+                        label = category,
+                        checked = category in newCategories,
+                        onCheckedChange = {
+                            if (it) {
+                                newCategories += category
+                            } else {
+                                newCategories -= category
+                            }
+                        },
+                    )
+                }
+            }
+        },
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            TextButton(onClick = { onClickCategories(newCategories.toList()) }) {
+                Text(text = stringResource(MR.strings.action_ok))
+            }
+        },
+    )
+}
+// SY <--
