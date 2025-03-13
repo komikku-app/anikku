@@ -15,6 +15,11 @@ sealed class Extension {
     abstract val isNsfw: Boolean
     abstract val isTorrent: Boolean
 
+    // KMK -->
+    abstract val signatureHash: String
+    abstract val repoName: String?
+    // KMK <--
+
     data class Installed(
         override val name: String,
         override val pkgName: String,
@@ -24,6 +29,11 @@ sealed class Extension {
         override val lang: String,
         override val isNsfw: Boolean,
         override val isTorrent: Boolean,
+        // KMK -->
+        override val signatureHash: String,
+        /** Guessing repo name from built-in signatures preset */
+        override val repoName: String? = null,
+        // KMK <--
         val pkgFactory: String?,
         val sources: List<Source>,
         val icon: Drawable?,
@@ -31,6 +41,9 @@ sealed class Extension {
         val isObsolete: Boolean = false,
         val isShared: Boolean,
         val repoUrl: String? = null,
+        // SY -->
+        val isRedundant: Boolean = false,
+        // SY <--
     ) : Extension()
 
     data class Available(
@@ -42,6 +55,10 @@ sealed class Extension {
         override val lang: String,
         override val isNsfw: Boolean,
         override val isTorrent: Boolean,
+        // KMK -->
+        override val signatureHash: String,
+        override val repoName: String,
+        // KMK <--
         val sources: List<AnimeSource>,
         val apkName: String,
         val iconUrl: String,
@@ -70,7 +87,11 @@ sealed class Extension {
         override val versionName: String,
         override val versionCode: Long,
         override val libVersion: Double,
-        val signatureHash: String,
+        /* KMK --> */
+        override /* KMK <-- */ val signatureHash: String,
+        // KMK -->
+        override val repoName: String? = null,
+        // KMK <--
         override val lang: String? = null,
         override val isNsfw: Boolean = false,
         override val isTorrent: Boolean = false,

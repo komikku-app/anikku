@@ -22,18 +22,37 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
+import mihon.domain.extensionrepo.interactor.CreateExtensionRepo.Companion.KEIYOUSHI_REPO_SIGNATURE
+import mihon.domain.extensionrepo.interactor.CreateExtensionRepo.Companion.OFFICIAL_REPO_SIGNATURE
+import mihon.domain.extensionrepo.interactor.GetExtensionRepo
+import mihon.domain.extensionrepo.model.ExtensionRepo
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
 
 /**
- * Class that handles the loading of the extensions installed in the system.
+ * Class that handles the loading of the extensions. Supports two kinds of extensions:
+ *
+ * 1. Shared extension: This extension is installed to the system with package
+ * installer, so other variants of Tachiyomi and its forks can also use this extension.
+ *
+ * 2. Private extension: This extension is put inside private data directory of the
+ * running app, so this extension can only be used by the running app and not shared
+ * with other apps.
+ *
+ * When both kinds of extensions are installed with a same package name, shared
+ * extension will be used unless the version codes are different. In that case the
+ * one with higher version code will be used.
  */
-@SuppressLint("PackageManagerGetSignatures")
 internal object ExtensionLoader {
 
     private val preferences: SourcePreferences by injectLazy()
     private val trustExtension: TrustExtension by injectLazy()
+
+    // KMK -->
+    private val getExtensionRepo: GetExtensionRepo by injectLazy()
+    // KMK <--
+
     private val loadNsfwSource by lazy {
         preferences.showNsfwSource().get()
     }
@@ -59,15 +78,9 @@ internal object ExtensionLoader {
     private fun getPrivateExtensionDir(context: Context) = File(context.filesDir, "exts")
 
     fun installPrivateExtensionFile(context: Context, file: File): Boolean {
-        val extension = context.packageManager.getPackageArchiveInfo(
-            file.absolutePath,
-            PACKAGE_FLAGS,
-        )
+        val extension = context.packageManager.getPackageArchiveInfo(file.absolutePath, PACKAGE_FLAGS)
             ?.takeIf { isPackageAnExtension(it) } ?: return false
-        val currentExtension = getExtensionPackageInfoFromPkgName(
-            context,
-            extension.packageName,
-        )
+        val currentExtension = getExtensionPackageInfoFromPkgName(context, extension.packageName)
 
         if (currentExtension != null) {
             if (PackageInfoCompat.getLongVersionCode(extension) <
@@ -89,10 +102,7 @@ internal object ExtensionLoader {
             }
         }
 
-        val target = File(
-            getPrivateExtensionDir(context),
-            "${extension.packageName}.$PRIVATE_EXTENSION_EXTENSION",
-        )
+        val target = File(getPrivateExtensionDir(context), "${extension.packageName}.$PRIVATE_EXTENSION_EXTENSION")
         return try {
             target.delete()
             file.copyAndSetReadOnlyTo(target, overwrite = true)
@@ -122,9 +132,7 @@ internal object ExtensionLoader {
         val pkgManager = context.packageManager
 
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            pkgManager.getInstalledPackages(
-                PackageManager.PackageInfoFlags.of(PACKAGE_FLAGS.toLong()),
-            )
+            pkgManager.getInstalledPackages(PackageManager.PackageInfoFlags.of(PACKAGE_FLAGS.toLong()))
         } else {
             pkgManager.getInstalledPackages(PACKAGE_FLAGS)
         }
@@ -167,8 +175,19 @@ internal object ExtensionLoader {
 
         // Load each extension concurrently and wait for completion
         return runBlocking {
+            // KMK -->
+            val extRepos = getExtensionRepo.getAll()
+            // KMK <--
             val deferred = extPkgs.map {
-                async { loadExtension(context, it) }
+                async {
+                    loadExtension(
+                        context,
+                        it,
+                        // KMK -->
+                        extRepos,
+                        // KMK <--
+                    )
+                }
             }
             deferred.awaitAll()
         }
@@ -192,15 +211,9 @@ internal object ExtensionLoader {
     }
 
     private fun getExtensionInfoFromPkgName(context: Context, pkgName: String): ExtensionInfo? {
-        val privateExtensionFile = File(
-            getPrivateExtensionDir(context),
-            "$pkgName.$PRIVATE_EXTENSION_EXTENSION",
-        )
+        val privateExtensionFile = File(getPrivateExtensionDir(context), "$pkgName.$PRIVATE_EXTENSION_EXTENSION")
         val privatePkg = if (privateExtensionFile.isFile) {
-            context.packageManager.getPackageArchiveInfo(
-                privateExtensionFile.absolutePath,
-                PACKAGE_FLAGS,
-            )
+            context.packageManager.getPackageArchiveInfo(privateExtensionFile.absolutePath, PACKAGE_FLAGS)
                 ?.takeIf { isPackageAnExtension(it) }
                 ?.let {
                     it.applicationInfo!!.fixBasePaths(privateExtensionFile.absolutePath)
@@ -235,9 +248,17 @@ internal object ExtensionLoader {
      * @param context The application context.
      * @param extensionInfo The extension to load.
      */
-    private suspend fun loadExtension(context: Context, extensionInfo: ExtensionInfo): LoadResult {
+    private suspend fun loadExtension(
+        context: Context,
+        extensionInfo: ExtensionInfo,
+        // KMK -->
+        extRepos: List<ExtensionRepo>? = null,
+        // KMK <--
+    ): LoadResult {
+        // KMK -->
+        val repos = extRepos ?: getExtensionRepo.getAll()
+        // KMK <--
         val pkgManager = context.packageManager
-
         val pkgInfo = extensionInfo.packageInfo
         val appInfo = pkgInfo.applicationInfo!!
         val pkgName = pkgInfo.packageName
@@ -273,8 +294,17 @@ internal object ExtensionLoader {
                 versionCode,
                 libVersion,
                 signatures.last(),
+                // KMK -->
+                repoName = when {
+                    isOfficiallySigned(signatures) -> "Anikku"
+                    isKeiyoushiSigned(signatures) -> "Keiyoushi"
+                    else -> repos.firstOrNull { repo ->
+                        signatures.all { it == repo.signingKeyFingerprint }
+                    }?.name
+                },
+                // KMK <--
             )
-            logcat(LogPriority.WARN, message = { "Extension $pkgName isn't trusted" })
+            logcat(LogPriority.WARN) { "Extension $pkgName isn't trusted" }
             return LoadResult.Untrusted(extension)
         }
 
@@ -358,6 +388,16 @@ internal object ExtensionLoader {
             pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),
             icon = appInfo.loadIcon(pkgManager),
             isShared = extensionInfo.isShared,
+            // KMK -->
+            signatureHash = signatures.last(),
+            repoName = when {
+                isOfficiallySigned(signatures) -> "Anikku"
+                isKeiyoushiSigned(signatures) -> "Keiyoushi"
+                else -> repos.firstOrNull { repo ->
+                    signatures.all { it == repo.signingKeyFingerprint }
+                }?.name
+            },
+            // KMK <--
         )
         return LoadResult.Success(extension)
     }
@@ -413,6 +453,14 @@ internal object ExtensionLoader {
         }
             ?.map { Hash.sha256(it.toByteArray()) }
             ?.toList()
+    }
+
+    private fun isOfficiallySigned(signatures: List<String>): Boolean {
+        return signatures.all { it == OFFICIAL_REPO_SIGNATURE }
+    }
+
+    private fun isKeiyoushiSigned(signatures: List<String>): Boolean {
+        return signatures.all { it == KEIYOUSHI_REPO_SIGNATURE }
     }
 
     /**

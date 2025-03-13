@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.api
 
 import android.content.Context
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.extension.model.LoadResult
@@ -32,15 +33,27 @@ internal class ExtensionApi {
     private val getExtensionRepo: GetExtensionRepo by injectLazy()
     private val updateExtensionRepo: UpdateExtensionRepo by injectLazy()
     private val extensionManager: ExtensionManager by injectLazy()
+
+    // SY -->
+    private val sourcePreferences: SourcePreferences by injectLazy()
+
+    // SY <--
+
     private val json: Json by injectLazy()
 
     private val lastExtCheck: Preference<Long> by lazy {
-        preferenceStore.getLong("last_ext_check", 0)
+        preferenceStore.getLong(Preference.appStateKey("last_ext_check"), 0)
     }
 
     suspend fun findExtensions(): List<Extension.Available> {
+        // KMK -->
+        val disabledRepos = sourcePreferences.disabledRepos().get()
+        // KMK <--
         return withIOContext {
             getExtensionRepo.getAll()
+                // KMK -->
+                .filterNot { it.baseUrl in disabledRepos }
+                // KMK <--
                 .map { async { getExtensions(it) } }
                 .awaitAll()
                 .flatten()
@@ -57,7 +70,13 @@ internal class ExtensionApi {
             with(json) {
                 response
                     .parseAs<List<ExtensionJsonObject>>()
-                    .toExtensions(repoBaseUrl)
+                    .toExtensions(
+                        repoBaseUrl,
+                        // KMK -->
+                        signature = extRepo.signingKeyFingerprint,
+                        repoName = extRepo.shortName ?: extRepo.name,
+                        // KMK <--
+                    )
             }
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e) { "Failed to get extensions from $repoBaseUrl" }
@@ -93,7 +112,6 @@ internal class ExtensionApi {
         for (installedExt in installedExtensions) {
             val pkgName = installedExt.pkgName
             val availableExt = extensions.find { it.pkgName == pkgName } ?: continue
-
             val hasUpdatedVer = availableExt.versionCode > installedExt.versionCode
             val hasUpdatedLib = availableExt.libVersion > installedExt.libVersion
             val hasUpdate = hasUpdatedVer || hasUpdatedLib
@@ -109,7 +127,13 @@ internal class ExtensionApi {
         return extensionsWithUpdate
     }
 
-    private fun List<ExtensionJsonObject>.toExtensions(repoUrl: String): List<Extension.Available> {
+    private fun List<ExtensionJsonObject>.toExtensions(
+        repoUrl: String,
+        // KMK -->
+        signature: String,
+        repoName: String,
+        // KMK <--
+    ): List<Extension.Available> {
         return this
             .filter {
                 val libVersion = it.extractLibVersion()
@@ -129,6 +153,10 @@ internal class ExtensionApi {
                     apkName = it.apk,
                     iconUrl = "$repoUrl/icon/${it.pkg}.png",
                     repoUrl = repoUrl,
+                    // KMK -->
+                    signatureHash = signature,
+                    repoName = repoName,
+                    // KMK <--
                 )
             }
     }

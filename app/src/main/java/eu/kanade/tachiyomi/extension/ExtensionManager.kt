@@ -183,7 +183,7 @@ class ExtensionManager(
         availableExtensions: List<Extension.Available>,
     ) {
         if (availableExtensions.isEmpty()) {
-            preferences.animeExtensionUpdatesCount().set(0)
+            preferences.extensionUpdatesCount().set(0)
             return
         }
 
@@ -365,7 +365,7 @@ class ExtensionManager(
 
     private fun updatePendingUpdatesCount() {
         val pendingUpdateCount = installedExtensionsMapFlow.value.values.count { it.hasUpdate }
-        preferences.animeExtensionUpdatesCount().set(pendingUpdateCount)
+        preferences.extensionUpdatesCount().set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             ExtensionUpdateNotifier(context).dismiss()
         }

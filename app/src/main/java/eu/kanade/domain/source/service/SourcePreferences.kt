@@ -1,6 +1,7 @@
 package eu.kanade.domain.source.service
 
 import eu.kanade.domain.source.interactor.SetMigrateSorting
+import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
@@ -58,17 +59,18 @@ class SourcePreferences(
         -1,
     )
 
-    fun animeExtensionUpdatesCount() = preferenceStore.getInt("animeext_updates_count", 0)
+    fun extensionUpdatesCount() = preferenceStore.getInt("animeext_updates_count", 0)
 
     fun hideInLibraryItems() = preferenceStore.getBoolean(
         "browse_hide_in_anime_library_items",
         false,
     )
 
+    // KMK -->
+    fun disabledRepos() = preferenceStore.getStringSet("disabled_repos", emptySet())
+    // KMK <--
+
     // SY -->
-
-    // fun enableSourceBlacklist() = preferenceStore.getBoolean("eh_enable_source_blacklist", true)
-
      fun sourcesTabCategories() = preferenceStore.getStringSet("sources_tab_categories", mutableSetOf())
 
      fun sourcesTabCategoriesFilter() = preferenceStore.getBoolean("sources_tab_categories_filter", false)

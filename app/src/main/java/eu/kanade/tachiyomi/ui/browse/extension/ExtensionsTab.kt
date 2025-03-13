@@ -1,6 +1,10 @@
 package eu.kanade.tachiyomi.ui.browse.extension
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined._18UpRating
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,6 +26,7 @@ import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -35,17 +40,25 @@ fun extensionsTab(
     var privateExtensionToUninstall by remember { mutableStateOf<Extension?>(null) }
 
     return TabContent(
-        titleRes = MR.strings.label_anime_extensions,
+        titleRes = MR.strings.label_extensions,
         badgeNumber = state.updates.takeIf { it > 0 },
         searchEnabled = true,
         actions = persistentListOf(
+            // KMK -->
+            AppBar.Action(
+                title = stringResource(KMR.strings.action_toggle_nsfw_only),
+                icon = Icons.Outlined._18UpRating,
+                iconTint = if (state.nsfwOnly) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                onClick = { extensionsScreenModel.toggleNsfwOnly() },
+            ),
+            AppBar.OverflowAction(
+                title = stringResource(MR.strings.action_webview_refresh),
+                onClick = extensionsScreenModel::findAvailableExtensions,
+            ),
+            // KMK <--
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.action_filter),
-                onClick = {
-                    navigator.push(
-                        ExtensionFilterScreen(),
-                    )
-                },
+                onClick = { navigator.push(ExtensionFilterScreen()) },
             ),
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.label_extension_repos),
@@ -59,9 +72,7 @@ fun extensionsTab(
                 searchQuery = state.searchQuery,
                 onLongClickItem = { extension ->
                     when (extension) {
-                        is Extension.Available -> extensionsScreenModel.installExtension(
-                            extension,
-                        )
+                        is Extension.Available -> extensionsScreenModel.installExtension(extension)
                         else -> {
                             if (context.isPackageInstalled(extension.pkgName)) {
                                 extensionsScreenModel.uninstallExtension(extension)
@@ -93,7 +104,7 @@ fun extensionsTab(
             )
 
             privateExtensionToUninstall?.let { extension ->
-                AnimeExtensionUninstallConfirmation(
+                ExtensionUninstallConfirmation(
                     extensionName = extension.name,
                     onClickConfirm = {
                         extensionsScreenModel.uninstallExtension(extension)
@@ -108,7 +119,7 @@ fun extensionsTab(
 }
 
 @Composable
-private fun AnimeExtensionUninstallConfirmation(
+private fun ExtensionUninstallConfirmation(
     extensionName: String,
     onClickConfirm: () -> Unit,
     onDismissRequest: () -> Unit,

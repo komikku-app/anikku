@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
@@ -47,7 +48,15 @@ class ExtensionsScreenModel(
         val context = Injekt.get<Application>()
         val extensionMapper: (Map<String, InstallStep>) -> ((Extension) -> ExtensionUiModel.Item) = { map ->
             {
-                ExtensionUiModel.Item(it, map[it.pkgName] ?: InstallStep.Idle)
+                ExtensionUiModel.Item(
+                    it,
+                    map[
+                        it.pkgName +
+                            // KMK -->
+                            ":${it.signatureHash}",
+                        // KMK <--
+                    ] ?: InstallStep.Idle,
+                )
             }
         }
         val queryFilter: (String) -> ((Extension) -> Boolean) = { query ->
@@ -70,20 +79,14 @@ class ExtensionsScreenModel(
                                 it.name.contains(input, ignoreCase = true) ||
                                     it.id == input.toLongOrNull() ||
                                     if (it is HttpSource) {
-                                        it.baseUrl.contains(
-                                            input,
-                                            ignoreCase = true,
-                                        )
+                                        it.baseUrl.contains(input, ignoreCase = true)
                                     } else {
                                         false
                                     }
                             } ||
                                 extension.name.contains(input, ignoreCase = true)
                         }
-                        is Extension.Untrusted -> extension.name.contains(
-                            input,
-                            ignoreCase = true,
-                        )
+                        is Extension.Untrusted -> extension.name.contains(input, ignoreCase = true)
                     }
                 }
             }
@@ -92,43 +95,55 @@ class ExtensionsScreenModel(
         screenModelScope.launchIO {
             combine(
                 state.map { it.searchQuery }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS),
+                // KMK -->
+                state.map { it.nsfwOnly }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS),
+                // KMK <--
                 currentDownloads,
                 getExtensions.subscribe(),
-            ) { query, downloads, (_updates, _installed, _available, _untrusted) ->
+            ) { query, nsfwOnly, downloads, (_updates, _installed, _available, _untrusted) ->
                 val searchQuery = query ?: ""
 
                 val itemsGroups: ItemGroups = mutableMapOf()
 
-                val updates = _updates.filter(queryFilter(searchQuery)).map(
-                    extensionMapper(downloads),
-                )
+                val updates = _updates.filter(queryFilter(searchQuery)).map(extensionMapper(downloads))
+                    // KMK -->
+                    .filter { !nsfwOnly || it.extension.isNsfw }
+                // KMK <--
                 if (updates.isNotEmpty()) {
                     itemsGroups[ExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending)] = updates
                 }
 
-                val installed = _installed.filter(queryFilter(searchQuery)).map(
-                    extensionMapper(downloads),
-                )
-                val untrusted = _untrusted.filter(queryFilter(searchQuery)).map(
-                    extensionMapper(downloads),
-                )
+                val installed = _installed.filter(queryFilter(searchQuery)).map(extensionMapper(downloads))
+                    // KMK -->
+                    .filter { !nsfwOnly || it.extension.isNsfw }
+                // KMK <--
+                val untrusted = _untrusted.filter(queryFilter(searchQuery)).map(extensionMapper(downloads))
+                    // KMK -->
+                    .filter { !nsfwOnly || it.extension.isNsfw }
+                // KMK <--
                 if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
                     itemsGroups[ExtensionUiModel.Header.Resource(MR.strings.ext_installed)] = installed + untrusted
                 }
 
                 val languagesWithExtensions = _available
                     .filter(queryFilter(searchQuery))
+                    // KMK -->
+                    .filter { !nsfwOnly || it.isNsfw }
+                    // KMK <--
                     .groupBy { it.lang }
                     .toSortedMap(LocaleHelper.comparator)
                     .map { (lang, exts) ->
-                        ExtensionUiModel.Header.Text(
-                            LocaleHelper.getSourceDisplayName(lang, context),
-                        ) to exts.map(extensionMapper(downloads))
+                        ExtensionUiModel.Header.Text(LocaleHelper.getSourceDisplayName(lang, context)) to
+                            exts.map(extensionMapper(downloads))
                     }
-
                 if (languagesWithExtensions.isNotEmpty()) {
                     itemsGroups.putAll(languagesWithExtensions)
                 }
+                // KMK -->
+                if (_available.isEmpty()) {
+                    itemsGroups[ExtensionUiModel.Header.Resource(KMR.strings.extensions_page_more)] = emptyList()
+                }
+                // KMK <--
 
                 itemsGroups
             }
@@ -141,9 +156,10 @@ class ExtensionsScreenModel(
                     }
                 }
         }
+
         screenModelScope.launchIO { findAvailableExtensions() }
 
-        preferences.animeExtensionUpdatesCount().changes()
+        preferences.extensionUpdatesCount().changes()
             .onEach { mutableState.update { state -> state.copy(updates = it) } }
             .launchIn(screenModelScope)
 
@@ -185,11 +201,26 @@ class ExtensionsScreenModel(
     }
 
     private fun addDownloadState(extension: Extension, installStep: InstallStep) {
-        currentDownloads.update { it + Pair(extension.pkgName, installStep) }
+        currentDownloads.update {
+            it + Pair(
+                extension.pkgName +
+                    // KMK -->
+                    ":${extension.signatureHash}",
+                // KMK <--
+                installStep,
+            )
+        }
     }
 
     private fun removeDownloadState(extension: Extension) {
-        currentDownloads.update { it - extension.pkgName }
+        currentDownloads.update {
+            it - (
+                extension.pkgName +
+                    // KMK -->
+                    ":${extension.signatureHash}"
+                // KMK <--
+                )
+        }
     }
 
     private suspend fun Flow<InstallStep>.collectToInstallUpdate(extension: Extension) =
@@ -205,6 +236,7 @@ class ExtensionsScreenModel(
     fun findAvailableExtensions() {
         screenModelScope.launchIO {
             mutableState.update { it.copy(isRefreshing = true) }
+
             extensionManager.findAvailableExtensions()
 
             // Fake slower refresh so it doesn't seem like it's not doing anything
@@ -220,6 +252,14 @@ class ExtensionsScreenModel(
         }
     }
 
+    // KMK -->
+    fun toggleNsfwOnly() {
+        mutableState.update {
+            it.copy(nsfwOnly = !it.nsfwOnly)
+        }
+    }
+    // KMK <--
+
     @Immutable
     data class State(
         val isLoading: Boolean = true,
@@ -228,6 +268,9 @@ class ExtensionsScreenModel(
         val updates: Int = 0,
         val installer: BasePreferences.ExtensionInstaller? = null,
         val searchQuery: String? = null,
+        // KMK -->
+        val nsfwOnly: Boolean = false,
+        // KMK <--
     ) {
         val isEmpty = items.isEmpty()
     }
@@ -240,6 +283,7 @@ object ExtensionUiModel {
         data class Resource(val textRes: StringResource) : Header
         data class Text(val text: String) : Header
     }
+
     data class Item(
         val extension: Extension,
         val installStep: InstallStep,

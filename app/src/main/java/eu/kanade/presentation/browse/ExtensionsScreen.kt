@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -58,11 +59,14 @@ import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.components.material.topSmallPaddingValues
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.icons.FlagEmoji
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.EmptyScreenAction
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -149,6 +153,9 @@ private fun ExtensionContent(
     val context = LocalContext.current
     var trustState by remember { mutableStateOf<Extension.Untrusted?>(null) }
     val installGranted = rememberRequestPackageInstallsPermissionState(initialValue = true)
+    // KMK -->
+    val navigator = LocalNavigator.current
+    // KMK <--
 
     FastScrollLazyColumn(
         contentPadding = contentPadding + topSmallPaddingValues,
@@ -172,23 +179,44 @@ private fun ExtensionContent(
                 when (header) {
                     is ExtensionUiModel.Header.Resource -> {
                         val action: @Composable RowScope.() -> Unit =
-                            if (header.textRes == MR.strings.ext_updates_pending) {
-                                {
-                                    Button(onClick = { onClickUpdateAll() }) {
-                                        Text(
-                                            text = stringResource(MR.strings.ext_update_all),
-                                            style = LocalTextStyle.current.copy(
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                            ),
-                                        )
+                            when (header.textRes) {
+                                MR.strings.ext_updates_pending -> {
+                                    {
+                                        Button(onClick = { onClickUpdateAll() }) {
+                                            Text(
+                                                text = stringResource(MR.strings.ext_update_all),
+                                                style = LocalTextStyle.current.copy(
+                                                    color = MaterialTheme.colorScheme.onPrimary,
+                                                ),
+                                            )
+                                        }
                                     }
                                 }
-                            } else {
-                                {}
+                                // KMK -->
+                                KMR.strings.extensions_page_more -> {
+                                    {
+                                        Button(onClick = { navigator?.push(ExtensionReposScreen()) }) {
+                                            Text(
+                                                text = stringResource(MR.strings.action_add_repo),
+                                                style = LocalTextStyle.current.copy(
+                                                    color = MaterialTheme.colorScheme.onPrimary,
+                                                ),
+                                            )
+                                        }
+                                    }
+                                }
+                                // KMK <--
+                                else -> {
+                                    {}
+                                }
                             }
                         ExtensionHeader(
                             textRes = header.textRes,
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier
+                                // KMK -->
+                                .padding(end = MaterialTheme.padding.small)
+                                // KMK <--
+                                .animateItemFastScroll(),
                             action = action,
                         )
                     }
@@ -351,13 +379,15 @@ private fun ExtensionItemContent(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
         ) {
             ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
-                if (extension is Extension.Installed && extension.lang.isNotEmpty()) {
-                    Text(
-                        text = LocaleHelper.getSourceDisplayName(
-                            extension.lang,
-                            LocalContext.current,
-                        ),
-                    )
+                // KMK -->
+                extension.lang?.let {
+                    if (it.isNotEmpty()) {
+                        // KMK <--
+                        Text(
+                            text = /* KMK --> */FlagEmoji.getEmojiLangFlag(it) + " " + /* KMK <-- */
+                                LocaleHelper.getSourceDisplayName(it, LocalContext.current),
+                        )
+                    }
                 }
 
                 if (extension.versionName.isNotEmpty()) {
@@ -365,6 +395,10 @@ private fun ExtensionItemContent(
                         text = extension.versionName,
                     )
                 }
+
+                // KMK -->
+                Text(text = extension.repoName?.let { "@$it" } ?: "(?)")
+                // KMK <--
 
                 val warning = when {
                     extension is Extension.Untrusted -> MR.strings.ext_untrusted
@@ -541,3 +575,80 @@ private fun ExtensionTrustDialog(
         onDismissRequest = onDismissRequest,
     )
 }
+
+// KMK -->
+@Preview
+@Composable
+private fun ExtensionItemContentPreview() {
+    val extAvail = Extension.Available(
+        name = "Tachiyomi",
+        pkgName = "com.tachiyomi.test",
+        versionName = "1.2.3",
+        lang = "en",
+        versionCode = 1,
+        libVersion = 1.0,
+        isNsfw = true,
+        isTorrent = true,
+        signatureHash = "900000",
+        repoName = "Repository",
+        sources = emptyList(),
+        apkName = "Test",
+        iconUrl = "",
+        repoUrl = "",
+    )
+    val extInstalled = Extension.Installed(
+        name = "Tachiyomi",
+        pkgName = "com.tachiyomi.test",
+        versionName = "1.2.3",
+        lang = "en",
+        versionCode = 1,
+        libVersion = 1.0,
+        isNsfw = true,
+        isTorrent = false,
+        signatureHash = "900000",
+        repoName = "Repository",
+        sources = emptyList(),
+        repoUrl = "",
+        pkgFactory = null,
+        icon = null,
+        hasUpdate = false,
+        isObsolete = false,
+        isShared = false,
+        isRedundant = false,
+    )
+    val extUntrusted = Extension.Untrusted(
+        name = "Tachiyomi",
+        pkgName = "com.tachiyomi.test",
+        versionName = "1.2.3",
+        lang = "en",
+        versionCode = 1,
+        libVersion = 1.0,
+        isNsfw = true,
+        signatureHash = "900000",
+        repoName = "Repository",
+    )
+    Column {
+        ExtensionItemContent(
+            extension = extAvail.copy(
+                repoName = "Repository extensions minion multiple languages various sources",
+            ),
+            installStep = InstallStep.Idle,
+        )
+        ExtensionItemContent(extension = extAvail, installStep = InstallStep.Installing)
+        ExtensionItemContent(extension = extInstalled, installStep = InstallStep.Idle)
+        ExtensionItemContent(
+            extension = extInstalled.copy(
+                isObsolete = true,
+            ),
+            installStep = InstallStep.Idle,
+        )
+        ExtensionItemContent(
+            extension = extInstalled.copy(
+                isRedundant = true,
+            ),
+            installStep = InstallStep.Idle,
+        )
+        ExtensionItemContent(extension = extUntrusted, installStep = InstallStep.Idle)
+    }
+}
+// KMK <--
