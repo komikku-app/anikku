@@ -1,8 +1,10 @@
 package eu.kanade.tachiyomi.ui.browse.source
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.interactor.GetEnabledSources
 import eu.kanade.domain.source.interactor.GetShowLatest
@@ -55,11 +57,14 @@ class SourcesScreenModel(
     private val toggleExcludeFromDataSaver: ToggleExcludeFromDataSaver = Injekt.get(),
     private val setSourceCategories: SetSourceCategories = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
+    val smartSearchConfig: SourcesScreen.SmartSearchConfig?,
     // SY <--
 ) : StateScreenModel<SourcesScreenModel.State>(State()) {
 
     private val _events = Channel<Event>(Int.MAX_VALUE)
     val events = _events.receiveAsFlow()
+
+    val useNewSourceNavigation by uiPreferences.useNewSourceNavigation().asState(screenModelScope)
 
     init {
         // SY -->
@@ -70,8 +75,8 @@ class SourcesScreenModel(
             // KMK <--
             getEnabledSources.subscribe(),
             getSourceCategories.subscribe(),
-            getShowLatest.subscribe(false),
-            flowOf(false),
+            getShowLatest.subscribe(smartSearchConfig != null),
+            flowOf(smartSearchConfig == null),
             ::collectLatestSources,
         )
             .catch {

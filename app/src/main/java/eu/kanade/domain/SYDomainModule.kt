@@ -7,6 +7,7 @@ import eu.kanade.domain.anime.interactor.GetSortTag
 import eu.kanade.domain.anime.interactor.ReorderSortTag
 import eu.kanade.domain.source.interactor.CreateSourceCategory
 import eu.kanade.domain.source.interactor.DeleteSourceCategory
+import eu.kanade.domain.source.interactor.GetExhSavedSearch
 import eu.kanade.domain.source.interactor.GetShowLatest
 import eu.kanade.domain.source.interactor.GetSourceCategories
 import eu.kanade.domain.source.interactor.RenameSourceCategory
@@ -55,6 +56,7 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.api.addFactory
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
+import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 
 class SYDomainModule : InjektModule {
 
@@ -66,7 +68,7 @@ class SYDomainModule : InjektModule {
         addFactory { GetAnimeBySource(get()) }
         addFactory { DeleteEpisodes(get()) }
         addFactory { DeleteAnimeById(get()) }
-//        addFactory { FilterSerializer() }
+        addFactory { FilterSerializer() }
         addFactory { GetHistoryByAnimeId(get()) }
         addFactory { GetEpisodeByUrl(get()) }
         addFactory { GetSourceCategories(get()) }
@@ -106,7 +108,7 @@ class SYDomainModule : InjektModule {
         addFactory { GetSavedSearchBySourceId(get()) }
         addFactory { DeleteSavedSearchById(get()) }
         addFactory { InsertSavedSearch(get()) }
-//        addFactory { GetExhSavedSearch(get(), get(), get()) }
+        addFactory { GetExhSavedSearch(get(), get(), get()) }
 
         addSingletonFactory<FeedSavedSearchRepository> { FeedSavedSearchRepositoryImpl(get()) }
         addFactory { InsertFeedSavedSearch(get()) }

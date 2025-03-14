@@ -26,11 +26,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.presentation.browse.components.BaseSourceItem
+import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.util.system.LocaleHelper
-import exh.source.EH_SOURCE_ID
-import exh.source.EXH_SOURCE_ID
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.source.model.Pin
 import tachiyomi.domain.source.model.Source
@@ -46,7 +45,6 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.theme.header
 import tachiyomi.presentation.core.util.plus
-import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.isLocal
 
 @Composable
@@ -77,7 +75,7 @@ fun SourcesScreen(
                     },
                     key = {
                         when (it) {
-                            is SourceUiModel.Header -> it.hashCode()
+                            is SourceUiModel.Header -> "header-${it.hashCode()}"
                             is SourceUiModel.Item -> "source-${it.source.key()}"
                         }
                     },
@@ -85,13 +83,20 @@ fun SourcesScreen(
                     when (model) {
                         is SourceUiModel.Header -> {
                             SourceHeader(
-                                modifier = Modifier.animateItem(),
+                                modifier = Modifier.animateItemFastScroll(),
                                 language = model.language,
+                                // SY -->
+                                isCategory = model.isCategory,
+                                // SY <--
                             )
                         }
                         is SourceUiModel.Item -> SourceItem(
-                            modifier = Modifier.animateItem(),
+                            modifier = Modifier.animateItemFastScroll(),
                             source = model.source,
+                            // SY -->
+                            showLatest = state.showLatest,
+                            showPin = state.showPin,
+                            // SY <--
                             onClickItem = onClickItem,
                             onLongClickItem = onLongClickItem,
                             onClickPin = onClickPin,
@@ -106,16 +111,22 @@ fun SourcesScreen(
 @Composable
 private fun SourceHeader(
     language: String,
+    // SY -->
+    isCategory: Boolean,
+    // SY <--
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     Text(
-        text = LocaleHelper.getSourceDisplayName(language, context),
+        // SY -->
+        text = if (!isCategory) {
+            LocaleHelper.getSourceDisplayName(language, context)
+        } else {
+            language
+        },
+        // SY <--
         modifier = modifier
-            .padding(
-                horizontal = MaterialTheme.padding.medium,
-                vertical = MaterialTheme.padding.small,
-            ),
+            .padding(horizontal = MaterialTheme.padding.medium, vertical = MaterialTheme.padding.small),
         style = MaterialTheme.typography.header,
     )
 }
@@ -123,6 +134,10 @@ private fun SourceHeader(
 @Composable
 private fun SourceItem(
     source: Source,
+    // SY -->
+    showLatest: Boolean,
+    showPin: Boolean,
+    // SY <--
     onClickItem: (Source, Listing) -> Unit,
     onLongClickItem: (Source) -> Unit,
     onClickPin: (Source) -> Unit,
@@ -134,7 +149,7 @@ private fun SourceItem(
         onClickItem = { onClickItem(source, Listing.Popular) },
         onLongClickItem = { onLongClickItem(source) },
         action = {
-            if (source.supportsLatest) {
+            if (source.supportsLatest /* SY --> */ && showLatest /* SY <-- */) {
                 TextButton(onClick = { onClickItem(source, Listing.Latest) }) {
                     Text(
                         text = stringResource(MR.strings.latest),
@@ -144,10 +159,14 @@ private fun SourceItem(
                     )
                 }
             }
-            SourcePinButton(
-                isPinned = Pin.Pinned in source.pin,
-                onClick = { onClickPin(source) },
-            )
+            // SY -->
+            if (showPin) {
+                SourcePinButton(
+                    isPinned = Pin.Pinned in source.pin,
+                    onClick = { onClickPin(source) },
+                )
+            }
+            // SY <--
         },
     )
 }

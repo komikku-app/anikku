@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -41,6 +42,8 @@ import eu.kanade.presentation.browse.BrowseSourceContent
 import eu.kanade.presentation.browse.MissingSourceScreen
 import eu.kanade.presentation.browse.components.BrowseSourceToolbar
 import eu.kanade.presentation.browse.components.RemoveAnimeDialog
+import eu.kanade.presentation.browse.components.SavedSearchCreateDialog
+import eu.kanade.presentation.browse.components.SavedSearchDeleteDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
@@ -53,6 +56,7 @@ import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialogScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -60,6 +64,7 @@ import tachiyomi.core.common.Constants
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -69,6 +74,10 @@ import tachiyomi.source.local.LocalSource
 data class BrowseSourceScreen(
     private val sourceId: Long,
     private val listingQuery: String?,
+    // SY -->
+    private val filtersJson: String? = null,
+    private val savedSearch: Long? = null,
+    // SY <--
 ) : Screen(), AssistContentScreen {
 
     private var assistUrl: String? = null
@@ -82,25 +91,40 @@ data class BrowseSourceScreen(
             return
         }
 
-        val screenModel = rememberScreenModel { BrowseSourceScreenModel(sourceId, listingQuery) }
+        val screenModel = rememberScreenModel {
+            BrowseSourceScreenModel(
+                sourceId = sourceId,
+                listingQuery = listingQuery,
+                // SY -->
+                filtersJson = filtersJson,
+                savedSearch = savedSearch,
+                // SY <--
+            )
+        }
         val state by screenModel.state.collectAsState()
 
         val navigator = LocalNavigator.currentOrThrow
         val navigateUp: () -> Unit = {
             when {
-                !state.isUserQuery && state.toolbarQuery != null -> screenModel.setToolbarQuery(
-                    null,
-                )
+                !state.isUserQuery && state.toolbarQuery != null -> screenModel.setToolbarQuery(null)
                 else -> navigator.pop()
             }
         }
 
-        if (screenModel.source is StubSource) {
-            MissingSourceScreen(
-                source = screenModel.source,
-                navigateUp = navigateUp,
-            )
-            return
+        // SY -->
+        val context = LocalContext.current
+        // SY <--
+
+        // KMK -->
+        screenModel.source.let {
+            // KMK <--
+            if (it is StubSource) {
+                MissingSourceScreen(
+                    source = it,
+                    navigateUp = navigateUp,
+                )
+                return
+            }
         }
 
         val scope = rememberCoroutineScope()
@@ -184,9 +208,12 @@ data class BrowseSourceScreen(
                                 },
                             )
                         }
-                        if (state.filters.isNotEmpty()) {
+                        if (/* SY --> */ state.filterable /* SY <-- */) {
                             FilterChip(
-                                selected = state.listing is Listing.Search,
+                                selected = state.listing is Listing.Search &&
+                                    // KMK -->
+                                    (state.listing as Listing.Search).savedSearchId == null,
+                                // KMK <--
                                 onClick = screenModel::openFilterSheet,
                                 leadingIcon = {
                                     Icon(
@@ -197,10 +224,36 @@ data class BrowseSourceScreen(
                                     )
                                 },
                                 label = {
-                                    Text(text = stringResource(MR.strings.action_filter))
+                                    // SY -->
+                                    Text(
+                                        text = if (state.filters.isNotEmpty()) {
+                                            stringResource(MR.strings.action_filter)
+                                        } else {
+                                            stringResource(MR.strings.action_search)
+                                        },
+                                    )
+                                    // SY <--
                                 },
                             )
                         }
+                        // KMK -->
+                        state.savedSearches.forEach { savedSearch ->
+                            FilterChip(
+                                selected = state.listing is Listing.Search &&
+                                    (state.listing as Listing.Search).savedSearchId == savedSearch.id,
+                                onClick = {
+                                    screenModel.onSavedSearch(savedSearch) {
+                                        context.toast(it)
+                                    }
+                                },
+                                label = {
+                                    Text(
+                                        text = savedSearch.name,
+                                    )
+                                },
+                            )
+                        }
+                        // KMK <--
                     }
 
                     HorizontalDivider()
@@ -251,6 +304,20 @@ data class BrowseSourceScreen(
                     onReset = screenModel::resetFilters,
                     onFilter = { screenModel.search(filters = state.filters) },
                     onUpdate = screenModel::setFilters,
+                    // SY -->
+                    startExpanded = screenModel.startExpanded,
+                    onSave = screenModel::onSaveSearch,
+                    savedSearches = state.savedSearches,
+                    onSavedSearch = { search ->
+                        screenModel.onSavedSearch(search) {
+                            context.toast(it)
+                        }
+                    },
+                    onSavedSearchPress = screenModel::onSavedSearchPress,
+                    // KMK -->
+                    onSavedSearchPressDesc = stringResource(KMR.strings.saved_searches_delete),
+                    // KMK <--
+                    // SY <--
                 )
             }
             is BrowseSourceScreenModel.Dialog.AddDuplicateAnime -> {
@@ -284,7 +351,7 @@ data class BrowseSourceScreen(
                     onConfirm = {
                         screenModel.changeAnimeFavorite(dialog.anime)
                     },
-                    animeToRemove = dialog.anime.title,
+                    animeToRemove = dialog.anime,
                 )
             }
             is BrowseSourceScreenModel.Dialog.ChangeAnimeCategory -> {
@@ -298,6 +365,18 @@ data class BrowseSourceScreen(
                     },
                 )
             }
+            is BrowseSourceScreenModel.Dialog.CreateSavedSearch -> SavedSearchCreateDialog(
+                onDismissRequest = onDismissRequest,
+                currentSavedSearches = dialog.currentSavedSearches,
+                saveSearch = screenModel::saveSearch,
+            )
+            is BrowseSourceScreenModel.Dialog.DeleteSavedSearch -> SavedSearchDeleteDialog(
+                onDismissRequest = onDismissRequest,
+                name = dialog.name,
+                deleteSavedSearch = {
+                    screenModel.deleteSearch(dialog.idToDelete)
+                },
+            )
             else -> {}
         }
 
