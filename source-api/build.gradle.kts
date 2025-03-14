@@ -14,6 +14,10 @@ kotlin {
                 api(libs.rxjava)
                 api(libs.jsoup)
 
+                // SY -->
+                api(kotlinx.reflect)
+                // SY <--
+
                 implementation(project.dependencies.platform(compose.bom))
                 implementation(compose.runtime)
             }

@@ -38,6 +38,10 @@ class SourcePreferences(
         SetMigrateSorting.Direction.ASCENDING,
     )
 
+    // KMK -->
+    fun hideInLibraryFeedItems() = preferenceStore.getBoolean("feed_hide_in_library_items", false)
+    // KMK <--
+
     fun trustedExtensions() = preferenceStore.getStringSet(
         Preference.appStateKey("trusted_extensions"),
         emptySet(),

@@ -16,6 +16,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -24,6 +26,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.icerock.moko.resources.StringResource
+import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -33,39 +36,34 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun TabbedScreen(
-    titleRes: StringResource?,
+    titleRes: StringResource,
     tabs: ImmutableList<TabContent>,
-    modifier: Modifier = Modifier,
     state: PagerState = rememberPagerState { tabs.size },
-    scrollable: Boolean = false,
     searchQuery: String? = null,
     onChangeSearchQuery: (String?) -> Unit = {},
+    // KMK -->
+    feedScreenModel: FeedScreenModel,
+    // KMK <--
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // KMK -->
+    val feedState by feedScreenModel.state.collectAsState()
+    // KMK <--
+
     Scaffold(
         topBar = {
-            if (titleRes != null) {
                 val tab = tabs[state.currentPage]
                 val searchEnabled = tab.searchEnabled
 
                 SearchToolbar(
-                    titleContent = {
-                        AppBarTitle(
-                            stringResource(titleRes),
-                            modifier = modifier,
-                            null,
-                            tab.numberTitle,
-                        )
-                    },
+                    titleContent = { AppBarTitle(stringResource(titleRes)) },
                     searchEnabled = searchEnabled,
                     searchQuery = if (searchEnabled) searchQuery else null,
                     onChangeSearchQuery = onChangeSearchQuery,
                     actions = { AppBarActions(tab.actions) },
-                    navigateUp = tab.navigateUp,
                 )
-            }
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { contentPadding ->
@@ -76,20 +74,15 @@ fun TabbedScreen(
                 end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
             ),
         ) {
-            FlexibleTabRow(
-                scrollable = scrollable,
+            PrimaryTabRow(
                 selectedTabIndex = state.currentPage,
+                modifier = Modifier.zIndex(1f),
             ) {
                 tabs.forEachIndexed { index, tab ->
                     Tab(
                         selected = state.currentPage == index,
                         onClick = { scope.launch { state.animateScrollToPage(index) } },
-                        text = {
-                            TabText(
-                                text = stringResource(tab.titleRes),
-                                badgeCount = tab.badgeNumber,
-                            )
-                        },
+                        text = { TabText(text = stringResource(tab.titleRes), badgeCount = tab.badgeNumber) },
                         unselectedContentColor = MaterialTheme.colorScheme.onSurface,
                     )
                 }
