@@ -287,7 +287,7 @@ object AboutScreen : Screen() {
                         LinkIcon(
                             label = "GitHub",
                             icon = CustomIcons.Github,
-                            url = "https://github.com/anikku-app/anikku",
+                            url = "https://github.com/komikku-app/anikku",
                         )
                     }
                 }

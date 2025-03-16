@@ -10,7 +10,7 @@
 Discover and watch anime, cartoons, series, and more – easier than ever on your Android device.
 
 [![Discord server](https://img.shields.io/discord/841701076242530374.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/85jB7V5AJR)
-[![GitHub downloads](https://img.shields.io/github/downloads/Dark25/aniyomi/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/anikku-app/anikku/releases)
+[![GitHub downloads](https://img.shields.io/github/downloads/Dark25/aniyomi/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/anikku/releases)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Dark25/aniyomi/build_push.yml?labelColor=27303D)](https://github.com/aniyomiorg/aniyomi/actions/workflows/build_push.yml)
 [![License: Apache-2.0](https://img.shields.io/github/license/Dark25/aniyomi?labelColor=27303D&color=818cf8)](/LICENSE)
@@ -18,8 +18,8 @@ Discover and watch anime, cartoons, series, and more – easier than ever on you
 
 ## Download
 
-[![Anikku Stable](https://img.shields.io/github/release/anikku-app/anikku.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://github.com/anikku-app/anikku/releases)
-[![Anikku Preview](https://img.shields.io/github/v/release/anikku-app/anikku-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://github.com/anikku-app/anikku-preview/releases)
+[![Anikku Stable](https://img.shields.io/github/release/komikku-app/anikku.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://github.com/komikku-app/anikku/releases)
+[![Anikku Preview](https://img.shields.io/github/v/release/komikku-app/anikku-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://github.com/komikku-app/anikku-preview/releases)
 
 *Requires Android 8.0 or higher.*
 
@@ -80,7 +80,7 @@ Before reporting a new issue, take a look at the [FAQ](https://anikku-app.github
 
 Thank you to all the people who have contributed!
 
-<a href="https://github.com/anikku-app/anikku/graphs/contributors">
+<a href="https://github.com/komikku-app/anikku/graphs/contributors">
     <img src="https://contrib.rocks/image?repo=aniyomiorg/aniyomi" alt="Anikku app contributors" title="Anikku app contributors" width="800"/>
 </a>
 
