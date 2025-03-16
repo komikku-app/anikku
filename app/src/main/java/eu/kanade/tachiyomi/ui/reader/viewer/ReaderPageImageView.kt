@@ -35,10 +35,10 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.SCALE_TYPE_
 import com.github.chrisbanes.photoview.PhotoView
 import eu.kanade.tachiyomi.data.coil.cropBorders
 import eu.kanade.tachiyomi.data.coil.customDecoder
-import eu.kanade.tachiyomi.util.system.GLUtil
 import eu.kanade.tachiyomi.util.system.animatorDurationScale
 import eu.kanade.tachiyomi.util.view.isVisibleOnScreen
 import okio.BufferedSource
+import tachiyomi.core.common.util.system.ImageUtil
 
 /**
  * A wrapper view for showing page image.
@@ -228,7 +228,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
         pageView = SubsamplingScaleImageView(context)
             .apply {
-                setMaxTileSize(GLUtil.maxTextureSize)
+                setMaxTileSize(ImageUtil.hardwareBitmapThreshold)
                 setDoubleTapZoomStyle(SubsamplingScaleImageView.ZOOM_FOCUS_CENTER)
                 setPanLimit(SubsamplingScaleImageView.PAN_LIMIT_INSIDE)
                 setMinimumTileDpi(180)
