@@ -2,6 +2,7 @@ name: 🐞 Issue report
 description: Report an issue in Anikku
 labels: [Bug]
 body:
+
   - type: textarea
     id: reproduce-steps
     attributes:
@@ -95,9 +96,9 @@ body:
           required: true
         - label: If this is an issue with an extension, I should be opening an issue in the extension's repository.
           required: true
-        - label: I have gone through the [FAQ](https://aniyomi.org/docs/faq/general) and [troubleshooting guide](https://aniyomi.org/docs/guides/troubleshooting/).
+        - label: I have gone through the [FAQ](https://anikku-app.github.io/docs/faq/general) and [troubleshooting guide](https://anikku-app.github.io/docs/guides/troubleshooting/).
           required: true
-        - label: I have updated the app to version **[0.16.4.3](https://github.com/anikku-app/anikku/releases/latest)**.
+        - label: I have updated the app to **[latest version](https://github.com/komikku-app/anikku/releases/latest)**.
           required: true
         - label: I have updated all installed extensions.
           required: true
