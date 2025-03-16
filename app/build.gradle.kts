@@ -75,7 +75,7 @@ android {
             matchingFallbacks.add("release")
             val debugType = getByName("debug")
             versionNameSuffix = debugType.versionNameSuffix
-            applicationIdSuffix = debugType.applicationIdSuffix
+            applicationIdSuffix = ".beta"
         }
         create("benchmark") {
             initWith(getByName("release"))
