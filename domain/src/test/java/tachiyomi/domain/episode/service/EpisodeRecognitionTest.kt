@@ -9,34 +9,34 @@ import org.junit.jupiter.api.parallel.ExecutionMode
 class EpisodeRecognitionTest {
 
     @Test
-    fun `Basic Ch prefix`() {
+    fun `Basic Ep prefix`() {
         val animeTitle = "Mokushiroku Alice"
 
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ch.4: Misrepresentation", 4.0)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ep.4: Misrepresentation", 4.0)
     }
 
     @Test
-    fun `Basic Ch prefix with space after period`() {
+    fun `Basic Ep prefix with space after period`() {
         val animeTitle = "Mokushiroku Alice"
 
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol. 1 Ch. 4: Misrepresentation", 4.0)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol. 1 Ep. 4: Misrepresentation", 4.0)
     }
 
     @Test
-    fun `Basic Ch prefix with decimal`() {
+    fun `Basic Ep prefix with decimal`() {
         val animeTitle = "Mokushiroku Alice"
 
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ch.4.1: Misrepresentation", 4.1)
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ch.4.4: Misrepresentation", 4.4)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ep.4.1: Misrepresentation", 4.1)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ep.4.4: Misrepresentation", 4.4)
     }
 
     @Test
-    fun `Basic Ch prefix with alpha postfix`() {
+    fun `Basic Ep prefix with alpha postfix`() {
         val animeTitle = "Mokushiroku Alice"
 
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ch.4.a: Misrepresentation", 4.1)
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ch.4.b: Misrepresentation", 4.2)
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ch.4.extra: Misrepresentation", 4.99)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ep.4.a: Misrepresentation", 4.1)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ep.4.b: Misrepresentation", 4.2)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ep.4.extra: Misrepresentation", 4.99)
     }
 
     @Test
@@ -115,7 +115,7 @@ class EpisodeRecognitionTest {
     fun `Episode containing dot v2`() {
         val animeTitle = "random"
 
-        assertEpisode(animeTitle, "Vol.1 Ch.5v.2: Alones", 5.0)
+        assertEpisode(animeTitle, "Vol.1 Ep.5v.2: Alones", 5.0)
     }
 
     @Test
@@ -126,24 +126,24 @@ class EpisodeRecognitionTest {
     }
 
     @Test
-    fun `Space between ch x`() {
+    fun `Space between ep x`() {
         val animeTitle = "Mokushiroku Alice"
 
-        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ch. 4: Misrepresentation", 4.0)
+        assertEpisode(animeTitle, "Mokushiroku Alice Vol.1 Ep. 4: Misrepresentation", 4.0)
     }
 
     @Test
-    fun `Episode title with ch substring`() {
+    fun `Episode title with ep substring`() {
         val animeTitle = "Ayame 14"
 
-        assertEpisode(animeTitle, "Vol.1 Ch.1: March 25 (First Day Cohabiting)", 1.0)
+        assertEpisode(animeTitle, "Vol.1 Ep.1: March 25 (First Day Cohabiting)", 1.0)
     }
 
     @Test
     fun `Episode containing multiple zeros`() {
         val animeTitle = "random"
 
-        assertEpisode(animeTitle, "Vol.001 Ch.003: Kaguya Doesn't Know Much", 3.0)
+        assertEpisode(animeTitle, "Vol.001 Ep.003: Kaguya Doesn't Know Much", 3.0)
     }
 
     @Test
@@ -232,7 +232,7 @@ class EpisodeRecognitionTest {
         val animeTitle = "One Piece"
 
         assertEpisode(animeTitle, "One Piece 300,a", 300.1)
-        assertEpisode(animeTitle, "One Piece Ch,123,extra", 123.99)
+        assertEpisode(animeTitle, "One Piece Ep,123,extra", 123.99)
         assertEpisode(animeTitle, "One Piece the sunny, goes swimming 024,005", 24.005)
     }
 
@@ -240,10 +240,10 @@ class EpisodeRecognitionTest {
     fun `Episode title containing hyphens`() {
         val animeTitle = "Solo Leveling"
 
-        assertEpisode(animeTitle, "ch 122-a", 122.1)
-        assertEpisode(animeTitle, "Solo Leveling Ch.123-extra", 123.99)
+        assertEpisode(animeTitle, "ep 122-a", 122.1)
+        assertEpisode(animeTitle, "Solo Leveling Ep.123-extra", 123.99)
         assertEpisode(animeTitle, "Solo Leveling, 024-005", 24.005)
-        assertEpisode(animeTitle, "Ch.191-200 Read Online", 191.200)
+        assertEpisode(animeTitle, "Ep.191-200 Read Online", 191.200)
     }
 
     @Test
