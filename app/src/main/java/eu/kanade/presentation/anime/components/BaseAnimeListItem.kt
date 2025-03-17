@@ -68,6 +68,9 @@ private val defaultCover: @Composable RowScope.(Anime, () -> Unit) -> Unit = { a
             .fillMaxHeight(),
         data = anime,
         onClick = onClick,
+        // KMK -->
+        size = AnimeCover.Size.Big,
+        // KMK <--
     )
 }
 

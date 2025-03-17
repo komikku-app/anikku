@@ -20,13 +20,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -37,6 +40,7 @@ import eu.kanade.presentation.anime.components.AnimeCover
 import eu.kanade.presentation.anime.components.DotSeparatorText
 import eu.kanade.presentation.anime.components.EpisodeDownloadAction
 import eu.kanade.presentation.anime.components.EpisodeDownloadIndicator
+import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
 import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.relativeTimeSpanString
@@ -78,6 +82,7 @@ internal fun LazyListScope.updatesLastUpdatedItem(
 
 internal fun LazyListScope.updatesUiItems(
     uiModels: List<UpdatesUiModel>,
+    usePanoramaCover: Boolean,
     selectionMode: Boolean,
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
     onClickCover: (UpdatesItem) -> Unit,
@@ -102,7 +107,10 @@ internal fun LazyListScope.updatesUiItems(
         when (item) {
             is UpdatesUiModel.Header -> {
                 ListGroupHeader(
-                    modifier = Modifier.animateItemFastScroll(),
+                    modifier = Modifier.animateItemFastScroll()
+                        // KMK -->
+                        .padding(top = MaterialTheme.padding.extraSmall),
+                    // KMK <--
                     text = relativeDateText(item.date),
                 )
             }
@@ -144,6 +152,7 @@ internal fun LazyListScope.updatesUiItems(
                     // AM (FILE_SIZE) -->
                     updatesItem = updatesItem,
                     // <-- AM (FILE_SIZE)
+                    usePanoramaCover = usePanoramaCover,
                 )
             }
         }
@@ -165,6 +174,8 @@ private fun UpdatesUiItem(
     // AM (FILE_SIZE) -->
     updatesItem: UpdatesItem,
     // <-- AM (FILE_SIZE)
+    usePanoramaCover: Boolean,
+    coverRatio: MutableFloatState = remember { mutableFloatStateOf(1f) },
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -180,17 +191,56 @@ private fun UpdatesUiItem(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 },
             )
-            .height(56.dp)
-            .padding(horizontal = MaterialTheme.padding.medium),
+            .padding(
+                // KMK -->
+                vertical = MaterialTheme.padding.extraSmall,
+                // KMK <--
+                horizontal = MaterialTheme.padding.medium,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AnimeCover.Square(
-            modifier = Modifier
-                .padding(vertical = 6.dp)
-                .fillMaxHeight(),
-            data = update.coverData,
-            onClick = onClickCover,
-        )
+        // KMK -->
+        val mangaCover = update.coverData
+        val coverIsWide = coverRatio.floatValue <= RatioSwitchToPanorama
+        val bgColor = mangaCover.dominantCoverColors?.first?.let { Color(it) }
+        val onBgColor = mangaCover.dominantCoverColors?.second
+            if (usePanoramaCover && coverIsWide) {
+                AnimeCover.Panorama(
+                    modifier = Modifier
+                        .padding(top = MaterialTheme.padding.small)
+                        .width(UpdateItemPanoramaWidth),
+                    data = mangaCover,
+                    onClick = onClickCover,
+                    // KMK -->
+                    bgColor = bgColor,
+                    tint = onBgColor,
+                    size = AnimeCover.Size.Medium,
+                    onCoverLoaded = { _, result ->
+                        val image = result.result.image
+                        coverRatio.floatValue = image.height.toFloat() / image.width
+                    },
+                    // KMK <--
+                )
+            } else {
+                // KMK <--
+                AnimeCover.Book(
+                    modifier = Modifier
+                        // KMK -->
+                        .padding(top = MaterialTheme.padding.small)
+                        .width(UpdateItemWidth),
+                    // KMK <--
+                    data = mangaCover,
+                    onClick = onClickCover,
+                    // KMK -->
+                    bgColor = bgColor,
+                    tint = onBgColor,
+                    size = AnimeCover.Size.Medium,
+                    onCoverLoaded = { _, result ->
+                        val image = result.result.image
+                        coverRatio.floatValue = image.height.toFloat() / image.width
+                    },
+                )
+            }
         Column(
             modifier = Modifier
                 .padding(horizontal = MaterialTheme.padding.medium)
@@ -221,9 +271,7 @@ private fun UpdatesUiItem(
                         imageVector = Icons.Filled.Bookmark,
                         contentDescription = stringResource(MR.strings.action_filter_bookmarked),
                         modifier = Modifier
-                            .sizeIn(
-                                maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp },
-                            ),
+                            .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.width(2.dp))
@@ -304,6 +352,11 @@ private fun formatProgress(milliseconds: Long): String {
         )
     }
 }
+
+private val IndicatorSize = 18.dp
+private val UpdateItemPanoramaWidth = 126.dp
+private val UpdateItemWidth = 56.dp
+// KMK <--
 
 // AM (FILE_SIZE) -->
 private val storagePreferences: StoragePreferences by injectLazy()

@@ -20,6 +20,7 @@ import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
+import exh.source.anyIs
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.i18n.MR
@@ -32,7 +33,7 @@ fun BrowseSourceToolbar(
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
     source: Source?,
-    displayMode: LibraryDisplayMode,
+    displayMode: LibraryDisplayMode?,
     onDisplayModeChange: (LibraryDisplayMode) -> Unit,
     navigateUp: () -> Unit,
     onWebViewClick: () -> Unit,
@@ -48,7 +49,7 @@ fun BrowseSourceToolbar(
     // Avoid capturing unstable source in actions lambda
     val title = source?.name
     val isLocalSource = source is LocalSource
-    val isConfigurableSource = source is ConfigurableSource
+    val isConfigurableSource = source?.anyIs<ConfigurableSource>() == true
 
     var selectingDisplayMode by remember { mutableStateOf(false) }
 
@@ -63,17 +64,19 @@ fun BrowseSourceToolbar(
             AppBarActions(
                 actions = persistentListOf<AppBar.AppBarAction>().builder()
                     .apply {
-                        add(
-                            AppBar.Action(
-                                title = stringResource(MR.strings.action_display_mode),
-                                icon = if (displayMode == LibraryDisplayMode.List) {
-                                    Icons.AutoMirrored.Filled.ViewList
-                                } else {
-                                    Icons.Filled.ViewModule
-                                },
-                                onClick = { selectingDisplayMode = true },
-                            ),
-                        )
+                        if (displayMode != null) {
+                            add(
+                                AppBar.Action(
+                                    title = stringResource(MR.strings.action_display_mode),
+                                    icon = if (displayMode == LibraryDisplayMode.List) {
+                                        Icons.AutoMirrored.Filled.ViewList
+                                    } else {
+                                        Icons.Filled.ViewModule
+                                    },
+                                    onClick = { selectingDisplayMode = true },
+                                ),
+                            )
+                        }
                         if (isLocalSource) {
                             add(
                                 AppBar.OverflowAction(

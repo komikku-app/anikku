@@ -13,6 +13,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.materialkolor.PaletteStyle
 import eu.kanade.core.preference.asState
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.TabletUiMode
@@ -28,6 +29,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
+import tachiyomi.i18n.sy.SYMR
+import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -51,6 +54,9 @@ object SettingsAppearanceScreen : SearchableSettings {
             getMangaInfoThemeGroup(uiPreferences = uiPreferences),
             // KMK <--
             getDisplayGroup(uiPreferences = uiPreferences),
+            // SY -->
+            getForkGroup(uiPreferences = uiPreferences),
+            // SY <--
         )
     }
 
@@ -257,6 +263,104 @@ object SettingsAppearanceScreen : SearchableSettings {
             ),
         )
     }
+
+    // SY -->
+    @Composable
+    fun getForkGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
+        val previewsRowCount by uiPreferences.previewsRowCount().collectAsState()
+        // KMK -->
+        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+        val relatedMangasInOverflow by uiPreferences.expandRelatedAnimes().collectAsState()
+        // KMK <--
+
+        return Preference.PreferenceGroup(
+            stringResource(SYMR.strings.pref_category_fork),
+            preferenceItems = persistentListOf(
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.usePanoramaCoverFlow(),
+                    title = stringResource(KMR.strings.pref_panorama_cover_flow),
+                    subtitle = stringResource(KMR.strings.pref_panorama_cover_flow_summary),
+                ),
+                // KMK <--
+//                Preference.PreferenceItem.SwitchPreference(
+//                    pref = uiPreferences.expandFilters(),
+//                    title = stringResource(SYMR.strings.toggle_expand_search_filters),
+//                ),
+//                // KMK -->
+//                Preference.PreferenceItem.SwitchPreference(
+//                    pref = uiPreferences.expandRelatedAnimes(),
+//                    title = stringResource(KMR.strings.pref_expand_related_mangas),
+//                    subtitle = stringResource(KMR.strings.pref_expand_related_mangas_summary),
+//                    enabled = sourcePreferences.relatedAnimes().get(),
+//                ),
+//                Preference.PreferenceItem.SwitchPreference(
+//                    pref = uiPreferences.relatedAnimesInOverflow(),
+//                    enabled = !relatedMangasInOverflow,
+//                    title = stringResource(KMR.strings.put_related_mangas_in_overflow),
+//                    subtitle = stringResource(KMR.strings.put_related_mangas_in_overflow_summary),
+//                ),
+//                Preference.PreferenceItem.SwitchPreference(
+//                    pref = uiPreferences.showHomeOnRelatedAnimes(),
+//                    title = stringResource(KMR.strings.pref_show_home_on_related_mangas),
+//                    subtitle = stringResource(KMR.strings.pref_show_home_on_related_mangas_summary),
+//                    enabled = sourcePreferences.relatedAnimes().get(),
+//                ),
+//                // KMK <--
+//                Preference.PreferenceItem.SwitchPreference(
+//                    pref = uiPreferences.recommendsInOverflow(),
+//                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
+//                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
+//                ),
+//                Preference.PreferenceItem.SwitchPreference(
+//                    pref = uiPreferences.mergeInOverflow(),
+//                    title = stringResource(SYMR.strings.put_merge_in_overflow),
+//                    subtitle = stringResource(SYMR.strings.put_merge_in_overflow_summary),
+//                ),
+//                Preference.PreferenceItem.SliderPreference(
+//                    value = previewsRowCount,
+//                    title = stringResource(SYMR.strings.pref_previews_row_count),
+//                    subtitle = if (previewsRowCount > 0) {
+//                        pluralStringResource(
+//                            SYMR.plurals.row_count,
+//                            previewsRowCount,
+//                            previewsRowCount,
+//                        )
+//                    } else {
+//                        stringResource(MR.strings.disabled)
+//                    },
+//                    min = 0,
+//                    max = 10,
+//                    onValueChanged = {
+//                        uiPreferences.previewsRowCount().set(it)
+//                        true
+//                    },
+//                ),
+            ),
+        )
+    }
+
+    @Composable
+    fun getNavbarGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
+        return Preference.PreferenceGroup(
+            stringResource(SYMR.strings.pref_category_navbar),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.showNavUpdates(),
+                    title = stringResource(SYMR.strings.pref_hide_updates_button),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.showNavHistory(),
+                    title = stringResource(SYMR.strings.pref_hide_history_button),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.bottomBarLabels(),
+                    title = stringResource(SYMR.strings.pref_show_bottom_bar_labels),
+                ),
+            ),
+        )
+    }
+    // SY <--
 }
 
 private val DateFormats = listOf(

@@ -98,6 +98,9 @@ internal fun AnimeItem(
             },
             // KMK -->
             isSelected = isSelected,
+            coverRatio = coverRatio,
+            usePanoramaCover = panoramaCover,
+            fitToPanoramaCover = true,
             // KMK <--
             coverAlpha = if (isFavorite) CommonAnimeItemDefaults.BrowseFavoriteCoverAlpha else 1f,
             onClick = onClick,

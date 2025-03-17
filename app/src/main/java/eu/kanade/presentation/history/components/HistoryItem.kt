@@ -14,15 +14,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableFloatState
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.anime.components.AnimeCover
+import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.util.lang.toTimestampString
@@ -40,6 +44,10 @@ fun HistoryItem(
     onClickResume: () -> Unit,
     onClickDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    // KMK -->
+    usePanoramaCover: Boolean,
+    coverRatio: MutableFloatState = remember { mutableFloatStateOf(1f) },
+    // KMK <--
 ) {
     Row(
         modifier = modifier
@@ -48,11 +56,43 @@ fun HistoryItem(
             .padding(horizontal = MaterialTheme.padding.medium, vertical = MaterialTheme.padding.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // KMK -->
+        val animeCover = history.coverData
+        val coverIsWide = coverRatio.floatValue <= RatioSwitchToPanorama
+        val bgColor = animeCover.dominantCoverColors?.first?.let { Color(it) }
+        val onBgColor = animeCover.dominantCoverColors?.second
+        if (usePanoramaCover && coverIsWide) {
+            AnimeCover.Panorama(
+                modifier = Modifier.fillMaxHeight(),
+                data = animeCover,
+                onClick = onClickCover,
+                // KMK -->
+                bgColor = bgColor,
+                tint = onBgColor,
+                size = AnimeCover.Size.Medium,
+                onCoverLoaded = { _, result ->
+                    val image = result.result.image
+                    coverRatio.floatValue = image.height.toFloat() / image.width
+                },
+                // KMK <--
+            )
+        } else {
+            // KMK <--
         AnimeCover.Book(
             modifier = Modifier.fillMaxHeight(),
-            data = history.coverData,
+                data = animeCover,
             onClick = onClickCover,
+                // KMK -->
+                bgColor = bgColor,
+                tint = onBgColor,
+                size = AnimeCover.Size.Medium,
+                onCoverLoaded = { _, result ->
+                    val image = result.result.image
+                    coverRatio.floatValue = image.height.toFloat() / image.width
+                },
+                // KMK <--
         )
+        }
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -105,6 +145,7 @@ private fun HistoryItemPreviews(
                 onClickCover = {},
                 onClickResume = {},
                 onClickDelete = {},
+                usePanoramaCover = false,
             )
         }
     }

@@ -28,6 +28,7 @@ fun BrowseSourceComfortableGrid(
     onAnimeLongClick: (Anime) -> Unit,
     // KMK -->
     selection: List<Anime>,
+    usePanoramaCover: Boolean = false,
     // KMK <--
 ) {
     LazyVerticalGrid(
@@ -48,7 +49,10 @@ fun BrowseSourceComfortableGrid(
                 anime = anime,
                 onClick = { onAnimeClick(anime) },
                 onLongClick = { onAnimeLongClick(anime) },
+                // KMK -->
                 isSelected = selection.fastAny { selected -> selected.id == anime.id },
+                usePanoramaCover = usePanoramaCover,
+                // KMK <--
             )
         }
 
@@ -67,6 +71,7 @@ internal fun BrowseSourceComfortableGridItem(
     onLongClick: () -> Unit = onClick,
     // KMK -->
     isSelected: Boolean = false,
+    usePanoramaCover: Boolean,
     // KMK <--
 ) {
     AnimeComfortableGridItem(
@@ -80,6 +85,8 @@ internal fun BrowseSourceComfortableGridItem(
         ),
         // KMK -->
         isSelected = isSelected,
+        usePanoramaCover = usePanoramaCover,
+        fitToPanoramaCover = true,
         // KMK <--
         coverAlpha = if (anime.favorite) CommonAnimeItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         coverBadgeStart = {

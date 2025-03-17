@@ -270,7 +270,7 @@ fun AnimeActionRow(
             AnimeActionButton(
                 title = stringResource(MR.strings.action_web_view),
                 icon = Icons.Outlined.Public,
-                color = defaultActionButtonColor,
+                color = MaterialTheme.colorScheme.primary, // KMK: defaultActionButtonColor
                 onClick = onWebViewClicked,
                 onLongClick = onWebViewLongClicked,
             )

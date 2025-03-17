@@ -5,9 +5,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.Panorama
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -20,9 +24,11 @@ import eu.kanade.presentation.history.components.HistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.history.HistoryScreenModel
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -42,6 +48,9 @@ fun HistoryScreen(
     navigateUp: (() -> Unit)?,
     searchQuery: String? = null,
 ) {
+    // KMK -->
+    val usePanoramaCover = remember { mutableStateOf(false) }
+    // KMK <--
     Scaffold(
         topBar = { scrollBehavior ->
             SearchToolbar(
@@ -53,6 +62,18 @@ fun HistoryScreen(
                         // KMK -->
                         persistentListOf<AppBar.AppBarAction>().builder()
                             .apply {
+                                if (!state.list.isNullOrEmpty()) {
+                                    add(
+                                        AppBar.Action(
+                                            title = stringResource(KMR.strings.action_panorama_cover),
+                                            icon = Icons.Outlined.Panorama,
+                                            iconTint = MaterialTheme.colorScheme.primary.takeIf { usePanoramaCover.value },
+                                            onClick = {
+                                                usePanoramaCover.value = !usePanoramaCover.value
+                                            },
+                                        ),
+                                    )
+                                }
                                 add(
                                     // KMK <--
                                     AppBar.Action(
@@ -95,6 +116,9 @@ fun HistoryScreen(
                     onClickCover = { history -> onClickCover(history.animeId) },
                     onClickResume = { history -> onClickResume(history.animeId, history.episodeId) },
                     onClickDelete = { item -> onDialogChange(HistoryScreenModel.Dialog.Delete(item)) },
+                    // KMK -->
+                    usePanoramaCover = usePanoramaCover.value,
+                    // KMK <--
                 )
             }
         }
@@ -108,6 +132,9 @@ private fun HistoryScreenContent(
     onClickCover: (HistoryWithRelations) -> Unit,
     onClickResume: (HistoryWithRelations) -> Unit,
     onClickDelete: (HistoryWithRelations) -> Unit,
+    // KMK -->
+    usePanoramaCover: Boolean,
+    // KMK <--
 ) {
     FastScrollLazyColumn(
         contentPadding = contentPadding,
@@ -137,6 +164,9 @@ private fun HistoryScreenContent(
                         onClickCover = { onClickCover(value) },
                         onClickResume = { onClickResume(value) },
                         onClickDelete = { onClickDelete(value) },
+                        // KMK -->
+                        usePanoramaCover = usePanoramaCover,
+                        // KMK <--
                     )
                 }
             }

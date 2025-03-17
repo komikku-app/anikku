@@ -142,6 +142,7 @@ fun BrowseSourceContent(
                 onAnimeLongClick = onAnimeLongClick,
                 // KMK -->
                 selection = selection,
+                usePanoramaCover = true,
                 // KMK <--
             )
         }
