@@ -15,8 +15,6 @@ import com.materialkolor.PaletteStyle
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
-import eu.kanade.domain.ui.model.NavStyle
-import eu.kanade.domain.ui.model.StartScreen
 import eu.kanade.domain.ui.model.TabletUiMode
 import eu.kanade.domain.ui.model.ThemeMode
 import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
@@ -37,6 +35,7 @@ import uy.kohesive.injekt.api.get
 import java.time.LocalDate
 
 object SettingsAppearanceScreen : SearchableSettings {
+    private fun readResolve(): Any = SettingsAppearanceScreen
 
     @ReadOnlyComposable
     @Composable
@@ -56,7 +55,6 @@ object SettingsAppearanceScreen : SearchableSettings {
     }
 
     @Composable
-    @Suppress("SpreadOperator")
     private fun getThemeGroup(
         uiPreferences: UiPreferences,
     ): Preference.PreferenceGroup {
@@ -71,18 +69,6 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         val amoledPref = uiPreferences.themeDarkAmoled()
         val amoled by amoledPref.collectAsState()
-
-        val customPreferenceItem = if (appTheme == AppTheme.CUSTOM) {
-            listOf(
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_custom_color),
-                    subtitle = stringResource(MR.strings.custom_color_description),
-                    onClick = { navigator.push(AppCustomThemeColorPickerScreen()) },
-                ),
-            )
-        } else {
-            emptyList()
-        }
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_theme),
@@ -106,7 +92,48 @@ object SettingsAppearanceScreen : SearchableSettings {
                         )
                     }
                 },
-                *customPreferenceItem.toTypedArray(),
+                // KMK -->
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(KMR.strings.pref_custom_color),
+                    enabled = appTheme == AppTheme.CUSTOM,
+                    subtitle = stringResource(KMR.strings.custom_color_description),
+                    onClick = { navigator.push(AppCustomThemeColorPickerScreen()) },
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    pref = uiPreferences.customThemeStyle(),
+                    title = stringResource(KMR.strings.pref_custom_theme_style),
+                    enabled = appTheme == AppTheme.CUSTOM,
+                    entries = PaletteStyle.entries
+                        .associateWith {
+                            when (it) {
+                                PaletteStyle.TonalSpot ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_tonalspot)
+                                PaletteStyle.Neutral ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_neutral)
+                                PaletteStyle.Vibrant ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_vibrant)
+                                PaletteStyle.Expressive ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_expressive)
+                                PaletteStyle.Rainbow ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_rainbow)
+                                PaletteStyle.FruitSalad ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_fruitsalad)
+                                PaletteStyle.Monochrome ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_monochrome)
+                                PaletteStyle.Fidelity ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_fidelity)
+                                PaletteStyle.Content ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_content)
+                                else -> it.name
+                            }
+                        }
+                        .toImmutableMap(),
+                    onValueChanged = {
+                        (context as? Activity)?.let { ActivityCompat.recreate(it) }
+                        true
+                    },
+                ),
+                // KMK <--
                 Preference.PreferenceItem.SwitchPreference(
                     pref = amoledPref,
                     title = stringResource(MR.strings.pref_dark_theme_pure_black),
@@ -207,25 +234,6 @@ object SettingsAppearanceScreen : SearchableSettings {
                         context.toast(MR.strings.requires_app_restart)
                         true
                     },
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    pref = uiPreferences.startScreen(),
-                    title = stringResource(MR.strings.pref_start_screen),
-                    entries = StartScreen.entries
-                        .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
-                    onValueChanged = {
-                        context.toast(MR.strings.requires_app_restart)
-                        true
-                    },
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    pref = uiPreferences.navStyle(),
-                    title = "Navigation Style",
-                    entries = NavStyle.entries
-                        .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
-                    onValueChanged = { true },
                 ),
                 Preference.PreferenceItem.ListPreference(
                     pref = uiPreferences.dateFormat(),
