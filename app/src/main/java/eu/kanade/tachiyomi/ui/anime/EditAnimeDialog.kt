@@ -11,6 +11,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.LayoutRes
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,13 +38,21 @@ import coil3.transform.RoundedCornersTransformation
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.databinding.EditMangaDialogBinding
 import eu.kanade.tachiyomi.source.model.SAnime
 import eu.kanade.tachiyomi.util.lang.chop
 import eu.kanade.tachiyomi.util.system.dpToPx
-import eu.kanade.tachiyomi.widget.materialdialogs.setTextInput
-import exh.ui.metadata.adapters.MetadataUIUtil.getResourceColor
+import eu.kanade.tachiyomi.widget.materialdialogs.binding
+import eu.kanade.tachiyomi.widget.materialdialogs.dismissDialog
+import eu.kanade.tachiyomi.widget.materialdialogs.setColors
+import eu.kanade.tachiyomi.widget.materialdialogs.setHint
+import eu.kanade.tachiyomi.widget.materialdialogs.setNegativeButton
+import eu.kanade.tachiyomi.widget.materialdialogs.setPositiveButton
+import eu.kanade.tachiyomi.widget.materialdialogs.setTextEdit
+import eu.kanade.tachiyomi.widget.materialdialogs.setTitle
 import exh.util.dropBlank
 import exh.util.trimOrNull
 import kotlinx.coroutines.CoroutineScope
@@ -52,10 +62,15 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.source.local.isLocal
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 @Composable
 fun EditAnimeDialog(
     manga: Anime,
+    // KMK -->
+    coverRatio: MutableFloatState,
+    // KMK <--
     onDismissRequest: () -> Unit,
     onPositiveClick: (
         title: String?,
@@ -139,6 +154,7 @@ fun EditAnimeDialog(
                                     scope,
                                     // KMK -->
                                     colors,
+                                    coverRatio = coverRatio,
                                     // KMK <--
                                 )
                             }
@@ -172,9 +188,16 @@ private fun onViewCreated(
     scope: CoroutineScope,
     // KMK -->
     colors: EditAnimeDialogColors,
+    coverRatio: MutableFloatState,
     // KMK <--
 ) {
-    loadCover(manga, binding)
+    loadCover(
+        manga,
+        binding,
+        // KMK -->
+        coverRatio,
+        // KMK <--
+    )
 
     // KMK -->
     // val statusAdapter: ArrayAdapter<String> = ArrayAdapter(
@@ -235,7 +258,7 @@ private fun onViewCreated(
         binding.mangaArtist.setText(manga.artist.orEmpty())
         binding.thumbnailUrl.setText(manga.thumbnailUrl.orEmpty())
         binding.mangaDescription.setText(manga.description.orEmpty())
-        binding.mangaGenresTags.setChips(manga.genre.orEmpty().dropBlank(), scope)
+        binding.mangaGenresTags.setChips(manga.genre.orEmpty().dropBlank(), scope, colors)
     } else {
         if (manga.title != manga.ogTitle) {
             binding.title.append(manga.title)
@@ -252,7 +275,7 @@ private fun onViewCreated(
         if (manga.description != manga.ogDescription) {
             binding.mangaDescription.append(manga.description.orEmpty())
         }
-        binding.mangaGenresTags.setChips(manga.genre.orEmpty().dropBlank(), scope)
+        binding.mangaGenresTags.setChips(manga.genre.orEmpty().dropBlank(), scope, colors)
 
         binding.title.hint = context.stringResource(SYMR.strings.title_hint, manga.ogTitle)
 
@@ -321,81 +344,152 @@ private fun onViewCreated(
     binding.resetInfo.setBackgroundColor(colors.btnBgColor)
     // KMK <--
 
-    binding.resetTags.setOnClickListener { resetTags(manga, binding, scope) }
-    binding.resetInfo.setOnClickListener { resetInfo(manga, binding, scope) }
+    binding.resetTags.setOnClickListener { resetTags(manga, binding, scope, colors) }
+    binding.resetInfo.setOnClickListener { resetInfo(manga, binding, scope, colors) }
 }
 
-private fun resetTags(manga: Anime, binding: EditMangaDialogBinding, scope: CoroutineScope) {
+private fun resetTags(
+    manga: Anime,
+    binding: EditMangaDialogBinding,
+    scope: CoroutineScope,
+    // KMK -->
+    colors: EditAnimeDialogColors,
+    // KMK <--
+) {
     if (manga.genre.isNullOrEmpty() || manga.isLocal()) {
-        binding.mangaGenresTags.setChips(emptyList(), scope)
+        binding.mangaGenresTags.setChips(emptyList(), scope, colors)
     } else {
-        binding.mangaGenresTags.setChips(manga.ogGenre.orEmpty(), scope)
+        binding.mangaGenresTags.setChips(manga.ogGenre.orEmpty(), scope, colors)
     }
 }
 
-private fun resetInfo(manga: Anime, binding: EditMangaDialogBinding, scope: CoroutineScope) {
-    binding.title.setText("")
-    binding.mangaAuthor.setText("")
-    binding.mangaArtist.setText("")
-    binding.mangaDescription.setText("")
-    resetTags(manga, binding, scope)
-}
-
-private fun loadCover(manga: Anime, binding: EditMangaDialogBinding) {
-    binding.mangaCover.load(manga) {
-        transformations(RoundedCornersTransformation(4.dpToPx.toFloat()))
+private fun loadCover(
+    manga: Anime,
+    binding: EditMangaDialogBinding,
+    // KMK -->
+    coverRatio: MutableFloatState,
+    // KMK <--
+) {
+    // KMK -->
+    if (Injekt.get<UiPreferences>().usePanoramaCoverAlways().get() && coverRatio.floatValue <= RatioSwitchToPanorama) {
+        binding.mangaCover.visibility = View.GONE
+        binding.mangaCoverPanorama.visibility = View.VISIBLE
+        binding.mangaCoverPanorama.load(manga) {
+            transformations(RoundedCornersTransformation(4.dpToPx.toFloat()))
+        }
+    } else {
+        // KMK <--
+        binding.mangaCover.load(manga) {
+            transformations(RoundedCornersTransformation(4.dpToPx.toFloat()))
+        }
     }
 }
 
-private fun ChipGroup.setChips(items: List<String>, scope: CoroutineScope) {
+private fun resetInfo(
+    manga: Anime,
+    binding: EditMangaDialogBinding,
+    scope: CoroutineScope,
+    // KMK -->
+    colors: EditAnimeDialogColors,
+    // KMK <--
+) {
+    binding.title.text?.clear()
+    binding.mangaAuthor.text?.clear()
+    binding.mangaArtist.text?.clear()
+    binding.thumbnailUrl.text?.clear()
+    binding.mangaDescription.text?.clear()
+    resetTags(manga, binding, scope, colors)
+}
+
+private fun ChipGroup.setChips(
+    items: List<String>,
+    scope: CoroutineScope,
+    // KMK -->
+    colors: EditAnimeDialogColors,
+    // KMK <--
+) {
     removeAllViews()
+
+    // KMK -->
+    val colorStateList = ColorStateList.valueOf(colors.tagColor)
+    // KMK <--
 
     items.asSequence().map { item ->
         Chip(context).apply {
             text = item
+            // KMK -->
+            setTextColor(colors.tagTextColor)
+            // KMK <--
 
             isCloseIconVisible = true
-            closeIcon?.setTint(context.getResourceColor(R.attr.colorAccent))
+            // KMK -->
+            // closeIcon?.setTint(context.getResourceColor(R.attr.colorAccent))
+            closeIcon?.setTint(colors.iconColor)
+            // KMK <--
             setOnCloseIconClickListener {
                 removeView(this)
             }
+
+            // KMK -->
+            chipBackgroundColor = colorStateList
+            // KMK <--
         }
     }.forEach {
         addView(it)
     }
 
     val addTagChip = Chip(context).apply {
-        setText(R.string.add_tag)
+        text = SYMR.strings.add_tags.getString(context)
+        // KMK -->
+        setTextColor(colors.tagTextColor)
+        // KMK <--
 
         chipIcon = ContextCompat.getDrawable(context, R.drawable.ic_add_24dp)?.apply {
             isChipIconVisible = true
-            setTint(context.getResourceColor(R.attr.colorAccent))
+            // KMK -->
+            // setTint(context.getResourceColor(R.attr.colorAccent))
+            setTint(colors.iconColor)
+            // KMK <--
         }
 
+        // KMK -->
+        chipBackgroundColor = colorStateList
+        // KMK <--
+
         setOnClickListener {
-            var newTag: String? = null
-            MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.add_tag)
-                .setTextInput {
-                    newTag = it.trimOrNull()
+            // KMK -->
+            var dialog: AlertDialog? = null
+
+            val builder = MaterialAlertDialogBuilder(context)
+            val binding = builder.binding(context)
+                .setTitle(SYMR.strings.add_tags.getString(context))
+                .setHint(SYMR.strings.multi_tags_comma_separated.getString(context))
+                .setPositiveButton(MR.strings.action_ok.getString(context)) {
+                    dialog?.dismissDialog()
+                    // KMK <--
+                    val newTags = it.trimOrNull()
+                    newTags?.let { tags ->
+                        setChips(items + tags.split(",").mapNotNull { tag -> tag.trimOrNull() }, scope, colors)
+                    }
+                    // KMK -->
                 }
-                .setPositiveButton(R.string.action_ok) { _, _ ->
-                    if (newTag != null) setChips(items + listOfNotNull(newTag), scope)
+                .setNegativeButton(MR.strings.action_cancel.getString(context)) {
+                    dialog?.dismissDialog()
                 }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
+                .setTextEdit()
+                .setColors(colors)
+
+            dialog = builder.create()
+            dialog.setView(binding.root)
+            dialog.show()
+            // KMK <--
         }
     }
     addView(addTagChip)
 }
 
 private fun ChipGroup.getTextStrings(): List<String> = children.mapNotNull {
-    if (it is Chip &&
-        !it.text.toString().contains(
-            context.getString(R.string.add_tag),
-            ignoreCase = true,
-        )
-    ) {
+    if (it is Chip && !it.text.toString().contains(context.stringResource(SYMR.strings.add_tags), ignoreCase = true)) {
         it.text.toString()
     } else {
         null

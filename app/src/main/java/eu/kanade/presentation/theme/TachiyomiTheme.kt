@@ -1,13 +1,20 @@
 package eu.kanade.presentation.theme
 
+import android.app.UiModeManager
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RippleConfiguration
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.getSystemService
+import com.materialkolor.Contrast
+import com.materialkolor.DynamicMaterialTheme
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.presentation.theme.colorscheme.BaseColorScheme
@@ -48,6 +55,41 @@ fun TachiyomiTheme(
 }
 
 @Composable
+fun TachiyomiTheme(
+    seedColor: Color?,
+    appTheme: AppTheme? = null,
+    amoled: Boolean? = null,
+    typography: Typography = MaterialTheme.typography,
+    content: @Composable () -> Unit,
+) {
+    val uiPreferences = Injekt.get<UiPreferences>()
+    val context = LocalContext.current
+    val isAmoled = amoled ?: uiPreferences.themeDarkAmoled().get()
+    if (seedColor != null) {
+        DynamicMaterialTheme(
+            seedColor = seedColor,
+            useDarkTheme = isSystemInDarkTheme(),
+            withAmoled = isAmoled,
+            style = uiPreferences.themeCoverBasedStyle().get(),
+            typography = typography,
+            animate = true,
+            content = content,
+            contrastLevel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                context.getSystemService<UiModeManager>()?.contrast?.toDouble() ?: Contrast.Default.value
+            } else {
+                Contrast.Default.value
+            },
+        )
+    } else {
+        BaseTachiyomiTheme(
+            appTheme = appTheme ?: uiPreferences.appTheme().get(),
+            isAmoled = isAmoled,
+            content = content,
+        )
+    }
+}
+
+@Composable
 fun TachiyomiPreviewTheme(
     appTheme: AppTheme = AppTheme.DEFAULT,
     isAmoled: Boolean = false,
@@ -72,13 +114,21 @@ private fun getThemeColorScheme(
     appTheme: AppTheme,
     isAmoled: Boolean,
 ): ColorScheme {
-    val uiPreferences = Injekt.get<UiPreferences>()
-    val colorScheme = if (appTheme == AppTheme.MONET) {
-        MonetColorScheme(LocalContext.current)
-    } else if (appTheme == AppTheme.CUSTOM) {
-        CustomColorScheme(uiPreferences)
-    } else {
-        colorSchemes.getOrDefault(appTheme, TachiyomiColorScheme)
+    val colorScheme = when (appTheme) {
+        AppTheme.MONET -> {
+            MonetColorScheme(LocalContext.current)
+        }
+        // KMK -->
+        AppTheme.CUSTOM -> {
+            val uiPreferences = Injekt.get<UiPreferences>()
+            CustomColorScheme(
+                uiPreferences,
+            )
+        }
+        // KMK <--
+        else -> {
+            colorSchemes.getOrDefault(appTheme, TachiyomiColorScheme)
+        }
     }
     return colorScheme.getColorScheme(
         isSystemInDarkTheme(),
@@ -104,15 +154,9 @@ val playerRippleConfiguration
 
 private val colorSchemes: Map<AppTheme, BaseColorScheme> = mapOf(
     AppTheme.DEFAULT to TachiyomiColorScheme,
-    AppTheme.CLOUDFLARE to CloudflareColorScheme,
-    AppTheme.COTTONCANDY to CottoncandyColorScheme,
-    AppTheme.DOOM to DoomColorScheme,
     AppTheme.GREEN_APPLE to GreenAppleColorScheme,
     AppTheme.LAVENDER to LavenderColorScheme,
-    AppTheme.MATRIX to MatrixColorScheme,
     AppTheme.MIDNIGHT_DUSK to MidnightDuskColorScheme,
-    AppTheme.MOCHA to MochaColorScheme,
-    AppTheme.SAPPHIRE to SapphireColorScheme,
     AppTheme.NORD to NordColorScheme,
     AppTheme.STRAWBERRY_DAIQUIRI to StrawberryColorScheme,
     AppTheme.TAKO to TakoColorScheme,
@@ -120,4 +164,10 @@ private val colorSchemes: Map<AppTheme, BaseColorScheme> = mapOf(
     AppTheme.TIDAL_WAVE to TidalWaveColorScheme,
     AppTheme.YINYANG to YinYangColorScheme,
     AppTheme.YOTSUBA to YotsubaColorScheme,
+    AppTheme.CLOUDFLARE to CloudflareColorScheme,
+    AppTheme.COTTONCANDY to CottoncandyColorScheme,
+    AppTheme.DOOM to DoomColorScheme,
+    AppTheme.MATRIX to MatrixColorScheme,
+    AppTheme.MOCHA to MochaColorScheme,
+    AppTheme.SAPPHIRE to SapphireColorScheme,
 )

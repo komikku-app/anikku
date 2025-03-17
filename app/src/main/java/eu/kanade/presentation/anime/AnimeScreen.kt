@@ -33,6 +33,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -78,6 +79,7 @@ import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.coroutines.delay
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.episode.service.missingEpisodesCount
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -154,6 +156,11 @@ fun AnimeScreen(
     onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllEpisodeSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
+
+    // KMK -->
+    onCoverLoaded: (AnimeCover) -> Unit,
+    coverRatio: MutableFloatState,
+    // KMK <--
 ) {
     val context = LocalContext.current
     val onCopyTagToClipboard: (tag: String) -> Unit = {
@@ -214,6 +221,10 @@ fun AnimeScreen(
             onAllEpisodeSelected = onAllEpisodeSelected,
             onInvertSelection = onInvertSelection,
             onSettingsClicked = onSettingsClicked,
+            // KMK -->
+            onCoverLoaded = onCoverLoaded,
+            coverRatio = coverRatio,
+            // KMK <--
         )
     } else {
         AnimeScreenLargeImpl(
@@ -262,11 +273,14 @@ fun AnimeScreen(
             onAllEpisodeSelected = onAllEpisodeSelected,
             onInvertSelection = onInvertSelection,
             onSettingsClicked = onSettingsClicked,
+            // KMK -->
+            onCoverLoaded = onCoverLoaded,
+            coverRatio = coverRatio,
+            // KMK <--
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AnimeScreenSmallImpl(
     state: AnimeScreenModel.State.Success,
@@ -327,6 +341,11 @@ private fun AnimeScreenSmallImpl(
     onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllEpisodeSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
+
+    // KMK -->
+    onCoverLoaded: (AnimeCover) -> Unit,
+    coverRatio: MutableFloatState,
+    // KMK <--
 ) {
     val episodeListState = rememberLazyListState()
 
@@ -476,6 +495,10 @@ private fun AnimeScreenSmallImpl(
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
+                            // KMK -->
+                            onCoverLoaded = onCoverLoaded,
+                            coverRatio = coverRatio,
+                            // KMK <--
                         )
                     }
 
@@ -574,9 +597,8 @@ private fun AnimeScreenSmallImpl(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimeScreenLargeImpl(
+private fun AnimeScreenLargeImpl(
     state: AnimeScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
@@ -635,6 +657,11 @@ fun AnimeScreenLargeImpl(
     onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllEpisodeSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
+
+    // KMK -->
+    onCoverLoaded: (AnimeCover) -> Unit,
+    coverRatio: MutableFloatState,
+    // KMK <--
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
@@ -771,6 +798,10 @@ fun AnimeScreenLargeImpl(
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
+                            // KMK -->
+                            onCoverLoaded = onCoverLoaded,
+                            coverRatio = coverRatio,
+                            // KMK <--
                         )
                         AnimeActionRow(
                             favorite = state.anime.favorite,

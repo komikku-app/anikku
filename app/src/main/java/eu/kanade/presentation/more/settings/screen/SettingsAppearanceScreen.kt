@@ -6,10 +6,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.materialkolor.PaletteStyle
+import eu.kanade.core.preference.asState
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.NavStyle
@@ -26,6 +29,7 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -44,6 +48,9 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         return listOf(
             getThemeGroup(uiPreferences = uiPreferences),
+            // KMK -->
+            getMangaInfoThemeGroup(uiPreferences = uiPreferences),
+            // KMK <--
             getDisplayGroup(uiPreferences = uiPreferences),
         )
     }
@@ -112,6 +119,62 @@ object SettingsAppearanceScreen : SearchableSettings {
             ),
         )
     }
+
+    // KMK -->
+    @Composable
+    private fun getMangaInfoThemeGroup(
+        uiPreferences: UiPreferences,
+    ): Preference.PreferenceGroup {
+        val scope = rememberCoroutineScope()
+        val mangaInfoThemeCoverBased by remember {
+            Injekt.get<UiPreferences>().themeCoverBased().asState(scope)
+        }
+        return Preference.PreferenceGroup(
+            title = stringResource(KMR.strings.pref_manga_info),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.themeCoverBased(),
+                    title = stringResource(KMR.strings.pref_theme_cover_based),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    pref = uiPreferences.themeCoverBasedStyle(),
+                    title = stringResource(KMR.strings.pref_theme_cover_based_style),
+                    enabled = mangaInfoThemeCoverBased,
+                    entries = PaletteStyle.entries
+                        .associateWith {
+                            when (it) {
+                                PaletteStyle.TonalSpot ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_tonalspot)
+                                PaletteStyle.Neutral ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_neutral)
+                                PaletteStyle.Vibrant ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_vibrant)
+                                PaletteStyle.Expressive ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_expressive)
+                                PaletteStyle.Rainbow ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_rainbow)
+                                PaletteStyle.FruitSalad ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_fruitsalad)
+                                PaletteStyle.Monochrome ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_monochrome)
+                                PaletteStyle.Fidelity ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_fidelity)
+                                PaletteStyle.Content ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_content)
+                                else -> it.name
+                            }
+                        }
+                        .toImmutableMap(),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.usePanoramaCoverAnimeInfo(),
+                    title = stringResource(KMR.strings.pref_panorama_cover),
+                    subtitle = stringResource(KMR.strings.pref_panorama_cover_summary),
+                ),
+            ),
+        )
+    }
+    // KMK <--
 
     @Composable
     private fun getDisplayGroup(

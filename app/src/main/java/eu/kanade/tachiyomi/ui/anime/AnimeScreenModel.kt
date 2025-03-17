@@ -5,10 +5,17 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
+import androidx.palette.graphics.Palette
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import coil3.Image
+import coil3.asDrawable
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
@@ -18,14 +25,17 @@ import eu.kanade.domain.anime.model.episodesFiltered
 import eu.kanade.domain.anime.model.toSAnime
 import eu.kanade.domain.episode.interactor.SetSeenStatus
 import eu.kanade.domain.episode.interactor.SyncEpisodesWithSource
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.interactor.TrackEpisode
 import eu.kanade.domain.track.model.AutoTrackState
 import eu.kanade.domain.track.service.TrackPreferences
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.anime.DownloadAction
 import eu.kanade.presentation.anime.components.EpisodeDownloadAction
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.data.coil.getBestColor
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -43,6 +53,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.AniChartApi
 import eu.kanade.tachiyomi.util.episode.getNextUnseen
 import eu.kanade.tachiyomi.util.removeCovers
+import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toast
 import exh.util.nullIfEmpty
 import exh.util.trimOrNull
@@ -75,9 +86,11 @@ import tachiyomi.domain.anime.interactor.GetDuplicateLibraryAnime
 import tachiyomi.domain.anime.interactor.SetAnimeEpisodeFlags
 import tachiyomi.domain.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.anime.model.AnimeUpdate
 import tachiyomi.domain.anime.model.CustomAnimeInfo
 import tachiyomi.domain.anime.model.applyFilter
+import tachiyomi.domain.anime.model.asAnimeCover
 import tachiyomi.domain.anime.repository.AnimeRepository
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetAnimeCategories
@@ -111,6 +124,10 @@ class AnimeScreenModel(
     private val trackPreferences: TrackPreferences = Injekt.get(),
     internal val playerPreferences: PlayerPreferences = Injekt.get(),
     internal val gesturePreferences: GesturePreferences = Injekt.get(),
+    private val uiPreferences: UiPreferences = Injekt.get(),
+    // KMK -->
+    private val sourcePreferences: SourcePreferences = Injekt.get(),
+    // KMK <--
     private val trackerManager: TrackerManager = Injekt.get(),
     private val trackEpisode: TrackEpisode = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
@@ -142,6 +159,10 @@ class AnimeScreenModel(
 
     private val successState: State.Success?
         get() = state.value as? State.Success
+
+    // KMK -->
+    val themeCoverBased = uiPreferences.themeCoverBased().get()
+    // KMK <--
 
     val anime: Anime?
         get() = successState?.anime
@@ -258,6 +279,64 @@ class AnimeScreenModel(
             updateSuccessState { it.copy(isRefreshingData = false) }
         }
     }
+
+    // KMK -->
+    /**
+     * Get the color of the manga cover by loading cover with ImageRequest directly from network.
+     */
+    fun setPaletteColor(model: Any) {
+        if (model is ImageRequest && model.defined.sizeResolver != null) return
+
+        val imageRequestBuilder = if (model is ImageRequest) {
+            model.newBuilder()
+        } else {
+            ImageRequest.Builder(context).data(model)
+        }
+            .allowHardware(false)
+
+        val generatePalette: (Image) -> Unit = { image ->
+            val bitmap = image.asDrawable(context.resources).getBitmapOrNull()
+            if (bitmap != null) {
+                Palette.from(bitmap).generate {
+                    screenModelScope.launchIO {
+                        if (it == null) return@launchIO
+                        val animeCover = when (model) {
+                            is Anime -> model.asAnimeCover()
+                            is AnimeCover -> model
+                            else -> return@launchIO
+                        }
+                        if (animeCover.isAnimeFavorite) {
+                            it.dominantSwatch?.let { swatch ->
+                                animeCover.dominantCoverColors = swatch.rgb to swatch.titleTextColor
+                            }
+                        }
+                        val vibrantColor = it.getBestColor() ?: return@launchIO
+                        animeCover.vibrantCoverColor = vibrantColor
+                        updateSuccessState {
+                            it.copy(seedColor = Color(vibrantColor))
+                        }
+                    }
+                }
+            }
+        }
+
+        context.imageLoader.enqueue(
+            imageRequestBuilder
+                .target(
+                    onSuccess = generatePalette,
+                    onError = {
+                        // TODO: handle error
+                        // val file = coverCache.getCoverFile(manga!!)
+                        // if (file.exists()) {
+                        //     file.delete()
+                        //     setPaletteColor()
+                        // }
+                    },
+                )
+                .build(),
+        )
+    }
+    // KMK <--
 
     fun fetchAllFromSource(manualFetch: Boolean = true) {
         screenModelScope.launch {
@@ -1302,6 +1381,8 @@ class AnimeScreenModel(
                 anime.nextEpisodeToAir,
                 anime.nextEpisodeAiringAt,
             ),
+            val seedColor: Color? = anime.asAnimeCover().vibrantCoverColor?.let { Color(it) },
+            // KMK <--
         ) : State {
 
             val processedEpisodes by lazy {

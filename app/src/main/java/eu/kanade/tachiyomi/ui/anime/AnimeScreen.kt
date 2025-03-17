@@ -5,10 +5,12 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -22,6 +24,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.materialkolor.ktx.blend
 import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.domain.anime.model.hasCustomCover
 import eu.kanade.domain.anime.model.toSAnime
@@ -35,6 +38,7 @@ import eu.kanade.presentation.anime.components.DeleteEpisodesDialog
 import eu.kanade.presentation.anime.components.SetIntervalDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
+import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.formatEpisodeNumber
@@ -60,6 +64,7 @@ import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
@@ -105,6 +110,35 @@ class AnimeScreen(
         }
 
         val successState = state as AnimeScreenModel.State.Success
+
+        val content = @Composable {
+            MangaDetailContent(
+                        context = context,
+                        screenModel = screenModel,
+                        successState = successState,
+                        navigator = navigator,
+                        scope = scope,
+                    )
+        }
+
+        val seedColor = successState.seedColor
+        TachiyomiTheme(
+            seedColor = seedColor.takeIf { screenModel.themeCoverBased },
+        ) {
+            content()
+        }
+    }
+
+    @Composable
+    fun MangaDetailContent(
+        context: Context,
+        screenModel: AnimeScreenModel,
+        successState: AnimeScreenModel.State.Success,
+        navigator: Navigator,
+        scope: CoroutineScope,
+    ) {
+        // KMK <--
+        val haptic = LocalHapticFeedback.current
         val isHttpSource = remember { successState.source is HttpSource }
 
         LaunchedEffect(successState.anime, screenModel.source) {
@@ -118,6 +152,11 @@ class AnimeScreen(
                 }
             }
         }
+
+        // KMK -->
+        val coverRatio = remember { mutableFloatStateOf(1f) }
+        val fullCoverBackground = MaterialTheme.colorScheme.surfaceTint.blend(MaterialTheme.colorScheme.surface)
+        // KMK <--
 
         AnimeScreen(
             state = successState,
@@ -210,6 +249,11 @@ class AnimeScreen(
             onEpisodeSelected = screenModel::toggleSelection,
             onAllEpisodeSelected = screenModel::toggleAllSelection,
             onInvertSelection = screenModel::invertSelection,
+            onCoverLoaded = {
+                if (screenModel.themeCoverBased || successState.anime.favorite) screenModel.setPaletteColor(it)
+            },
+            coverRatio = coverRatio,
+            // KMK <--
         )
 
         val onDismissRequest = {
@@ -314,15 +358,6 @@ class AnimeScreen(
                     LoadingScreen(Modifier.systemBarsPadding())
                 }
             }
-            // SY -->
-            is AnimeScreenModel.Dialog.EditAnimeInfo -> {
-                EditAnimeDialog(
-                    manga = dialog.anime,
-                    onDismissRequest = screenModel::dismissDialog,
-                    onPositiveClick = screenModel::updateAnimeInfo,
-                )
-            }
-            // SY <--
             is AnimeScreenModel.Dialog.SetAnimeFetchInterval -> {
                 SetIntervalDialog(
                     interval = dialog.anime.fetchInterval,
@@ -332,6 +367,18 @@ class AnimeScreen(
                         .takeIf { screenModel.isUpdateIntervalEnabled },
                 )
             }
+            // SY -->
+            is AnimeScreenModel.Dialog.EditAnimeInfo -> {
+                EditAnimeDialog(
+                    manga = dialog.anime,
+                    // KMK -->
+                    coverRatio = coverRatio,
+                    // KMK <--
+                    onDismissRequest = screenModel::dismissDialog,
+                    onPositiveClick = screenModel::updateAnimeInfo,
+                )
+            }
+            // SY <--
             AnimeScreenModel.Dialog.ChangeAnimeSkipIntro -> {
                 fun updateSkipIntroLength(newLength: Long) {
                     scope.launchIO {

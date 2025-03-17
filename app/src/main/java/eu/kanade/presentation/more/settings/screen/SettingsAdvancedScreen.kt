@@ -26,6 +26,7 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.interactor.TrustExtension
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.source.service.SourcePreferences.DataSaver
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.advanced.ClearDatabaseScreen
 import eu.kanade.presentation.more.settings.screen.debug.DebugInfoScreen
@@ -62,6 +63,7 @@ import logcat.LogPriority
 import okhttp3.Headers
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -289,6 +291,9 @@ object SettingsAdvancedScreen : SearchableSettings {
     private fun getLibraryGroup(): Preference.PreferenceGroup {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+        // KMK -->
+        val uiPreferences = remember { Injekt.get<UiPreferences>() }
+        // KMK <--
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_library),
@@ -300,6 +305,12 @@ object SettingsAdvancedScreen : SearchableSettings {
                         MetadataUpdateJob.startNow(context)
                     },
                 ),
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.preloadLibraryColor(),
+                    title = stringResource(KMR.strings.preload_library_cover_color),
+                ),
+                // KMK <--
             ),
         )
     }

@@ -12,15 +12,20 @@ import coil3.fetch.SourceFetchResult
 import coil3.getOrDefault
 import coil3.request.Options
 import com.hippo.unifile.UniFile
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.coil.AnimeCoverFetcher.Companion.USE_CUSTOM_COVER_KEY
 import eu.kanade.tachiyomi.network.await
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import logcat.LogPriority
 import okhttp3.CacheControl
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.Response
+import okio.BufferedSource
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
 import okio.Source
@@ -30,7 +35,10 @@ import okio.source
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeCover
+import tachiyomi.domain.anime.model.asAnimeCover
 import tachiyomi.domain.source.service.SourceManager
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import java.io.File
 import java.io.IOException
@@ -46,7 +54,11 @@ import java.io.IOException
  * - [USE_CUSTOM_COVER_KEY]: Use custom cover if set by user, default is true
  */
 class AnimeCoverFetcher(
-    private val url: String?,
+    // KMK -->
+    private val animeCover: AnimeCover,
+    private val url: String? = animeCover.url,
+    // private val url: String?,
+    // KMK <--
     private val isLibraryAnime: Boolean,
     private val options: Options,
     private val coverFileLazy: Lazy<File?>,
@@ -56,6 +68,13 @@ class AnimeCoverFetcher(
     private val callFactoryLazy: Lazy<Call.Factory>,
     private val imageLoader: ImageLoader,
 ) : Fetcher {
+
+    // KMK -->
+    private val scope by lazy { CoroutineScope(Dispatchers.IO) }
+    private val uiPreferences = Injekt.get<UiPreferences>()
+    private val themeCoverBased = uiPreferences.themeCoverBased().get()
+    private val preloadLibraryColor = uiPreferences.preloadLibraryColor().get()
+    // KMK <--
 
     private val diskCacheKey: String
         get() = diskCacheKeyLazy.value
@@ -84,6 +103,9 @@ class AnimeCoverFetcher(
     }
 
     private fun fileLoader(file: File): FetchResult {
+        // KMK -->
+        setRatioAndColorsInScope(animeCover, ogFile = file)
+        // KMK <--
         return SourceFetchResult(
             source = ImageSource(
                 file = file.toOkioPath(),
@@ -96,6 +118,9 @@ class AnimeCoverFetcher(
     }
 
     private fun fileUriLoader(uri: String): FetchResult {
+        // KMK -->
+        setRatioAndColorsInScope(animeCover)
+        // KMK <--
         val source = UniFile.fromUri(options.context, uri.toUri())!!
             .openInputStream()
             .source()
@@ -129,6 +154,9 @@ class AnimeCoverFetcher(
                 }
 
                 // Read from snapshot
+                // KMK -->
+                setRatioAndColorsInScope(animeCover, bufferedSource = snapshot.toImageSource().source())
+                // KMK <--
                 return SourceFetchResult(
                     source = snapshot.toImageSource(),
                     mimeType = "image/*",
@@ -149,6 +177,9 @@ class AnimeCoverFetcher(
                 // Read from disk cache
                 snapshot = writeToDiskCache(response)
                 if (snapshot != null) {
+                    // KMK -->
+                    setRatioAndColorsInScope(animeCover, bufferedSource = snapshot.toImageSource().source())
+                    // KMK <--
                     return SourceFetchResult(
                         source = snapshot.toImageSource(),
                         mimeType = "image/*",
@@ -156,6 +187,15 @@ class AnimeCoverFetcher(
                     )
                 }
 
+                // KMK -->
+                setRatioAndColorsInScope(
+                    animeCover,
+                    bufferedSource = ImageSource(
+                        source = responseBody.source(),
+                        fileSystem = FileSystem.SYSTEM,
+                    ).source(),
+                )
+                // KMK <--
                 // Read from response if cache is unused or unusable
                 return SourceFetchResult(
                     source = ImageSource(source = responseBody.source(), fileSystem = FileSystem.SYSTEM),
@@ -294,10 +334,33 @@ class AnimeCoverFetcher(
         }
     }
 
+    // KMK -->
+    /**
+     * [setRatioAndColorsInScope] is called whenever a cover is loaded with [AnimeCoverFetcher.fetch]
+     *
+     * @param bufferedSource if not null then it will load bitmap from [BufferedSource], regardless of [ogFile]
+     * @param ogFile if not null then it will load bitmap from [File]. If it's null then it will try to load bitmap
+     *  from [CoverCache] using either [CoverCache.customCoverCacheDir] or [CoverCache.cacheDir]
+     * @param force if true then it will always re-calculate ratio & color for favorite animes.
+     */
+    private fun setRatioAndColorsInScope(
+        animeCover: AnimeCover,
+        bufferedSource: BufferedSource? = null,
+        ogFile: File? = null,
+        onlyFavorite: Boolean = !themeCoverBased,
+        force: Boolean = false,
+    ) {
+        if (!preloadLibraryColor) return
+        scope.launch {
+            AnimeCoverMetadata.setRatioAndColors(animeCover, bufferedSource, ogFile, onlyFavorite, force)
+        }
+    }
+    // KMK <--
+
     private enum class Type {
         File,
-        URL,
         URI,
+        URL,
     }
 
     class AnimeFactory(
@@ -309,7 +372,10 @@ class AnimeCoverFetcher(
 
         override fun create(data: Anime, options: Options, imageLoader: ImageLoader): Fetcher {
             return AnimeCoverFetcher(
-                url = data.thumbnailUrl,
+                // KMK -->
+                // url = data.thumbnailUrl,
+                animeCover = data.asAnimeCover(),
+                // KMK <--
                 isLibraryAnime = data.favorite,
                 options = options,
                 coverFileLazy = lazy { coverCache.getCoverFile(data.thumbnailUrl) },
@@ -331,7 +397,10 @@ class AnimeCoverFetcher(
 
         override fun create(data: AnimeCover, options: Options, imageLoader: ImageLoader): Fetcher {
             return AnimeCoverFetcher(
-                url = data.url,
+                // KMK -->
+                // url = data.url,
+                animeCover = data,
+                // KMK <--
                 isLibraryAnime = data.isAnimeFavorite,
                 options = options,
                 coverFileLazy = lazy { coverCache.getCoverFile(data.url) },
