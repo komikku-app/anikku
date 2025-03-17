@@ -9,11 +9,11 @@
 ### Full-featured player, based on Aniyomi.
 Discover and watch anime, cartoons, series, and more – easier than ever on your Android device.
 
-[![Discord server](https://img.shields.io/discord/841701076242530374.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/85jB7V5AJR)
-[![GitHub downloads](https://img.shields.io/github/downloads/Dark25/aniyomi/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/anikku/releases)
+[![Discord server](https://img.shields.io/discord/1242381704459452488.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/85jB7V5AJR)
+[![GitHub downloads](https://img.shields.io/github/downloads/komikku-app/anikku/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/anikku/releases)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/Dark25/aniyomi/build_push.yml?labelColor=27303D)](https://github.com/aniyomiorg/aniyomi/actions/workflows/build_push.yml)
-[![License: Apache-2.0](https://img.shields.io/github/license/Dark25/aniyomi?labelColor=27303D&color=818cf8)](/LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/komikku-app/anikku/build_check.yml?labelColor=27303D)](https://github.com/komikku-app/anikku/actions/workflows/build_check.yml)
+[![License: Apache-2.0](https://img.shields.io/github/license/komikku-app/anikku?labelColor=27303D&color=818cf8)](/LICENSE)
 [![Translation status](https://img.shields.io/weblate/progress/aniyomi?labelColor=27303D&color=946300)](https://hosted.weblate.org/engage/aniyomi/)
 
 ## Download
