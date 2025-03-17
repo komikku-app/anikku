@@ -163,9 +163,8 @@ class LibraryUpdateNotifier(
      * Shows notification containing update entries that failed with action to open full log.
      *
      * @param failed Number of entries that failed to update.
-     * @param uri Uri for error log file containing all titles that failed.
      */
-    fun showUpdateErrorNotification(failed: Int, uri: Uri) {
+    fun showUpdateErrorNotification(failed: Int) {
         if (failed == 0) {
             return
         }
@@ -178,7 +177,7 @@ class LibraryUpdateNotifier(
             setContentText(context.stringResource(MR.strings.action_show_errors))
             setSmallIcon(R.mipmap.ic_launcher)
 
-            setContentIntent(NotificationReceiver.openErrorLogPendingActivity(context, uri))
+            setContentIntent(NotificationReceiver.openErrorLogPendingActivity(context))
         }
     }
 

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
@@ -32,6 +33,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.more.DownloadQueueState
 import tachiyomi.core.common.Constants
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -55,6 +57,9 @@ fun MoreScreen(
     onClickPlayerSettings: () -> Unit,
     onClickSettings: () -> Unit,
     onClickAbout: () -> Unit,
+    // KMK -->
+    onClickLibraryUpdateErrors: () -> Unit,
+    // KMK <--
 ) {
     val uriHandler = LocalUriHandler.current
 
@@ -163,6 +168,15 @@ fun MoreScreen(
                     onPreferenceClick = onClickStats,
                 )
             }
+            // KMK -->
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(KMR.strings.option_label_library_update_errors),
+                    icon = Icons.Outlined.NewReleases,
+                    onPreferenceClick = onClickLibraryUpdateErrors,
+                )
+            }
+            // KMK <--
             item {
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_data_storage),

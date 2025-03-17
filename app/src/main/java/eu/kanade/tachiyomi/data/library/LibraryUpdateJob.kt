@@ -28,8 +28,6 @@ import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.SAnime
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
-import eu.kanade.tachiyomi.util.storage.getUriCompat
-import eu.kanade.tachiyomi.util.system.createFileInCacheDir
 import eu.kanade.tachiyomi.util.system.isConnectedToWifi
 import eu.kanade.tachiyomi.util.system.isRunning
 import eu.kanade.tachiyomi.util.system.workManager
@@ -66,13 +64,17 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_OUTSI
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_CHARGING
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_NETWORK_NOT_METERED
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_ONLY_ON_WIFI
+import tachiyomi.domain.libraryUpdateError.interactor.DeleteLibraryUpdateErrors
+import tachiyomi.domain.libraryUpdateError.interactor.InsertLibraryUpdateErrors
+import tachiyomi.domain.libraryUpdateError.model.LibraryUpdateError
+import tachiyomi.domain.libraryUpdateErrorMessage.interactor.InsertLibraryUpdateErrorMessages
+import tachiyomi.domain.libraryUpdateErrorMessage.model.LibraryUpdateErrorMessage
 import tachiyomi.domain.source.model.SourceNotInstalledException
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.File
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.concurrent.CopyOnWriteArrayList
@@ -97,6 +99,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
     private val notifier = LibraryUpdateNotifier(context)
 
+    // KMK -->
+    private val deleteLibraryUpdateErrors: DeleteLibraryUpdateErrors = Injekt.get()
+    private val insertLibraryUpdateErrors: InsertLibraryUpdateErrors = Injekt.get()
+    private val insertLibraryUpdateErrorMessages: InsertLibraryUpdateErrorMessages = Injekt.get()
+    // KMK <--
+
     private var animeToUpdate: List<LibraryAnime> = mutableListOf()
 
     override suspend fun doWork(): Result {
@@ -112,6 +120,10 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 return Result.retry()
             }
         }
+
+        // KMK -->
+        deleteLibraryUpdateErrors.cleanUnrelevantMangaErrors()
+        // KMK <--
 
         try {
             setForeground(getForegroundInfo())
@@ -354,6 +366,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             val episodesToDownload = filterEpisodesForDownload.await(anime, newEpisodes)
 
                                             if (episodesToDownload.isNotEmpty()) {
+                                                downloadEpisodes(anime, episodesToDownload)
                                                 hasDownloads.set(true)
                                             }
 
@@ -363,17 +376,20 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             // Convert to the anime that contains new episodes
                                             newUpdates.add(anime to newEpisodes.toTypedArray())
                                         }
+                                        clearErrorFromDB(mangaId = anime.id)
                                     } catch (e: Throwable) {
                                         val errorMessage = when (e) {
-                                            is NoResultsException -> context.stringResource(
-                                                MR.strings.no_episodes_error,
-                                            )
-                                            // failedUpdates will already have the source, don't need to copy it into the message
+                                            is NoResultsException ->
+                                                context.stringResource(MR.strings.no_episodes_error)
+                                            // failedUpdates will already have the source,
+                                            // don't need to copy it into the message
                                             is SourceNotInstalledException -> context.stringResource(
                                                 MR.strings.loader_not_implemented_error,
                                             )
+
                                             else -> e.message
                                         }
+                                        writeErrorToDB(anime to errorMessage)
                                         failedUpdates.add(anime to errorMessage)
                                     }
                                 }
@@ -394,10 +410,8 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         }
 
         if (failedUpdates.isNotEmpty()) {
-            val errorFile = writeErrorFile(failedUpdates)
             notifier.showUpdateErrorNotification(
                 failedUpdates.size,
-                errorFile.getUriCompat(context),
             )
         }
     }
@@ -460,37 +474,39 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         )
     }
 
-    /**
-     * Writes basic file of update errors to cache dir.
-     */
-    private fun writeErrorFile(errors: List<Pair<Anime, String?>>): File {
-        try {
-            if (errors.isNotEmpty()) {
-                val file = context.createFileInCacheDir("anikku_update_errors.txt")
-                file.bufferedWriter().use { out ->
-                    out.write(
-                        context.stringResource(MR.strings.library_errors_help, ERROR_LOG_HELP_URL) + "\n\n",
-                    )
-                    // Error file format:
-                    // ! Error
-                    //   # Source
-                    //     - Anime
-                    errors.groupBy({ it.second }, { it.first }).forEach { (error, animes) ->
-                        out.write("\n! ${error}\n")
-                        animes.groupBy { it.source }.forEach { (srcId, animes) ->
-                            val source = sourceManager.getOrStub(srcId)
-                            out.write("  # $source\n")
-                            animes.forEach {
-                                out.write("    - ${it.title}\n")
-                            }
-                        }
-                    }
-                }
-                return file
-            }
-        } catch (_: Exception) {}
-        return File("")
+    // KMK -->
+    private suspend fun clearErrorFromDB(mangaId: Long) {
+        deleteLibraryUpdateErrors.deleteMangaError(mangaId = mangaId)
     }
+
+    private suspend fun writeErrorToDB(error: Pair<Anime, String?>) {
+        val errorMessage = error.second ?: "???"
+        val errorMessageId = insertLibraryUpdateErrorMessages.get(errorMessage)
+            ?: insertLibraryUpdateErrorMessages.insert(
+                libraryUpdateErrorMessage = LibraryUpdateErrorMessage(-1L, errorMessage),
+            )
+
+        insertLibraryUpdateErrors.upsert(
+            LibraryUpdateError(id = -1L, animeId = error.first.id, messageId = errorMessageId),
+        )
+    }
+
+    private suspend fun writeErrorsToDB(errors: List<Pair<Anime, String?>>) {
+        val libraryErrors = errors.groupBy({ it.second }, { it.first })
+        val errorMessages = insertLibraryUpdateErrorMessages.insertAll(
+            libraryUpdateErrorMessages = libraryErrors.keys.map { errorMessage ->
+                LibraryUpdateErrorMessage(-1L, errorMessage.orEmpty())
+            },
+        )
+        val errorList = mutableListOf<LibraryUpdateError>()
+        errorMessages.forEach {
+            libraryErrors[it.second]?.forEach { manga ->
+                errorList.add(LibraryUpdateError(id = -1L, animeId = manga.id, messageId = it.first))
+            }
+        }
+        insertLibraryUpdateErrors.insertAll(errorList)
+    }
+    // KMK <--
 
     companion object {
         private const val TAG = "AnimeLibraryUpdate"

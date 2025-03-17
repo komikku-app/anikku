@@ -43,6 +43,7 @@ import eu.kanade.tachiyomi.ui.browse.BrowseTab
 import eu.kanade.tachiyomi.ui.download.DownloadQueueScreen
 import eu.kanade.tachiyomi.ui.history.HistoryTab
 import eu.kanade.tachiyomi.ui.library.LibraryTab
+import eu.kanade.tachiyomi.ui.libraryUpdateError.LibraryUpdateErrorScreen
 import eu.kanade.tachiyomi.ui.more.MoreTab
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import kotlinx.coroutines.channels.Channel
@@ -181,8 +182,14 @@ object HomeScreen : Screen() {
                         if (it is Tab.AnimeLib && it.animeIdToOpen != null) {
                             navigator.push(AnimeScreen(it.animeIdToOpen))
                         }
-                        if (it is Tab.More && it.toDownloads) {
-                            navigator.push(DownloadQueueScreen)
+                        if (it is Tab.More) {
+                            if (it.toDownloads) {
+                                navigator.push(DownloadQueueScreen)
+                                // KMK -->
+                            } else if (it.toLibraryUpdateErrors) {
+                                navigator.push(LibraryUpdateErrorScreen())
+                                // KMK <--
+                            }
                         }
                     }
                 }
@@ -322,6 +329,11 @@ object HomeScreen : Screen() {
         data object Updates : Tab
         data object History : Tab
         data class Browse(val toExtensions: Boolean = false) : Tab
-        data class More(val toDownloads: Boolean) : Tab
+        data class More(
+            val toDownloads: Boolean,
+            // KMK -->
+            val toLibraryUpdateErrors: Boolean = false,
+            // KMK <--
+        ) : Tab
     }
 }
