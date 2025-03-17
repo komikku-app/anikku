@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -38,7 +39,7 @@ abstract class SearchScreenModel(
     sourcePreferences: SourcePreferences = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
     private val extensionManager: ExtensionManager = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
+    internal val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
     private val getAnime: GetAnime = Injekt.get(),
     private val preferences: SourcePreferences = Injekt.get(),
 ) : StateScreenModel<SearchScreenModel.State>(initialState) {
@@ -69,6 +70,13 @@ abstract class SearchScreenModel(
                 mutableState.update { it.copy(onlyShowHasResults = state) }
             }
         }
+        // KMK -->
+        screenModelScope.launch {
+            preferences.globalSearchPinnedState().changes().collectLatest { state ->
+                mutableState.update { it.copy(sourceFilter = state) }
+            }
+        }
+        // KMK <--
     }
 
     @Composable
@@ -83,7 +91,7 @@ abstract class SearchScreenModel(
     }
 
     open fun getEnabledSources(): List<CatalogueSource> {
-        return sourceManager.getCatalogueSources()
+        return sourceManager.getVisibleCatalogueSources()
             .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
             .sortedWith(
                 compareBy(
@@ -93,6 +101,16 @@ abstract class SearchScreenModel(
             )
     }
 
+    // KMK -->
+    fun hasPinnedSources(): Boolean = getEnabledSources().any { "${it.id}" in pinnedSources }
+
+    fun shouldPinnedSourcesHidden() {
+        if (!hasPinnedSources()) {
+            preferences.globalSearchPinnedState().set(SourceFilter.All)
+        }
+    }
+    // KMK <--
+
     private fun getSelectedSources(): List<CatalogueSource> {
         val enabledSources = getEnabledSources()
 
@@ -101,11 +119,14 @@ abstract class SearchScreenModel(
             return enabledSources
         }
 
-        return extensionManager.installedExtensionsFlow.value
+        // SY -->
+        val filteredSourceIds = extensionManager.installedExtensionsFlow.value
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
             .filterIsInstance<CatalogueSource>()
-            .filter { it in enabledSources }
+            .map { it.id }
+        return enabledSources.filter { it.id in filteredSourceIds }
+        // SY <--
     }
 
     fun updateSearchQuery(query: String?) {
@@ -113,7 +134,7 @@ abstract class SearchScreenModel(
     }
 
     fun setSourceFilter(filter: SourceFilter) {
-        mutableState.update { it.copy(sourceFilter = filter) }
+        preferences.globalSearchPinnedState().set(filter)
         search()
     }
 
@@ -126,11 +147,14 @@ abstract class SearchScreenModel(
         val sourceFilter = state.value.sourceFilter
 
         if (query.isNullOrBlank()) return
+
         val sameQuery = this.lastQuery == query
         if (sameQuery && this.lastSourceFilter == sourceFilter) return
 
         this.lastQuery = query
         this.lastSourceFilter = sourceFilter
+
+        searchJob?.cancel()
 
         val sources = getSelectedSources()
 
@@ -156,13 +180,16 @@ abstract class SearchScreenModel(
                     if (state.value.items[source] !is SearchItemResult.Loading) {
                         return@async
                     }
+
                     try {
                         val page = withContext(coroutineDispatcher) {
                             source.getSearchAnime(1, query, source.getFilterList())
                         }
 
                         val titles = page.animes.map {
-                            networkToLocalAnime.await(it.toDomainAnime(source.id))
+                            // KMK -->
+                            it.toDomainAnime(source.id)
+                            // KMK <--
                         }
 
                         if (isActive) {
@@ -207,6 +234,7 @@ abstract class SearchScreenModel(
         val progress: Int = items.count { it.value !is SearchItemResult.Loading }
         val total: Int = items.size
         val filteredItems = items.filter { (_, result) -> result.isVisible(onlyShowHasResults) }
+            .toImmutableMap()
     }
 }
 

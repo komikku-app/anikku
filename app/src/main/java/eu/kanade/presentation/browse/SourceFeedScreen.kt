@@ -20,7 +20,10 @@ import eu.kanade.presentation.browse.components.GlobalSearchResultItem
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.AppBarTitle
+import eu.kanade.presentation.components.BulkSelectionToolbar
 import eu.kanade.presentation.components.SearchToolbar
+import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
+import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.anime.model.Anime
@@ -104,11 +107,37 @@ fun SourceFeedScreen(
     onSourceSettingClick: (() -> Unit?)?,
     onSortFeedClick: (() -> Unit)?,
     onLongClickManga: (Anime) -> Unit,
+    bulkFavoriteScreenModel: BulkFavoriteScreenModel,
     // KMK <--
 ) {
+    // KMK -->
+    val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
+    // KMK <--
+
     Scaffold(
         topBar = { scrollBehavior ->
             // KMK -->
+            if (bulkFavoriteState.selectionMode) {
+                BulkSelectionToolbar(
+                    selectedCount = bulkFavoriteState.selection.size,
+                    isRunning = bulkFavoriteState.isRunning,
+                    onClickClearSelection = bulkFavoriteScreenModel::toggleSelectionMode,
+                    onChangeCategoryClick = bulkFavoriteScreenModel::addFavorite,
+                    onSelectAll = {
+                        items.forEach {
+                            it.results?.forEach { manga ->
+                                bulkFavoriteScreenModel.select(manga)
+                            }
+                        }
+                    },
+                    onReverseSelection = {
+                        bulkFavoriteScreenModel.reverseSelection(
+                            items.mapNotNull { it.results }
+                                .flatten(),
+                        )
+                    },
+                )
+            } else {
                 // KMK <--
                 SourceFeedToolbar(
                     title = name,
@@ -121,8 +150,11 @@ fun SourceFeedScreen(
                     onWebViewClick = onWebViewClick,
                     onSourceSettingClick = onSourceSettingClick,
                     onSortFeedClick = onSortFeedClick,
+                    toggleSelectionMode = bulkFavoriteScreenModel::toggleSelectionMode,
+                    isRunning = bulkFavoriteState.isRunning,
                     // KMK <--
                 )
+            }
         },
         floatingActionButton = {
             BrowseSourceFloatingActionButton(
@@ -147,6 +179,10 @@ fun SourceFeedScreen(
                         onLongClickFeed = onLongClickFeed,
                         // KMK <--
                         onClickManga = onClickManga,
+                        // KMK -->
+                        onLongClickManga = onLongClickManga,
+                        selection = bulkFavoriteState.selection,
+                        // KMK <--
                     )
                 }
             }
@@ -167,6 +203,10 @@ fun SourceFeedList(
     onLongClickFeed: (SourceFeedUI.SourceSavedSearch, Boolean, Boolean) -> Unit,
     // KMK <--
     onClickManga: (Anime) -> Unit,
+    // KMK -->
+    onLongClickManga: (Anime) -> Unit,
+    selection: List<Anime>,
+    // KMK <--
 ) {
     ScrollbarLazyColumn(
         contentPadding = paddingValues + topSmallPaddingValues,
@@ -188,6 +228,19 @@ fun SourceFeedList(
                     item.title
                 },
                 subtitle = null,
+                onLongClick = if (item is SourceFeedUI.SourceSavedSearch) {
+                    {
+                        // KMK -->
+                        onLongClickFeed(
+                            item,
+                            index != items.size - items.filterIsInstance<SourceFeedUI.SourceSavedSearch>().size,
+                            index != items.lastIndex,
+                        )
+                        // KMK <--
+                    }
+                } else {
+                    null
+                },
                 onClick = when (item) {
                     is SourceFeedUI.Browse -> onClickBrowse
                     is SourceFeedUI.Latest -> onClickLatest
@@ -200,6 +253,10 @@ fun SourceFeedList(
                     item = item,
                     getMangaState = { getMangaState(it) },
                     onClickManga = onClickManga,
+                    // KMK -->
+                    onLongClickManga = onLongClickManga,
+                    selection = selection,
+                    // KMK <--
                 )
             }
         }
@@ -211,6 +268,10 @@ fun SourceFeedItem(
     item: SourceFeedUI,
     getMangaState: @Composable ((Anime) -> State<Anime>),
     onClickManga: (Anime) -> Unit,
+    // KMK -->
+    onLongClickManga: (Anime) -> Unit,
+    selection: List<Anime>,
+    // KMK <--
 ) {
     val results = item.results
     when {
@@ -225,7 +286,9 @@ fun SourceFeedItem(
                 titles = item.results.orEmpty(),
                 getAnime = getMangaState,
                 onClick = onClickManga,
-                onLongClick = { },
+                // KMK -->
+                onLongClick = onLongClickManga,
+                selection = selection,
                 // KMK <--
             )
         }
@@ -244,6 +307,8 @@ fun SourceFeedToolbar(
     onWebViewClick: (() -> Unit)?,
     onSourceSettingClick: (() -> Unit?)?,
     onSortFeedClick: (() -> Unit)?,
+    toggleSelectionMode: () -> Unit,
+    isRunning: Boolean,
     // KMK <--
 ) {
     SearchToolbar(
@@ -262,6 +327,8 @@ fun SourceFeedToolbar(
             AppBarActions(
                 actions = persistentListOf<AppBar.AppBarAction>().builder()
                     .apply {
+                        add(bulkSelectionButton(isRunning, toggleSelectionMode))
+
                         onWebViewClick?.let {
                             add(
                                 AppBar.Action(

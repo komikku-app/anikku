@@ -2,6 +2,7 @@ package eu.kanade.presentation.browse.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.automirrored.outlined.Help
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -18,9 +19,11 @@ import eu.kanade.presentation.components.RadioMenuItem
 import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.source.local.LocalSource
 
@@ -37,6 +40,10 @@ fun BrowseSourceToolbar(
     onSettingsClick: () -> Unit,
     onSearch: (String) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    // KMK -->
+    toggleSelectionMode: () -> Unit,
+    isRunning: Boolean,
+    // KMK <--
 ) {
     // Avoid capturing unstable source in actions lambda
     val title = source?.name
@@ -74,6 +81,27 @@ fun BrowseSourceToolbar(
                                     onClick = onHelpClick,
                                 ),
                             )
+                        }
+                        // KMK -->
+                        add(bulkSelectionButton(isRunning, toggleSelectionMode))
+                        // KMK <--
+                        if (isLocalSource) {
+                            if (isConfigurableSource && displayMode != null) {
+                                add(
+                                    AppBar.OverflowAction(
+                                        title = stringResource(MR.strings.label_help),
+                                        onClick = onHelpClick,
+                                    ),
+                                )
+                            } else {
+                                add(
+                                    AppBar.Action(
+                                        title = stringResource(MR.strings.label_help),
+                                        icon = Icons.AutoMirrored.Outlined.Help,
+                                        onClick = onHelpClick,
+                                    ),
+                                )
+                            }
                         } else {
                             add(
                                 AppBar.OverflowAction(
@@ -105,6 +133,15 @@ fun BrowseSourceToolbar(
                     selectingDisplayMode = false
                     onDisplayModeChange(LibraryDisplayMode.ComfortableGrid)
                 }
+                // KMK -->
+                RadioMenuItem(
+                    text = { Text(text = stringResource(KMR.strings.action_display_comfortable_grid_panorama)) },
+                    isChecked = displayMode == LibraryDisplayMode.ComfortableGridPanorama,
+                ) {
+                    selectingDisplayMode = false
+                    onDisplayModeChange(LibraryDisplayMode.ComfortableGridPanorama)
+                }
+                // KMK <--
                 RadioMenuItem(
                     text = { Text(text = stringResource(MR.strings.action_display_grid)) },
                     isChecked = displayMode == LibraryDisplayMode.CompactGrid,

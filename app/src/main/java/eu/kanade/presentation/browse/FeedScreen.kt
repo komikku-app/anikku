@@ -80,6 +80,7 @@ fun FeedScreen(
     onClickManga: (Anime) -> Unit,
     // KMK -->
     onLongClickManga: (Anime) -> Unit,
+    selection: List<Anime>,
     // KMK <--
     onRefresh: () -> Unit,
     getAnimeState: @Composable (Anime) -> State<Anime>,
@@ -120,6 +121,15 @@ fun FeedScreen(
                         GlobalSearchResultItem(
                             title = item.title,
                             subtitle = item.subtitle,
+                            onLongClick = {
+                                // KMK -->
+                                onLongClickFeed(
+                                    item,
+                                    index != 0,
+                                    index != feeds.lastIndex,
+                                )
+                                // KMK <--
+                            },
                             onClick = {
                                 if (item.savedSearch != null && item.source != null) {
                                     onClickSavedSearch(item.savedSearch, item.source)
@@ -135,6 +145,7 @@ fun FeedScreen(
                                 onClickManga = onClickManga,
                                 // KMK -->
                                 onLongClickManga = onLongClickManga,
+                                selection = selection,
                                 // KMK <--
                             )
                         }
@@ -152,6 +163,7 @@ fun FeedItem(
     onClickManga: (Anime) -> Unit,
     // KMK -->
     onLongClickManga: (Anime) -> Unit,
+    selection: List<Anime>,
     // KMK <--
 ) {
     when {
@@ -168,6 +180,7 @@ fun FeedItem(
                 onClick = onClickManga,
                 // KMK -->
                 onLongClick = onLongClickManga,
+                selection = selection,
                 // KMK <--
             )
         }

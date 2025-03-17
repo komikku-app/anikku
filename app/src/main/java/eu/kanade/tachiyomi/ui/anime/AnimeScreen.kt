@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.anime
 
 import android.content.Context
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -11,8 +12,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +53,12 @@ import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.anime.track.TrackInfoDialogHomeScreen
+import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
+import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
+import eu.kanade.tachiyomi.ui.browse.ChangeAnimeCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.RemoveAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
@@ -114,11 +123,25 @@ class AnimeScreen(
 
         val successState = state as AnimeScreenModel.State.Success
 
+        // KMK -->
+        val bulkFavoriteScreenModel = rememberScreenModel { BulkFavoriteScreenModel() }
+        val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
+
+        val showingRelatedMangasScreen = rememberSaveable { mutableStateOf(false) }
+
+        BackHandler(enabled = bulkFavoriteState.selectionMode || showingRelatedMangasScreen.value) {
+            when {
+                bulkFavoriteState.selectionMode -> bulkFavoriteScreenModel.toggleSelectionMode()
+                showingRelatedMangasScreen.value -> showingRelatedMangasScreen.value = false
+            }
+        }
+
         val content = @Composable {
             MangaDetailContent(
                         context = context,
                         screenModel = screenModel,
                         successState = successState,
+                        bulkFavoriteScreenModel = bulkFavoriteScreenModel,
                         navigator = navigator,
                         scope = scope,
                     )
@@ -130,6 +153,25 @@ class AnimeScreen(
         ) {
             content()
         }
+
+        when (bulkFavoriteState.dialog) {
+            is BulkFavoriteScreenModel.Dialog.AddDuplicateManga ->
+                AddDuplicateAnimeDialog(bulkFavoriteScreenModel)
+
+            is BulkFavoriteScreenModel.Dialog.RemoveManga ->
+                RemoveAnimeDialog(bulkFavoriteScreenModel)
+
+            is BulkFavoriteScreenModel.Dialog.ChangeMangaCategory ->
+                ChangeAnimeCategoryDialog(bulkFavoriteScreenModel)
+
+            is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
+                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+
+            is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
+                AllowDuplicateDialog(bulkFavoriteScreenModel)
+
+            else -> {}
+        }
     }
 
     @Composable
@@ -137,6 +179,7 @@ class AnimeScreen(
         context: Context,
         screenModel: AnimeScreenModel,
         successState: AnimeScreenModel.State.Success,
+        bulkFavoriteScreenModel: BulkFavoriteScreenModel,
         navigator: Navigator,
         scope: CoroutineScope,
     ) {
@@ -270,7 +313,7 @@ class AnimeScreen(
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
                     onDismissRequest = onDismissRequest,
-                    onEditCategories = { navigator.push(CategoryScreen) },
+                    onEditCategories = { navigator.push(CategoryScreen()) },
                     onConfirm = { include, _ ->
                         screenModel.moveAnimeToCategoriesAndAddToLibrary(dialog.anime, include)
                     },
@@ -296,6 +339,9 @@ class AnimeScreen(
                         migrateManga(navigator, dialog.duplicate, screenModel.anime!!.id)
                         // SY <--
                     },
+                    // KMK -->
+                    duplicate = dialog.duplicate,
+                    // KMK <--
                 )
             }
 

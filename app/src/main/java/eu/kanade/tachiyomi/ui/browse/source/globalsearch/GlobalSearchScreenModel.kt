@@ -20,6 +20,10 @@ class GlobalSearchScreenModel(
             }
             search()
         }
+
+        // KMK -->
+        shouldPinnedSourcesHidden()
+        // KMK <--
     }
 
     override fun getEnabledSources(): List<CatalogueSource> {

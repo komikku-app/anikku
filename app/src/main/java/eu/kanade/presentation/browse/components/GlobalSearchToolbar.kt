@@ -26,8 +26,11 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.SearchToolbar
+import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
+import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -45,6 +48,11 @@ fun GlobalSearchToolbar(
     onlyShowHasResults: Boolean,
     onToggleResults: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
+    // KMK -->
+    toggleSelectionMode: () -> Unit,
+    isRunning: Boolean,
+    hasPinnedSources: Boolean,
+    // KMK <--
 ) {
     Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
         Box {
@@ -55,6 +63,15 @@ fun GlobalSearchToolbar(
                 onClickCloseSearch = navigateUp,
                 navigateUp = navigateUp,
                 scrollBehavior = scrollBehavior,
+                // KMK -->
+                actions = {
+                    AppBarActions(
+                        actions = persistentListOf(
+                            bulkSelectionButton(isRunning, toggleSelectionMode),
+                        ),
+                    )
+                },
+                // KMK <--
             )
             if (progress in 1..<total) {
                 LinearProgressIndicator(
@@ -73,21 +90,25 @@ fun GlobalSearchToolbar(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
         ) {
             // TODO: make this UX better; it only applies when triggering a new search
-            FilterChip(
-                selected = sourceFilter == SourceFilter.PinnedOnly,
-                onClick = { onChangeSearchFilter(SourceFilter.PinnedOnly) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Outlined.PushPin,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(FilterChipDefaults.IconSize),
-                    )
-                },
-                label = {
-                    Text(text = stringResource(MR.strings.pinned_sources))
-                },
-            )
+            // KMK -->
+            if (hasPinnedSources) {
+                // KMK <--
+                FilterChip(
+                    selected = sourceFilter == SourceFilter.PinnedOnly,
+                    onClick = { onChangeSearchFilter(SourceFilter.PinnedOnly) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.PushPin,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(FilterChipDefaults.IconSize),
+                        )
+                    },
+                    label = {
+                        Text(text = stringResource(MR.strings.pinned_sources))
+                    },
+                )
+            }
             FilterChip(
                 selected = sourceFilter == SourceFilter.All,
                 onClick = { onChangeSearchFilter(SourceFilter.All) },

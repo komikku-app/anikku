@@ -29,6 +29,13 @@ import eu.kanade.presentation.browse.components.SourceFeedDeleteDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
+import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
+import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
+import eu.kanade.tachiyomi.ui.browse.ChangeAnimeCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.RemoveAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import kotlinx.collections.immutable.persistentListOf
@@ -45,6 +52,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 fun feedTab(
     // KMK -->
     screenModel: FeedScreenModel,
+    bulkFavoriteScreenModel: BulkFavoriteScreenModel,
     // KMK <--
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
@@ -52,14 +60,20 @@ fun feedTab(
 
     // KMK -->
     val scope = rememberCoroutineScope()
+    val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val showingFeedOrderScreen = rememberSaveable { mutableStateOf(false) }
 
     val haptic = LocalHapticFeedback.current
 
-    BackHandler(enabled = showingFeedOrderScreen.value) {
+    BackHandler(enabled = bulkFavoriteState.selectionMode || showingFeedOrderScreen.value) {
         when {
+            bulkFavoriteState.selectionMode -> bulkFavoriteScreenModel.backHandler()
             showingFeedOrderScreen.value -> showingFeedOrderScreen.value = false
         }
+    }
+
+    LaunchedEffect(bulkFavoriteState.selectionMode) {
+        HomeScreen.showBottomNav(!bulkFavoriteState.selectionMode)
     }
     // KMK <--
 
@@ -111,6 +125,10 @@ fun feedTab(
                     icon = Icons.Outlined.SwapVert,
                     onClick = { showingFeedOrderScreen.value = true },
                 ),
+                bulkSelectionButton(
+                    isRunning = bulkFavoriteState.isRunning,
+                    toggleSelectionMode = bulkFavoriteScreenModel::toggleSelectionMode,
+                ),
                 // KMK <--
             )
         },
@@ -138,6 +156,7 @@ fun feedTab(
                                 BrowseSourceScreen(
                                     source.id,
                                     listingQuery = null,
+                                    savedSearch = savedSearch.id,
                                 ),
                             )
                         },
@@ -163,17 +182,26 @@ fun feedTab(
                             // KMK -->
                             scope.launchIO {
                                 val manga = screenModel.networkToLocalAnime.getLocal(it)
+                                if (bulkFavoriteState.selectionMode) {
+                                    bulkFavoriteScreenModel.toggleSelection(manga)
+                                } else {
                                     // KMK <--
                                     navigator.push(AnimeScreen(manga.id, true))
+                                }
                             }
                         },
                         // KMK -->
                         onLongClickManga = {
                             scope.launchIO {
                                 val manga = screenModel.networkToLocalAnime.getLocal(it)
+                                if (!bulkFavoriteState.selectionMode) {
+                                    bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
+                                } else {
                                     navigator.push(AnimeScreen(manga.id, true))
+                                }
                             }
                         },
+                        selection = bulkFavoriteState.selection,
                         // KMK <--
                         onRefresh = screenModel::init,
                         getAnimeState = { manga -> screenModel.getManga(initialManga = manga) },
@@ -238,6 +266,22 @@ fun feedTab(
                     // KMK <--
                 }
             }
+
+            // KMK -->
+            when (bulkFavoriteState.dialog) {
+                is BulkFavoriteScreenModel.Dialog.AddDuplicateManga ->
+                    AddDuplicateAnimeDialog(bulkFavoriteScreenModel)
+                is BulkFavoriteScreenModel.Dialog.RemoveManga ->
+                    RemoveAnimeDialog(bulkFavoriteScreenModel)
+                is BulkFavoriteScreenModel.Dialog.ChangeMangaCategory ->
+                    ChangeAnimeCategoryDialog(bulkFavoriteScreenModel)
+                is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
+                    ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+                is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
+                    AllowDuplicateDialog(bulkFavoriteScreenModel)
+                else -> {}
+            }
+            // KMK <--
 
             val internalErrString = stringResource(MR.strings.internal_error)
             val tooManyFeedsString = stringResource(KMR.strings.too_many_in_feed)

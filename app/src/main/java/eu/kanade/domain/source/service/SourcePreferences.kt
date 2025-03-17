@@ -71,6 +71,11 @@ class SourcePreferences(
     )
 
     // KMK -->
+    fun globalSearchPinnedState() = preferenceStore.getEnum(
+        Preference.appStateKey("global_search_pinned_toggle_state"),
+        SourceFilter.PinnedOnly,
+    )
+
     fun disabledRepos() = preferenceStore.getStringSet("disabled_repos", emptySet())
     // KMK <--
 

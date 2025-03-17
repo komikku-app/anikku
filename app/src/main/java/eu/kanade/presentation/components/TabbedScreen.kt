@@ -11,7 +11,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
@@ -23,9 +22,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.icerock.moko.resources.StringResource
+import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
 import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -43,6 +42,7 @@ fun TabbedScreen(
     onChangeSearchQuery: (String?) -> Unit = {},
     // KMK -->
     feedScreenModel: FeedScreenModel,
+    bulkFavoriteScreenModel: BulkFavoriteScreenModel,
     // KMK <--
 ) {
     val scope = rememberCoroutineScope()
@@ -50,13 +50,36 @@ fun TabbedScreen(
 
     // KMK -->
     val feedState by feedScreenModel.state.collectAsState()
+    val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     // KMK <--
 
     Scaffold(
         topBar = {
-                val tab = tabs[state.currentPage]
-                val searchEnabled = tab.searchEnabled
-
+            val tab = tabs[state.currentPage]
+            val searchEnabled = tab.searchEnabled
+            // KMK -->
+            if (bulkFavoriteState.selectionMode) {
+                BulkSelectionToolbar(
+                    selectedCount = bulkFavoriteState.selection.size,
+                    isRunning = bulkFavoriteState.isRunning,
+                    onClickClearSelection = bulkFavoriteScreenModel::toggleSelectionMode,
+                    onChangeCategoryClick = bulkFavoriteScreenModel::addFavorite,
+                    onSelectAll = {
+                        feedState.items?.forEach {
+                            it.results?.forEach { manga ->
+                                bulkFavoriteScreenModel.select(manga)
+                            }
+                        }
+                    },
+                    onReverseSelection = {
+                        feedState.items
+                            ?.mapNotNull { it.results }
+                            ?.flatten()
+                            ?.let { bulkFavoriteScreenModel.reverseSelection(it) }
+                    },
+                )
+            } else {
+                // KMK <--
                 SearchToolbar(
                     titleContent = { AppBarTitle(stringResource(titleRes)) },
                     searchEnabled = searchEnabled,
@@ -64,6 +87,7 @@ fun TabbedScreen(
                     onChangeSearchQuery = onChangeSearchQuery,
                     actions = { AppBarActions(tab.actions) },
                 )
+            }
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { contentPadding ->
@@ -108,31 +132,4 @@ data class TabContent(
     val searchEnabled: Boolean = false,
     val actions: ImmutableList<AppBar.AppBarAction> = persistentListOf(),
     val content: @Composable (contentPadding: PaddingValues, snackbarHostState: SnackbarHostState) -> Unit,
-    val numberTitle: Int = 0,
-    val cancelAction: () -> Unit = {},
-    val navigateUp: (() -> Unit)? = null,
 )
-
-@Composable
-private fun FlexibleTabRow(
-    scrollable: Boolean,
-    selectedTabIndex: Int,
-    block: @Composable () -> Unit,
-) {
-    return if (scrollable) {
-        ScrollableTabRow(
-            selectedTabIndex = selectedTabIndex,
-            edgePadding = 13.dp,
-            modifier = Modifier.zIndex(1f),
-        ) {
-            block()
-        }
-    } else {
-        PrimaryTabRow(
-            selectedTabIndex = selectedTabIndex,
-            modifier = Modifier.zIndex(1f),
-        ) {
-            block()
-        }
-    }
-}

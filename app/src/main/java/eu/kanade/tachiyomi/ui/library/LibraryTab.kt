@@ -307,7 +307,7 @@ data object LibraryTab : Tab {
                     onDismissRequest = onDismissRequest,
                     onEditCategories = {
                         screenModel.clearSelection()
-                        navigator.push(CategoryScreen)
+                        navigator.push(CategoryScreen())
                     },
                     onConfirm = { include, exclude ->
                         screenModel.clearSelection()

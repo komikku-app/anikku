@@ -49,6 +49,9 @@ fun BrowseSourceContent(
     onLocalSourceHelpClick: () -> Unit,
     onAnimeClick: (Anime) -> Unit,
     onAnimeLongClick: (Anime) -> Unit,
+    // KMK -->
+    selection: List<Anime>,
+    // KMK <--
 ) {
     val context = LocalContext.current
 
@@ -124,14 +127,34 @@ fun BrowseSourceContent(
                 contentPadding = contentPadding,
                 onAnimeClick = onAnimeClick,
                 onAnimeLongClick = onAnimeLongClick,
+                // KMK -->
+                selection = selection,
+                // KMK <--
             )
         }
+        // KMK -->
+        LibraryDisplayMode.ComfortableGridPanorama -> {
+            BrowseSourceComfortableGrid(
+                animeList = animeList,
+                columns = columns,
+                contentPadding = contentPadding,
+                onAnimeClick = onAnimeClick,
+                onAnimeLongClick = onAnimeLongClick,
+                // KMK -->
+                selection = selection,
+                // KMK <--
+            )
+        }
+        // KMK <--
         LibraryDisplayMode.List -> {
             BrowseSourceList(
                 animeList = animeList,
                 contentPadding = contentPadding,
                 onAnimeClick = onAnimeClick,
                 onAnimeLongClick = onAnimeLongClick,
+                // KMK -->
+                selection = selection,
+                // KMK <--
             )
         }
         LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
@@ -141,9 +164,11 @@ fun BrowseSourceContent(
                 contentPadding = contentPadding,
                 onAnimeClick = onAnimeClick,
                 onAnimeLongClick = onAnimeLongClick,
+                // KMK -->
+                selection = selection,
+                // KMK <--
             )
         }
-        else -> {}
     }
 }
 

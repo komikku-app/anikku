@@ -3,11 +3,13 @@ package eu.kanade.presentation.components
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,6 +31,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
@@ -239,6 +242,29 @@ fun AppBarActions(
         }
     }
 
+    // KMK -->
+    actions.filterIsInstance<AppBar.ActionCompose>().map {
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+            tooltip = {
+                PlainTooltip {
+                    Text(it.title)
+                }
+            },
+            state = rememberTooltipState(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .size(40.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                it.content()
+            }
+        }
+    }
+    // KMK <--
+
     val overflowActions = actions.filterIsInstance<AppBar.OverflowAction>()
     if (overflowActions.isNotEmpty()) {
         TooltipBox(
@@ -442,6 +468,13 @@ sealed interface AppBar {
         val onClick: () -> Unit,
         val enabled: Boolean = true,
     ) : AppBarAction
+
+    // KMK -->
+    data class ActionCompose(
+        val title: String,
+        val content: @Composable () -> Unit,
+    ) : AppBarAction
+    // KMK <--
 
     data class OverflowAction(
         val title: String,

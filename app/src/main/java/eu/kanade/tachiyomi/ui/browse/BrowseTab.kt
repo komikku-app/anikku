@@ -80,6 +80,7 @@ data object BrowseTab : Tab {
 
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
+        val bulkFavoriteScreenModel = rememberScreenModel { BulkFavoriteScreenModel() }
         // KMK <--
 
         // SY -->
@@ -96,6 +97,7 @@ data object BrowseTab : Tab {
                     feedTab(
                         // KMK -->
                         feedScreenModel,
+                        bulkFavoriteScreenModel,
                         // KMK <--
                     ),
                     sourcesTab(),
@@ -109,6 +111,7 @@ data object BrowseTab : Tab {
                     feedTab(
                         // KMK -->
                         feedScreenModel,
+                        bulkFavoriteScreenModel,
                         // KMK <--
                     ),
                     extensionsTab(extensionsScreenModel),
@@ -127,6 +130,7 @@ data object BrowseTab : Tab {
             onChangeSearchQuery = extensionsScreenModel::search,
             // KMK -->
             feedScreenModel = feedScreenModel,
+            bulkFavoriteScreenModel = bulkFavoriteScreenModel,
             // KMK <--
         )
         LaunchedEffect(Unit) {

@@ -30,6 +30,12 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
+import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
+import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
+import eu.kanade.tachiyomi.ui.browse.ChangeAnimeCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.RemoveAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.extension.details.ExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.SourceFilterDialog
@@ -78,12 +84,15 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
             screenModel.resetFilters()
         }
 
+        val bulkFavoriteScreenModel = rememberScreenModel { BulkFavoriteScreenModel() }
+        val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
         val showingFeedOrderScreen = rememberSaveable { mutableStateOf(false) }
 
         val haptic = LocalHapticFeedback.current
 
-        BackHandler(enabled = showingFeedOrderScreen.value) {
+        BackHandler(enabled = bulkFavoriteState.selectionMode || showingFeedOrderScreen.value) {
             when {
+                bulkFavoriteState.selectionMode -> bulkFavoriteScreenModel.backHandler()
                 showingFeedOrderScreen.value -> showingFeedOrderScreen.value = false
             }
         }
@@ -121,8 +130,12 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                         // KMK -->
                         scope.launchIO {
                             val manga = screenModel.networkToLocalAnime.getLocal(it)
+                            if (bulkFavoriteState.selectionMode) {
+                                bulkFavoriteScreenModel.toggleSelection(manga)
+                            } else {
                                 // KMK <--
                                 onMangaClick(navigator, manga)
+                            }
                         }
                     },
                     onClickSearch = { onSearchClick(navigator, screenModel.source, it) },
@@ -168,9 +181,14 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     onLongClickManga = {
                         scope.launchIO {
                             val manga = screenModel.networkToLocalAnime.getLocal(it)
+                            if (!bulkFavoriteState.selectionMode) {
+                                bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
+                            } else {
                                 navigator.push(AnimeScreen(manga.id, true))
+                            }
                         }
                     },
+                    bulkFavoriteScreenModel = bulkFavoriteScreenModel,
                     // KMK <--
                 )
             }
@@ -265,6 +283,21 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                 )
             }
             null -> Unit
+        }
+
+        // KMK -->
+        when (bulkFavoriteState.dialog) {
+            is BulkFavoriteScreenModel.Dialog.AddDuplicateManga ->
+                AddDuplicateAnimeDialog(bulkFavoriteScreenModel)
+            is BulkFavoriteScreenModel.Dialog.RemoveManga ->
+                RemoveAnimeDialog(bulkFavoriteScreenModel)
+            is BulkFavoriteScreenModel.Dialog.ChangeMangaCategory ->
+                ChangeAnimeCategoryDialog(bulkFavoriteScreenModel)
+            is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
+                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+            is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
+                AllowDuplicateDialog(bulkFavoriteScreenModel)
+            else -> {}
         }
         // KMK <--
     }

@@ -1,6 +1,7 @@
 package eu.kanade.presentation.browse.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,9 @@ fun GlobalSearchResultItem(
     // SY <--
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // SY -->
+    onLongClick: (() -> Unit)? = null,
+    // SY <--
     content: @Composable () -> Unit,
 ) {
     Column(modifier = modifier) {
@@ -45,7 +49,15 @@ fun GlobalSearchResultItem(
                     end = MaterialTheme.padding.extraSmall,
                 )
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
+                // SY -->
+                .let {
+                    if (onLongClick == null) {
+                        it.clickable(onClick = onClick)
+                    } else {
+                        it.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                    }
+                },
+            // SY <--
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {

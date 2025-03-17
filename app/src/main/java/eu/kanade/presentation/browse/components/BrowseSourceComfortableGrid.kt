@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastAny
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import eu.kanade.presentation.library.components.AnimeComfortableGridItem
@@ -25,6 +26,9 @@ fun BrowseSourceComfortableGrid(
     contentPadding: PaddingValues,
     onAnimeClick: (Anime) -> Unit,
     onAnimeLongClick: (Anime) -> Unit,
+    // KMK -->
+    selection: List<Anime>,
+    // KMK <--
 ) {
     LazyVerticalGrid(
         columns = columns,
@@ -44,6 +48,7 @@ fun BrowseSourceComfortableGrid(
                 anime = anime,
                 onClick = { onAnimeClick(anime) },
                 onLongClick = { onAnimeLongClick(anime) },
+                isSelected = selection.fastAny { selected -> selected.id == anime.id },
             )
         }
 
@@ -60,6 +65,9 @@ internal fun BrowseSourceComfortableGridItem(
     anime: Anime,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = onClick,
+    // KMK -->
+    isSelected: Boolean = false,
+    // KMK <--
 ) {
     AnimeComfortableGridItem(
         title = anime.title,
@@ -70,6 +78,9 @@ internal fun BrowseSourceComfortableGridItem(
             ogUrl = anime.thumbnailUrl,
             lastModified = anime.coverLastModified,
         ),
+        // KMK -->
+        isSelected = isSelected,
+        // KMK <--
         coverAlpha = if (anime.favorite) CommonAnimeItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         coverBadgeStart = {
             InLibraryBadge(enabled = anime.favorite)
