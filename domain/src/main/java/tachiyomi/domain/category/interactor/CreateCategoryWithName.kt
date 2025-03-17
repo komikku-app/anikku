@@ -26,7 +26,9 @@ class CreateCategoryWithName(
             name = name,
             order = nextOrder,
             flags = initialFlags,
+            // KMK -->
             hidden = false,
+            // KMK <--
         )
 
         try {
@@ -41,8 +43,8 @@ class CreateCategoryWithName(
     sealed interface Result {
         // SY -->
         data class Success(val category: Category) : Result
-        // SY <--
 
+        // SY <--
         data class InternalError(val error: Throwable) : Result
     }
 }

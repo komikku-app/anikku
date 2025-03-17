@@ -34,6 +34,8 @@ import tachiyomi.domain.library.model.LibrarySort
 import tachiyomi.domain.library.model.sort
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.BaseSortItem
 import tachiyomi.presentation.core.components.CheckboxItem
 import tachiyomi.presentation.core.components.HeadingItem
@@ -61,7 +63,7 @@ fun LibrarySettingsDialog(
             stringResource(MR.strings.action_sort),
             stringResource(MR.strings.action_display),
             // SY -->
-            stringResource(MR.strings.group),
+            stringResource(SYMR.strings.group),
             // SY <--
         ),
     ) { page ->
@@ -92,6 +94,7 @@ fun LibrarySettingsDialog(
     }
 }
 
+@Suppress("UnusedReceiverParameter")
 @Composable
 private fun ColumnScope.FilterPage(
     screenModel: LibrarySettingsScreenModel,
@@ -175,6 +178,7 @@ private fun ColumnScope.FilterPage(
     }
 }
 
+@Suppress("UnusedReceiverParameter")
 @Composable
 private fun ColumnScope.SortPage(
     category: Category?,
@@ -258,6 +262,7 @@ private val displayModes = listOf(
     MR.strings.action_display_list to LibraryDisplayMode.List,
 )
 
+@Suppress("UnusedReceiverParameter")
 @Composable
 private fun ColumnScope.DisplayPage(
     screenModel: LibrarySettingsScreenModel,
@@ -320,6 +325,12 @@ private fun ColumnScope.DisplayPage(
         label = stringResource(MR.strings.action_display_show_tabs),
         pref = screenModel.libraryPreferences.categoryTabs(),
     )
+    // KMK -->
+    CheckboxItem(
+        label = stringResource(KMR.strings.action_show_hidden_categories),
+        pref = screenModel.libraryPreferences.showHiddenCategories(),
+    )
+    // KMK <--
     CheckboxItem(
         label = stringResource(MR.strings.action_display_show_number_of_items),
         pref = screenModel.libraryPreferences.categoryNumberOfItems(),

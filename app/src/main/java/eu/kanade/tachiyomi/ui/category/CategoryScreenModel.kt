@@ -18,7 +18,6 @@ import tachiyomi.domain.category.interactor.HideCategory
 import tachiyomi.domain.category.interactor.RenameCategory
 import tachiyomi.domain.category.interactor.ReorderCategory
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -26,11 +25,12 @@ import uy.kohesive.injekt.api.get
 class CategoryScreenModel(
     private val getCategories: GetCategories = Injekt.get(),
     private val createCategoryWithName: CreateCategoryWithName = Injekt.get(),
-    private val hideCategory: HideCategory = Injekt.get(),
     private val deleteCategory: DeleteCategory = Injekt.get(),
     private val reorderCategory: ReorderCategory = Injekt.get(),
     private val renameCategory: RenameCategory = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    // KMK -->
+    private val hideCategory: HideCategory = Injekt.get(),
+    // KMK <--
 ) : StateScreenModel<CategoryScreenState>(CategoryScreenState.Loading) {
 
     private val _events: Channel<CategoryEvent> = Channel()
@@ -54,32 +54,27 @@ class CategoryScreenModel(
     fun createCategory(name: String) {
         screenModelScope.launch {
             when (createCategoryWithName.await(name)) {
-                is CreateCategoryWithName.Result.InternalError -> _events.send(
-                    CategoryEvent.InternalError,
-                )
-
+                is CreateCategoryWithName.Result.InternalError -> _events.send(CategoryEvent.InternalError)
                 else -> {}
             }
         }
     }
 
+    // KMK -->
     fun hideCategory(category: Category) {
         screenModelScope.launch {
             when (hideCategory.await(category)) {
-                is HideCategory.Result.InternalError -> _events.send(
-                    CategoryEvent.InternalError,
-                )
+                is HideCategory.Result.InternalError -> _events.send(CategoryEvent.InternalError)
                 else -> {}
             }
         }
     }
+    // KMK <--
 
     fun deleteCategory(categoryId: Long) {
         screenModelScope.launch {
             when (deleteCategory.await(categoryId = categoryId)) {
-                is DeleteCategory.Result.InternalError -> _events.send(
-                    CategoryEvent.InternalError,
-                )
+                is DeleteCategory.Result.InternalError -> _events.send(CategoryEvent.InternalError)
                 else -> {}
             }
         }
@@ -94,23 +89,10 @@ class CategoryScreenModel(
         }
     }
 
-    fun moveUp(category: Category) {
+    fun changeOrder(category: Category, newOrder: Int) {
         screenModelScope.launch {
-            when (reorderCategory.moveUp(category)) {
-                is ReorderCategory.Result.InternalError -> _events.send(
-                    CategoryEvent.InternalError,
-                )
-                else -> {}
-            }
-        }
-    }
-
-    fun moveDown(category: Category) {
-        screenModelScope.launch {
-            when (reorderCategory.moveDown(category)) {
-                is ReorderCategory.Result.InternalError -> _events.send(
-                    CategoryEvent.InternalError,
-                )
+            when (reorderCategory.changeOrder(category, newOrder)) {
+                is ReorderCategory.Result.InternalError -> _events.send(CategoryEvent.InternalError)
                 else -> {}
             }
         }
@@ -119,9 +101,7 @@ class CategoryScreenModel(
     fun renameCategory(category: Category, name: String) {
         screenModelScope.launch {
             when (renameCategory.await(category, name)) {
-                is RenameCategory.Result.InternalError -> _events.send(
-                    CategoryEvent.InternalError,
-                )
+                is RenameCategory.Result.InternalError -> _events.send(CategoryEvent.InternalError)
                 else -> {}
             }
         }

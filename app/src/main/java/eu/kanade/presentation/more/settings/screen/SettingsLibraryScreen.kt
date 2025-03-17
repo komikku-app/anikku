@@ -118,10 +118,6 @@ object SettingsLibraryScreen : SearchableSettings {
                         true
                     },
                 ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = libraryPreferences.showHiddenCategories(),
-                    title = stringResource(MR.strings.pref_category_hide_hidden),
-                ),
             ),
         )
     }

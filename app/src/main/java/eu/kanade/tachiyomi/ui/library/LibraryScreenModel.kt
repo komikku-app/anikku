@@ -459,14 +459,24 @@ class LibraryScreenModel(
                 .groupBy { it.libraryAnime.category }
         }
 
-        return combine(getCategories.subscribe(), animelibAnimesFlow) { categories, animelibAnime ->
+        return combine(
+            // KMK -->
+            libraryPreferences.showHiddenCategories().changes(),
+            // KMK <--
+            getCategories.subscribe(),
+            animelibAnimesFlow,
+        ) { showHiddenCategories, categories, animelibAnime ->
             val displayCategories = if (animelibAnime.isNotEmpty() && !animelibAnime.containsKey(0)) {
                 categories.fastFilterNot { it.isSystemCategory }
             } else {
                 categories
             }
 
-            displayCategories.associateWith { animelibAnime[it.id].orEmpty() }
+            displayCategories
+                // KMK -->
+                .filterNot { !showHiddenCategories && it.hidden }
+                // KMK <--
+                .associateWith { animelibAnime[it.id].orEmpty() }
         }
     }
 
