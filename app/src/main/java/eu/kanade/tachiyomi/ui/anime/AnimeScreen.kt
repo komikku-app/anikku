@@ -317,7 +317,7 @@ class AnimeScreen(
             // SY -->
             is AnimeScreenModel.Dialog.EditAnimeInfo -> {
                 EditAnimeDialog(
-                    anime = dialog.anime,
+                    manga = dialog.anime,
                     onDismissRequest = screenModel::dismissDialog,
                     onPositiveClick = screenModel::updateAnimeInfo,
                 )
