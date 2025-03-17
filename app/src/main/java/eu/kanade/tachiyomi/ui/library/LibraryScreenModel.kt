@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.compareToWithCollator
@@ -71,15 +72,18 @@ import tachiyomi.domain.library.model.LibraryGroup
 import tachiyomi.domain.library.model.LibrarySort
 import tachiyomi.domain.library.model.sort
 import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.GetTracksPerAnime
 import tachiyomi.domain.track.model.Track
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.random.Random
+import tachiyomi.domain.source.model.Source as DomainSource
 
 /**
  * Typealias for the library anime, using the category as keys, and list of anime as values.
@@ -108,14 +112,12 @@ class LibraryScreenModel(
     // SY <--
 ) : StateScreenModel<LibraryScreenModel.State>(State()) {
 
-    var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory().asState(
-        screenModelScope,
-    )
+    var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory().asState(screenModelScope)
 
     init {
         screenModelScope.launchIO {
             combine(
-                state.map { it.searchQuery }.debounce(SEARCH_DEBOUNCE_MILLIS),
+                state.map { it.searchQuery }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS),
                 getLibraryFlow(),
                 getTracksPerAnime.subscribe(),
                 combine(
@@ -407,7 +409,11 @@ class LibraryScreenModel(
             // <-- AM (FILLERMARK)
             libraryPreferences.filterCompleted().changes(),
             libraryPreferences.filterIntervalCustom().changes(),
-            transform = {
+            // KMK -->
+            libraryPreferences.sourceBadge().changes(),
+            libraryPreferences.useLangIcon().changes(),
+            // KMK <--
+        ) {
                 ItemPreferences(
                     downloadBadge = it[0] as Boolean,
                     localBadge = it[1] as Boolean,
@@ -423,9 +429,12 @@ class LibraryScreenModel(
                     filterCompleted = it[10] as TriState,
                     filterIntervalCustom = it[11] as TriState,
                     // <-- AM (FILLERMARK)
+                // KMK -->
+                sourceBadge = it[12] as Boolean,
+                useLangIcon = it[13] as Boolean,
+                // KMK <--
                 )
-            },
-        )
+        }
     }
 
     /**
@@ -440,6 +449,9 @@ class LibraryScreenModel(
             libraryMangaList
                 .map { libraryManga ->
                     // Display mode based on user preference: take it from global library setting or category
+                    // KMK -->
+                    val source = sourceManager.getOrStub(libraryManga.anime.source)
+                    // KMK <--
                     LibraryItem(
                         libraryManga,
                         downloadCount = if (prefs.downloadBadge) {
@@ -450,10 +462,24 @@ class LibraryScreenModel(
                         unseenCount = libraryManga.unseenCount,
                         isLocal = if (prefs.localBadge) libraryManga.anime.isLocal() else false,
                         sourceLanguage = if (prefs.languageBadge) {
-                            sourceManager.getOrStub(libraryManga.anime.source).lang
+                            source.lang
                         } else {
                             ""
                         },
+                        // KMK -->
+                        useLangIcon = prefs.useLangIcon,
+                        source = if (prefs.sourceBadge) {
+                            DomainSource(
+                                source.id,
+                                source.lang,
+                                source.name,
+                                supportsLatest = false,
+                                isStub = source is StubSource,
+                            )
+                        } else {
+                            null
+                        },
+                        // KMK <--
                     )
                 }
                 .groupBy { it.libraryAnime.category }
@@ -488,10 +514,12 @@ class LibraryScreenModel(
                 mapOf(
                     Category(
                         0,
-                        preferences.context.getString(R.string.ungrouped),
+                        preferences.context.stringResource(SYMR.strings.ungrouped),
                         0,
                         0,
+                        // KMK -->
                         false,
+                        // KMK <--
                     ) to
                         values.flatten().distinctBy { it.libraryAnime.anime.id },
                 )
@@ -968,6 +996,10 @@ class LibraryScreenModel(
         val downloadBadge: Boolean,
         val localBadge: Boolean,
         val languageBadge: Boolean,
+        // KMK -->
+        val useLangIcon: Boolean,
+        val sourceBadge: Boolean,
+        // KMK <--
         val skipOutsideReleasePeriod: Boolean,
 
         val globalFilterDownloaded: Boolean,

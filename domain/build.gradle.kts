@@ -20,6 +20,11 @@ kotlin {
 }
 
 dependencies {
+    implementation(projects.i18n)
+    // SY -->
+    implementation(projects.i18nSy)
+    // SY <--
+
     implementation(projects.sourceApi)
     implementation(projects.core.common)
 

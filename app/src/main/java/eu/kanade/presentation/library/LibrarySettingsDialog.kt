@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.util.fastForEach
+import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.R
@@ -26,6 +27,8 @@ import eu.kanade.tachiyomi.ui.library.LibrarySettingsScreenModel
 import eu.kanade.tachiyomi.util.system.isDevFlavor
 import eu.kanade.tachiyomi.util.system.isPreviewBuildType
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.map
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.model.LibraryDisplayMode
@@ -193,10 +196,10 @@ private fun ColumnScope.SortPage(
         globalSortMode.type
     }
     val sortDescending = if (screenModel.grouping == LibraryGroup.BY_DEFAULT) {
-        category.sort.isAscending
+        !category.sort.isAscending
     } else {
-        globalSortMode.isAscending
-    }.not()
+        !globalSortMode.isAscending
+    }
     // SY <--
 
     val options = remember(trackers.isEmpty()) {
@@ -315,6 +318,19 @@ private fun ColumnScope.DisplayPage(
         label = stringResource(MR.strings.action_display_language_badge),
         pref = screenModel.libraryPreferences.languageBadge(),
     )
+    // KMK -->
+    val showLang by screenModel.libraryPreferences.languageBadge().collectAsState()
+    if (showLang) {
+        CheckboxItem(
+            label = stringResource(KMR.strings.action_display_language_icon),
+            pref = screenModel.libraryPreferences.useLangIcon(),
+        )
+    }
+    CheckboxItem(
+        label = stringResource(KMR.strings.action_display_source_badge),
+        pref = screenModel.libraryPreferences.sourceBadge(),
+    )
+    // KMK <--
     CheckboxItem(
         label = stringResource(MR.strings.action_display_show_continue_watching_button),
         pref = screenModel.libraryPreferences.showContinueWatchingButton(),
@@ -337,9 +353,10 @@ private fun ColumnScope.DisplayPage(
     )
 }
 
+// SY -->
 data class GroupMode(
     val int: Int,
-    val nameRes: Int,
+    val nameRes: StringResource,
     val drawableRes: Int,
 )
 
@@ -354,6 +371,7 @@ private fun groupTypeDrawableRes(type: Int): Int {
     }
 }
 
+@Suppress("UnusedReceiverParameter")
 @Composable
 private fun ColumnScope.GroupPage(
     screenModel: LibrarySettingsScreenModel,
@@ -378,7 +396,7 @@ private fun ColumnScope.GroupPage(
                 LibraryGroup.groupTypeStringRes(it, hasCategories),
                 groupTypeDrawableRes(it),
             )
-        }
+        }.toImmutableList()
     }
 
     groups.fastForEach {

@@ -58,6 +58,12 @@ class SourcesFilterScreenModel(
         toggleLanguage.await(language)
     }
 
+    // SY -->
+    fun toggleSources(enable: Boolean, sources: List<Source>) {
+        toggleSource.await(sources.map { it.id }, enable)
+    }
+    // SY <--
+
     sealed interface State {
 
         @Immutable

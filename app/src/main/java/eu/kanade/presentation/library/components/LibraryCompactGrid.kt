@@ -53,7 +53,13 @@ fun LibraryCompactGrid(
                     LanguageBadge(
                         isLocal = libraryItem.isLocal,
                         sourceLanguage = libraryItem.sourceLanguage,
+                        // KMK -->
+                        useLangIcon = libraryItem.useLangIcon,
+                        // KMK <--
                     )
+                    // KMK -->
+                    SourceIconBadge(source = libraryItem.source)
+                    // KMK <--
                 },
                 onLongClick = { onLongClick(libraryItem.libraryAnime) },
                 onClick = { onClick(libraryItem.libraryAnime) },

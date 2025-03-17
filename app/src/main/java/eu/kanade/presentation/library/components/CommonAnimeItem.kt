@@ -175,12 +175,12 @@ private fun BoxScope.CoverTextOverlay(
  */
 @Composable
 fun AnimeComfortableGridItem(
-    isSelected: Boolean = false,
+    coverData: EntryCoverModel,
     title: String,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    isSelected: Boolean = false,
     titleMaxLines: Int = 2,
-    coverData: EntryCoverModel,
     coverAlpha: Float = 1f,
     coverBadgeStart: (@Composable RowScope.() -> Unit)? = null,
     coverBadgeEnd: (@Composable RowScope.() -> Unit)? = null,

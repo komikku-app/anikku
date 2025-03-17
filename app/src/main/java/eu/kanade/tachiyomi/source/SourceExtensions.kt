@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import tachiyomi.domain.source.model.StubSource
+import tachiyomi.presentation.core.icons.FlagEmoji
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -21,11 +22,20 @@ fun Source.getNameForAnimeInfo(): String {
     val hasOneActiveLanguages = enabledLanguages.size == 1
     val isInEnabledLanguages = lang in enabledLanguages
     return when {
+        // KMK -->
+        isLocalOrStub() -> toString()
+        // KMK <--
         // For edge cases where user disables a source they got manga of in their library.
-        hasOneActiveLanguages && !isInEnabledLanguages -> toString()
+        hasOneActiveLanguages && !isInEnabledLanguages ->
+            // KMK -->
+            "$name (${FlagEmoji.getEmojiLangFlag(lang)})"
+        // KMK <--
         // Hide the language tag when only one language is used.
         hasOneActiveLanguages && isInEnabledLanguages -> name
-        else -> toString()
+        else ->
+            // KMK -->
+            "$name (${FlagEmoji.getEmojiLangFlag(lang)})"
+        // KMK <--
     }
 }
 

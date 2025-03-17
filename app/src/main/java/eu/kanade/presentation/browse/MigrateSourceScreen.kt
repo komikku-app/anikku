@@ -49,6 +49,7 @@ import tachiyomi.presentation.core.components.Scroller.STICKY_HEADER_KEY_PREFIX
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.components.material.topSmallPaddingValues
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.icons.FlagEmoji
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.theme.header
@@ -230,7 +231,7 @@ private fun MigrateSourceItem(
                 Badge(text = "$count")
             }
         },
-        content = { _, sourceLangString ->
+        content = { _, sourceLangString, /* KMK --> */ lang /* KMK <-- */ ->
             Column(
                 modifier = Modifier
                     .padding(horizontal = MaterialTheme.padding.medium)
@@ -249,7 +250,8 @@ private fun MigrateSourceItem(
                     if (sourceLangString != null) {
                         Text(
                             modifier = Modifier.secondaryItemAlpha(),
-                            text = sourceLangString,
+                            text = /* KMK --> */ FlagEmoji.getEmojiLangFlag(lang) + " " + /* KMK <-- */
+                                sourceLangString,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall,
