@@ -11,11 +11,15 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.MigrateAnimeScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateSearchScreen
+import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.flow.collectLatest
+import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.screens.LoadingScreen
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 data class MigrateAnimeScreen(
     private val sourceId: Long,
@@ -36,10 +40,39 @@ data class MigrateAnimeScreen(
 
         MigrateAnimeScreen(
             navigateUp = navigator::pop,
-            title = state.source!!.name,
+            title = state.source?.name ?: "???",
             state = state,
-            onClickItem = { navigator.push(MigrateSearchScreen(it.id)) },
+            onClickItem = {
+                // SY -->
+                PreMigrationScreen.navigateToMigration(
+                    Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
+                    navigator,
+                    listOf(it.anime.id),
+                )
+                // SY <--
+            },
             onClickCover = { navigator.push(AnimeScreen(it.id)) },
+            // KMK -->
+            onMultiMigrateClicked = {
+                if (state.selectionMode) {
+                    PreMigrationScreen.navigateToMigration(
+                        Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
+                        navigator,
+                        state.selected.map { it.anime.id },
+                    )
+                } else {
+                    context.toast(KMR.strings.migrating_all_entries)
+                    PreMigrationScreen.navigateToMigration(
+                        Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
+                        navigator,
+                        state.titles.map { it.anime.id },
+                    )
+                }
+            },
+            onSelectAll = screenModel::toggleAllSelection,
+            onInvertSelection = screenModel::invertSelection,
+            onAnimeSelected = screenModel::toggleSelection,
+            // KMK <--
         )
 
         LaunchedEffect(Unit) {

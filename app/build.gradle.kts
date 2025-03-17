@@ -7,6 +7,7 @@ plugins {
     id("mihon.android.application")
     id("mihon.android.application.compose")
     id("com.github.zellius.shortcut-helper")
+    kotlin("plugin.parcelize")
     kotlin("plugin.serialization")
     alias(libs.plugins.aboutLibraries)
     id("com.github.ben-manes.versions")

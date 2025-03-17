@@ -25,6 +25,7 @@ import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
+import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigrationListScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.browse.SourceFilterDialog
 import eu.kanade.tachiyomi.ui.home.HomeScreen
@@ -90,7 +91,13 @@ data class SourceSearchScreen(
         ) { paddingValues ->
             val pagingFlow by screenModel.animePagerFlowFlow.collectAsState()
             val openMigrateDialog: (Anime) -> Unit = {
-                screenModel.setDialog(BrowseSourceScreenModel.Dialog.Migrate(newAnime = it, oldAnime = oldAnime))
+                // SY -->
+                navigator.items
+                    .filterIsInstance<MigrationListScreen>()
+                    .last()
+                    .newSelectedItem = oldAnime.id to it.id
+                navigator.popUntil { it is MigrationListScreen }
+                // SY <--
             }
             BrowseSourceContent(
                 source = screenModel.source,
@@ -140,22 +147,6 @@ data class SourceSearchScreen(
                     // KMK <--
                     onSavedSearchPress = {},
                     // SY <--
-                )
-            }
-            is BrowseSourceScreenModel.Dialog.Migrate -> {
-                MigrateDialog(
-                    oldAnime = oldAnime,
-                    newAnime = dialog.newAnime,
-                    screenModel = rememberScreenModel { MigrateDialogScreenModel() },
-                    onDismissRequest = onDismissRequest,
-                    onClickTitle = { navigator.push(AnimeScreen(dialog.newAnime.id)) },
-                    onPopScreen = {
-                        scope.launch {
-                            navigator.popUntilRoot()
-                            HomeScreen.openTab(HomeScreen.Tab.Browse())
-                            navigator.push(AnimeScreen(dialog.newAnime.id))
-                        }
-                    },
                 )
             }
             else -> {}

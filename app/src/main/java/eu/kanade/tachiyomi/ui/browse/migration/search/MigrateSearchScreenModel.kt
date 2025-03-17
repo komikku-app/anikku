@@ -7,32 +7,38 @@ import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.domain.anime.interactor.GetAnime
+import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class MigrateSearchScreenModel(
-    val animeId: Long,
-    initialExtensionFilter: String = "",
+    val mangaId: Long,
+    // SY -->
+    val validSources: List<Long>,
+    // SY <--
     getAnime: GetAnime = Injekt.get(),
+    // SY -->
+    private val sourceManager: SourceManager = Injekt.get(),
+    // SY <--
 ) : SearchScreenModel() {
 
     init {
-        extensionFilter = initialExtensionFilter
         screenModelScope.launch {
-            val anime = getAnime.await(animeId)!!
+            val manga = getAnime.await(mangaId)!!
             mutableState.update {
                 it.copy(
-                    fromSourceId = anime.source,
-                    searchQuery = anime.title,
+                    fromSourceId = manga.source,
+                    searchQuery = manga.title,
                 )
             }
-
             search()
         }
     }
 
     override fun getEnabledSources(): List<CatalogueSource> {
-        return super.getEnabledSources()
+        // SY -->
+        return validSources.mapNotNull { sourceManager.get(it) }
+            .filterIsInstance<CatalogueSource>()
             .filter { state.value.sourceFilter != SourceFilter.PinnedOnly || "${it.id}" in pinnedSources }
             .sortedWith(
                 compareBy(
@@ -41,5 +47,6 @@ class MigrateSearchScreenModel(
                     { "${it.name.lowercase()} (${it.lang})" },
                 ),
             )
+        // SY <--
     }
 }

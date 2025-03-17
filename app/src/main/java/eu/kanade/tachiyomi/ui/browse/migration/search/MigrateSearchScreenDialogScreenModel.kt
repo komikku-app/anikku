@@ -11,33 +11,22 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class MigrateSearchScreenDialogScreenModel(
-    val animeId: Long,
+    val mangaId: Long,
     getAnime: GetAnime = Injekt.get(),
 ) : StateScreenModel<MigrateSearchScreenDialogScreenModel.State>(State()) {
 
     init {
         screenModelScope.launch {
-            val anime = getAnime.await(animeId)!!
+            val manga = getAnime.await(mangaId)!!
 
             mutableState.update {
-                it.copy(anime = anime)
+                it.copy(manga = manga)
             }
-        }
-    }
-
-    fun setDialog(dialog: Dialog?) {
-        mutableState.update {
-            it.copy(dialog = dialog)
         }
     }
 
     @Immutable
     data class State(
-        val anime: Anime? = null,
-        val dialog: Dialog? = null,
+        val manga: Anime? = null,
     )
-
-    sealed interface Dialog {
-        data class Migrate(val anime: Anime) : Dialog
-    }
 }

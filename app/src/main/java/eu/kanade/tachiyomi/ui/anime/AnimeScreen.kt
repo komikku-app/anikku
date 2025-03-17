@@ -50,8 +50,7 @@ import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.anime.track.TrackInfoDialogHomeScreen
-import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialog
-import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialogScreenModel
+import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
 import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateSearchScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
@@ -71,11 +70,14 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 class AnimeScreen(
     private val animeId: Long,
@@ -234,9 +236,7 @@ class AnimeScreen(
             onEditFetchIntervalClicked = screenModel::showSetAnimeFetchIntervalDialog.takeIf {
                 successState.anime.favorite
             },
-            onMigrateClicked = {
-                navigator.push(MigrateSearchScreen(successState.anime.id))
-            }.takeIf { successState.anime.favorite },
+            onMigrateClicked = { migrateManga(navigator, screenModel.anime!!) }.takeIf { successState.anime.favorite },
             changeAnimeSkipIntro = screenModel::showAnimeSkipIntroDialog.takeIf { successState.anime.favorite },
             onMultiBookmarkClicked = screenModel::bookmarkEpisodes,
             // AM (FILLERMARK) -->
@@ -291,21 +291,13 @@ class AnimeScreen(
                     onConfirm = { screenModel.toggleFavorite(onRemoved = {}, checkDuplicate = false) },
                     onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
                     onMigrate = {
-                        screenModel.showMigrateDialog(dialog.duplicate)
+                        // SY -->
+                        migrateManga(navigator, dialog.duplicate, screenModel.anime!!.id)
+                        // SY <--
                     },
                 )
             }
 
-            is AnimeScreenModel.Dialog.Migrate -> {
-                MigrateDialog(
-                    oldAnime = dialog.oldAnime,
-                    newAnime = dialog.newAnime,
-                    screenModel = MigrateDialogScreenModel(),
-                    onDismissRequest = onDismissRequest,
-                    onClickTitle = { navigator.push(AnimeScreen(dialog.oldAnime.id)) },
-                    onPopScreen = { navigator.replace(AnimeScreen(dialog.newAnime.id)) },
-                )
-            }
             AnimeScreenModel.Dialog.SettingsSheet -> EpisodeSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 anime = successState.anime,
@@ -537,5 +529,20 @@ class AnimeScreen(
         val source = source_ as? HttpSource ?: return
         val url = source.getAnimeUrl(anime.toSAnime())
         context.copyToClipboard(url, url)
+    }
+
+    // SY -->
+    /**
+     * Initiates source migration for the specific manga.
+     */
+    private fun migrateManga(navigator: Navigator, manga: Anime, toMangaId: Long? = null) {
+        // SY -->
+        PreMigrationScreen.navigateToMigration(
+            Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
+            navigator,
+            manga.id,
+            toMangaId,
+        )
+        // SY <--
     }
 }

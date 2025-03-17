@@ -26,34 +26,44 @@ data class MigrationFlag(
 
 object MigrationFlags {
 
-    private const val EPISODES = 0b00001
-    private const val CATEGORIES = 0b00010
-    private const val CUSTOM_COVER = 0b01000
-    private const val DELETE_DOWNLOADED = 0b10000
+    const val CHAPTERS = 0b000001
+    const val CATEGORIES = 0b000010
+    const val TRACK = 0b000100
+    const val CUSTOM_COVER = 0b001000
+    const val EXTRA = 0b010000
+    const val DELETE_CHAPTERS = 0b100000
 
     private val coverCache: CoverCache by injectLazy()
     private val downloadCache: DownloadCache by injectLazy()
 
-    fun hasEpisodes(value: Int): Boolean {
-        return value and EPISODES != 0
+    fun hasChapters(value: Int): Boolean {
+        return value and CHAPTERS != 0
     }
 
     fun hasCategories(value: Int): Boolean {
         return value and CATEGORIES != 0
     }
 
+    fun hasTracks(value: Int): Boolean {
+        return value and TRACK != 0
+    }
+
     fun hasCustomCover(value: Int): Boolean {
         return value and CUSTOM_COVER != 0
     }
 
-    fun hasDeleteDownloaded(value: Int): Boolean {
-        return value and DELETE_DOWNLOADED != 0
+    fun hasExtra(value: Int): Boolean {
+        return value and EXTRA != 0
+    }
+
+    fun hasDeleteChapters(value: Int): Boolean {
+        return value and DELETE_CHAPTERS != 0
     }
 
     /** Returns information about applicable flags with default selections. */
     fun getFlags(anime: Anime?, defaultSelectedBitMap: Int): List<MigrationFlag> {
         val flags = mutableListOf<MigrationFlag>()
-        flags += MigrationFlag.create(EPISODES, defaultSelectedBitMap, MR.strings.chapters)
+        flags += MigrationFlag.create(CHAPTERS, defaultSelectedBitMap, MR.strings.chapters)
         flags += MigrationFlag.create(CATEGORIES, defaultSelectedBitMap, MR.strings.categories)
 
         if (anime != null) {
@@ -66,7 +76,7 @@ object MigrationFlags {
             }
             if (downloadCache.getDownloadCount(anime) > 0) {
                 flags += MigrationFlag.create(
-                    DELETE_DOWNLOADED,
+                    DELETE_CHAPTERS,
                     defaultSelectedBitMap,
                     MR.strings.delete_downloaded,
                 )

@@ -457,7 +457,6 @@ open class BrowseSourceScreenModel(
             val anime: Anime,
             val initialSelection: ImmutableList<CheckboxState.State<Category>>,
         ) : Dialog
-        data class Migrate(val newAnime: Anime, val oldAnime: Anime) : Dialog
 
         // SY -->
         data class DeleteSavedSearch(val idToDelete: Long, val name: String) : Dialog
