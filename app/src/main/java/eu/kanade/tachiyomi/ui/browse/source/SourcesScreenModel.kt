@@ -211,6 +211,20 @@ class SourcesScreenModel(
         mutableState.update { it.copy(dialog = null) }
     }
 
+    // KMK -->
+    fun search(query: String?) {
+        mutableState.update {
+            it.copy(searchQuery = query)
+        }
+    }
+
+    fun toggleNsfwOnly() {
+        mutableState.update {
+            it.copy(nsfwOnly = !it.nsfwOnly)
+        }
+    }
+    // KMK <--
+
     sealed interface Event {
         data object FailedFetchingSources : Event
     }

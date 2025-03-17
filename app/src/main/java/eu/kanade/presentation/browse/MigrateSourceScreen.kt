@@ -1,5 +1,6 @@
 package eu.kanade.presentation.browse
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,30 +8,42 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.SortByAlpha
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import eu.kanade.domain.source.interactor.SetMigrateSorting
+import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.presentation.browse.components.BaseSourceItem
 import eu.kanade.presentation.browse.components.SourceIcon
+import eu.kanade.presentation.components.AnimatedFloatingSearchBox
+import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.migration.sources.MigrateSourceScreenModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.source.model.Source
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.Badge
 import tachiyomi.presentation.core.components.BadgeGroup
+import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.Scroller.STICKY_HEADER_KEY_PREFIX
 import tachiyomi.presentation.core.components.material.padding
@@ -49,11 +62,17 @@ fun MigrateSourceScreen(
     onClickItem: (Source) -> Unit,
     onToggleSortingDirection: () -> Unit,
     onToggleSortingMode: () -> Unit,
+    // KMK -->
+    onChangeSearchQuery: (String?) -> Unit,
+    // KMK <--
 ) {
     val context = LocalContext.current
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
-        state.isEmpty -> EmptyScreen(
+        // KMK -->
+        state.searchQuery == null &&
+            // KMK <--
+            state.isEmpty -> EmptyScreen(
             stringRes = MR.strings.information_empty_library,
             modifier = Modifier.padding(contentPadding),
         )
@@ -70,6 +89,10 @@ fun MigrateSourceScreen(
                 onToggleSortingMode = onToggleSortingMode,
                 sortingDirection = state.sortingDirection,
                 onToggleSortingDirection = onToggleSortingDirection,
+                // KMK -->
+                state = state,
+                onChangeSearchQuery = onChangeSearchQuery,
+                // KMK <--
             )
     }
 }
@@ -84,61 +107,105 @@ private fun MigrateSourceList(
     onToggleSortingMode: () -> Unit,
     sortingDirection: SetMigrateSorting.Direction,
     onToggleSortingDirection: () -> Unit,
+    // KMK -->
+    state: MigrateSourceScreenModel.State,
+    onChangeSearchQuery: (String?) -> Unit,
+    // KMK <--
 ) {
-    ScrollbarLazyColumn(
-        contentPadding = contentPadding + topSmallPaddingValues,
-    ) {
-        stickyHeader(key = STICKY_HEADER_KEY_PREFIX) {
-            Row(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(start = MaterialTheme.padding.medium),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(MR.strings.migration_selection_prompt),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.header,
-                )
+    // KMK -->
+    val lazyListState = rememberLazyListState()
+    var filterObsoleteSource by rememberSaveable { mutableStateOf(false) }
 
-                IconButton(onClick = onToggleSortingMode) {
-                    when (sortingMode) {
-                        SetMigrateSorting.Mode.ALPHABETICAL -> Icon(
-                            Icons.Outlined.SortByAlpha,
-                            contentDescription = stringResource(MR.strings.action_sort_alpha),
-                        )
-                        SetMigrateSorting.Mode.TOTAL -> Icon(
-                            Icons.Outlined.Numbers,
-                            contentDescription = stringResource(MR.strings.action_sort_count),
+    BackHandler(enabled = !state.searchQuery.isNullOrBlank()) {
+        onChangeSearchQuery("")
+    }
+
+    Column(
+        // Wrap around so we can use stickyHeader
+        modifier = Modifier.padding(contentPadding),
+    ) {
+        AnimatedFloatingSearchBox(
+            listState = lazyListState,
+            searchQuery = state.searchQuery,
+            onChangeSearchQuery = onChangeSearchQuery,
+            placeholderText = stringResource(KMR.strings.action_search_for_source),
+            modifier = Modifier
+                .padding(
+                    horizontal = MaterialTheme.padding.medium,
+                    vertical = MaterialTheme.padding.small,
+                ),
+        )
+
+        FastScrollLazyColumn(
+            state = lazyListState,
+            // contentPadding = contentPadding + topSmallPaddingValues,
+            // KMK <--
+        ) {
+            stickyHeader(key = STICKY_HEADER_KEY_PREFIX) {
+                Row(
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(start = MaterialTheme.padding.medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.migration_selection_prompt),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.header,
+                    )
+
+                    IconButton(onClick = { filterObsoleteSource = !filterObsoleteSource }) {
+                        Icon(
+                            Icons.Outlined.NewReleases,
+                            contentDescription = stringResource(MR.strings.ext_obsolete),
+                            tint = MaterialTheme.colorScheme.error
+                                .takeIf { filterObsoleteSource } ?: LocalContentColor.current,
                         )
                     }
-                }
-                IconButton(onClick = onToggleSortingDirection) {
-                    when (sortingDirection) {
-                        SetMigrateSorting.Direction.ASCENDING -> Icon(
-                            Icons.Outlined.ArrowUpward,
-                            contentDescription = stringResource(MR.strings.action_asc),
-                        )
-                        SetMigrateSorting.Direction.DESCENDING -> Icon(
-                            Icons.Outlined.ArrowDownward,
-                            contentDescription = stringResource(MR.strings.action_desc),
-                        )
+                    IconButton(onClick = onToggleSortingMode) {
+                        when (sortingMode) {
+                            SetMigrateSorting.Mode.ALPHABETICAL -> Icon(
+                                Icons.Outlined.SortByAlpha,
+                                contentDescription = stringResource(MR.strings.action_sort_alpha),
+                            )
+
+                            SetMigrateSorting.Mode.TOTAL -> Icon(
+                                Icons.Outlined.Numbers,
+                                contentDescription = stringResource(MR.strings.action_sort_count),
+                            )
+                        }
+                    }
+                    IconButton(onClick = onToggleSortingDirection) {
+                        when (sortingDirection) {
+                            SetMigrateSorting.Direction.ASCENDING -> Icon(
+                                Icons.Outlined.ArrowUpward,
+                                contentDescription = stringResource(MR.strings.action_asc),
+                            )
+
+                            SetMigrateSorting.Direction.DESCENDING -> Icon(
+                                Icons.Outlined.ArrowDownward,
+                                contentDescription = stringResource(MR.strings.action_desc),
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        items(
-            items = list,
-            key = { (source, _) -> "migrate-${source.id}" },
-        ) { (source, count) ->
-            MigrateSourceItem(
-                modifier = Modifier.animateItem(),
-                source = source,
-                count = count,
-                onClickItem = { onClickItem(source) },
-                onLongClickItem = { onLongClickItem(source) },
-            )
+            items(
+                items = list.filter { !filterObsoleteSource || it.first.installedExtension?.isObsolete != false },
+                key = { (source, _) -> "migrate-${source.id}" },
+            ) { (source, count) ->
+                MigrateSourceItem(
+                    // KMK -->
+                    // modifier = Modifier.animateItem(),
+                    modifier = Modifier.animateItemFastScroll(),
+                    // KMK <--
+                    source = source,
+                    count = count,
+                    onClickItem = { onClickItem(source) },
+                    onLongClickItem = { onLongClickItem(source) },
+                )
+            }
         }
     }
 }
@@ -197,6 +264,17 @@ private fun MigrateSourceItem(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
+                        // KMK -->
+                    } else if (source.installedExtension?.isObsolete == true) {
+                        Text(
+                            modifier = Modifier.secondaryItemAlpha(),
+                            text = stringResource(MR.strings.ext_obsolete),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        // KMK <--
                     }
                 }
             }

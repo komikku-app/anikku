@@ -52,6 +52,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
+import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
@@ -79,6 +80,9 @@ data class BrowseSourceScreen(
     // SY -->
     private val filtersJson: String? = null,
     private val savedSearch: Long? = null,
+    /** being set when called from [SmartSearchScreen] or when click on a manga from this screen
+     * which was previously opened from `SmartSearchScreen` */
+    private val smartSearchConfig: SourcesScreen.SmartSearchConfig? = null,
     // SY <--
 ) : Screen(), AssistContentScreen {
 
@@ -275,7 +279,24 @@ data class BrowseSourceScreen(
                 onWebViewClick = onWebViewClick,
                 onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
                 onLocalSourceHelpClick = onHelpClick,
-                onAnimeClick = { navigator.push((AnimeScreen(it.id, true))) },
+                onAnimeClick = {
+                    // KMK -->
+                    scope.launchIO {
+                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                            // KMK <--
+                            navigator.push(
+                                AnimeScreen(
+                                    manga.id,
+                                    // KMK -->
+                                    // Finding the entry to be merged to, so we don't want to expand description
+                                    // so that user can see the `Merge to another` button
+                                    smartSearchConfig != null,
+                                    // KMK <--
+                                    smartSearchConfig,
+                                ),
+                            )
+                    }
+                },
                 onAnimeLongClick = { anime ->
                     scope.launchIO {
                         val duplicateAnime = screenModel.getDuplicateAnimelibAnime(anime)

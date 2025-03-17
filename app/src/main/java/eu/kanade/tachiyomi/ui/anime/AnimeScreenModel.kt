@@ -117,8 +117,12 @@ import kotlin.math.floor
 class AnimeScreenModel(
     private val context: Context,
     private val lifecycle: Lifecycle,
-    private val animeId: Long,
+    private val mangaId: Long,
+    // SY -->
+    /** If it is opened from Source then it will auto expand the manga description */
     private val isFromSource: Boolean,
+    private val smartSearched: Boolean,
+    // SY <--
     private val downloadPreferences: DownloadPreferences = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val trackPreferences: TrackPreferences = Injekt.get(),
@@ -214,7 +218,7 @@ class AnimeScreenModel(
     init {
         screenModelScope.launchIO {
             combine(
-                getAnimeAndEpisodes.subscribe(animeId).distinctUntilChanged(),
+                getAnimeAndEpisodes.subscribe(mangaId).distinctUntilChanged(),
                 downloadCache.changes,
                 downloadManager.queueState,
             ) { animeAndEpisodes, _, _ -> animeAndEpisodes }
@@ -232,8 +236,8 @@ class AnimeScreenModel(
         observeDownloads()
 
         screenModelScope.launchIO {
-            val anime = getAnimeAndEpisodes.awaitManga(animeId)
-            val episodes = getAnimeAndEpisodes.awaitChapters(animeId)
+            val anime = getAnimeAndEpisodes.awaitManga(mangaId)
+            val episodes = getAnimeAndEpisodes.awaitChapters(mangaId)
                 .toEpisodeListItems(anime)
 
             if (!anime.favorite) {
@@ -625,7 +629,7 @@ class AnimeScreenModel(
 
     private fun moveAnimeToCategory(categoryIds: List<Long>) {
         screenModelScope.launchIO {
-            setAnimeCategories.await(animeId, categoryIds)
+            setAnimeCategories.await(mangaId, categoryIds)
         }
     }
 
@@ -746,7 +750,7 @@ class AnimeScreenModel(
             screenModelScope.launch {
                 snackbarHostState.showSnackbar(message = message)
             }
-            val newAnime = animeRepository.getAnimeById(animeId)
+            val newAnime = animeRepository.getAnimeById(mangaId)
             updateSuccessState { it.copy(anime = newAnime, isRefreshingData = false) }
         }
     }
@@ -925,14 +929,14 @@ class AnimeScreenModel(
                 return@launchIO
             }
 
-            val tracks = getTracks.await(animeId)
+            val tracks = getTracks.await(mangaId)
             val maxEpisodeNumber = episodes.maxOf { it.episodeNumber }
             val shouldPromptTrackingUpdate = tracks.any { track -> maxEpisodeNumber > track.lastEpisodeSeen }
 
             if (!shouldPromptTrackingUpdate) return@launchIO
 
             if (autoTrackState == AutoTrackState.ALWAYS) {
-                trackEpisode.await(context, animeId, maxEpisodeNumber)
+                trackEpisode.await(context, mangaId, maxEpisodeNumber)
                 withUIContext {
                     context.toast(
                         context.stringResource(MR.strings.trackers_updated_summary_anime, maxEpisodeNumber.toInt()),
@@ -949,7 +953,7 @@ class AnimeScreenModel(
             )
 
             if (result == SnackbarResult.ActionPerformed) {
-                trackEpisode.await(context, animeId, maxEpisodeNumber)
+                trackEpisode.await(context, mangaId, maxEpisodeNumber)
             }
         }
     }

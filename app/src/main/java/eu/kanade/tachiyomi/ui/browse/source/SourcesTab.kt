@@ -3,6 +3,9 @@ package eu.kanade.tachiyomi.ui.browse.source
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.TravelExplore
+import androidx.compose.material.icons.outlined._18UpRating
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,10 +26,13 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
+import exh.ui.smartsearch.SmartSearchScreen
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -38,19 +44,46 @@ fun Screen.sourcesTab(
     val state by screenModel.state.collectAsState()
 
     return TabContent(
-        titleRes = MR.strings.label_sources,
-        actions = persistentListOf(
-            AppBar.Action(
-                title = stringResource(MR.strings.action_global_search),
-                icon = Icons.Outlined.TravelExplore,
-                onClick = { navigator.push(GlobalSearchScreen()) },
-            ),
-            AppBar.Action(
-                title = stringResource(MR.strings.action_filter),
-                icon = Icons.Outlined.FilterList,
-                onClick = { navigator.push(SourcesFilterScreen()) },
-            ),
-        ),
+        // SY -->
+        titleRes = when (smartSearchConfig == null) {
+            true -> MR.strings.label_sources
+            false -> SYMR.strings.find_in_another_source
+        },
+        actions = if (smartSearchConfig == null) {
+            persistentListOf(
+                AppBar.Action(
+                    title = stringResource(MR.strings.action_global_search),
+                    icon = Icons.Outlined.TravelExplore,
+                    onClick = { navigator.push(GlobalSearchScreen()) },
+                ),
+                // KMK -->
+                AppBar.Action(
+                    title = stringResource(KMR.strings.action_toggle_nsfw_only),
+                    icon = Icons.Outlined._18UpRating,
+                    iconTint = if (state.nsfwOnly) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                    onClick = { screenModel.toggleNsfwOnly() },
+                ),
+                // KMK <--
+                AppBar.Action(
+                    title = stringResource(MR.strings.action_filter),
+                    icon = Icons.Outlined.FilterList,
+                    onClick = { navigator.push(SourcesFilterScreen()) },
+                ),
+            )
+        } else {
+            // Merge: find in another source
+            persistentListOf(
+                // KMK -->
+                AppBar.Action(
+                    title = stringResource(KMR.strings.action_toggle_nsfw_only),
+                    icon = Icons.Outlined._18UpRating,
+                    iconTint = if (state.nsfwOnly) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                    onClick = { screenModel.toggleNsfwOnly() },
+                ),
+                // KMK <--
+            )
+        },
+        // SY <--
         content = { contentPadding, snackbarHostState ->
             SourcesScreen(
                 state = state,
@@ -58,6 +91,8 @@ fun Screen.sourcesTab(
                 onClickItem = { source, listing ->
                     // SY -->
                     val screen = when {
+                        // Search selected source for entries to merge or for the recommending entry
+                        smartSearchConfig != null -> SmartSearchScreen(source.id, smartSearchConfig)
                         listing == Listing.Popular && screenModel.useNewSourceNavigation -> SourceFeedScreen(source.id)
                         else -> BrowseSourceScreen(source.id, listing.query)
                     }
@@ -66,6 +101,9 @@ fun Screen.sourcesTab(
                 },
                 onClickPin = screenModel::togglePin,
                 onLongClickItem = screenModel::showSourceDialog,
+                // KMK -->
+                onChangeSearchQuery = screenModel::search,
+                // KMK <--
             )
 
             when (val dialog = state.dialog) {

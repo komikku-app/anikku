@@ -1,11 +1,13 @@
 package eu.kanade.presentation.browse
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.presentation.browse.components.BaseSourceItem
+import eu.kanade.presentation.components.AnimatedFloatingSearchBox
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
@@ -34,7 +37,9 @@ import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.source.model.Pin
 import tachiyomi.domain.source.model.Source
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
+import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
@@ -45,6 +50,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.theme.header
 import tachiyomi.presentation.core.util.plus
+import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.isLocal
 
 @Composable
@@ -54,16 +60,48 @@ fun SourcesScreen(
     onClickItem: (Source, Listing) -> Unit,
     onClickPin: (Source) -> Unit,
     onLongClickItem: (Source) -> Unit,
+    // KMK -->
+    @Suppress("UNUSED_PARAMETER") modifier: Modifier = Modifier,
+    onChangeSearchQuery: (String?) -> Unit,
+    // KMK <--
 ) {
+    // KMK -->
+    val lazyListState = rememberLazyListState()
+
+    BackHandler(enabled = !state.searchQuery.isNullOrBlank()) {
+        onChangeSearchQuery("")
+    }
+    // KMK <--
+
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
-        state.isEmpty -> EmptyScreen(
-            stringRes = MR.strings.source_empty_screen,
+        // KMK -->
+        state.searchQuery == null &&
+            // KMK <--
+            state.isEmpty -> EmptyScreen(
+            MR.strings.source_empty_screen,
             modifier = Modifier.padding(contentPadding),
         )
-        else -> {
-            ScrollbarLazyColumn(
-                contentPadding = contentPadding + topSmallPaddingValues,
+        // KMK -->
+        else -> Column(
+            // Wrap around so we can use stickyHeader
+            modifier = Modifier.padding(contentPadding),
+        ) {
+            AnimatedFloatingSearchBox(
+                listState = lazyListState,
+                searchQuery = state.searchQuery,
+                onChangeSearchQuery = onChangeSearchQuery,
+                placeholderText = stringResource(KMR.strings.action_search_for_source),
+                modifier = Modifier
+                    .padding(
+                        horizontal = MaterialTheme.padding.medium,
+                        vertical = MaterialTheme.padding.small,
+                    ),
+            )
+
+            FastScrollLazyColumn(
+                state = lazyListState,
+                // KMK <--
             ) {
                 items(
                     items = state.items,

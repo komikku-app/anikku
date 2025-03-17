@@ -51,7 +51,7 @@ import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.anime.track.TrackInfoDialogHomeScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
-import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateSearchScreen
+import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
@@ -80,8 +80,10 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class AnimeScreen(
-    private val animeId: Long,
+    private val mangaId: Long,
+    /** If it is opened from Source then it will auto expand the manga description */
     val fromSource: Boolean = false,
+    private val smartSearchConfig: SourcesScreen.SmartSearchConfig? = null,
 ) : Screen(), AssistContentScreen {
 
     private var assistUrl: String? = null
@@ -89,7 +91,6 @@ class AnimeScreen(
     override fun onProvideAssistUrl() = assistUrl
 
     @Composable
-    @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod")
     override fun Content() {
         if (!ifSourcesLoaded()) {
             LoadingScreen()
@@ -98,11 +99,11 @@ class AnimeScreen(
 
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
-        val haptic = LocalHapticFeedback.current
         val scope = rememberCoroutineScope()
         val lifecycleOwner = LocalLifecycleOwner.current
-        val screenModel =
-            rememberScreenModel { AnimeScreenModel(context, lifecycleOwner.lifecycle, animeId, fromSource) }
+        val screenModel = rememberScreenModel {
+            AnimeScreenModel(context, lifecycleOwner.lifecycle, mangaId, fromSource, smartSearchConfig != null)
+        }
 
         val state by screenModel.state.collectAsStateWithLifecycle()
 
@@ -374,7 +375,7 @@ class AnimeScreen(
             AnimeScreenModel.Dialog.ChangeAnimeSkipIntro -> {
                 fun updateSkipIntroLength(newLength: Long) {
                     scope.launchIO {
-                        screenModel.setAnimeViewerFlags.awaitSetSkipIntroLength(animeId, newLength)
+                        screenModel.setAnimeViewerFlags.awaitSetSkipIntroLength(mangaId, newLength)
                     }
                 }
                 // TODO(custombuttons)
