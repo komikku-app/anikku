@@ -180,7 +180,7 @@ private fun ExtensionRepoListItem(
 
 // KMK -->
 fun repoResId(baseUrl: String) = when (baseUrl) {
-    "https://raw.githubusercontent.com/komikku-app/extensions/repo" -> R.mipmap.komikku
+    "https://raw.githubusercontent.com/anikku-app/extensions/repo" -> R.mipmap.komikku
     "https://raw.githubusercontent.com/keiyoushi/extensions/repo" -> R.mipmap.keiyoushi
     else -> R.mipmap.extension
 }
@@ -189,7 +189,7 @@ fun repoResId(baseUrl: String) = when (baseUrl) {
 @Composable
 fun ExtensionReposContentPreview() {
     val repos = persistentSetOf(
-        ExtensionRepo("https://raw.githubusercontent.com/komikku-app/extensions/repo", "Komikku", "", "", "key1"),
+        ExtensionRepo("https://raw.githubusercontent.com/anikku-app/extensions/repo", "Komikku", "", "", "key1"),
         ExtensionRepo("https://raw.githubusercontent.com/keiyoushi/extensions/repo", "Keiyoushi", "", "", "key2"),
         ExtensionRepo("https://repo", "Other", "", "", "key2"),
     )
