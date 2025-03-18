@@ -122,6 +122,7 @@ import tachiyomi.domain.episode.service.getEpisodeSort
 import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.history.interactor.UpsertHistory
 import tachiyomi.domain.history.model.HistoryUpdate
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetMergedMangaById
 import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.source.service.SourceManager
@@ -175,6 +176,7 @@ class PlayerViewModel @JvmOverloads constructor(
     // SY <--
     // ANK -->
     private val getIncognitoState: GetIncognitoState = Injekt.get(),
+    private val libraryPreferences: LibraryPreferences = Injekt.get(),
     // ANK <--
 ) : ViewModel() {
 
@@ -1615,28 +1617,7 @@ class PlayerViewModel @JvmOverloads constructor(
         val progress = playerPreferences.progressPreference().get()
         val shouldTrack = !incognitoMode || hasTrackers
         if (seconds >= totalSeconds * progress && shouldTrack) {
-            currentEp.seen = true
-            updateTrackEpisodeSeen(currentEp)
-            deleteEpisodeIfNeeded(currentEp)
-
-            val duplicateUnseenEpisodes = currentPlaylist.value
-                .mapNotNull { episode ->
-                    if (
-                        !episode.seen &&
-                        episode.isRecognizedNumber &&
-                        episode.episode_number == currentEp.episode_number
-                    ) {
-                        EpisodeUpdate(id = episode.id!!, read = true)
-                    } else {
-                        null
-                    }
-                }
-
-            if (duplicateUnseenEpisodes.isNotEmpty()) {
-                viewModelScope.launchNonCancellable {
-                    updateEpisode.awaitAll(duplicateUnseenEpisodes)
-                }
-            }
+            updateChapterProgressOnComplete(currentEp)
         }
 
         saveWatchingProgress(currentEp)
@@ -1644,6 +1625,35 @@ class PlayerViewModel @JvmOverloads constructor(
         val inDownloadRange = seconds.toDouble() / totalSeconds > 0.35
         if (inDownloadRange) {
             downloadNextEpisodes()
+        }
+    }
+
+    private fun updateChapterProgressOnComplete(currentEp: Episode) {
+        currentEp.seen = true
+        updateTrackEpisodeSeen(currentEp)
+        deleteEpisodeIfNeeded(currentEp)
+
+        val markDuplicateAsSeen = libraryPreferences.markDuplicateReadChapterAsRead().get()
+            .contains(LibraryPreferences.MARK_DUPLICATE_CHAPTER_READ_EXISTING)
+        if (!markDuplicateAsSeen) return
+
+        val duplicateUnseenEpisodes = currentPlaylist.value
+            .mapNotNull { episode ->
+                if (
+                    !episode.seen &&
+                    episode.isRecognizedNumber &&
+                    episode.episode_number == currentEp.episode_number
+                ) {
+                    EpisodeUpdate(id = episode.id!!, read = true)
+                } else {
+                    null
+                }
+            }
+
+        if (duplicateUnseenEpisodes.isNotEmpty()) {
+            viewModelScope.launchNonCancellable {
+                updateEpisode.awaitAll(duplicateUnseenEpisodes)
+            }
         }
     }
 

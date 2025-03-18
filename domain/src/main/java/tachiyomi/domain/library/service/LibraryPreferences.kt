@@ -80,6 +80,8 @@ class LibraryPreferences(
         false,
     )
 
+    fun markDuplicateReadChapterAsRead() = preferenceStore.getStringSet("mark_duplicate_read_chapter_read", emptySet())
+
     // region Filter
 
     fun filterDownloaded() = preferenceStore.getEnum(
@@ -264,6 +266,9 @@ class LibraryPreferences(
         const val ANIME_HAS_UNSEEN = "anime_fully_seen"
         const val ANIME_NON_SEEN = "anime_started"
         const val ANIME_OUTSIDE_RELEASE_PERIOD = "anime_outside_release_period"
+
+        const val MARK_DUPLICATE_CHAPTER_READ_NEW = "new"
+        const val MARK_DUPLICATE_CHAPTER_READ_EXISTING = "existing"
 
         const val DEFAULT_CATEGORY_PREF_KEY = "default_anime_category"
         private const val LIBRARY_UPDATE_CATEGORIES_PREF_KEY = "animelib_update_categories"

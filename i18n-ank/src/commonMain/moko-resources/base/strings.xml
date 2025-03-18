@@ -176,7 +176,14 @@
     <string name="channel_new_episodes">Episode updates</string>
     <string name="pref_incognito_watching_mode_extension_summary">Pause watching history for extension</string>
     <string name="pref_library_update_show_tab_badge">Show unseen count on Updates icon</string>
-    <string name="pref_mark_duplicate_seen_episode_seen">Mark duplicate seen episodes as seen</string>
+    <string name="pref_behavior">Behavior</string>
+    <!-- This should be to the left for RTL locales -->
+    <string name="pref_episode_swipe_end">Episode on swipe to right</string>
+    <!-- This should be to the right for RTL locales -->
+    <string name="pref_episode_swipe_start">Episode on swipe to left</string>
+    <string name="pref_mark_duplicate_seen_episode_seen">Mark duplicate seen episode as seen</string>
+    <string name="pref_mark_duplicate_seen_episode_seen_existing">After watching a episode</string>
+    <string name="pref_mark_duplicate_seen_episode_seen_new">After fetching new episode</string>
 
         <!-- SY -->
     <string name="sync_on_episode_seen">Sync on Episode Seen</string>

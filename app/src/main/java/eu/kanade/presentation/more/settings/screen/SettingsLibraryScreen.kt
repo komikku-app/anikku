@@ -38,6 +38,8 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_OUTSI
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_CHARGING
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_NETWORK_NOT_METERED
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_ONLY_ON_WIFI
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.MARK_DUPLICATE_CHAPTER_READ_EXISTING
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.MARK_DUPLICATE_CHAPTER_READ_NEW
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
@@ -67,7 +69,7 @@ object SettingsLibraryScreen : SearchableSettings {
         return listOf(
             getCategoriesGroup(LocalNavigator.currentOrThrow, allCategories, libraryPreferences),
             getGlobalUpdateGroup(allCategories, libraryPreferences),
-            getChapterSwipeActionsGroup(libraryPreferences),
+            getBehaviorGroup(libraryPreferences),
             // SY -->
             getSortingCategory(LocalNavigator.currentOrThrow, libraryPreferences),
             getMigrationCategory(unsortedPreferences),
@@ -242,11 +244,11 @@ object SettingsLibraryScreen : SearchableSettings {
     }
 
     @Composable
-    private fun getChapterSwipeActionsGroup(
+    private fun getBehaviorGroup(
         libraryPreferences: LibraryPreferences,
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_episode_swipe),
+            title = stringResource(AMR.strings.pref_behavior),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeToStartAction(),
@@ -285,6 +287,16 @@ object SettingsLibraryScreen : SearchableSettings {
                             stringResource(MR.strings.action_download),
                     ),
                     title = stringResource(MR.strings.pref_episode_swipe_end),
+                ),
+                Preference.PreferenceItem.MultiSelectListPreference(
+                    preference = libraryPreferences.markDuplicateReadChapterAsRead(),
+                    entries = persistentMapOf(
+                        MARK_DUPLICATE_CHAPTER_READ_EXISTING to
+                            stringResource(AMR.strings.pref_mark_duplicate_seen_episode_seen_existing),
+                        MARK_DUPLICATE_CHAPTER_READ_NEW to
+                            stringResource(AMR.strings.pref_mark_duplicate_seen_episode_seen_new),
+                    ),
+                    title = stringResource(AMR.strings.pref_mark_duplicate_seen_episode_seen),
                 ),
             ),
         )
