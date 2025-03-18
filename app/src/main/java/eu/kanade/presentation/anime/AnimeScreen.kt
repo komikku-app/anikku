@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
@@ -27,7 +29,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -36,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,17 +48,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.anime.components.AnimeActionRow
 import eu.kanade.presentation.anime.components.AnimeBottomActionMenu
 import eu.kanade.presentation.anime.components.AnimeEpisodeListItem
@@ -91,11 +103,15 @@ import tachiyomi.presentation.core.components.material.ExtendedFloatingActionBut
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.isLocal
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 @Composable
 fun AnimeScreen(
@@ -358,6 +374,17 @@ private fun AnimeScreenSmallImpl(
         }
     }
 
+    // KMK -->
+    val uiPreferences = Injekt.get<UiPreferences>()
+
+    var layoutSize by remember { mutableStateOf(IntSize.Zero) }
+    var fabSize by remember { mutableStateOf(IntSize.Zero) }
+    var positionOnScreen by remember { mutableStateOf(Offset.Zero) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    val fabPosition by uiPreferences.watchButtonPosition().collectAsState()
+    val watchButtonPosition = uiPreferences.watchButtonPosition()
+    // KMK <--
+
     val internalOnBackPressed = {
         if (isAnySelected) {
             onAllEpisodeSelected(false)
@@ -436,6 +463,29 @@ private fun AnimeScreenSmallImpl(
                 visible = isFABVisible,
                 enter = fadeIn(),
                 exit = fadeOut(),
+                // KMK -->
+                modifier = Modifier
+                    .offset { IntOffset(offsetX.roundToInt(), 0) }
+                    .onGloballyPositioned { coordinates ->
+                        fabSize = coordinates.size
+                        positionOnScreen = coordinates.positionOnScreen()
+                    }
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                if (positionOnScreen.x + fabSize.width / 2 >= layoutSize.width / 2) {
+                                    watchButtonPosition.set(FabPosition.End.toString())
+                                } else {
+                                    watchButtonPosition.set(FabPosition.Start.toString())
+                                }
+                                offsetX = 0f
+                            },
+                        ) { change, dragAmount ->
+                            change.consume()
+                            offsetX += dragAmount
+                        }
+                    },
+                // KMK <--
             ) {
                 ExtendedFloatingActionButton(
                     text = {
@@ -443,22 +493,29 @@ private fun AnimeScreenSmallImpl(
                             state.episodes.fastAny { it.episode.seen }
                         }
                         Text(
-                            text = stringResource(
-                                if (isWatching) MR.strings.action_resume else MR.strings.action_start,
-                            ),
+                            text = stringResource(if (isWatching) MR.strings.action_resume else MR.strings.action_start),
                         )
                     },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = null,
-                        )
-                    },
+                    icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
                     onClick = onContinueWatching,
                     expanded = episodeListState.shouldExpandFAB(),
+                    // KMK -->
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    // KMK <--
                 )
             }
         },
+        // KMK -->
+        floatingActionButtonPosition = if (fabPosition == FabPosition.End.toString()) {
+            FabPosition.End
+        } else {
+            FabPosition.Start
+        },
+        modifier = Modifier
+            .onGloballyPositioned { coordinates ->
+                layoutSize = coordinates.size
+            },
+        // KMK <--
     ) { contentPadding ->
         val topPadding = contentPadding.calculateTopPadding()
 
@@ -675,6 +732,17 @@ private fun AnimeScreenLargeImpl(
         }
     }
 
+    // KMK -->
+    val uiPreferences = Injekt.get<UiPreferences>()
+
+    var layoutSize by remember { mutableStateOf(IntSize.Zero) }
+    var fabSize by remember { mutableStateOf(IntSize.Zero) }
+    var positionOnScreen by remember { mutableStateOf(Offset.Zero) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    val fabPosition by uiPreferences.watchButtonPosition().collectAsState()
+    val watchButtonPosition = uiPreferences.watchButtonPosition()
+    // KMK <--
+
     val insetPadding = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()
     var topBarHeight by remember { mutableIntStateOf(0) }
 
@@ -750,6 +818,29 @@ private fun AnimeScreenLargeImpl(
                 visible = isFABVisible,
                 enter = fadeIn(),
                 exit = fadeOut(),
+                // KMK -->
+                modifier = Modifier
+                    .offset { IntOffset(offsetX.roundToInt(), 0) }
+                    .onGloballyPositioned { coordinates ->
+                        fabSize = coordinates.size
+                        positionOnScreen = coordinates.positionOnScreen()
+                    }
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                if (positionOnScreen.x + fabSize.width / 2 >= layoutSize.width / 2) {
+                                    watchButtonPosition.set(FabPosition.End.toString())
+                                } else {
+                                    watchButtonPosition.set(FabPosition.Start.toString())
+                                }
+                                offsetX = 0f
+                            },
+                        ) { change, dragAmount ->
+                            change.consume()
+                            offsetX += dragAmount
+                        }
+                    },
+                // KMK <--
             ) {
                 ExtendedFloatingActionButton(
                     text = {
@@ -765,9 +856,23 @@ private fun AnimeScreenLargeImpl(
                     icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
                     onClick = onContinueWatching,
                     expanded = episodeListState.shouldExpandFAB(),
+                    // KMK -->
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    // KMK <--
                 )
             }
         },
+        // KMK -->
+        floatingActionButtonPosition = if (fabPosition == FabPosition.End.toString()) {
+            FabPosition.End
+        } else {
+            FabPosition.Start
+        },
+        modifier = Modifier
+            .onGloballyPositioned { coordinates ->
+                layoutSize = coordinates.size
+            },
+        // KMK <--
     ) { contentPadding ->
         PullRefresh(
             refreshing = state.isRefreshingData,
