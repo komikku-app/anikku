@@ -145,6 +145,38 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      */
     protected abstract fun animeDetailsParse(document: Document): SAnime
 
+    // KMK -->
+    /**
+     * Parses the response from the site and returns a list of related animes.
+     * Normally it's not needed to override this method.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param response the response from the site.
+     */
+    override fun relatedAnimeListParse(response: Response): List<SAnime> {
+        return response.asJsoup()
+            .select(relatedAnimeListSelector()).map { relatedAnimeFromElement(it) }
+    }
+    override fun relatedMangaListParse(response: Response) = relatedAnimeListParse(response)
+
+    /**
+     * Returns the Jsoup selector that returns a list of [Element] corresponding to each related animes.
+     *
+     * @since komikku/extensions-lib 1.6
+     */
+    protected open fun relatedAnimeListSelector(): String = popularAnimeSelector()
+    protected open fun relatedMangaListSelector() = relatedAnimeListSelector()
+
+    /**
+     * Returns a anime from the given element.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param element an element obtained from [relatedAnimeListSelector].
+     */
+    protected open fun relatedAnimeFromElement(element: Element): SAnime = popularAnimeFromElement(element)
+    protected open fun relatedMangaFromElement(element: Element) = relatedAnimeFromElement(element)
+    // KMK <--
+
     /**
      * Parses the response from the site and returns a list of episodes.
      *

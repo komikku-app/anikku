@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -144,14 +145,30 @@ class AnimeScreen(
         }
 
         val content = @Composable {
-            MangaDetailContent(
+            Crossfade(
+                targetState = showingRelatedMangasScreen.value,
+                label = "manga_related_crossfade",
+            ) { showRelatedMangasScreen ->
+                when (showRelatedMangasScreen) {
+                    true -> RelatedAnimesScreen(
+                        screenModel = screenModel,
+                        successState = successState,
+                        bulkFavoriteScreenModel = bulkFavoriteScreenModel,
+                        navigateUp = { showingRelatedMangasScreen.value = false },
+                        navigator = navigator,
+                        scope = scope,
+                    )
+                    false -> MangaDetailContent(
                         context = context,
                         screenModel = screenModel,
                         successState = successState,
                         bulkFavoriteScreenModel = bulkFavoriteScreenModel,
+                        showRelatedMangasScreen = { showingRelatedMangasScreen.value = true },
                         navigator = navigator,
                         scope = scope,
                     )
+                }
+            }
         }
 
         val seedColor = successState.seedColor
@@ -187,6 +204,7 @@ class AnimeScreen(
         screenModel: AnimeScreenModel,
         successState: AnimeScreenModel.State.Success,
         bulkFavoriteScreenModel: BulkFavoriteScreenModel,
+        showRelatedMangasScreen: () -> Unit,
         navigator: Navigator,
         scope: CoroutineScope,
     ) {
@@ -301,6 +319,26 @@ class AnimeScreen(
             onEpisodeSelected = screenModel::toggleSelection,
             onAllEpisodeSelected = screenModel::toggleAllSelection,
             onInvertSelection = screenModel::invertSelection,
+            // KMK -->
+            getAnimeState = { screenModel.getManga(initialManga = it) },
+            onRelatedAnimesScreenClick = {
+                if (successState.isRelatedMangasFetched == null) {
+                    scope.launchIO { screenModel.fetchRelatedMangasFromSource(onDemand = true) }
+                }
+                showRelatedMangasScreen()
+            },
+            onRelatedAnimeClick = {
+                scope.launchIO {
+                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    navigator.push(AnimeScreen(manga.id, true))
+                }
+            },
+            onRelatedAnimeLongClick = {
+                scope.launchIO {
+                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
+                }
+            },
             onCoverLoaded = {
                 if (screenModel.themeCoverBased || successState.anime.favorite) screenModel.setPaletteColor(it)
             },

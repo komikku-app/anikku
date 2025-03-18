@@ -20,4 +20,8 @@ enum class AnimeScreenItem {
     EPISODE_HEADER,
     EPISODE,
     AIRING_TIME,
+
+    // KMK -->
+    RELATED_ANIMES,
+    // KMK <--
 }

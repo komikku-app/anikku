@@ -59,11 +59,11 @@ class UiPreferences(
     fun feedTabInFront() = preferenceStore.getBoolean("latest_tab_position", false)
 
     // KMK -->
-    fun expandRelatedAnimes() = preferenceStore.getBoolean("expand_related_mangas", true)
+    fun expandRelatedAnimes() = preferenceStore.getBoolean("expand_related_animes", true)
 
-    fun relatedAnimesInOverflow() = preferenceStore.getBoolean("related_mangas_in_overflow", false)
+    fun relatedAnimesInOverflow() = preferenceStore.getBoolean("related_animes_in_overflow", false)
 
-    fun showHomeOnRelatedAnimes() = preferenceStore.getBoolean("show_home_on_related_mangas", true)
+    fun showHomeOnRelatedAnimes() = preferenceStore.getBoolean("show_home_on_related_animes", true)
 
     fun watchButtonPosition() = preferenceStore.getString("reading_button_position", FabPosition.End.toString())
 

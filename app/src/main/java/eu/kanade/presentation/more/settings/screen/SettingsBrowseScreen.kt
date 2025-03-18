@@ -22,6 +22,7 @@ import mihon.domain.extensionrepo.interactor.GetExtensionRepoCount
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
@@ -57,6 +58,13 @@ object SettingsBrowseScreen : SearchableSettings {
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.label_sources),
                 preferenceItems = persistentListOf(
+                    // KMK -->
+                    Preference.PreferenceItem.SwitchPreference(
+                        pref = sourcePreferences.relatedAnimes(),
+                        title = stringResource(KMR.strings.pref_source_related_mangas),
+                        subtitle = stringResource(KMR.strings.pref_source_related_mangas_summary),
+                    ),
+                    // KMK <--
                     kotlin.run {
                         val count by sourcePreferences.sourcesTabCategories().collectAsState()
                         Preference.PreferenceItem.TextPreference(

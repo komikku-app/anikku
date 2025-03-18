@@ -1,7 +1,9 @@
 package eu.kanade.presentation.anime.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FilterList
@@ -22,15 +24,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.anime.DownloadAction
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DownloadDropdownMenu
 import eu.kanade.presentation.components.UpIcon
+import eu.kanade.tachiyomi.ui.anime.AnimeScreen
+import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
+import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.theme.active
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 @Composable
 fun AnimeToolbar(
@@ -47,6 +57,9 @@ fun AnimeToolbar(
     onClickSettings: (() -> Unit)?,
     // SY -->
     onClickEditInfo: (() -> Unit)?,
+    // KMK -->
+    onClickRelatedAnimes: (() -> Unit)?,
+    // KMK <--
     // SY <--
     // Anime only
     changeAnimeSkipIntro: (() -> Unit)?,
@@ -57,6 +70,13 @@ fun AnimeToolbar(
     modifier: Modifier = Modifier,
     backgroundAlphaProvider: () -> Float = titleAlphaProvider,
 ) {
+    // KMK -->
+    val navigator = LocalNavigator.current
+    fun onHomeClicked() = navigator?.popUntil { screen ->
+        screen is SourceFeedScreen || screen is BrowseSourceScreen
+    }
+    val isHomeEnabled = Injekt.get<UiPreferences>().showHomeOnRelatedAnimes().get()
+    // KMK <--
     Column(
         modifier = modifier,
     ) {
@@ -71,8 +91,22 @@ fun AnimeToolbar(
                 )
             },
             navigationIcon = {
-                IconButton(onClick = onBackClicked) {
-                    UpIcon(navigationIcon = Icons.Outlined.Close.takeIf { isActionMode })
+                Row {
+                    IconButton(onClick = onBackClicked) {
+                        UpIcon(navigationIcon = Icons.Outlined.Close.takeIf { isActionMode })
+                    }
+                    // KMK -->
+                    if (isHomeEnabled && navigator != null) {
+                        if (navigator.size >= 2 &&
+                            navigator.items[navigator.size - 2] is AnimeScreen ||
+                            navigator.size >= 5
+                        ) {
+                            IconButton(onClick = { onHomeClicked() }) {
+                                UpIcon(navigationIcon = Icons.Filled.Home)
+                            }
+                        }
+                    }
+                    // KMK <--
                 }
             },
             actions = {
@@ -171,6 +205,16 @@ fun AnimeToolbar(
                                         ),
                                     )
                                 }
+                                // KMK -->
+                                if (onClickRelatedAnimes != null) {
+                                    add(
+                                        AppBar.OverflowAction(
+                                            title = stringResource(KMR.strings.pref_source_related_mangas),
+                                            onClick = onClickRelatedAnimes,
+                                        ),
+                                    )
+                                }
+                                // KMK <--
                                 if (onClickSettings != null) {
                                     add(
                                         AppBar.OverflowAction(
