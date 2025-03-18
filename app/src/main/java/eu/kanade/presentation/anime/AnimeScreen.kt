@@ -65,6 +65,9 @@ import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.anime.components.AnimeActionRow
 import eu.kanade.presentation.anime.components.AnimeBottomActionMenu
@@ -176,6 +179,7 @@ fun AnimeScreen(
     // KMK -->
     onCoverLoaded: (AnimeCover) -> Unit,
     coverRatio: MutableFloatState,
+    hazeState: HazeState,
     // KMK <--
 ) {
     val context = LocalContext.current
@@ -240,6 +244,7 @@ fun AnimeScreen(
             // KMK -->
             onCoverLoaded = onCoverLoaded,
             coverRatio = coverRatio,
+            hazeState = hazeState,
             // KMK <--
         )
     } else {
@@ -292,6 +297,7 @@ fun AnimeScreen(
             // KMK -->
             onCoverLoaded = onCoverLoaded,
             coverRatio = coverRatio,
+            hazeState = hazeState,
             // KMK <--
         )
     }
@@ -361,6 +367,7 @@ private fun AnimeScreenSmallImpl(
     // KMK -->
     onCoverLoaded: (AnimeCover) -> Unit,
     coverRatio: MutableFloatState,
+    hazeState: HazeState,
     // KMK <--
 ) {
     val episodeListState = rememberLazyListState()
@@ -514,7 +521,10 @@ private fun AnimeScreenSmallImpl(
         modifier = Modifier
             .onGloballyPositioned { coordinates ->
                 layoutSize = coordinates.size
-            },
+            }
+            .haze(
+                state = hazeState,
+            ),
         // KMK <--
     ) { contentPadding ->
         val topPadding = contentPadding.calculateTopPadding()
@@ -718,6 +728,7 @@ private fun AnimeScreenLargeImpl(
     // KMK -->
     onCoverLoaded: (AnimeCover) -> Unit,
     coverRatio: MutableFloatState,
+    hazeState: HazeState,
     // KMK <--
 ) {
     val layoutDirection = LocalLayoutDirection.current
@@ -871,7 +882,10 @@ private fun AnimeScreenLargeImpl(
         modifier = Modifier
             .onGloballyPositioned { coordinates ->
                 layoutSize = coordinates.size
-            },
+            }
+            .haze(
+                state = hazeState,
+            ),
         // KMK <--
     ) { contentPadding ->
         PullRefresh(

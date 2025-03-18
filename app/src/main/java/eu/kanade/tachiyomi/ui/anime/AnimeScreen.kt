@@ -17,9 +17,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,6 +31,10 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.materialkolor.ktx.blend
+import dev.chrisbanes.haze.HazeDefaults
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeChild
 import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.domain.anime.model.hasCustomCover
 import eu.kanade.domain.anime.model.toSAnime
@@ -201,6 +208,7 @@ class AnimeScreen(
 
         // KMK -->
         val coverRatio = remember { mutableFloatStateOf(1f) }
+        val hazeState = remember { HazeState() }
         val fullCoverBackground = MaterialTheme.colorScheme.surfaceTint.blend(MaterialTheme.colorScheme.surface)
         // KMK <--
 
@@ -297,6 +305,7 @@ class AnimeScreen(
                 if (screenModel.themeCoverBased || successState.anime.favorite) screenModel.setPaletteColor(it)
             },
             coverRatio = coverRatio,
+            hazeState = hazeState,
             // KMK <--
         )
 
@@ -392,6 +401,17 @@ class AnimeScreen(
                             }
                         },
                         onDismissRequest = onDismissRequest,
+                        // KMK -->
+                        modifier = Modifier
+                            .hazeChild(
+                                state = hazeState,
+                                style = HazeStyle(
+                                    backgroundColor = Color.Transparent,
+                                    tint = HazeDefaults.tint(fullCoverBackground),
+                                    blurRadius = 10.dp,
+                                ),
+                            ),
+                        // KMK <--
                     )
                 } else {
                     LoadingScreen(Modifier.systemBarsPadding())
