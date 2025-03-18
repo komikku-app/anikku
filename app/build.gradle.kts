@@ -51,6 +51,8 @@ android {
             isShrinkResources = Config.enableCodeShrink
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
+
+            buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = true)}\"")
         }
 
         val commonMatchingFallbacks = listOf(release.name)
