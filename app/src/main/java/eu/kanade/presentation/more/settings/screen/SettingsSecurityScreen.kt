@@ -33,7 +33,7 @@ import eu.kanade.tachiyomi.ui.base.delegate.SecureActivityDelegate
 import eu.kanade.tachiyomi.ui.category.biometric.BiometricTimesScreen
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.isAuthenticationSupported
-import eu.kanade.tachiyomi.util.system.analyticsIncluded
+import eu.kanade.tachiyomi.util.system.telemetryIncluded
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.core.common.i18n.stringResource
@@ -59,7 +59,7 @@ object SettingsSecurityScreen : SearchableSettings {
         val privacyPreferences = remember { Injekt.get<PrivacyPreferences>() }
         return buildList(2) {
             add(getSecurityGroup(securityPreferences))
-            if (!analyticsIncluded) return@buildList
+            if (!telemetryIncluded) return@buildList
             add(getFirebaseGroup(privacyPreferences))
         }
     }
