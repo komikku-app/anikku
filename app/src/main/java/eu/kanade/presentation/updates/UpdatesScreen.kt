@@ -30,6 +30,7 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel
+import eu.kanade.tachiyomi.ui.updates.groupByDateAndAnime
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -65,7 +66,9 @@ fun UpdateScreen(
     onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
     onOpenEpisode: (UpdatesItem, altPlayer: Boolean) -> Unit,
-    navigateUp: (() -> Unit)?,
+    // KMK -->
+    collapseToggle: (key: String) -> Unit,
+    // KMK <--
 ) {
     // KMK -->
     val usePanoramaCover = remember { mutableStateOf(false) }
@@ -81,7 +84,6 @@ fun UpdateScreen(
                 onSelectAll = { onSelectAll(true) },
                 onInvertSelection = { onInvertSelection() },
                 onCancelActionMode = { onSelectAll(false) },
-                navigateUp = navigateUp,
                 scrollBehavior = scrollBehavior,
                 // KMK -->
                 usePanoramaCover = usePanoramaCover.value,
@@ -135,8 +137,19 @@ fun UpdateScreen(
                         updatesLastUpdatedItem(lastUpdated)
 
                         updatesUiItems(
-                            uiModels = state.getUiModel(),
+                            uiModels = state.getUiModel()
+                                // KMK -->
+                                .filter {
+                                    when (it) {
+                                        is UpdatesUiModel.Header, is UpdatesUiModel.Leader -> true
+                                        is UpdatesUiModel.Item ->
+                                            state.expandedState.contains(it.item.update.groupByDateAndAnime())
+                                    }
+                                },
+                            expandedState = state.expandedState,
+                            collapseToggle = collapseToggle,
                             usePanoramaCover = usePanoramaCover.value,
+                            // KMK <--
                             selectionMode = state.selectionMode,
                             onUpdateSelected = onUpdateSelected,
                             onClickCover = onClickCover,
@@ -160,7 +173,6 @@ private fun UpdatesAppBar(
     onInvertSelection: () -> Unit,
     onCancelActionMode: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
-    navigateUp: (() -> Unit)?,
     // KMK -->
     usePanoramaCover: Boolean,
     usePanoramaCoverClick: () -> Unit,
@@ -212,7 +224,6 @@ private fun UpdatesAppBar(
                 ),
             )
         },
-        navigateUp = navigateUp,
         scrollBehavior = scrollBehavior,
     )
 }
@@ -272,5 +283,9 @@ private fun UpdatesBottomBar(
 
 sealed interface UpdatesUiModel {
     data class Header(val date: LocalDate) : UpdatesUiModel
-    data class Item(val item: UpdatesItem) : UpdatesUiModel
+    open class Item(open val item: UpdatesItem, open val isExpandable: Boolean = false) : UpdatesUiModel
+    // KMK -->
+    /** The first [Item] in a group of episodes from same manga */
+    data class Leader(override val item: UpdatesItem, override val isExpandable: Boolean) : Item(item)
+    // KMK <--
 }

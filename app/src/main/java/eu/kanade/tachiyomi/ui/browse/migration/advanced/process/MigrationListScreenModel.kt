@@ -17,7 +17,6 @@ import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.MigrationType
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingAnime.SearchResult
 import eu.kanade.tachiyomi.util.system.toast
 import exh.smartsearch.SmartSearchEngine
-import exh.source.MERGED_SOURCE_ID
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException

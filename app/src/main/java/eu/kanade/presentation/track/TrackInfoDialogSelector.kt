@@ -93,17 +93,15 @@ fun TrackStatusSelector(
 }
 
 @Composable
-fun TrackItemSelector(
+fun TrackEpisodeSelector(
     selection: Int,
     onSelectionChange: (Int) -> Unit,
     range: Iterable<Int>,
     onConfirm: () -> Unit,
     onDismissRequest: () -> Unit,
-    isManga: Boolean,
 ) {
-    val titleText = if (isManga) MR.strings.chapters else MR.strings.episodes
     BaseSelector(
-        title = stringResource(titleText),
+        title = stringResource(MR.strings.episodes),
         content = {
             WheelNumberPicker(
                 items = range.toImmutableList(),
@@ -164,14 +162,12 @@ fun TrackDateSelector(
                     headline = null,
                     showModeToggle = false,
                 )
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        MaterialTheme.padding.small,
-                        Alignment.End,
-                    ),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small, Alignment.End),
                 ) {
                     if (onRemove != null) {
                         TextButton(onClick = onRemove) {
@@ -192,7 +188,7 @@ fun TrackDateSelector(
 }
 
 @Composable
-fun BaseSelector(
+private fun BaseSelector(
     title: String,
     content: @Composable BoxScope.() -> Unit,
     onConfirm: () -> Unit,
@@ -211,10 +207,7 @@ fun BaseSelector(
         buttons = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(
-                    MaterialTheme.padding.small,
-                    Alignment.End,
-                ),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small, Alignment.End),
             ) {
                 if (thirdButton != null) {
                     thirdButton()

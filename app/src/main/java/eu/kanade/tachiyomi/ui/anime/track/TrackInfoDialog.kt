@@ -42,8 +42,8 @@ import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.model.toDbTrack
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.track.TrackDateSelector
+import eu.kanade.presentation.track.TrackEpisodeSelector
 import eu.kanade.presentation.track.TrackInfoDialogHome
-import eu.kanade.presentation.track.TrackItemSelector
 import eu.kanade.presentation.track.TrackScoreSelector
 import eu.kanade.presentation.track.TrackStatusSelector
 import eu.kanade.presentation.track.TrackerSearch
@@ -87,24 +87,20 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
-import tachiyomi.domain.track.model.Track as DbAnimeTrack
 
 data class TrackInfoDialogHomeScreen(
     private val animeId: Long,
     private val animeTitle: String,
     private val sourceId: Long,
 ) : Screen() {
+
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val screenModel = rememberScreenModel { Model(animeId, sourceId) }
 
-        val dateFormat = remember {
-            UiPreferences.dateFormat(
-                Injekt.get<UiPreferences>().dateFormat().get(),
-            )
-        }
+        val dateFormat = remember { UiPreferences.dateFormat(Injekt.get<UiPreferences>().dateFormat().get()) }
         val state by screenModel.state.collectAsState()
 
         TrackInfoDialogHome(
@@ -157,7 +153,7 @@ data class TrackInfoDialogHomeScreen(
                     screenModel.registerEnhancedTracking(it)
                 } else {
                     navigator.push(
-                        TrackServiceSearchScreen(
+                        TrackerSearchScreen(
                             animeId = animeId,
                             initialQuery = it.track?.title ?: animeTitle,
                             currentUrl = it.track?.remoteUrl,
@@ -169,7 +165,7 @@ data class TrackInfoDialogHomeScreen(
             onOpenInBrowser = { openTrackerInBrowser(context, it) },
             onRemoved = {
                 navigator.push(
-                    TrackerAnimeRemoveScreen(
+                    TrackerRemoveScreen(
                         animeId = animeId,
                         track = it.track!!,
                         serviceId = it.tracker.id,
@@ -213,13 +209,7 @@ data class TrackInfoDialogHomeScreen(
                     .catch { logcat(LogPriority.ERROR, it) }
                     .distinctUntilChanged()
                     .map { it.mapToTrackItem() }
-                    .collectLatest { trackItems ->
-                        mutableState.update {
-                            it.copy(
-                                trackItems = trackItems,
-                            )
-                        }
-                    }
+                    .collectLatest { trackItems -> mutableState.update { it.copy(trackItems = trackItems) } }
             }
         }
 
@@ -278,7 +268,7 @@ data class TrackInfoDialogHomeScreen(
 }
 
 private data class TrackStatusSelectorScreen(
-    private val track: DbAnimeTrack,
+    private val track: Track,
     private val serviceId: Long,
 ) : Screen() {
 
@@ -305,7 +295,7 @@ private data class TrackStatusSelectorScreen(
     }
 
     private class Model(
-        private val track: DbAnimeTrack,
+        private val track: Track,
         private val tracker: Tracker,
     ) : StateScreenModel<Model.State>(State(track.status)) {
 
@@ -333,7 +323,7 @@ private data class TrackStatusSelectorScreen(
 }
 
 private data class TrackEpisodeSelectorScreen(
-    private val track: DbAnimeTrack,
+    private val track: Track,
     private val serviceId: Long,
 ) : Screen() {
 
@@ -348,7 +338,7 @@ private data class TrackEpisodeSelectorScreen(
         }
         val state by screenModel.state.collectAsState()
 
-        TrackItemSelector(
+        TrackEpisodeSelector(
             selection = state.selection,
             onSelectionChange = screenModel::setSelection,
             range = remember { screenModel.getRange() },
@@ -357,12 +347,11 @@ private data class TrackEpisodeSelectorScreen(
                 navigator.pop()
             },
             onDismissRequest = navigator::pop,
-            isManga = false,
         )
     }
 
     private class Model(
-        private val track: DbAnimeTrack,
+        private val track: Track,
         private val tracker: Tracker,
     ) : StateScreenModel<Model.State>(State(track.lastEpisodeSeen.toInt())) {
 
@@ -396,7 +385,7 @@ private data class TrackEpisodeSelectorScreen(
 }
 
 private data class TrackScoreSelectorScreen(
-    private val track: DbAnimeTrack,
+    private val track: Track,
     private val serviceId: Long,
 ) : Screen() {
 
@@ -424,7 +413,7 @@ private data class TrackScoreSelectorScreen(
     }
 
     private class Model(
-        private val track: DbAnimeTrack,
+        private val track: Track,
         private val tracker: Tracker,
     ) : StateScreenModel<Model.State>(State(tracker.animeService.displayScore(track))) {
 
@@ -450,7 +439,7 @@ private data class TrackScoreSelectorScreen(
 }
 
 private data class TrackDateSelectorScreen(
-    private val track: DbAnimeTrack,
+    private val track: Track,
     private val serviceId: Long,
     private val start: Boolean,
 ) : Screen() {
@@ -546,7 +535,7 @@ private data class TrackDateSelectorScreen(
     }
 
     private class Model(
-        private val track: DbAnimeTrack,
+        private val track: Track,
         private val tracker: Tracker,
         private val start: Boolean,
     ) : ScreenModel {
@@ -582,7 +571,7 @@ private data class TrackDateSelectorScreen(
 }
 
 private data class TrackDateRemoverScreen(
-    private val track: DbAnimeTrack,
+    private val track: Track,
     private val serviceId: Long,
     private val start: Boolean,
 ) : Screen() {
@@ -612,7 +601,7 @@ private data class TrackDateRemoverScreen(
                 )
             },
             text = {
-                val serviceName = screenModel.getName()
+                val serviceName = screenModel.getServiceName()
                 Text(
                     text = if (start) {
                         stringResource(MR.strings.track_remove_start_date_conf_text, serviceName)
@@ -624,10 +613,7 @@ private data class TrackDateRemoverScreen(
             buttons = {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        MaterialTheme.padding.small,
-                        Alignment.End,
-                    ),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small, Alignment.End),
                 ) {
                     TextButton(onClick = navigator::pop) {
                         Text(text = stringResource(MR.strings.action_cancel))
@@ -650,12 +636,12 @@ private data class TrackDateRemoverScreen(
     }
 
     private class Model(
-        private val track: DbAnimeTrack,
+        private val track: Track,
         private val tracker: Tracker,
         private val start: Boolean,
     ) : ScreenModel {
 
-        fun getName() = tracker.name
+        fun getServiceName() = tracker.name
 
         fun removeDate() {
             screenModelScope.launchNonCancellable {
@@ -669,7 +655,7 @@ private data class TrackDateRemoverScreen(
     }
 }
 
-data class TrackServiceSearchScreen(
+data class TrackerSearchScreen(
     private val animeId: Long,
     private val initialQuery: String,
     private val currentUrl: String?,
@@ -757,7 +743,7 @@ data class TrackServiceSearchScreen(
     }
 }
 
-private data class TrackerAnimeRemoveScreen(
+private data class TrackerRemoveScreen(
     private val animeId: Long,
     private val track: Track,
     private val serviceId: Long,

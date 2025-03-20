@@ -3,7 +3,6 @@ package eu.kanade.domain.ui
 import androidx.compose.material3.FabPosition
 import com.materialkolor.PaletteStyle
 import eu.kanade.domain.ui.model.AppTheme
-import eu.kanade.domain.ui.model.NavStyle
 import eu.kanade.domain.ui.model.StartScreen
 import eu.kanade.domain.ui.model.TabletUiMode
 import eu.kanade.domain.ui.model.ThemeMode
@@ -78,8 +77,6 @@ class UiPreferences(
 
     fun mergeInOverflow() = preferenceStore.getBoolean("merge_in_overflow", true)
 
-    fun previewsRowCount() = preferenceStore.getInt("pref_previews_row_count", 4)
-
     fun useNewSourceNavigation() = preferenceStore.getBoolean("use_new_source_navigation", true)
 
     fun bottomBarLabels() = preferenceStore.getBoolean("pref_show_bottom_bar_labels", true)
@@ -90,9 +87,7 @@ class UiPreferences(
 
     // SY <--
 
-    fun startScreen() = preferenceStore.getEnum("start_screen", StartScreen.ANIME)
-
-    fun navStyle() = preferenceStore.getEnum("bottom_rail_nav_style", NavStyle.MOVE_HISTORY_TO_MORE)
+    fun startScreen() = preferenceStore.getEnum("start_screen", StartScreen.LIBRARY)
 
     companion object {
         fun dateFormat(format: String): DateTimeFormatter = when (format) {

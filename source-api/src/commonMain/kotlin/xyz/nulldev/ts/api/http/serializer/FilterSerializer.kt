@@ -1,6 +1,5 @@
 package xyz.nulldev.ts.api.http.serializer
 
-import eu.kanade.tachiyomi.animesource.model.AnimeFilter as Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -20,6 +19,7 @@ import logcat.asLog
 import tachiyomi.core.common.util.system.logcat
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.isSubclassOf
+import eu.kanade.tachiyomi.animesource.model.AnimeFilter as Filter
 
 class FilterSerializer {
     private val serializers = listOf<Serializer<*>>(

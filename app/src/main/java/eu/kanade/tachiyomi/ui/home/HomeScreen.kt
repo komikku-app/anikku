@@ -24,16 +24,19 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import eu.kanade.core.preference.asState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.util.Screen
@@ -59,12 +62,12 @@ import tachiyomi.presentation.core.components.material.NavigationBar
 import tachiyomi.presentation.core.components.material.NavigationRail
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.pluralStringResource
-import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 
 object HomeScreen : Screen() {
+    private fun readResolve(): Any = HomeScreen
 
     private val librarySearchEvent = Channel<String>()
     private val openTabEvent = Channel<Tab>()
@@ -73,14 +76,28 @@ object HomeScreen : Screen() {
     private const val TAB_FADE_DURATION = 200
     private const val TAB_NAVIGATOR_KEY = "HomeTabs"
 
+    private val TABS = listOf(
+        LibraryTab,
+        UpdatesTab,
+        HistoryTab,
+        BrowseTab,
+        MoreTab,
+    )
+
     private val uiPreferences: UiPreferences by injectLazy()
     private val defaultTab = uiPreferences.startScreen().get().tab
-    private val moreTab = uiPreferences.navStyle().get().moreTab
 
     @Composable
     override fun Content() {
-        val navStyle by uiPreferences.navStyle().collectAsState()
         val navigator = LocalNavigator.currentOrThrow
+
+        // SY -->
+        val scope = rememberCoroutineScope()
+        val alwaysShowLabel by remember {
+            Injekt.get<UiPreferences>().bottomBarLabels().asState(scope)
+        }
+        // SY <--
+
         TabNavigator(
             tab = defaultTab,
             key = TAB_NAVIGATOR_KEY,
@@ -91,9 +108,13 @@ object HomeScreen : Screen() {
                     startBar = {
                         if (isTabletUi()) {
                             NavigationRail {
-                                navStyle.tabs.fastForEach {
-                                    NavigationRailItem(it)
-                                }
+                                TABS
+                                    // SY -->
+                                    .fastFilter { it.isEnabled() }
+                                    // SY <--
+                                    .fastForEach {
+                                        NavigationRailItem(it/* SY --> */, alwaysShowLabel/* SY <-- */)
+                                    }
                             }
                         }
                     },
@@ -103,14 +124,18 @@ object HomeScreen : Screen() {
                                 showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
                             }
                             AnimatedVisibility(
-                                visible = bottomNavVisible && tabNavigator.current != navStyle.moreTab,
+                                visible = bottomNavVisible,
                                 enter = expandVertically(),
                                 exit = shrinkVertically(),
                             ) {
                                 NavigationBar {
-                                    navStyle.tabs.fastForEach {
-                                        NavigationBarItem(it)
-                                    }
+                                    TABS
+                                        // SY -->
+                                        .fastFilter { it.isEnabled() }
+                                        // SY <--
+                                        .fastForEach {
+                                            NavigationBarItem(it/* SY --> */, alwaysShowLabel/* SY <-- */)
+                                        }
                                 }
                             }
                         }
@@ -132,6 +157,7 @@ object HomeScreen : Screen() {
                                     materialFadeThroughOut(durationMillis = TAB_FADE_DURATION)
                             },
                             label = "tabContent",
+                            contentKey = { it.key },
                         ) {
                             tabNavigator.saveableState(key = "currentTab", it) {
                                 it.Content()
@@ -141,16 +167,9 @@ object HomeScreen : Screen() {
                 }
             }
 
-            val goToStartScreen = {
-                if (defaultTab != moreTab) {
-                    tabNavigator.current = defaultTab
-                } else {
-                    tabNavigator.current = LibraryTab
-                }
-            }
+            val goToStartScreen = { tabNavigator.current = defaultTab }
             BackHandler(
-                enabled = (tabNavigator.current == moreTab || tabNavigator.current != defaultTab) &&
-                    (tabNavigator.current != LibraryTab || defaultTab != moreTab),
+                enabled = tabNavigator.current != defaultTab,
                 onBack = goToStartScreen,
             )
 
@@ -167,7 +186,7 @@ object HomeScreen : Screen() {
                 launch {
                     openTabEvent.receiveAsFlow().collectLatest {
                         tabNavigator.current = when (it) {
-                            is Tab.AnimeLib -> LibraryTab
+                            is Tab.Library -> LibraryTab
                             is Tab.Updates -> UpdatesTab
                             is Tab.History -> HistoryTab
                             is Tab.Browse -> {
@@ -179,7 +198,7 @@ object HomeScreen : Screen() {
                             is Tab.More -> MoreTab
                         }
 
-                        if (it is Tab.AnimeLib && it.animeIdToOpen != null) {
+                        if (it is Tab.Library && it.animeIdToOpen != null) {
                             navigator.push(AnimeScreen(it.animeIdToOpen))
                         }
                         if (it is Tab.More) {
@@ -198,7 +217,12 @@ object HomeScreen : Screen() {
     }
 
     @Composable
-    private fun RowScope.NavigationBarItem(tab: eu.kanade.presentation.util.Tab) {
+    private fun RowScope.NavigationBarItem(
+        tab: eu.kanade.presentation.util.Tab,
+        // SY -->
+        alwaysShowLabel: Boolean,
+        // SY <--
+    ) {
         val tabNavigator = LocalTabNavigator.current
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
@@ -221,12 +245,17 @@ object HomeScreen : Screen() {
                     overflow = TextOverflow.Ellipsis,
                 )
             },
-            alwaysShowLabel = true,
+            alwaysShowLabel = /* SY --> */alwaysShowLabel, /* SY <-- */
         )
     }
 
     @Composable
-    fun NavigationRailItem(tab: eu.kanade.presentation.util.Tab) {
+    fun NavigationRailItem(
+        tab: eu.kanade.presentation.util.Tab,
+        // SY -->
+        alwaysShowLabel: Boolean,
+        // SY <--
+    ) {
         val tabNavigator = LocalTabNavigator.current
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
@@ -249,7 +278,7 @@ object HomeScreen : Screen() {
                     overflow = TextOverflow.Ellipsis,
                 )
             },
-            alwaysShowLabel = true,
+            alwaysShowLabel = /* SY --> */alwaysShowLabel, /* SY <-- */
         )
     }
 
@@ -258,14 +287,14 @@ object HomeScreen : Screen() {
         BadgedBox(
             badge = {
                 when {
-                    UpdatesTab::class.isInstance(tab) -> {
+                    tab is UpdatesTab -> {
                         val count by produceState(initialValue = 0) {
                             val pref = Injekt.get<LibraryPreferences>()
                             combine(
+                                pref.newShowUpdatesCount().changes(),
                                 pref.newUpdatesCount().changes(),
-                                pref.newMangaUpdatesCount().changes(),
-                            ) { countAnime, countManga -> countAnime + countManga }
-                                .collectLatest { value = if (pref.newShowUpdatesCount().get()) it else 0 }
+                            ) { show, count -> if (show) count else 0 }
+                                .collectLatest { value = it }
                         }
                         if (count > 0) {
                             Badge {
@@ -283,8 +312,8 @@ object HomeScreen : Screen() {
                     }
                     BrowseTab::class.isInstance(tab) -> {
                         val count by produceState(initialValue = 0) {
-                            val pref = Injekt.get<SourcePreferences>()
-                            pref.extensionUpdatesCount().changes().collectLatest { value = it }
+                            Injekt.get<SourcePreferences>().extensionUpdatesCount().changes()
+                                .collectLatest { value = it }
                         }
                         if (count > 0) {
                             Badge {
@@ -325,7 +354,7 @@ object HomeScreen : Screen() {
     }
 
     sealed interface Tab {
-        data class AnimeLib(val animeIdToOpen: Long? = null) : Tab
+        data class Library(val animeIdToOpen: Long? = null) : Tab
         data object Updates : Tab
         data object History : Tab
         data class Browse(val toExtensions: Boolean = false) : Tab

@@ -78,10 +78,10 @@ fun HistoryItem(
             )
         } else {
             // KMK <--
-        AnimeCover.Book(
-            modifier = Modifier.fillMaxHeight(),
+            AnimeCover.Book(
+                modifier = Modifier.fillMaxHeight(),
                 data = animeCover,
-            onClick = onClickCover,
+                onClick = onClickCover,
                 // KMK -->
                 bgColor = bgColor,
                 tint = onBgColor,
@@ -91,7 +91,7 @@ fun HistoryItem(
                     coverRatio.floatValue = image.height.toFloat() / image.width
                 },
                 // KMK <--
-        )
+            )
         }
         Column(
             modifier = Modifier

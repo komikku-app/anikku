@@ -101,16 +101,16 @@ fun AnimeCompactGridItem(
             cover = {
                 AnimeCover.Book(
                     modifier = Modifier
-                            // KMK -->
-                            // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
-                            // KMK <--
-                            .fillMaxWidth(),
-                    data = coverData,
                         // KMK -->
-                        alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
-                        bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
-                        tint = onBgColor,
+                        // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
                         // KMK <--
+                        .fillMaxWidth(),
+                    data = coverData,
+                    // KMK -->
+                    alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
+                    bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                    tint = onBgColor,
+                    // KMK <--
                 )
             },
             badgesStart = coverBadgeStart,
@@ -224,49 +224,49 @@ fun AnimeComfortableGridItem(
         Column {
             AnimeGridCover(
                 cover = {
-                        if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
-                            AnimeCover.Panorama(
-                                modifier = Modifier
-                                    // KMK -->
-                                    // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
-                                    // KMK <--
-                                    .fillMaxWidth(),
-                                data = coverData,
+                    if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
+                        AnimeCover.Panorama(
+                            modifier = Modifier
                                 // KMK -->
-                                alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
-                                bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
-                                tint = onBgColor,
-                                onCoverLoaded = { _, result ->
-                                    val image = result.result.image
-                                    coverRatio.floatValue = image.height.toFloat() / image.width
-                                },
+                                // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
                                 // KMK <--
-                            )
-                        } else {
+                                .fillMaxWidth(),
+                            data = coverData,
+                            // KMK -->
+                            alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
+                            bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                            tint = onBgColor,
+                            onCoverLoaded = { _, result ->
+                                val image = result.result.image
+                                coverRatio.floatValue = image.height.toFloat() / image.width
+                            },
                             // KMK <--
-                    AnimeCover.Book(
-                        modifier = Modifier
-                                    // KMK -->
-                                    // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
-                                    // KMK <--
-                                    .fillMaxWidth(),
-                        data = coverData,
+                        )
+                    } else {
+                        // KMK <--
+                        AnimeCover.Book(
+                            modifier = Modifier
                                 // KMK -->
-                                alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
-                                bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
-                                tint = onBgColor,
-                                onCoverLoaded = { _, result ->
-                                    val image = result.result.image
-                                    coverRatio.floatValue = image.height.toFloat() / image.width
-                                },
-                                scale = if (usePanoramaCover && coverIsWide) {
-                                    ContentScale.Fit
-                                } else {
-                                    ContentScale.Crop
-                                },
+                                // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
                                 // KMK <--
-                    )
-                        }
+                                .fillMaxWidth(),
+                            data = coverData,
+                            // KMK -->
+                            alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
+                            bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                            tint = onBgColor,
+                            onCoverLoaded = { _, result ->
+                                val image = result.result.image
+                                coverRatio.floatValue = image.height.toFloat() / image.width
+                            },
+                            scale = if (usePanoramaCover && coverIsWide) {
+                                ContentScale.Fit
+                            } else {
+                                ContentScale.Crop
+                            },
+                            // KMK <--
+                        )
+                    }
                 },
                 // KMK -->
                 ratio = if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
@@ -445,17 +445,17 @@ fun AnimeListItem(
     ) {
         AnimeCover.Book(
             modifier = Modifier
-                    // KMK -->
-                    // .alpha(coverAlpha)
-                    // KMK <--
-                    .fillMaxHeight(),
-            data = coverData,
                 // KMK -->
-                alpha = coverAlpha,
-                bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
-                tint = onBgColor,
-                size = AnimeCover.Size.Big,
+                // .alpha(coverAlpha)
                 // KMK <--
+                .fillMaxHeight(),
+            data = coverData,
+            // KMK -->
+            alpha = coverAlpha,
+            bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+            tint = onBgColor,
+            size = AnimeCover.Size.Big,
+            // KMK <--
         )
         Text(
             text = title,

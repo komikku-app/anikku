@@ -45,8 +45,6 @@ fun HistoryScreen(
     onClickCover: (animeId: Long) -> Unit,
     onClickResume: (animeId: Long, episodeId: Long) -> Unit,
     onDialogChange: (HistoryScreenModel.Dialog?) -> Unit,
-    navigateUp: (() -> Unit)?,
-    searchQuery: String? = null,
 ) {
     // KMK -->
     val usePanoramaCover = remember { mutableStateOf(false) }
@@ -90,7 +88,6 @@ fun HistoryScreen(
                         // KMK <--
                     )
                 },
-                navigateUp = navigateUp,
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -100,7 +97,7 @@ fun HistoryScreen(
             if (it == null) {
                 LoadingScreen(Modifier.padding(contentPadding))
             } else if (it.isEmpty()) {
-                val msg = if (!searchQuery.isNullOrEmpty()) {
+                val msg = if (!state.searchQuery.isNullOrEmpty()) {
                     MR.strings.no_results_found
                 } else {
                     MR.strings.information_no_recent_anime
@@ -127,7 +124,7 @@ fun HistoryScreen(
 
 @Composable
 private fun HistoryScreenContent(
-    history: List<HistoryUiModel>,
+    history: ImmutableList<HistoryUiModel>,
     contentPadding: PaddingValues,
     onClickCover: (HistoryWithRelations) -> Unit,
     onClickResume: (HistoryWithRelations) -> Unit,
@@ -189,12 +186,10 @@ internal fun HistoryScreenPreviews(
         HistoryScreen(
             state = historyState,
             snackbarHostState = SnackbarHostState(),
-            searchQuery = null,
             onSearchQueryChange = {},
             onClickCover = {},
             onClickResume = { _, _ -> run {} },
             onDialogChange = {},
-            navigateUp = {},
         )
     }
 }

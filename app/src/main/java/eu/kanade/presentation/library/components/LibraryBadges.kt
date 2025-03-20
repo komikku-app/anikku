@@ -96,20 +96,20 @@ fun SourceIconBadge(
             )
         }
         source.isLocal() -> {
-        Badge(
-            imageVector = Icons.Outlined.Folder,
-            color = MaterialTheme.colorScheme.tertiary,
-            iconColor = MaterialTheme.colorScheme.onTertiary,
-        )
+            Badge(
+                imageVector = Icons.Outlined.Folder,
+                color = MaterialTheme.colorScheme.tertiary,
+                iconColor = MaterialTheme.colorScheme.onTertiary,
+            )
         }
         else -> {
             // Default source icon (if source doesn't have an icon)
-        Badge(
+            Badge(
                 imageVector = Icons.Outlined.LocalLibrary,
-            color = MaterialTheme.colorScheme.tertiary,
+                color = MaterialTheme.colorScheme.tertiary,
                 iconColor = MaterialTheme.colorScheme.onTertiary,
-        )
-    }
+            )
+        }
     }
 }
 // KMK <--

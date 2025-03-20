@@ -302,7 +302,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param response the response from the site.
      */
     protected open fun relatedAnimeListParse(response: Response): List<SAnime> = popularAnimeParse(response).animes
-    protected open fun relatedMangaListParse(response: Response)= relatedAnimeListParse(response)
+    protected open fun relatedMangaListParse(response: Response) = relatedAnimeListParse(response)
     // KMK <--
 
     /**

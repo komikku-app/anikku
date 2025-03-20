@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -17,7 +18,8 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import eu.kanade.domain.ui.model.NavStyle
+import eu.kanade.core.preference.asState
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.history.HistoryScreen
 import eu.kanade.presentation.history.components.HistoryDeleteAllDialog
 import eu.kanade.presentation.history.components.HistoryDeleteDialog
@@ -26,20 +28,23 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connection.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connection.discord.DiscordScreen
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 
 data object HistoryTab : Tab {
+    private fun readResolve(): Any = HistoryTab
+
+    private val snackbarHostState = SnackbarHostState()
 
     private val resumeLastEpisodeSeenEvent = Channel<Unit>()
 
@@ -48,13 +53,8 @@ data object HistoryTab : Tab {
         get() {
             val isSelected = LocalTabNavigator.current.current.key == key
             val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_history_enter)
-            val index: UShort = when (currentNavigationStyle()) {
-                NavStyle.MOVE_HISTORY_TO_MORE -> 5u
-                NavStyle.MOVE_BROWSE_TO_MORE -> 3u
-                else -> 2u
-            }
             return TabOptions(
-                index = index,
+                index = 2u,
                 title = stringResource(MR.strings.history),
                 icon = rememberAnimatedVectorPainter(image, isSelected),
             )
@@ -64,55 +64,30 @@ data object HistoryTab : Tab {
         resumeLastEpisodeSeenEvent.send(Unit)
     }
 
+    // SY -->
+    @Composable
+    override fun isEnabled(): Boolean {
+        val scope = rememberCoroutineScope()
+        return remember {
+            Injekt.get<UiPreferences>().showNavHistory().asState(scope)
+        }.value
+    }
+    // SY <--
+
     @Composable
     override fun Content() {
-        val context = LocalContext.current
-        val fromMore = currentNavigationStyle() == NavStyle.MOVE_HISTORY_TO_MORE
-        // Hoisted for history tab's search bar
-        val snackbarHostState = SnackbarHostState()
-
         val navigator = LocalNavigator.currentOrThrow
+        val context = LocalContext.current
         val screenModel = rememberScreenModel { HistoryScreenModel() }
         val state by screenModel.state.collectAsState()
-        val searchQuery by screenModel.query.collectAsState()
-
-        val scope = rememberCoroutineScope()
-        val navigateUp: (() -> Unit)? = if (fromMore) {
-            {
-                if (navigator.lastItem == HomeScreen) {
-                    scope.launch { HomeScreen.openTab(HomeScreen.Tab.AnimeLib()) }
-                } else {
-                    navigator.pop()
-                }
-            }
-        } else {
-            null
-        }
-
-        suspend fun openEpisode(context: Context, episode: Episode?) {
-            val playerPreferences: PlayerPreferences by injectLazy()
-            val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
-            if (episode != null) {
-                MainActivity.startPlayerActivity(
-                    context,
-                    episode.animeId,
-                    episode.id,
-                    extPlayer,
-                )
-            } else {
-                snackbarHostState.showSnackbar(context.stringResource(MR.strings.no_next_episode))
-            }
-        }
 
         HistoryScreen(
             state = state,
-            searchQuery = searchQuery,
             snackbarHostState = snackbarHostState,
-            onSearchQueryChange = screenModel::search,
+            onSearchQueryChange = screenModel::updateSearchQuery,
             onClickCover = { navigator.push(AnimeScreen(it)) },
             onClickResume = screenModel::getNextEpisodeForAnime,
             onDialogChange = screenModel::setDialog,
-            navigateUp = navigateUp,
         )
 
         val onDismissRequest = { screenModel.setDialog(null) }
@@ -167,6 +142,21 @@ data object HistoryTab : Tab {
 
         LaunchedEffect(Unit) {
             (context as? MainActivity)?.ready = true
+        }
+    }
+
+    private suspend fun openEpisode(context: Context, episode: Episode?) {
+        val playerPreferences: PlayerPreferences by injectLazy()
+        val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
+        if (episode != null) {
+            MainActivity.startPlayerActivity(
+                context,
+                episode.animeId,
+                episode.id,
+                extPlayer,
+            )
+        } else {
+            snackbarHostState.showSnackbar(context.stringResource(MR.strings.no_next_episode))
         }
     }
 }

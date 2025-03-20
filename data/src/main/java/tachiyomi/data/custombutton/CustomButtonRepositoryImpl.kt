@@ -2,12 +2,12 @@ package tachiyomi.data.custombutton
 
 import android.database.sqlite.SQLiteException
 import kotlinx.coroutines.flow.Flow
+import tachiyomi.data.Database
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.domain.custombuttons.exception.SaveCustomButtonException
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.domain.custombuttons.repository.CustomButtonRepository
-import tachiyomi.data.Database
 
 class CustomButtonRepositoryImpl(
     private val handler: DatabaseHandler,

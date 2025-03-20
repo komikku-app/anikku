@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.util
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
