@@ -1,14 +1,13 @@
 package eu.kanade.tachiyomi.ui.library
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -34,6 +33,7 @@ import eu.kanade.presentation.anime.components.LibraryBottomActionMenu
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.library.DeleteLibraryAnimeDialog
 import eu.kanade.presentation.library.LibrarySettingsDialog
+import eu.kanade.presentation.library.ResetInfoAnimeDialog
 import eu.kanade.presentation.library.components.LibraryContent
 import eu.kanade.presentation.library.components.LibraryToolbar
 import eu.kanade.presentation.more.onboarding.GETTING_STARTED_URL
@@ -45,7 +45,6 @@ import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
-import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
@@ -78,19 +77,16 @@ import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 
 data object LibraryTab : Tab {
+    private fun readResolve(): Any = LibraryTab
 
-    @OptIn(ExperimentalAnimationGraphicsApi::class)
     override val options: TabOptions
         @Composable
         get() {
-            val title = MR.strings.label_anime_library
             val isSelected = LocalTabNavigator.current.current.key == key
-            val image = AnimatedImageVector.animatedVectorResource(
-                R.drawable.anim_animelibrary_leave,
-            )
+            val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_animelibrary_leave)
             return TabOptions(
                 index = 0u,
-                title = stringResource(title),
+                title = stringResource(MR.strings.label_library),
                 icon = rememberAnimatedVectorPainter(image, isSelected),
             )
         }
@@ -99,7 +95,6 @@ data object LibraryTab : Tab {
         requestOpenSettingsSheet()
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -130,29 +125,20 @@ data object LibraryTab : Tab {
             )
             // SY <--
             scope.launch {
-                val msgRes = if (started) MR.strings.updating_category else MR.strings.update_already_running
+                val msgRes = when {
+                    !started -> MR.strings.update_already_running
+                    category != null -> MR.strings.updating_category
+                    else -> MR.strings.updating_library
+                }
                 snackbarHostState.showSnackbar(context.stringResource(msgRes))
             }
             started
         }
 
-        suspend fun openEpisode(episode: Episode) {
-            val playerPreferences: PlayerPreferences by injectLazy()
-            val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
-            MainActivity.startPlayerActivity(
-                context,
-                episode.animeId,
-                episode.id,
-                extPlayer,
-            )
-        }
-
-        val defaultTitle = stringResource(MR.strings.label_anime_library)
-
         Scaffold(
             topBar = { scrollBehavior ->
                 val title = state.getToolbarTitle(
-                    defaultTitle = defaultTitle,
+                    defaultTitle = stringResource(MR.strings.label_library),
                     defaultCategoryTitle = stringResource(MR.strings.label_default),
                     page = screenModel.activeCategoryIndex,
                 )
@@ -163,21 +149,15 @@ data object LibraryTab : Tab {
                     title = title,
                     onClickUnselectAll = screenModel::clearSelection,
                     onClickSelectAll = { screenModel.selectAll(screenModel.activeCategoryIndex) },
-                    onClickInvertSelection = {
-                        screenModel.invertSelection(
-                            screenModel.activeCategoryIndex,
-                        )
-                    },
+                    onClickInvertSelection = { screenModel.invertSelection(screenModel.activeCategoryIndex) },
                     onClickFilter = screenModel::showSettingsDialog,
                     onClickRefresh = {
-                        onClickRefresh(
-                            state.categories[screenModel.activeCategoryIndex],
-                        )
+                        onClickRefresh(state.categories[screenModel.activeCategoryIndex.coerceAtMost(state.categories.lastIndex)])
                     },
                     onClickGlobalUpdate = { onClickRefresh(null) },
-                    onClickOpenRandomEntry = {
+                    onClickOpenRandomAnime = {
                         scope.launch {
-                            val randomItem = screenModel.getRandomAnimelibItemForCurrentCategory()
+                            val randomItem = screenModel.getRandomLibraryItemForCurrentCategory()
                             if (randomItem != null) {
                                 navigator.push(AnimeScreen(randomItem.libraryAnime.anime.id))
                             } else {
@@ -191,7 +171,7 @@ data object LibraryTab : Tab {
                         if (!SyncDataJob.isRunning(context)) {
                             SyncDataJob.startNow(context)
                         } else {
-                            context.toast(MR.strings.sync_in_progress)
+                            context.toast(SYMR.strings.sync_in_progress)
                         }
                     },
                     searchQuery = state.searchQuery,
@@ -208,6 +188,7 @@ data object LibraryTab : Tab {
                     onDownloadClicked = screenModel::runDownloadActionSelection
                         .takeIf { state.selection.fastAll { !it.anime.isLocal() } },
                     onDeleteClicked = screenModel::openDeleteAnimeDialog,
+                    // SY -->
                     onClickMigrate = {
                         val selectedMangaIds = state.selection
                             .map { it.anime.id }
@@ -222,7 +203,11 @@ data object LibraryTab : Tab {
                             context.toast(SYMR.strings.no_valid_entry)
                         }
                     },
-                    onClickResetInfo = screenModel::resetInfo.takeIf { state.showResetInfo },
+                    onClickResetInfo = screenModel::openResetInfoAnimeDialog.takeIf { state.showResetInfo },
+                    // SY <--
+                    // KMK -->
+                    onClickMerge = null,
+                    // KMK <--
                 )
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -257,7 +242,7 @@ data object LibraryTab : Tab {
                         onContinueWatchingClicked = { it: LibraryAnime ->
                             scope.launchIO {
                                 val episode = screenModel.getNextUnseenEpisode(it.anime)
-                                if (episode != null) openEpisode(episode)
+                                if (episode != null) openEpisode(context, episode)
                             }
                             Unit
                         }.takeIf { state.showAnimeContinueButton },
@@ -268,18 +253,12 @@ data object LibraryTab : Tab {
                         },
                         onRefresh = onClickRefresh,
                         onGlobalSearchClicked = {
-                            navigator.push(
-                                GlobalSearchScreen(screenModel.state.value.searchQuery ?: ""),
-                            )
+                            navigator.push(GlobalSearchScreen(screenModel.state.value.searchQuery ?: ""))
                         },
                         getNumberOfAnimeForCategory = { state.getAnimeCountForCategory(it) },
                         getDisplayMode = { screenModel.getDisplayMode() },
-                        getColumnsForOrientation = {
-                            screenModel.getColumnsPreferenceForCurrentOrientation(
-                                it,
-                            )
-                        },
-                    ) { state.getAnimelibItemsByPage(it) }
+                        getColumnsForOrientation = { screenModel.getColumnsPreferenceForCurrentOrientation(it) },
+                    ) { state.getLibraryItemsByPage(it) }
                 }
             }
         }
@@ -306,7 +285,9 @@ data object LibraryTab : Tab {
                     initialSelection = dialog.initialSelection,
                     onDismissRequest = onDismissRequest,
                     onEditCategories = {
-                        screenModel.clearSelection()
+                        // KMK -->
+                        // screenModel.clearSelection()
+                        // KMK <--
                         navigator.push(CategoryScreen())
                     },
                     onConfirm = { include, exclude ->
@@ -321,6 +302,15 @@ data object LibraryTab : Tab {
                     onDismissRequest = onDismissRequest,
                     onConfirm = { deleteAnime, deleteEpisode ->
                         screenModel.removeAnimes(dialog.anime, deleteAnime, deleteEpisode)
+                        screenModel.clearSelection()
+                    },
+                )
+            }
+            is LibraryScreenModel.Dialog.ResetInfoAnime -> {
+                ResetInfoAnimeDialog(
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = {
+                        screenModel.resetInfo()
                         screenModel.clearSelection()
                     },
                 )
@@ -352,6 +342,17 @@ data object LibraryTab : Tab {
             launch { queryEvent.receiveAsFlow().collect(screenModel::search) }
             launch { requestSettingsSheetEvent.receiveAsFlow().collectLatest { screenModel.showSettingsDialog() } }
         }
+    }
+
+    private suspend fun openEpisode(context: Context, episode: Episode) {
+        val playerPreferences: PlayerPreferences by injectLazy()
+        val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
+        MainActivity.startPlayerActivity(
+            context,
+            episode.animeId,
+            episode.id,
+            extPlayer,
+        )
     }
 
     // For invoking search from other screen

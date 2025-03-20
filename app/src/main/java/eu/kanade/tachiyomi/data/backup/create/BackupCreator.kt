@@ -7,8 +7,8 @@ import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.backup.BackupFileValidator
 import eu.kanade.tachiyomi.data.backup.create.creators.AnimeBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.CategoriesBackupCreator
-import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionRepoBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.CustomButtonBackupCreator
+import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionRepoBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionsBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.PreferenceBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.SourcesBackupCreator

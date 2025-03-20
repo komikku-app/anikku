@@ -1,4 +1,4 @@
-package eu.kanade.presentation.updates
+package eu.kanade.presentation.library
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -8,27 +8,32 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun UpdatesDeleteConfirmationDialog(
+fun ResetInfoAnimeDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {
     AlertDialog(
-        text = {
-            Text(text = stringResource(MR.strings.confirm_delete_episodes))
-        },
         onDismissRequest = onDismissRequest,
-        confirmButton = {
-            TextButton(onClick = {
-                onConfirm()
-                onDismissRequest()
-            }) {
-                Text(text = stringResource(MR.strings.action_ok))
-            }
-        },
         dismissButton = {
             TextButton(onClick = onDismissRequest) {
                 Text(text = stringResource(MR.strings.action_cancel))
             }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDismissRequest()
+                    onConfirm()
+                },
+            ) {
+                Text(text = stringResource(MR.strings.action_ok))
+            }
+        },
+        title = {
+            Text(text = stringResource(MR.strings.reset_info))
+        },
+        text = {
+            Text(text = stringResource(MR.strings.are_you_sure))
         },
     )
 }

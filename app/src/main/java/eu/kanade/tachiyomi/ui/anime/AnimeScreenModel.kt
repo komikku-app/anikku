@@ -52,10 +52,10 @@ import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.model.SAnime
-import eu.kanade.tachiyomi.ui.anime.track.TrackItem
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.isLoading
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.removeDuplicates
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.sorted
+import eu.kanade.tachiyomi.ui.anime.track.TrackItem
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.AniChartApi

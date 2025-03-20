@@ -19,6 +19,7 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.MoreScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
@@ -27,12 +28,14 @@ import eu.kanade.tachiyomi.data.connection.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.download.DownloadQueueScreen
+import eu.kanade.tachiyomi.ui.history.HistoryTab
+import eu.kanade.tachiyomi.ui.libraryUpdateError.LibraryUpdateErrorScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.setting.PlayerSettingsScreen
-import eu.kanade.tachiyomi.ui.libraryUpdateError.LibraryUpdateErrorScreen
 import eu.kanade.tachiyomi.ui.setting.SettingsScreen
 import eu.kanade.tachiyomi.ui.stats.StatsScreen
 import eu.kanade.tachiyomi.ui.storage.StorageScreen
+import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import eu.kanade.tachiyomi.util.system.isInstalledFromFDroid
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,7 +73,6 @@ data object MoreTab : Tab {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel { MoreScreenModel() }
         val downloadQueueState by screenModel.downloadQueueState.collectAsState()
-        val navStyle = currentNavigationStyle()
         MoreScreen(
             downloadQueueStateProvider = { downloadQueueState },
             downloadedOnly = screenModel.downloadedOnly,
@@ -78,8 +80,10 @@ data object MoreTab : Tab {
             incognitoMode = screenModel.incognitoMode,
             onIncognitoModeChange = { screenModel.incognitoMode = it },
             isFDroid = context.isInstalledFromFDroid(),
-            navStyle = navStyle,
-            onClickAlt = { navigator.push(navStyle.moreTab) },
+            // SY -->
+            showNavUpdates = screenModel.showNavUpdates,
+            showNavHistory = screenModel.showNavHistory,
+            // SY <--
             onClickDownloadQueue = { navigator.push(DownloadQueueScreen) },
             onClickCategories = { navigator.push(CategoryScreen()) },
             onClickStats = { navigator.push(StatsScreen) },
@@ -88,6 +92,10 @@ data object MoreTab : Tab {
             onClickPlayerSettings = { navigator.push(PlayerSettingsScreen) },
             onClickSettings = { navigator.push(SettingsScreen()) },
             onClickAbout = { navigator.push(SettingsScreen(SettingsScreen.Destination.About)) },
+            // SY -->
+            onClickUpdates = { navigator.push(UpdatesTab) },
+            onClickHistory = { navigator.push(HistoryTab) },
+            // SY <--
             // KMK -->
             onClickLibraryUpdateErrors = { navigator.push(LibraryUpdateErrorScreen()) },
             // KMK <--
@@ -106,14 +114,20 @@ data object MoreTab : Tab {
 private class MoreScreenModel(
     private val downloadManager: DownloadManager = Injekt.get(),
     preferences: BasePreferences = Injekt.get(),
+    // SY -->
+    uiPreferences: UiPreferences = Injekt.get(),
+    // SY <--
 ) : ScreenModel {
 
     var downloadedOnly by preferences.downloadedOnly().asState(screenModelScope)
     var incognitoMode by preferences.incognitoMode().asState(screenModelScope)
 
-    private var _downloadQueueState: MutableStateFlow<DownloadQueueState> = MutableStateFlow(
-        DownloadQueueState.Stopped,
-    )
+    // SY -->
+    val showNavUpdates by uiPreferences.showNavUpdates().asState(screenModelScope)
+    val showNavHistory by uiPreferences.showNavHistory().asState(screenModelScope)
+    // SY <--
+
+    private var _downloadQueueState: MutableStateFlow<DownloadQueueState> = MutableStateFlow(DownloadQueueState.Stopped)
     val downloadQueueState: StateFlow<DownloadQueueState> = _downloadQueueState.asStateFlow()
 
     init {
@@ -122,18 +136,13 @@ private class MoreScreenModel(
             combine(
                 downloadManager.isDownloaderRunning,
                 downloadManager.queueState,
-            ) { isRunningAnime, animeDownloadQueue ->
-                Pair(
-                    isRunningAnime,
-                    animeDownloadQueue.size,
-                )
-            }
-                .collectLatest { (isDownloadingAnime, animeDownloadQueueSize) ->
-                    val pendingDownloadExists = animeDownloadQueueSize != 0
+            ) { isRunning, downloadQueue -> Pair(isRunning, downloadQueue.size) }
+                .collectLatest { (isDownloading, downloadQueueSize) ->
+                    val pendingDownloadExists = downloadQueueSize != 0
                     _downloadQueueState.value = when {
                         !pendingDownloadExists -> DownloadQueueState.Stopped
-                        !isDownloadingAnime -> DownloadQueueState.Paused(animeDownloadQueueSize)
-                        else -> DownloadQueueState.Downloading(animeDownloadQueueSize)
+                        !isDownloading -> DownloadQueueState.Paused(downloadQueueSize)
+                        else -> DownloadQueueState.Downloading(downloadQueueSize)
                     }
                 }
         }

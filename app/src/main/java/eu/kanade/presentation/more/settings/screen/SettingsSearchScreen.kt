@@ -64,7 +64,7 @@ import tachiyomi.presentation.core.util.runOnEnterKeyPressed
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
 class SettingsSearchScreen(
-    val isPlayer: Boolean = false,
+    private val isPlayer: Boolean = false,
 ) : Screen() {
     @Composable
     override fun Content() {
@@ -245,7 +245,7 @@ private fun SearchResult(
                 ) {
                     items(
                         items = it,
-                        key = { i -> i.hashCode() },
+                        key = { i -> "settings-search-${i.hashCode()}" },
                     ) { item ->
                         Column(
                             modifier = Modifier
@@ -278,6 +278,9 @@ private fun SearchResult(
 @Composable
 @NonRestartableComposable
 private fun getIndex() = settingScreens
+    // SY -->
+    .filter(SearchableSettings::isEnabled)
+    // SY <--
     .map { screen ->
         SettingsData(
             title = stringResource(screen.getTitleRes()),

@@ -12,8 +12,8 @@ import eu.kanade.tachiyomi.data.backup.models.BackupExtensionRepos
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
 import eu.kanade.tachiyomi.data.backup.restore.restorers.AnimeRestorer
-import eu.kanade.tachiyomi.data.backup.restore.restorers.CustomButtonRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.CategoriesRestorer
+import eu.kanade.tachiyomi.data.backup.restore.restorers.CustomButtonRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionRepoRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionsRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.PreferenceRestorer

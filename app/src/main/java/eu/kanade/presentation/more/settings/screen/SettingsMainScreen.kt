@@ -51,6 +51,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
 object SettingsMainScreen : Screen() {
+    private fun readResolve(): Any = SettingsMainScreen
+
     @Composable
     override fun Content() {
         Content(twoPane = false)
@@ -102,6 +104,9 @@ object SettingsMainScreen : Screen() {
             containerColor = containerColor,
             content = { contentPadding ->
                 val state = rememberLazyListState()
+                // SY -->
+                val items = items.filter { it.screen !is SearchableSettings || it.screen.isEnabled() }
+                // SY <--
                 val indexSelected = if (twoPane) {
                     items.indexOfFirst { it.screen::class == navigator.items.first()::class }
                         .also {
@@ -123,7 +128,7 @@ object SettingsMainScreen : Screen() {
                 ) {
                     itemsIndexed(
                         items = items,
-                        key = { _, item -> item.hashCode() },
+                        key = { _, item -> "settings-main-${item.hashCode()}" },
                     ) { index, item ->
                         val selected = indexSelected == index
                         var modifier: Modifier = Modifier
@@ -134,9 +139,7 @@ object SettingsMainScreen : Screen() {
                                 .clip(RoundedCornerShape(24.dp))
                                 .then(
                                     if (selected) {
-                                        Modifier.background(
-                                            MaterialTheme.colorScheme.surfaceVariant,
-                                        )
+                                        Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
                                     } else {
                                         Modifier
                                     },
@@ -166,8 +169,8 @@ object SettingsMainScreen : Screen() {
 
     private data class Item(
         val titleRes: StringResource,
-        val subtitleRes: StringResource? = null,
-        val formatSubtitle: @Composable () -> String? = { subtitleRes?.let { stringResource(it) } },
+        val subtitleRes: StringResource,
+        val formatSubtitle: @Composable () -> String = { stringResource(subtitleRes) },
         val icon: ImageVector,
         val screen: VoyagerScreen,
     )
@@ -231,10 +234,9 @@ object SettingsMainScreen : Screen() {
         ),
         Item(
             titleRes = MR.strings.pref_category_about,
+            subtitleRes = StringResource(0),
             formatSubtitle = {
-                "${stringResource(MR.strings.app_name)} ${AboutScreen.getVersionName(
-                    withBuildDate = false,
-                )}"
+                "${stringResource(MR.strings.app_name)} ${AboutScreen.getVersionName(withBuildDate = false)}"
             },
             icon = Icons.Outlined.Info,
             screen = AboutScreen,

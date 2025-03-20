@@ -62,7 +62,6 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listi
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
-import exh.source.isEhBasedSource
 import exh.ui.smartsearch.SmartSearchScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest

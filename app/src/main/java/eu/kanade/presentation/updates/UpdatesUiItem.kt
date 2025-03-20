@@ -1,12 +1,13 @@
 package eu.kanade.presentation.updates
+
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
@@ -14,7 +15,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,6 +51,7 @@ import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
+import eu.kanade.tachiyomi.ui.updates.groupByDateAndAnime
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
@@ -63,14 +68,11 @@ import java.util.concurrent.TimeUnit
 internal fun LazyListScope.updatesLastUpdatedItem(
     lastUpdated: Long,
 ) {
-    item(key = "animeUpdates-lastUpdated") {
+    item(key = "updates-lastUpdated") {
         Box(
             modifier = Modifier
-                .animateItem(fadeInSpec = null, fadeOutSpec = null)
-                .padding(
-                    horizontal = MaterialTheme.padding.medium,
-                    vertical = MaterialTheme.padding.small,
-                ),
+                .animateItemFastScroll()
+                .padding(horizontal = MaterialTheme.padding.medium, vertical = MaterialTheme.padding.small),
         ) {
             Text(
                 text = stringResource(MR.strings.updates_last_update_info, relativeTimeSpanString(lastUpdated)),
@@ -82,7 +84,11 @@ internal fun LazyListScope.updatesLastUpdatedItem(
 
 internal fun LazyListScope.updatesUiItems(
     uiModels: List<UpdatesUiModel>,
+    // KMK -->
+    expandedState: Set<String>,
+    collapseToggle: (key: String) -> Unit,
     usePanoramaCover: Boolean,
+    // KMK <--
     selectionMode: Boolean,
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
     onClickCover: (UpdatesItem) -> Unit,
@@ -99,8 +105,8 @@ internal fun LazyListScope.updatesUiItems(
         },
         key = {
             when (it) {
-                is UpdatesUiModel.Header -> "animeUpdatesHeader-${it.hashCode()}"
-                is UpdatesUiModel.Item -> "animeUpdates-${it.item.update.animeId}-${it.item.update.episodeId}"
+                is UpdatesUiModel.Header -> "updatesHeader-${it.hashCode()}"
+                is UpdatesUiModel.Item -> "updates-${it.item.update.animeId}-${it.item.update.episodeId}"
             }
         },
     ) { item ->
@@ -134,12 +140,7 @@ internal fun LazyListScope.updatesUiItems(
                     },
                     onClick = {
                         when {
-                            selectionMode -> onUpdateSelected(
-                                updatesItem,
-                                !updatesItem.selected,
-                                true,
-                                false,
-                            )
+                            selectionMode -> onUpdateSelected(updatesItem, !updatesItem.selected, true, false)
                             else -> onClickUpdate(updatesItem, false)
                         }
                     },
@@ -152,7 +153,13 @@ internal fun LazyListScope.updatesUiItems(
                     // AM (FILE_SIZE) -->
                     updatesItem = updatesItem,
                     // <-- AM (FILE_SIZE)
+                    // KMK -->
+                    isLeader = item is UpdatesUiModel.Leader,
+                    isExpandable = item.isExpandable,
+                    expanded = expandedState.contains(updatesItem.update.groupByDateAndAnime()),
+                    collapseToggle = collapseToggle,
                     usePanoramaCover = usePanoramaCover,
+                    // KMK <--
                 )
             }
         }
@@ -174,9 +181,15 @@ private fun UpdatesUiItem(
     // AM (FILE_SIZE) -->
     updatesItem: UpdatesItem,
     // <-- AM (FILE_SIZE)
+    // KMK -->
+    isLeader: Boolean,
+    isExpandable: Boolean,
+    expanded: Boolean,
+    collapseToggle: (key: String) -> Unit,
     usePanoramaCover: Boolean,
-    coverRatio: MutableFloatState = remember { mutableFloatStateOf(1f) },
     modifier: Modifier = Modifier,
+    coverRatio: MutableFloatState = remember { mutableFloatStateOf(1f) },
+    // KMK <--
 ) {
     val haptic = LocalHapticFeedback.current
     val textAlpha = if (update.seen) DISABLED_ALPHA else 1f
@@ -204,6 +217,7 @@ private fun UpdatesUiItem(
         val coverIsWide = coverRatio.floatValue <= RatioSwitchToPanorama
         val bgColor = mangaCover.dominantCoverColors?.first?.let { Color(it) }
         val onBgColor = mangaCover.dominantCoverColors?.second
+        if (isLeader) {
             if (usePanoramaCover && coverIsWide) {
                 AnimeCover.Panorama(
                     modifier = Modifier
@@ -241,6 +255,14 @@ private fun UpdatesUiItem(
                     },
                 )
             }
+        } else {
+            Box(
+                modifier = Modifier
+                    .width(if (usePanoramaCover && coverIsWide) UpdateItemPanoramaWidth else UpdateItemWidth),
+            )
+            // KMK <--
+        }
+
         Column(
             modifier = Modifier
                 .padding(horizontal = MaterialTheme.padding.medium)
@@ -297,7 +319,17 @@ private fun UpdatesUiItem(
                 }
             }
         }
-// AM (FILE_SIZE) -->
+
+        // KMK -->
+        if (isLeader && isExpandable) {
+            CollapseButton(
+                expanded = expanded,
+                collapseToggle = { collapseToggle(update.groupByDateAndAnime()) },
+            )
+        }
+        // KMK <--
+
+        // AM (FILE_SIZE) -->
         var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
         if (downloadStateProvider() == Download.State.DOWNLOADED &&
             storagePreferences.showEpisodeFileSize().get() &&
@@ -333,6 +365,33 @@ private fun UpdatesUiItem(
     }
 }
 
+// KMK -->
+@Composable
+fun CollapseButton(
+    expanded: Boolean,
+    collapseToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(IndicatorSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        IconButton(onClick = { collapseToggle() }) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+private val IndicatorSize = 18.dp
+private val UpdateItemPanoramaWidth = 126.dp
+private val UpdateItemWidth = 56.dp
+// KMK <--
+
 private fun formatProgress(milliseconds: Long): String {
     return if (milliseconds > 3600000L) {
         String.format(
@@ -352,11 +411,6 @@ private fun formatProgress(milliseconds: Long): String {
         )
     }
 }
-
-private val IndicatorSize = 18.dp
-private val UpdateItemPanoramaWidth = 126.dp
-private val UpdateItemWidth = 56.dp
-// KMK <--
 
 // AM (FILE_SIZE) -->
 private val storagePreferences: StoragePreferences by injectLazy()

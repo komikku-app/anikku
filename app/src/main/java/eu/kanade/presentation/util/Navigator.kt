@@ -15,37 +15,36 @@ import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.ScreenTransitionContent
-import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.domain.ui.model.NavStyle
+import eu.kanade.tachiyomi.util.system.isPreviewBuildType
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.plus
+import logcat.LogPriority
 import soup.compose.material.motion.animation.materialSharedAxisX
 import soup.compose.material.motion.animation.rememberSlideDistance
-import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import tachiyomi.core.common.util.system.logcat
 
 /**
  * For invoking back press to the parent activity
  */
 val LocalBackPress: ProvidableCompositionLocal<(() -> Unit)?> = staticCompositionLocalOf { null }
 
-private val uiPreferences: UiPreferences = Injekt.get()
-
 interface Tab : cafe.adriel.voyager.navigator.tab.Tab {
     suspend fun onReselect(navigator: Navigator) {}
 
+    // SY -->
     @Composable
-    fun currentNavigationStyle(): NavStyle = uiPreferences.navStyle().collectAsState().value
+    fun isEnabled(): Boolean = true
+    // SY <--
 }
 
 abstract class Screen : Screen {
-
-    override val key: ScreenKey = uniqueScreenKey
+    // known bug: https://github.com/mihonapp/mihon/issues/712
+    // This is where it create a key Screen#uuid:transition which causes exception Key ... was used multiple times
+    override val key: ScreenKey = "$uniqueScreenKey#${this::class.simpleName}"
 }
 
 /**
@@ -93,9 +92,12 @@ fun ScreenTransition(
         targetState = navigator.lastItem,
         transitionSpec = transition,
         modifier = modifier,
-        label = "transition",
+        label = "screen-transition",
     ) { screen ->
-        navigator.saveableState("transition", screen) {
+        if (isPreviewBuildType) {
+            logcat(LogPriority.ERROR) { "ScreenTransition: ${screen.key}" }
+        }
+        navigator.saveableState("screen-transition-${screen.key}", screen) {
             content(screen)
         }
     }

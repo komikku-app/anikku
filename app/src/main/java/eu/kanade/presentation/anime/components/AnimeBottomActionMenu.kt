@@ -31,7 +31,11 @@ import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Merge
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.RemoveDone
+import androidx.compose.material.icons.outlined.SwapCalls
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,19 +52,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.anime.DownloadAction
 import eu.kanade.presentation.components.DownloadDropdownMenu
+import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.util.system.isTabletUi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -93,10 +102,7 @@ fun AnimeBottomActionMenu(
         val playerPreferences: PlayerPreferences = Injekt.get()
         Surface(
             modifier = modifier,
-            shape = MaterialTheme.shapes.large.copy(
-                bottomEnd = ZeroCornerSize,
-                bottomStart = ZeroCornerSize,
-            ),
+            shape = MaterialTheme.shapes.large.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             val haptic = LocalHapticFeedback.current
@@ -308,6 +314,9 @@ fun LibraryBottomActionMenu(
     onClickMigrate: (() -> Unit)?,
     onClickResetInfo: (() -> Unit)?,
     // SY <--
+    // KMK -->
+    onClickMerge: (() -> Unit)?,
+    // KMK <--
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -324,19 +333,28 @@ fun LibraryBottomActionMenu(
             val haptic = LocalHapticFeedback.current
             val confirm =
                 remember {
-                    mutableStateListOf(false, false, false, false, false)
+                    mutableStateListOf(false, false, false, false, false /* SY --> */, false, false, false /* SY <-- */)
                 }
             var resetJob: Job? = remember { null }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                (0..<5).forEach { i -> confirm[i] = i == toConfirmIndex }
+                (0..<8).forEach { i -> confirm[i] = i == toConfirmIndex }
                 resetJob?.cancel()
                 resetJob = scope.launch {
                     delay(1.seconds)
                     if (isActive) confirm[toConfirmIndex] = false
                 }
             }
-            val showOverflow = onClickResetInfo != null
+            // SY -->
+            val showOverflow = onClickResetInfo != null ||
+                // KMK -->
+                onClickMigrate != null ||
+                onClickMerge != null
+            // KMK <--
+            val configuration = LocalConfiguration.current
+            val isTabletUi = remember { configuration.isTabletUi() }
+            var overFlowOpen by remember { mutableStateOf(false) }
+            // SY <--
             Row(
                 modifier = Modifier
                     .windowInsetsPadding(
@@ -392,13 +410,86 @@ fun LibraryBottomActionMenu(
                 )
                 // SY -->
                 if (showOverflow) {
+                    if (isTabletUi) {
+                        if (onClickMigrate != null) {
+                            Button(
+                                title = stringResource(MR.strings.migrate),
+                                icon = Icons.Outlined.SwapCalls,
+                                toConfirm = confirm[6],
+                                onLongClick = { onLongClickItem(6) },
+                                onClick = onClickMigrate,
+                            )
+                        }
+                        // KMK -->
+                        if (onClickMerge != null) {
+                            Button(
+                                title = stringResource(SYMR.strings.merge),
+                                icon = Icons.Outlined.Merge,
+                                toConfirm = confirm[7],
+                                onLongClick = { onLongClickItem(7) },
+                                onClick = onClickMerge,
+                            )
+                        }
+                        // KMK <--
+                    }
                     Button(
-                        title = stringResource(MR.strings.reset_info),
-                        icon = Icons.Outlined.Delete,
+                        title = stringResource(MR.strings.label_more),
+                        icon = Icons.Outlined.MoreVert,
                         toConfirm = confirm[5],
                         onLongClick = { onLongClickItem(5) },
-                        onClick = onClickResetInfo!!,
+                        onClick = { overFlowOpen = true },
                     )
+                    DropdownMenu(
+                        expanded = overFlowOpen,
+                        onDismissRequest = { overFlowOpen = false },
+                        // KMK -->
+                        offset = DpOffset((-10).dp, 0.dp),
+                        // KMK <--
+                    ) {
+                        if (!isTabletUi) {
+                            if (onClickMigrate != null) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(MR.strings.migrate)) },
+                                    onClick = onClickMigrate,
+                                )
+                            }
+                            // KMK -->
+                            if (onClickMerge != null) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(SYMR.strings.merge)) },
+                                    onClick = onClickMerge,
+                                )
+                            }
+                            // KMK <--
+                        }
+                        if (onClickResetInfo != null) {
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(SYMR.strings.reset_info)) },
+                                onClick = onClickResetInfo,
+                            )
+                        }
+                    }
+                    /* KMK -->
+                } else {
+                    if (onClickMigrate != null) {
+                        Button(
+                            title = stringResource(MR.strings.migrate),
+                            icon = Icons.Outlined.SwapCalls,
+                            toConfirm = confirm[6],
+                            onLongClick = { onLongClickItem(6) },
+                            onClick = onClickMigrate,
+                        )
+                    }
+                    if (onClickMerge != null) {
+                        Button(
+                            title = stringResource(SYMR.strings.merge),
+                            icon = Icons.Outlined.Merge,
+                            toConfirm = confirm[7],
+                            onLongClick = { onLongClickItem(7) },
+                            onClick = onClickMerge,
+                        )
+                    }
+                    // KMK <-- */
                 }
                 // SY <--
             }

@@ -57,8 +57,10 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.anime.interactor.GetLibraryAnime
+import tachiyomi.domain.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeUpdate
+import tachiyomi.domain.anime.model.CustomAnimeInfo
 import tachiyomi.domain.anime.model.applyFilter
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetAnimeCategories
@@ -109,6 +111,7 @@ class LibraryScreenModel(
     private val trackerManager: TrackerManager = Injekt.get(),
     // SY -->
     private val getTracks: GetTracks = Injekt.get(),
+    private val setCustomAnimeInfo: SetCustomAnimeInfo = Injekt.get(),
     // SY <--
 ) : StateScreenModel<LibraryScreenModel.State>(State()) {
 
@@ -414,26 +417,26 @@ class LibraryScreenModel(
             libraryPreferences.useLangIcon().changes(),
             // KMK <--
         ) {
-                ItemPreferences(
-                    downloadBadge = it[0] as Boolean,
-                    localBadge = it[1] as Boolean,
-                    languageBadge = it[2] as Boolean,
-                    skipOutsideReleasePeriod = LibraryPreferences.ANIME_OUTSIDE_RELEASE_PERIOD in (it[3] as Set<*>),
-                    globalFilterDownloaded = it[4] as Boolean,
-                    filterDownloaded = it[5] as TriState,
-                    filterUnseen = it[6] as TriState,
-                    filterStarted = it[7] as TriState,
-                    filterBookmarked = it[8] as TriState,
-                    // AM (FILLERMARK) -->
-                    filterFillermarked = it[9] as TriState,
-                    filterCompleted = it[10] as TriState,
-                    filterIntervalCustom = it[11] as TriState,
-                    // <-- AM (FILLERMARK)
+            ItemPreferences(
+                downloadBadge = it[0] as Boolean,
+                localBadge = it[1] as Boolean,
+                languageBadge = it[2] as Boolean,
+                skipOutsideReleasePeriod = LibraryPreferences.ANIME_OUTSIDE_RELEASE_PERIOD in (it[3] as Set<*>),
+                globalFilterDownloaded = it[4] as Boolean,
+                filterDownloaded = it[5] as TriState,
+                filterUnseen = it[6] as TriState,
+                filterStarted = it[7] as TriState,
+                filterBookmarked = it[8] as TriState,
+                // AM (FILLERMARK) -->
+                filterFillermarked = it[9] as TriState,
+                filterCompleted = it[10] as TriState,
+                filterIntervalCustom = it[11] as TriState,
+                // <-- AM (FILLERMARK)
                 // KMK -->
                 sourceBadge = it[12] as Boolean,
                 useLangIcon = it[13] as Boolean,
                 // KMK <--
-                )
+            )
         }
     }
 
@@ -623,9 +626,10 @@ class LibraryScreenModel(
         }
     }
 
+    // SY -->
     fun resetInfo() {
         state.value.selection.fastForEach { (anime) ->
-            val animeInfo = AnimeUpdate(
+            val animeInfo = CustomAnimeInfo(
                 id = anime.id,
                 title = null,
                 author = null,
@@ -635,12 +639,12 @@ class LibraryScreenModel(
                 genre = null,
                 status = null,
             )
-            screenModelScope.launchNonCancellable {
-                updateAnime.await(animeInfo)
-            }
+
+            setCustomAnimeInfo.set(animeInfo)
         }
         clearSelection()
     }
+    // SY <--
 
     /**
      * Marks animes' episodes seen status.
@@ -732,7 +736,7 @@ class LibraryScreenModel(
         )
     }
 
-    suspend fun getRandomAnimelibItemForCurrentCategory(): LibraryItem? {
+    suspend fun getRandomLibraryItemForCurrentCategory(): LibraryItem? {
         if (state.value.categories.isEmpty()) return null
 
         return withIOContext {
@@ -857,8 +861,13 @@ class LibraryScreenModel(
     }
 
     fun openDeleteAnimeDialog() {
-        val nimeList = state.value.selection.map { it.anime }
-        mutableState.update { it.copy(dialog = Dialog.DeleteAnime(nimeList)) }
+        val animeList = state.value.selection.map { it.anime }
+        mutableState.update { it.copy(dialog = Dialog.DeleteAnime(animeList)) }
+    }
+
+    fun openResetInfoAnimeDialog() {
+        val animeList = state.value.selection.map { it.anime }
+        mutableState.update { it.copy(dialog = Dialog.ResetInfoAnime(animeList)) }
     }
 
     fun closeDialog() {
@@ -872,6 +881,7 @@ class LibraryScreenModel(
             val initialSelection: ImmutableList<CheckboxState<Category>>,
         ) : Dialog
         data class DeleteAnime(val anime: List<Anime>) : Dialog
+        data class ResetInfoAnime(val anime: List<Anime>) : Dialog
     }
 
     // SY -->
@@ -1042,21 +1052,25 @@ class LibraryScreenModel(
 
         val categories = library.keys.toList()
 
+        // SY -->
         val showResetInfo: Boolean by lazy {
             selection.fastAny { (anime) ->
                 anime.title != anime.ogTitle ||
                     anime.author != anime.ogAuthor ||
                     anime.artist != anime.ogArtist ||
+                    anime.thumbnailUrl != anime.ogThumbnailUrl ||
                     anime.description != anime.ogDescription ||
                     anime.genre != anime.ogGenre ||
                     anime.status != anime.ogStatus
             }
         }
+        // SY <--
+
         fun getAnimelibItemsByCategoryId(categoryId: Long): List<LibraryItem>? {
             return library.firstNotNullOfOrNull { (k, v) -> v.takeIf { k.id == categoryId } }
         }
 
-        fun getAnimelibItemsByPage(page: Int): List<LibraryItem> {
+        fun getLibraryItemsByPage(page: Int): List<LibraryItem> {
             return library.values.toTypedArray().getOrNull(page).orEmpty()
         }
 

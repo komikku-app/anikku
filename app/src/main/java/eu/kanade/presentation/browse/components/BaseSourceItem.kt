@@ -79,8 +79,8 @@ private val defaultContent: @Composable RowScope.(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
         ) {
             // KMK <--
-        if (sourceLangString != null) {
-            Text(
+            if (sourceLangString != null) {
+                Text(
                     text = /* KMK --> */ FlagEmoji.getEmojiLangFlag(lang) + " " + /* KMK <-- */
                         sourceLangString,
                     maxLines = 1,
@@ -94,12 +94,12 @@ private val defaultContent: @Composable RowScope.(
                 Text(
                     text = stringResource(MR.strings.ext_nsfw_short).uppercase(),
                     color = MaterialTheme.colorScheme.error,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
-            )
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
-    }
         // KMK <--
     }
 }

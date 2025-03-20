@@ -41,20 +41,20 @@ fun EpisodeHeader(
     ) {
         // KMK <--
         Column(
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
-    ) {
-        Text(
-            text = if (episodeCount == null) {
-                stringResource(MR.strings.episodes)
-            } else {
-                pluralStringResource(MR.plurals.anime_num_episodes, count = episodeCount, episodeCount)
-            },
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+        ) {
+            Text(
+                text = if (episodeCount == null) {
+                    stringResource(MR.strings.episodes)
+                } else {
+                    pluralStringResource(MR.plurals.anime_num_episodes, count = episodeCount, episodeCount)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
 
-        MissingEpisodesWarning(missingEpisodeCount)
-    }
+            MissingEpisodesWarning(missingEpisodeCount)
+        }
     }
 }
 

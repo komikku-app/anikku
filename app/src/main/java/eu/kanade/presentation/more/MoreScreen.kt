@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
@@ -13,6 +12,7 @@ import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.GetApp
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.QueryStats
@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
-import eu.kanade.domain.ui.model.NavStyle
 import eu.kanade.presentation.components.WarningBanner
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
@@ -47,8 +46,10 @@ fun MoreScreen(
     incognitoMode: Boolean,
     onIncognitoModeChange: (Boolean) -> Unit,
     isFDroid: Boolean,
-    navStyle: NavStyle,
-    onClickAlt: () -> Unit,
+    // SY -->
+    showNavUpdates: Boolean,
+    showNavHistory: Boolean,
+    // SY <--
     onClickDownloadQueue: () -> Unit,
     onClickCategories: () -> Unit,
     onClickStats: () -> Unit,
@@ -57,6 +58,8 @@ fun MoreScreen(
     onClickPlayerSettings: () -> Unit,
     onClickSettings: () -> Unit,
     onClickAbout: () -> Unit,
+    onClickUpdates: () -> Unit,
+    onClickHistory: () -> Unit,
     // KMK -->
     onClickLibraryUpdateErrors: () -> Unit,
     // KMK <--
@@ -67,9 +70,7 @@ fun MoreScreen(
         topBar = {
             Column(
                 modifier = Modifier.windowInsetsPadding(
-                    WindowInsets.systemBars.only(
-                        WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
-                    ),
+                    WindowInsets.systemBars.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 ),
             ) {
                 if (isFDroid) {
@@ -86,7 +87,8 @@ fun MoreScreen(
         },
     ) { contentPadding ->
         ScrollbarLazyColumn(
-            modifier = Modifier.padding(contentPadding),
+            // KMK: use contentPadding as preferable padding for ScrollbarLazyColumn when not using stickyHeader
+            contentPadding = contentPadding,
         ) {
             item {
                 LogoHeader()
@@ -112,13 +114,26 @@ fun MoreScreen(
 
             item { HorizontalDivider() }
 
-            item {
-                TextPreferenceWidget(
-                    title = navStyle.moreTab.options.title,
-                    icon = navStyle.moreIcon,
-                    onPreferenceClick = onClickAlt,
-                )
+            // SY -->
+            if (!showNavUpdates) {
+                item {
+                    TextPreferenceWidget(
+                        title = stringResource(MR.strings.label_recent_updates),
+                        icon = Icons.Outlined.NewReleases,
+                        onPreferenceClick = onClickUpdates,
+                    )
+                }
             }
+            if (!showNavHistory) {
+                item {
+                    TextPreferenceWidget(
+                        title = stringResource(MR.strings.history),
+                        icon = Icons.Outlined.History,
+                        onPreferenceClick = onClickHistory,
+                    )
+                }
+            }
+            // SY <--
 
             item {
                 val downloadQueueState = downloadQueueStateProvider()
@@ -140,14 +155,9 @@ fun MoreScreen(
                                 }"
                             }
                         }
-
                         is DownloadQueueState.Downloading -> {
                             val pending = downloadQueueState.pending
-                            pluralStringResource(
-                                MR.plurals.download_queue_summary,
-                                count = pending,
-                                pending,
-                            )
+                            pluralStringResource(MR.plurals.download_queue_summary, count = pending, pending)
                         }
                     },
                     icon = Icons.Outlined.GetApp,

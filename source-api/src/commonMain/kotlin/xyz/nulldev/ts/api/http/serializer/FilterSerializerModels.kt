@@ -1,6 +1,5 @@
 package xyz.nulldev.ts.api.http.serializer
 
-import eu.kanade.tachiyomi.animesource.model.AnimeFilter as Filter
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -15,6 +14,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
+import eu.kanade.tachiyomi.animesource.model.AnimeFilter as Filter
 
 interface Serializer<in T : Filter<out Any?>> {
     fun JsonObjectBuilder.serialize(filter: T) {}
