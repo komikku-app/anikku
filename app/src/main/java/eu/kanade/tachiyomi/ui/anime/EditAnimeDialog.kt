@@ -41,7 +41,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.databinding.EditMangaDialogBinding
+import eu.kanade.tachiyomi.databinding.EditAnimeDialogBinding
 import eu.kanade.tachiyomi.source.model.SAnime
 import eu.kanade.tachiyomi.util.lang.chop
 import eu.kanade.tachiyomi.util.system.dpToPx
@@ -84,7 +84,7 @@ fun EditAnimeDialog(
 ) {
     val scope = rememberCoroutineScope()
     var binding by remember {
-        mutableStateOf<EditMangaDialogBinding?>(null)
+        mutableStateOf<EditAnimeDialogBinding?>(null)
     }
     // KMK -->
     val colors = EditAnimeDialogColors(
@@ -144,7 +144,7 @@ fun EditAnimeDialog(
             ) {
                 AndroidView(
                     factory = { factoryContext ->
-                        EditMangaDialogBinding.inflate(LayoutInflater.from(factoryContext))
+                        EditAnimeDialogBinding.inflate(LayoutInflater.from(factoryContext))
                             .also { binding = it }
                             .apply {
                                 onViewCreated(
@@ -184,7 +184,7 @@ data class EditAnimeDialogColors(
 private fun onViewCreated(
     manga: Anime,
     context: Context,
-    binding: EditMangaDialogBinding,
+    binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
     // KMK -->
     colors: EditAnimeDialogColors,
@@ -350,7 +350,7 @@ private fun onViewCreated(
 
 private fun resetTags(
     manga: Anime,
-    binding: EditMangaDialogBinding,
+    binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
     // KMK -->
     colors: EditAnimeDialogColors,
@@ -365,7 +365,7 @@ private fun resetTags(
 
 private fun loadCover(
     manga: Anime,
-    binding: EditMangaDialogBinding,
+    binding: EditAnimeDialogBinding,
     // KMK -->
     coverRatio: MutableFloatState,
     // KMK <--
@@ -387,7 +387,7 @@ private fun loadCover(
 
 private fun resetInfo(
     manga: Anime,
-    binding: EditMangaDialogBinding,
+    binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
     // KMK -->
     colors: EditAnimeDialogColors,
