@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -137,6 +138,12 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
     override fun logout() {
         super.logout()
         interceptor.newAuth(null)
+    }
+
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        throw NotImplementedError("Not implemented.")
+        // Got CloudFlare blocked, possible reason is using old API
+        // return api.getAnimeMetadata(track)
     }
 
     private fun getUserId(): String {

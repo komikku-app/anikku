@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -230,6 +231,10 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
         super.logout()
         trackPreferences.trackToken(this).delete()
         interceptor.setAuth(null)
+    }
+
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        return api.getAnimeMetadata(track)
     }
 
     fun saveOAuth(alOAuth: ALOAuth?) {

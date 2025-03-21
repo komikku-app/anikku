@@ -123,7 +123,7 @@ class AnimeRestorer(
                 artist = anime.artist,
                 author = anime.author,
                 description = anime.description,
-                genre = anime.genre?.joinToString(separator = ", "),
+                genre = anime.genre?.joinToString(),
                 title = anime.title,
                 status = anime.status,
                 thumbnailUrl = anime.thumbnailUrl,

@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListAnimeQueryResult
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
@@ -285,6 +286,92 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .let {
                         val viewer = it.data.viewer
                         Pair(viewer.id, viewer.mediaListOptions.scoreFormat)
+                    }
+            }
+        }
+    }
+
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        return withIOContext {
+            val query = """
+            |query (${'$'}animeid: Int!) {
+                |Media (id: ${'$'}animeid) {
+                    |id
+                    |title {
+                        |userPreferred
+                    |}
+                    |coverImage {
+                        |large
+                    |}
+                    |description
+                    |studios {
+                        |nodes {
+                            |name
+                        |}
+                    |}
+                    |staff {
+                        |edges {
+                            |role
+                            |node {
+                                |name {
+                                    |userPreferred
+                                |}
+                            |}
+                        |}
+                    |}
+                |}
+            |}
+            |
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("animeid", track.remoteId)
+                }
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALAnimeMetadata>()
+                    .let { dto ->
+                        val anime = dto.data.media
+                        TrackAnimeMetadata(
+                            remoteId = anime.id,
+                            title = anime.title.userPreferred,
+                            thumbnailUrl = anime.coverImage.large,
+                            description = anime.description?.htmlDecode()?.ifEmpty { null },
+                            authors = (
+                                anime.studios.nodes
+                                    .map { it.name } +
+                                    anime.staff.edges
+                                        .filter {
+                                            it.role.contains("Story", true) ||
+                                                it.role.contains("Creator", true) ||
+                                                it.role.contains("Script", true) ||
+                                                it.role.contains("Writer", true)
+                                        }
+                                        .map { it.node.name.userPreferred }
+                                )
+                                .joinToString()
+                                .ifEmpty { null },
+                            artists = anime.staff.edges
+                                .filter {
+                                    it.role.contains("Producer", true) ||
+                                        it.role.contains("Director", true) ||
+                                        it.role.contains("Animation", true) ||
+                                        it.role.contains("Art", true) ||
+                                        it.role.contains("Design", true) ||
+                                        it.role.contains("Music", true) ||
+                                        it.role.contains("Song", true)
+                                }
+                                .joinToString { it.node.name.userPreferred }
+                                .ifEmpty { null },
+                        )
                     }
             }
         }

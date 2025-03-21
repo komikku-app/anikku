@@ -4,6 +4,7 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.track.Tracker
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -119,6 +120,12 @@ data class DummyTracker(
         track: eu.kanade.tachiyomi.data.database.models.Track,
         epochMillis: Long,
     ) = Unit
+
+    override suspend fun getAnimeMetadata(
+        track: Track,
+    ) = TrackAnimeMetadata(
+        0, "test", "test", "test", "test", "test",
+    )
 
     // KMK -->
     override fun hasNotStartedWatching(status: Long): Boolean = status == 2L
