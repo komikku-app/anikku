@@ -4,16 +4,18 @@ import android.net.Uri
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAddAnimeResult
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALAnimeMetadata
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListAnimeQueryResult
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
+import eu.kanade.tachiyomi.util.lang.htmlDecode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -28,7 +30,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.time.Duration.Companion.minutes
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
 class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
@@ -68,6 +70,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .awaitSuccess()
                     .parseAs<ALAddAnimeResult>()
                     .let {
+                        track.library_id = it.data.entry.id
                         track
                     }
             }
@@ -109,8 +112,8 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
-    suspend fun deleteLibAnime(track: DomainAnimeTrack) {
-        return withIOContext {
+    suspend fun deleteLibAnime(track: DomainTrack) {
+        withIOContext {
             val query = """
             |mutation DeleteAnime(${'$'}listId: Int) {
                 |DeleteMediaListEntry(id: ${'$'}listId) {
@@ -130,7 +133,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
-    suspend fun searchAnime(search: String): List<TrackSearch> {
+    suspend fun search(search: String): List<TrackSearch> {
         return withIOContext {
             val query = """
             |query Search(${'$'}query: String) {
@@ -237,7 +240,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     ),
                 )
                     .awaitSuccess()
-                    .parseAs<ALUserListEntryQueryResult>()
+                    .parseAs<ALUserListAnimeQueryResult>()
                     .data.page.mediaList
                     .map { it.toALUserAnime() }
                     .firstOrNull()

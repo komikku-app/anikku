@@ -19,7 +19,6 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.connection.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connection.discord.PlayerData
 import eu.kanade.tachiyomi.data.download.DownloadManager
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isNsfw
@@ -553,7 +552,6 @@ class ExternalIntents {
                     val tracker = trackerManager.get(track.trackerId)
                     if (tracker != null &&
                         tracker.isLoggedIn &&
-                        tracker is AnimeTracker &&
                         episodeNumber > track.lastEpisodeSeen
                     ) {
                         val updatedTrack = track.copy(lastEpisodeSeen = episodeNumber)
@@ -563,7 +561,7 @@ class ExternalIntents {
                         async {
                             runCatching {
                                 if (context.isOnline()) {
-                                    tracker.animeService.update(updatedTrack.toDbTrack(), true)
+                                    tracker.update(updatedTrack.toDbTrack(), true)
                                     insertTrack.await(updatedTrack)
                                 } else {
                                     delayedTrackingStore.add(track.animeId, lastEpisodeSeen = episodeNumber)

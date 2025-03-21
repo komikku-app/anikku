@@ -320,7 +320,7 @@ class LibraryScreenModel(
                     entry.value.isEmpty() -> null
                     else ->
                         entry.value
-                            .mapNotNull { trackerMap[it.trackerId]?.animeService?.get10PointScore(it) }
+                            .mapNotNull { trackerMap[it.trackerId]?.get10PointScore(it) }
                             .average()
                 }
             }

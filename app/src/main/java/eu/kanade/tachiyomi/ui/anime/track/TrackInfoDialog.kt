@@ -48,7 +48,6 @@ import eu.kanade.presentation.track.TrackScoreSelector
 import eu.kanade.presentation.track.TrackStatusSelector
 import eu.kanade.presentation.track.TrackerSearch
 import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
@@ -219,7 +218,7 @@ data class TrackInfoDialogHomeScreen(
                 val anime = Injekt.get<GetAnime>().await(animeId) ?: return@launchNonCancellable
                 try {
                     val matchResult = item.tracker.match(anime) ?: throw Exception()
-                    item.tracker.animeService.register(matchResult, animeId)
+                    item.tracker.register(matchResult, animeId)
                 } catch (e: Exception) {
                     withUIContext { Injekt.get<Application>().toast(MR.strings.error_no_match) }
                 }
@@ -249,9 +248,7 @@ data class TrackInfoDialogHomeScreen(
         }
 
         private fun List<Track>.mapToTrackItem(): List<TrackItem> {
-            val loggedInTrackers = Injekt.get<TrackerManager>().loggedInTrackers().filter {
-                it is AnimeTracker
-            }
+            val loggedInTrackers = Injekt.get<TrackerManager>().loggedInTrackers()
             val source = Injekt.get<SourceManager>().getOrStub(sourceId)
             return loggedInTrackers
                 // Map to TrackItem
@@ -300,8 +297,8 @@ private data class TrackStatusSelectorScreen(
     ) : StateScreenModel<Model.State>(State(track.status)) {
 
         fun getSelections(): Map<Long, StringResource?> {
-            return tracker.animeService.getStatusListAnime().associateWith {
-                (tracker as? AnimeTracker)?.getStatusForAnime(it)
+            return tracker.getStatusListAnime().associateWith {
+                tracker.getStatusForAnime(it)
             }
         }
 
@@ -311,7 +308,7 @@ private data class TrackStatusSelectorScreen(
 
         fun setStatus() {
             screenModelScope.launchNonCancellable {
-                tracker.animeService.setRemoteAnimeStatus(track.toDbTrack(), state.value.selection)
+                tracker.setRemoteAnimeStatus(track.toDbTrack(), state.value.selection)
             }
         }
 
@@ -370,7 +367,7 @@ private data class TrackEpisodeSelectorScreen(
 
         fun setEpisode() {
             screenModelScope.launchNonCancellable {
-                tracker.animeService.setRemoteLastEpisodeSeen(
+                tracker.setRemoteLastEpisodeSeen(
                     track.toDbTrack(),
                     state.value.selection,
                 )
@@ -415,10 +412,10 @@ private data class TrackScoreSelectorScreen(
     private class Model(
         private val track: Track,
         private val tracker: Tracker,
-    ) : StateScreenModel<Model.State>(State(tracker.animeService.displayScore(track))) {
+    ) : StateScreenModel<Model.State>(State(tracker.displayScore(track))) {
 
         fun getSelections(): ImmutableList<String> {
-            return tracker.animeService.getScoreList()
+            return tracker.getScoreList()
         }
 
         fun setSelection(selection: String) {
@@ -427,7 +424,7 @@ private data class TrackScoreSelectorScreen(
 
         fun setScore() {
             screenModelScope.launchNonCancellable {
-                tracker.animeService.setRemoteScore(track.toDbTrack(), state.value.selection)
+                tracker.setRemoteScore(track.toDbTrack(), state.value.selection)
             }
         }
 
@@ -557,9 +554,9 @@ private data class TrackDateSelectorScreen(
                 millis.convertEpochMillisZone(ZoneOffset.UTC, ZoneOffset.systemDefault())
             screenModelScope.launchNonCancellable {
                 if (start) {
-                    tracker.animeService.setRemoteStartDate(track.toDbTrack(), localMillis)
+                    tracker.setRemoteStartDate(track.toDbTrack(), localMillis)
                 } else {
-                    tracker.animeService.setRemoteFinishDate(track.toDbTrack(), localMillis)
+                    tracker.setRemoteFinishDate(track.toDbTrack(), localMillis)
                 }
             }
         }
@@ -646,9 +643,9 @@ private data class TrackDateRemoverScreen(
         fun removeDate() {
             screenModelScope.launchNonCancellable {
                 if (start) {
-                    tracker.animeService.setRemoteStartDate(track.toDbTrack(), 0)
+                    tracker.setRemoteStartDate(track.toDbTrack(), 0)
                 } else {
-                    tracker.animeService.setRemoteFinishDate(track.toDbTrack(), 0)
+                    tracker.setRemoteFinishDate(track.toDbTrack(), 0)
                 }
             }
         }
@@ -712,7 +709,7 @@ data class TrackerSearchScreen(
 
                 val result = withIOContext {
                     try {
-                        val results = tracker.animeService.searchAnime(query)
+                        val results = tracker.search(query)
                         Result.success(results)
                     } catch (e: Throwable) {
                         Result.failure(e)
@@ -728,7 +725,7 @@ data class TrackerSearchScreen(
         }
 
         fun registerTracking(item: TrackSearch) {
-            screenModelScope.launchNonCancellable { tracker.animeService.register(item, animeId) }
+            screenModelScope.launchNonCancellable { tracker.register(item, animeId) }
         }
 
         fun updateSelection(selected: TrackSearch) {

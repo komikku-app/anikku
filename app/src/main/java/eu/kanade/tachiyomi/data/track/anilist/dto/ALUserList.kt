@@ -4,12 +4,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ALUserListEntryQueryResult(
-    val data: ALUserListEntryPage,
+data class ALUserListAnimeQueryResult(
+    val data: ALUserListAnimePage,
 )
 
 @Serializable
-data class ALUserListEntryPage(
+data class ALUserListAnimePage(
     @SerialName("Page")
     val page: ALUserListMediaList,
 )

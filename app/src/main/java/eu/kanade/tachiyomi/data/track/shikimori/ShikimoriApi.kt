@@ -24,7 +24,7 @@ import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
 class ShikimoriApi(
     private val trackId: Long,
@@ -57,6 +57,7 @@ class ShikimoriApi(
                 ).awaitSuccess()
                     .parseAs<SMAddAnimeResponse>()
                     .let {
+                        // save id of the entry for possible future delete request
                         track.library_id = it.id
                     }
                 track
@@ -64,12 +65,9 @@ class ShikimoriApi(
         }
     }
 
-    suspend fun updateLibAnime(track: Track, userId: String): Track = addLibAnime(
-        track,
-        userId,
-    )
+    suspend fun updateLibAnime(track: Track, userId: String): Track = addLibAnime(track, userId)
 
-    suspend fun deleteLibAnime(track: DomainAnimeTrack) {
+    suspend fun deleteLibAnime(track: DomainTrack) {
         withIOContext {
             authClient
                 .newCall(DELETE("$API_URL/v2/user_rates/${track.libraryId}"))

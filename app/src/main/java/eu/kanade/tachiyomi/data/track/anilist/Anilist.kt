@@ -5,7 +5,6 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.model.toDbTrack
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
@@ -17,25 +16,16 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Anilist(id: Long) :
-    BaseTracker(
-        id,
-        "AniList",
-    ),
-    AnimeTracker,
-    DeletableTracker {
+class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
 
     companion object {
-        const val READING = 1L
         const val WATCHING = 11L
         const val COMPLETED = 2L
         const val ON_HOLD = 3L
         const val DROPPED = 4L
-        const val PLAN_TO_READ = 5L
         const val PLAN_TO_WATCH = 15L
-        const val REREADING = 6L
         const val REWATCHING = 16L
 
         const val POINT_100 = "POINT_100"
@@ -51,7 +41,7 @@ class Anilist(id: Long) :
 
     private val api by lazy { AnilistApi(client, interceptor) }
 
-    override val supportsReadingDates: Boolean = true
+    override val supportsWatchingDates: Boolean = true
 
     private val scorePreference = trackPreferences.anilistScoreType()
 
@@ -77,9 +67,9 @@ class Anilist(id: Long) :
         WATCHING -> MR.strings.watching
         PLAN_TO_WATCH -> MR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
-        REWATCHING -> MR.strings.repeating_anime
         ON_HOLD -> MR.strings.paused
         DROPPED -> MR.strings.dropped
+        REWATCHING -> MR.strings.repeating_anime
         else -> null
     }
 
@@ -105,7 +95,7 @@ class Anilist(id: Long) :
         }
     }
 
-    override fun get10PointScore(track: DomainAnimeTrack): Double {
+    override fun get10PointScore(track: DomainTrack): Double {
         // Score is stored in 100 point format
         return track.score / 10.0
     }
@@ -132,7 +122,7 @@ class Anilist(id: Long) :
         }
     }
 
-    override fun displayScore(track: DomainAnimeTrack): String {
+    override fun displayScore(track: DomainTrack): String {
         val score = track.score
 
         return when (scorePreference.get()) {
@@ -140,12 +130,14 @@ class Anilist(id: Long) :
                 0.0 -> "0 ★"
                 else -> "${((score + 10) / 20).toInt()} ★"
             }
+
             POINT_3 -> when {
                 score == 0.0 -> "0"
                 score <= 35 -> "😦"
                 score <= 60 -> "😐"
                 else -> "😊"
             }
+
             else -> track.toApiScore()
         }
     }
@@ -179,8 +171,8 @@ class Anilist(id: Long) :
         return api.updateLibAnime(track)
     }
 
-    override suspend fun delete(track: DomainAnimeTrack) {
-        if (track.libraryId == null || track.libraryId!! == 0L) {
+    override suspend fun delete(track: DomainTrack) {
+        if (track.libraryId == null || track.libraryId == 0L) {
             val libAnime = api.findLibAnime(track.toDbTrack(), getUsername().toInt()) ?: return
             return api.deleteLibAnime(track.copy(id = libAnime.library_id!!))
         }
@@ -195,8 +187,8 @@ class Anilist(id: Long) :
             track.library_id = remoteTrack.library_id
 
             if (track.status != COMPLETED) {
-                val isRereading = track.status == REWATCHING
-                track.status = if (!isRereading && hasSeenEpisodes) WATCHING else track.status
+                val isRewatching = track.status == REWATCHING
+                track.status = if (!isRewatching && hasSeenEpisodes) WATCHING else track.status
             }
 
             update(track)
@@ -208,8 +200,8 @@ class Anilist(id: Long) :
         }
     }
 
-    override suspend fun searchAnime(query: String): List<TrackSearch> {
-        return api.searchAnime(query)
+    override suspend fun search(query: String): List<TrackSearch> {
+        return api.search(query)
     }
 
     override suspend fun refresh(track: Track): Track {
@@ -251,4 +243,8 @@ class Anilist(id: Long) :
             null
         }
     }
+
+    // KMK -->
+    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    // KMK <--
 }

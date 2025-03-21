@@ -4,7 +4,6 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
@@ -16,27 +15,19 @@ import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 import java.text.DecimalFormat
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Kitsu(id: Long) :
-    BaseTracker(
-        id,
-        "Kitsu",
-    ),
-    AnimeTracker,
-    DeletableTracker {
+class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
 
     companion object {
-        const val READING = 1L
         const val WATCHING = 11L
         const val COMPLETED = 2L
         const val ON_HOLD = 3L
         const val DROPPED = 4L
-        const val PLAN_TO_READ = 5L
         const val PLAN_TO_WATCH = 15L
     }
 
-    override val supportsReadingDates: Boolean = true
+    override val supportsWatchingDates: Boolean = true
 
     private val json: Json by injectLazy()
 
@@ -76,7 +67,7 @@ class Kitsu(id: Long) :
         return if (index > 0) (index + 1) / 2.0 else 0.0
     }
 
-    override fun displayScore(track: DomainAnimeTrack): String {
+    override fun displayScore(track: DomainTrack): String {
         val df = DecimalFormat("0.#")
         return df.format(track.score)
     }
@@ -103,7 +94,7 @@ class Kitsu(id: Long) :
         return api.updateLibAnime(track)
     }
 
-    override suspend fun delete(track: DomainAnimeTrack) {
+    override suspend fun delete(track: DomainTrack) {
         api.removeLibAnime(track)
     }
 
@@ -125,7 +116,7 @@ class Kitsu(id: Long) :
         }
     }
 
-    override suspend fun searchAnime(query: String): List<TrackSearch> {
+    override suspend fun search(query: String): List<TrackSearch> {
         return api.searchAnime(query)
     }
 
@@ -163,4 +154,8 @@ class Kitsu(id: Long) :
             null
         }
     }
+
+    // KMK -->
+    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    // KMK <--
 }

@@ -4,7 +4,6 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
@@ -16,7 +15,7 @@ import tachiyomi.domain.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker, AnimeTracker {
+class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
 
     companion object {
         const val UNSEEN = 1L
@@ -64,7 +63,7 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker, AnimeTr
         return track
     }
 
-    override suspend fun searchAnime(query: String): List<TrackSearch> =
+    override suspend fun search(query: String): List<TrackSearch> =
         throw Exception("Not used")
 
     override suspend fun refresh(track: Track): Track {
@@ -101,4 +100,8 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker, AnimeTr
             null
         }
     }
+
+    // KMK -->
+    override fun hasNotStartedWatching(status: Long): Boolean = status == UNSEEN
+    // KMK <--
 }
