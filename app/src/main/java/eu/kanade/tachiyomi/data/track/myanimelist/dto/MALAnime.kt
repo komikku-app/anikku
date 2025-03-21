@@ -25,3 +25,19 @@ data class MALAnimeCovers(
     val large: String?,
     val medium: String,
 )
+
+@Serializable
+data class MALAnimeMetadata(
+    val id: Long,
+    val title: String,
+    val synopsis: String?,
+    @SerialName("main_picture")
+    val covers: MALAnimeCovers,
+    val studios: List<MALStudio> = emptyList(),
+)
+
+@Serializable
+data class MALStudio(
+    val id: Long,
+    val name: String,
+)

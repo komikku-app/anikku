@@ -4,10 +4,12 @@ import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuAddAnimeResult
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuAlgoliaSearchResult
+import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuAnimeMetadata
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuCurrentUserResult
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuListSearchResult
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuSearchResult
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.network.DELETE
 import eu.kanade.tachiyomi.network.GET
@@ -237,6 +239,85 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     .parseAs<KitsuCurrentUserResult>()
                     .data[0]
                     .id
+            }
+        }
+    }
+
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        return withIOContext {
+            val query = """
+            |query(${'$'}libraryId: ID!, ${'$'}staffCount: Int) {
+                |findLibraryEntryById(id: ${'$'}libraryId) {
+                    |media {
+                        |id
+                        |titles {
+                            |preferred
+                        |}
+                        |posterImage {
+                            |original {
+                                |url
+                            |}
+                        |}
+                        |description
+                        |staff(first: ${'$'}staffCount) {
+                            |nodes {
+                                |role
+                                |person {
+                                    |name
+                                |}
+                            |}
+                        |}
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("libraryId", track.remoteId)
+                    put("staffCount", 25) // 25 based on nothing
+                }
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        GRAPHQL_URL,
+                        headers = headersOf("Accept-Language", "en"),
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<KitsuAnimeMetadata>()
+                    .let { dto ->
+                        val anime = dto.data.findLibraryEntryById.media
+                        TrackAnimeMetadata(
+                            remoteId = anime.id.toLong(),
+                            title = anime.titles.preferred,
+                            thumbnailUrl = anime.posterImage.original.url,
+                            description = anime.description.en?.htmlDecode()?.ifEmpty { null },
+                            authors = anime.staff.nodes
+                                .filter {
+                                    it.role.contains("Story", true) ||
+                                        it.role.contains("Creator", true) ||
+                                        it.role.contains("Script", true) ||
+                                        it.role.contains("Writer", true)
+                                }
+                                .joinToString { it.person.name }
+                                .ifEmpty { null },
+                            artists = anime.staff.nodes
+                                .filter {
+                                    it.role.contains("Producer", true) ||
+                                        it.role.contains("Director", true) ||
+                                        it.role.contains("Animation", true) ||
+                                        it.role.contains("Art", true) ||
+                                        it.role.contains("Design", true) ||
+                                        it.role.contains("Music", true) ||
+                                        it.role.contains("Song", true)
+                                }
+                                .joinToString { it.person.name }
+                                .ifEmpty { null },
+                        )
+                    }
             }
         }
     }

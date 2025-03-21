@@ -1,11 +1,14 @@
 package eu.kanade.tachiyomi.data.track.shikimori
 
 import android.net.Uri
+import androidx.compose.ui.util.fastAny
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAddAnimeResponse
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAnime
+import eu.kanade.tachiyomi.data.track.shikimori.dto.SMMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUser
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserListEntry
@@ -91,7 +94,7 @@ class ShikimoriApi(
         }
     }
 
-    suspend fun findLibAnime(track: Track, user_id: String): Track? {
+    suspend fun findLibAnime(track: Track, userId: String): Track? {
         return withIOContext {
             val urlAnimes = "$API_URL/animes".toUri().buildUpon()
                 .appendPath(track.remote_id.toString())
@@ -103,7 +106,7 @@ class ShikimoriApi(
             }
 
             val url = "$API_URL/v2/user_rates".toUri().buildUpon()
-                .appendQueryParameter("user_id", user_id)
+                .appendQueryParameter("user_id", userId)
                 .appendQueryParameter("target_id", track.remote_id.toString())
                 .appendQueryParameter("target_type", "Anime")
                 .build()
@@ -129,6 +132,87 @@ class ShikimoriApi(
                 .awaitSuccess()
                 .parseAs<SMUser>()
                 .id
+        }
+    }
+
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        return withIOContext {
+            val query = """
+                |query(${'$'}ids: String!) {
+                    |animes(ids: ${'$'}ids) {
+                        |id
+                        |name
+                        |description
+                        |poster {
+                            |originalUrl
+                        |}
+                        |studios {
+                            |name
+                        |}
+                        |personRoles {
+                            |person {
+                                |name
+                            |}
+                            |rolesEn
+                        |}
+                    |}
+                |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("ids", "${track.remoteId}")
+                }
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        "https://shikimori.one/api/graphql",
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<SMMetadata>()
+                    .let { dto ->
+                        val anime = dto.data.animes.firstOrNull() ?: throw Exception("Could not get metadata from Shikimori")
+                        TrackAnimeMetadata(
+                            remoteId = anime.id.toLong(),
+                            title = anime.name,
+                            thumbnailUrl = anime.poster.originalUrl,
+                            description = anime.description,
+                            authors = (
+                                anime.studios
+                                    .map { it.name.trim() } +
+                                    anime.personRoles
+                                        .filter { roles ->
+                                            roles.rolesEn.fastAny {
+                                                it.contains("Story", true) ||
+                                                    it.contains("Creator", true) ||
+                                                    it.contains("Script", true) ||
+                                                    it.contains("Writer", true)
+                                            }
+                                        }
+                                        .map { it.person.name }
+                                )
+                                .joinToString()
+                                .ifEmpty { null },
+                            artists = anime.personRoles
+                                .filter { roles ->
+                                    roles.rolesEn.fastAny {
+                                        it.contains("Producer", true) ||
+                                            it.contains("Director", true) ||
+                                            it.contains("Animation", true) ||
+                                            it.contains("Art", true) ||
+                                            it.contains("Design", true) ||
+                                            it.contains("Music", true) ||
+                                            it.contains("Song", true)
+                                    }
+                                }
+                                .joinToString { it.person.name }
+                                .ifEmpty { null },
+                        )
+                    }
+            }
         }
     }
 

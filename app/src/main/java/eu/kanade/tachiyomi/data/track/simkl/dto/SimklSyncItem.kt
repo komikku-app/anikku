@@ -72,3 +72,19 @@ data class SimklSyncResultItem(
 data class SimklSyncResultIds(
     val simkl: Long,
 )
+
+@Serializable
+data class SimklAnimeResponse(
+    val id: Long? = null,
+    val title: String,
+    val poster: String? = null,
+    val overview: String? = null,
+    val network: String? = null,
+    val director: String? = null,
+    val studios: List<SimklStudio>? = null,
+)
+
+@Serializable
+class SimklStudio(
+    val name: String,
+)

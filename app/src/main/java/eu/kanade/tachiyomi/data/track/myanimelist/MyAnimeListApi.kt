@@ -3,8 +3,10 @@ package eu.kanade.tachiyomi.data.track.myanimelist
 import android.net.Uri
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnime
+import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnimeMetadata
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALListItem
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALListItemStatus
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALOAuth
@@ -188,6 +190,34 @@ class MyAnimeListApi(
                 matches + findListItemsAnime(query, offset + LIST_PAGINATION_AMOUNT)
             } else {
                 matches
+            }
+        }
+    }
+
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        return withIOContext {
+            val url = "$BASE_API_URL/anime".toUri().buildUpon()
+                .appendPath(track.remoteId.toString())
+                .appendQueryParameter(
+                    "fields",
+                    "id,title,synopsis,main_picture,studios{name}",
+                )
+                .build()
+            with(json) {
+                authClient.newCall(GET(url.toString()))
+                    .awaitSuccess()
+                    .parseAs<MALAnimeMetadata>()
+                    .let { anime ->
+                        TrackAnimeMetadata(
+                            remoteId = anime.id,
+                            title = anime.title,
+                            thumbnailUrl = anime.covers.large?.ifEmpty { null } ?: anime.covers.medium,
+                            description = anime.synopsis,
+                            authors = anime.studios
+                                .joinToString { it.name }
+                                .ifEmpty { null },
+                        )
+                    }
             }
         }
     }

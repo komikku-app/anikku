@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.source.Source
 import kotlinx.collections.immutable.ImmutableList
@@ -61,6 +62,10 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
 
     override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
         return track
+    }
+
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        throw NotImplementedError("Not implemented.")
     }
 
     override suspend fun search(query: String): List<TrackSearch> =

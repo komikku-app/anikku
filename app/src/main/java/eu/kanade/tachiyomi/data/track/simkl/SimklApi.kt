@@ -1,10 +1,11 @@
 package eu.kanade.tachiyomi.data.track.simkl
 
 import android.net.Uri
-import android.util.Log
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
+import eu.kanade.tachiyomi.data.track.simkl.dto.SimklAnimeResponse
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklOAuth
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklSearchResult
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklSyncResult
@@ -177,8 +178,6 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
                     .firstOrNull() ?: return@withIOContext null
             }
 
-            Log.i("SOMETHING-IDK", foundAnime.toString())
-
             if (foundAnime.result != true) return@withIOContext null
             val lastWatched = foundAnime.lastWatched ?: return@withIOContext null
             val status = foundAnime.list ?: return@withIOContext null
@@ -212,6 +211,34 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
                     .awaitSuccess()
                     .parseAs<SimklUser>()
                     .account.id
+            }
+        }
+    }
+
+    suspend fun getSimklAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        return withIOContext {
+            val type = track.remoteUrl
+                .substringAfter("/")
+                .substringBefore("/")
+            val url = "$API_URL/$type/${track.remoteId}?extended=full&client_id=$CLIENT_ID"
+            with(json) {
+                authClient.newCall(GET(url))
+                    .awaitSuccess()
+                    .parseAs<SimklAnimeResponse>()
+                    .let { anime ->
+                        TrackAnimeMetadata(
+                            remoteId = anime.id,
+                            title = anime.title,
+                            thumbnailUrl = anime.poster?.let { "$POSTERS_URL${it}_m.webp" },
+                            description = anime.overview,
+                            authors = when (type) {
+                                "anime" -> anime.studios?.joinToString { it.name }
+                                "movies" -> anime.director
+                                else -> anime.network
+                            },
+                            artists = anime.network,
+                        )
+                    }
             }
         }
     }

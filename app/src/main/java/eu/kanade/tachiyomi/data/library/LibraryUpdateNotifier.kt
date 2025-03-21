@@ -375,7 +375,7 @@ class LibraryUpdateNotifier(
                     // "Episodes 1, 2.5, 3"
                     context.stringResource(
                         MR.strings.notification_episodes_multiple,
-                        displayableEpisodeNumbers.joinToString(", "),
+                        displayableEpisodeNumbers.joinToString(),
                     )
                 }
             }

@@ -20,6 +20,7 @@ import tachiyomi.domain.track.interactor.InsertTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
+import tachiyomi.domain.track.model.Track as DomainTrack
 
 abstract class BaseTracker(
     override val id: Long,
@@ -118,6 +119,10 @@ abstract class BaseTracker(
     override suspend fun setRemoteFinishDate(track: Track, epochMillis: Long) {
         track.finished_watching_date = epochMillis
         updateRemote(track)
+    }
+
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        throw NotImplementedError("Not implemented.")
     }
 
     private suspend fun updateRemote(track: Track): Unit = withIOContext {
