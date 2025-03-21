@@ -3,7 +3,7 @@ package eu.kanade.presentation.more.settings.screen
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -33,6 +33,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object SettingsDiscordScreen : SearchableSettings {
+    private fun readResolve(): Any = SettingsDiscordScreen
 
     @ReadOnlyComposable
     @Composable
@@ -43,7 +44,7 @@ object SettingsDiscordScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         IconButton(onClick = { uriHandler.openUri("https://tachiyomi.org/help/guides/tracking/") }) {
             Icon(
-                imageVector = Icons.Outlined.HelpOutline,
+                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                 contentDescription = stringResource(R.string.tracking_guide),
             )
         }
@@ -58,7 +59,6 @@ object SettingsDiscordScreen : SearchableSettings {
         val discordRPCStatus = connectionPreferences.discordRPCStatus()
 
         val enableDRPC by enableDRPCPref.collectAsState()
-        val useChapterTitles by useChapterTitlesPref.collectAsState()
 
         var dialog by remember { mutableStateOf<Any?>(null) }
         dialog?.run {
