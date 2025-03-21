@@ -1,5 +1,8 @@
 name: Delete Merged Branch
 
+permissions:
+  contents: write
+
 on:
   pull_request:
     types: [closed]
