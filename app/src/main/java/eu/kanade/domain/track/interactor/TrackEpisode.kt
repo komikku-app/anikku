@@ -36,10 +36,10 @@ class TrackEpisode(
                 async {
                     runCatching {
                         if (context.isOnline()) {
-                            val updatedTrack = service.animeService.refresh(track.toDbTrack())
+                            val updatedTrack = service.refresh(track.toDbTrack())
                                 .toDomainTrack(idRequired = true)!!
                                 .copy(lastEpisodeSeen = episodeNumber)
-                            service.animeService.update(updatedTrack.toDbTrack(), true)
+                            service.update(updatedTrack.toDbTrack(), true)
                             insertTrack.await(updatedTrack)
                             delayedTrackingStore.remove(track.id)
                         } else {

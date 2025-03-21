@@ -29,7 +29,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
 class MyAnimeListApi(
     private val trackId: Long,
@@ -77,7 +77,6 @@ class MyAnimeListApi(
             val url = "$BASE_API_URL/anime".toUri().buildUpon()
                 // MAL API throws a 400 when the query is over 64 characters...
                 .appendQueryParameter("q", query.take(64))
-                .appendQueryParameter("q", query)
                 .appendQueryParameter("nsfw", "true")
                 .build()
             with(json) {
@@ -111,7 +110,7 @@ class MyAnimeListApi(
                             summary = it.synopsis
                             total_episodes = it.numEpisodes
                             score = it.mean
-                            cover_url = it.covers.large
+                            cover_url = (it.covers?.large ?: it.covers?.medium).orEmpty()
                             tracking_url = "https://myanimelist.net/anime/$remote_id"
                             publishing_status = it.status.replace("_", " ")
                             publishing_type = it.mediaType.replace("_", " ")
@@ -149,7 +148,7 @@ class MyAnimeListApi(
         }
     }
 
-    suspend fun deleteAnimeItem(track: DomainAnimeTrack) {
+    suspend fun deleteAnimeItem(track: DomainTrack) {
         withIOContext {
             authClient
                 .newCall(DELETE(animeUrl(track.remoteId).toString()))

@@ -133,7 +133,7 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { DownloadManager(app) }
         addSingletonFactory { DownloadCache(app) }
 
-        addSingletonFactory { TrackerManager(app) }
+        addSingletonFactory { TrackerManager() }
         addSingletonFactory { DelayedTrackingStore(app) }
 
         addSingletonFactory { ImageSaver(app) }

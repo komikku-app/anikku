@@ -27,7 +27,6 @@ data class KitsuAlgoliaSearchResult(
 data class KitsuAlgoliaSearchItem(
     val id: Long,
     val canonicalTitle: String,
-    val chapterCount: Long?,
     val episodeCount: Long?,
     val subtype: String?,
     val posterImage: KitsuSearchItemCover?,

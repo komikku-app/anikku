@@ -46,7 +46,7 @@ class BangumiApi(
 
     suspend fun updateLibAnime(track: Track): Track {
         return withIOContext {
-            // read status update
+            // watch status update
             val sbody = FormBody.Builder()
                 .add("rating", track.score.toInt().toString())
                 .add("status", track.toApiStatus())
@@ -54,7 +54,7 @@ class BangumiApi(
             authClient.newCall(POST("$API_URL/collection/${track.remote_id}/update", body = sbody))
                 .awaitSuccess()
 
-            // chapter update
+            // episode update
             val body = FormBody.Builder()
                 .add("watched_eps", track.last_episode_seen.toInt().toString())
                 .build()
@@ -68,10 +68,7 @@ class BangumiApi(
 
     suspend fun searchAnime(search: String): List<TrackSearch> {
         return withIOContext {
-            val url = "$API_URL/search/subject/${URLEncoder.encode(
-                search,
-                StandardCharsets.UTF_8.name(),
-            )}"
+            val url = "$API_URL/search/subject/${URLEncoder.encode(search, StandardCharsets.UTF_8.name())}"
                 .toUri()
                 .buildUpon()
                 .appendQueryParameter("type", "2")
@@ -106,16 +103,16 @@ class BangumiApi(
 
     suspend fun statusLibAnime(track: Track): Track? {
         return withIOContext {
-            val urlUserRead = "$API_URL/collection/${track.remote_id}"
-            val requestUserRead = Request.Builder()
-                .url(urlUserRead)
+            val urlUserWatch = "$API_URL/collection/${track.remote_id}"
+            val requestUserWatch = Request.Builder()
+                .url(urlUserWatch)
                 .cacheControl(CacheControl.FORCE_NETWORK)
                 .get()
                 .build()
 
-            // TODO: get user readed chapter here
+            // TODO: get user watched episode here
             with(json) {
-                authClient.newCall(requestUserRead)
+                authClient.newCall(requestUserWatch)
                     .awaitSuccess()
                     .parseAs<BGMCollectionResponse>()
                     .let {

@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.anilist
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.database.models.Track
 import uy.kohesive.injekt.injectLazy
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
 fun Track.toApiStatus() = when (status) {
     Anilist.WATCHING -> "CURRENT"
@@ -43,4 +43,4 @@ private fun Double.toApiScore(): String = when (preferences.anilistScoreType().g
     else -> throw NotImplementedError("Unknown score type")
 }
 
-fun DomainAnimeTrack.toApiScore(): String = this.score.toApiScore()
+fun DomainTrack.toApiScore(): String = this.score.toApiScore()

@@ -48,7 +48,6 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.track.components.TrackLogoIcon
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.ui.anime.track.TrackItem
 import eu.kanade.tachiyomi.util.lang.toLocalDate
@@ -82,12 +81,12 @@ fun TrackInfoDialogHome(
     ) {
         trackItems.forEach { item ->
             if (item.track != null) {
-                val supportsScoring = item.tracker.animeService.getScoreList().isNotEmpty()
-                val supportsReadingDates = item.tracker.supportsReadingDates
+                val supportsScoring = item.tracker.getScoreList().isNotEmpty()
+                val supportsReadingDates = item.tracker.supportsWatchingDates
                 TrackInfoItem(
                     title = item.track.title,
                     tracker = item.tracker,
-                    status = (item.tracker as? AnimeTracker)?.getStatusForAnime(item.track.status),
+                    status = item.tracker.getStatusForAnime(item.track.status),
                     onStatusClick = { onStatusClick(item) },
                     episodes = "${item.track.lastEpisodeSeen.toInt()}".let {
                         val totalEpisodes = item.track.totalEpisodes
@@ -99,7 +98,7 @@ fun TrackInfoDialogHome(
                         }
                     },
                     onEpisodesClick = { onEpisodeClick(item) },
-                    score = item.tracker.animeService.displayScore(item.track)
+                    score = item.tracker.displayScore(item.track)
                         .takeIf { supportsScoring && item.track.score != 0.0 },
                     onScoreClick = { onScoreClick(item) }
                         .takeIf { supportsScoring },

@@ -8,7 +8,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SMUserListEntry(
     val id: Long,
-    val chapters: Double,
     val episodes: Double,
     val score: Int,
     val status: String,

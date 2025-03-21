@@ -3,7 +3,6 @@ package eu.kanade.domain.track.interactor
 import eu.kanade.domain.track.model.toDbTrack
 import eu.kanade.domain.track.model.toDomainTrack
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -29,7 +28,7 @@ class AddTracks(
 ) {
 
     // TODO: update all trackers based on common data
-    suspend fun bind(tracker: AnimeTracker, item: Track, animeId: Long) = withNonCancellableContext {
+    suspend fun bind(tracker: Tracker, item: Track, animeId: Long) = withNonCancellableContext {
         withIOContext {
             val allEpisodes = getEpisodesByAnimeId.await(animeId)
             val hasSeenEpisodes = allEpisodes.any { it.seen }
@@ -87,13 +86,13 @@ class AddTracks(
                     try {
                         service.match(anime)?.let { track ->
                             track.anime_id = anime.id
-                            (service as Tracker).animeService.bind(track)
+                            (service as Tracker).bind(track)
                             insertTrack.await(track.toDomainTrack(idRequired = false)!!)
 
                             syncEpisodeProgressWithTrack.await(
                                 anime.id,
                                 track.toDomainTrack(idRequired = false)!!,
-                                service.animeService,
+                                service,
                             )
                         }
                     } catch (e: Exception) {

@@ -4,7 +4,6 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
@@ -15,25 +14,16 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
-class MyAnimeList(id: Long) :
-    BaseTracker(
-        id,
-        "MyAnimeList",
-    ),
-    AnimeTracker,
-    DeletableTracker {
+class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
 
     companion object {
-        const val READING = 1L
         const val WATCHING = 11L
         const val COMPLETED = 2L
         const val ON_HOLD = 3L
         const val DROPPED = 4L
-        const val PLAN_TO_READ = 6L
         const val PLAN_TO_WATCH = 16L
-        const val REREADING = 7L
         const val REWATCHING = 17L
 
         private const val SEARCH_ID_PREFIX = "id:"
@@ -49,7 +39,7 @@ class MyAnimeList(id: Long) :
     private val interceptor by lazy { MyAnimeListInterceptor(this) }
     private val api by lazy { MyAnimeListApi(id, client, interceptor) }
 
-    override val supportsReadingDates: Boolean = true
+    override val supportsWatchingDates: Boolean = true
 
     override fun getLogo() = R.drawable.ic_tracker_mal
 
@@ -77,11 +67,7 @@ class MyAnimeList(id: Long) :
 
     override fun getScoreList(): ImmutableList<String> = SCORE_LIST
 
-    override fun indexToScore(index: Int): Double {
-        return index.toDouble()
-    }
-
-    override fun displayScore(track: DomainAnimeTrack): String {
+    override fun displayScore(track: DomainTrack): String {
         return track.score.toInt().toString()
     }
 
@@ -109,7 +95,7 @@ class MyAnimeList(id: Long) :
         return api.updateItem(track)
     }
 
-    override suspend fun delete(track: DomainAnimeTrack) {
+    override suspend fun delete(track: DomainTrack) {
         api.deleteAnimeItem(track)
     }
 
@@ -133,7 +119,7 @@ class MyAnimeList(id: Long) :
         }
     }
 
-    override suspend fun searchAnime(query: String): List<TrackSearch> {
+    override suspend fun search(query: String): List<TrackSearch> {
         if (query.startsWith(SEARCH_ID_PREFIX)) {
             query.substringAfter(SEARCH_ID_PREFIX).toIntOrNull()?.let { id ->
                 return listOf(api.getAnimeDetails(id))
@@ -191,4 +177,8 @@ class MyAnimeList(id: Long) :
             null
         }
     }
+
+    // KMK -->
+    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    // KMK <--
 }

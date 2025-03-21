@@ -1,8 +1,8 @@
 package eu.kanade.domain.track.interactor
 
 import eu.kanade.domain.track.model.toDbTrack
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
+import eu.kanade.tachiyomi.data.track.Tracker
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
@@ -21,9 +21,9 @@ class SyncEpisodeProgressWithTrack(
     suspend fun await(
         animeId: Long,
         remoteTrack: Track,
-        service: AnimeTracker,
+        tracker: Tracker,
     ) {
-        if (service !is EnhancedTracker) {
+        if (tracker !is EnhancedTracker) {
             return
         }
 
@@ -41,7 +41,7 @@ class SyncEpisodeProgressWithTrack(
         val updatedTrack = remoteTrack.copy(lastEpisodeSeen = lastSeen)
 
         try {
-            service.update(updatedTrack.toDbTrack())
+            tracker.update(updatedTrack.toDbTrack())
             updateEpisode.awaitAll(episodeUpdates)
             insertTrack.await(updatedTrack)
         } catch (e: Throwable) {

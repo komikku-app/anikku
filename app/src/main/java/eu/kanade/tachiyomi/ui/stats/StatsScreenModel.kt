@@ -10,7 +10,6 @@ import eu.kanade.core.util.fastFilterNot
 import eu.kanade.presentation.more.stats.StatsScreenState
 import eu.kanade.presentation.more.stats.data.StatsData
 import eu.kanade.tachiyomi.data.download.DownloadManager
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SAnime
 import kotlinx.coroutines.flow.update
@@ -37,7 +36,7 @@ class StatsScreenModel(
     private val trackerManager: TrackerManager = Injekt.get(),
 ) : StateScreenModel<StatsScreenState>(StatsScreenState.Loading) {
 
-    private val loggedInTrackers by lazy { trackerManager.loggedInTrackers().filter { it is AnimeTracker } }
+    private val loggedInTrackers by lazy { trackerManager.loggedInTrackers() }
 
     init {
         screenModelScope.launchIO {
@@ -161,6 +160,6 @@ class StatsScreenModel(
 
     private fun get10PointScore(track: Track): Double {
         val service = trackerManager.get(track.trackerId)!!
-        return service.animeService.get10PointScore(track)
+        return service.get10PointScore(track)
     }
 }

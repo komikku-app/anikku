@@ -33,10 +33,7 @@ class BangumiInterceptor(private val bangumi: Bangumi) : Interceptor {
         }
 
         return originalRequest.newBuilder()
-            .header(
-                "User-Agent",
-                "Anikku v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})",
-            )
+            .header("User-Agent", "Anikku v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
             .apply {
                 if (originalRequest.method == "GET") {
                     val newUrl = originalRequest.url.newBuilder()

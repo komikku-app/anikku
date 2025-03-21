@@ -70,9 +70,7 @@ data class KitsuListSearchItemIncluded(
 @Serializable
 data class KitsuListSearchItemIncludedAttributes(
     val canonicalTitle: String,
-    val chapterCount: Long?,
     val episodeCount: Long?,
-    val mangaType: String?,
     val showType: String?,
     val posterImage: KitsuSearchItemCover?,
     val synopsis: String?,

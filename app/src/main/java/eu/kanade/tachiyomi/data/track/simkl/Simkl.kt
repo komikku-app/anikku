@@ -4,7 +4,6 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklOAuth
@@ -14,9 +13,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
-import tachiyomi.domain.track.model.Track as DomainAnimeTrack
+import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Simkl(id: Long) : BaseTracker(id, "Simkl"), AnimeTracker {
+class Simkl(id: Long) : BaseTracker(id, "Simkl") {
 
     companion object {
         const val WATCHING = 1L
@@ -38,7 +37,7 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl"), AnimeTracker {
 
     override fun getScoreList(): ImmutableList<String> = SCORE_LIST
 
-    override fun displayScore(track: DomainAnimeTrack): String {
+    override fun displayScore(track: DomainTrack): String {
         return track.score.toInt().toString()
     }
 
@@ -79,7 +78,7 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl"), AnimeTracker {
         }
     }
 
-    override suspend fun searchAnime(query: String): List<TrackSearch> {
+    override suspend fun search(query: String): List<TrackSearch> {
         return api.searchAnime(query, "anime") +
             api.searchAnime(query, "tv") +
             api.searchAnime(query, "movie")
@@ -146,4 +145,8 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl"), AnimeTracker {
         trackPreferences.trackToken(this).delete()
         interceptor.newAuth(null)
     }
+
+    // KMK -->
+    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    // KMK <--
 }

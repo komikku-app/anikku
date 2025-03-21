@@ -11,11 +11,8 @@ import eu.kanade.tachiyomi.data.track.simkl.Simkl
 
 @Suppress("MagicNumber")
 enum class TrackStatus(val int: Long, @StringRes val res: Int) {
-    READING(1, R.string.reading),
     WATCHING(11, R.string.watching),
-    REPEATING(2, R.string.repeating),
     REWATCHING(17, R.string.repeating_anime),
-    PLAN_TO_READ(3, R.string.plan_to_read),
     PLAN_TO_WATCH(16, R.string.plan_to_watch),
     PAUSED(4, R.string.on_hold),
     COMPLETED(5, R.string.completed),
@@ -29,26 +26,20 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
             return when (tracker) {
                 (1L) -> {
                     when (statusLong) {
-                        MyAnimeList.READING -> READING
                         MyAnimeList.WATCHING -> WATCHING
                         MyAnimeList.COMPLETED -> COMPLETED
                         MyAnimeList.ON_HOLD -> PAUSED
-                        MyAnimeList.PLAN_TO_READ -> PLAN_TO_READ
                         MyAnimeList.PLAN_TO_WATCH -> PLAN_TO_WATCH
                         MyAnimeList.DROPPED -> DROPPED
-                        MyAnimeList.REREADING -> REPEATING
                         MyAnimeList.REWATCHING -> REWATCHING
                         else -> null
                     }
                 }
                 TrackerManager.ANILIST -> {
                     when (statusLong) {
-                        Anilist.READING -> READING
                         Anilist.WATCHING -> WATCHING
                         Anilist.REWATCHING -> REWATCHING
-                        Anilist.PLAN_TO_READ -> PLAN_TO_READ
                         Anilist.PLAN_TO_WATCH -> PLAN_TO_WATCH
-                        Anilist.REREADING -> REPEATING
                         Anilist.ON_HOLD -> PAUSED
                         Anilist.COMPLETED -> COMPLETED
                         Anilist.DROPPED -> DROPPED
@@ -57,11 +48,9 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                 }
                 TrackerManager.KITSU -> {
                     when (statusLong) {
-                        Kitsu.READING -> READING
                         Kitsu.WATCHING -> WATCHING
                         Kitsu.COMPLETED -> COMPLETED
                         Kitsu.ON_HOLD -> PAUSED
-                        Kitsu.PLAN_TO_READ -> PLAN_TO_READ
                         Kitsu.PLAN_TO_WATCH -> PLAN_TO_WATCH
                         Kitsu.DROPPED -> DROPPED
                         else -> null
@@ -69,21 +58,16 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                 }
                 (4L) -> {
                     when (statusLong) {
-                        Shikimori.READING -> READING
                         Shikimori.COMPLETED -> COMPLETED
                         Shikimori.ON_HOLD -> PAUSED
-                        Shikimori.PLAN_TO_READ -> PLAN_TO_READ
                         Shikimori.DROPPED -> DROPPED
-                        Shikimori.REREADING -> REPEATING
                         else -> null
                     }
                 }
                 (5L) -> {
                     when (statusLong) {
-                        Bangumi.READING -> READING
                         Bangumi.COMPLETED -> COMPLETED
                         Bangumi.ON_HOLD -> PAUSED
-                        Bangumi.PLAN_TO_READ -> PLAN_TO_READ
                         Bangumi.DROPPED -> DROPPED
                         else -> null
                     }
