@@ -1,5 +1,6 @@
 package exh.source
 
+import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.source.model.AnimesPage
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SAnime
@@ -89,6 +90,12 @@ class EnhancedHttpSource(
      * @param response the response from the site.
      */
     override fun episodeVideoParse(response: Response) =
+        throw UnsupportedOperationException("Should never be called!")
+
+    override fun hosterListParse(response: Response) =
+        throw UnsupportedOperationException("Should never be called!")
+
+    override fun videoListParse(response: Response, hoster: Hoster) =
         throw UnsupportedOperationException("Should never be called!")
 
     /**

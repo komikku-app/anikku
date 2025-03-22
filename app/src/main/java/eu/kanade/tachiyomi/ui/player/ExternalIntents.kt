@@ -24,6 +24,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isNsfw
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
+import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.isOnline
@@ -83,12 +84,13 @@ class ExternalIntents {
         chosenVideo: Video?,
     ): Intent? {
         if (!initAnime(animeId, episodeId)) return null
+        val hosters = EpisodeLoader.getHosters(episode, anime, source)
 
         val video = chosenVideo
-            ?: EpisodeLoader.getLinks(episode, anime, source).firstOrNull()
+            ?: HosterLoader.getBestVideo(source, hosters)
             ?: throw Exception("Video list is empty")
 
-        val videoUrl = getVideoUrl(context, video) ?: return null
+        val videoUrl = getVideoUrl(source, context, video) ?: return null
 
         val pkgName = playerPreferences.externalPlayerPreference().get()
 
@@ -138,12 +140,14 @@ class ExternalIntents {
      * @param context the application context.
      * @param video the video being sent to the external player.
      */
-    private suspend fun getVideoUrl(context: Context, video: Video): Uri? {
-        if (video.videoUrl == null) {
-            makeErrorToast(context, Exception("Video URL is null. Instead watch Suavemente!"))
+    private suspend fun getVideoUrl(source: Source, context: Context, video: Video): Uri? {
+        val resolvedVideo = HosterLoader.getResolvedVideo(source, video)
+
+        if (resolvedVideo == null || resolvedVideo.videoUrl.isEmpty()) {
+            makeErrorToast(context, Exception("Video URL is empty."))
             return null
         } else {
-            val uri = video.videoUrl!!.toUri()
+            val uri = resolvedVideo.videoUrl.toUri()
 
             val isOnDevice = if (anime.source == LocalSource.ID) {
                 true
