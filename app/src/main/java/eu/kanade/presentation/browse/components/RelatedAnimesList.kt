@@ -8,7 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.util.fastAny
 import eu.kanade.presentation.browse.RelatedAnimeTitle
 import eu.kanade.presentation.browse.RelatedAnimesLoadingItem
@@ -24,6 +28,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun RelatedAnimesList(
     relatedAnimes: List<RelatedAnime>,
+    entries: Int,
+    topBarHeight: Int,
     getManga: @Composable (Anime) -> State<Anime>,
     contentPadding: PaddingValues,
     onMangaClick: (Anime) -> Unit,
@@ -32,9 +38,14 @@ fun RelatedAnimesList(
     onKeywordLongClick: (String) -> Unit,
     selection: List<Anime>,
 ) {
+    var containerHeight by remember { mutableIntStateOf(0) }
     FastScrollLazyColumn(
         // Using modifier instead of contentPadding so we can use stickyHeader
-        modifier = Modifier.padding(contentPadding),
+        modifier = Modifier
+            .padding(contentPadding)
+            .onGloballyPositioned { layoutCoordinates ->
+                containerHeight = layoutCoordinates.size.height - topBarHeight
+            },
     ) {
         relatedAnimes.forEach { related ->
             val isLoading = related is RelatedAnime.Loading
@@ -90,6 +101,8 @@ fun RelatedAnimesList(
                         anime = manga,
                         onClick = { onMangaClick(manga) },
                         onLongClick = { onMangaLongClick(manga) },
+                        entries = entries,
+                        containerHeight = containerHeight,
                         isSelected = selection.fastAny { selected -> selected.id == manga.id },
                     )
                 }

@@ -43,6 +43,8 @@ fun RelatedAnimesContent(
     relatedAnimes: List<RelatedAnime>?,
     getMangaState: @Composable (Anime) -> State<Anime>,
     columns: GridCells,
+    entries: Int = 0,
+    topBarHeight: Int = 0,
     displayMode: LibraryDisplayMode,
     contentPadding: PaddingValues,
     onMangaClick: (Anime) -> Unit,
@@ -110,6 +112,8 @@ fun RelatedAnimesContent(
         LibraryDisplayMode.List -> {
             RelatedAnimesList(
                 relatedAnimes = relatedAnimes,
+                entries = entries,
+                topBarHeight = topBarHeight,
                 getManga = getMangaState,
                 contentPadding = contentPadding,
                 onMangaClick = onMangaClick,

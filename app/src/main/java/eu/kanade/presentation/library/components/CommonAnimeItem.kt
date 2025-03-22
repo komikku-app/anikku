@@ -412,16 +412,15 @@ fun AnimeListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     badge: @Composable (RowScope.() -> Unit),
-    isSelected: Boolean = false,
-    coverAlpha: Float = 1f,
     onClickContinueWatching: (() -> Unit)? = null,
-    entries: Int = -1,
+    entries: Int = 0,
     containerHeight: Int = 0,
     // KMK -->
+    isSelected: Boolean = false,
+    coverAlpha: Float = 1f,
     libraryColored: Boolean = true,
     // KMK <--
 ) {
-    val density = LocalDensity.current
     // KMK -->
     val bgColor = coverData.dominantCoverColors?.first?.let { Color(it) }.takeIf { libraryColored }
     val onBgColor = coverData.dominantCoverColors?.second.takeIf { libraryColored }
@@ -431,9 +430,11 @@ fun AnimeListItem(
             .selectedBackground(isSelected)
             .height(
                 when (entries) {
-                    -1 -> 76.dp
-                    0 -> with(density) { (containerHeight / 7).toDp() } - (3 / 7).dp
-                    else -> with(density) { (containerHeight / entries).toDp() } - (3 / entries).dp
+                    0 -> 76.dp
+                    else -> {
+                        val density = LocalDensity.current
+                        with(density) { (containerHeight / entries).toDp() } - (3 / entries).dp
+                    }
                 },
             )
             .combinedClickable(

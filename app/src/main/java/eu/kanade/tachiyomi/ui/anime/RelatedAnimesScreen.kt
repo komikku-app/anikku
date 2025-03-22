@@ -7,6 +7,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
@@ -46,6 +47,7 @@ fun RelatedAnimesScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var topBarHeight by remember { mutableIntStateOf(0) }
     Scaffold(
         topBar = { scrollBehavior ->
             if (bulkFavoriteState.selectionMode) {
@@ -87,6 +89,8 @@ fun RelatedAnimesScreen(
             relatedAnimes = successState.relatedAnimesSorted,
             getMangaState = { manga -> screenModel.getManga(initialManga = manga) },
             columns = getColumnsPreference(LocalConfiguration.current.orientation),
+            entries = getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),
+            topBarHeight = topBarHeight,
             displayMode = displayMode,
             contentPadding = paddingValues,
             onMangaClick = {
@@ -130,4 +134,16 @@ private fun getColumnsPreference(orientation: Int): GridCells {
         libraryPreferences.portraitColumns()
     }.get()
     return if (columns == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(columns)
+}
+
+// returns the number from the size slider
+private fun getColumnsPreferenceForCurrentOrientation(orientation: Int): Int {
+    val libraryPreferences: LibraryPreferences = Injekt.get()
+
+    val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
+    return if (isLandscape) {
+        libraryPreferences.landscapeColumns()
+    } else {
+        libraryPreferences.portraitColumns()
+    }.get()
 }
