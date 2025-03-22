@@ -5,6 +5,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.paging.LoadState
@@ -19,6 +24,8 @@ import tachiyomi.presentation.core.util.plus
 @Composable
 fun BrowseSourceList(
     animeList: LazyPagingItems<StateFlow<Anime>>,
+    entries: Int,
+    topBarHeight: Int,
     contentPadding: PaddingValues,
     onAnimeClick: (Anime) -> Unit,
     onAnimeLongClick: (Anime) -> Unit,
@@ -26,8 +33,13 @@ fun BrowseSourceList(
     selection: List<Anime>,
     // KMK <--
 ) {
+    var containerHeight by remember { mutableIntStateOf(0) }
     LazyColumn(
         contentPadding = contentPadding + PaddingValues(vertical = 8.dp),
+        modifier = Modifier
+            .onGloballyPositioned { layoutCoordinates ->
+                containerHeight = layoutCoordinates.size.height - topBarHeight
+            },
     ) {
         item {
             if (animeList.loadState.prepend is LoadState.Loading) {
@@ -41,6 +53,8 @@ fun BrowseSourceList(
                 anime = anime,
                 onClick = { onAnimeClick(anime) },
                 onLongClick = { onAnimeLongClick(anime) },
+                entries = entries,
+                containerHeight = containerHeight,
                 // KMK -->
                 isSelected = selection.fastAny { selected -> selected.id == anime.id },
                 // KMK <--
@@ -60,6 +74,8 @@ internal fun BrowseSourceListItem(
     anime: Anime,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = onClick,
+    entries: Int,
+    containerHeight: Int,
     // KMK -->
     isSelected: Boolean = false,
     // KMK <--
@@ -82,5 +98,7 @@ internal fun BrowseSourceListItem(
         },
         onLongClick = onLongClick,
         onClick = onClick,
+        entries = entries,
+        containerHeight = containerHeight,
     )
 }
