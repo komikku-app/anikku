@@ -60,6 +60,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import kotlin.math.roundToInt
 
 data object DownloadQueueScreen : Screen {
+    private fun readResolve(): Any = DownloadQueueScreen
 
     @Composable
     override fun Content() {
