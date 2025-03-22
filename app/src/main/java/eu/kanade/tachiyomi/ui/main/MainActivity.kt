@@ -69,6 +69,7 @@ import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.DefaultNavigatorScreenTransition
 import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
@@ -546,7 +547,9 @@ class MainActivity : BaseActivity() {
             episodeId: Long,
             extPlayer: Boolean,
             video: Video? = null,
-            videoList: List<Video>? = null,
+            hosterIndex: Int = -1,
+            videoIndex: Int = -1,
+            hosterList: List<Hoster>? = null,
         ) {
             if (extPlayer) {
                 val intent = try {
@@ -559,7 +562,14 @@ class MainActivity : BaseActivity() {
                 externalPlayerResult?.launch(intent) ?: return
             } else {
                 context.startActivity(
-                    PlayerActivity.newIntent(context, animeId, episodeId, videoList, videoList?.indexOf(video)),
+                    PlayerActivity.newIntent(
+                        context,
+                        animeId,
+                        episodeId,
+                        hosterList,
+                        hosterIndex,
+                        videoIndex,
+                    ),
                 )
             }
         }
