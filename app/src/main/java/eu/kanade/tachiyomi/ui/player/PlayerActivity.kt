@@ -73,7 +73,6 @@ import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
 import eu.kanade.tachiyomi.databinding.PlayerLayoutBinding
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.source.isNsfw
-import eu.kanade.tachiyomi.source.model.serialize
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
@@ -89,7 +88,6 @@ import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -1114,18 +1112,17 @@ class PlayerActivity : BaseActivity() {
                 MPVLib.command(arrayOf("set", "start", "${player.timePos}"))
             }
         }
-
-        if (it.videoUrl?.startsWith(TorrentServerUtils.hostUrl) == true ||
-            it.videoUrl?.startsWith("magnet") == true ||
-            it.videoUrl?.endsWith(".torrent") == true
+        if (video.videoUrl.startsWith(TorrentServerUtils.hostUrl) ||
+            video.videoUrl.startsWith("magnet") ||
+            video.videoUrl.endsWith(".torrent")
         ) {
             launchIO {
                 TorrentServerService.start()
                 TorrentServerService.wait(10)
-                torrentLinkHandler(it.videoUrl!!, it.quality)
+                torrentLinkHandler(video.videoUrl!!, video.quality)
             }
         } else {
-        MPVLib.command(arrayOf("loadfile", parseVideoUrl(video.videoUrl)))
+            MPVLib.command(arrayOf("loadfile", parseVideoUrl(video?.videoUrl)))
         }
         updateDiscordRPC(exitingPlayer = false)
     }
@@ -1172,12 +1169,12 @@ class PlayerActivity : BaseActivity() {
         finish()
     }
 
-    fun parseVideoUrl(videoUrl: String?): String? {
+    private fun parseVideoUrl(videoUrl: String?): String? {
         return videoUrl?.toUri()?.resolveUri(this)
             ?: videoUrl
     }
 
-    fun setHttpOptions(video: Video) {
+    private fun setHttpOptions(video: Video) {
         if (viewModel.isEpisodeOnline() != true) return
         val source = viewModel.currentSource.value as? HttpSource ?: return
 
@@ -1391,30 +1388,37 @@ class PlayerActivity : BaseActivity() {
 
     // AM (DISCORD) -->
     private fun updateDiscordRPC(exitingPlayer: Boolean) {
-        if (connectionsPreferences.enableDiscordRPC().get()) {
-            viewModel.viewModelScope.launchIO {
+        if (!connectionsPreferences.enableDiscordRPC().get()) return
+
+        viewModel.viewModelScope.launchIO {
+            try {
                 if (!exitingPlayer) {
-                    val currentPosition = (player.timePos!!).toLong() * 1000
+                    val timePos = player.timePos ?: return@launchIO
+                    val duration = player.duration ?: 1440
+
+                    val currentPosition = timePos.toLong() * 1000
                     val startTimestamp = Calendar.getInstance().apply {
                         timeInMillis = System.currentTimeMillis() - currentPosition
                     }
-                    val durationInSeconds = player.duration ?: 1440
                     val endTimestamp = Calendar.getInstance().apply {
                         timeInMillis = startTimestamp.timeInMillis
-                        add(Calendar.SECOND, durationInSeconds)
+                        add(Calendar.SECOND, duration)
                     }
+
+                    val anime = viewModel.currentAnime.value ?: return@launchIO
+                    val episode = viewModel.currentEpisode.value ?: return@launchIO
 
                     DiscordRPCService.setPlayerActivity(
                         context = this@PlayerActivity,
                         PlayerData(
                             incognitoMode = viewModel.currentSource.value?.isNsfw() == true || viewModel.incognitoMode,
-                            animeId = viewModel.currentAnime.value?.id ?: -1,
-                            animeTitle = viewModel.currentAnime.value?.ogTitle ?: "",
-                            thumbnailUrl = viewModel.currentAnime.value?.thumbnailUrl ?: "",
+                            animeId = anime.id,
+                            animeTitle = anime.ogTitle,
+                            thumbnailUrl = anime.thumbnailUrl ?: "",
                             episodeNumber = if (connectionsPreferences.useChapterTitles().get()) {
-                                viewModel.currentEpisode.value?.name.toString()
+                                episode.name
                             } else {
-                                viewModel.currentEpisode.value?.episode_number.toString()
+                                episode.episode_number.toString()
                             },
                             startTimestamp = startTimestamp.timeInMillis,
                             endTimestamp = endTimestamp.timeInMillis,
@@ -1424,6 +1428,8 @@ class PlayerActivity : BaseActivity() {
                     val lastUsedScreen = DiscordRPCService.lastUsedScreen
                     DiscordRPCService.setAnimeScreen(this@PlayerActivity, lastUsedScreen)
                 }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR) { "Error updating Discord RPC: ${e.message}" }
             }
         }
     }

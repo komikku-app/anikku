@@ -48,7 +48,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -71,8 +70,8 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetHost
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetVideoContent
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
+import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -570,7 +569,7 @@ private fun VideoList(
                                     episode.name,
                                     episode.lastSecondSeen,
                                     anime.thumbnailUrl.orEmpty(),
-                                    selectedVideo.videoUrl!!,
+                                    currentVideo.videoUrl,
                                 )
                             } else {
                                 context.toast("Cast is disabled")

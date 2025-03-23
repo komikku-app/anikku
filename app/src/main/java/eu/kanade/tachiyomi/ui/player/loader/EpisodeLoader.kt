@@ -5,16 +5,16 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
+import kotlinx.coroutines.CancellationException
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.io.LocalSourceFileSystem
-import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
-import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
-import kotlinx.coroutines.CancellationException
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
