@@ -139,9 +139,9 @@ class AnimeScreenModel(
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val trackPreferences: TrackPreferences = Injekt.get(),
     internal val playerPreferences: PlayerPreferences = Injekt.get(),
-    private val gesturePreferences: GesturePreferences = Injekt.get(),
-    private val uiPreferences: UiPreferences = Injekt.get(),
+    internal val gesturePreferences: GesturePreferences = Injekt.get(),
     // KMK -->
+    private val uiPreferences: UiPreferences = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
     // KMK <--
     private val trackerManager: TrackerManager = Injekt.get(),
