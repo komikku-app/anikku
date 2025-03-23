@@ -70,7 +70,7 @@ import kotlin.coroutines.coroutineContext
  * The queue manipulation must be done in one thread (currently the main thread) to avoid unexpected
  * behavior, but it's safe to read it from multiple threads.
  */
-class AnimeDownloader(
+class Downloader(
     private val context: Context,
     private val provider: DownloadProvider,
     private val cache: DownloadCache,

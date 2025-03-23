@@ -49,7 +49,7 @@ class DownloadManager(
     /**
      * Downloader whose only task is to download episodes.
      */
-    private val downloader = AnimeDownloader(context, provider, cache, sourceManager)
+    private val downloader = Downloader(context, provider, cache, sourceManager)
 
     val isRunning: Boolean
         get() = downloader.isRunning
@@ -367,7 +367,7 @@ class DownloadManager(
 
         val capitalizationChanged = oldFolder.name.equals(newName, ignoreCase = true)
         if (capitalizationChanged) {
-            val tempName = newName + AnimeDownloader.TMP_DIR_SUFFIX
+            val tempName = newName + Downloader.TMP_DIR_SUFFIX
             if (!oldFolder.renameTo(tempName)) {
                 logcat(LogPriority.ERROR) { "Failed to rename source download folder: ${oldFolder.name}" }
                 return

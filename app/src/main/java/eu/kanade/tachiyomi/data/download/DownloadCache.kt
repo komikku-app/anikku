@@ -377,7 +377,7 @@ class DownloadCache(
                                 .mapNotNull {
                                     when {
                                         // Ignore incomplete downloads
-                                        it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
+                                        it.name?.endsWith(Downloader.TMP_DIR_SUFFIX) == true -> null
                                         // Folder of videos
                                         it.isDirectory -> it.name
                                         // MP4 files
