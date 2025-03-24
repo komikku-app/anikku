@@ -21,7 +21,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
-import mihon.domain.extensionrepo.interactor.CreateExtensionRepo.Companion.ANIKKU_SIGNATURE
 import mihon.domain.extensionrepo.interactor.GetExtensionRepo
 import mihon.domain.extensionrepo.model.ExtensionRepo
 import tachiyomi.core.common.util.system.logcat
@@ -293,11 +292,10 @@ internal object ExtensionLoader {
                 libVersion,
                 signatures.last(),
                 // KMK -->
-                repoName = when {
-                    isOfficiallySigned(signatures) -> "Anikku"
-                    else -> repos.firstOrNull { repo ->
-                        signatures.all { it == repo.signingKeyFingerprint }
-                    }?.name
+                repoName = repos.firstOrNull { repo ->
+                    signatures.all { it == repo.signingKeyFingerprint }
+                }?.let { repo ->
+                    repo.shortName.takeIf { !it.isNullOrBlank() } ?: repo.name
                 },
                 // KMK <--
             )
@@ -387,11 +385,10 @@ internal object ExtensionLoader {
             isShared = extensionInfo.isShared,
             // KMK -->
             signatureHash = signatures.last(),
-            repoName = when {
-                isOfficiallySigned(signatures) -> "Anikku"
-                else -> repos.firstOrNull { repo ->
-                    signatures.all { it == repo.signingKeyFingerprint }
-                }?.name
+            repoName = repos.firstOrNull { repo ->
+                signatures.all { it == repo.signingKeyFingerprint }
+            }?.let { repo ->
+                repo.shortName.takeIf { !it.isNullOrBlank() } ?: repo.name
             },
             // KMK <--
         )
@@ -449,10 +446,6 @@ internal object ExtensionLoader {
         }
             ?.map { Hash.sha256(it.toByteArray()) }
             ?.toList()
-    }
-
-    private fun isOfficiallySigned(signatures: List<String>): Boolean {
-        return signatures.all { it == ANIKKU_SIGNATURE }
     }
 
     /**
