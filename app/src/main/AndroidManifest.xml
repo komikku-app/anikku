@@ -80,6 +80,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
+                <data android:scheme="aniyomi" />
                 <data android:scheme="anikku" />
                 <data android:host="add-repo" />
             </intent-filter>
