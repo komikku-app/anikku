@@ -188,6 +188,8 @@ jobs:
           tag_name: ${{ needs.prepare-build.outputs.VERSION_TAG }}
           name: Anikku ${{ needs.prepare-build.outputs.VERSION_TAG }}
           body: |
+            [![GitHub downloads](https://img.shields.io/github/downloads/komikku-app/anikku/${{ needs.prepare-build.outputs.VERSION_TAG }}/total?label=Downloaded&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/anikku/releases/${{ needs.prepare-build.outputs.VERSION_TAG }})
+
             #### What's Changed
             ##### New
 
