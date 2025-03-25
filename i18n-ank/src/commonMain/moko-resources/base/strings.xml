@@ -191,6 +191,9 @@
     <string name="sync_on_episode_open">Sync on Episode Open</string>
     <string name="include_all_seen_entries">Include all seen entries</string>
 
+        <!-- Komikku -->
+    <string name="sync_progress_from_trackers_up_to_episode">Sync progress from Trackers up to episode %d</string>
+
         <!-- Aniyomi -->
     <string name="pref_library_summary_episode">Categories, global update, episode swipe</string>
     <string name="pref_category_delete_episodes">Delete episodes</string>
