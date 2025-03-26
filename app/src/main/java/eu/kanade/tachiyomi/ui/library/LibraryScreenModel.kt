@@ -949,14 +949,23 @@ class LibraryScreenModel(
                 }
             }
             LibraryGroup.BY_TAG -> {
+                val defaultTag = preferences.context.stringResource(SYMR.strings.ungrouped)
                 val tags: List<String> = libraryAnime.flatMap { item ->
-                    item.libraryAnime.anime.genre?.distinct() ?: emptyList()
+                    item.libraryAnime.anime.genre?.distinct() ?: listOf(defaultTag)
                 }
                 libraryAnime.flatMap { item ->
                     item.libraryAnime.anime.genre?.distinct()?.map { genre ->
                         Pair(genre, item)
-                    } ?: emptyList()
-                }.groupBy({ it.first }, { it.second }).filterValues { it.size > 3 }
+                    } ?: listOf(Pair(defaultTag, item))
+                }.groupBy({ it.first }, { it.second })
+                    .let { groups ->
+                        val bigGroups = groups.filterValues { it.size > 1 }.toList()
+                        val groupedEntries = bigGroups.map { it.second }.flatten()
+                        val smallGroups = groups.filterValues { it.size <= 1 }
+                            .flatMap { it.value }
+                            .let { listOf(Pair(defaultTag, it.distinct().filterNot { it in groupedEntries })) }
+                        (smallGroups + bigGroups).toMap()
+                    }
                     .mapKeys { (genre, _) ->
                         Category(
                             id = genre.hashCode().toLong(),

@@ -5,8 +5,6 @@ import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.online.HttpSource
 import exh.source.BlacklistedSources
-import exh.source.DelegatedHttpSource
-import exh.source.EnhancedHttpSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -113,12 +111,6 @@ class AndroidSourceManager(
         .filterIsInstance<CatalogueSource>()
         .filter {
             it.id !in BlacklistedSources.HIDDEN_SOURCES
-        }
-
-    fun getDelegatedCatalogueSources() = sourcesMapFlow.value.values
-        .filterIsInstance<EnhancedHttpSource>()
-        .mapNotNull { enhancedHttpSource ->
-            enhancedHttpSource.enhancedSource as? DelegatedHttpSource
         }
     // SY <--
 
