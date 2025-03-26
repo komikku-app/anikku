@@ -951,7 +951,7 @@ class LibraryScreenModel(
             LibraryGroup.BY_TAG -> {
                 val defaultTag = preferences.context.stringResource(SYMR.strings.ungrouped)
                 val tags: List<String> = libraryAnime.flatMap { item ->
-                    item.libraryAnime.anime.genre?.distinct() ?: listOf(defaultTag)
+                    item.libraryAnime.anime.genre?.distinct() ?: emptyList()
                 }
                 libraryAnime.flatMap { item ->
                     item.libraryAnime.anime.genre?.distinct()?.map { genre ->
@@ -959,12 +959,17 @@ class LibraryScreenModel(
                     } ?: listOf(Pair(defaultTag, item))
                 }.groupBy({ it.first }, { it.second })
                     .let { groups ->
-                        val bigGroups = groups.filterValues { it.size > 1 }.toList()
+                        val bigGroups = groups
+                            .filterKeys { it != defaultTag }
+                            .filterValues { it.size > 3 }.toList()
                         val groupedEntries = bigGroups.map { it.second }.flatten()
-                        val smallGroups = groups.filterValues { it.size <= 1 }
+                        val defaultGroups = groups
+                            .filterKeys { it == defaultTag }.toList()
+                        val smallGroups = groups.filterValues { it.size <= 3 }
                             .flatMap { it.value }
-                            .let { listOf(Pair(defaultTag, it.distinct().filterNot { it in groupedEntries })) }
-                        (smallGroups + bigGroups).toMap()
+                            .let { it.distinct().filterNot { it in groupedEntries } }
+                        val defaultGroup = defaultGroups.flatMap { it.second } + smallGroups
+                        (listOf(Pair(defaultTag, defaultGroup)) + bigGroups).toMap()
                     }
                     .mapKeys { (genre, _) ->
                         Category(
