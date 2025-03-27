@@ -262,7 +262,7 @@ object SettingsDownloadScreen : SearchableSettings {
                     ),
                     title = stringResource(KMR.strings.download_cache_renew_interval),
                 ),
-                Preference.PreferenceItem.InfoPreference(stringResource(KMR.strings.download_cache_renew_interval_info)),
+                Preference.PreferenceItem.InfoPreference(stringResource(AMR.strings.download_cache_renew_interval_info_anime)),
             ),
         )
     }
