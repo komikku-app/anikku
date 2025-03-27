@@ -8,22 +8,31 @@ import eu.kanade.tachiyomi.source.model.SManga
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.repository.SourcePagingSourceType
 
-class SourceSearchPagingSource(/* KMK --> */ override val /* KMK <-- */source: CatalogueSource, val query: String, val filters: FilterList) :
+class SourceSearchPagingSource(source: CatalogueSource, val query: String, val filters: FilterList) :
     SourcePagingSource(source) {
     override suspend fun requestNextPage(currentPage: Int): MangasPage {
-        return source.getSearchAnime(currentPage, query, filters)
+        return source?.getSearchAnime(currentPage, query, filters)
+            // KMK -->
+            ?: MangasPage(emptyList(), false)
+        // KMK <--
     }
 }
 
-class SourcePopularPagingSource(/* KMK --> */ override val /* KMK <-- */source: CatalogueSource) : SourcePagingSource(source) {
+class SourcePopularPagingSource(source: CatalogueSource) : SourcePagingSource(source) {
     override suspend fun requestNextPage(currentPage: Int): MangasPage {
-        return source.getPopularAnime(currentPage)
+        return source?.getPopularAnime(currentPage)
+            // KMK -->
+            ?: MangasPage(emptyList(), false)
+        // KMK <--
     }
 }
 
-class SourceLatestPagingSource(/* KMK --> */ override val /* KMK <-- */source: CatalogueSource) : SourcePagingSource(source) {
+class SourceLatestPagingSource(source: CatalogueSource) : SourcePagingSource(source) {
     override suspend fun requestNextPage(currentPage: Int): MangasPage {
-        return source.getLatestUpdates(currentPage)
+        return source?.getLatestUpdates(currentPage)
+            // KMK -->
+            ?: MangasPage(emptyList(), false)
+        // KMK <--
     }
 }
 
