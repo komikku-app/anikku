@@ -64,8 +64,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import eu.kanade.domain.source.service.SourcePreferences
@@ -88,11 +86,9 @@ import eu.kanade.presentation.manga.components.RelatedMangasRow
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
-import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.manga.ChapterList
 import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
 import eu.kanade.tachiyomi.ui.manga.MergedMangaData
@@ -191,6 +187,7 @@ fun MangaScreen(
 
     // KMK -->
     getMangaState: @Composable (Manga) -> State<Manga>,
+    onClickSourceSettingsClicked: (() -> Unit)?,
     onRelatedMangasScreenClick: () -> Unit,
     onRelatedMangaClick: (Manga) -> Unit,
     onRelatedMangaLongClick: (Manga) -> Unit,
@@ -207,11 +204,6 @@ fun MangaScreen(
             context.copyToClipboard(it, it)
         }
     }
-
-    val navigator = LocalNavigator.currentOrThrow
-    val onSettingsClicked: (() -> Unit)? = {
-        navigator.push(SourcePreferencesScreen(state.source.id))
-    }.takeIf { state.source is ConfigurableSource }
 
     if (!isTabletUi) {
         MangaScreenSmallImpl(
@@ -263,9 +255,9 @@ fun MangaScreen(
             onChapterSelected = onChapterSelected,
             onAllChapterSelected = onAllChapterSelected,
             onInvertSelection = onInvertSelection,
-            onSettingsClicked = onSettingsClicked,
             // KMK -->
             getMangaState = getMangaState,
+            onClickSourceSettingsClicked = onClickSourceSettingsClicked,
             onRelatedMangasScreenClick = onRelatedMangasScreenClick,
             onRelatedMangaClick = onRelatedMangaClick,
             onRelatedMangaLongClick = onRelatedMangaLongClick,
@@ -326,9 +318,9 @@ fun MangaScreen(
             onChapterSelected = onChapterSelected,
             onAllChapterSelected = onAllChapterSelected,
             onInvertSelection = onInvertSelection,
-            onSettingsClicked = onSettingsClicked,
             // KMK -->
             getMangaState = getMangaState,
+            onClickSourceSettingsClicked = onClickSourceSettingsClicked,
             onRelatedMangasScreenClick = onRelatedMangasScreenClick,
             onRelatedMangaClick = onRelatedMangaClick,
             onRelatedMangaLongClick = onRelatedMangaLongClick,
@@ -381,7 +373,6 @@ private fun MangaScreenSmallImpl(
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
     changeAnimeSkipIntro: (() -> Unit)?,
-    onSettingsClicked: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
     onRecommendClicked: () -> Unit,
@@ -409,6 +400,7 @@ private fun MangaScreenSmallImpl(
 
     // KMK -->
     getMangaState: @Composable ((Manga) -> State<Manga>),
+    onClickSourceSettingsClicked: (() -> Unit)?,
     onRelatedMangasScreenClick: () -> Unit,
     onRelatedMangaClick: (Manga) -> Unit,
     onRelatedMangaLongClick: (Manga) -> Unit,
@@ -484,6 +476,7 @@ private fun MangaScreenSmallImpl(
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
                 // KMK -->
+                onClickSourceSettings = onClickSourceSettingsClicked,
                 onClickRelatedMangas = onRelatedMangasScreenClick.takeIf {
                     !expandRelatedMangas &&
                         showRelatedMangasInOverflow &&
@@ -494,7 +487,6 @@ private fun MangaScreenSmallImpl(
                 onClickMergedSettings = onMergedSettingsClicked.takeIf { state.manga.source == MERGED_SOURCE_ID },
                 onClickMerge = onMergeClicked.takeIf { state.showMergeInOverflow },
                 // SY <--
-                onClickSettings = onSettingsClicked,
                 changeAnimeSkipIntro = changeAnimeSkipIntro,
                 actionModeCounter = selectedChapterCount,
                 onCancelActionMode = { onAllChapterSelected(false) },
@@ -838,7 +830,6 @@ private fun MangaScreenLargeImpl(
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
     changeAnimeSkipIntro: (() -> Unit)?,
-    onSettingsClicked: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
     onRecommendClicked: () -> Unit,
@@ -866,6 +857,7 @@ private fun MangaScreenLargeImpl(
 
     // KMK -->
     getMangaState: @Composable ((Manga) -> State<Manga>),
+    onClickSourceSettingsClicked: (() -> Unit)?,
     onRelatedMangasScreenClick: () -> Unit,
     onRelatedMangaClick: (Manga) -> Unit,
     onRelatedMangaLongClick: (Manga) -> Unit,
@@ -931,13 +923,13 @@ private fun MangaScreenLargeImpl(
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
                 onClickMigrate = onMigrateClicked,
-                onClickSettings = onSettingsClicked,
                 changeAnimeSkipIntro = changeAnimeSkipIntro,
                 onCancelActionMode = { onAllChapterSelected(false) },
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
                 // SY <--
                 // KMK -->
+                onClickSourceSettings = onClickSourceSettingsClicked,
                 onClickRelatedMangas = onRelatedMangasScreenClick.takeIf {
                     !expandRelatedMangas &&
                         showRelatedMangasInOverflow &&

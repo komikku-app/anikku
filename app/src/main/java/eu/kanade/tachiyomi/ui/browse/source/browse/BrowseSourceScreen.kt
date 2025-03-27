@@ -52,6 +52,7 @@ import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
@@ -64,6 +65,7 @@ import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
+import exh.source.anyIs
 import exh.ui.smartsearch.SmartSearchScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
@@ -174,6 +176,8 @@ data class BrowseSourceScreen(
 
         // KMK -->
         val mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems()
+
+        val isConfigurableSource = screenModel.source.anyIs<ConfigurableSource>()
         // KMK <--
 
         var topBarHeight by remember { mutableIntStateOf(0) }
@@ -218,7 +222,11 @@ data class BrowseSourceScreen(
                             navigateUp = navigateUp,
                             onWebViewClick = onWebViewClick,
                             onHelpClick = onHelpClick,
-                            onSettingsClick = { navigator.push(SourcePreferencesScreen(sourceId)) },
+                            // KMK -->
+                            onSettingsClick = {
+                                navigator.push(SourcePreferencesScreen(sourceId))
+                            }.takeIf { isConfigurableSource },
+                            // KMK <--
                             onSearch = screenModel::search,
                             // KMK -->
                             toggleSelectionMode = bulkFavoriteScreenModel::toggleSelectionMode,

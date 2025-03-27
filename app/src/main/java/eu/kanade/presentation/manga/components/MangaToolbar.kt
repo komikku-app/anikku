@@ -46,7 +46,6 @@ fun MangaToolbar(
     onClickEditCategory: (() -> Unit)?,
     onClickRefresh: () -> Unit,
     onClickMigrate: (() -> Unit)?,
-    onClickSettings: (() -> Unit)?,
     // SY -->
     onClickEditInfo: (() -> Unit)?,
     // KMK -->
@@ -55,6 +54,7 @@ fun MangaToolbar(
     onClickRecommend: (() -> Unit)?,
     onClickMerge: (() -> Unit)?,
     onClickMergedSettings: (() -> Unit)?,
+    onClickSourceSettings: (() -> Unit)?,
     // SY <--
     // Anime only
     changeAnimeSkipIntro: (() -> Unit)?,
@@ -231,14 +231,16 @@ fun MangaToolbar(
                         )
                     }
                     // SY <--
-                    if (onClickSettings != null) {
+                    // KMK -->
+                    if (onClickSourceSettings != null) {
                         add(
                             AppBar.OverflowAction(
-                                title = stringResource(MR.strings.settings),
-                                onClick = onClickSettings,
+                                title = stringResource(MR.strings.source_settings),
+                                onClick = onClickSourceSettings,
                             ),
                         )
                     }
+                    // KMK <--
                 }
                     .build(),
             )
