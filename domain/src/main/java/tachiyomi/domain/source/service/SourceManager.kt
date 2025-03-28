@@ -9,8 +9,6 @@ import tachiyomi.domain.source.model.StubSource
 
 interface SourceManager {
 
-    val isInitialized: StateFlow<Boolean>
-
     val catalogueSources: Flow<List<CatalogueSource>>
 
     fun get(sourceKey: Long): Source?
@@ -22,6 +20,8 @@ interface SourceManager {
     fun getCatalogueSources(): List<CatalogueSource>
 
     // SY -->
+    val isInitialized: StateFlow<Boolean>
+
     fun getVisibleOnlineSources(): List<HttpSource>
 
     fun getVisibleCatalogueSources(): List<CatalogueSource>

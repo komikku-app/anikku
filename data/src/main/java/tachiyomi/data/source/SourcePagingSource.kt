@@ -33,7 +33,9 @@ abstract class SourcePagingSource(
 
     abstract suspend fun requestNextPage(currentPage: Int): AnimesPage
 
-    override suspend fun load(params: LoadParams<Long>): LoadResult<Long, SAnime> {
+    override suspend fun load(
+        params: LoadParams<Long>,
+    ): LoadResult<Long, SAnime> {
         val page = params.key ?: 1
 
         val animesPage = try {
@@ -46,14 +48,29 @@ abstract class SourcePagingSource(
             return LoadResult.Error(e)
         }
 
+        // SY -->
+        return getPageLoadResult(params, animesPage)
+        // SY <--
+    }
+
+    // SY -->
+    open fun getPageLoadResult(
+        params: LoadParams<Long>,
+        animesPage: AnimesPage,
+    ): LoadResult.Page<Long, SAnime> {
+        val page = params.key ?: 1
+
         return LoadResult.Page(
             data = animesPage.animes,
             prevKey = null,
             nextKey = if (animesPage.hasNextPage) page + 1 else null,
         )
     }
+    // SY <--
 
-    override fun getRefreshKey(state: PagingState<Long, SAnime>): Long? {
+    override fun getRefreshKey(
+        state: PagingState<Long, SAnime>,
+    ): Long? {
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)
             anchorPage?.prevKey ?: anchorPage?.nextKey
