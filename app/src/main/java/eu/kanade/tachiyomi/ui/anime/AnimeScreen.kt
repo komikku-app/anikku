@@ -60,6 +60,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.anime.merged.EditMergedSettingsDialog
 import eu.kanade.tachiyomi.ui.anime.track.TrackInfoDialogHomeScreen
@@ -254,7 +255,12 @@ class AnimeScreen(
             onBackClicked = navigator::pop,
             onEpisodeClicked = { episode, alt ->
                 scope.launchIO {
-                    if (successState.source.isSourceForTorrents()) {
+                    if (successState.source is MergedSource &&
+                        successState.source.getMergedReferenceSources(screenModel.anime).any {
+                            it.isSourceForTorrents()
+                        } ||
+                        successState.source.isSourceForTorrents()
+                    ) {
                         TorrentServerService.start()
                         TorrentServerService.wait(10)
                         TorrentServerUtils.setTrackersList()

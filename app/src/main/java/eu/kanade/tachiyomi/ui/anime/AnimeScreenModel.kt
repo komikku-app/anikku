@@ -349,7 +349,12 @@ class AnimeScreenModel(
 
             val animeSource = Injekt.get<SourceManager>().getOrStub(anime.source)
             // --> (Torrent)
-            if (animeSource.isSourceForTorrents()) {
+            if (animeSource is MergedSource &&
+                animeSource.getMergedReferenceSources(anime).any {
+                    it.isSourceForTorrents()
+                } ||
+                animeSource.isSourceForTorrents()
+            ) {
                 TorrentServerService.start()
                 TorrentServerService.wait(10)
                 TorrentServerUtils.setTrackersList()

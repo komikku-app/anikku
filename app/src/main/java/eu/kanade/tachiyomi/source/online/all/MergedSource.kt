@@ -184,6 +184,24 @@ class MergedSource : HttpSource() {
         return LoadedAnimeSource(source, anime, this)
     }
 
+    suspend fun getMergedReferenceSources(anime: Anime?): List<Source> {
+        if (anime == null) return emptyList()
+        val animeReferences = getMergedReferencesById.await(anime.id)
+        require(animeReferences.isNotEmpty()) {
+            "Anime references are empty, episodes unavailable, merge is likely corrupted"
+        }
+
+        return animeReferences
+            .groupBy(MergedAnimeReference::animeSourceId)
+            .minus(MERGED_SOURCE_ID)
+            .values
+            .flatten()
+            .map {
+                val referenceAnime = getAnime.await(it.animeUrl, it.animeSourceId)
+                sourceManager.getOrStub(referenceAnime?.source ?: it.animeSourceId)
+            }
+    }
+
     data class LoadedAnimeSource(val source: Source, val anime: Anime?, val reference: MergedAnimeReference)
 
     override val lang = "all"
