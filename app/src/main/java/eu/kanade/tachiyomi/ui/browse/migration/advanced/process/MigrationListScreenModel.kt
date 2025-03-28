@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.MigrationType
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingAnime.SearchResult
 import eu.kanade.tachiyomi.util.system.toast
 import exh.smartsearch.SmartSearchEngine
+import exh.source.MERGED_SOURCE_ID
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -119,7 +120,14 @@ class MigrationListScreenModel(
                             MigratingAnime(
                                 manga = manga,
                                 episodeInfo = getChapterInfo(it),
-                                sourcesString = sourceManager.getOrStub(manga.source).getNameForAnimeInfo(),
+                                sourcesString = sourceManager.getOrStub(manga.source).getNameForAnimeInfo(
+                                    if (manga.source == MERGED_SOURCE_ID) {
+                                        getMergedReferencesById.await(manga.id)
+                                            .map { sourceManager.getOrStub(it.animeSourceId) }
+                                    } else {
+                                        null
+                                    },
+                                ),
                                 parentContext = screenModelScope.coroutineContext,
                             )
                         }

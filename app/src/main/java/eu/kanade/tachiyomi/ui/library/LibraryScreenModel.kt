@@ -15,6 +15,7 @@ import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.fastFilterNot
 import eu.kanade.core.util.fastPartition
+import eu.kanade.domain.anime.interactor.SmartSearchMerge
 import eu.kanade.domain.anime.interactor.UpdateAnime
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.episode.interactor.SetSeenStatus
@@ -29,8 +30,10 @@ import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SAnime
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.util.episode.getNextUnseen
 import eu.kanade.tachiyomi.util.removeCovers
+import exh.source.MERGED_SOURCE_ID
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.mutate
@@ -57,6 +60,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.anime.interactor.GetLibraryAnime
+import tachiyomi.domain.anime.interactor.GetMergedAnimeById
 import tachiyomi.domain.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeUpdate
@@ -66,6 +70,7 @@ import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetAnimeCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
+import tachiyomi.domain.episode.interactor.GetMergedEpisodesByAnimeId
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.history.interactor.GetNextEpisodes
 import tachiyomi.domain.library.model.LibraryAnime
@@ -110,9 +115,14 @@ class LibraryScreenModel(
     private val downloadCache: DownloadCache = Injekt.get(),
     private val trackerManager: TrackerManager = Injekt.get(),
     // SY -->
+    private val getMergedAnimeById: GetMergedAnimeById = Injekt.get(),
     private val getTracks: GetTracks = Injekt.get(),
     private val setCustomAnimeInfo: SetCustomAnimeInfo = Injekt.get(),
+    private val getMergedEpisodesByAnimeId: GetMergedEpisodesByAnimeId = Injekt.get(),
     // SY <--
+    // KMK -->
+    private val smartSearchMerge: SmartSearchMerge = Injekt.get(),
+    // KMK <--
 ) : StateScreenModel<LibraryScreenModel.State>(State()) {
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory().asState(screenModelScope)
@@ -458,7 +468,15 @@ class LibraryScreenModel(
                     LibraryItem(
                         libraryManga,
                         downloadCount = if (prefs.downloadBadge) {
-                            downloadManager.getDownloadCount(libraryManga.anime).toLong()
+                            // SY -->
+                            if (libraryManga.anime.source == MERGED_SOURCE_ID) {
+                                runBlocking {
+                                    getMergedAnimeById.await(libraryManga.anime.id)
+                                }.sumOf { downloadManager.getDownloadCount(it) }.toLong()
+                            } else {
+                                downloadManager.getDownloadCount(libraryManga.anime).toLong()
+                            }
+                            // SY <--
                         } else {
                             0
                         },
@@ -572,7 +590,14 @@ class LibraryScreenModel(
     }
 
     suspend fun getNextUnseenEpisode(anime: Anime): Episode? {
-        return getEpisodesByAnimeId.await(anime.id).getNextUnseen(anime, downloadManager)
+        // SY -->
+        val mergedManga = getMergedAnimeById.await(anime.id).associateBy { it.id }
+        return if (anime.id == MERGED_SOURCE_ID) {
+            getMergedEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true)
+        } else {
+            getEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true)
+        }.getNextUnseen(anime, downloadManager, mergedManga)
+        // SY <--
     }
 
     /**
@@ -609,6 +634,32 @@ class LibraryScreenModel(
     private fun downloadUnseenEpisodes(animes: List<Anime>, amount: Int?) {
         screenModelScope.launchNonCancellable {
             animes.forEach { anime ->
+                // SY -->
+                if (anime.source == MERGED_SOURCE_ID) {
+                    val mergedMangas = getMergedAnimeById.await(anime.id)
+                        .associateBy { it.id }
+                    getNextEpisodes.await(anime.id)
+                        .let { if (amount != null) it.take(amount) else it }
+                        .groupBy { it.animeId }
+                        .forEach ab@{ (mangaId, chapters) ->
+                            val mergedManga = mergedMangas[mangaId] ?: return@ab
+                            val downloadChapters = chapters.fastFilterNot { chapter ->
+                                downloadManager.queueState.value.fastAny { chapter.id == it.episode.id } ||
+                                    downloadManager.isEpisodeDownloaded(
+                                        chapter.name,
+                                        chapter.scanlator,
+                                        mergedManga.ogTitle,
+                                        mergedManga.source,
+                                    )
+                            }
+
+                            downloadManager.downloadEpisodes(mergedManga, downloadChapters)
+                        }
+
+                    return@forEach
+                }
+
+                // SY <--
                 val episodes = getNextEpisodes.await(anime.id)
                     .fastFilterNot { episode ->
                         downloadManager.getQueuedDownloadOrNull(episode.id) != null ||
@@ -688,7 +739,19 @@ class LibraryScreenModel(
                 animeToDelete.forEach { anime ->
                     val source = sourceManager.get(anime.source) as? HttpSource
                     if (source != null) {
-                        downloadManager.deleteAnime(anime, source)
+                        if (source is MergedSource) {
+                            val mergedMangas = getMergedAnimeById.await(anime.id)
+                            val sources = mergedMangas.distinctBy {
+                                it.source
+                            }.map { sourceManager.getOrStub(it.source) }
+                            mergedMangas.forEach merge@{ mergedManga ->
+                                val mergedSource =
+                                    sources.firstOrNull { mergedManga.source == it.id } as? HttpSource ?: return@merge
+                                downloadManager.deleteAnime(mergedManga, mergedSource)
+                            }
+                        } else {
+                            downloadManager.deleteAnime(anime, source)
+                        }
                     }
                 }
             }
@@ -1002,6 +1065,27 @@ class LibraryScreenModel(
             }
         }.toSortedMap(compareBy { it.order })
     }
+    // SY <--
+
+    // KMK -->
+    /**
+     * Will get first merged manga in the list as target merging.
+     * If there is no merged manga, then it will use the first one in list to create a new target.
+     */
+    suspend fun smartSearchMerge(selectedMangas: PersistentList<LibraryAnime>): Long? {
+        val mergedManga = selectedMangas.firstOrNull { it.anime.source == MERGED_SOURCE_ID }?.let { listOf(it) }
+            ?: emptyList()
+        val mergingMangas = selectedMangas.filterNot { it.anime.source == MERGED_SOURCE_ID }
+        val toMergeMangas = mergedManga + mergingMangas
+        if (toMergeMangas.size <= 1) return null
+
+        var mergingMangaId = toMergeMangas.first().anime.id
+        for (manga in toMergeMangas.drop(1)) {
+            mergingMangaId = smartSearchMerge.smartSearchMerge(manga.anime, mergingMangaId).id
+        }
+        return mergingMangaId
+    }
+    // KMK <--
 
     @Immutable
     private data class ItemPreferences(

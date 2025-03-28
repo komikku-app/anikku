@@ -74,6 +74,7 @@ import eu.kanade.presentation.anime.components.AnimeActionRow
 import eu.kanade.presentation.anime.components.AnimeBottomActionMenu
 import eu.kanade.presentation.anime.components.AnimeEpisodeListItem
 import eu.kanade.presentation.anime.components.AnimeInfoBox
+import eu.kanade.presentation.anime.components.AnimeInfoButtons
 import eu.kanade.presentation.anime.components.AnimeToolbar
 import eu.kanade.presentation.anime.components.EpisodeDownloadAction
 import eu.kanade.presentation.anime.components.EpisodeHeader
@@ -94,9 +95,11 @@ import eu.kanade.tachiyomi.source.model.SAnime
 import eu.kanade.tachiyomi.ui.anime.AnimeScreenModel
 import eu.kanade.tachiyomi.ui.anime.EpisodeList
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
+import eu.kanade.tachiyomi.ui.anime.MergedAnimeData
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.coroutines.delay
 import tachiyomi.core.common.util.lang.withIOContext
+import exh.source.MERGED_SOURCE_ID
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.episode.model.Episode
@@ -163,6 +166,9 @@ fun AnimeScreen(
     changeAnimeSkipIntro: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
+    onMergedSettingsClicked: () -> Unit,
+    onMergeClicked: () -> Unit,
+    onMergeWithAnotherClicked: () -> Unit,
     // SY <--
 
     // For bottom action menu
@@ -238,6 +244,9 @@ fun AnimeScreen(
             changeAnimeSkipIntro = changeAnimeSkipIntro,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
+            onMergedSettingsClicked = onMergedSettingsClicked,
+            onMergeClicked = onMergeClicked,
+            onMergeWithAnotherClicked = onMergeWithAnotherClicked,
             // SY <--
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             // AM (FILLERMARK) -->
@@ -295,6 +304,9 @@ fun AnimeScreen(
             onMigrateClicked = onMigrateClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
+            onMergedSettingsClicked = onMergedSettingsClicked,
+            onMergeClicked = onMergeClicked,
+            onMergeWithAnotherClicked = onMergeWithAnotherClicked,
             // SY <--
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             // AM (FILLERMARK) -->
@@ -363,6 +375,9 @@ private fun AnimeScreenSmallImpl(
     onSettingsClicked: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
+    onMergedSettingsClicked: () -> Unit,
+    onMergeClicked: () -> Unit,
+    onMergeWithAnotherClicked: () -> Unit,
     // SY <--
 
     // For bottom action menu
@@ -462,9 +477,12 @@ private fun AnimeScreenSmallImpl(
                 // KMK -->
                 onClickRelatedAnimes = onRelatedAnimesScreenClick.takeIf {
                     !expandRelatedAnimes &&
-                        showRelatedAnimesInOverflow
+                        showRelatedAnimesInOverflow &&
+                        state.anime.source != MERGED_SOURCE_ID
                 },
                 // KMK <--
+                onClickMergedSettings = onMergedSettingsClicked.takeIf { state.anime.source == MERGED_SOURCE_ID },
+                onClickMerge = onMergeClicked.takeIf { state.showMergeInOverflow },
                 // SY <--
                 onClickSettings = onSettingsClicked,
                 changeAnimeSkipIntro = changeAnimeSkipIntro,
@@ -589,7 +607,7 @@ private fun AnimeScreenSmallImpl(
                             isTabletUi = false,
                             appBarPadding = topPadding,
                             anime = state.anime,
-                            sourceName = remember { state.source.getNameForAnimeInfo() },
+                            sourceName = remember { state.source.getNameForAnimeInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
@@ -615,6 +633,9 @@ private fun AnimeScreenSmallImpl(
                             onTrackingClicked = onTrackingClicked,
                             onEditIntervalClicked = onEditIntervalClicked,
                             onEditCategory = onEditCategoryClicked,
+                            // SY -->
+                            onMergeClicked = onMergeClicked.takeUnless { state.showMergeInOverflow },
+                            // SY <--
                         )
                     }
 
@@ -633,7 +654,8 @@ private fun AnimeScreenSmallImpl(
 
                     // KMK -->
                     if (state.source !is StubSource &&
-                        relatedAnimesEnabled
+                        relatedAnimesEnabled &&
+                        state.anime.source != MERGED_SOURCE_ID
                     ) {
                         if (expandRelatedAnimes) {
                             if (state.relatedAnimesSorted?.isNotEmpty() != false) {
@@ -675,6 +697,22 @@ private fun AnimeScreenSmallImpl(
                         }
                     }
                     // KMK <--
+
+                    // SY -->
+                    if (state.showMergeWithAnother) {
+                        item(
+                            key = AnimeScreenItem.INFO_BUTTONS,
+                            contentType = AnimeScreenItem.INFO_BUTTONS,
+                        ) {
+                            AnimeInfoButtons(
+                                showRecommendsButton = true,
+                                showMergeWithAnotherButton = state.showMergeWithAnother,
+                                onRecommendClicked = { },
+                                onMergeWithAnotherClicked = onMergeWithAnotherClicked,
+                            )
+                        }
+                    }
+                    // SY <--
 
                     item(
                         key = AnimeScreenItem.EPISODE_HEADER,
@@ -725,6 +763,7 @@ private fun AnimeScreenSmallImpl(
                         source = state.source,
                         showFileSize = showFileSize,
                         // <-- AM (FILE_SIZE)
+                        mergedData = state.mergedData,
                         episodes = listItem,
                         isAnyEpisodeSelected = episodes.fastAny { it.selected },
                         episodeSwipeStartAction = episodeSwipeStartAction,
@@ -782,6 +821,9 @@ private fun AnimeScreenLargeImpl(
     onSettingsClicked: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
+    onMergedSettingsClicked: () -> Unit,
+    onMergeClicked: () -> Unit,
+    onMergeWithAnotherClicked: () -> Unit,
     // SY <--
 
     // For bottom action menu
@@ -877,9 +919,13 @@ private fun AnimeScreenLargeImpl(
                 // KMK -->
                 onClickRelatedAnimes = onRelatedAnimesScreenClick.takeIf {
                     !expandRelatedAnimes &&
-                        showRelatedAnimesInOverflow
+                        showRelatedAnimesInOverflow &&
+                        state.anime.source != MERGED_SOURCE_ID
                 },
                 // KMK <--
+                onClickMergedSettings = onMergedSettingsClicked.takeIf { state.anime.source == MERGED_SOURCE_ID },
+                onClickMerge = onMergeClicked.takeIf { state.showMergeInOverflow },
+                // SY <--
                 actionModeCounter = selectedEpisodeCount,
                 onSelectAll = { onAllEpisodeSelected(true) },
                 onInvertSelection = { onInvertSelection() },
@@ -1002,7 +1048,7 @@ private fun AnimeScreenLargeImpl(
                             isTabletUi = true,
                             appBarPadding = contentPadding.calculateTopPadding(),
                             anime = state.anime,
-                            sourceName = remember { state.source.getNameForAnimeInfo() },
+                            sourceName = remember { state.source.getNameForAnimeInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
@@ -1022,6 +1068,9 @@ private fun AnimeScreenLargeImpl(
                             onTrackingClicked = onTrackingClicked,
                             onEditIntervalClicked = onEditIntervalClicked,
                             onEditCategory = onEditCategoryClicked,
+                            // SY -->
+                            onMergeClicked = onMergeClicked.takeUnless { state.showMergeInOverflow },
+                            // SY <--
                         )
                         ExpandableAnimeDescription(
                             defaultExpandState = true,
@@ -1030,6 +1079,16 @@ private fun AnimeScreenLargeImpl(
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
                         )
+                        // SY -->
+                        if (state.showMergeWithAnother) {
+                            AnimeInfoButtons(
+                                showRecommendsButton = true,
+                                showMergeWithAnotherButton = state.showMergeWithAnother,
+                                onRecommendClicked = { },
+                                onMergeWithAnotherClicked = onMergeWithAnotherClicked,
+                            )
+                        }
+                        // SY <--
                     }
                 },
                 endContent = {
@@ -1047,7 +1106,8 @@ private fun AnimeScreenLargeImpl(
                         ) {
                             // KMK -->
                             if (state.source !is StubSource &&
-                                relatedAnimesEnabled
+                                relatedAnimesEnabled &&
+                                state.anime.source != MERGED_SOURCE_ID
                             ) {
                                 if (expandRelatedAnimes) {
                                     if (state.relatedAnimesSorted?.isNotEmpty() != false) {
@@ -1138,6 +1198,7 @@ private fun AnimeScreenLargeImpl(
                                 source = state.source,
                                 showFileSize = showFileSize,
                                 // <-- AM (FILE_SIZE)
+                                mergedData = state.mergedData,
                                 episodes = listItem,
                                 isAnyEpisodeSelected = episodes.fastAny { it.selected },
                                 episodeSwipeStartAction = episodeSwipeStartAction,
@@ -1222,6 +1283,7 @@ private fun LazyListScope.sharedEpisodeItems(
     source: Source,
     showFileSize: Boolean,
     // <-- AM (FILE_SIZE)
+    mergedData: MergedAnimeData?,
     episodes: List<EpisodeList>,
     isAnyEpisodeSelected: Boolean,
     episodeSwipeStartAction: LibraryPreferences.EpisodeSwipeAction,
@@ -1235,6 +1297,8 @@ private fun LazyListScope.sharedEpisodeItems(
         items = episodes,
         key = { item ->
             when (item) {
+                // KMK: using hashcode to prevent edge-cases where the missing count might duplicate,
+                // especially on merged anime
                 is EpisodeList.MissingCount -> "missing-count-${item.hashCode()}"
                 is EpisodeList.Item -> "episode-${item.id}"
             }
@@ -1294,7 +1358,8 @@ private fun LazyListScope.sharedEpisodeItems(
                     fillermark = item.episode.fillermark,
                     // <-- AM (FILLERMARK)
                     selected = item.selected,
-                    downloadIndicatorEnabled = !isAnyEpisodeSelected && !anime.isLocal(),
+                    downloadIndicatorEnabled =
+                    !isAnyEpisodeSelected && !(mergedData?.anime?.get(item.episode.animeId) ?: anime).isLocal(),
                     downloadStateProvider = { item.downloadState },
                     downloadProgressProvider = { item.downloadProgress },
                     episodeSwipeStartAction = episodeSwipeStartAction,

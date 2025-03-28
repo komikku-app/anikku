@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.base.BasePreferences
+import eu.kanade.domain.episode.interactor.SetSeenStatus
 import eu.kanade.domain.episode.model.toDbEpisode
 import eu.kanade.domain.track.interactor.TrackEpisode
 import eu.kanade.domain.track.service.TrackPreferences
@@ -61,6 +62,7 @@ import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.IndexedSegment
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
@@ -105,12 +107,15 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.anime.interactor.GetAnime
+import tachiyomi.domain.anime.interactor.GetMergedAnimeById
+import tachiyomi.domain.anime.interactor.GetMergedReferencesById
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
+import tachiyomi.domain.episode.interactor.GetMergedEpisodesByAnimeId
 import tachiyomi.domain.episode.interactor.UpdateEpisode
 import tachiyomi.domain.episode.model.EpisodeUpdate
 import tachiyomi.domain.episode.service.getEpisodeSort
@@ -159,7 +164,12 @@ class PlayerViewModel @JvmOverloads constructor(
     private val basePreferences: BasePreferences = Injekt.get(),
     private val getCustomButtons: GetCustomButtons = Injekt.get(),
     private val trackSelect: TrackSelect = Injekt.get(),
+    // SY -->
     uiPreferences: UiPreferences = Injekt.get(),
+    private val getMergedAnimeById: GetMergedAnimeById = Injekt.get(),
+    private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
+    private val getMergedEpisodesByAnimeId: GetMergedEpisodesByAnimeId = Injekt.get(),
+    // SY <--
 ) : ViewModel() {
 
     private val _currentPlaylist = MutableStateFlow<List<Episode>>(emptyList())
@@ -301,6 +311,11 @@ class PlayerViewModel @JvmOverloads constructor(
     private fun updateAniskipButton(value: String?) {
         _aniskipButton.update { _ -> value }
     }
+
+    /**
+     * The episode loader for the loaded anime. It'll be null until [anime] is set.
+     */
+    private var loader: EpisodeLoader? = null
 
     init {
         viewModelScope.launchIO {
@@ -1181,6 +1196,23 @@ class PlayerViewModel @JvmOverloads constructor(
         return try {
             val anime = getAnime.await(animeId)
             if (anime != null) {
+                // SY -->
+                sourceManager.isInitialized.first { it }
+                val source = sourceManager.getOrStub(anime.source)
+                val mergedReferences = if (source is MergedSource) {
+                    runBlocking {
+                        getMergedReferencesById.await(anime.id)
+                    }
+                } else {
+                    emptyList()
+                }
+                val mergedManga = if (source is MergedSource) {
+                    runBlocking {
+                        getMergedAnimeById.await(anime.id)
+                    }.associateBy { it.id }
+                } else {
+                    emptyMap()
+                }
                 _currentAnime.update { _ -> anime }
                 animeTitle.update { _ -> anime.title }
                 sourceManager.isInitialized.first { it }
@@ -1191,7 +1223,6 @@ class PlayerViewModel @JvmOverloads constructor(
                 updateEpisodeList(initEpisodeList(anime))
 
                 val episode = currentPlaylist.value.first { it.id == episodeId }
-                val source = sourceManager.getOrStub(anime.source)
 
                 _currentEpisode.update { _ -> episode }
                 _currentSource.update { _ -> source }
@@ -1223,7 +1254,14 @@ class PlayerViewModel @JvmOverloads constructor(
                     }
                     qualityIndex = Pair(hostIndex, vidIndex)
                 } else {
-                    EpisodeLoader.getHosters(currentEp.toDomainEpisode()!!, anime, source)
+                    EpisodeLoader.getHosters(
+                        episode = currentEp.toDomainEpisode()!!,
+                        anime = anime,
+                        source = source,
+                        sourceManager = sourceManager,
+                        mergedReferences = mergedReferences,
+                        mergedManga = mergedManga,
+                    )
                         .takeIf { it.isNotEmpty() }
                         ?.also { currentHosterList = it }
                         ?: run {

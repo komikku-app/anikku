@@ -22,7 +22,7 @@ fun Episode.copyFromSEpisode(sEpisode: SEpisode): Episode {
         url = sEpisode.url,
         dateUpload = sEpisode.date_upload,
         episodeNumber = sEpisode.episode_number.toDouble(),
-        scanlator = sEpisode.scanlator?.ifBlank { null },
+        scanlator = sEpisode.scanlator?.ifBlank { null }?.trim(),
     )
 }
 

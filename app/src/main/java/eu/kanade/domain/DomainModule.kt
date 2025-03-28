@@ -160,7 +160,7 @@ class DomainModule : InjektModule {
         addFactory { GetEpisodesByAnimeId(get()) }
         addFactory { GetEpisodeByUrlAndAnimeId(get()) }
         addFactory { UpdateEpisode(get()) }
-        addFactory { SetSeenStatus(get(), get(), get(), get()) }
+        addFactory { SetSeenStatus(get(), get(), get(), get(), get()) }
         addFactory { ShouldUpdateDbEpisode() }
         addFactory { SyncEpisodesWithSource(get(), get(), get(), get(), get(), get(), get()) }
         // addFactory { GetAvailableScanlators(get()) }

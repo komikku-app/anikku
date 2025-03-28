@@ -4,7 +4,9 @@ import android.content.Context
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import exh.source.BlacklistedSources
+import exh.source.MERGED_SOURCE_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,7 +60,11 @@ class AndroidSourceManager(
                                 Injekt.get(),
                             ),
                         ),
-                    )
+                    ).apply {
+                        // SY -->
+                        put(MERGED_SOURCE_ID, MergedSource())
+                        // SY <--
+                    }
                     extensions.forEach { extension ->
                         extension.sources.forEach {
                             mutableMap[it.id] = it
