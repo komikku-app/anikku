@@ -39,7 +39,6 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.domain.episode.interactor.SetSeenStatus
 import eu.kanade.domain.episode.model.toDbEpisode
 import eu.kanade.domain.track.interactor.TrackEpisode
 import eu.kanade.domain.track.service.TrackPreferences
@@ -82,6 +81,7 @@ import eu.kanade.tachiyomi.util.lang.takeBytes
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
 import eu.kanade.tachiyomi.util.system.toast
+import exh.source.MERGED_SOURCE_ID
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.toImmutableList
@@ -102,7 +102,6 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
-import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
@@ -370,8 +369,8 @@ class PlayerViewModel @JvmOverloads constructor(
         _isLoadingEpisode.update { _ -> value }
     }
 
-    private fun updateEpisodeList(episodeList: List<Episode>) {
-        _currentPlaylist.update { _ -> filterEpisodeList(episodeList) }
+    private fun updateEpisodeList(pair: Pair<List<Episode>, Map<Long, Anime>?>) {
+        _currentPlaylist.update { _ -> filterEpisodeList(pair.first, pair.second) }
     }
 
     fun getDecoder() {
@@ -1082,8 +1081,24 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private var episodeToDownload: Download? = null
 
-    private fun filterEpisodeList(episodes: List<Episode>): List<Episode> {
+    /**
+     * Episode list for the active manga. It's retrieved lazily and should be accessed for the first
+     * time in a background thread to avoid blocking the UI.
+     */
+    private fun filterEpisodeList(episodes: List<Episode>, mangaMap: Map<Long, Anime>?): List<Episode> {
         val anime = currentAnime.value ?: return episodes
+
+        fun isEpisodeDownloaded(episode: Episode): Boolean {
+            val chapterManga = mangaMap?.get(episode.anime_id) ?: anime
+            return downloadManager.isEpisodeDownloaded(
+                episodeName = episode.name,
+                episodeScanlator = episode.scanlator,
+                animeTitle = chapterManga.ogTitle,
+                sourceId = chapterManga.source,
+            )
+        }
+        // SY <--
+
         val selectedEpisode = episodes.find { it.id == episodeId }
             ?: error("Requested episode of id $episodeId not found in episode list")
 
@@ -1093,19 +1108,9 @@ class PlayerViewModel @JvmOverloads constructor(
                 anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN &&
                 it.seen ||
                 anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED &&
-                !downloadManager.isEpisodeDownloaded(
-                    it.name,
-                    it.scanlator,
-                    anime.title,
-                    anime.source,
-                ) ||
+                !isEpisodeDownloaded(it) ||
                 anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED &&
-                downloadManager.isEpisodeDownloaded(
-                    it.name,
-                    it.scanlator,
-                    anime.title,
-                    anime.source,
-                ) ||
+                isEpisodeDownloaded(it) ||
                 anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED &&
                 !it.bookmark ||
                 anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED &&
@@ -1291,8 +1296,17 @@ class PlayerViewModel @JvmOverloads constructor(
         MPVLib.setPropertyDouble("user-data/current-anime/episode-number", episode.episode_number.toDouble())
     }
 
-    private fun initEpisodeList(anime: Anime): List<Episode> {
-        val episodes = runBlocking { getEpisodesByAnimeId.await(anime.id) }
+    private fun initEpisodeList(anime: Anime): Pair<List<Episode>, Map<Long, Anime>?> {
+        // SY -->
+        val (episodes, mangaMap) = runBlocking {
+            if (anime.source == MERGED_SOURCE_ID) {
+                getMergedEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to
+                    getMergedAnimeById.await(anime.id)
+                        .associateBy { it.id }
+            } else {
+                getEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to null
+            }
+        }
 
         return episodes
             .sortedWith(getEpisodeSort(anime, sortDescending = false))
@@ -1303,7 +1317,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     this
                 }
             }
-            .map { it.toDbEpisode() }
+            .map { it.toDbEpisode() } to mangaMap
     }
 
     private var hasTrackers: Boolean = false

@@ -83,7 +83,6 @@ import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import exh.source.MERGED_SOURCE_ID
-import exh.ui.smartsearch.SmartSearchScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -567,7 +566,7 @@ class AnimeScreen(
         withIOContext {
             MainActivity.startPlayerActivity(
                 context,
-                episode.animeId,
+                mangaId,
                 episode.id,
                 useExternalPlayer,
             )

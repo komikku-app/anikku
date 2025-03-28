@@ -53,8 +53,8 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.getNameForAnimeInfo
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.model.SAnime
-import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.source.online.all.MergedSource
+import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.isLoading
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.removeDuplicates
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.sorted
@@ -237,6 +237,7 @@ class AnimeScreenModel(
         constructor(pair: Pair<Anime, List<Episode>>) :
             this(pair.first, pair.second)
     }
+
     // SY <--
     internal var isFromChangeCategory: Boolean = false
 
@@ -924,12 +925,12 @@ class AnimeScreenModel(
                     // SY <--
                     val episodes = state.source.getEpisodeList(state.anime.toSAnime())
 
-                val newEpisodes = syncEpisodesWithSource.await(
-                    episodes,
-                    state.anime,
-                    state.source,
-                    manualFetch,
-                )
+                    val newEpisodes = syncEpisodesWithSource.await(
+                        episodes,
+                        state.anime,
+                        state.source,
+                        manualFetch,
+                    )
 
                     if (manualFetch) {
                         downloadNewEpisodes(newEpisodes)
@@ -1243,8 +1244,8 @@ class AnimeScreenModel(
             }
         } else {
             // SY <--
-        val anime = successState?.anime ?: return
-        downloadManager.downloadEpisodes(anime, episodes, true, alt, video)
+            val anime = successState?.anime ?: return
+            downloadManager.downloadEpisodes(anime, episodes, true, alt, video)
         }
         toggleAllSelection(false)
     }

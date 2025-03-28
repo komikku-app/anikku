@@ -94,12 +94,12 @@ import eu.kanade.tachiyomi.source.getNameForAnimeInfo
 import eu.kanade.tachiyomi.source.model.SAnime
 import eu.kanade.tachiyomi.ui.anime.AnimeScreenModel
 import eu.kanade.tachiyomi.ui.anime.EpisodeList
-import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.anime.MergedAnimeData
+import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import exh.source.MERGED_SOURCE_ID
 import kotlinx.coroutines.delay
 import tachiyomi.core.common.util.lang.withIOContext
-import exh.source.MERGED_SOURCE_ID
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.episode.model.Episode
