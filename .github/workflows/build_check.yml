@@ -19,6 +19,8 @@ on:
       - '!i18n-sy/src/commonMain/moko-resources/base/plurals.xml'
       - '!i18n-kmk/src/commonMain/moko-resources/base/strings.xml'
       - '!i18n-kmk/src/commonMain/moko-resources/base/plurals.xml'
+      - '!i18n-ank/src/commonMain/moko-resources/base/strings.xml'
+      - '!i18n-ank/src/commonMain/moko-resources/base/plurals.xml'
   # pull_request:
   #   paths-ignore:
   #     - '**.md'

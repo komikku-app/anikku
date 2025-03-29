@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.backup.restore
 import dev.icerock.moko.resources.StringResource
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 
 data class RestoreOptions(
     val libraryEntries: Boolean = true,
@@ -12,6 +13,9 @@ data class RestoreOptions(
     val customButtons: Boolean = true,
     val sourceSettings: Boolean = true,
     val extensions: Boolean = false,
+    // SY -->
+    val savedSearchesFeeds: Boolean = true,
+    // SY <--
 ) {
 
     fun asBooleanArray() = booleanArrayOf(
@@ -22,15 +26,22 @@ data class RestoreOptions(
         customButtons,
         sourceSettings,
         extensions,
+        // SY -->
+        savedSearchesFeeds,
+        // SY <--
     )
 
-    fun canRestore() = libraryEntries ||
-        categories ||
-        appSettings ||
-        extensionRepoSettings ||
-        customButtons ||
-        sourceSettings ||
-        extensions
+    fun canRestore() =
+        libraryEntries ||
+            categories ||
+            appSettings ||
+            extensionRepoSettings ||
+            sourceSettings ||
+            customButtons ||
+            extensions ||
+            // SY -->
+            savedSearchesFeeds
+    // SY <--
 
     companion object {
         val options = persistentListOf(
@@ -64,6 +75,15 @@ data class RestoreOptions(
                 getter = RestoreOptions::sourceSettings,
                 setter = { options, enabled -> options.copy(sourceSettings = enabled) },
             ),
+            // SY -->
+            Entry(
+                // KMK-->
+                label = KMR.strings.saved_searches_feeds,
+                // KMK <--
+                getter = RestoreOptions::savedSearchesFeeds,
+                setter = { options, enabled -> options.copy(savedSearchesFeeds = enabled) },
+            ),
+            // SY <--
             Entry(
                 label = MR.strings.label_extensions,
                 getter = RestoreOptions::extensions,
@@ -79,6 +99,9 @@ data class RestoreOptions(
             customButtons = array[4],
             sourceSettings = array[5],
             extensions = array[6],
+            // SY -->
+            savedSearchesFeeds = array[7],
+            // SY <--
         )
     }
 
