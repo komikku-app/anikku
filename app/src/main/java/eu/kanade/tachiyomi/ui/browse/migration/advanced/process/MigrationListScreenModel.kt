@@ -483,6 +483,10 @@ class MigrationListScreenModel(
                     .takeIf { migrateExtra },
                 // KMK <--
                 dateAdded = if (replace) oldManga.dateAdded else Instant.now().toEpochMilli(),
+                notes = oldManga.notes
+                    // KMK -->
+                    .takeIf { migrateExtra },
+                // KMK <--
             ),
         )
     }

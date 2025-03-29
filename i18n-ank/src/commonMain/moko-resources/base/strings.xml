@@ -167,6 +167,9 @@
     <string name="library_exported">Library Exported</string>
     <string name="author">Author</string>
     <string name="artist">Artist</string>
+    <string name="action_notes">Notes</string>
+    <string name="action_edit_notes">Edit notes</string>
+    <string name="notes_placeholder">Enjoyed the part where…</string>
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->
