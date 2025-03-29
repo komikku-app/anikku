@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
+import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
 import eu.kanade.tachiyomi.data.backup.models.BackupSource
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
 import kotlinx.serialization.Serializable
@@ -20,7 +21,6 @@ data class SyncData(
     val backup: Backup? = null,
 )
 
-@Suppress("TooManyFunctions")
 abstract class SyncService(
     val context: Context,
     val json: Json,
@@ -38,15 +38,15 @@ abstract class SyncService(
     protected fun mergeSyncData(localSyncData: SyncData, remoteSyncData: SyncData): SyncData {
         val mergedAnimeCategoriesList =
             mergeCategoriesLists(
-                localSyncData.backup?.backupAnimeCategories,
-                remoteSyncData.backup?.backupAnimeCategories,
+                localSyncData.backup?.backupCategories,
+                remoteSyncData.backup?.backupCategories,
             )
 
         val mergedAnimeList = mergeAnimeLists(
             localSyncData.backup?.backupAnime,
             remoteSyncData.backup?.backupAnime,
-            localSyncData.backup?.backupAnimeCategories ?: emptyList(),
-            remoteSyncData.backup?.backupAnimeCategories ?: emptyList(),
+            localSyncData.backup?.backupCategories ?: emptyList(),
+            remoteSyncData.backup?.backupCategories ?: emptyList(),
             mergedAnimeCategoriesList,
         )
 
@@ -59,13 +59,24 @@ abstract class SyncService(
             remoteSyncData.backup?.backupSourcePreferences,
         )
 
+        // SY -->
+        val mergedSavedSearchesList = mergeSavedSearchesLists(
+            localSyncData.backup?.backupSavedSearches,
+            remoteSyncData.backup?.backupSavedSearches,
+        )
+        // SY <--
+
         // Create the merged Backup object
         val mergedBackup = Backup(
             backupAnime = mergedAnimeList,
-            backupAnimeCategories = mergedAnimeCategoriesList,
+            backupCategories = mergedAnimeCategoriesList,
             backupSources = mergedAnimeSourcesList,
             backupPreferences = mergedPreferencesList,
             backupSourcePreferences = mergedSourcePreferencesList,
+
+            // SY -->
+            backupSavedSearches = mergedSavedSearchesList,
+            // SY <--
         )
 
         // Create the merged SData object
@@ -75,6 +86,15 @@ abstract class SyncService(
         )
     }
 
+    /**
+     * Merges two lists of BackupAnime objects, selecting the most recent manga based on the lastModifiedAt value.
+     * If lastModifiedAt is null for a manga, it treats that manga as the oldest possible for comparison purposes.
+     * This function is designed to reconcile local and remote manga lists, ensuring the most up-to-date manga is retained.
+     *
+     * @param localAnimeList The list of local BackupAnime objects or null.
+     * @param remoteAnimeList The list of remote BackupAnime objects or null.
+     * @return A list of BackupAnime objects, each representing the most recent version of the manga from either local or remote sources.
+     */
     private fun mergeAnimeLists(
         localAnimeList: List<BackupAnime>?,
         remoteAnimeList: List<BackupAnime>?,
@@ -128,19 +148,17 @@ abstract class SyncService(
                 local != null && remote != null -> {
                     // Compare versions to decide which manga to keep
                     if (local.version >= remote.version) {
-                        logcat(
-                            LogPriority.DEBUG,
-                            logTag,
-                        ) { "Keeping local version of ${local.title} with merged episodes." }
+                        logcat(LogPriority.DEBUG, logTag) {
+                            "Keeping local version of ${local.title} with merged episodes."
+                        }
                         updateCategories(
                             local.copy(episodes = mergeEpisodes(local.episodes, remote.episodes)),
                             localCategoriesMapByOrder,
                         )
                     } else {
-                        logcat(
-                            LogPriority.DEBUG,
-                            logTag,
-                        ) { "Keeping remote version of ${remote.title} with merged episodes." }
+                        logcat(LogPriority.DEBUG, logTag) {
+                            "Keeping remote version of ${remote.title} with merged episodes."
+                        }
                         updateCategories(
                             remote.copy(episodes = mergeEpisodes(local.episodes, remote.episodes)),
                             remoteCategoriesMapByOrder,
@@ -162,6 +180,23 @@ abstract class SyncService(
         return mergedList
     }
 
+/**
+     * Merges two lists of BackupEpisode objects, selecting the most recent episode based on the lastModifiedAt value.
+     * If lastModifiedAt is null for a episode, it treats that episode as the oldest possible for comparison purposes.
+     * This function is designed to reconcile local and remote episode lists, ensuring the most up-to-date episode is retained.
+     *
+     * @param localEpisodes The list of local BackupEpisode objects.
+     * @param remoteEpisodes The list of remote BackupEpisode objects.
+     * @return A list of BackupEpisode objects, each representing the most recent version of the episode from either local or remote sources.
+     *
+     * - This function is used in scenarios where local and remote episode lists need to be synchronized.
+     * - It iterates over the union of the URLs from both local and remote episodes.
+     * - For each URL, it compares the corresponding local and remote episodes based on the lastModifiedAt value.
+     * - If only one source (local or remote) has the episode for a URL, that episode is used.
+     * - If both sources have the episode, the one with the more recent lastModifiedAt value is chosen.
+     * - If lastModifiedAt is null or missing, the episode is considered the oldest for safety, ensuring that any episode with a valid timestamp is preferred.
+     * - The resulting list contains the most recent episodes from the combined set of local and remote episodes.
+     */
     private fun mergeEpisodes(
         localEpisodes: List<BackupEpisode>,
         remoteEpisodes: List<BackupEpisode>,
@@ -200,8 +235,16 @@ abstract class SyncService(
                 }
                 localEpisode != null && remoteEpisode != null -> {
                     // Use version number to decide which episode to keep
-                    val chosenChapter =
-                        if (localEpisode.version >= remoteEpisode.version) localEpisode else remoteEpisode
+                    val chosenChapter = if (localEpisode.version >= remoteEpisode.version) {
+                        // If there mare more episode on remote, local sourceOrder will need to be updated to maintain correct source order.
+                        if (localEpisodes.size < remoteEpisodes.size) {
+                            localEpisode.copy(sourceOrder = remoteEpisode.sourceOrder)
+                        } else {
+                            localEpisode
+                        }
+                    } else {
+                        remoteEpisode
+                    }
                     logcat(LogPriority.DEBUG, logTag) {
                         "Merging episode: ${chosenChapter.name}. Chosen version from: ${
                             if (localEpisode.version >= remoteEpisode.version) "Local" else "Remote"
@@ -211,14 +254,14 @@ abstract class SyncService(
                 }
                 else -> {
                     logcat(LogPriority.DEBUG, logTag) {
-                        "No chapter found for composite key: $compositeKey. Skipping."
+                        "No episode found for composite key: $compositeKey. Skipping."
                     }
                     null
                 }
             }
         }
 
-        logcat(LogPriority.DEBUG, logTag) { "Episode merge completed. Total merged chapters: ${mergedEpisodes.size}" }
+        logcat(LogPriority.DEBUG, logTag) { "Episode merge completed. Total merged episodes: ${mergedEpisodes.size}" }
 
         return mergedEpisodes
     }
@@ -230,7 +273,6 @@ abstract class SyncService(
      * @param remoteCategoriesList The list of remote SyncCategory objects.
      * @return The merged list of SyncCategory objects.
      */
-    @Suppress("ReturnCount")
     private fun mergeCategoriesLists(
         localCategoriesList: List<BackupCategory>?,
         remoteCategoriesList: List<BackupCategory>?,
@@ -377,8 +419,8 @@ abstract class SyncService(
         }
 
         // Merge both source preferences maps
-        val mergedSourcePreferences = (localPreferencesMap.keys + remotePreferencesMap.keys)
-            .distinct().mapNotNull { sourceKey ->
+        val mergedSourcePreferences = (localPreferencesMap.keys + remotePreferencesMap.keys).distinct()
+            .mapNotNull { sourceKey ->
                 val localSourcePreference = localPreferencesMap[sourceKey]
                 val remoteSourcePreference = remotePreferencesMap[sourceKey]
 
@@ -425,4 +467,62 @@ abstract class SyncService(
         val mergedPrefsMap = (localPrefs + remotePrefs).associateBy { it.key }
         return mergedPrefsMap.values.toList()
     }
+
+    // SY -->
+    private fun mergeSavedSearchesLists(
+        localSearches: List<BackupSavedSearch>?,
+        remoteSearches: List<BackupSavedSearch>?,
+    ): List<BackupSavedSearch> {
+        val logTag = "MergeSavedSearches"
+
+        // Define a function to create a composite key from a BackupSavedSearch
+        fun searchCompositeKey(search: BackupSavedSearch): String {
+            return "${search.name}|${search.source}"
+        }
+
+        // Create maps using the composite key
+        val localSearchMap = localSearches?.associateBy { searchCompositeKey(it) } ?: emptyMap()
+        val remoteSearchMap = remoteSearches?.associateBy { searchCompositeKey(it) } ?: emptyMap()
+
+        logcat(LogPriority.DEBUG, logTag) {
+            "Starting saved searches merge. Local saved searches: ${localSearches?.size}, " +
+                "Remote saved searches: ${remoteSearches?.size}"
+        }
+
+        // Merge both saved searches maps
+        val mergedSearches = (localSearchMap.keys + remoteSearchMap.keys).distinct().mapNotNull { compositeKey ->
+            val localSearch = localSearchMap[compositeKey]
+            val remoteSearch = remoteSearchMap[compositeKey]
+
+            logcat(LogPriority.DEBUG, logTag) {
+                "Processing saved search key: $compositeKey. Local search: ${localSearch != null}, " +
+                    "Remote search: ${remoteSearch != null}"
+            }
+
+            when {
+                localSearch != null && remoteSearch == null -> {
+                    logcat(LogPriority.DEBUG, logTag) { "Using local saved search: ${localSearch.name}." }
+                    localSearch
+                }
+                remoteSearch != null && localSearch == null -> {
+                    logcat(LogPriority.DEBUG, logTag) { "Using remote saved search: ${remoteSearch.name}." }
+                    remoteSearch
+                }
+
+                else -> {
+                    logcat(LogPriority.DEBUG, logTag) {
+                        "No saved search found for composite key: $compositeKey. Skipping."
+                    }
+                    null
+                }
+            }
+        }
+
+        logcat(LogPriority.DEBUG, logTag) {
+            "Saved searches merge completed. Total merged saved searches: ${mergedSearches.size}"
+        }
+
+        return mergedSearches
+    }
+    // SY <--
 }

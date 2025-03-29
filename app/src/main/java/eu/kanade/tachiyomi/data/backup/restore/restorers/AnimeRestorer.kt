@@ -5,13 +5,17 @@ import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
+import eu.kanade.tachiyomi.data.backup.models.BackupMergedMangaReference
 import eu.kanade.tachiyomi.data.backup.models.BackupTracking
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.UpdateStrategyColumnAdapter
+import tachiyomi.data.anime.AnimeMapper
+import tachiyomi.data.anime.MergedAnimeMapper
 import tachiyomi.domain.anime.interactor.FetchInterval
 import tachiyomi.domain.anime.interactor.GetAnimeByUrlAndSourceId
 import tachiyomi.domain.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.anime.model.CustomAnimeInfo
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.episode.model.Episode
@@ -58,6 +62,9 @@ class AnimeRestorer(
             )
     }
 
+    /**
+     * Restore a single anime
+     */
     suspend fun restore(
         backupAnime: BackupAnime,
         backupCategories: List<BackupCategory>,
@@ -78,6 +85,11 @@ class AnimeRestorer(
                 backupCategories = backupCategories,
                 history = backupAnime.history,
                 tracks = backupAnime.tracking,
+                excludedScanlators = backupAnime.excludedScanlators,
+                // SY -->
+                mergedMangaReferences = backupAnime.mergedMangaReferences,
+                customManga = backupAnime.getCustomMangaInfo(),
+                // SY <--
             )
 
             if (isSync) {
@@ -162,13 +174,12 @@ class AnimeRestorer(
         val (existingEpisodes, newEpisodes) = backupEpisodes
             .mapNotNull { backupEpisode ->
                 val episode = backupEpisode.toEpisodeImpl().copy(animeId = anime.id)
-
                 val dbEpisode = dbEpisodesByUrl[episode.url]
 
                 when {
                     dbEpisode == null -> episode // New episode
                     episode.forComparison() == dbEpisode.forComparison() -> null // Same state; skip
-                    else -> updateEpisodeBasedOnSyncState(episode, dbEpisode)
+                    else -> updateEpisodeBasedOnSyncState(episode, dbEpisode) // Update existed episode
                 }
             }
             .partition { it.id > 0 }
@@ -187,6 +198,7 @@ class AnimeRestorer(
                 // <-- AM (FILLERMARK)
                 seen = episode.seen,
                 lastSecondSeen = episode.lastSecondSeen,
+                sourceOrder = episode.sourceOrder,
             )
         } else {
             episode.copyFrom(dbEpisode).let {
@@ -211,7 +223,17 @@ class AnimeRestorer(
     }
 
     private fun Episode.forComparison() =
-        this.copy(id = 0L, animeId = 0L, dateFetch = 0L, dateUpload = 0L, lastModifiedAt = 0L, version = 0L)
+        this.copy(
+            id = 0L,
+            animeId = 0L,
+            dateFetch = 0L,
+            // KMK -->
+            // dateUpload = 0L, some time source loses dateUpload so we overwrite with backup
+            sourceOrder = 0L, // ignore sourceOrder since it will be updated on refresh
+            // KMK <--
+            lastModifiedAt = 0L,
+            version = 0L,
+        )
 
     private suspend fun insertNewEpisodes(episodes: List<Episode>) {
         handler.await(true) {
@@ -254,12 +276,14 @@ class AnimeRestorer(
                     lastSecondSeen = episode.lastSecondSeen,
                     totalSeconds = episode.totalSeconds,
                     episodeNumber = null,
-                    sourceOrder = null,
+                    sourceOrder = if (isSync) episode.sourceOrder else null,
                     dateFetch = null,
-                    dateUpload = null,
+                    // KMK -->
+                    dateUpload = episode.dateUpload,
+                    // KMK <--
                     episodeId = episode.id,
                     version = episode.version,
-                    isSyncing = 0,
+                    isSyncing = 1,
                 )
             }
         }
@@ -305,12 +329,23 @@ class AnimeRestorer(
         backupCategories: List<BackupCategory>,
         history: List<BackupHistory>,
         tracks: List<BackupTracking>,
+        excludedScanlators: List<String>,
+        // SY -->
+        mergedMangaReferences: List<BackupMergedMangaReference>,
+        customManga: CustomAnimeInfo?,
+        // SY <--
     ): Anime {
         restoreCategories(anime, categories, backupCategories)
         restoreEpisodes(anime, episodes)
         restoreTracking(anime, tracks)
         restoreHistory(anime, history)
+        restoreExcludedScanlators(anime, excludedScanlators)
         updateAnime.awaitUpdateFetchInterval(anime, now, currentFetchWindow)
+        // SY -->
+        restoreMergedMangaReferencesForManga(anime.id, mergedMangaReferences)
+        restoreEditedInfo(customManga?.copy(id = anime.id))
+        // SY <--
+
         return anime
     }
 
@@ -354,7 +389,8 @@ class AnimeRestorer(
             val item = history.getHistoryImpl()
 
             if (dbHistory == null) {
-                val episode = handler.awaitOneOrNull { episodesQueries.getEpisodeByUrl(history.url) }
+                val episode = handler.awaitList { episodesQueries.getEpisodeByUrl(history.url) }
+                    .find { it.anime_id == anime.id }
                 return@mapNotNull if (episode == null) {
                     // Episode doesn't exist; skip
                     null
@@ -441,5 +477,109 @@ class AnimeRestorer(
         }
     }
 
+    // SY -->
+    /**
+     * Restore the categories from Json
+     *
+     * @param mergeMangaId the merge manga for the references
+     * @param backupMergedMangaReferences the list of backup manga references for the merged manga
+     */
+    private suspend fun restoreMergedMangaReferencesForManga(
+        mergeMangaId: Long,
+        backupMergedMangaReferences: List<BackupMergedMangaReference>,
+    ) {
+        // Get merged manga references from file and from db
+        val dbMergedMangaReferences = handler.awaitList {
+            mergedQueries.selectAll(MergedAnimeMapper::map)
+        }
+
+        // Iterate over them
+        backupMergedMangaReferences.forEach { backupMergedMangaReference ->
+            // If the backupMergedMangaReference isn't in the db,
+            // remove the id and insert a new backupMergedMangaReference
+            // Store the inserted id in the backupMergedMangaReference
+            if (dbMergedMangaReferences.none {
+                    backupMergedMangaReference.mergeUrl == it.mergeUrl &&
+                        backupMergedMangaReference.mangaUrl == it.animeUrl
+                }
+            ) {
+                // Let the db assign the id
+                val mergedManga = handler.awaitOneOrNull {
+                    animesQueries.getAnimeByUrlAndSource(
+                        backupMergedMangaReference.mangaUrl,
+                        backupMergedMangaReference.mangaSourceId,
+                        AnimeMapper::mapAnime,
+                    )
+                } ?: return@forEach
+                backupMergedMangaReference.getMergedMangaReference().run {
+                    handler.await {
+                        mergedQueries.insert(
+                            infoAnime = isInfoAnime,
+                            getEpisodeUpdates = getEpisodeUpdates,
+                            episodeSortMode = episodeSortMode.toLong(),
+                            episodePriority = episodePriority.toLong(),
+                            downloadEpisodes = downloadEpisodes,
+                            mergeId = mergeMangaId,
+                            mergeUrl = mergeUrl,
+                            animeId = mergedManga.id,
+                            animeUrl = animeUrl,
+                            animeSource = animeSourceId,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun restoreEditedInfo(mangaJson: CustomAnimeInfo?) {
+        mangaJson ?: return
+        setCustomAnimeInfo.set(mangaJson)
+    }
+
+    private fun BackupAnime.getCustomMangaInfo(): CustomAnimeInfo? {
+        if (customTitle != null ||
+            customArtist != null ||
+            customAuthor != null ||
+            customThumbnailUrl != null ||
+            customDescription != null ||
+            customGenre != null ||
+            customStatus != 0
+        ) {
+            return CustomAnimeInfo(
+                id = 0L,
+                title = customTitle,
+                author = customAuthor,
+                artist = customArtist,
+                thumbnailUrl = customThumbnailUrl,
+                description = customDescription,
+                genre = customGenre,
+                status = customStatus.takeUnless { it == 0 }?.toLong(),
+            )
+        }
+        return null
+    }
+    // SY <--
+
     private fun Track.forComparison() = this.copy(id = 0L, animeId = 0L)
+
+    /**
+     * Restores the excluded scanlators for the manga.
+     *
+     * @param manga the manga whose excluded scanlators have to be restored.
+     * @param excludedScanlators the excluded scanlators to restore.
+     */
+    private suspend fun restoreExcludedScanlators(manga: Anime, excludedScanlators: List<String>) {
+        if (excludedScanlators.isEmpty()) return
+        val existingExcludedScanlators = handler.awaitList {
+            excluded_scanlatorsQueries.getExcludedScanlatorsByAnimeId(manga.id)
+        }
+        val toInsert = excludedScanlators.filter { it !in existingExcludedScanlators }
+        if (toInsert.isNotEmpty()) {
+            handler.await {
+                toInsert.forEach {
+                    excluded_scanlatorsQueries.insert(manga.id, it)
+                }
+            }
+        }
+    }
 }

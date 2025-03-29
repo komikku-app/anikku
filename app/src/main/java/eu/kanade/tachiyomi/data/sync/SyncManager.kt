@@ -81,22 +81,38 @@ class SyncManager(
         val backupOptions = BackupOptions(
             libraryEntries = syncOptions.libraryEntries,
             categories = syncOptions.categories,
-            chapters = syncOptions.chapters,
+            episodes = syncOptions.chapters,
             tracking = syncOptions.tracking,
             history = syncOptions.history,
+            extensionRepoSettings = syncOptions.extensionRepoSettings,
             appSettings = syncOptions.appSettings,
             sourceSettings = syncOptions.sourceSettings,
             privateSettings = syncOptions.privateSettings,
+
+            // SY -->
+            customInfo = syncOptions.customInfo,
+            seenEntries = syncOptions.seenEntries,
+            savedSearchesFeeds = syncOptions.savedSearchesFeeds,
+            // SY <--
         )
 
         logcat(LogPriority.DEBUG) { "Begin create backup" }
         val backupAnime = backupCreator.backupAnimes(databaseAnime, backupOptions)
         val backup = Backup(
             backupAnime = backupAnime,
-            backupAnimeCategories = backupCreator.backupAnimeCategories(backupOptions),
+            backupCategories = backupCreator.backupAnimeCategories(backupOptions),
             backupSources = backupCreator.backupAnimeSources(backupAnime),
             backupPreferences = backupCreator.backupAppPreferences(backupOptions),
+            backupExtensionRepo = backupCreator.backupExtensionRepos(backupOptions),
             backupSourcePreferences = backupCreator.backupSourcePreferences(backupOptions),
+
+            // SY -->
+            backupSavedSearches = backupCreator.backupSavedSearches(backupOptions),
+            // SY <--
+
+            // KMK -->
+            backupFeeds = backupCreator.backupFeeds(backupOptions),
+            // KMK <--
         )
         logcat(LogPriority.DEBUG) { "End create backup" }
 
@@ -137,6 +153,7 @@ class SyncManager(
 
         if (remoteBackup === syncData.backup) {
             // nothing changed
+            logcat(LogPriority.DEBUG) { "Skip restore due to remote was overwrite from local" }
             syncPreferences.lastSyncTimestamp().set(Date().time)
             notifier.showSyncSuccess("Sync completed successfully")
             return
@@ -149,9 +166,7 @@ class SyncManager(
         }
 
         // Check if it's first sync based on lastSyncTimestamp
-        if (syncPreferences.lastSyncTimestamp().get() == 0L &&
-            databaseAnime.isNotEmpty()
-        ) {
+        if (syncPreferences.lastSyncTimestamp().get() == 0L && databaseAnime.isNotEmpty()) {
             // It's first sync no need to restore data. (just update remote data)
             syncPreferences.lastSyncTimestamp().set(Date().time)
             notifier.showSyncSuccess("Updated remote data successfully")
@@ -163,16 +178,24 @@ class SyncManager(
 
         val newSyncData = backup.copy(
             backupAnime = animeFilteredFavorites,
-            backupAnimeCategories = remoteBackup.backupAnimeCategories,
+            backupCategories = remoteBackup.backupCategories,
             backupSources = remoteBackup.backupSources,
             backupPreferences = remoteBackup.backupPreferences,
             backupSourcePreferences = remoteBackup.backupSourcePreferences,
+            backupExtensionRepo = remoteBackup.backupExtensionRepo,
+
+            // SY -->
+            backupSavedSearches = remoteBackup.backupSavedSearches,
+            // SY <--
+
+            // KMK -->
+            backupFeeds = remoteBackup.backupFeeds,
+            // KMK <--
         )
 
         // It's local sync no need to restore data. (just update remote data)
         if (animeFilteredFavorites.isEmpty()) {
             // update the sync timestamp
-
             syncPreferences.lastSyncTimestamp().set(Date().time)
             notifier.showSyncSuccess("Sync completed successfully")
             return
@@ -188,7 +211,8 @@ class SyncManager(
                 options = RestoreOptions(
                     appSettings = true,
                     sourceSettings = true,
-                    libraryEntries = true, // Correct parameter name
+                    libraryEntries = true,
+                    extensionRepoSettings = true,
                 ),
             )
 
@@ -200,7 +224,7 @@ class SyncManager(
     }
 
     private fun writeSyncDataToCache(context: Context, backup: Backup): Uri? {
-        val cacheFile = File(context.cacheDir, "Anikku_sync_data.proto.gz")
+        val cacheFile = File(context.cacheDir, "anikku_sync_data.proto.gz")
         return try {
             cacheFile.outputStream().use { output ->
                 output.write(ProtoBuf.encodeToByteArray(Backup.serializer(), backup))
@@ -213,9 +237,9 @@ class SyncManager(
     }
 
     /**
-     * Retrieves all manga from the local database.
+     * Retrieves all anime from the local database.
      *
-     * @return a list of all manga stored in the database
+     * @return a list of all anime stored in the database
      */
     private suspend fun getAllAnimeFromDB(): List<Anime> {
         return handler.awaitList { animesQueries.getAllAnime(::mapAnime) }
@@ -244,7 +268,6 @@ class SyncManager(
         return false
     }
 
-    @Suppress("ReturnCount")
     private fun areEpisodesDifferent(localEpisodes: List<Episodes>, remoteEpisodes: List<BackupEpisode>): Boolean {
         val localEpisodeMap = localEpisodes.associateBy { it.url }
         val remoteEpisodeMap = remoteEpisodes.associateBy { it.url }
@@ -256,7 +279,7 @@ class SyncManager(
         for ((url, localEpisode) in localEpisodeMap) {
             val remoteEpisode = remoteEpisodeMap[url]
 
-            // If a matching remote Episode doesn't exist, or the version numbers are different, consider them different
+            // If a matching remote episode doesn't exist, or the version numbers are different, consider them different
             if (remoteEpisode == null || localEpisode.version != remoteEpisode.version) {
                 return true
             }
@@ -266,13 +289,12 @@ class SyncManager(
     }
 
     /**
-     * Filters the favorite and non-favorite manga from the backup and checks
-     * if the favorite manga is different from the local database.
+     * Filters the favorite and non-favorite anime from the backup and checks
+     * if the favorite anime is different from the local database.
      * @param backup the Backup object containing the backup data.
-     * @return a Pair of lists, where the first list contains different favorite manga
-     * and the second list contains non-favorite manga.
+     * @return a Pair of lists, where the first list contains different favorite anime
+     * and the second list contains non-favorite anime.
      */
-    @Suppress("MagicNumber")
     private suspend fun aniFilterFavoritesAndNonFavorites(backup: Backup): Pair<List<BackupAnime>, List<BackupAnime>> {
         val favorites = mutableListOf<BackupAnime>()
         val nonFavorites = mutableListOf<BackupAnime>()
@@ -319,8 +341,8 @@ class SyncManager(
     }
 
     /**
-     * Updates the non-favorite manga in the local database with their favorite status from the backup.
-     * @param nonFavorites the list of non-favorite BackupManga objects from the backup.
+     * Updates the non-favorite anime in the local database with their favorite status from the backup.
+     * @param nonFavorites the list of non-favorite BackupAnime objects from the backup.
      */
     private suspend fun animeUpdateNonFavorites(nonFavorites: List<BackupAnime>) {
         val localAnimeList = getAllAnimeFromDB()

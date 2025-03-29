@@ -10,7 +10,9 @@ import eu.kanade.tachiyomi.data.backup.create.creators.CategoriesBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.CustomButtonBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionRepoBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionsBackupCreator
+import eu.kanade.tachiyomi.data.backup.create.creators.FeedBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.PreferenceBackupCreator
+import eu.kanade.tachiyomi.data.backup.create.creators.SavedSearchBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.SourcesBackupCreator
 import eu.kanade.tachiyomi.data.backup.models.Backup
 import eu.kanade.tachiyomi.data.backup.models.BackupAnime
@@ -18,7 +20,9 @@ import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupCustomButtons
 import eu.kanade.tachiyomi.data.backup.models.BackupExtension
 import eu.kanade.tachiyomi.data.backup.models.BackupExtensionRepos
+import eu.kanade.tachiyomi.data.backup.models.BackupFeed
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
+import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
 import eu.kanade.tachiyomi.data.backup.models.BackupSource
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
 import kotlinx.serialization.protobuf.ProtoBuf
@@ -29,6 +33,7 @@ import okio.sink
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.anime.interactor.GetFavorites
+import tachiyomi.domain.anime.interactor.GetMergedAnime
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.repository.AnimeRepository
 import tachiyomi.domain.backup.service.BackupPreferences
@@ -57,6 +62,13 @@ class BackupCreator(
     private val customButtonBackupCreator: CustomButtonBackupCreator = CustomButtonBackupCreator(),
     private val sourcesBackupCreator: SourcesBackupCreator = SourcesBackupCreator(),
     private val extensionsBackupCreator: ExtensionsBackupCreator = ExtensionsBackupCreator(context),
+    // KMK -->
+    private val feedBackupCreator: FeedBackupCreator = FeedBackupCreator(),
+    // KMK <--
+    // SY -->
+    private val savedSearchBackupCreator: SavedSearchBackupCreator = SavedSearchBackupCreator(),
+    private val getMergedAnime: GetMergedAnime = Injekt.get(),
+    // SY <--
 ) {
 
     suspend fun backup(uri: Uri, options: BackupOptions): String {
@@ -65,12 +77,14 @@ class BackupCreator(
             file = if (isAutoBackup) {
                 // Get dir of file and create
                 val dir = UniFile.fromUri(context, uri)
+
                 // Delete older backups
                 dir?.listFiles { _, filename -> FILENAME_REGEX.matches(filename) }
                     .orEmpty()
                     .sortedByDescending { it.name }
                     .drop(MAX_AUTO_BACKUPS - 1)
                     .forEach { it.delete() }
+
                 // Create new file to place backup
                 dir?.createFile(getFilename())
             } else {
@@ -81,22 +95,29 @@ class BackupCreator(
                 throw IllegalStateException(context.stringResource(MR.strings.create_backup_file_error))
             }
 
-            val nonFavoriteAnime = if (options.readEntries) {
-                animeRepository.getSeenAnimeNotInLibrary()
-            } else {
-                emptyList()
-            }
-            val backupAnime = backupAnimes(getFavorites.await() + nonFavoriteAnime, options)
+            val nonFavoriteAnime = if (options.seenEntries) animeRepository.getSeenAnimeNotInLibrary() else emptyList()
+            // SY -->
+            val mergedManga = getMergedAnime.await()
+            // SY <--
+            val backupAnime = backupAnimes(getFavorites.await() + nonFavoriteAnime /* SY --> */ + mergedManga /* SY <-- */, options)
 
             val backup = Backup(
                 backupAnime = backupAnime,
-                backupAnimeCategories = backupAnimeCategories(options),
+                backupCategories = backupAnimeCategories(options),
                 backupSources = backupAnimeSources(backupAnime),
                 backupPreferences = backupAppPreferences(options),
-                backupAnimeExtensionRepo = backupAnimeExtensionRepos(options),
+                backupExtensionRepo = backupExtensionRepos(options),
                 backupCustomButton = backupCustomButtons(options),
                 backupSourcePreferences = backupSourcePreferences(options),
                 backupExtensions = backupExtensions(options),
+
+                // SY -->
+                backupSavedSearches = backupSavedSearches(options),
+                // SY <--
+
+                // KMK -->
+                backupFeeds = backupFeeds(options),
+                // KMK <--
             )
 
             val byteArray = parser.encodeToByteArray(Backup.serializer(), backup)
@@ -129,29 +150,29 @@ class BackupCreator(
         }
     }
 
-    internal suspend fun backupAnimeCategories(options: BackupOptions): List<BackupCategory> {
+    suspend fun backupAnimeCategories(options: BackupOptions): List<BackupCategory> {
         if (!options.categories) return emptyList()
 
         return categoriesBackupCreator()
     }
 
-    internal suspend fun backupAnimes(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
+    suspend fun backupAnimes(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
         if (!options.libraryEntries) return emptyList()
 
         return animeBackupCreator(animes, options)
     }
 
-    internal fun backupAnimeSources(animes: List<BackupAnime>): List<BackupSource> {
+    fun backupAnimeSources(animes: List<BackupAnime>): List<BackupSource> {
         return sourcesBackupCreator(animes)
     }
 
-    internal fun backupAppPreferences(options: BackupOptions): List<BackupPreference> {
+    fun backupAppPreferences(options: BackupOptions): List<BackupPreference> {
         if (!options.appSettings) return emptyList()
 
         return preferenceBackupCreator.createApp(includePrivatePreferences = options.privateSettings)
     }
 
-    private suspend fun backupAnimeExtensionRepos(options: BackupOptions): List<BackupExtensionRepos> {
+    suspend fun backupExtensionRepos(options: BackupOptions): List<BackupExtensionRepos> {
         if (!options.extensionRepoSettings) return emptyList()
 
         return extensionRepoBackupCreator()
@@ -168,6 +189,25 @@ class BackupCreator(
 
         return preferenceBackupCreator.createSource(includePrivatePreferences = options.privateSettings)
     }
+
+    // SY -->
+    suspend fun backupSavedSearches(options: BackupOptions): List<BackupSavedSearch> {
+        if (!options.savedSearchesFeeds) return emptyList()
+
+        return savedSearchBackupCreator()
+    }
+    // SY <--
+
+    // KMK -->
+    /**
+     * Backup global Popular/Latest feeds
+     */
+    suspend fun backupFeeds(options: BackupOptions): List<BackupFeed> {
+        if (!options.savedSearchesFeeds) return emptyList()
+
+        return feedBackupCreator()
+    }
+    // KMK <--
 
     private fun backupExtensions(options: BackupOptions): List<BackupExtension> {
         if (!options.extensions) return emptyList()

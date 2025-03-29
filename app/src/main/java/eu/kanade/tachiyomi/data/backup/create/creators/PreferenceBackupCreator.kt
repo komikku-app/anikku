@@ -28,7 +28,7 @@ class PreferenceBackupCreator(
     }
 
     fun createSource(includePrivatePreferences: Boolean): List<BackupSourcePreferences> {
-        val animePreferences = sourceManager.getCatalogueSources()
+        return sourceManager.getCatalogueSources()
             .filterIsInstance<ConfigurableSource>()
             .map {
                 BackupSourcePreferences(
@@ -38,7 +38,6 @@ class PreferenceBackupCreator(
                 )
             }
             .filter { it.prefs.isNotEmpty() }
-        return animePreferences
     }
 
     @Suppress("UNCHECKED_CAST")

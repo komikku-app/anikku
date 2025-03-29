@@ -151,6 +151,7 @@ dependencies {
     implementation(projects.i18n)
     // KMK -->
     implementation(projects.i18nKmk)
+    implementation(projects.i18nAnk)
     // KMK <--
     // SY -->
     implementation(projects.i18nSy)
