@@ -2,8 +2,10 @@ package eu.kanade.tachiyomi.extension
 
 import android.content.Context
 import android.graphics.drawable.Drawable
+import androidx.core.content.ContextCompat
 import eu.kanade.domain.extension.interactor.TrustExtension
 import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.extension.api.ExtensionApi
 import eu.kanade.tachiyomi.extension.api.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.model.Extension
@@ -13,6 +15,7 @@ import eu.kanade.tachiyomi.extension.util.ExtensionInstallReceiver
 import eu.kanade.tachiyomi.extension.util.ExtensionInstaller
 import eu.kanade.tachiyomi.extension.util.ExtensionLoader
 import eu.kanade.tachiyomi.util.system.toast
+import exh.source.MERGED_SOURCE_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -87,12 +90,19 @@ class ExtensionManager(
                 ext.sources.any { it.id == sourceId }
             }
             ?.pkgName
-            ?: return null
-
-        return iconMap[pkgName] ?: iconMap.getOrPut(pkgName) {
-            ExtensionLoader.getExtensionPackageInfoFromPkgName(context, pkgName)!!.applicationInfo!!
-                .loadIcon(context.packageManager)
+        if (pkgName != null) {
+            return iconMap[pkgName] ?: iconMap.getOrPut(pkgName) {
+                ExtensionLoader.getExtensionPackageInfoFromPkgName(context, pkgName)!!.applicationInfo!!
+                    .loadIcon(context.packageManager)
+            }
         }
+
+        // SY -->
+        return when (sourceId) {
+            MERGED_SOURCE_ID -> ContextCompat.getDrawable(context, R.mipmap.ic_merged_source)
+            else -> null
+        }
+        // SY <--
     }
 
     private var availableAnimeExtensionsSourcesData: Map<Long, StubSource> = emptyMap()

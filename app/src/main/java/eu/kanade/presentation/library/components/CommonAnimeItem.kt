@@ -201,8 +201,8 @@ fun AnimeComfortableGridItem(
     isSelected: Boolean = false,
     titleMaxLines: Int = 2,
     coverAlpha: Float = 1f,
-    coverBadgeStart: (@Composable RowScope.() -> Unit)? = null,
-    coverBadgeEnd: (@Composable RowScope.() -> Unit)? = null,
+    coverBadgeStart: @Composable (RowScope.() -> Unit)? = null,
+    coverBadgeEnd: @Composable (RowScope.() -> Unit)? = null,
     onClickContinueWatching: (() -> Unit)? = null,
     // KMK -->
     libraryColored: Boolean = true,
