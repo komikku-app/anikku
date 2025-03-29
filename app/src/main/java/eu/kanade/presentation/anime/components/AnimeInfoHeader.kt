@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.CallMerge
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HourglassEmpty
@@ -85,6 +86,7 @@ import eu.kanade.tachiyomi.source.model.SAnime
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.TextButton
 import tachiyomi.presentation.core.components.material.padding
@@ -207,6 +209,9 @@ fun AnimeActionRow(
     onTrackingClicked: () -> Unit,
     onEditIntervalClicked: (() -> Unit)?,
     onEditCategory: (() -> Unit)?,
+    // SY -->
+    onMergeClicked: (() -> Unit)?,
+    // SY <--
     modifier: Modifier = Modifier,
 ) {
     val defaultActionButtonColor = MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA)
@@ -267,6 +272,16 @@ fun AnimeActionRow(
                 onLongClick = onWebViewLongClicked,
             )
         }
+        // SY -->
+        if (onMergeClicked != null) {
+            AnimeActionButton(
+                title = stringResource(SYMR.strings.merge),
+                icon = Icons.AutoMirrored.Outlined.CallMerge,
+                color = MaterialTheme.colorScheme.primary, // KMK: defaultActionButtonColor
+                onClick = onMergeClicked,
+            )
+        }
+        // SY <--
     }
 }
 

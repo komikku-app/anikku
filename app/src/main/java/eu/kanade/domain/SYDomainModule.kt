@@ -5,6 +5,7 @@ import eu.kanade.domain.anime.interactor.CreateSortTag
 import eu.kanade.domain.anime.interactor.DeleteSortTag
 import eu.kanade.domain.anime.interactor.GetSortTag
 import eu.kanade.domain.anime.interactor.ReorderSortTag
+import eu.kanade.domain.anime.interactor.SmartSearchMerge
 import eu.kanade.domain.source.interactor.CreateSourceCategory
 import eu.kanade.domain.source.interactor.DeleteSourceCategory
 import eu.kanade.domain.source.interactor.GetExhSavedSearch
@@ -28,6 +29,7 @@ import tachiyomi.domain.anime.interactor.GetMergedAnimeById
 import tachiyomi.domain.anime.interactor.GetMergedAnimeForDownloading
 import tachiyomi.domain.anime.interactor.GetMergedReferencesById
 import tachiyomi.domain.anime.interactor.GetSeenAnimeNotInLibraryView
+import tachiyomi.domain.anime.interactor.InsertMergedReference
 import tachiyomi.domain.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.anime.interactor.UpdateMergedSettings
 import tachiyomi.domain.anime.repository.AnimeMergeRepository
@@ -79,9 +81,6 @@ class SYDomainModule : InjektModule {
         addFactory { CreateSortTag(get(), get()) }
         addFactory { DeleteSortTag(get(), get()) }
         addFactory { ReorderSortTag(get(), get()) }
-//        addFactory { GetPagePreviews(get(), get()) }
-//        addFactory { SearchEngine() }
-//        addFactory { IsTrackUnfollowed() }
         addFactory { GetSeenAnimeNotInLibraryView(get()) }
 
         addSingletonFactory<AnimeMergeRepository> { AnimeMergeRepositoryImpl(get()) }
@@ -89,19 +88,14 @@ class SYDomainModule : InjektModule {
         addFactory { GetMergedAnimeById(get()) }
         addFactory { GetMergedReferencesById(get()) }
         addFactory { GetMergedEpisodesByAnimeId(get(), get()) }
-//        addFactory { InsertMergedReference(get()) }
+        addFactory { InsertMergedReference(get()) }
         addFactory { UpdateMergedSettings(get()) }
         addFactory { DeleteByMergeId(get()) }
         addFactory { DeleteMergeById(get()) }
         addFactory { GetMergedAnimeForDownloading(get()) }
         // KMK -->
-//        addFactory { SmartSearchMerge(get()) }
+        addFactory { SmartSearchMerge(get()) }
         // KMK <--
-
-//        addFactory { GetFavoriteEntries(get()) }
-//        addFactory { InsertFavoriteEntries(get()) }
-//        addFactory { DeleteFavoriteEntries(get()) }
-//        addFactory { InsertFavoriteEntryAlternative(get()) }
 
         addSingletonFactory<SavedSearchRepository> { SavedSearchRepositoryImpl(get()) }
         addFactory { GetSavedSearchById(get()) }
