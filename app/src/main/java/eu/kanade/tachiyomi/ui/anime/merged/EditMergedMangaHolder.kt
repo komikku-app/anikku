@@ -30,7 +30,7 @@ class EditMergedMangaHolder(view: View, val adapter: EditMergedMangaAdapter) : F
         binding.download.setOnClickListener {
             adapter.editMergedMangaItemListener.onToggleChapterDownloadsClicked(bindingAdapterPosition)
         }
-        setHandelAlpha(adapter.isPriorityOrder)
+        setHandleAlpha(adapter.isPriorityOrder)
     }
 
     override fun onItemReleased(position: Int) {
@@ -52,7 +52,7 @@ class EditMergedMangaHolder(view: View, val adapter: EditMergedMangaAdapter) : F
         updateChapterUpdatesIcon(item.mergedAnimeReference.getEpisodeUpdates)
     }
 
-    fun setHandelAlpha(isPriorityOrder: Boolean) {
+    fun setHandleAlpha(isPriorityOrder: Boolean) {
         binding.reorder.alpha = when (isPriorityOrder) {
             true -> 1F
             false -> 0.5F

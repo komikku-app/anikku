@@ -26,7 +26,7 @@ fun List<Episode>.applyFilters(
     val fillermarkedFilter = anime.fillermarkedFilter
     // <-- AM (FILLERMARK)
 
-    return filter { episode -> applyFilter(unseenFilter) { !episode.seen } }
+    return asSequence().filter { episode -> applyFilter(unseenFilter) { !episode.seen } }
         .filter { episode -> applyFilter(bookmarkedFilter) { episode.bookmark } }
         // AM (FILLERMARK) -->
         .filter { episode -> applyFilter(fillermarkedFilter) { episode.fillermark } }
@@ -48,7 +48,7 @@ fun List<Episode>.applyFilters(
                 downloaded || isLocalAnime
             }
         }
-        .sortedWith(getEpisodeSort(anime))
+        .sortedWith(getEpisodeSort(anime)).toList()
 }
 
 /**

@@ -311,11 +311,6 @@ class PlayerViewModel @JvmOverloads constructor(
         _aniskipButton.update { _ -> value }
     }
 
-    /**
-     * The episode loader for the loaded anime. It'll be null until [anime] is set.
-     */
-    private var loader: EpisodeLoader? = null
-
     init {
         viewModelScope.launchIO {
             try {

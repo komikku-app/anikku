@@ -579,32 +579,31 @@ class AnimeScreen(
         }
     }
 
-    private fun getAnimeUrl(anime_: Anime?, source_: Source?): String? {
-        val anime = anime_ ?: return null
-        val source = source_ as? HttpSource ?: return null
+    private fun getAnimeUrl(anime: Anime?, source: Source?): String? {
+        if (anime == null) return null
 
         return try {
-            source.getAnimeUrl(anime.toSAnime())
-        } catch (e: Exception) {
+            (source as? HttpSource)?.getAnimeUrl(anime.toSAnime())
+        } catch (_: Exception) {
             null
         }
     }
 
-    private fun openAnimeInWebView(navigator: Navigator, anime_: Anime?, source_: Source?) {
-        getAnimeUrl(anime_, source_)?.let { url ->
+    private fun openAnimeInWebView(navigator: Navigator, anime: Anime?, source: Source?) {
+        getAnimeUrl(anime, source)?.let { url ->
             navigator.push(
                 WebViewScreen(
                     url = url,
-                    initialTitle = anime_?.title,
-                    sourceId = source_?.id,
+                    initialTitle = anime?.title,
+                    sourceId = source?.id,
                 ),
             )
         }
     }
 
-    private fun shareAnime(context: Context, anime_: Anime?, source_: Source?) {
+    private fun shareAnime(context: Context, anime: Anime?, source: Source?) {
         try {
-            getAnimeUrl(anime_, source_)?.let { url ->
+            getAnimeUrl(anime, source)?.let { url ->
                 val intent = url.toUri().toShareIntent(context, type = "text/plain")
                 context.startActivity(
                     Intent.createChooser(
@@ -671,10 +670,9 @@ class AnimeScreen(
     /**
      * Copy Anime URL to Clipboard
      */
-    private fun copyAnimeUrl(context: Context, anime_: Anime?, source_: Source?) {
-        val anime = anime_ ?: return
-        val source = source_ as? HttpSource ?: return
-        val url = source.getAnimeUrl(anime.toSAnime())
+    private fun copyAnimeUrl(context: Context, anime: Anime?, source: Source?) {
+        if (anime == null) return
+        val url = (source as? HttpSource)?.getAnimeUrl(anime.toSAnime()) ?: return
         context.copyToClipboard(url, url)
     }
 
@@ -731,9 +729,8 @@ class AnimeScreen(
         launchUI {
             try {
                 val mergedManga = withNonCancellableContext {
-                    smartSearchMerge(manga, smartSearchConfig?.origMangaId!!)
+                    smartSearchMerge(manga, smartSearchConfig?.origMangaId ?: throw IllegalStateException("smartSearchConfig is null"))
                 }
-
                 navigator.popUntil { it is SourcesScreen }
                 navigator.pop()
                 // KMK -->

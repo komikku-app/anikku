@@ -41,8 +41,8 @@ class EditMergedSettingsState(
 ) : EditMergedMangaAdapter.EditMergedMangaItemListener {
     var mergedMangas: List<Pair<Anime?, MergedAnimeReference>> by mutableStateOf(emptyList())
     var mergeReference: MergedAnimeReference? by mutableStateOf(null)
-    var mergedMangaAdapter: EditMergedMangaAdapter? by mutableStateOf(null)
-    var mergedMangaHeaderAdapter: EditMergedSettingsHeaderAdapter? by mutableStateOf(null)
+    private var mergedMangaAdapter: EditMergedMangaAdapter? by mutableStateOf(null)
+    private var mergedMangaHeaderAdapter: EditMergedSettingsHeaderAdapter? by mutableStateOf(null)
 
     fun onViewCreated(
         context: Context,

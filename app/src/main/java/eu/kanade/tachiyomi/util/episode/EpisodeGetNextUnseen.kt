@@ -11,8 +11,10 @@ import tachiyomi.domain.episode.model.Episode
  */
 fun List<Episode>.getNextUnseen(
     anime: Anime,
-    downloadManager: DownloadManager /* SY --> */,
-    mergedManga: Map<Long, Anime>, /* SY <-- */
+    downloadManager: DownloadManager,
+    // SY -->
+    mergedManga: Map<Long, Anime>,
+    // SY <--
 ): Episode? {
     return applyFilters(anime, downloadManager/* SY --> */, mergedManga/* SY <-- */).let { episodes ->
         if (anime.sortDescending()) {

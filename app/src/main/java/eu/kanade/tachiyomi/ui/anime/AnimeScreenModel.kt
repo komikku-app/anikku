@@ -45,7 +45,6 @@ import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
-import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.network.HttpException
@@ -147,7 +146,7 @@ class AnimeScreenModel(
     private val isFromSource: Boolean,
     private val smartSearched: Boolean,
     // SY <--
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
+    downloadPreferences: DownloadPreferences = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val trackPreferences: TrackPreferences = Injekt.get(),
     internal val playerPreferences: PlayerPreferences = Injekt.get(),
@@ -191,7 +190,7 @@ class AnimeScreenModel(
     internal val setAnimeViewerFlags: SetAnimeViewerFlags = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     // AM (FILE_SIZE) -->
-    private val storagePreferences: StoragePreferences = Injekt.get(),
+    storagePreferences: StoragePreferences = Injekt.get(),
     // <-- AM (FILE_SIZE)
 ) : StateScreenModel<AnimeScreenModel.State>(State.Loading) {
 
@@ -216,7 +215,7 @@ class AnimeScreenModel(
 
     val episodeSwipeStartAction = libraryPreferences.swipeEpisodeEndAction().get()
     val episodeSwipeEndAction = libraryPreferences.swipeEpisodeStartAction().get()
-    var autoTrackState = trackPreferences.autoUpdateTrackOnMarkRead().get()
+    private var autoTrackState = trackPreferences.autoUpdateTrackOnMarkRead().get()
 
     val showNextEpisodeAirTime = trackPreferences.showNextEpisodeAiringTime().get()
     val alwaysUseExternalPlayer = playerPreferences.alwaysUseExternalPlayer().get()
@@ -886,7 +885,6 @@ class AnimeScreenModel(
             }
 
             // SY -->
-            @Suppress("NAME_SHADOWING")
             val manga = mergedData?.anime?.get(episode.animeId) ?: anime
             val source = mergedData?.sources?.find { manga.source == it.id }?.takeIf { mergedData.sources.size > 2 }
             // SY <--
@@ -1556,9 +1554,9 @@ class AnimeScreenModel(
                     .map { service ->
                         TrackItem(
                             animeTracks.find {
-                                it.trackerId == (service as BaseTracker).id
+                                it.trackerId == service.id
                             },
-                            (service as BaseTracker),
+                            service,
                         )
                     }
             }

@@ -116,7 +116,7 @@ class MergedSource : HttpSource() {
         fetchEpisodesAndSync(anime, downloadEpisodes)
     }
 
-    suspend fun fetchEpisodesAndSync(anime: Anime, downloadEpisodes: Boolean = true): List<Episode> {
+    private suspend fun fetchEpisodesAndSync(anime: Anime, downloadEpisodes: Boolean = true): List<Episode> {
         val animeReferences = getMergedReferencesById.await(anime.id)
         require(animeReferences.isNotEmpty()) {
             "Anime references are empty, episodes unavailable, merge is likely corrupted"

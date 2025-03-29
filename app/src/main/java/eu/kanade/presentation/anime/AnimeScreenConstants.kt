@@ -20,9 +20,6 @@ enum class AnimeScreenItem {
 
     // SY -->
     INFO_BUTTONS,
-    EPISODE_PREVIEW_LOADING,
-    EPISODE_PREVIEW_ROW,
-    EPISODE_PREVIEW_MORE,
     // SY <--
 
     EPISODE_HEADER,
