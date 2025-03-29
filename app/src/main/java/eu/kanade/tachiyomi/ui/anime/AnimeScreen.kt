@@ -30,6 +30,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.materialkolor.ktx.blend
 import dev.chrisbanes.haze.HazeDefaults
 import dev.chrisbanes.haze.HazeState
@@ -59,7 +60,9 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
+import eu.kanade.tachiyomi.ui.anime.merged.EditMergedSettingsDialog
 import eu.kanade.tachiyomi.ui.anime.track.TrackInfoDialogHomeScreen
 import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
@@ -80,17 +83,24 @@ import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
+import exh.source.MERGED_SOURCE_ID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
+import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import uy.kohesive.injekt.Injekt
@@ -245,7 +255,12 @@ class AnimeScreen(
             onBackClicked = navigator::pop,
             onEpisodeClicked = { episode, alt ->
                 scope.launchIO {
-                    if (successState.source.isSourceForTorrents()) {
+                    if (successState.source is MergedSource &&
+                        successState.source.getMergedReferenceSources(screenModel.anime).any {
+                            it.isSourceForTorrents()
+                        } ||
+                        successState.source.isSourceForTorrents()
+                    ) {
                         TorrentServerService.start()
                         TorrentServerService.wait(10)
                         TorrentServerUtils.setTrackersList()
@@ -259,13 +274,23 @@ class AnimeScreen(
                 screenModel.toggleFavorite()
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             },
+            // SY -->
             onWebViewClicked = {
-                openAnimeInWebView(
-                    navigator,
-                    screenModel.anime,
-                    screenModel.source,
-                )
+                if (successState.mergedData == null) {
+                    openAnimeInWebView(
+                        navigator,
+                        screenModel.anime,
+                        screenModel.source,
+                    )
+                } else {
+                    openMergedMangaWebview(
+                        context,
+                        navigator,
+                        successState.mergedData,
+                    )
+                }
             }.takeIf { isHttpSource },
+            // SY <--
             onWebViewLongClicked = {
                 copyAnimeUrl(
                     context,
@@ -300,14 +325,19 @@ class AnimeScreen(
             }.takeIf { isHttpSource },
             onDownloadActionClicked = screenModel::runDownloadAction.takeIf { !successState.source.isLocalOrStub() },
             onEditCategoryClicked = screenModel::showChangeCategoryDialog.takeIf { successState.anime.favorite },
-            // SY -->
-            onEditInfoClicked = screenModel::showEditAnimeInfoDialog,
-            // SY <--
             onEditFetchIntervalClicked = screenModel::showSetAnimeFetchIntervalDialog.takeIf {
                 successState.anime.favorite
             },
-            onMigrateClicked = { migrateManga(navigator, screenModel.anime!!) }.takeIf { successState.anime.favorite },
             changeAnimeSkipIntro = screenModel::showAnimeSkipIntroDialog.takeIf { successState.anime.favorite },
+            // SY -->
+            onMigrateClicked = { migrateManga(navigator, screenModel.anime!!) }.takeIf { successState.anime.favorite },
+            onEditInfoClicked = screenModel::showEditAnimeInfoDialog,
+            onMergedSettingsClicked = screenModel::showEditMergedSettingsDialog,
+            onMergeClicked = { openSmartSearch(navigator, successState.anime) },
+            onMergeWithAnotherClicked = {
+                mergeWithAnother(navigator, context, successState.anime, screenModel::smartSearchMerge)
+            },
+            // SY <--
             onMultiBookmarkClicked = screenModel::bookmarkEpisodes,
             // AM (FILLERMARK) -->
             onMultiFillermarkClicked = screenModel::fillermarkEpisodes,
@@ -475,6 +505,15 @@ class AnimeScreen(
                     onPositiveClick = screenModel::updateAnimeInfo,
                 )
             }
+
+            is AnimeScreenModel.Dialog.EditMergedSettings -> {
+                EditMergedSettingsDialog(
+                    mergedData = dialog.mergedData,
+                    onDismissRequest = screenModel::dismissDialog,
+                    onDeleteClick = screenModel::deleteMerge,
+                    onPositiveClick = screenModel::updateMergeSettings,
+                )
+            }
             // SY <--
             AnimeScreenModel.Dialog.ChangeAnimeSkipIntro -> {
                 fun updateSkipIntroLength(newLength: Long) {
@@ -533,39 +572,38 @@ class AnimeScreen(
         withIOContext {
             MainActivity.startPlayerActivity(
                 context,
-                episode.animeId,
+                mangaId,
                 episode.id,
                 useExternalPlayer,
             )
         }
     }
 
-    private fun getAnimeUrl(anime_: Anime?, source_: Source?): String? {
-        val anime = anime_ ?: return null
-        val source = source_ as? HttpSource ?: return null
+    private fun getAnimeUrl(anime: Anime?, source: Source?): String? {
+        if (anime == null) return null
 
         return try {
-            source.getAnimeUrl(anime.toSAnime())
-        } catch (e: Exception) {
+            (source as? HttpSource)?.getAnimeUrl(anime.toSAnime())
+        } catch (_: Exception) {
             null
         }
     }
 
-    private fun openAnimeInWebView(navigator: Navigator, anime_: Anime?, source_: Source?) {
-        getAnimeUrl(anime_, source_)?.let { url ->
+    private fun openAnimeInWebView(navigator: Navigator, anime: Anime?, source: Source?) {
+        getAnimeUrl(anime, source)?.let { url ->
             navigator.push(
                 WebViewScreen(
                     url = url,
-                    initialTitle = anime_?.title,
-                    sourceId = source_?.id,
+                    initialTitle = anime?.title,
+                    sourceId = source?.id,
                 ),
             )
         }
     }
 
-    private fun shareAnime(context: Context, anime_: Anime?, source_: Source?) {
+    private fun shareAnime(context: Context, anime: Anime?, source: Source?) {
         try {
-            getAnimeUrl(anime_, source_)?.let { url ->
+            getAnimeUrl(anime, source)?.let { url ->
                 val intent = url.toUri().toShareIntent(context, type = "text/plain")
                 context.startActivity(
                     Intent.createChooser(
@@ -632,10 +670,9 @@ class AnimeScreen(
     /**
      * Copy Anime URL to Clipboard
      */
-    private fun copyAnimeUrl(context: Context, anime_: Anime?, source_: Source?) {
-        val anime = anime_ ?: return
-        val source = source_ as? HttpSource ?: return
-        val url = source.getAnimeUrl(anime.toSAnime())
+    private fun copyAnimeUrl(context: Context, anime: Anime?, source: Source?) {
+        if (anime == null) return
+        val url = (source as? HttpSource)?.getAnimeUrl(anime.toSAnime()) ?: return
         context.copyToClipboard(url, url)
     }
 
@@ -653,4 +690,63 @@ class AnimeScreen(
         )
         // SY <--
     }
+
+    private fun openMergedMangaWebview(context: Context, navigator: Navigator, mergedAnimeData: MergedAnimeData) {
+        val sourceManager: SourceManager = Injekt.get()
+        val mergedManga = mergedAnimeData.anime.values.filterNot { it.source == MERGED_SOURCE_ID }
+        val sources = mergedManga.map { sourceManager.getOrStub(it.source) }
+        MaterialAlertDialogBuilder(context)
+            .setTitle(MR.strings.action_open_in_web_view.getString(context))
+            .setSingleChoiceItems(
+                Array(mergedManga.size) { index -> sources[index].toString() },
+                -1,
+            ) { dialog, index ->
+                dialog.dismiss()
+                openAnimeInWebView(navigator, mergedManga[index], sources[index] as? HttpSource)
+            }
+            .setNegativeButton(MR.strings.action_cancel.getString(context), null)
+            .show()
+    }
+    // SY <--
+
+    // EXH -->
+    /**
+     * Called when click Merge on an entry to search for entries to merge.
+     */
+    private fun openSmartSearch(navigator: Navigator, manga: Anime) {
+        val smartSearchConfig = SourcesScreen.SmartSearchConfig(manga.title, manga.id)
+
+        navigator.push(SourcesScreen(smartSearchConfig))
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun mergeWithAnother(
+        navigator: Navigator,
+        context: Context,
+        manga: Anime,
+        smartSearchMerge: suspend (Anime, Long) -> Anime,
+    ) {
+        launchUI {
+            try {
+                val mergedManga = withNonCancellableContext {
+                    smartSearchMerge(manga, smartSearchConfig?.origMangaId ?: throw IllegalStateException("smartSearchConfig is null"))
+                }
+                navigator.popUntil { it is SourcesScreen }
+                navigator.pop()
+                // KMK -->
+                if (navigator.lastItem !is AnimeScreen) {
+                    navigator push AnimeScreen(mergedManga.id)
+                } else {
+                    // KMK <--
+                    navigator replace AnimeScreen(mergedManga.id)
+                }
+                context.toast(SYMR.strings.entry_merged)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
+                context.toast(context.stringResource(SYMR.strings.failed_merge, e.message.orEmpty()))
+            }
+        }
+    }
+    // EXH <--
 }

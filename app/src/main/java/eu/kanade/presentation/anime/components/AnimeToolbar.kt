@@ -61,6 +61,8 @@ fun AnimeToolbar(
     // KMK -->
     onClickRelatedAnimes: (() -> Unit)?,
     // KMK <--
+    onClickMerge: (() -> Unit)?,
+    onClickMergedSettings: (() -> Unit)?,
     // SY <--
     // Anime only
     changeAnimeSkipIntro: (() -> Unit)?,
@@ -158,16 +160,6 @@ fun AnimeToolbar(
                                         onClick = onClickFilter,
                                     ),
                                 )
-                                // SY -->
-                                if (onClickEditInfo != null) {
-                                    add(
-                                        AppBar.OverflowAction(
-                                            title = stringResource(SYMR.strings.action_edit_info),
-                                            onClick = onClickEditInfo,
-                                        ),
-                                    )
-                                }
-                                // SY <--
                                 if (changeAnimeSkipIntro != null) {
                                     add(
                                         AppBar.OverflowAction(
@@ -206,6 +198,23 @@ fun AnimeToolbar(
                                         ),
                                     )
                                 }
+                                // SY -->
+                                if (onClickMerge != null) {
+                                    add(
+                                        AppBar.OverflowAction(
+                                            title = stringResource(SYMR.strings.merge),
+                                            onClick = onClickMerge,
+                                        ),
+                                    )
+                                }
+                                if (onClickEditInfo != null) {
+                                    add(
+                                        AppBar.OverflowAction(
+                                            title = stringResource(SYMR.strings.action_edit_info),
+                                            onClick = onClickEditInfo,
+                                        ),
+                                    )
+                                }
                                 // KMK -->
                                 if (onClickRelatedAnimes != null) {
                                     add(
@@ -216,6 +225,15 @@ fun AnimeToolbar(
                                     )
                                 }
                                 // KMK <--
+                                if (onClickMergedSettings != null) {
+                                    add(
+                                        AppBar.OverflowAction(
+                                            title = stringResource(SYMR.strings.merge_settings),
+                                            onClick = onClickMergedSettings,
+                                        ),
+                                    )
+                                }
+                                // SY <--
                                 if (onClickSettings != null) {
                                     add(
                                         AppBar.OverflowAction(

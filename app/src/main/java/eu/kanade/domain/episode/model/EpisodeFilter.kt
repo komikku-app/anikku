@@ -13,7 +13,11 @@ import tachiyomi.source.local.isLocal
  * Applies the view filters to the list of episodes obtained from the database.
  * @return an observable of the list of episodes filtered and sorted.
  */
-fun List<Episode>.applyFilters(anime: Anime, downloadManager: DownloadManager): List<Episode> {
+fun List<Episode>.applyFilters(
+    anime: Anime,
+    downloadManager: DownloadManager, /* SY --> */
+    mergedAnime: Map<Long, Anime>, /* SY <-- */
+): List<Episode> {
     val isLocalAnime = anime.isLocal()
     val unseenFilter = anime.unseenFilter
     val downloadedFilter = anime.downloadedFilter
@@ -22,12 +26,16 @@ fun List<Episode>.applyFilters(anime: Anime, downloadManager: DownloadManager): 
     val fillermarkedFilter = anime.fillermarkedFilter
     // <-- AM (FILLERMARK)
 
-    return filter { episode -> applyFilter(unseenFilter) { !episode.seen } }
+    return asSequence().filter { episode -> applyFilter(unseenFilter) { !episode.seen } }
         .filter { episode -> applyFilter(bookmarkedFilter) { episode.bookmark } }
         // AM (FILLERMARK) -->
         .filter { episode -> applyFilter(fillermarkedFilter) { episode.fillermark } }
         // <-- AM (FILLERMARK)
         .filter { episode ->
+            // SY -->
+            @Suppress("NAME_SHADOWING")
+            val anime = mergedAnime.getOrElse(episode.animeId) { anime }
+            // SY <--
             applyFilter(downloadedFilter) {
                 val downloaded = downloadManager.isEpisodeDownloaded(
                     episode.name,
@@ -40,7 +48,7 @@ fun List<Episode>.applyFilters(anime: Anime, downloadManager: DownloadManager): 
                 downloaded || isLocalAnime
             }
         }
-        .sortedWith(getEpisodeSort(anime))
+        .sortedWith(getEpisodeSort(anime)).toList()
 }
 
 /**

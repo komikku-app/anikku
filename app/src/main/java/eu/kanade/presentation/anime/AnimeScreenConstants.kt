@@ -17,6 +17,11 @@ enum class AnimeScreenItem {
     INFO_BOX,
     ACTION_ROW,
     DESCRIPTION_WITH_TAG,
+
+    // SY -->
+    INFO_BUTTONS,
+    // SY <--
+
     EPISODE_HEADER,
     EPISODE,
     AIRING_TIME,

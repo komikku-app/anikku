@@ -9,10 +9,13 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import kotlinx.coroutines.CancellationException
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.anime.model.MergedAnimeReference
 import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.io.LocalSourceFileSystem
 import uy.kohesive.injekt.Injekt
@@ -31,9 +34,37 @@ class EpisodeLoader {
          * @param anime the anime of the episode.
          * @param source the source of the anime.
          */
-        suspend fun getHosters(episode: Episode, anime: Anime, source: Source): List<Hoster> {
+        suspend fun getHosters(
+            episode: Episode,
+            anime: Anime,
+            source: Source,
+            sourceManager: SourceManager? = null,
+            mergedReferences: List<MergedAnimeReference> = emptyList(),
+            mergedManga: Map<Long, Anime> = emptyMap(),
+        ): List<Hoster> {
             val isDownloaded = isDownload(episode, anime)
             return when {
+                // SY -->
+                source is MergedSource -> {
+                    val mangaReference = mergedReferences.firstOrNull {
+                        it.animeId == episode.animeId
+                    } ?: error("Merge reference null")
+                    val actualSource = sourceManager?.get(mangaReference.animeSourceId)
+                        ?: error("Source ${mangaReference.animeSourceId} was null")
+                    val manga = mergedManga[episode.animeId] ?: error("Manga for merged episode was null")
+                    val isMergedMangaDownloaded = isDownload(episode, manga)
+                    when {
+                        isMergedMangaDownloaded -> getHostersOnDownloaded(
+                            episode = episode,
+                            anime = manga,
+                            source = actualSource,
+                        )
+                        actualSource is HttpSource -> getHostersOnHttp(episode, actualSource)
+                        actualSource is LocalSource -> getHostersOnLocal(episode)
+                        else -> error("Source not found")
+                    }
+                }
+                // SY <--
                 isDownloaded -> getHostersOnDownloaded(episode, anime, source)
                 source is HttpSource -> getHostersOnHttp(episode, source)
                 source is LocalSource -> getHostersOnLocal(episode)
@@ -50,10 +81,12 @@ class EpisodeLoader {
         fun isDownload(episode: Episode, anime: Anime): Boolean {
             val downloadManager: DownloadManager = Injekt.get()
             return downloadManager.isEpisodeDownloaded(
-                episode.name,
-                episode.scanlator,
-                anime.title,
-                anime.source,
+                episodeName = episode.name,
+                episodeScanlator = episode.scanlator,
+                // SY -->
+                animeTitle = anime.ogTitle,
+                // SY <--
+                sourceId = anime.source,
                 skipCache = true,
             )
         }

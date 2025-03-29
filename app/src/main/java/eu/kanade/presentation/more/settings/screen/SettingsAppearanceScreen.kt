@@ -311,30 +311,11 @@ object SettingsAppearanceScreen : SearchableSettings {
 //                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
 //                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
 //                ),
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.mergeInOverflow(),
-//                    title = stringResource(SYMR.strings.put_merge_in_overflow),
-//                    subtitle = stringResource(SYMR.strings.put_merge_in_overflow_summary),
-//                ),
-//                Preference.PreferenceItem.SliderPreference(
-//                    value = previewsRowCount,
-//                    title = stringResource(SYMR.strings.pref_previews_row_count),
-//                    subtitle = if (previewsRowCount > 0) {
-//                        pluralStringResource(
-//                            SYMR.plurals.row_count,
-//                            previewsRowCount,
-//                            previewsRowCount,
-//                        )
-//                    } else {
-//                        stringResource(MR.strings.disabled)
-//                    },
-//                    min = 0,
-//                    max = 10,
-//                    onValueChanged = {
-//                        uiPreferences.previewsRowCount().set(it)
-//                        true
-//                    },
-//                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.mergeInOverflow(),
+                    title = stringResource(SYMR.strings.put_merge_in_overflow),
+                    subtitle = stringResource(SYMR.strings.put_merge_in_overflow_summary),
+                ),
             ),
         )
     }

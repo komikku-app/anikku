@@ -22,6 +22,7 @@ import coil3.request.allowHardware
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
+import eu.kanade.domain.anime.interactor.SmartSearchMerge
 import eu.kanade.domain.anime.interactor.UpdateAnime
 import eu.kanade.domain.anime.model.downloadedFilter
 import eu.kanade.domain.anime.model.episodesFiltered
@@ -44,13 +45,14 @@ import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
-import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.getNameForAnimeInfo
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.model.SAnime
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.isLoading
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.removeDuplicates
@@ -63,6 +65,7 @@ import eu.kanade.tachiyomi.util.episode.getNextUnseen
 import eu.kanade.tachiyomi.util.removeCovers
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toast
+import exh.source.MERGED_SOURCE_ID
 import exh.util.nullIfEmpty
 import exh.util.trimOrNull
 import kotlinx.collections.immutable.ImmutableList
@@ -74,6 +77,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -89,16 +93,22 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.source.NoResultsException
+import tachiyomi.domain.anime.interactor.DeleteMergeById
 import tachiyomi.domain.anime.interactor.GetAnime
 import tachiyomi.domain.anime.interactor.GetAnimeWithEpisodes
 import tachiyomi.domain.anime.interactor.GetDuplicateLibraryAnime
+import tachiyomi.domain.anime.interactor.GetMergedAnimeById
+import tachiyomi.domain.anime.interactor.GetMergedReferencesById
 import tachiyomi.domain.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.anime.interactor.SetAnimeEpisodeFlags
 import tachiyomi.domain.anime.interactor.SetCustomAnimeInfo
+import tachiyomi.domain.anime.interactor.UpdateMergedSettings
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.anime.model.AnimeUpdate
 import tachiyomi.domain.anime.model.CustomAnimeInfo
+import tachiyomi.domain.anime.model.MergeAnimeSettingsUpdate
+import tachiyomi.domain.anime.model.MergedAnimeReference
 import tachiyomi.domain.anime.model.applyFilter
 import tachiyomi.domain.anime.model.asAnimeCover
 import tachiyomi.domain.anime.repository.AnimeRepository
@@ -106,6 +116,7 @@ import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetAnimeCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.episode.interactor.GetMergedEpisodesByAnimeId
 import tachiyomi.domain.episode.interactor.SetAnimeDefaultEpisodeFlags
 import tachiyomi.domain.episode.interactor.UpdateEpisode
 import tachiyomi.domain.episode.model.Episode
@@ -135,7 +146,7 @@ class AnimeScreenModel(
     private val isFromSource: Boolean,
     private val smartSearched: Boolean,
     // SY <--
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
+    downloadPreferences: DownloadPreferences = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val trackPreferences: TrackPreferences = Injekt.get(),
     internal val playerPreferences: PlayerPreferences = Injekt.get(),
@@ -148,9 +159,17 @@ class AnimeScreenModel(
     private val trackEpisode: TrackEpisode = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
     private val downloadCache: DownloadCache = Injekt.get(),
-    private val getAnimeAndEpisodes: GetAnimeWithEpisodes = Injekt.get(),
+    private val getAnimeWithEpisodes: GetAnimeWithEpisodes = Injekt.get(),
     // SY -->
     private val sourceManager: SourceManager = Injekt.get(),
+    private val getMergedEpisodesByAnimeId: GetMergedEpisodesByAnimeId = Injekt.get(),
+    private val getMergedAnimeById: GetMergedAnimeById = Injekt.get(),
+    private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
+    // KMK -->
+    private val smartSearchMerge: SmartSearchMerge = Injekt.get(),
+    // KMK <--
+    private val updateMergedSettings: UpdateMergedSettings = Injekt.get(),
+    private val deleteMergeById: DeleteMergeById = Injekt.get(),
     private val setCustomAnimeInfo: SetCustomAnimeInfo = Injekt.get(),
     // SY <--
     val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
@@ -171,7 +190,7 @@ class AnimeScreenModel(
     internal val setAnimeViewerFlags: SetAnimeViewerFlags = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     // AM (FILE_SIZE) -->
-    private val storagePreferences: StoragePreferences = Injekt.get(),
+    storagePreferences: StoragePreferences = Injekt.get(),
     // <-- AM (FILE_SIZE)
 ) : StateScreenModel<AnimeScreenModel.State>(State.Loading) {
 
@@ -196,7 +215,7 @@ class AnimeScreenModel(
 
     val episodeSwipeStartAction = libraryPreferences.swipeEpisodeEndAction().get()
     val episodeSwipeEndAction = libraryPreferences.swipeEpisodeStartAction().get()
-    var autoTrackState = trackPreferences.autoUpdateTrackOnMarkRead().get()
+    private var autoTrackState = trackPreferences.autoUpdateTrackOnMarkRead().get()
 
     val showNextEpisodeAirTime = trackPreferences.showNextEpisodeAiringTime().get()
     val alwaysUseExternalPlayer = playerPreferences.alwaysUseExternalPlayer().get()
@@ -208,6 +227,17 @@ class AnimeScreenModel(
     private val selectedPositions: Array<Int> = arrayOf(-1, -1) // first and last selected index in list
     private val selectedEpisodeIds: HashSet<Long> = HashSet()
 
+    // SY -->
+    private data class CombineState(
+        val manga: Anime,
+        val episodes: List<Episode>,
+        val mergedData: MergedAnimeData? = null,
+    ) {
+        constructor(pair: Pair<Anime, List<Episode>>) :
+            this(pair.first, pair.second)
+    }
+
+    // SY <--
     internal var isFromChangeCategory: Boolean = false
 
     internal val autoOpenTrack: Boolean
@@ -231,17 +261,53 @@ class AnimeScreenModel(
 
     init {
         screenModelScope.launchIO {
-            combine(
-                getAnimeAndEpisodes.subscribe(mangaId).distinctUntilChanged(),
-                downloadCache.changes,
-                downloadManager.queueState,
-            ) { animeAndEpisodes, _, _ -> animeAndEpisodes }
+            getAnimeWithEpisodes.subscribe(mangaId).distinctUntilChanged()
+                // SY -->
+                .combine(
+                    getMergedEpisodesByAnimeId.subscribe(mangaId, true)
+                        .distinctUntilChanged(),
+                ) { (manga, chapters), mergedChapters ->
+                    if (manga.source == MERGED_SOURCE_ID) {
+                        manga to mergedChapters
+                    } else {
+                        manga to chapters
+                    }
+                }
+                .map { CombineState(it) }
+                .combine(
+                    combine(
+                        getMergedAnimeById.subscribe(mangaId)
+                            .distinctUntilChanged(),
+                        getMergedReferencesById.subscribe(mangaId)
+                            .distinctUntilChanged(),
+                    ) { manga, references ->
+                        if (manga.isNotEmpty()) {
+                            MergedAnimeData(
+                                references,
+                                manga.associateBy { it.id },
+                                references.map { it.animeSourceId }.distinct()
+                                    .map { sourceManager.getOrStub(it) },
+                            )
+                        } else {
+                            null
+                        }
+                    },
+                ) { state, mergedData ->
+                    state.copy(mergedData = mergedData)
+                }
+                .combine(downloadCache.changes) { state, _ -> state }
+                .combine(downloadManager.queueState) { state, _ -> state }
+                // SY <--
                 .flowWithLifecycle(lifecycle)
-                .collectLatest { (anime, episodes) ->
+                .collectLatest { (manga, chapters /* SY --> */, mergedData /* SY <-- */) ->
+                    val chapterItems = chapters.toEpisodeListItems(manga /* SY --> */, mergedData /* SY <-- */)
                     updateSuccessState {
                         it.copy(
-                            anime = anime,
-                            episodes = episodes.toEpisodeListItems(anime),
+                            anime = manga,
+                            episodes = chapterItems,
+                            // SY -->
+                            mergedData = mergedData,
+                            // SY <--
                         )
                     }
                 }
@@ -250,9 +316,28 @@ class AnimeScreenModel(
         observeDownloads()
 
         screenModelScope.launchIO {
-            val anime = getAnimeAndEpisodes.awaitManga(mangaId)
-            val episodes = getAnimeAndEpisodes.awaitChapters(mangaId)
-                .toEpisodeListItems(anime)
+            val anime = getAnimeWithEpisodes.awaitManga(mangaId)
+
+            // SY -->
+            val mergedData = getMergedReferencesById.await(mangaId).takeIf { it.isNotEmpty() }?.let { references ->
+                MergedAnimeData(
+                    references,
+                    getMergedAnimeById.await(mangaId).associateBy { it.id },
+                    references.map { it.animeSourceId }.distinct()
+                        .map { sourceManager.getOrStub(it) },
+                )
+            }
+            val episodes = (
+                if (anime.source ==
+                    MERGED_SOURCE_ID
+                ) {
+                    getMergedEpisodesByAnimeId.await(mangaId)
+                } else {
+                    getAnimeWithEpisodes.awaitChapters(mangaId)
+                }
+                )
+                .toEpisodeListItems(anime, mergedData)
+            // SY <--
 
             if (!anime.favorite) {
                 setAnimeDefaultEpisodeFlags.await(anime)
@@ -263,7 +348,12 @@ class AnimeScreenModel(
 
             val animeSource = Injekt.get<SourceManager>().getOrStub(anime.source)
             // --> (Torrent)
-            if (animeSource.isSourceForTorrents()) {
+            if (animeSource is MergedSource &&
+                animeSource.getMergedReferenceSources(anime).any {
+                    it.isSourceForTorrents()
+                } ||
+                animeSource.isSourceForTorrents()
+            ) {
                 TorrentServerService.start()
                 TorrentServerService.wait(10)
                 TorrentServerUtils.setTrackersList()
@@ -279,6 +369,11 @@ class AnimeScreenModel(
                     episodes = episodes,
                     isRefreshingData = needRefreshInfo || needRefreshEpisode,
                     dialog = null,
+                    // SY -->
+                    showMergeInOverflow = uiPreferences.mergeInOverflow().get(),
+                    showMergeWithAnother = smartSearched,
+                    mergedData = mergedData,
+                    // SY <--
                 )
             }
             // Start observe tracking since it only needs animeId
@@ -478,7 +573,37 @@ class AnimeScreenModel(
                 }
         }
     }
+
+    suspend fun smartSearchMerge(manga: Anime, originalMangaId: Long): Anime {
+        return smartSearchMerge.smartSearchMerge(manga, originalMangaId)
+    }
     // KMK <--
+
+    fun updateMergeSettings(mergedAnimeReferences: List<MergedAnimeReference>) {
+        screenModelScope.launchNonCancellable {
+            if (mergedAnimeReferences.isNotEmpty()) {
+                updateMergedSettings.awaitAll(
+                    mergedAnimeReferences.map {
+                        MergeAnimeSettingsUpdate(
+                            id = it.id,
+                            isInfoAnime = it.isInfoAnime,
+                            getEpisodeUpdates = it.getEpisodeUpdates,
+                            episodePriority = it.episodePriority,
+                            downloadEpisodes = it.downloadEpisodes,
+                            episodeSortMode = it.episodeSortMode,
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    fun deleteMerge(reference: MergedAnimeReference) {
+        screenModelScope.launchNonCancellable {
+            deleteMergeById.await(reference.id)
+        }
+    }
+    // SY <--
 
     fun toggleFavorite() {
         toggleFavorite(
@@ -618,7 +743,15 @@ class AnimeScreenModel(
      */
     private fun deleteDownloads() {
         val state = successState ?: return
-        downloadManager.deleteAnime(state.anime, state.source)
+        // SY -->
+        if (state.source is MergedSource) {
+            val mergedManga = state.mergedData?.anime?.map { it.value to sourceManager.getOrStub(it.value.source) }
+            mergedManga?.forEach { (manga, source) ->
+                downloadManager.deleteAnime(manga, source)
+            }
+        } else {
+            /* SY <-- */ downloadManager.deleteAnime(state.anime, state.source)
+        }
     }
 
     /**
@@ -680,9 +813,20 @@ class AnimeScreenModel(
     // Episodes list - start
 
     private fun observeDownloads() {
+        // SY -->
+        val isMergedSource = source is MergedSource
+        val mergedIds = if (isMergedSource) successState?.mergedData?.anime?.keys.orEmpty() else emptySet()
+        // SY <--
         screenModelScope.launchIO {
             downloadManager.statusFlow()
-                .filter { it.anime.id == successState?.anime?.id }
+                .filter {
+                    /* SY --> */ if (isMergedSource) {
+                        it.anime.id in mergedIds
+                    } else {
+                        /* SY <-- */ it.anime.id ==
+                            successState?.anime?.id
+                    }
+                }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .flowWithLifecycle(lifecycle)
                 .collect {
@@ -694,7 +838,14 @@ class AnimeScreenModel(
 
         screenModelScope.launchIO {
             downloadManager.progressFlow()
-                .filter { it.anime.id == successState?.anime?.id }
+                .filter {
+                    /* SY --> */ if (isMergedSource) {
+                        it.anime.id in mergedIds
+                    } else {
+                        /* SY <-- */ it.anime.id ==
+                            successState?.anime?.id
+                    }
+                }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .flowWithLifecycle(lifecycle)
                 .collect {
@@ -719,7 +870,12 @@ class AnimeScreenModel(
         }
     }
 
-    private fun List<Episode>.toEpisodeListItems(anime: Anime): List<EpisodeList.Item> {
+    private fun List<Episode>.toEpisodeListItems(
+        anime: Anime,
+        // SY -->
+        mergedData: MergedAnimeData?,
+        // SY <--
+    ): List<EpisodeList.Item> {
         val isLocal = anime.isLocal()
         return map { episode ->
             val activeDownload = if (isLocal) {
@@ -727,6 +883,11 @@ class AnimeScreenModel(
             } else {
                 downloadManager.getQueuedDownloadOrNull(episode.id)
             }
+
+            // SY -->
+            val manga = mergedData?.anime?.get(episode.animeId) ?: anime
+            val source = mergedData?.sources?.find { manga.source == it.id }?.takeIf { mergedData.sources.size > 2 }
+            // SY <--
             val downloaded = if (isLocal) {
                 true
             } else {
@@ -748,6 +909,9 @@ class AnimeScreenModel(
                 downloadState = downloadState,
                 downloadProgress = activeDownload?.progress ?: 0,
                 selected = episode.id in selectedEpisodeIds,
+                // SY -->
+                sourceName = source?.getNameForAnimeInfo(),
+                // SY <--
             )
         }
     }
@@ -759,18 +923,26 @@ class AnimeScreenModel(
         val state = successState ?: return
         try {
             withIOContext {
-                val episodes = state.source.getEpisodeList(state.anime.toSAnime())
+                // SY -->
+                if (state.source !is MergedSource) {
+                    // SY <--
+                    val episodes = state.source.getEpisodeList(state.anime.toSAnime())
 
-                val newEpisodes = syncEpisodesWithSource.await(
-                    episodes,
-                    state.anime,
-                    state.source,
-                    manualFetch,
-                )
+                    val newEpisodes = syncEpisodesWithSource.await(
+                        episodes,
+                        state.anime,
+                        state.source,
+                        manualFetch,
+                    )
 
-                if (manualFetch) {
-                    downloadNewEpisodes(newEpisodes)
+                    if (manualFetch) {
+                        downloadNewEpisodes(newEpisodes)
+                    }
+                    // SY -->
+                } else {
+                    state.source.fetchEpisodesForMergedAnime(state.anime, manualFetch)
                 }
+                // SY <--
             }
         } catch (e: Throwable) {
             val message = if (e is NoResultsException) {
@@ -804,7 +976,7 @@ class AnimeScreenModel(
      */
     internal suspend fun fetchRelatedMangasFromSource(onDemand: Boolean = false, onFinish: (() -> Unit)? = null) {
         val expandRelatedMangas = uiPreferences.expandRelatedAnimes().get()
-        if (!onDemand && !expandRelatedMangas) return
+        if (!onDemand && !expandRelatedMangas || anime?.source == MERGED_SOURCE_ID) return
 
         // start fetching related mangas
         setRelatedMangasFetchedStatus(false)
@@ -1066,8 +1238,18 @@ class AnimeScreenModel(
         alt: Boolean = false,
         video: Video? = null,
     ) {
-        val anime = successState?.anime ?: return
-        downloadManager.downloadEpisodes(anime, episodes, true, alt, video)
+        // SY -->
+        val state = successState ?: return
+        if (state.source is MergedSource) {
+            episodes.groupBy { it.animeId }.forEach { map ->
+                val manga = state.mergedData?.anime?.get(map.key) ?: return@forEach
+                downloadManager.downloadEpisodes(manga, map.value)
+            }
+        } else {
+            // SY <--
+            val anime = successState?.anime ?: return
+            downloadManager.downloadEpisodes(anime, episodes, true, alt, video)
+        }
         toggleAllSelection(false)
     }
 
@@ -1372,9 +1554,9 @@ class AnimeScreenModel(
                     .map { service ->
                         TrackItem(
                             animeTracks.find {
-                                it.trackerId == (service as BaseTracker).id
+                                it.trackerId == service.id
                             },
-                            (service as BaseTracker),
+                            service,
                         )
                     }
             }
@@ -1409,6 +1591,7 @@ class AnimeScreenModel(
 
         // SY -->
         data class EditAnimeInfo(val anime: Anime) : Dialog
+        data class EditMergedSettings(val mergedData: MergedAnimeData) : Dialog
         // SY <--
 
         data object ChangeAnimeSkipIntro : Dialog
@@ -1448,6 +1631,18 @@ class AnimeScreenModel(
             }
         }
     }
+
+    fun showEditMergedSettingsDialog() {
+        val mergedData = successState?.mergedData ?: return
+        mutableState.update { state ->
+            when (state) {
+                State.Loading -> state
+                is State.Success -> {
+                    state.copy(dialog = Dialog.EditMergedSettings(mergedData))
+                }
+            }
+        }
+    }
     // SY <--
 
     fun showAnimeSkipIntroDialog() {
@@ -1478,6 +1673,12 @@ class AnimeScreenModel(
                 anime.nextEpisodeToAir,
                 anime.nextEpisodeAiringAt,
             ),
+
+            // SY -->
+            val mergedData: MergedAnimeData?,
+            val showMergeInOverflow: Boolean,
+            val showMergeWithAnother: Boolean,
+            // SY <--
             // KMK -->
             /**
              * status of fetching related mangas
@@ -1508,6 +1709,10 @@ class AnimeScreenModel(
 
             val processedEpisodes by lazy {
                 episodes.applyFilters(anime).toList()
+                    // KMK -->
+                    // safe-guard some edge-cases where episodes are duplicated some how on a merged entry
+                    .distinctBy { it.id }
+                // KMK <--
             }
 
             val episodeListItems by lazy {
@@ -1581,6 +1786,14 @@ class AnimeScreenModel(
     }
 }
 
+// SY -->
+data class MergedAnimeData(
+    val references: List<MergedAnimeReference>,
+    val anime: Map<Long, Anime>,
+    val sources: List<Source>,
+)
+// SY <--
+
 @Immutable
 sealed class EpisodeList {
     @Immutable
@@ -1598,6 +1811,9 @@ sealed class EpisodeList {
         var fileSize: Long? = null,
         // <-- AM (FILE_SIZE)
         val selected: Boolean = false,
+        // SY -->
+        val sourceName: String?,
+        // SY <--
     ) : EpisodeList() {
         val id = episode.id
         val isDownloaded = downloadState == Download.State.DOWNLOADED
