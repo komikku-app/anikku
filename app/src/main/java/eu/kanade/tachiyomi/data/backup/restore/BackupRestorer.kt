@@ -9,21 +9,27 @@ import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupCustomButtons
 import eu.kanade.tachiyomi.data.backup.models.BackupExtension
 import eu.kanade.tachiyomi.data.backup.models.BackupExtensionRepos
+import eu.kanade.tachiyomi.data.backup.models.BackupFeed
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
+import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
 import eu.kanade.tachiyomi.data.backup.restore.restorers.AnimeRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.CategoriesRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.CustomButtonRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionRepoRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionsRestorer
+import eu.kanade.tachiyomi.data.backup.restore.restorers.FeedRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.PreferenceRestorer
+import eu.kanade.tachiyomi.data.backup.restore.restorers.SavedSearchRestorer
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
+import exh.source.MERGED_SOURCE_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,6 +46,12 @@ class BackupRestorer(
     private val customButtonRestorer: CustomButtonRestorer = CustomButtonRestorer(),
     private val animeRestorer: AnimeRestorer = AnimeRestorer(isSync),
     private val extensionsRestorer: ExtensionsRestorer = ExtensionsRestorer(context),
+    // SY -->
+    private val savedSearchRestorer: SavedSearchRestorer = SavedSearchRestorer(),
+    // SY <--
+    // KMK -->
+    private val feedRestorer: FeedRestorer = FeedRestorer(),
+    // KMK <--
 ) {
 
     private var restoreAmount = 0
@@ -80,13 +92,18 @@ class BackupRestorer(
             restoreAmount += backup.backupAnime.size
         }
         if (options.categories) {
-            restoreAmount += 2 // +2 for anime and manga categories
+            restoreAmount += 1
         }
+        // SY -->
+        if (options.savedSearchesFeeds) {
+            restoreAmount += 1
+        }
+        // SY <--
         if (options.appSettings) {
             restoreAmount += 1
         }
         if (options.extensionRepoSettings) {
-            restoreAmount += backup.backupAnimeExtensionRepo.size
+            restoreAmount += backup.backupExtensionRepo.size
         }
         if (options.customButtons) {
             restoreAmount += 1
@@ -100,10 +117,18 @@ class BackupRestorer(
 
         coroutineScope {
             if (options.categories) {
-                restoreCategories(
-                    backupAnimeCategories = backup.backupAnimeCategories,
+                restoreCategories(backupAnimeCategories = backup.backupCategories)
+            }
+            // SY -->
+            if (options.savedSearchesFeeds) {
+                restoreSavedSearches(
+                    backup.backupSavedSearches,
+                    // KMK -->
+                    backup.backupFeeds,
+                    // KMK <--
                 )
             }
+            // SY <--
             if (options.appSettings) {
                 restoreAppPreferences(backup.backupPreferences)
             }
@@ -111,10 +136,10 @@ class BackupRestorer(
                 restoreSourcePreferences(backup.backupSourcePreferences)
             }
             if (options.libraryEntries) {
-                restoreAnime(backup.backupAnime, if (options.categories) backup.backupAnimeCategories else emptyList())
+                restoreAnime(backup.backupAnime, if (options.categories) backup.backupCategories else emptyList())
             }
             if (options.extensionRepoSettings) {
-                restoreExtensionRepos(backup.backupAnimeExtensionRepo)
+                restoreExtensionRepos(backup.backupExtensionRepo)
             }
             if (options.customButtons) {
                 restoreCustomButtons(backup.backupCustomButton)
@@ -127,9 +152,7 @@ class BackupRestorer(
         }
     }
 
-    private fun CoroutineScope.restoreCategories(
-        backupAnimeCategories: List<BackupCategory>,
-    ) = launch {
+    private fun CoroutineScope.restoreCategories(backupAnimeCategories: List<BackupCategory>) = launch {
         ensureActive()
         categoriesRestorer(backupAnimeCategories)
 
@@ -142,11 +165,35 @@ class BackupRestorer(
         )
     }
 
+    // SY -->
+    private fun CoroutineScope.restoreSavedSearches(
+        backupSavedSearches: List<BackupSavedSearch>,
+        // KMK -->
+        backupFeeds: List<BackupFeed>,
+        // KMK <--
+    ) = launch {
+        ensureActive()
+        savedSearchRestorer.restoreSavedSearches(backupSavedSearches)
+        // KMK -->
+        feedRestorer.restoreFeeds(backupFeeds)
+        // KMK <--
+
+        restoreProgress += 1
+        notifier.showRestoreProgress(
+            context.stringResource(KMR.strings.saved_searches_feeds),
+            restoreProgress,
+            restoreAmount,
+            isSync,
+        )
+    }
+    // SY <--
+
     private fun CoroutineScope.restoreAnime(
         backupAnimes: List<BackupAnime>,
         backupAnimeCategories: List<BackupCategory>,
     ) = launch {
         animeRestorer.sortByNew(backupAnimes)
+            /* SY --> */.sortedBy { it.source == MERGED_SOURCE_ID } /* SY <-- */
             .forEach {
                 ensureActive()
 
@@ -198,7 +245,7 @@ class BackupRestorer(
                 try {
                     extensionRepoRestorer(it)
                 } catch (e: Exception) {
-                    errors.add(Date() to "Error Adding Anime Repo: ${it.name} : ${e.message}")
+                    errors.add(Date() to "Error Adding Repo: ${it.name} : ${e.message}")
                 }
 
                 restoreProgress += 1
@@ -240,7 +287,7 @@ class BackupRestorer(
     private fun writeErrorLog(): File {
         try {
             if (errors.isNotEmpty()) {
-                val file = context.createFileInCacheDir("aniyomi_restore_error.txt")
+                val file = context.createFileInCacheDir("anikku_restore_error.txt")
                 val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
 
                 file.bufferedWriter().use { out ->

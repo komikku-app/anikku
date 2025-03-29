@@ -4,9 +4,7 @@ import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.CustomAnimeInfo
 
-@Suppress("MagicNumber")
 @Serializable
 data class BackupAnime(
     // in 1.x some of these values have different names
@@ -38,9 +36,13 @@ data class BackupAnime(
     @ProtoNumber(105) var updateStrategy: UpdateStrategy = UpdateStrategy.ALWAYS_UPDATE,
     @ProtoNumber(106) var lastModifiedAt: Long = 0,
     @ProtoNumber(107) var favoriteModifiedAt: Long? = null,
+    @ProtoNumber(108) var excludedScanlators: List<String> = emptyList(),
     @ProtoNumber(109) var version: Long = 0,
 
+    // SY specific values
+    @ProtoNumber(600) var mergedMangaReferences: List<BackupMergedMangaReference> = emptyList(),
     @ProtoNumber(602) var customStatus: Int = 0,
+    @ProtoNumber(603) var customThumbnailUrl: String? = null,
 
     // J2K specific values
     @ProtoNumber(800) var customTitle: String? = null,
@@ -73,28 +75,4 @@ data class BackupAnime(
             version = this@BackupAnime.version,
         )
     }
-
-    // SY -->
-    @Suppress("ComplexCondition")
-    fun getCustomAnimeInfo(): CustomAnimeInfo? {
-        if (customTitle != null ||
-            customArtist != null ||
-            customAuthor != null ||
-            customDescription != null ||
-            customGenre != null ||
-            customStatus != 0
-        ) {
-            return CustomAnimeInfo(
-                id = 0L,
-                title = customTitle,
-                author = customAuthor,
-                artist = customArtist,
-                description = customDescription,
-                genre = customGenre,
-                status = customStatus.takeUnless { it == 0 }?.toLong(),
-            )
-        }
-        return null
-    }
-    // SY <--
 }

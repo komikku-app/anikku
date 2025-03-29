@@ -3,34 +3,45 @@ package eu.kanade.tachiyomi.data.backup.create
 import dev.icerock.moko.resources.StringResource
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
+import tachiyomi.i18n.sy.SYMR
 
 data class BackupOptions(
     val libraryEntries: Boolean = true,
     val categories: Boolean = true,
-    val chapters: Boolean = true,
+    val episodes: Boolean = true,
     val tracking: Boolean = true,
     val history: Boolean = true,
-    val readEntries: Boolean = true,
+    val seenEntries: Boolean = true,
     val appSettings: Boolean = true,
     val extensionRepoSettings: Boolean = true,
     val customButton: Boolean = true,
     val sourceSettings: Boolean = true,
     val privateSettings: Boolean = false,
+    // SY -->
+    val customInfo: Boolean = true,
+    val savedSearchesFeeds: Boolean = true,
+    // SY <--
     val extensions: Boolean = false,
 ) {
 
     fun asBooleanArray() = booleanArrayOf(
         libraryEntries,
         categories,
-        chapters,
+        episodes,
         tracking,
         history,
-        readEntries,
+        seenEntries,
         appSettings,
         extensionRepoSettings,
         customButton,
         sourceSettings,
         privateSettings,
+        // SY -->
+        customInfo,
+        savedSearchesFeeds,
+        // SY <--
         extensions,
     )
 
@@ -39,7 +50,8 @@ data class BackupOptions(
         appSettings ||
         extensionRepoSettings ||
         customButton ||
-        sourceSettings
+        sourceSettings ||
+        savedSearchesFeeds
 
     companion object {
         val libraryOptions = persistentListOf(
@@ -49,9 +61,9 @@ data class BackupOptions(
                 setter = { options, enabled -> options.copy(libraryEntries = enabled) },
             ),
             Entry(
-                label = MR.strings.chapters_episodes,
-                getter = BackupOptions::chapters,
-                setter = { options, enabled -> options.copy(chapters = enabled) },
+                label = MR.strings.episodes,
+                getter = BackupOptions::episodes,
+                setter = { options, enabled -> options.copy(episodes = enabled) },
                 enabled = { it.libraryEntries },
             ),
             Entry(
@@ -72,11 +84,26 @@ data class BackupOptions(
                 setter = { options, enabled -> options.copy(categories = enabled) },
             ),
             Entry(
-                label = MR.strings.non_library_settings,
-                getter = BackupOptions::readEntries,
-                setter = { options, enabled -> options.copy(readEntries = enabled) },
+                label = AMR.strings.non_library_settings,
+                getter = BackupOptions::seenEntries,
+                setter = { options, enabled -> options.copy(seenEntries = enabled) },
                 enabled = { it.libraryEntries },
             ),
+            // SY -->
+            Entry(
+                label = SYMR.strings.custom_entry_info,
+                getter = BackupOptions::customInfo,
+                setter = { options, enabled -> options.copy(customInfo = enabled) },
+                enabled = { it.libraryEntries },
+            ),
+            Entry(
+                // KMK-->
+                label = KMR.strings.saved_searches_feeds,
+                // KMK <--
+                getter = BackupOptions::savedSearchesFeeds,
+                setter = { options, enabled -> options.copy(savedSearchesFeeds = enabled) },
+            ),
+            // SY <--
         )
 
         val settingsOptions = persistentListOf(
@@ -119,16 +146,20 @@ data class BackupOptions(
         fun fromBooleanArray(array: BooleanArray) = BackupOptions(
             libraryEntries = array[0],
             categories = array[1],
-            chapters = array[2],
+            episodes = array[2],
             tracking = array[3],
             history = array[4],
-            readEntries = array[5],
+            seenEntries = array[5],
             appSettings = array[6],
             extensionRepoSettings = array[7],
             customButton = array[8],
             sourceSettings = array[9],
             privateSettings = array[10],
             extensions = array[11],
+            // SY -->
+            customInfo = array[12],
+            savedSearchesFeeds = array[13],
+            // SY <--
         )
     }
 

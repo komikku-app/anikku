@@ -12,6 +12,13 @@ data class SyncSettings(
     val history: Boolean = true,
     val animeHistory: Boolean = true,
     val appSettings: Boolean = true,
+    val extensionRepoSettings: Boolean = true,
     val sourceSettings: Boolean = true,
     val privateSettings: Boolean = false,
+
+    // SY -->
+    val customInfo: Boolean = true,
+    val seenEntries: Boolean = true,
+    val savedSearchesFeeds: Boolean = true,
+    // SY <--
 )

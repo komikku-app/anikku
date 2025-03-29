@@ -4,10 +4,14 @@ import eu.kanade.tachiyomi.data.backup.create.BackupOptions
 import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
-import eu.kanade.tachiyomi.data.backup.models.backupAnimeTrackMapper
 import eu.kanade.tachiyomi.data.backup.models.backupEpisodeMapper
+import eu.kanade.tachiyomi.data.backup.models.backupMergedMangaReferenceMapper
+import eu.kanade.tachiyomi.data.backup.models.backupTrackMapper
+import exh.source.MERGED_SOURCE_ID
 import tachiyomi.data.DatabaseHandler
+import tachiyomi.domain.anime.interactor.GetCustomAnimeInfo
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.anime.model.CustomAnimeInfo
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.history.interactor.GetHistory
 import uy.kohesive.injekt.Injekt
@@ -17,6 +21,9 @@ class AnimeBackupCreator(
     private val handler: DatabaseHandler = Injekt.get(),
     private val getCategories: GetCategories = Injekt.get(),
     private val getHistory: GetHistory = Injekt.get(),
+    // SY -->
+    private val getCustomAnimeInfo: GetCustomAnimeInfo = Injekt.get(),
+    // SY <--
 ) {
 
     suspend operator fun invoke(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
@@ -27,9 +34,29 @@ class AnimeBackupCreator(
 
     private suspend fun backupAnime(anime: Anime, options: BackupOptions): BackupAnime {
         // Entry for this anime
-        val animeObject = anime.toBackupAnime()
+        val animeObject = anime.toBackupAnime(
+            // SY -->
+            if (options.customInfo) {
+                getCustomAnimeInfo.get(anime.id)
+            } else {
+                null
+            },
+            // SY <--
+        )
 
-        if (options.chapters) {
+        // SY -->
+        if (anime.source == MERGED_SOURCE_ID) {
+            animeObject.mergedMangaReferences = handler.awaitList {
+                mergedQueries.selectByMergeId(anime.id, backupMergedMangaReferenceMapper)
+            }
+        }
+        // SY <--
+
+        animeObject.excludedScanlators = handler.awaitList {
+            excluded_scanlatorsQueries.getExcludedScanlatorsByAnimeId(anime.id)
+        }
+
+        if (options.episodes) {
             // Backup all the episodes
             handler.awaitList {
                 episodesQueries.getEpisodesByAnimeId(
@@ -51,7 +78,7 @@ class AnimeBackupCreator(
         }
 
         if (options.tracking) {
-            val tracks = handler.awaitList { anime_syncQueries.getTracksByAnimeId(anime.id, backupAnimeTrackMapper) }
+            val tracks = handler.awaitList { anime_syncQueries.getTracksByAnimeId(anime.id, backupTrackMapper) }
             if (tracks.isNotEmpty()) {
                 animeObject.tracking = tracks
             }
@@ -62,7 +89,7 @@ class AnimeBackupCreator(
             if (historyByAnimeId.isNotEmpty()) {
                 val history = historyByAnimeId.map { history ->
                     val episode = handler.awaitOne { episodesQueries.getEpisodeById(history.episodeId) }
-                    BackupHistory(episode.url, history.seenAt?.time ?: 0L)
+                    BackupHistory(episode.url, history.seenAt?.time ?: 0L, history.watchDuration)
                 }
                 if (history.isNotEmpty()) {
                     animeObject.history = history
@@ -74,7 +101,7 @@ class AnimeBackupCreator(
     }
 }
 
-private fun Anime.toBackupAnime() =
+private fun Anime.toBackupAnime(/* SY --> */customAnimeInfo: CustomAnimeInfo?/* SY <-- */) =
     BackupAnime(
         url = this.url,
         title = this.title,
@@ -93,4 +120,16 @@ private fun Anime.toBackupAnime() =
         lastModifiedAt = this.lastModifiedAt,
         favoriteModifiedAt = this.favoriteModifiedAt,
         version = this.version,
-    )
+        // SY -->
+    ).also { backupManga ->
+        customAnimeInfo?.let {
+            backupManga.customTitle = it.title
+            backupManga.customArtist = it.artist
+            backupManga.customAuthor = it.author
+            backupManga.customThumbnailUrl = it.thumbnailUrl
+            backupManga.customDescription = it.description
+            backupManga.customGenre = it.genre
+            backupManga.customStatus = it.status?.toInt() ?: 0
+        }
+    }
+// SY <--
