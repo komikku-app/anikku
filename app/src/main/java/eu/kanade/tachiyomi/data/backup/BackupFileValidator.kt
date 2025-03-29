@@ -9,6 +9,7 @@ import uy.kohesive.injekt.api.get
 
 class BackupFileValidator(
     private val context: Context,
+
     private val sourceManager: SourceManager = Injekt.get(),
     private val trackerManager: TrackerManager = Injekt.get(),
 ) {
@@ -39,10 +40,10 @@ class BackupFileValidator(
             .distinct()
             .sorted()
 
-        val animeTrackers = backup.backupAnime
+        val trackers = backup.backupAnime
             .flatMap { it.tracking }
             .map { it.syncId }
-        val trackers = animeTrackers.distinct()
+            .distinct()
         val missingTrackers = trackers
             .mapNotNull { trackerManager.get(it.toLong()) }
             .filter { !it.isLoggedIn }

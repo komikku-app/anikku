@@ -50,31 +50,11 @@ data class BackupTracking(
             remoteUrl = this@BackupTracking.trackingUrl,
         )
     }
-
-    companion object {
-        fun copyFrom(track: Track): BackupTracking {
-            return BackupTracking(
-                syncId = track.trackerId.toInt(),
-                mediaId = track.remoteId,
-                // forced not null so its compatible with 1.x backup system
-                libraryId = track.libraryId!!,
-                title = track.title,
-                // convert to float for 1.x
-                lastEpisodeSeen = track.lastEpisodeSeen.toFloat(),
-                totalEpisodes = track.totalEpisodes.toInt(),
-                score = track.score.toFloat(),
-                status = track.status.toInt(),
-                startedWatchingDate = track.startDate,
-                finishedWatchingDate = track.finishDate,
-                trackingUrl = track.remoteUrl,
-            )
-        }
-    }
 }
 
-val backupAnimeTrackMapper = {
-        _id: Long,
-        anime_id: Long,
+val backupTrackMapper = {
+        _: Long,
+        _: Long,
         syncId: Long,
         mediaId: Long,
         libraryId: Long?,

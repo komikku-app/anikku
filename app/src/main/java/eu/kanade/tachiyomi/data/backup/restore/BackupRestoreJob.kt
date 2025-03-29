@@ -15,6 +15,7 @@ import eu.kanade.tachiyomi.data.backup.BackupNotifier
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.isRunning
+import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.CancellationException
 import logcat.LogPriority
@@ -37,11 +38,7 @@ class BackupRestoreJob(private val context: Context, workerParams: WorkerParamet
 
         val isSync = inputData.getBoolean(SYNC_KEY, false)
 
-        try {
-            setForeground(getForegroundInfo())
-        } catch (e: IllegalStateException) {
-            logcat(LogPriority.ERROR, e) { "Not allowed to run on foreground service" }
-        }
+        setForegroundSafely()
 
         return try {
             BackupRestorer(context, notifier, isSync).restore(uri, options)
@@ -104,6 +101,5 @@ class BackupRestoreJob(private val context: Context, workerParams: WorkerParamet
 private const val TAG = "BackupRestore"
 
 private const val LOCATION_URI_KEY = "location_uri" // String
-
 private const val SYNC_KEY = "sync" // Boolean
 private const val OPTIONS_KEY = "options" // BooleanArray
