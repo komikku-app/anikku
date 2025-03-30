@@ -9,8 +9,8 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.source.local.io.LocalSourceFileSystem
@@ -20,7 +20,7 @@ import uy.kohesive.injekt.api.get
 
 /**
  * This class is used to provide the directories where the downloads should be saved.
- * It uses the following path scheme: /<root downloads dir>/<source name>/<anime>/<episode>
+ * It uses the following path scheme: /<root downloads dir>/<source name>/<manga>/<chapter>
  *
  * @param context the application context.
  */
@@ -36,22 +36,23 @@ class DownloadProvider(
         get() = storageManager.getDownloadsDirectory()
 
     /**
-     * Returns the download directory for an anime. For internal use only.
+     * Returns the download directory for a manga. For internal use only.
      *
-     * @param animeTitle the title of the anime to query.
-     * @param source the source of the anime.
+     * @param mangaTitle the title of the manga to query.
+     * @param source the source of the manga.
      */
-    internal fun getAnimeDir(animeTitle: String, source: Source): UniFile {
+    internal fun getMangaDir(mangaTitle: String, source: Source): UniFile {
         try {
             return downloadsDir!!
                 .createDirectory(getSourceDirName(source))!!
-                .createDirectory(getAnimeDirName(animeTitle))!!
+                .createDirectory(getMangaDirName(mangaTitle))!!
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e) { "Invalid download directory" }
             throw Exception(
                 context.stringResource(
                     MR.strings.invalid_location,
-                    downloadsDir?.displayablePath ?: "",
+                    (downloadsDir?.displayablePath ?: "") +
+                        "/${getSourceDirName(source)}/${getMangaDirName(mangaTitle)}",
                 ),
             )
         }
@@ -67,51 +68,71 @@ class DownloadProvider(
     }
 
     /**
-     * Returns the download directory for an anime if it exists.
+     * Returns the download directory for a manga if it exists.
      *
-     * @param animeTitle the title of the anime to query.
-     * @param source the source of the anime.
+     * @param mangaTitle the title of the manga to query.
+     * @param source the source of the manga.
      */
-    fun findAnimeDir(animeTitle: String, source: Source): UniFile? {
+    fun findMangaDir(mangaTitle: String, source: Source): UniFile? {
         val sourceDir = findSourceDir(source)
-        return sourceDir?.findFile(getAnimeDirName(animeTitle))
+        return sourceDir?.findFile(getMangaDirName(mangaTitle))
     }
 
     /**
-     * Returns the download directory for an episode if it exists.
+     * Returns the download directory for a chapter if it exists.
      *
-     * @param episodeName the name of the episode to query.
-     * @param episodeScanlator scanlator of the episode to query
-     * @param animeTitle the title of the anime to query.
-     * @param source the source of the episode.
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
+     * @param mangaTitle the title of the manga to query.
+     * @param source the source of the chapter.
      */
-    fun findEpisodeDir(
-        episodeName: String,
-        episodeScanlator: String?,
-        animeTitle: String,
-        source: Source,
-    ): UniFile? {
-        val animeDir = findAnimeDir(animeTitle, source)
-        return getValidEpisodeDirNames(episodeName, episodeScanlator).asSequence()
-            .mapNotNull { animeDir?.findFile(it) }
+    fun findChapterDir(chapterName: String, chapterScanlator: String?, mangaTitle: String, source: Source): UniFile? {
+        val mangaDir = findMangaDir(mangaTitle, source)
+        return getValidChapterDirNames(chapterName, chapterScanlator).asSequence()
+            .mapNotNull { mangaDir?.findFile(it) }
             .firstOrNull()
     }
 
     /**
-     * Returns a list of downloaded directories for the episodes that exist.
+     * Returns a list of downloaded directories for the chapters that exist.
      *
-     * @param episodes the episodes to query.
-     * @param anime the anime of the episode.
-     * @param source the source of the episode.
+     * @param chapters the chapters to query.
+     * @param manga the manga of the chapter.
+     * @param source the source of the chapter.
      */
-    fun findEpisodeDirs(episodes: List<Episode>, anime: Anime, source: Source): Pair<UniFile?, List<UniFile>> {
-        val animeDir = findAnimeDir(anime.title, source) ?: return null to emptyList()
-        return animeDir to episodes.mapNotNull { episode ->
-            getValidEpisodeDirNames(episode.name, episode.scanlator).asSequence()
-                .mapNotNull { animeDir.findFile(it) }
+    fun findChapterDirs(chapters: List<Chapter>, manga: Manga, source: Source): Pair<UniFile?, List<UniFile>> {
+        val mangaDir = findMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source) ?: return null to emptyList()
+        return mangaDir to chapters.mapNotNull { chapter ->
+            getValidChapterDirNames(chapter.name, chapter.scanlator).asSequence()
+                .mapNotNull { mangaDir.findFile(it) }
                 .firstOrNull()
         }
     }
+
+    // SY -->
+    /**
+     * Returns a list of all files in manga directory
+     *
+     * @param chapters the chapters to query.
+     * @param manga the manga of the chapter.
+     * @param source the source of the chapter.
+     */
+    fun findUnmatchedChapterDirs(
+        chapters: List<Chapter>,
+        manga: Manga,
+        source: Source,
+    ): List<UniFile> {
+        val mangaDir = findMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source) ?: return emptyList()
+        return mangaDir.listFiles().orEmpty().asList().filter {
+            chapters.find { chp ->
+                getValidChapterDirNames(chp.name, chp.scanlator).any { dir ->
+                    mangaDir.findFile(dir) != null
+                }
+            } == null ||
+                it.name?.endsWith(Downloader.TMP_DIR_SUFFIX) == true
+        }
+    }
+    // SY <--
 
     /**
      * Returns the download directory name for a source.
@@ -123,96 +144,96 @@ class DownloadProvider(
     }
 
     /**
-     * Returns the download directory name for an anime.
+     * Returns the download directory name for a manga.
      *
-     * @param animeTitle the title of the anime to query.
+     * @param mangaTitle the title of the manga to query.
      */
-    fun getAnimeDirName(animeTitle: String): String {
-        return DiskUtil.buildValidFilename(animeTitle)
+    fun getMangaDirName(mangaTitle: String): String {
+        return DiskUtil.buildValidFilename(mangaTitle)
     }
 
     /**
-     * Returns the episode directory name for an episode.
+     * Returns the chapter directory name for a chapter.
      *
-     * @param episodeName the name of the episode to query.
-     * @param episodeScanlator scanlator of the episode to query
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
      */
-    fun getEpisodeDirName(episodeName: String, episodeScanlator: String?): String {
-        val newEpisodeName = sanitizeEpisodeName(episodeName)
+    fun getChapterDirName(chapterName: String, chapterScanlator: String?): String {
+        val newChapterName = sanitizeChapterName(chapterName)
         return DiskUtil.buildValidFilename(
             when {
-                !episodeScanlator.isNullOrBlank() -> "${episodeScanlator}_$newEpisodeName"
-                else -> newEpisodeName
+                !chapterScanlator.isNullOrBlank() -> "${chapterScanlator}_$newChapterName"
+                else -> newChapterName
             },
         )
     }
 
     /**
-     * Return the new name for the episode (in case it's empty or blank)
+     * Return the new name for the chapter (in case it's empty or blank)
      *
-     * @param episodeName the name of the episode
+     * @param chapterName the name of the chapter
      */
-    private fun sanitizeEpisodeName(episodeName: String): String {
-        return episodeName.ifBlank {
+    private fun sanitizeChapterName(chapterName: String): String {
+        return chapterName.ifBlank {
             "Episode"
         }
     }
 
     /**
-     * Returns the episode directory name for an episode.
+     * Returns the chapter directory name for a chapter.
      *
-     * @param episodeName the name of the episode to query.
-     * @param episodeScanlator scanlator of the episode to query
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
      */
-    fun getOldEpisodeDirName(episodeName: String, episodeScanlator: String?): String {
+    private fun getOldChapterDirName(chapterName: String, chapterScanlator: String?): String {
         return DiskUtil.buildValidFilename(
             when {
-                episodeScanlator != null -> "${episodeScanlator}_$episodeName"
-                else -> episodeName
+                chapterScanlator != null -> "${chapterScanlator}_$chapterName"
+                else -> chapterName
             },
         )
     }
 
-    fun isEpisodeDirNameChanged(oldEpisode: Episode, newEpisode: Episode): Boolean {
-        return oldEpisode.name != newEpisode.name ||
-            oldEpisode.scanlator?.takeIf { it.isNotBlank() } != newEpisode.scanlator?.takeIf { it.isNotBlank() }
+    fun isChapterDirNameChanged(oldChapter: Chapter, newChapter: Chapter): Boolean {
+        return oldChapter.name != newChapter.name ||
+            oldChapter.scanlator?.takeIf { it.isNotBlank() } != newChapter.scanlator?.takeIf { it.isNotBlank() }
     }
 
     /**
-     * Returns valid downloaded episode directory names.
+     * Returns valid downloaded chapter directory names.
      *
-     * @param episodeName the name of the episode to query.
-     * @param episodeScanlator scanlator of the episode to query
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
      */
-    fun getValidEpisodeDirNames(episodeName: String, episodeScanlator: String?): List<String> {
-        val episodeDirName = getEpisodeDirName(episodeName, episodeScanlator)
-        val oldEpisodeDirName = getOldEpisodeDirName(episodeName, episodeScanlator)
-        return listOf(episodeDirName, oldEpisodeDirName)
+    fun getValidChapterDirNames(chapterName: String, chapterScanlator: String?): List<String> {
+        val chapterDirName = getChapterDirName(chapterName, chapterScanlator)
+        val oldChapterDirName = getOldChapterDirName(chapterName, chapterScanlator)
+        return listOf(chapterDirName, oldChapterDirName)
     }
 
     // AM (FILE_SIZE) -->
     /**
-     * Returns an episode file size in bytes.
-     * Returns null if the episode is not found in expected location
+     * Returns a chapter file size in bytes.
+     * Returns null if the chapter is not found in expected location
      *
-     * @param episodeName the name of the episode to query.
-     * @param episodeScanlator scanlator of the episode to query
-     * @param animeTitle the title of the anime
-     * @param source the source of the anime
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
+     * @param mangaTitle the title of the manga
+     * @param source the source of the manga
      */
-    fun getEpisodeFileSize(
-        episodeName: String,
-        episodeUrl: String?,
-        episodeScanlator: String?,
-        animeTitle: String,
+    fun getChapterFileSize(
+        chapterName: String,
+        chapterUrl: String?,
+        chapterScanlator: String?,
+        mangaTitle: String,
         source: Source?,
     ): Long? {
         if (source == null) return null
         return if (source.isLocal()) {
-            val (animeDirName, episodeDirName) = episodeUrl?.split('/', limit = 2) ?: return null
-            localFileSystem.getBaseDirectory()?.findFile(animeDirName)?.findFile(episodeDirName)?.size()
+            val (mangaDirName, chapterDirName) = chapterUrl?.split('/', limit = 2) ?: return null
+            localFileSystem.getBaseDirectory()?.findFile(mangaDirName)?.findFile(chapterDirName)?.size()
         } else {
-            findEpisodeDir(episodeName, episodeScanlator, animeTitle, source)?.size()
+            findChapterDir(chapterName, chapterScanlator, mangaTitle, source)?.size()
         }
     }
     // <-- AM (FILE_SIZE)

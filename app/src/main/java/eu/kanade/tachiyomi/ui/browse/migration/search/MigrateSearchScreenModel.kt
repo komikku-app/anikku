@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import tachiyomi.domain.anime.interactor.GetAnime
+import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -16,7 +16,7 @@ class MigrateSearchScreenModel(
     // SY -->
     val validSources: List<Long>,
     // SY <--
-    getAnime: GetAnime = Injekt.get(),
+    getManga: GetManga = Injekt.get(),
     // SY -->
     private val sourceManager: SourceManager = Injekt.get(),
     // SY <--
@@ -24,7 +24,7 @@ class MigrateSearchScreenModel(
 
     init {
         screenModelScope.launch {
-            val manga = getAnime.await(mangaId)!!
+            val manga = getManga.await(mangaId)!!
             mutableState.update {
                 it.copy(
                     fromSourceId = manga.source,

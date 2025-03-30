@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.automirrored.outlined.Help
 import androidx.compose.material.icons.filled.ViewModule
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -77,14 +78,6 @@ fun BrowseSourceToolbar(
                                 ),
                             )
                         }
-                        if (isLocalSource) {
-                            add(
-                                AppBar.OverflowAction(
-                                    title = stringResource(MR.strings.label_help),
-                                    onClick = onHelpClick,
-                                ),
-                            )
-                        }
                         // KMK -->
                         add(bulkSelectionButton(isRunning, toggleSelectionMode))
                         // KMK <--
@@ -106,13 +99,24 @@ fun BrowseSourceToolbar(
                                 )
                             }
                         } else {
-                            add(
-                                AppBar.OverflowAction(
-                                    title = stringResource(MR.strings.action_open_in_web_view),
-                                    onClick = onWebViewClick,
-                                ),
-                            )
+                            if (isConfigurableSource && displayMode != null) {
+                                add(
+                                    AppBar.OverflowAction(
+                                        title = stringResource(MR.strings.action_web_view),
+                                        onClick = onWebViewClick,
+                                    ),
+                                )
+                            } else {
+                                add(
+                                    AppBar.Action(
+                                        title = stringResource(MR.strings.action_web_view),
+                                        icon = Icons.Outlined.Public,
+                                        onClick = onWebViewClick,
+                                    ),
+                                )
+                            }
                         }
+                        // SY <--
                         if (isConfigurableSource) {
                             add(
                                 AppBar.OverflowAction(

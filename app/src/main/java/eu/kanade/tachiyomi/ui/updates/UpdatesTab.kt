@@ -20,18 +20,18 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.anime.EpisodeOptionsDialogScreen
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
+import eu.kanade.presentation.manga.EpisodeOptionsDialogScreen
 import eu.kanade.presentation.updates.UpdateScreen
 import eu.kanade.presentation.updates.UpdatesDeleteConfirmationDialog
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.download.DownloadQueueScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel.Event
 import kotlinx.coroutines.flow.collectLatest
@@ -86,19 +86,19 @@ data object UpdatesTab : Tab {
             state = state,
             snackbarHostState = screenModel.snackbarHostState,
             lastUpdated = screenModel.lastUpdated,
-            onClickCover = { item -> navigator.push(AnimeScreen(item.update.animeId)) },
+            onClickCover = { item -> navigator.push(MangaScreen(item.update.mangaId)) },
             onSelectAll = screenModel::toggleAllSelection,
             onInvertSelection = screenModel::invertSelection,
             onUpdateLibrary = screenModel::updateLibrary,
-            onDownloadEpisode = screenModel::downloadEpisodes,
+            onDownloadChapter = screenModel::downloadChapters,
             onMultiBookmarkClicked = screenModel::bookmarkUpdates,
             // AM (FILLERMARK) -->
             onMultiFillermarkClicked = screenModel::fillermarkUpdates,
             // <-- AM (FILLERMARK)
-            onMultiMarkAsSeenClicked = screenModel::markUpdatesSeen,
-            onMultiDeleteClicked = screenModel::showConfirmDeleteEpisodes,
+            onMultiMarkAsReadClicked = screenModel::markUpdatesRead,
+            onMultiDeleteClicked = screenModel::showConfirmDeleteChapters,
             onUpdateSelected = screenModel::toggleSelection,
-            onOpenEpisode = { updateItem: UpdatesItem, altPlayer: Boolean ->
+            onOpenChapter = { updateItem: UpdatesItem, altPlayer: Boolean ->
                 scope.launchIO {
                     openEpisode(context, updateItem.update, altPlayer)
                 }
@@ -114,7 +114,7 @@ data object UpdatesTab : Tab {
             is UpdatesScreenModel.Dialog.DeleteConfirmation -> {
                 UpdatesDeleteConfirmationDialog(
                     onDismissRequest = onDismissDialog,
-                    onConfirm = { screenModel.deleteEpisodes(dialog.toDelete) },
+                    onConfirm = { screenModel.deleteChapters(dialog.toDelete) },
                 )
             }
 

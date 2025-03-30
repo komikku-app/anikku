@@ -46,6 +46,7 @@ fun AlertDialogContent(
                         }
                     }
                 }
+
                 Box(
                     modifier = Modifier
                         .padding(

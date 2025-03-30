@@ -10,11 +10,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.MigrateSearchScreen
 import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangasCategoryDialog
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigrationListScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import tachiyomi.core.common.util.lang.launchIO
 
 class MigrateSearchScreen(private val mangaId: Long, private val validSources: List<Long>) : Screen() {
@@ -45,7 +45,7 @@ class MigrateSearchScreen(private val mangaId: Long, private val validSources: L
             navigateUp = navigator::pop,
             onChangeSearchQuery = screenModel::updateSearchQuery,
             onSearch = { screenModel.search() },
-            getAnime = { screenModel.getAnime(it) },
+            getManga = { screenModel.getManga(it) },
             onChangeSearchFilter = screenModel::setSourceFilter,
             onToggleResults = screenModel::toggleFilterResults,
             onClickSource = {
@@ -56,7 +56,7 @@ class MigrateSearchScreen(private val mangaId: Long, private val validSources: L
             onClickItem = {
                 // KMK -->
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = screenModel.networkToLocalManga.getLocal(it)
                     if (bulkFavoriteState.selectionMode) {
                         bulkFavoriteScreenModel.toggleSelection(manga)
                     } else
@@ -66,7 +66,7 @@ class MigrateSearchScreen(private val mangaId: Long, private val validSources: L
                             navigator.items
                                 .filterIsInstance<MigrationListScreen>()
                                 .last()
-                                .newSelectedItem = mangaId to it.id
+                                .newSelectedItem = mangaId to manga.id
                             navigator.popUntil { it is MigrationListScreen }
                             // SY <--
                         }
@@ -75,9 +75,9 @@ class MigrateSearchScreen(private val mangaId: Long, private val validSources: L
             onLongClickItem = {
                 // KMK -->
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = screenModel.networkToLocalManga.getLocal(it)
                     // KMK <--
-                    navigator.push(AnimeScreen(manga.id, true))
+                    navigator.push(MangaScreen(manga.id, true))
                 }
             },
             // KMK -->
@@ -89,7 +89,7 @@ class MigrateSearchScreen(private val mangaId: Long, private val validSources: L
         // KMK -->
         when (bulkFavoriteState.dialog) {
             is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
-                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangasCategoryDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
                 AllowDuplicateDialog(bulkFavoriteScreenModel)
             else -> {}

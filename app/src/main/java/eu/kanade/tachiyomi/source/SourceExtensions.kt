@@ -16,7 +16,7 @@ fun Source.getPreferenceKey(): String = "source_$id"
 
 fun Source.toStubSource(): StubSource = StubSource(id = id, lang = lang, name = name)
 
-fun Source.getNameForAnimeInfo(
+fun Source.getNameForMangaInfo(
     // SY -->
     mergeSources: List<Source>? = null,
     // SY <--
@@ -37,7 +37,7 @@ fun Source.getNameForAnimeInfo(
         // KMK -->
         isLocalOrStub() -> toString()
         // KMK <--
-        // For edge cases where user disables a source they got anime of in their library.
+        // For edge cases where user disables a source they got manga of in their library.
         hasOneActiveLanguages && !isInEnabledLanguages ->
             // KMK -->
             "$name (${FlagEmoji.getEmojiLangFlag(lang)})"

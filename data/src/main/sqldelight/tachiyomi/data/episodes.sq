@@ -60,14 +60,7 @@ WHERE _id = :id;
 getEpisodesByAnimeId:
 SELECT EP.*
 FROM episodes EP
-LEFT JOIN excluded_scanlators ES
-ON EP.anime_id = ES.anime_id
-AND EP.scanlator = ES.scanlator
-WHERE EP.anime_id = :animeId
-AND (
-    :applyScanlatorFilter = 0
-    OR ES.scanlator IS NULL
-);
+WHERE EP.anime_id = :animeId;
 
 getScanlatorsByAnimeId:
 SELECT scanlator
@@ -106,14 +99,7 @@ FROM (
 ) AS A
 JOIN episodes EP
 ON EP.anime_id = A.anime_id
-LEFT JOIN excluded_scanlators ES
-ON A.merge_id = ES.anime_id
-AND EP.scanlator = ES.scanlator
-WHERE A.merge_id = :animeId
-AND (
-    :applyScanlatorFilter = 0
-    OR ES.scanlator IS NULL
-);
+WHERE A.merge_id = :animeId;
 
 getScanlatorsByMergeId:
 SELECT scanlator

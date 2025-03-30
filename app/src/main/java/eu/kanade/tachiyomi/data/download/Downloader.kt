@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.net.toUri
 import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.FFprobeSession
@@ -115,6 +116,12 @@ class Downloader(
         get() = downloaderJob?.isActive ?: false
 
     /**
+     * Whether the downloader is paused
+     */
+    @Volatile
+    var isPaused: Boolean = false
+
+    /**
      * Whether FFmpeg is running.
      */
     @Volatile
@@ -141,6 +148,8 @@ class Downloader(
         val pending = queueState.value.filter { it.status != Download.State.DOWNLOADED }
         pending.forEach { if (it.status != Download.State.QUEUE) it.status = Download.State.QUEUE }
 
+        isPaused = false
+
         launchDownloaderJob()
 
         return pending.isNotEmpty()
@@ -160,11 +169,13 @@ class Downloader(
             return
         }
 
-        if (queueState.value.isNotEmpty()) {
+        if (isPaused && queueState.value.isNotEmpty()) {
             notifier.onPaused()
         } else {
             notifier.onComplete()
         }
+
+        isPaused = false
 
         DownloadJob.stop(context)
     }
@@ -177,6 +188,7 @@ class Downloader(
         queueState.value
             .filter { it.status == Download.State.DOWNLOADING }
             .forEach { it.status = Download.State.QUEUE }
+        isPaused = true
     }
 
     /**
@@ -190,7 +202,7 @@ class Downloader(
     }
 
     /**
-     * Prepares the jobs to start downloading.
+     * Prepares the subscriptions to start downloading.
      */
     private fun launchDownloaderJob() {
         if (isRunning) return
@@ -199,11 +211,12 @@ class Downloader(
             val activeDownloadsFlow = queueState.transformLatest { queue ->
                 while (true) {
                     val activeDownloads = queue.asSequence()
-                        .filter {
-                            it.status.value <= Download.State.DOWNLOADING.value
-                        } // Ignore completed downloads, leave them in the queue
+                        // Ignore completed downloads, leave them in the queue
+                        .filter { it.status.value <= Download.State.DOWNLOADING.value }
                         .groupBy { it.source }
-                        .toList().take(3) // Concurrently download from 5 different sources
+                        .toList()
+                        // Concurrently download from 5 different sources
+                        .take(3)
                         .map { (_, downloads) -> downloads.first() }
                     emit(activeDownloads)
 
@@ -298,7 +311,7 @@ class Downloader(
 
         val episodesToQueue = episodes.asSequence()
             // Filter out those already downloaded.
-            .filter { provider.findEpisodeDir(it.name, it.scanlator, anime.title, source) == null }
+            .filter { provider.findChapterDir(it.name, it.scanlator, /* SY --> */ anime.ogTitle /* SY <-- */, source) == null }
             // Add episodes to queue from the start.
             .sortedByDescending { it.sourceOrder }
             // Filter out those already enqueued.
@@ -346,14 +359,14 @@ class Downloader(
     private suspend fun downloadEpisode(download: Download) {
         // This try catch manages errors during download
         try {
-            val animeDir = provider.getAnimeDir(download.anime.title, download.source)
+            val animeDir = provider.getMangaDir(/* SY --> */ download.anime.ogTitle /* SY <-- */, download.source)
 
             val availSpace = DiskUtil.getAvailableStorageSpace(animeDir)
             if (availSpace != -1L && availSpace < MIN_DISK_SPACE) {
                 throw Exception(context.stringResource(MR.strings.download_insufficient_space))
             }
 
-            val episodeDirname = provider.getEpisodeDirName(download.episode.name, download.episode.scanlator)
+            val episodeDirname = provider.getChapterDirName(download.episode.name, download.episode.scanlator)
             val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
 
             if (download.video == null) {
@@ -427,7 +440,7 @@ class Downloader(
                         downloadVideo(download, tmpDir, filename)
                     } else {
                         val betterFileName = DiskUtil.buildValidFilename(
-                            "${download.anime.title} - ${download.episode.name}",
+                            "${/* SY --> */ download.anime.ogTitle /* SY <-- */} - ${download.episode.name}",
                         )
                         downloadVideoExternal(download.video!!, download.source, tmpDir, betterFileName)
                     }
@@ -759,7 +772,7 @@ class Downloader(
             } else {
                 intent = Intent(Intent.ACTION_VIEW).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    setDataAndType(Uri.parse(video.videoUrl), "video/*")
+                    setDataAndType(video.videoUrl.toUri(), "video/*")
                     putExtra("extra_filename", filename)
                 }
             }
@@ -790,11 +803,11 @@ class Downloader(
 
         download.status = if (downloadedVideo.size == 1) {
             // Only rename the directory if it's downloaded
-            val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
+            val filename = DiskUtil.buildValidFilename("${/* SY --> */ download.anime.ogTitle /* SY <-- */} - ${download.episode.name}")
             tmpDir.findFile("${filename}_tmp.mkv")?.delete()
             tmpDir.renameTo(dirname)
 
-            cache.addEpisode(dirname, animeDir, download.anime)
+            cache.addChapter(dirname, animeDir, download.anime)
 
             DiskUtil.createNoMediaFile(tmpDir, context)
             Download.State.DOWNLOADED

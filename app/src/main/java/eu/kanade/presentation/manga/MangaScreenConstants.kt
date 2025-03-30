@@ -1,0 +1,32 @@
+package eu.kanade.presentation.manga
+
+enum class DownloadAction {
+    NEXT_1_EPISODE,
+    NEXT_5_EPISODES,
+    NEXT_10_EPISODES,
+    NEXT_25_EPISODES,
+    UNSEEN_EPISODES,
+}
+
+enum class EditCoverAction {
+    EDIT,
+    DELETE,
+}
+
+enum class MangaScreenItem {
+    INFO_BOX,
+    ACTION_ROW,
+    DESCRIPTION_WITH_TAG,
+
+    // SY -->
+    INFO_BUTTONS,
+    // SY <--
+
+    EPISODE_HEADER,
+    EPISODE,
+    AIRING_TIME,
+
+    // KMK -->
+    RELATED_ANIMES,
+    // KMK <--
+}

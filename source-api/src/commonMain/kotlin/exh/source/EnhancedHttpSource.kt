@@ -1,11 +1,11 @@
 package exh.source
 
 import eu.kanade.tachiyomi.animesource.model.Hoster
-import eu.kanade.tachiyomi.source.model.AnimesPage
+import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.SAnime
-import eu.kanade.tachiyomi.source.model.SEpisode
-import eu.kanade.tachiyomi.source.model.Video
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import exh.pref.DelegateSourcePreferences
 import okhttp3.Response
@@ -27,7 +27,7 @@ class EnhancedHttpSource(
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a [AnimesPage] object.
+     * Parses the response from the site and returns a [MangasPage] object.
      *
      * @param response the response from the site.
      */
@@ -45,7 +45,7 @@ class EnhancedHttpSource(
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a [AnimesPage] object.
+     * Parses the response from the site and returns a [MangasPage] object.
      *
      * @param response the response from the site.
      */
@@ -61,7 +61,7 @@ class EnhancedHttpSource(
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a [AnimesPage] object.
+     * Parses the response from the site and returns a [MangasPage] object.
      *
      * @param response the response from the site.
      */
@@ -85,7 +85,7 @@ class EnhancedHttpSource(
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a SEpisode Object.
+     * Parses the response from the site and returns a SChapter Object.
      *
      * @param response the response from the site.
      */
@@ -201,12 +201,12 @@ class EnhancedHttpSource(
      * @param anime the anime to be updated.
      */
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getAnimeDetails(anime)"))
-    override fun fetchAnimeDetails(anime: SAnime) = source().fetchAnimeDetails(anime)
+    override fun fetchAnimeDetails(anime: SManga) = source().fetchAnimeDetails(anime)
 
     /**
      * [1.x API] Get the updated details for a anime.
      */
-    override suspend fun getAnimeDetails(anime: SAnime): SAnime = source().getAnimeDetails(anime)
+    override suspend fun getAnimeDetails(anime: SManga): SManga = source().getAnimeDetails(anime)
 
     /**
      * Returns the request for the details of a anime. Override only if it's needed to change the
@@ -214,7 +214,7 @@ class EnhancedHttpSource(
      *
      * @param anime the anime to be updated.
      */
-    override fun animeDetailsRequest(anime: SAnime) = source().animeDetailsRequest(anime)
+    override fun animeDetailsRequest(anime: SManga) = source().animeDetailsRequest(anime)
 
     /**
      * Returns an observable with the updated episode list for a anime. Normally it's not needed to
@@ -223,12 +223,12 @@ class EnhancedHttpSource(
      * @param anime the anime to look for episodes.
      */
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getEpisodeList(anime)"))
-    override fun fetchEpisodeList(anime: SAnime) = source().fetchEpisodeList(anime)
+    override fun fetchEpisodeList(anime: SManga) = source().fetchEpisodeList(anime)
 
     /**
      * [1.x API] Get all the available episodes for a anime.
      */
-    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = source().getEpisodeList(anime)
+    override suspend fun getEpisodeList(anime: SManga): List<SChapter> = source().getEpisodeList(anime)
 
     /**
      * Returns an observable with the video list for a episode.
@@ -236,12 +236,12 @@ class EnhancedHttpSource(
      * @param episode the episode whose video list has to be fetched.
      */
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getVideoList(episode)"))
-    override fun fetchVideoList(episode: SEpisode) = source().fetchVideoList(episode)
+    override fun fetchVideoList(episode: SChapter) = source().fetchVideoList(episode)
 
     /**
      * [1.x API] Get the list of videos a episode has.
      */
-    override suspend fun getVideoList(episode: SEpisode): List<Video> = source().getVideoList(episode)
+    override suspend fun getVideoList(episode: SChapter): List<Video> = source().getVideoList(episode)
 
     /**
      * Returns an observable with the video containing the source url of the video. If there's any
@@ -261,7 +261,7 @@ class EnhancedHttpSource(
      * @param anime the anime
      * @return url of the anime
      */
-    override fun getAnimeUrl(anime: SAnime) = source().getAnimeUrl(anime)
+    override fun getAnimeUrl(anime: SManga) = source().getAnimeUrl(anime)
 
     /**
      * Returns the url of the provided episode
@@ -270,7 +270,7 @@ class EnhancedHttpSource(
      * @param episode the episode
      * @return url of the episode
      */
-    override fun getEpisodeUrl(episode: SEpisode) = source().getEpisodeUrl(episode)
+    override fun getEpisodeUrl(episode: SChapter) = source().getEpisodeUrl(episode)
 
     /**
      * Called before inserting a new episode into database. Use it if you need to override episode
@@ -279,7 +279,7 @@ class EnhancedHttpSource(
      * @param episode the episode to be added.
      * @param anime the anime of the episode.
      */
-    override fun prepareNewEpisode(episode: SEpisode, anime: SAnime) =
+    override fun prepareNewEpisode(episode: SChapter, anime: SManga) =
         source().prepareNewEpisode(episode, anime)
 
     /**

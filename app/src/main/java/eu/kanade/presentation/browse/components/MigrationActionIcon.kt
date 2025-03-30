@@ -17,7 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingAnime
+import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingManga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -25,7 +25,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun MigrationActionIcon(
     modifier: Modifier,
-    result: MigratingAnime.SearchResult,
+    result: MigratingManga.SearchResult,
     skipManga: () -> Unit,
     // KMK -->
     cancelManga: () -> Unit,
@@ -38,7 +38,7 @@ fun MigrationActionIcon(
     val closeMenu = { moreExpanded = false }
 
     Box(modifier) {
-        if (result is MigratingAnime.SearchResult.Searching) {
+        if (result is MigratingManga.SearchResult.Searching) {
             // KMK -->
             IconButton(onClick = cancelManga) {
                 // KMK <--
@@ -47,7 +47,7 @@ fun MigrationActionIcon(
                     contentDescription = stringResource(SYMR.strings.action_stop),
                 )
             }
-        } else if (result is MigratingAnime.SearchResult.Result || result is MigratingAnime.SearchResult.NotFound) {
+        } else if (result is MigratingManga.SearchResult.Result || result is MigratingManga.SearchResult.NotFound) {
             IconButton(onClick = { moreExpanded = !moreExpanded }) {
                 Icon(
                     imageVector = Icons.Outlined.MoreVert,
@@ -73,7 +73,7 @@ fun MigrationActionIcon(
                         closeMenu()
                     },
                 )
-                if (result is MigratingAnime.SearchResult.Result) {
+                if (result is MigratingManga.SearchResult.Result) {
                     DropdownMenuItem(
                         text = { Text(stringResource(SYMR.strings.action_migrate_now)) },
                         onClick = {

@@ -27,8 +27,8 @@ import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
@@ -46,7 +46,7 @@ data object HistoryTab : Tab {
 
     private val snackbarHostState = SnackbarHostState()
 
-    private val resumeLastEpisodeSeenEvent = Channel<Unit>()
+    private val resumeLastChapterReadEvent = Channel<Unit>()
 
     override val options: TabOptions
         @Composable
@@ -55,13 +55,13 @@ data object HistoryTab : Tab {
             val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_history_enter)
             return TabOptions(
                 index = 2u,
-                title = stringResource(MR.strings.history),
+                title = stringResource(MR.strings.label_recent_manga),
                 icon = rememberAnimatedVectorPainter(image, isSelected),
             )
         }
 
     override suspend fun onReselect(navigator: Navigator) {
-        resumeLastEpisodeSeenEvent.send(Unit)
+        resumeLastChapterReadEvent.send(Unit)
     }
 
     // SY -->
@@ -85,8 +85,8 @@ data object HistoryTab : Tab {
             state = state,
             snackbarHostState = snackbarHostState,
             onSearchQueryChange = screenModel::updateSearchQuery,
-            onClickCover = { navigator.push(AnimeScreen(it)) },
-            onClickResume = screenModel::getNextEpisodeForAnime,
+            onClickCover = { navigator.push(MangaScreen(it)) },
+            onClickResume = screenModel::getNextChapterForManga,
             onDialogChange = screenModel::setDialog,
         )
 
@@ -97,7 +97,7 @@ data object HistoryTab : Tab {
                     onDismissRequest = onDismissRequest,
                     onDelete = { all ->
                         if (all) {
-                            screenModel.removeAllFromHistory(dialog.history.animeId)
+                            screenModel.removeAllFromHistory(dialog.history.mangaId)
                         } else {
                             screenModel.removeFromHistory(dialog.history)
                         }
@@ -129,14 +129,14 @@ data object HistoryTab : Tab {
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
                     HistoryScreenModel.Event.HistoryCleared ->
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
-                    is HistoryScreenModel.Event.OpenEpisode -> openEpisode(context, e.episode)
+                    is HistoryScreenModel.Event.OpenChapter -> openChapter(context, e.chapter)
                 }
             }
         }
 
         LaunchedEffect(Unit) {
-            resumeLastEpisodeSeenEvent.receiveAsFlow().collectLatest {
-                openEpisode(context, screenModel.getNextEpisode())
+            resumeLastChapterReadEvent.receiveAsFlow().collectLatest {
+                openChapter(context, screenModel.getNextChapter())
             }
         }
 
@@ -145,7 +145,7 @@ data object HistoryTab : Tab {
         }
     }
 
-    private suspend fun openEpisode(context: Context, episode: Episode?) {
+    private suspend fun openChapter(context: Context, episode: Episode?) {
         val playerPreferences: PlayerPreferences by injectLazy()
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
         if (episode != null) {

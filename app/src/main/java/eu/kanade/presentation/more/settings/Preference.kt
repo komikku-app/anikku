@@ -26,7 +26,10 @@ sealed class Preference {
     abstract val enabled: Boolean
 
     sealed class PreferenceItem<T> : Preference() {
-        abstract val subtitle: String?
+        // SY -->
+        abstract val subtitle: CharSequence?
+        // SY <--
+
         abstract val icon: ImageVector?
         abstract val onValueChanged: suspend (newValue: T) -> Boolean
 
@@ -35,7 +38,7 @@ sealed class Preference {
          */
         data class TextPreference(
             override val title: String,
-            override val subtitle: String? = null,
+            override val subtitle: CharSequence? = null,
             override val icon: ImageVector? = null,
             override val enabled: Boolean = true,
             override val onValueChanged: suspend (newValue: String) -> Boolean = { true },
@@ -49,7 +52,7 @@ sealed class Preference {
         data class SwitchPreference(
             val pref: PreferenceData<Boolean>,
             override val title: String,
-            override val subtitle: String? = null,
+            override val subtitle: CharSequence? = null,
             override val icon: ImageVector? = null,
             override val enabled: Boolean = true,
             override val onValueChanged: suspend (newValue: Boolean) -> Boolean = { true },
@@ -86,9 +89,7 @@ sealed class Preference {
             val entries: ImmutableMap<T, String>,
         ) : PreferenceItem<T>() {
             internal fun internalSet(newValue: Any) = pref.set(newValue as T)
-            internal suspend fun internalOnValueChanged(newValue: Any) = onValueChanged(
-                newValue as T,
-            )
+            internal suspend fun internalOnValueChanged(newValue: Any) = onValueChanged(newValue as T)
 
             @Composable
             internal fun internalSubtitleProvider(value: Any?, entries: ImmutableMap<out Any?, String>) =
@@ -257,12 +258,12 @@ sealed class Preference {
 
         data class CustomPreference(
             override val title: String,
-            val content: @Composable (PreferenceItem<String>) -> Unit,
-        ) : PreferenceItem<String>() {
+            val content: @Composable () -> Unit,
+        ) : PreferenceItem<Unit>() {
             override val enabled: Boolean = true
             override val subtitle: String? = null
             override val icon: ImageVector? = null
-            override val onValueChanged: suspend (newValue: String) -> Boolean = { true }
+            override val onValueChanged: suspend (newValue: Unit) -> Boolean = { true }
         }
     }
 
@@ -271,6 +272,5 @@ sealed class Preference {
         override val enabled: Boolean = true,
 
         val preferenceItems: ImmutableList<PreferenceItem<out Any>>,
-
     ) : Preference()
 }

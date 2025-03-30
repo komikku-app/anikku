@@ -12,7 +12,7 @@ data class SMUserListEntry(
     val score: Int,
     val status: String,
 ) {
-    fun toAnimeTrack(trackId: Long, anime: SMAnime): Track {
+    fun toTrack(trackId: Long, anime: SMAnime): Track {
         return Track.create(trackId).apply {
             title = anime.name
             remote_id = this@SMUserListEntry.id

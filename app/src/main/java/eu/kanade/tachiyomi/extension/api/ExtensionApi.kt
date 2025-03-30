@@ -89,7 +89,7 @@ internal class ExtensionApi {
         fromAvailableExtensionList: Boolean = false,
     ): List<Extension.Installed>? {
         // Limit checks to once a day at most
-        if (fromAvailableExtensionList &&
+        if (!fromAvailableExtensionList &&
             Instant.now().toEpochMilli() < lastExtCheck.get() + 1.days.inWholeMilliseconds
         ) {
             return null
@@ -191,8 +191,8 @@ private data class ExtensionSourceJsonObject(
     val baseUrl: String,
 )
 
-private val extensionSourceMapper: (ExtensionSourceJsonObject) -> Extension.Available.AnimeSource = {
-    Extension.Available.AnimeSource(
+private val extensionSourceMapper: (ExtensionSourceJsonObject) -> Extension.Available.Source = {
+    Extension.Available.Source(
         id = it.id,
         lang = it.lang,
         name = it.name,

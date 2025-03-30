@@ -45,7 +45,7 @@ internal fun InfoWidget(text: String) {
 private fun InfoWidgetPreview() {
     TachiyomiPreviewTheme {
         Surface {
-            InfoWidget(text = stringResource(MR.strings.download_ahead_info))
+            InfoWidget(text = stringResource(MR.strings.download_ahead_info_anime))
         }
     }
 }

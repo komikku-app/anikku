@@ -14,7 +14,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import uy.kohesive.injekt.injectLazy
 import java.io.IOException
 
@@ -67,7 +67,7 @@ class LocalHttpServerService : Service() {
         )
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentText(stringResource(TLMR.strings.server_local_notification_casting))
+            .setContentText(stringResource(AMR.strings.server_local_notification_casting))
             .setSmallIcon(R.drawable.cast_ic_notification_0)
             .addAction(
                 R.drawable.quantum_ic_stop_white_24,
@@ -100,7 +100,7 @@ class LocalHttpServerService : Service() {
      */
     private fun createNotificationChannel() {
         val name = stringResource(MR.strings.app_name)
-        val descriptionText = stringResource(TLMR.strings.server_local_notification_channel_description)
+        val descriptionText = stringResource(AMR.strings.server_local_notification_channel_description)
         val importance = NotificationManager.IMPORTANCE_LOW
         val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
             description = descriptionText

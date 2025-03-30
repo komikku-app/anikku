@@ -5,11 +5,7 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 class GlobalSearchScreenModel(
     initialQuery: String = "",
     initialExtensionFilter: String? = null,
-) : SearchScreenModel(
-    State(
-        searchQuery = initialQuery,
-    ),
-) {
+) : SearchScreenModel(State(searchQuery = initialQuery)) {
 
     init {
         extensionFilter = initialExtensionFilter

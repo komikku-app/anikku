@@ -20,7 +20,7 @@ data class ALAnime(
     val totalEpisodes: Long,
     val averageScore: Int,
 ) {
-    fun toTrack() = TrackSearch.create(TrackerManager.ANILIST).apply {
+    fun toTrackSearch() = TrackSearch.create(TrackerManager.ANILIST).apply {
         remote_id = remoteId
         title = this@ALAnime.title
         total_episodes = totalEpisodes

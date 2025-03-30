@@ -85,7 +85,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import logcat.LogPriority
 import logcat.logcat
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.i18n.stringResource
 import java.util.concurrent.TimeUnit
 
@@ -206,7 +206,7 @@ fun ExpandedControllerScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(TLMR.strings.cast_subtitle_settings),
+                            contentDescription = stringResource(AMR.strings.cast_subtitle_settings),
                             tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
@@ -361,7 +361,7 @@ fun ExpandedControllerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SkipPrevious,
-                                contentDescription = stringResource(TLMR.strings.cast_previous_video),
+                                contentDescription = stringResource(AMR.strings.cast_previous_video),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -373,7 +373,7 @@ fun ExpandedControllerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Replay30,
-                                contentDescription = stringResource(TLMR.strings.cast_rewind_30s),
+                                contentDescription = stringResource(AMR.strings.cast_rewind_30s),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -388,9 +388,9 @@ fun ExpandedControllerScreen(
                             Icon(
                                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (isPlaying) {
-                                    stringResource(TLMR.strings.cast_pause)
+                                    stringResource(AMR.strings.cast_pause)
                                 } else {
-                                    stringResource(TLMR.strings.cast_play)
+                                    stringResource(AMR.strings.cast_play)
                                 },
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(32.dp),
@@ -405,7 +405,7 @@ fun ExpandedControllerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Forward30,
-                                contentDescription = stringResource(TLMR.strings.cast_forward_30s),
+                                contentDescription = stringResource(AMR.strings.cast_forward_30s),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -433,7 +433,7 @@ fun ExpandedControllerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SkipNext,
-                                contentDescription = stringResource(TLMR.strings.cast_next_video),
+                                contentDescription = stringResource(AMR.strings.cast_next_video),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -467,7 +467,7 @@ fun ExpandedControllerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Subtitles,
-                                contentDescription = stringResource(TLMR.strings.cast_tracks),
+                                contentDescription = stringResource(AMR.strings.cast_tracks),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -480,7 +480,7 @@ fun ExpandedControllerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.QueueMusic,
-                                contentDescription = stringResource(TLMR.strings.queue),
+                                contentDescription = stringResource(AMR.strings.queue),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -495,8 +495,8 @@ fun ExpandedControllerScreen(
     if (showDisconnectDialog) {
         AlertDialog(
             onDismissRequest = { showDisconnectDialog = false },
-            title = { Text(stringResource(TLMR.strings.cast_end_session)) },
-            text = { Text(stringResource(TLMR.strings.cast_end_session_message)) },
+            title = { Text(stringResource(AMR.strings.cast_end_session)) },
+            text = { Text(stringResource(AMR.strings.cast_end_session_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -504,12 +504,12 @@ fun ExpandedControllerScreen(
                         showDisconnectDialog = false
                     },
                 ) {
-                    Text(stringResource(TLMR.strings.cast_end_session_confirm))
+                    Text(stringResource(AMR.strings.cast_end_session_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDisconnectDialog = false }) {
-                    Text(stringResource(TLMR.strings.cast_end_session_cancel))
+                    Text(stringResource(AMR.strings.cast_end_session_cancel))
                 }
             },
         )
@@ -537,7 +537,7 @@ fun ExpandedControllerScreen(
     if (showSpeedDialog) {
         AlertDialog(
             onDismissRequest = { showSpeedDialog = false },
-            title = { Text(stringResource(TLMR.strings.playback_speed)) },
+            title = { Text(stringResource(AMR.strings.playback_speed)) },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -570,7 +570,7 @@ fun ExpandedControllerScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showSpeedDialog = false }) {
-                    Text(stringResource(TLMR.strings.cast_close))
+                    Text(stringResource(AMR.strings.cast_close))
                 }
             },
         )
@@ -613,7 +613,7 @@ private fun VolumeControl(
                         volume < 0.5f -> Icons.AutoMirrored.Filled.VolumeDown
                         else -> Icons.AutoMirrored.Filled.VolumeUp
                     },
-                    contentDescription = stringResource(TLMR.strings.cast_volume),
+                    contentDescription = stringResource(AMR.strings.cast_volume),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
@@ -648,7 +648,7 @@ private fun VolumeControl(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.VolumeDown,
-                                    contentDescription = stringResource(TLMR.strings.cast_volume_down),
+                                    contentDescription = stringResource(AMR.strings.cast_volume_down),
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
@@ -683,7 +683,7 @@ private fun VolumeControl(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                    contentDescription = stringResource(TLMR.strings.cast_volume_up),
+                                    contentDescription = stringResource(AMR.strings.cast_volume_up),
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
@@ -738,11 +738,11 @@ private fun QueueDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(TLMR.strings.queue)) },
+        title = { Text(stringResource(AMR.strings.queue)) },
         text = {
             if (queueItems.isEmpty() && client?.hasMediaSession() != true) {
                 Text(
-                    text = stringResource(TLMR.strings.empty_queue),
+                    text = stringResource(AMR.strings.empty_queue),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -781,7 +781,7 @@ private fun QueueDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(TLMR.strings.cast_close))
+                Text(stringResource(AMR.strings.cast_close))
             }
         },
     )
@@ -885,7 +885,7 @@ private fun ExpandedControllerQueueItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.Clear,
-                    contentDescription = stringResource(TLMR.strings.cast_remove_from_queue),
+                    contentDescription = stringResource(AMR.strings.cast_remove_from_queue),
                     tint = MaterialTheme.colorScheme.error,
                 )
             }
@@ -931,7 +931,7 @@ private fun TracksSelectionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(TLMR.strings.cast_tracks)) },
+        title = { Text(stringResource(AMR.strings.cast_tracks)) },
         text = {
             LazyColumn {
                 val subtitleTracks = tracks.filter { it.type == MediaTrack.TYPE_TEXT }
@@ -940,14 +940,14 @@ private fun TracksSelectionDialog(
                 if (subtitleTracks.isNotEmpty()) {
                     item {
                         Text(
-                            text = stringResource(TLMR.strings.cast_subtitles),
+                            text = stringResource(AMR.strings.cast_subtitles),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
 
                         TrackItem(
                             track = null,
-                            name = stringResource(TLMR.strings.cast_no_subtitles),
+                            name = stringResource(AMR.strings.cast_no_subtitles),
                             isSelected = !activeTrackIds.any { id ->
                                 tracks.find { it.id == id }?.type == MediaTrack.TYPE_TEXT
                             },
@@ -987,7 +987,7 @@ private fun TracksSelectionDialog(
                 if (audioTracks.isNotEmpty()) {
                     item {
                         Text(
-                            text = stringResource(TLMR.strings.cast_audio_tracks),
+                            text = stringResource(AMR.strings.cast_audio_tracks),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
@@ -1015,7 +1015,7 @@ private fun TracksSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(TLMR.strings.cast_close))
+                Text(stringResource(AMR.strings.cast_close))
             }
         },
     )

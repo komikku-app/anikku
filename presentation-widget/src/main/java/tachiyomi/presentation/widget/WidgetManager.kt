@@ -21,13 +21,13 @@ class WidgetManager(
 
     fun Context.init(scope: LifecycleCoroutineScope) {
         combine(
-            getUpdates.subscribe(seen = false, after = BaseUpdatesGridGlanceWidget.DateLimit.toEpochMilli()),
+            getUpdates.subscribe(read = false, after = BaseUpdatesGridGlanceWidget.DateLimit.toEpochMilli()),
             securityPreferences.useAuthenticator().changes(),
             transform = { a, b -> a to b },
         )
             .distinctUntilChanged { old, new ->
                 old.second == new.second &&
-                    old.first.map { it.episodeId }.toSet() == new.first.map { it.episodeId }.toSet()
+                    old.first.map { it.chapterId }.toSet() == new.first.map { it.chapterId }.toSet()
             }
             .onEach {
                 try {

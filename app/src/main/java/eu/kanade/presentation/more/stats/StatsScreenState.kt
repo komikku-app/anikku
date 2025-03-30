@@ -8,10 +8,10 @@ sealed interface StatsScreenState {
     data object Loading : StatsScreenState
 
     @Immutable
-    data class SuccessAnime(
-        val overview: StatsData.AnimeOverview,
-        val titles: StatsData.AnimeTitles,
-        val episodes: StatsData.Episodes,
+    data class Success(
+        val overview: StatsData.Overview,
+        val titles: StatsData.Titles,
+        val chapters: StatsData.Chapters,
         val trackers: StatsData.Trackers,
     ) : StatsScreenState
 }

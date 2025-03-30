@@ -1,12 +1,12 @@
 package tachiyomi.domain.libraryUpdateError.model
 
-import tachiyomi.domain.anime.model.AnimeCover
+import tachiyomi.domain.manga.model.MangaCover
 
 data class LibraryUpdateErrorWithRelations(
-    val animeId: Long,
-    val animeTitle: String,
-    val animeSource: Long,
-    val animeCover: AnimeCover,
+    val mangaId: Long,
+    val mangaTitle: String,
+    val mangaSource: Long,
+    val mangaCover: MangaCover,
     val errorId: Long,
     val messageId: Long,
 )

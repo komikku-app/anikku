@@ -1,14 +1,15 @@
 package exh.smartsearch
 
-import eu.kanade.domain.anime.model.toDomainAnime
+import eu.kanade.domain.manga.model.toDomainManga
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.getSearchManga
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.SAnime
+import eu.kanade.tachiyomi.source.model.SManga
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import java.util.Locale
 
 class SmartSearchEngine(
@@ -16,12 +17,12 @@ class SmartSearchEngine(
 ) {
     private val normalizedLevenshtein = NormalizedLevenshtein()
 
-    suspend fun smartSearch(source: CatalogueSource, title: String): Anime? {
+    suspend fun smartSearch(source: CatalogueSource, title: String): Manga? {
         val cleanedTitle = cleanSmartSearchTitle(title)
 
         val queries = getSmartSearchQueries(cleanedTitle)
 
-        val eligibleAnime = supervisorScope {
+        val eligibleManga = supervisorScope {
             queries.map { query ->
                 async(Dispatchers.Default) {
                     val builtQuery = if (extraSearchParams != null) {
@@ -30,9 +31,9 @@ class SmartSearchEngine(
                         query
                     }
 
-                    val searchResults = source.getSearchAnime(1, builtQuery, FilterList())
+                    val searchResults = source.getSearchManga(1, builtQuery, FilterList())
 
-                    searchResults.animes.map {
+                    searchResults.mangas.map {
                         val cleanedMangaTitle = cleanSmartSearchTitle(it.originalTitle)
                         val normalizedDistance = normalizedLevenshtein.similarity(cleanedTitle, cleanedMangaTitle)
                         SearchEntry(it, normalizedDistance)
@@ -43,23 +44,23 @@ class SmartSearchEngine(
             }.flatMap { it.await() }
         }
 
-        return eligibleAnime.maxByOrNull { it.dist }?.manga?.toDomainAnime(source.id)
+        return eligibleManga.maxByOrNull { it.dist }?.manga?.toDomainManga(source.id)
     }
 
-    suspend fun normalSearch(source: CatalogueSource, title: String): Anime? {
+    suspend fun normalSearch(source: CatalogueSource, title: String): Manga? {
         val eligibleManga = supervisorScope {
             val searchQuery = if (extraSearchParams != null) {
                 "$title ${extraSearchParams.trim()}"
             } else {
                 title
             }
-            val searchResults = source.getSearchAnime(1, searchQuery, FilterList())
+            val searchResults = source.getSearchManga(1, searchQuery, FilterList())
 
-            if (searchResults.animes.size == 1) {
-                return@supervisorScope listOf(SearchEntry(searchResults.animes.first(), 0.0))
+            if (searchResults.mangas.size == 1) {
+                return@supervisorScope listOf(SearchEntry(searchResults.mangas.first(), 0.0))
             }
 
-            searchResults.animes.map {
+            searchResults.mangas.map {
                 val normalizedDistance = normalizedLevenshtein.similarity(title, it.originalTitle)
                 SearchEntry(it, normalizedDistance)
             }.filter { (_, normalizedDistance) ->
@@ -67,7 +68,7 @@ class SmartSearchEngine(
             }
         }
 
-        return eligibleManga.maxByOrNull { it.dist }?.manga?.toDomainAnime(source.id)
+        return eligibleManga.maxByOrNull { it.dist }?.manga?.toDomainManga(source.id)
     }
 
     private fun getSmartSearchQueries(cleanedTitle: String): List<String> {
@@ -106,7 +107,7 @@ class SmartSearchEngine(
             cleanedTitle = removeTextInBrackets(preTitle, false)
         }
 
-        // Strip episode reference RU
+        // Strip chapter reference RU
         cleanedTitle = cleanedTitle.replace(chapterRefCyrillicRegexp, " ").trim()
 
         // Strip non-special characters
@@ -181,4 +182,4 @@ class SmartSearchEngine(
     }
 }
 
-data class SearchEntry(val manga: SAnime, val dist: Double)
+data class SearchEntry(val manga: SManga, val dist: Double)

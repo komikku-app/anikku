@@ -1,4 +1,4 @@
-Looking to report an issue/bug or make a feature request? Please refer to the [README file](https://github.com/anikku-app/anikku#issues-feature-requests-and-contributing).
+Looking to report an issue/bug or make a feature request? Please refer to the [README file](https://github.com/komikku-app/anikku#issues-feature-requests-and-contributing).
 
 ---
 
@@ -30,7 +30,7 @@ Before you start, please note that the ability to use following technologies is 
 
 # Translations
 
-Translations are done externally via Weblate. See [our website](https://aniyomi.org/docs/contribute#translation) for more details.
+Translations are done externally via Weblate. See [our website](https://anikku-app.github.io/docs/contribute#translation) for more details.
 
 
 # Forks

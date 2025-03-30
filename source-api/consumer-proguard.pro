@@ -4,3 +4,5 @@
 -keep class eu.kanade.tachiyomi.animesource.** extends eu.kanade.tachiyomi.torrentutils.** { public protected *; }
 
 -keep,allowoptimization class eu.kanade.tachiyomi.util.JsoupExtensionsKt { public protected *; }
+
+-keep class exh.metadata.** { public protected *; }

@@ -15,16 +15,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.anime.components.AnimeCover
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.asAnimeCover
+import eu.kanade.presentation.manga.components.MangaCover
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.presentation.core.components.material.padding
 
 private val UpcomingItemHeight = 96.dp
 
 @Composable
 fun UpcomingItem(
-    upcoming: Anime,
+    upcoming: Manga,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -40,11 +40,11 @@ fun UpcomingItem(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.large),
     ) {
         // KMK -->
-        val mangaCover = upcoming.asAnimeCover()
+        val mangaCover = upcoming.asMangaCover()
         val bgColor = mangaCover.dominantCoverColors?.first?.let { Color(it) }
         val onBgColor = mangaCover.dominantCoverColors?.second
         // KMK <--
-        AnimeCover.Book(
+        MangaCover.Book(
             modifier = Modifier.fillMaxHeight(),
             data = mangaCover,
             bgColor = bgColor,

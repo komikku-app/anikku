@@ -2,7 +2,6 @@ plugins {
     id("mihon.library")
     kotlin("multiplatform")
     alias(libs.plugins.moko)
-    id("com.github.ben-manes.versions")
 }
 
 kotlin {
@@ -16,6 +15,10 @@ kotlin {
                 api(libs.moko.core)
             }
         }
+    }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 }
 
@@ -36,10 +39,4 @@ android {
 multiplatformResources {
     resourcesClassName.set("AMR")
     resourcesPackage.set("tachiyomi.i18n.ank")
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions.freeCompilerArgs.addAll(
-        "-Xexpect-actual-classes",
-    )
 }

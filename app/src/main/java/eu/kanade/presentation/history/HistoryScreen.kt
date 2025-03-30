@@ -42,8 +42,8 @@ fun HistoryScreen(
     state: HistoryScreenModel.State,
     snackbarHostState: SnackbarHostState,
     onSearchQueryChange: (String?) -> Unit,
-    onClickCover: (animeId: Long) -> Unit,
-    onClickResume: (animeId: Long, episodeId: Long) -> Unit,
+    onClickCover: (mangaId: Long) -> Unit,
+    onClickResume: (mangaId: Long, chapterId: Long) -> Unit,
     onDialogChange: (HistoryScreenModel.Dialog?) -> Unit,
 ) {
     // KMK -->
@@ -110,8 +110,8 @@ fun HistoryScreen(
                 HistoryScreenContent(
                     history = it,
                     contentPadding = contentPadding,
-                    onClickCover = { history -> onClickCover(history.animeId) },
-                    onClickResume = { history -> onClickResume(history.animeId, history.episodeId) },
+                    onClickCover = { history -> onClickCover(history.mangaId) },
+                    onClickResume = { history -> onClickResume(history.mangaId, history.chapterId) },
                     onClickDelete = { item -> onDialogChange(HistoryScreenModel.Dialog.Delete(item)) },
                     // KMK -->
                     usePanoramaCover = usePanoramaCover.value,

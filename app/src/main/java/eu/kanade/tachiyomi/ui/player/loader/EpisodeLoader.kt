@@ -7,14 +7,13 @@ import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.DownloadManager
-import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import kotlinx.coroutines.CancellationException
 import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.MergedAnimeReference
 import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.io.LocalSourceFileSystem
@@ -37,9 +36,9 @@ class EpisodeLoader {
         suspend fun getHosters(
             episode: Episode,
             anime: Anime,
-            source: Source,
+            source: AnimeSource,
             sourceManager: SourceManager? = null,
-            mergedReferences: List<MergedAnimeReference> = emptyList(),
+            mergedReferences: List<MergedMangaReference> = emptyList(),
             mergedManga: Map<Long, Anime> = emptyMap(),
         ): List<Hoster> {
             val isDownloaded = isDownload(episode, anime)
@@ -51,7 +50,7 @@ class EpisodeLoader {
                     } ?: error("Merge reference null")
                     val actualSource = sourceManager?.get(mangaReference.animeSourceId)
                         ?: error("Source ${mangaReference.animeSourceId} was null")
-                    val manga = mergedManga[episode.animeId] ?: error("Manga for merged episode was null")
+                    val manga = mergedManga[episode.animeId] ?: error("Anime for merged episode was null")
                     val isMergedMangaDownloaded = isDownload(episode, manga)
                     when {
                         isMergedMangaDownloaded -> getHostersOnDownloaded(
@@ -116,7 +115,7 @@ class EpisodeLoader {
         private fun getHostersOnDownloaded(
             episode: Episode,
             anime: Anime,
-            source: Source,
+            source: AnimeSource,
         ): List<Hoster> {
             val downloadManager: DownloadManager = Injekt.get()
             return try {
@@ -171,7 +170,7 @@ class EpisodeLoader {
         }
 
         /**
-         * Returns a list of hosters when the [episode] is online.
+         * Returns a list of hosters when the [Episode] is online.
          *
          * @param source the online source of the episode.
          * @param hoster the hoster.

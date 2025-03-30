@@ -35,7 +35,7 @@ data class KitsuAlgoliaSearchItem(
     val startDate: Long?,
     val endDate: Long?,
 ) {
-    fun toAnimeTrack(): TrackSearch {
+    fun toTrackSearch(): TrackSearch {
         return TrackSearch.create(TrackerManager.KITSU).apply {
             remote_id = this@KitsuAlgoliaSearchItem.id
             title = canonicalTitle

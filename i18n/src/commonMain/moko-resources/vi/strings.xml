@@ -678,7 +678,7 @@
     <string name="action_sort_next_updated">Cập nhật dự kiến tiếp theo</string>
     <string name="information_cloudflare_help">Nhấn vào đây để được trợ giúp về Cloudflare</string>
     <string name="pref_update_only_in_release_period">Chưa công bố</string>
-    <string name="unlock_app_title">Mở khóa Anikku</string>
+    <string name="unlock_app_title">Mở khóa Aniyomi</string>
     <string name="source_settings">Cài đặt nguồn</string>
     <string name="app_settings">Cài đặt ứng dụng</string>
     <string name="pref_storage_location">Vị trí kho chứa</string>
@@ -775,8 +775,8 @@
     <string name="also_set_chapter_settings_for_library">Ngoài ra có hiệu lực với tất cả truyện trong thư viện</string>
     <string name="dialog_with_checkbox_reset">Đặt lại mọi chương của manga này</string>
     <string name="download_insufficient_space">Không thể tãi chương vì dung lượng bộ nhớ xuống thấp</string>
-    <string name="download_queue_size_warning">Cảnh báo: các tải xuống hàng loạt lớn có thể dẫn đến các nguồn trở nên chậm hơn và / hoặc chặn Anikku. Nhấn vào để tìm hiểu thêm.</string>
-    <string name="information_webview_required">Anikku yêu cầu phải có WebView</string>
+    <string name="download_queue_size_warning">Cảnh báo: các tải xuống hàng loạt lớn có thể dẫn đến các nguồn trở nên chậm hơn và / hoặc chặn Aniyomi. Nhấn vào để tìm hiểu thêm.</string>
+    <string name="information_webview_required">Aniyomi yêu cầu phải có WebView</string>
     <string name="download_notifier_download_paused_chapters">Tải xuống đã tạm dừng</string>
     <string name="channel_new_chapters_episodes">Cập nhật chương</string>
     <string name="general_categories">Thể loại</string>
@@ -786,7 +786,7 @@
     <string name="confirm_exit">Hãy nhấn lại nút quay lại để thoát</string>
     <string name="information_empty_repos">Bạn chưa đặt repo.</string>
     <string name="action_add_repo">Thêm repo</string>
-    <string name="action_add_repo_message">Thêm repo bên ngoài vào Anikku. Link này có đuôi URL kết thúc với \"index.min.json\".</string>
+    <string name="action_add_repo_message">Thêm repo bên ngoài vào Aniyomi. Link này có đuôi URL kết thúc với \"index.min.json\".</string>
     <string name="error_repo_exists">Repo này đã tồn tại!</string>
     <string name="action_delete_repo">Xoá repo</string>
     <string name="invalid_repo_name">Repo URL không hợp lệ</string>
@@ -952,7 +952,6 @@
 \nHiện đang nén thành Jpeg</string>
     <string name="label_anime_extension_repos">Repo Anime Extension</string>
     <string name="settings">Cài đặt</string>
-    <string name="download_threads_number_summary">Số lượng luồng được sử dụng để tải xuống, có thể khiến IP của bạn bị chặn nếu quá cao, thường thì 4 là con số phù hợp để tránh tải nặng trên máy chủ nguồn.</string>
     <string name="action_change_intro_length">Thay đổi độ dài intro</string>
     <string name="relative_time_now">Bây giờ</string>
     <string name="action_replace_repo">Thay thế</string>
@@ -1003,10 +1002,7 @@
     <string name="bandwidth_hero">Bandwidth Hero (yêu cầu máy chủ Bandwidth Hero Proxy)</string>
     <string name="resmush">resmush.it</string>
     <string name="bandwidth_data_saver_server">Máy chủ Bandwidth Hero Proxy</string>
-    <string name="onboarding_storage_action_create_folder">Tạo thư mục Anikku mặc định</string>
-    <string name="safe_download">Chế độ tải xuống an toàn cho anime</string>
-    <string name="safe_download_summary">Kích hoạt chế độ tải xuống một luồng và không có phạm vi</string>
-    <string name="download_threads_number">Số luồng</string>
+    <string name="onboarding_storage_action_create_folder">Tạo thư mục Aniyomi mặc định</string>
     <string name="download_speed_limit">Giới hạn tốc độ tải xuống</string>
     <string name="download_speed_limit_hint">Đặt thành 0 để tắt giới hạn tốc độ.</string>
     <string name="pref_mpv_scripts_summary">Cần có quyền truy cập bộ nhớ ngoài.</string>
@@ -1037,14 +1033,12 @@
     <string name="pref_waiting_time_aniskip_5">5 giây</string>
     <string name="snack_add_to_anime_library">Thêm anime vào thư viện?</string>
     <string name="dialog_with_checkbox_reset_anime">Đặt lại mọi tập cho anime này</string>
-    <string name="player_aniskip_ed">Bỏ qua Ending</string>
     <string name="data_saver_image_format_summary_off">Kích thước tệp Jpeg nhỏ hơn đáng kể so với Webp (có nghĩa là lưu được nhiều dữ liệu hơn), nhưng nó cũng khiến hình ảnh mất chất lượng nhiều hơn.
 \nHiện đang nén thành Webp</string>
     <string name="data_saver_exclude">Loại trừ khỏi trình tiết kiệm dữ liệu</string>
     <string name="data_saver">Trình tiết kiệm dữ liệu</string>
     <string name="wsrv">wsrv.nl</string>
     <string name="data_saver_server_summary">Điền url máy chủ Bandwidth Hero Proxy tại đây</string>
-    <string name="player_aniskip_op">Bỏ qua Opening</string>
     <string name="pref_enable_auto_skip_ani_skip">Bật tự động skip</string>
     <string name="player_aniskip_dontskip_toast">Skip sau %d giây</string>
     <string name="label_anime_extensions">Anime Extensions</string>
@@ -1080,8 +1074,6 @@
     <string name="label_manga_extensions">Manga Extensions</string>
     <string name="label_migration_manga">Di chuyển Manga</string>
     <string name="copied_video_link_to_clipboard">Đã sao chép liên kết chất lượng video vào bảng nhớ tạm</string>
-    <string name="player_aniskip_mixedOp">Bỏ qua MixedOp</string>
-    <string name="player_aniskip_recap">Bỏ qua Recap</string>
     <string name="pref_gpu_next_title">Bật gpu-next</string>
     <string name="label_upcoming">Sắp tới</string>
     <string name="action_add_anyway">Vẫn thêm</string>

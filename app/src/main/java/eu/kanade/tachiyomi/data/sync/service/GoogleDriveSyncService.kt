@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.sync.service
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import com.google.api.client.auth.oauth2.TokenResponseException
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest
@@ -279,7 +279,7 @@ class GoogleDriveService(private val context: Context) {
         val authorizationUrl = generateAuthorizationUrl()
 
         return Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse(authorizationUrl)
+            data = authorizationUrl.toUri()
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }

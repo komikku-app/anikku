@@ -1,26 +1,26 @@
 package eu.kanade.presentation.history.components
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.history.model.HistoryWithRelations
+import tachiyomi.domain.manga.model.MangaCover
 import java.util.Date
 
 internal class HistoryWithRelationsProvider : PreviewParameterProvider<HistoryWithRelations> {
 
     private val simple = HistoryWithRelations(
         id = 1L,
-        episodeId = 2L,
-        animeId = 3L,
+        chapterId = 2L,
+        mangaId = 3L,
         // SY -->
         ogTitle = "Test Title",
         // SY <--
-        episodeNumber = 10.2,
-        seenAt = Date(1697247357L),
-        watchDuration = 123L,
-        coverData = AnimeCover(
-            animeId = 3L,
+        chapterNumber = 10.2,
+        readAt = Date(1697247357L),
+        readDuration = 123L,
+        coverData = MangaCover(
+            mangaId = 3L,
             sourceId = 4L,
-            isAnimeFavorite = false,
+            isMangaFavorite = false,
             ogUrl = "https://example.com/cover.png",
             lastModified = 5L,
         ),
@@ -28,18 +28,18 @@ internal class HistoryWithRelationsProvider : PreviewParameterProvider<HistoryWi
 
     private val historyWithoutReadAt = HistoryWithRelations(
         id = 1L,
-        episodeId = 2L,
-        animeId = 3L,
+        chapterId = 2L,
+        mangaId = 3L,
         // SY -->
         ogTitle = "Test Title",
         // SY <--
-        episodeNumber = 10.2,
-        seenAt = null,
-        watchDuration = 123L,
-        coverData = AnimeCover(
-            animeId = 3L,
+        chapterNumber = 10.2,
+        readAt = null,
+        readDuration = 123L,
+        coverData = MangaCover(
+            mangaId = 3L,
             sourceId = 4L,
-            isAnimeFavorite = false,
+            isMangaFavorite = false,
             ogUrl = "https://example.com/cover.png",
             lastModified = 5L,
         ),
@@ -47,18 +47,18 @@ internal class HistoryWithRelationsProvider : PreviewParameterProvider<HistoryWi
 
     private val historyWithNegativeChapterNumber = HistoryWithRelations(
         id = 1L,
-        episodeId = 2L,
-        animeId = 3L,
+        chapterId = 2L,
+        mangaId = 3L,
         // SY -->
         ogTitle = "Test Title",
         // SY <--
-        episodeNumber = -2.0,
-        seenAt = Date(1697247357L),
-        watchDuration = 123L,
-        coverData = AnimeCover(
-            animeId = 3L,
+        chapterNumber = -2.0,
+        readAt = Date(1697247357L),
+        readDuration = 123L,
+        coverData = MangaCover(
+            mangaId = 3L,
             sourceId = 4L,
-            isAnimeFavorite = false,
+            isMangaFavorite = false,
             ogUrl = "https://example.com/cover.png",
             lastModified = 5L,
         ),

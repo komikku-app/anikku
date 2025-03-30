@@ -1,31 +1,30 @@
 package eu.kanade.tachiyomi.data.track
 
-import androidx.annotation.StringRes
-import eu.kanade.tachiyomi.R
+import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.bangumi.Bangumi
 import eu.kanade.tachiyomi.data.track.kitsu.Kitsu
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.data.track.shikimori.Shikimori
 import eu.kanade.tachiyomi.data.track.simkl.Simkl
+import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 
-@Suppress("MagicNumber")
-enum class TrackStatus(val int: Long, @StringRes val res: Int) {
-    WATCHING(11, R.string.watching),
-    REWATCHING(17, R.string.repeating_anime),
-    PLAN_TO_WATCH(16, R.string.plan_to_watch),
-    PAUSED(4, R.string.on_hold),
-    COMPLETED(5, R.string.completed),
-    DROPPED(6, R.string.dropped),
-    OTHER(7, R.string.not_tracked),
+enum class TrackStatus(val long: Long, val res: StringResource) {
+    WATCHING(11L, MR.strings.watching),
+    REWATCHING(17L, MR.strings.repeating_anime),
+    PLAN_TO_WATCH(16L, MR.strings.plan_to_watch),
+    PAUSED(4L, MR.strings.on_hold),
+    COMPLETED(5L, MR.strings.completed),
+    DROPPED(6L, MR.strings.dropped),
+    OTHER(7L, SYMR.strings.not_tracked),
     ;
 
     companion object {
-        @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod")
-        fun parseTrackerStatus(tracker: Long, statusLong: Long): TrackStatus? {
+        fun parseTrackerStatus(trackerManager: TrackerManager, tracker: Long, status: Long): TrackStatus? {
             return when (tracker) {
-                (1L) -> {
-                    when (statusLong) {
+                trackerManager.myAnimeList.id -> {
+                    when (status) {
                         MyAnimeList.WATCHING -> WATCHING
                         MyAnimeList.COMPLETED -> COMPLETED
                         MyAnimeList.ON_HOLD -> PAUSED
@@ -35,19 +34,19 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
-                TrackerManager.ANILIST -> {
-                    when (statusLong) {
+                trackerManager.aniList.id -> {
+                    when (status) {
                         Anilist.WATCHING -> WATCHING
-                        Anilist.REWATCHING -> REWATCHING
-                        Anilist.PLAN_TO_WATCH -> PLAN_TO_WATCH
-                        Anilist.ON_HOLD -> PAUSED
                         Anilist.COMPLETED -> COMPLETED
+                        Anilist.ON_HOLD -> PAUSED
+                        Anilist.PLAN_TO_WATCH -> PLAN_TO_WATCH
                         Anilist.DROPPED -> DROPPED
+                        Anilist.REWATCHING -> REWATCHING
                         else -> null
                     }
                 }
-                TrackerManager.KITSU -> {
-                    when (statusLong) {
+                trackerManager.kitsu.id -> {
+                    when (status) {
                         Kitsu.WATCHING -> WATCHING
                         Kitsu.COMPLETED -> COMPLETED
                         Kitsu.ON_HOLD -> PAUSED
@@ -56,24 +55,29 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
-                (4L) -> {
-                    when (statusLong) {
+                trackerManager.shikimori.id -> {
+                    when (status) {
+                        Shikimori.WATCHING -> WATCHING
                         Shikimori.COMPLETED -> COMPLETED
                         Shikimori.ON_HOLD -> PAUSED
+                        Shikimori.PLAN_TO_WATCH -> PLAN_TO_WATCH
                         Shikimori.DROPPED -> DROPPED
+                        Shikimori.REWATCHING -> REWATCHING
                         else -> null
                     }
                 }
-                (5L) -> {
-                    when (statusLong) {
+                trackerManager.bangumi.id -> {
+                    when (status) {
+                        Bangumi.WATCHING -> WATCHING
                         Bangumi.COMPLETED -> COMPLETED
                         Bangumi.ON_HOLD -> PAUSED
+                        Bangumi.PLAN_TO_WATCH -> PLAN_TO_WATCH
                         Bangumi.DROPPED -> DROPPED
                         else -> null
                     }
                 }
-                TrackerManager.SIMKL -> {
-                    when (statusLong) {
+                trackerManager.simkl.id -> {
+                    when (status) {
                         Simkl.WATCHING -> WATCHING
                         Simkl.COMPLETED -> COMPLETED
                         Simkl.ON_HOLD -> PAUSED

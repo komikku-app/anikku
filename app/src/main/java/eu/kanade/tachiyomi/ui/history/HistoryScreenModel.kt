@@ -23,9 +23,9 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.interactor.GetHistory
-import tachiyomi.domain.history.interactor.GetNextEpisodes
+import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.history.interactor.RemoveHistory
 import tachiyomi.domain.history.model.HistoryWithRelations
 import uy.kohesive.injekt.Injekt
@@ -33,7 +33,7 @@ import uy.kohesive.injekt.api.get
 
 class HistoryScreenModel(
     private val getHistory: GetHistory = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
+    private val getNextChapters: GetNextChapters = Injekt.get(),
     private val removeHistory: RemoveHistory = Injekt.get(),
 ) : StateScreenModel<HistoryScreenModel.State>(State()) {
 
@@ -61,8 +61,8 @@ class HistoryScreenModel(
     private fun List<HistoryWithRelations>.toHistoryUiModels(): List<HistoryUiModel> {
         return map { HistoryUiModel.Item(it) }
             .insertSeparators { before, after ->
-                val beforeDate = before?.item?.seenAt?.time?.toLocalDate()
-                val afterDate = after?.item?.seenAt?.time?.toLocalDate()
+                val beforeDate = before?.item?.readAt?.time?.toLocalDate()
+                val afterDate = after?.item?.readAt?.time?.toLocalDate()
                 when {
                     beforeDate != afterDate && afterDate != null -> HistoryUiModel.Header(afterDate)
                     // Return null to avoid adding a separator between two items.
@@ -71,19 +71,19 @@ class HistoryScreenModel(
             }
     }
 
-    suspend fun getNextEpisode(): Episode? {
-        return withIOContext { getNextEpisodes.await(onlyUnseen = false).firstOrNull() }
+    suspend fun getNextChapter(): Chapter? {
+        return withIOContext { getNextChapters.await(onlyUnread = false).firstOrNull() }
     }
 
-    fun getNextEpisodeForAnime(animeId: Long, episodeId: Long) {
+    fun getNextChapterForManga(mangaId: Long, chapterId: Long) {
         screenModelScope.launchIO {
-            sendNextEpisodeEvent(getNextEpisodes.await(animeId, episodeId, onlyUnseen = false))
+            sendNextChapterEvent(getNextChapters.await(mangaId, chapterId, onlyUnread = false))
         }
     }
 
-    private suspend fun sendNextEpisodeEvent(episodes: List<Episode>) {
-        val episode = episodes.firstOrNull()
-        _events.send(Event.OpenEpisode(episode))
+    private suspend fun sendNextChapterEvent(chapters: List<Chapter>) {
+        val chapter = chapters.firstOrNull()
+        _events.send(Event.OpenChapter(chapter))
     }
 
     fun removeFromHistory(history: HistoryWithRelations) {
@@ -92,9 +92,9 @@ class HistoryScreenModel(
         }
     }
 
-    fun removeAllFromHistory(animeId: Long) {
+    fun removeAllFromHistory(mangaId: Long) {
         screenModelScope.launchIO {
-            removeHistory.await(animeId)
+            removeHistory.await(mangaId)
         }
     }
 
@@ -127,7 +127,7 @@ class HistoryScreenModel(
     }
 
     sealed interface Event {
-        data class OpenEpisode(val episode: Episode?) : Event
+        data class OpenChapter(val chapter: Chapter?) : Event
         data object InternalError : Event
         data object HistoryCleared : Event
     }

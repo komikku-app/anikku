@@ -25,7 +25,7 @@ object StorageScreen : Screen {
 
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { AnimeStorageScreenModel() }
+        val screenModel = rememberScreenModel { MangaStorageScreenModel() }
         val state by screenModel.state.collectAsState()
 
         Scaffold(

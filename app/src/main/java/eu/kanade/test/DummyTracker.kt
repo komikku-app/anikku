@@ -4,7 +4,7 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.track.Tracker
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -17,7 +17,7 @@ import tachiyomi.i18n.MR
 data class DummyTracker(
     override val id: Long,
     override val name: String,
-    override val supportsWatchingDates: Boolean = false,
+    override val supportsReadingDates: Boolean = false,
     override val isLoggedIn: Boolean = false,
     override val isLoggedInFlow: Flow<Boolean> = flowOf(false),
     val valLogoColor: Int = Color.rgb(18, 25, 35),
@@ -38,9 +38,9 @@ data class DummyTracker(
 
     override fun getLogo(): Int = valLogo
 
-    override fun getStatusListAnime(): List<Long> = valStatuses
+    override fun getStatusList(): List<Long> = valStatuses
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         1L -> MR.strings.watching
         2L -> MR.strings.plan_to_watch
         3L -> MR.strings.completed
@@ -50,9 +50,9 @@ data class DummyTracker(
         else -> null
     }
 
-    override fun getWatchingStatus(): Long = valWatchingStatus
+    override fun getReadingStatus(): Long = valWatchingStatus
 
-    override fun getRewatchingStatus(): Long = valWatchingStatus
+    override fun getRereadingStatus(): Long = valWatchingStatus
 
     override fun getCompletionStatus(): Long = valCompletionStatus
 
@@ -67,12 +67,12 @@ data class DummyTracker(
 
     override suspend fun update(
         track: eu.kanade.tachiyomi.data.database.models.Track,
-        didWatchEpisode: Boolean,
+        didReadChapter: Boolean,
     ): eu.kanade.tachiyomi.data.database.models.Track = track
 
     override suspend fun bind(
         track: eu.kanade.tachiyomi.data.database.models.Track,
-        hasSeenEpisodes: Boolean,
+        hasReadChapters: Boolean,
     ): eu.kanade.tachiyomi.data.database.models.Track = track
 
     override suspend fun search(query: String): List<TrackSearch> = valSearchResults
@@ -96,14 +96,14 @@ data class DummyTracker(
         animeId: Long,
     ) = Unit
 
-    override suspend fun setRemoteAnimeStatus(
+    override suspend fun setRemoteStatus(
         track: eu.kanade.tachiyomi.data.database.models.Track,
         status: Long,
     ) = Unit
 
-    override suspend fun setRemoteLastEpisodeSeen(
+    override suspend fun setRemoteLastChapterRead(
         track: eu.kanade.tachiyomi.data.database.models.Track,
-        episodeNumber: Int,
+        chapterNumber: Int,
     ) = Unit
 
     override suspend fun setRemoteScore(
@@ -121,13 +121,13 @@ data class DummyTracker(
         epochMillis: Long,
     ) = Unit
 
-    override suspend fun getAnimeMetadata(
+    override suspend fun getMangaMetadata(
         track: Track,
-    ) = TrackAnimeMetadata(
+    ) = TrackMangaMetadata(
         0, "test", "test", "test", "test", "test",
     )
 
     // KMK -->
-    override fun hasNotStartedWatching(status: Long): Boolean = status == 2L
+    override fun hasNotStartedReading(status: Long): Boolean = status == 2L
     // KMK <--
 }

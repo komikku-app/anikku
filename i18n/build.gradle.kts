@@ -1,6 +1,5 @@
 import mihon.buildlogic.generatedBuildDir
 import mihon.buildlogic.tasks.getLocalesConfigTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("mihon.library")
@@ -19,6 +18,10 @@ kotlin {
                 api(libs.moko.core)
             }
         }
+    }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 }
 
@@ -48,13 +51,5 @@ tasks {
     val localesConfigTask = project.getLocalesConfigTask(generatedAndroidResourceDir)
     preBuild {
         dependsOn(localesConfigTask)
-    }
-
-    withType<KotlinCompile> {
-        compilerOptions.freeCompilerArgs.addAll(
-            listOf(
-                "-Xexpect-actual-classes",
-            ),
-        )
     }
 }

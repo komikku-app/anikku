@@ -6,7 +6,7 @@ import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.model.toDomainTrack
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.flow.Flow
@@ -35,8 +35,8 @@ abstract class BaseTracker(
     override val client: OkHttpClient
         get() = networkService.client
 
-    // Application and remote support for watching dates
-    override val supportsWatchingDates: Boolean = false
+    // Application and remote support for reading dates
+    override val supportsReadingDates: Boolean = false
 
     // TODO: Store all scores as 10 point in the future maybe?
     override fun get10PointScore(track: DomainTrack): Double {
@@ -82,7 +82,7 @@ abstract class BaseTracker(
         }
     }
 
-    override suspend fun setRemoteAnimeStatus(track: Track, status: Long) {
+    override suspend fun setRemoteStatus(track: Track, status: Long) {
         track.status = status
         if (track.status == getCompletionStatus() && track.total_episodes != 0L) {
             track.last_episode_seen = track.total_episodes.toDouble()
@@ -90,15 +90,15 @@ abstract class BaseTracker(
         updateRemote(track)
     }
 
-    override suspend fun setRemoteLastEpisodeSeen(track: Track, episodeNumber: Int) {
+    override suspend fun setRemoteLastChapterRead(track: Track, chapterNumber: Int) {
         if (
             track.last_episode_seen == 0.0 &&
-            track.last_episode_seen < episodeNumber &&
-            track.status != getRewatchingStatus()
+            track.last_episode_seen < chapterNumber &&
+            track.status != getRereadingStatus()
         ) {
-            track.status = getWatchingStatus()
+            track.status = getReadingStatus()
         }
-        track.last_episode_seen = episodeNumber.toDouble()
+        track.last_episode_seen = chapterNumber.toDouble()
         if (track.total_episodes != 0L && track.last_episode_seen.toLong() == track.total_episodes) {
             track.status = getCompletionStatus()
             track.finished_watching_date = System.currentTimeMillis()
@@ -121,7 +121,7 @@ abstract class BaseTracker(
         updateRemote(track)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata {
         throw NotImplementedError("Not implemented.")
     }
 

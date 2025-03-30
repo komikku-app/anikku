@@ -24,7 +24,7 @@ data class BGMSearchItem(
     val rating: BGMSearchItemRating?,
     val url: String,
 ) {
-    fun toAnimeTrackSearch(trackId: Long): TrackSearch = TrackSearch.create(trackId).apply {
+    fun toTrackSearch(trackId: Long): TrackSearch = TrackSearch.create(trackId).apply {
         remote_id = this@BGMSearchItem.id
         title = nameCn.ifBlank { name }
         cover_url = images?.common.orEmpty()
@@ -41,7 +41,11 @@ data class BGMSearchItem(
 
 @Serializable
 data class BGMSearchItemCovers(
+    val large: String?,
+    val medium: String?,
     val common: String?,
+    val small: String?,
+    val grid: String?,
 )
 
 @Serializable

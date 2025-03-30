@@ -12,6 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import tachiyomi.presentation.core.util.secondaryItemAlpha
@@ -20,7 +24,7 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 fun TextPreferenceWidget(
     modifier: Modifier = Modifier,
     title: String? = null,
-    subtitle: String? = null,
+    subtitle: CharSequence? = null,
     icon: ImageVector? = null,
     iconTint: Color = MaterialTheme.colorScheme.primary,
     widget: @Composable (() -> Unit)? = null,
@@ -31,14 +35,27 @@ fun TextPreferenceWidget(
         title = title,
         subcomponent = if (!subtitle.isNullOrBlank()) {
             {
-                Text(
-                    text = subtitle,
-                    modifier = Modifier
-                        .padding(horizontal = PrefsHorizontalPadding)
-                        .secondaryItemAlpha(),
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 10,
-                )
+                // SY -->
+                if (subtitle is AnnotatedString) {
+                    Text(
+                        text = subtitle,
+                        modifier = Modifier
+                            .padding(horizontal = PrefsHorizontalPadding)
+                            .secondaryItemAlpha(),
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 10,
+                    )
+                } else {
+                    // SY <--
+                    Text(
+                        text = subtitle.toString(),
+                        modifier = Modifier
+                            .padding(horizontal = PrefsHorizontalPadding)
+                            .secondaryItemAlpha(),
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 10,
+                    )
+                }
             }
         } else {
             null
@@ -76,6 +93,19 @@ private fun TextPreferenceWidgetPreview() {
                     subtitle = "Text preference summary",
                     onPreferenceClick = {},
                 )
+                // SY -->
+                TextPreferenceWidget(
+                    title = "Text preference",
+                    subtitle = buildAnnotatedString {
+                        append("Text preference ")
+
+                        withStyle(SpanStyle(Color.Red)) {
+                            append("summary")
+                        }
+                    },
+                    onPreferenceClick = {},
+                )
+                // SY <--
             }
         }
     }

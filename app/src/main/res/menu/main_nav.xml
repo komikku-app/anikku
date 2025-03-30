@@ -2,22 +2,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_animelib"
-        android:icon="@drawable/ic_animelibrary_selector_24dp"
+        android:icon="@drawable/ic_library_selector_24dp"
         android:title="@string/label_anime_library" />
     <item
         android:id="@+id/nav_library"
-        android:icon="@drawable/ic_animelibrary_selector_24dp"
+        android:icon="@drawable/ic_library_selector_24dp"
         android:title="@string/label_manga" />
     <item
         android:id="@+id/nav_updates"
-        android:icon="@drawable/ic_animelibrary_selector_24dp"
+        android:icon="@drawable/ic_library_selector_24dp"
         android:title="@string/label_recent_updates" />
     <item
         android:id="@+id/nav_browse"
-        android:icon="@drawable/ic_animelibrary_selector_24dp"
+        android:icon="@drawable/ic_library_selector_24dp"
         android:title="@string/browse" />
     <item
         android:id="@+id/nav_more"
-        android:icon="@drawable/ic_animelibrary_selector_24dp"
+        android:icon="@drawable/ic_library_selector_24dp"
         android:title="@string/label_more" />
 </menu>

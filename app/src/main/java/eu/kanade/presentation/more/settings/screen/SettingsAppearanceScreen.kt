@@ -200,7 +200,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                         .toImmutableMap(),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = uiPreferences.usePanoramaCoverAnimeInfo(),
+                    pref = uiPreferences.usePanoramaCoverMangaInfo(),
                     title = stringResource(KMR.strings.pref_panorama_cover),
                     subtitle = stringResource(KMR.strings.pref_panorama_cover_summary),
                 ),
@@ -269,7 +269,7 @@ object SettingsAppearanceScreen : SearchableSettings {
     fun getForkGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
         // KMK -->
         val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
-        val relatedMangasInOverflow by uiPreferences.expandRelatedAnimes().collectAsState()
+        val relatedMangasInOverflow by uiPreferences.expandRelatedMangas().collectAsState()
         // KMK <--
 
         return Preference.PreferenceGroup(
@@ -282,35 +282,35 @@ object SettingsAppearanceScreen : SearchableSettings {
                     subtitle = stringResource(KMR.strings.pref_panorama_cover_flow_summary),
                 ),
                 // KMK <--
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.expandFilters(),
-//                    title = stringResource(SYMR.strings.toggle_expand_search_filters),
-//                ),
-//                // KMK -->
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = uiPreferences.expandRelatedAnimes(),
+                    pref = uiPreferences.expandFilters(),
+                    title = stringResource(SYMR.strings.toggle_expand_search_filters),
+                ),
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.expandRelatedMangas(),
                     title = stringResource(KMR.strings.pref_expand_related_mangas),
                     subtitle = stringResource(KMR.strings.pref_expand_related_mangas_summary),
-                    enabled = sourcePreferences.relatedAnimes().get(),
+                    enabled = sourcePreferences.relatedMangas().get(),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = uiPreferences.relatedAnimesInOverflow(),
+                    pref = uiPreferences.relatedMangasInOverflow(),
                     enabled = !relatedMangasInOverflow,
                     title = stringResource(KMR.strings.put_related_mangas_in_overflow),
                     subtitle = stringResource(KMR.strings.put_related_mangas_in_overflow_summary),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = uiPreferences.showHomeOnRelatedAnimes(),
+                    pref = uiPreferences.showHomeOnRelatedMangas(),
                     title = stringResource(KMR.strings.pref_show_home_on_related_mangas),
                     subtitle = stringResource(KMR.strings.pref_show_home_on_related_mangas_summary),
-                    enabled = sourcePreferences.relatedAnimes().get(),
+                    enabled = sourcePreferences.relatedMangas().get(),
                 ),
                 // KMK <--
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.recommendsInOverflow(),
-//                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
-//                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
-//                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.recommendsInOverflow(),
+                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
+                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
+                ),
                 Preference.PreferenceItem.SwitchPreference(
                     pref = uiPreferences.mergeInOverflow(),
                     title = stringResource(SYMR.strings.put_merge_in_overflow),

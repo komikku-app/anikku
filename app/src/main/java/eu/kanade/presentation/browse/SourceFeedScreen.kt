@@ -26,7 +26,7 @@ import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
 import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.i18n.MR
@@ -43,32 +43,32 @@ sealed class SourceFeedUI {
 
     abstract val title: Any
 
-    abstract val results: List<Anime>?
+    abstract val results: List<Manga>?
 
-    abstract fun withResults(results: List<Anime>?): SourceFeedUI
+    abstract fun withResults(results: List<Manga>?): SourceFeedUI
 
-    data class Latest(override val results: List<Anime>?) : SourceFeedUI() {
+    data class Latest(override val results: List<Manga>?) : SourceFeedUI() {
         override val id: Long = -1
         override val title: StringResource
             get() = MR.strings.latest
 
-        override fun withResults(results: List<Anime>?): SourceFeedUI {
+        override fun withResults(results: List<Manga>?): SourceFeedUI {
             return copy(results = results)
         }
     }
-    data class Browse(override val results: List<Anime>?) : SourceFeedUI() {
+    data class Browse(override val results: List<Manga>?) : SourceFeedUI() {
         override val id: Long = -2
         override val title: StringResource
             get() = MR.strings.browse
 
-        override fun withResults(results: List<Anime>?): SourceFeedUI {
+        override fun withResults(results: List<Manga>?): SourceFeedUI {
             return copy(results = results)
         }
     }
     data class SourceSavedSearch(
         val feed: FeedSavedSearch,
         val savedSearch: SavedSearch,
-        override val results: List<Anime>?,
+        override val results: List<Manga>?,
     ) : SourceFeedUI() {
         override val id: Long
             get() = feed.id
@@ -76,7 +76,7 @@ sealed class SourceFeedUI {
         override val title: String
             get() = savedSearch.name
 
-        override fun withResults(results: List<Anime>?): SourceFeedUI {
+        override fun withResults(results: List<Manga>?): SourceFeedUI {
             return copy(results = results)
         }
     }
@@ -96,17 +96,17 @@ fun SourceFeedScreen(
     // onClickDelete: (FeedSavedSearch) -> Unit,
     onLongClickFeed: (SourceFeedUI.SourceSavedSearch, Boolean, Boolean) -> Unit,
     // KMK <--
-    onClickManga: (Anime) -> Unit,
+    onClickManga: (Manga) -> Unit,
     onClickSearch: (String) -> Unit,
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
-    getMangaState: @Composable (Anime) -> State<Anime>,
+    getMangaState: @Composable (Manga) -> State<Manga>,
     // KMK -->
     navigateUp: () -> Unit,
     onWebViewClick: (() -> Unit)?,
     onSourceSettingClick: (() -> Unit?)?,
     onSortFeedClick: (() -> Unit)?,
-    onLongClickManga: (Anime) -> Unit,
+    onLongClickManga: (Manga) -> Unit,
     bulkFavoriteScreenModel: BulkFavoriteScreenModel,
     // KMK <--
 ) {
@@ -194,7 +194,7 @@ fun SourceFeedScreen(
 fun SourceFeedList(
     items: ImmutableList<SourceFeedUI>,
     paddingValues: PaddingValues,
-    getMangaState: @Composable ((Anime) -> State<Anime>),
+    getMangaState: @Composable ((Manga) -> State<Manga>),
     onClickBrowse: () -> Unit,
     onClickLatest: () -> Unit,
     onClickSavedSearch: (SavedSearch) -> Unit,
@@ -202,10 +202,10 @@ fun SourceFeedList(
     // onClickDelete: (FeedSavedSearch) -> Unit,
     onLongClickFeed: (SourceFeedUI.SourceSavedSearch, Boolean, Boolean) -> Unit,
     // KMK <--
-    onClickManga: (Anime) -> Unit,
+    onClickManga: (Manga) -> Unit,
     // KMK -->
-    onLongClickManga: (Anime) -> Unit,
-    selection: List<Anime>,
+    onLongClickManga: (Manga) -> Unit,
+    selection: List<Manga>,
     // KMK <--
 ) {
     ScrollbarLazyColumn(
@@ -266,11 +266,11 @@ fun SourceFeedList(
 @Composable
 fun SourceFeedItem(
     item: SourceFeedUI,
-    getMangaState: @Composable ((Anime) -> State<Anime>),
-    onClickManga: (Anime) -> Unit,
+    getMangaState: @Composable ((Manga) -> State<Manga>),
+    onClickManga: (Manga) -> Unit,
     // KMK -->
-    onLongClickManga: (Anime) -> Unit,
-    selection: List<Anime>,
+    onLongClickManga: (Manga) -> Unit,
+    selection: List<Manga>,
     // KMK <--
 ) {
     val results = item.results
@@ -284,7 +284,7 @@ fun SourceFeedItem(
         else -> {
             GlobalSearchCardRow(
                 titles = item.results.orEmpty(),
-                getAnime = getMangaState,
+                getManga = getMangaState,
                 onClick = onClickManga,
                 // KMK -->
                 onLongClick = onLongClickManga,

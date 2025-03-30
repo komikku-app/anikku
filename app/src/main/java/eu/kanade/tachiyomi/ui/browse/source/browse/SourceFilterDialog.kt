@@ -50,11 +50,11 @@ fun SourceFilterDialog(
     onSave: () -> Unit,
     onSavedSearch: (EXHSavedSearch) -> Unit,
     onSavedSearchPress: (EXHSavedSearch) -> Unit,
+    // SY <--
     // KMK -->
     onSavedSearchPressDesc: String,
     shouldShowSavingButton: Boolean = true,
     // KMK <--
-    // SY <--
 ) {
     val updateFilters = { onUpdate(filters) }
 

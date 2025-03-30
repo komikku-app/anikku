@@ -25,9 +25,9 @@ class WebViewScreenModel(
     var headers = emptyMap<String, String>()
 
     init {
-        sourceId?.let { sourceManager.get(it) as? HttpSource }?.let { animesource ->
+        sourceId?.let { sourceManager.get(it) as? HttpSource }?.let { source ->
             try {
-                headers = animesource.headers.toMultimap().mapValues { it.value.getOrNull(0) ?: "" }
+                headers = source.headers.toMultimap().mapValues { it.value.getOrNull(0) ?: "" }
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e) { "Failed to build headers" }
             }

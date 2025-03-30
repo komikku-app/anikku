@@ -28,11 +28,11 @@ import eu.kanade.presentation.browse.components.MigrationItem
 import eu.kanade.presentation.browse.components.MigrationItemResult
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingAnime
+import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingManga
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
@@ -43,13 +43,13 @@ import tachiyomi.presentation.core.util.plus
 
 @Composable
 fun MigrationListScreen(
-    items: ImmutableList<MigratingAnime>,
+    items: ImmutableList<MigratingManga>,
     migrationDone: Boolean,
     finishedCount: Int,
-    getManga: suspend (MigratingAnime.SearchResult.Result) -> Anime?,
-    getEpisodeInfo: suspend (MigratingAnime.SearchResult.Result) -> MigratingAnime.EpisodeInfo,
-    getSourceName: (Anime) -> String,
-    onMigrationItemClick: (Anime) -> Unit,
+    getManga: suspend (MigratingManga.SearchResult.Result) -> Manga?,
+    getChapterInfo: suspend (MigratingManga.SearchResult.Result) -> MigratingManga.ChapterInfo,
+    getSourceName: (Manga) -> String,
+    onMigrationItemClick: (Manga) -> Unit,
     openMigrationDialog: (Boolean) -> Unit,
     skipManga: (Long) -> Unit,
     // KMK -->
@@ -57,7 +57,7 @@ fun MigrationListScreen(
     navigateUp: () -> Unit,
     openMigrationOptionsDialog: () -> Unit,
     // KMK <--
-    searchManually: (MigratingAnime) -> Unit,
+    searchManually: (MigratingManga) -> Unit,
     migrateNow: (Long) -> Unit,
     copyNow: (Long) -> Unit,
 ) {
@@ -125,7 +125,7 @@ fun MigrationListScreen(
                             .fillMaxHeight(),
                         manga = migrationItem.manga,
                         sourcesString = migrationItem.sourcesString,
-                        episodeInfo = migrationItem.episodeInfo,
+                        chapterInfo = migrationItem.chapterInfo,
                         onClick = { onMigrationItemClick(migrationItem.manga) },
                     )
 
@@ -144,7 +144,7 @@ fun MigrationListScreen(
                         migrationItem = migrationItem,
                         result = result,
                         getManga = getManga,
-                        getEpisodeInfo = getEpisodeInfo,
+                        getChapterInfo = getChapterInfo,
                         getSourceName = getSourceName,
                         onMigrationItemClick = onMigrationItemClick,
                     )

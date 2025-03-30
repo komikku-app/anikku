@@ -5,13 +5,13 @@ import androidx.core.content.edit
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.manga.model.Manga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 /**
- * Class used to keep a list of episodes for future deletion.
+ * Class used to keep a list of chapters for future deletion.
  *
  * @param context the application context.
  */
@@ -21,85 +21,82 @@ class DownloadPendingDeleter(
 ) {
 
     /**
-     * Preferences used to store the list of episodes to delete.
+     * Preferences used to store the list of chapters to delete.
      */
-    private val preferences = context.getSharedPreferences(
-        "episodes_to_delete",
-        Context.MODE_PRIVATE,
-    )
+    private val preferences = context.getSharedPreferences("episodes_to_delete", Context.MODE_PRIVATE)
 
     /**
-     * Last added episode, used to avoid decoding from the preference too often.
+     * Last added chapter, used to avoid decoding from the preference too often.
      */
     private var lastAddedEntry: Entry? = null
 
     /**
-     * Adds a list of episodes for future deletion.
+     * Adds a list of chapters for future deletion.
      *
-     * @param episodes the episodes to be deleted.
-     * @param anime the anime of the episodes.
+     * @param chapters the chapters to be deleted.
+     * @param manga the manga of the chapters.
      */
     @Synchronized
-    fun addEpisodes(episodes: List<Episode>, anime: Anime) {
+    fun addChapters(chapters: List<Chapter>, manga: Manga) {
         val lastEntry = lastAddedEntry
 
-        val newEntry = if (lastEntry != null && lastEntry.anime.id == anime.id) {
-            // Append new episodes
-            val newEpisodes = lastEntry.episodes.addUniqueById(episodes)
+        val newEntry = if (lastEntry != null && lastEntry.manga.id == manga.id) {
+            // Append new chapters
+            val newChapters = lastEntry.chapters.addUniqueById(chapters)
 
-            // If no episodes were added, do nothing
-            if (newEpisodes.size == lastEntry.episodes.size) return
+            // If no chapters were added, do nothing
+            if (newChapters.size == lastEntry.chapters.size) return
 
-            // Last entry matches the anime, reuse it to avoid decoding json from preferences
-            lastEntry.copy(episodes = newEpisodes)
+            // Last entry matches the manga, reuse it to avoid decoding json from preferences
+            lastEntry.copy(chapters = newChapters)
         } else {
-            val existingEntry = preferences.getString(anime.id.toString(), null)
+            val existingEntry = preferences.getString(manga.id.toString(), null)
             if (existingEntry != null) {
-                // Existing entry found on preferences, decode json and add the new episode
+                // Existing entry found on preferences, decode json and add the new chapter
                 val savedEntry = json.decodeFromString<Entry>(existingEntry)
 
-                // Append new episodes
-                val newEpisodes = savedEntry.episodes.addUniqueById(episodes)
+                // Append new chapters
+                val newChapters = savedEntry.chapters.addUniqueById(chapters)
 
-                // If no episodes were added, do nothing
-                if (newEpisodes.size == savedEntry.episodes.size) return
+                // If no chapters were added, do nothing
+                if (newChapters.size == savedEntry.chapters.size) return
 
-                savedEntry.copy(episodes = newEpisodes)
+                savedEntry.copy(chapters = newChapters)
             } else {
                 // No entry has been found yet, create a new one
-                Entry(episodes.map { it.toEntry() }, anime.toEntry())
+                Entry(chapters.map { it.toEntry() }, manga.toEntry())
             }
         }
 
         // Save current state
         val json = json.encodeToString(newEntry)
         preferences.edit {
-            putString(newEntry.anime.id.toString(), json)
+            putString(newEntry.manga.id.toString(), json)
         }
         lastAddedEntry = newEntry
     }
 
     /**
-     * Returns the list of episodes to be deleted grouped by its anime.
+     * Returns the list of chapters to be deleted grouped by its manga.
      *
-     * Note: the returned list of anime and episodes only contain basic information needed by the
+     * Note: the returned list of manga and chapters only contain basic information needed by the
      * downloader, so don't use them for anything else.
      */
     @Synchronized
-    fun getPendingEpisodes(): Map<Anime, List<Episode>> {
+    fun getPendingChapters(): Map<Manga, List<Chapter>> {
         val entries = decodeAll()
         preferences.edit {
             clear()
         }
         lastAddedEntry = null
 
-        return entries.associate { (episodes, anime) ->
-            anime.toModel() to episodes.map { it.toModel() }
+        return entries.associate { (chapters, manga) ->
+            manga.toModel() to chapters.map { it.toModel() }
         }
     }
 
     /**
-     * Decodes all the episodes from preferences.
+     * Decodes all the chapters from preferences.
      */
     private fun decodeAll(): List<Entry> {
         return preferences.all.values.mapNotNull { rawEntry ->
@@ -112,32 +109,32 @@ class DownloadPendingDeleter(
     }
 
     /**
-     * Returns a copy of episode entries ensuring no duplicates by episode id.
+     * Returns a copy of chapter entries ensuring no duplicates by chapter id.
      */
-    private fun List<EpisodeEntry>.addUniqueById(episodes: List<Episode>): List<EpisodeEntry> {
+    private fun List<ChapterEntry>.addUniqueById(chapters: List<Chapter>): List<ChapterEntry> {
         val newList = toMutableList()
-        for (episode in episodes) {
-            if (none { it.id == episode.id }) {
-                newList.add(episode.toEntry())
+        for (chapter in chapters) {
+            if (none { it.id == chapter.id }) {
+                newList.add(chapter.toEntry())
             }
         }
         return newList
     }
 
     /**
-     * Returns a anime entry from a anime model.
+     * Returns a manga entry from a manga model.
      */
-    private fun Anime.toEntry() = AnimeEntry(id, url, title, source)
+    private fun Manga.toEntry() = MangaEntry(id, url, /* SY --> */ ogTitle /* SY <-- */, source)
 
     /**
-     * Returns a episode entry from a episode model.
+     * Returns a chapter entry from a chapter model.
      */
-    private fun Episode.toEntry() = EpisodeEntry(id, url, name, scanlator)
+    private fun Chapter.toEntry() = ChapterEntry(id, url, name, scanlator)
 
     /**
-     * Returns a anime model from a anime entry.
+     * Returns a manga model from a manga entry.
      */
-    private fun AnimeEntry.toModel() = Anime.create().copy(
+    private fun MangaEntry.toModel() = Manga.create().copy(
         url = url,
         // SY -->
         ogTitle = title,
@@ -147,9 +144,9 @@ class DownloadPendingDeleter(
     )
 
     /**
-     * Returns a episode model from a episode entry.
+     * Returns a chapter model from a chapter entry.
      */
-    private fun EpisodeEntry.toModel() = Episode.create().copy(
+    private fun ChapterEntry.toModel() = Chapter.create().copy(
         id = id,
         url = url,
         name = name,
@@ -157,19 +154,19 @@ class DownloadPendingDeleter(
     )
 
     /**
-     * Class used to save an entry of episodes with their anime into preferences.
+     * Class used to save an entry of chapters with their manga into preferences.
      */
     @Serializable
     private data class Entry(
-        val episodes: List<EpisodeEntry>,
-        val anime: AnimeEntry,
+        val chapters: List<ChapterEntry>,
+        val manga: MangaEntry,
     )
 
     /**
-     * Class used to save an entry for an episode into preferences.
+     * Class used to save an entry for a chapter into preferences.
      */
     @Serializable
-    private data class EpisodeEntry(
+    private data class ChapterEntry(
         val id: Long,
         val url: String,
         val name: String,
@@ -177,10 +174,10 @@ class DownloadPendingDeleter(
     )
 
     /**
-     * Class used to save an entry for an anime into preferences.
+     * Class used to save an entry for a manga into preferences.
      */
     @Serializable
-    private data class AnimeEntry(
+    private data class MangaEntry(
         val id: Long,
         val url: String,
         val title: String,

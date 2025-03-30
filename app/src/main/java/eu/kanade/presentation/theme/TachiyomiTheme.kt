@@ -122,7 +122,9 @@ private fun getThemeColorScheme(
         AppTheme.CUSTOM -> {
             val uiPreferences = Injekt.get<UiPreferences>()
             CustomColorScheme(
-                uiPreferences,
+                context = LocalContext.current,
+                seed = uiPreferences.colorTheme().get(),
+                style = uiPreferences.customThemeStyle().get(),
             )
         }
         // KMK <--

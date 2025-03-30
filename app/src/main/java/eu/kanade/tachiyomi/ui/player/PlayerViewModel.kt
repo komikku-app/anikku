@@ -40,7 +40,6 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.episode.model.toDbEpisode
-import eu.kanade.domain.track.interactor.TrackEpisode
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.screen.player.custombutton.CustomButtonFetchState
@@ -59,7 +58,6 @@ import eu.kanade.tachiyomi.data.saver.Location
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
-import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.IndexedSegment
@@ -74,8 +72,8 @@ import eu.kanade.tachiyomi.util.AniSkipApi
 import eu.kanade.tachiyomi.util.SkipType
 import eu.kanade.tachiyomi.util.Stamp
 import eu.kanade.tachiyomi.util.TrackSelect
+import eu.kanade.tachiyomi.util.chapter.filterDownloaded
 import eu.kanade.tachiyomi.util.editCover
-import eu.kanade.tachiyomi.util.episode.filterDownloadedEpisodes
 import eu.kanade.tachiyomi.util.lang.byteSize
 import eu.kanade.tachiyomi.util.lang.takeBytes
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -106,21 +104,21 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.anime.interactor.GetAnime
-import tachiyomi.domain.anime.interactor.GetMergedAnimeById
-import tachiyomi.domain.anime.interactor.GetMergedReferencesById
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
-import tachiyomi.domain.episode.interactor.GetMergedEpisodesByAnimeId
 import tachiyomi.domain.episode.interactor.UpdateEpisode
 import tachiyomi.domain.episode.model.EpisodeUpdate
 import tachiyomi.domain.episode.service.getEpisodeSort
-import tachiyomi.domain.history.interactor.GetNextEpisodes
+import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.history.interactor.UpsertHistory
 import tachiyomi.domain.history.model.HistoryUpdate
+import tachiyomi.domain.manga.interactor.GetMergedMangaById
+import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.MR
@@ -132,6 +130,7 @@ import java.io.InputStream
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
+import eu.kanade.domain.track.interactor.TrackChapter as TrackEpisode
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
@@ -151,7 +150,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val trackPreferences: TrackPreferences = Injekt.get(),
     private val trackEpisode: TrackEpisode = Injekt.get(),
     private val getAnime: GetAnime = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
+    private val getNextChapters: GetNextChapters = Injekt.get(),
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
     private val getAnimeCategories: GetCategories = Injekt.get(),
     private val getTracks: GetTracks = Injekt.get(),
@@ -165,9 +164,9 @@ class PlayerViewModel @JvmOverloads constructor(
     private val trackSelect: TrackSelect = Injekt.get(),
     // SY -->
     uiPreferences: UiPreferences = Injekt.get(),
-    private val getMergedAnimeById: GetMergedAnimeById = Injekt.get(),
+    private val getMergedMangaById: GetMergedMangaById = Injekt.get(),
     private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
-    private val getMergedEpisodesByAnimeId: GetMergedEpisodesByAnimeId = Injekt.get(),
+    private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId = Injekt.get(),
     // SY <--
 ) : ViewModel() {
 
@@ -186,7 +185,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _currentAnime = MutableStateFlow<Anime?>(null)
     val currentAnime = _currentAnime.asStateFlow()
 
-    private val _currentSource = MutableStateFlow<Source?>(null)
+    private val _currentSource = MutableStateFlow<AnimeSource?>(null)
     val currentSource = _currentSource.asStateFlow()
 
     private val _isEpisodeOnline = MutableStateFlow(false)
@@ -1077,19 +1076,22 @@ class PlayerViewModel @JvmOverloads constructor(
     private var episodeToDownload: Download? = null
 
     /**
-     * Episode list for the active manga. It's retrieved lazily and should be accessed for the first
+     * Episode list for the active anime. It's retrieved lazily and should be accessed for the first
      * time in a background thread to avoid blocking the UI.
      */
-    private fun filterEpisodeList(episodes: List<Episode>, mangaMap: Map<Long, Anime>?): List<Episode> {
+    private fun filterEpisodeList(episodes: List<Episode>, animeMap: Map<Long, Anime>?): List<Episode> {
         val anime = currentAnime.value ?: return episodes
 
+        // SY -->
         fun isEpisodeDownloaded(episode: Episode): Boolean {
-            val chapterManga = mangaMap?.get(episode.anime_id) ?: anime
+            val episodeAnime = animeMap?.get(episode.anime_id) ?: anime
             return downloadManager.isEpisodeDownloaded(
                 episodeName = episode.name,
                 episodeScanlator = episode.scanlator,
-                animeTitle = chapterManga.ogTitle,
-                sourceId = chapterManga.source,
+                // SY -->
+                animeTitle = episodeAnime.ogTitle,
+                // SY <--
+                sourceId = episodeAnime.source,
             )
         }
         // SY <--
@@ -1208,7 +1210,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 }
                 val mergedManga = if (source is MergedSource) {
                     runBlocking {
-                        getMergedAnimeById.await(anime.id)
+                        getMergedMangaById.await(anime.id)
                     }.associateBy { it.id }
                 } else {
                     emptyMap()
@@ -1295,11 +1297,11 @@ class PlayerViewModel @JvmOverloads constructor(
         // SY -->
         val (episodes, mangaMap) = runBlocking {
             if (anime.source == MERGED_SOURCE_ID) {
-                getMergedEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to
-                    getMergedAnimeById.await(anime.id)
+                getMergedChaptersByMangaId.await(anime.id) to
+                    getMergedMangaById.await(anime.id)
                         .associateBy { it.id }
             } else {
-                getEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to null
+                getEpisodesByAnimeId.await(anime.id) to null
             }
         }
 
@@ -1307,7 +1309,7 @@ class PlayerViewModel @JvmOverloads constructor(
             .sortedWith(getEpisodeSort(anime, sortDescending = false))
             .run {
                 if (basePreferences.downloadedOnly().get()) {
-                    filterDownloadedEpisodes(anime)
+                    filterDownloaded(anime, mangaMap)
                 } else {
                     this
                 }
@@ -1623,7 +1625,7 @@ class PlayerViewModel @JvmOverloads constructor(
             if (!episodesAreDownloaded) {
                 return@launchIO
             }
-            val episodesToDownload = getNextEpisodes.await(anime.id, nextEpisode.id!!)
+            val episodesToDownload = getNextChapters.await(anime.id, nextEpisode.id!!)
                 .take(downloadAheadAmount)
             downloadManager.downloadEpisodes(anime, episodesToDownload)
         }
@@ -1673,10 +1675,10 @@ class PlayerViewModel @JvmOverloads constructor(
             updateEpisode.await(
                 EpisodeUpdate(
                     id = episode.id!!,
-                    seen = episode.seen,
+                    read = episode.seen,
                     bookmark = episode.bookmark,
-                    lastSecondSeen = episode.last_second_seen,
-                    totalSeconds = episode.total_seconds,
+                    lastPageRead = episode.last_second_seen,
+                    totalPages = episode.total_seconds,
                 ),
             )
         }
@@ -1762,7 +1764,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     image = Image.Page(
                         inputStream = imageStream,
                         name = filename,
-                        location = Location.Pictures(relativePath),
+                        location = Location.Pictures.create(),
                     ),
                 )
                 notifier.onComplete(uri)

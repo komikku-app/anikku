@@ -6,13 +6,13 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.source.Source
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import okhttp3.Dns
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
@@ -37,18 +37,18 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
 
     override fun getLogoColor() = Color.rgb(0, 11, 37)
 
-    override fun getStatusListAnime(): List<Long> = listOf(UNSEEN, WATCHING, COMPLETED)
+    override fun getStatusList(): List<Long> = listOf(UNSEEN, WATCHING, COMPLETED)
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         UNSEEN -> MR.strings.unseen
         WATCHING -> MR.strings.watching
         COMPLETED -> MR.strings.completed
         else -> null
     }
 
-    override fun getWatchingStatus(): Long = WATCHING
+    override fun getReadingStatus(): Long = WATCHING
 
-    override fun getRewatchingStatus(): Long = -1
+    override fun getRereadingStatus(): Long = -1
 
     override fun getCompletionStatus(): Long = COMPLETED
 
@@ -56,15 +56,15 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
 
     override fun displayScore(track: DomainTrack): String = ""
 
-    override suspend fun update(track: Track, didWatchEpisode: Boolean): Track {
+    override suspend fun update(track: Track, didReadChapter: Boolean): Track {
         return api.updateProgress(track)
     }
 
-    override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
+    override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
         return track
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata {
         throw NotImplementedError("Not implemented.")
     }
 
@@ -88,25 +88,25 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
 
     override fun getAcceptedSources() = listOf("eu.kanade.tachiyomi.animeextension.all.jellyfin.Jellyfin")
 
-    override suspend fun match(anime: Anime): TrackSearch? =
+    override suspend fun match(manga: Manga): TrackSearch? =
         try {
-            api.getTrackSearch(anime.url)
+            api.getTrackSearch(manga.url)
         } catch (e: Exception) {
             null
         }
 
-    override fun isTrackFrom(track: DomainTrack, anime: Anime, source: Source?): Boolean =
-        track.remoteUrl == anime.url && source?.let { accept(it) } == true
+    override fun isTrackFrom(track: DomainTrack, manga: Manga, source: Source?): Boolean =
+        track.remoteUrl == manga.url && source?.let { accept(it) } == true
 
-    override fun migrateTrack(track: DomainTrack, anime: Anime, newSource: Source): DomainTrack? {
+    override fun migrateTrack(track: DomainTrack, manga: Manga, newSource: Source): DomainTrack? {
         return if (accept(newSource)) {
-            track.copy(remoteUrl = anime.url)
+            track.copy(remoteUrl = manga.url)
         } else {
             null
         }
     }
 
     // KMK -->
-    override fun hasNotStartedWatching(status: Long): Boolean = status == UNSEEN
+    override fun hasNotStartedReading(status: Long): Boolean = status == UNSEEN
     // KMK <--
 }

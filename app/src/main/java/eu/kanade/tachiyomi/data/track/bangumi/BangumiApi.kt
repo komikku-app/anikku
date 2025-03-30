@@ -7,11 +7,15 @@ import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMCollectionResponse
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMOAuth
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMSearchItem
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMSearchResult
+import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMSubject
+import eu.kanade.tachiyomi.data.track.bangumi.dto.Infobox
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.parseAs
+import exh.util.nullIfBlank
 import kotlinx.serialization.json.Json
 import okhttp3.CacheControl
 import okhttp3.FormBody
@@ -21,6 +25,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import tachiyomi.domain.track.model.Track as DomainTrack
 
 class BangumiApi(
     private val trackId: Long,
@@ -66,7 +71,7 @@ class BangumiApi(
         }
     }
 
-    suspend fun searchAnime(search: String): List<TrackSearch> {
+    suspend fun search(search: String): List<TrackSearch> {
         return withIOContext {
             val url = "$API_URL/search/subject/${URLEncoder.encode(search, StandardCharsets.UTF_8.name())}"
                 .toUri()
@@ -83,7 +88,7 @@ class BangumiApi(
                         if (result.code == 404) emptyList<TrackSearch>()
 
                         result.list
-                            ?.map { it.toAnimeTrackSearch(trackId) }
+                            ?.map { it.toTrackSearch(trackId) }
                             .orEmpty()
                     }
             }
@@ -96,7 +101,7 @@ class BangumiApi(
                 authClient.newCall(GET("$API_URL/subject/${track.remote_id}"))
                     .awaitSuccess()
                     .parseAs<BGMSearchItem>()
-                    .toAnimeTrackSearch(trackId)
+                    .toTrackSearch(trackId)
             }
         }
     }
@@ -122,6 +127,54 @@ class BangumiApi(
                         track.last_episode_seen = it.epStatus!!.toDouble()
                         track.score = it.rating!!
                         track
+                    }
+            }
+        }
+    }
+
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+        return withIOContext {
+            with(json) {
+                authClient.newCall(GET("${API_URL}/v0/subjects/${track.remoteId}"))
+                    .awaitSuccess()
+                    .parseAs<BGMSubject>()
+                    .let { anime ->
+                        TrackMangaMetadata(
+                            remoteId = anime.id,
+                            title = anime.nameCn.ifEmpty { anime.name },
+                            thumbnailUrl = anime.images?.large?.nullIfBlank()
+                                ?: anime.images?.medium?.nullIfBlank()
+                                ?: anime.images?.common?.nullIfBlank(),
+                            description = anime.summary,
+                            authors = anime.infobox
+                                .filter {
+                                    it.key.contains("原作", true) ||
+                                        it.key.contains("分镜", true) ||
+                                        it.key.contains("脚本", true)
+                                }
+                                .filterIsInstance<Infobox.SingleValue>()
+                                .joinToString { it.value }
+                                .ifEmpty { null },
+                            artists = anime.infobox
+                                .filter {
+                                    it.key.contains("制片", true) ||
+                                        it.key.contains("制作", true) ||
+                                        it.key.contains("导演", true) ||
+                                        it.key.contains("构成", true) ||
+                                        it.key.contains("动画", true) ||
+                                        it.key.contains("摄影", true) ||
+                                        it.key.contains("美术", true) ||
+                                        it.key.contains("插图", true) ||
+                                        it.key.contains("原案", true) ||
+                                        it.key.contains("设计", true) ||
+                                        it.key.contains("音乐", true) ||
+                                        it.key.contains("音响", true) ||
+                                        it.key.contains("音乐", true)
+                                }
+                                .filterIsInstance<Infobox.SingleValue>()
+                                .joinToString { it.value }
+                                .ifEmpty { null },
+                        )
                     }
             }
         }

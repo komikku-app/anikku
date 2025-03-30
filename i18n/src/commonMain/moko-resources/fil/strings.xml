@@ -530,7 +530,7 @@
     <string name="backup_info">Dapat nagtatabi rin kayo ng mga kopya ng backup sa ibang mga lugar. Ang mga backup ay naglalaman ng sensitibong data tulad ng nakaimbak na password; mag-ingat kung ibahagi ito.</string>
     <string name="connected_to_wifi">Sa Wi-Fi lang</string>
     <string name="update_72hour">Kada 3 araw</string>
-    <string name="download_queue_size_warning">Babala: maaaring humantong sa pagbagal at/o pagharang ng mga source sa Anikku ang maramihang pag-download. I-tap para matuto pa.</string>
+    <string name="download_queue_size_warning">Babala: maaaring humantong sa pagbagal at/o pagharang ng mga source sa Aniyomi ang maramihang pag-download. I-tap para matuto pa.</string>
     <string name="channel_app_updates">Mga update sa app</string>
     <string name="ext_update_all">I-update lahat</string>
     <string name="clear_database_source_item_count">%1$d na entry sa database na wala sa aklatan</string>
@@ -699,7 +699,7 @@
     <string name="download_cache_invalidated">Napawalang-bisa ang indise ng mga download</string>
     <string name="create_backup_file_error">Hindi makalikha ng backup file</string>
     <string name="track_activity_name">Pag-login sa tracker</string>
-    <string name="unlock_app_title">I-unlock ang Anikku</string>
+    <string name="unlock_app_title">I-unlock ang Aniyomi</string>
     <string name="exception_offline">Walang koneksyon sa Internet</string>
     <string name="exception_http">HTTP %d, tignan ang website sa WebView</string>
     <string name="exception_unknown_host">Hindi maabot ang %s</string>
@@ -768,7 +768,7 @@
     <string name="error_repo_exists">Umiiral na ang repo na ito!</string>
     <string name="action_delete_repo">Tanggalin ang repo</string>
     <string name="label_add_repo_input">URL ng repo</string>
-    <string name="action_add_repo_message">Magdagdag ng mga karagdagang repo sa Anikku. Dapat ito ay isang URL na nagtatapos sa \"index.min.json\".</string>
+    <string name="action_add_repo_message">Magdagdag ng mga karagdagang repo sa Aniyomi. Dapat ito ay isang URL na nagtatapos sa \"index.min.json\".</string>
     <string name="invalid_repo_name">Di-wastong URL ng repo</string>
     <string name="delete_repo_confirmation">Gusto mo bang tanggalin ang repo na \"%s\"?</string>
     <string name="manga_interval_custom_amount">Ipasadya ang update frequency:</string>
@@ -802,8 +802,8 @@
     <string name="also_set_chapter_settings_for_library">Gawin din sa lahat ng mga entry sa aking library</string>
     <string name="dialog_with_checkbox_reset">I-reset ang lahat ng chapters sa entry na ito</string>
     <string name="download_insufficient_space">Di ma-download ang mga kabanata dahil sa mababang espasyo</string>
-    <string name="download_queue_size_warning">Babala: maaari pong humantong sa pagbagal at/o pagharang ng mga source sa Anikku ang mga malalaking maramihang pag-download. Pakipindot po ito para matuto pa.</string>
-    <string name="information_webview_required">Kailangan ng Anikku ang WebView</string>
+    <string name="download_queue_size_warning">Babala: maaari pong humantong sa pagbagal at/o pagharang ng mga source sa Aniyomi ang mga malalaking maramihang pag-download. Pakipindot po ito para matuto pa.</string>
+    <string name="information_webview_required">Kailangan ng Aniyomi ang WebView</string>
     <string name="download_notifier_download_paused_chapters">Nakahinto ang pag-download</string>
     <string name="channel_new_chapters_episodes">Mga update sa kabanata</string>
     <string name="action_global_manga_search">Pangkahalatang Paghahanap ng Manga</string>
@@ -823,10 +823,10 @@
     <string name="action_start_download_internally">Gumamit ng internal na downloader</string>
     <string name="action_order_by_episode_number">Ayon sa bilang ng episode</string>
     <string name="default_anime_category">Default na kategorya ng anime</string>
-    <string name="unofficial_extension_message_aniyomi">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Anikku.</string>
+    <string name="unofficial_extension_message_aniyomi">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Aniyomi.</string>
     <string name="rotation_sensor_portrait">Sensor na portrait</string>
     <string name="rotation_sensor_landscape">Sensor na landscape</string>
-    <string name="unofficial_anime_extension_message">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Anikku.</string>
+    <string name="unofficial_anime_extension_message">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Aniyomi.</string>
     <string name="pref_category_player_seeking">Pagse-seek</string>
     <string name="pref_default_intro_length">Default na laktawan ang haba ng intro</string>
     <string name="pref_intro_length">Laktawan ang haba ng intro</string>
@@ -853,13 +853,9 @@
     <string name="label_anime_updates">Anime</string>
     <string name="enable_auto_play">Naka-on ang auto-play</string>
     <string name="video_stretch_screen">Naka-stretch sa screen</string>
-    <string name="player_aniskip_recap">Laktawan ang Recap</string>
     <string name="pref_enable_aniskip">Paganahin ang AniSkip</string>
     <string name="pref_enable_auto_skip_ani_skip">Paganahin ang auto skip</string>
-    <string name="player_aniskip_op">Laktawan ang Pagbubukas</string>
     <string name="action_change_intro_length">Baguhin ang haba ng intro</string>
-    <string name="player_aniskip_ed">Laktawan ang Pagtatapos</string>
-    <string name="player_aniskip_mixedOp">Laktawan ang MixedOp</string>
     <string name="pref_waiting_time_aniskip">Timeout ng button</string>
     <string name="pref_waiting_time_aniskip_5">5 segundo</string>
     <string name="pref_waiting_time_aniskip_6">6 na segundo</string>
@@ -1055,11 +1051,7 @@
     <string name="pref_gpu_next_title">Paganahin ang gpu-next</string>
     <string name="label_manga_extension_repos">Extension repo ng manga</string>
     <string name="download_slots_info">Magda-download lang nang sabay-sabay mula sa self-host o hindi nasusukat na mga source</string>
-    <string name="onboarding_storage_action_create_folder">Lumikha ng default na Anikku folder</string>
-    <string name="safe_download">Ligtas na download mode para sa anime</string>
-    <string name="safe_download_summary">Paganahin ang isahang thread at walang range na download mode</string>
-    <string name="download_threads_number">Bilang ng thread</string>
-    <string name="download_threads_number_summary">Bilang ng mga thread na gagamitin para sa pag-download, maaaring ma-block ang iyong IP kung masyadong mataas, kadalasan ang 4 ay isang magandang numero upang maiwasan ang mabigat na load sa mga source server.</string>
+    <string name="onboarding_storage_action_create_folder">Lumikha ng default na Aniyomi folder</string>
     <string name="pref_bottom_nav_no_browse">Ilipat ang Maghanap sa Iba pa na tab</string>
     <string name="pref_player_audio_channels">Mga audio channel</string>
     <string name="pref_player_audio_channels_auto">Awto</string>

@@ -2,16 +2,16 @@ package eu.kanade.domain.anime.interactor
 
 import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.AnimeUpdate
-import tachiyomi.domain.anime.repository.AnimeRepository
+import tachiyomi.domain.manga.model.AnimeUpdate
 import kotlin.math.pow
+import tachiyomi.domain.manga.repository.MangaRepository as AnimeRepository
 
 class SetAnimeViewerFlags(
     private val animeRepository: AnimeRepository,
 ) {
 
     suspend fun awaitSetSkipIntroLength(id: Long, flag: Long) {
-        val anime = animeRepository.getAnimeById(id)
+        val anime = animeRepository.getMangaById(id)
         animeRepository.update(
             AnimeUpdate(
                 id = id,
@@ -29,7 +29,7 @@ class SetAnimeViewerFlags(
     }
 
     private suspend fun awaitSetNextEpisodeToAir(id: Long, flag: Long) {
-        val anime = animeRepository.getAnimeById(id)
+        val anime = animeRepository.getMangaById(id)
         animeRepository.update(
             AnimeUpdate(
                 id = id,
@@ -39,7 +39,7 @@ class SetAnimeViewerFlags(
     }
 
     private suspend fun awaitSetNextEpisodeAiringAt(id: Long, flag: Long) {
-        val anime = animeRepository.getAnimeById(id)
+        val anime = animeRepository.getMangaById(id)
         animeRepository.update(
             AnimeUpdate(
                 id = id,

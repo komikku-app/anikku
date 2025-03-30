@@ -78,7 +78,7 @@ fun MoreScreen(
                         textRes = MR.strings.fdroid_warning,
                         modifier = Modifier.clickable {
                             uriHandler.openUri(
-                                "https://aniyomi.org/docs/faq/general#how-do-i-update-from-the-f-droid-builds",
+                                "https://anikku-app.github.io/docs/faq/general#how-do-i-update-from-the-f-droid-builds",
                             )
                         },
                     )
@@ -166,7 +166,7 @@ fun MoreScreen(
             }
             item {
                 TextPreferenceWidget(
-                    title = stringResource(MR.strings.general_categories),
+                    title = stringResource(MR.strings.categories),
                     icon = Icons.AutoMirrored.Outlined.Label,
                     onPreferenceClick = onClickCategories,
                 )

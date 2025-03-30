@@ -13,16 +13,15 @@ import tachiyomi.core.common.Constants
  * Class that manages [PendingIntent] of activity's
  */
 object NotificationHandler {
-
     /**
      * Returns [PendingIntent] that starts a download activity.
      *
      * @param context context of application
      */
-    internal fun openAnimeDownloadManagerPendingActivity(context: Context): PendingIntent {
+    internal fun openDownloadManagerPendingActivity(context: Context): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-            action = Constants.SHORTCUT_ANIME_DOWNLOADS
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            action = Constants.SHORTCUT_DOWNLOADS
         }
         return PendingIntent.getActivity(
             context,
@@ -36,7 +35,7 @@ object NotificationHandler {
      * Returns [PendingIntent] that starts a gallery activity
      *
      * @param context context of application
-     * @param file file containing image
+     * @param uri file containing image
      */
     internal fun openImagePendingActivity(context: Context, uri: Uri): PendingIntent {
         val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -67,11 +66,6 @@ object NotificationHandler {
 
     fun openUrl(context: Context, url: String): PendingIntent {
         val notificationIntent = Intent(Intent.ACTION_VIEW, url.toUri())
-        return PendingIntent.getActivity(
-            context,
-            0,
-            notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE,
-        )
+        return PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
 }

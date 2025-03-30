@@ -2,14 +2,15 @@ package tachiyomi.source.local
 
 import android.content.Context
 import com.hippo.unifile.UniFile
+import eu.kanade.tachiyomi.animesource.model.AnimesPage
+import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.UnmeteredSource
-import eu.kanade.tachiyomi.source.model.AnimesPage
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.SAnime
-import eu.kanade.tachiyomi.source.model.SEpisode
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.lang.compareToCaseInsensitiveNaturalOrder
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import kotlinx.coroutines.async
@@ -25,10 +26,9 @@ import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.core.metadata.tachiyomi.AnimeDetails
 import tachiyomi.core.metadata.tachiyomi.EpisodeDetails
+import tachiyomi.core.metadata.tachiyomi.MangaDetails
 import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.service.EpisodeRecognition
 import tachiyomi.i18n.MR
 import tachiyomi.source.local.filter.OrderBy
 import tachiyomi.source.local.image.LocalCoverManager
@@ -40,12 +40,16 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import tachiyomi.domain.chapter.service.ChapterRecognition as EpisodeRecognition
 import tachiyomi.domain.source.model.Source as DomainSource
 
 actual class LocalSource(
     private val context: Context,
     private val fileSystem: LocalSourceFileSystem,
     private val coverManager: LocalCoverManager,
+    // SY -->
+    private val allowHiddenFiles: () -> Boolean,
+    // SY <--
 ) : CatalogueSource, UnmeteredSource {
 
     private val json: Json by injectLazy()
@@ -56,15 +60,15 @@ actual class LocalSource(
     @Suppress("PrivatePropertyName")
     private val LatestFilters = FilterList(OrderBy.Latest(context))
 
-    override val name = context.stringResource(MR.strings.local_anime_source)
+    override val name: String = context.stringResource(MR.strings.local_source)
 
     override val id: Long = ID
 
-    override val lang = "other"
+    override val lang: String = "other"
 
     override fun toString() = name
 
-    override val supportsLatest = true
+    override val supportsLatest: Boolean = true
 
     // Browse related
     override suspend fun getPopularAnime(page: Int) = getSearchAnime(page, "", PopularFilters)
@@ -81,10 +85,19 @@ actual class LocalSource(
         } else {
             0L
         }
+        // SY -->
+        val allowLocalSourceHiddenFolders = allowHiddenFiles()
+        // SY <--
 
         var animeDirs = fileSystem.getFilesInBaseDirectory()
             // Filter out files that are hidden and is not a folder
-            .filter { it.isDirectory && !it.name.orEmpty().startsWith('.') }
+            .filter {
+                it.isDirectory &&
+                    /* SY --> */ (
+                        !it.name.orEmpty().startsWith('.') ||
+                            allowLocalSourceHiddenFolders
+                        ) /* SY <-- */
+            }
             .distinctBy { it.name }
             .filter {
                 if (lastModifiedLimit == 0L && query.isBlank()) {
@@ -139,20 +152,22 @@ actual class LocalSource(
             }
             .awaitAll()
 
-        AnimesPage(animes.toList(), false)
+        AnimesPage(animes, false)
     }
 
     // Old fetch functions
 
     // TODO: Should be replaced when Anime Extensions get to 1.15
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getPopular"))
+    @Suppress("DEPRECATION")
+    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getPopularAnime(page)"))
     override fun fetchPopularAnime(page: Int) = fetchSearchAnime(page, "", PopularFilters)
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getLatestUpdates"))
+    @Suppress("DEPRECATION")
+    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getLatestUpdates(page)"))
     override fun fetchLatestUpdates(page: Int) = fetchSearchAnime(page, "", LatestFilters)
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getSearchAnime"))
+    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getSearchAnime(page, query, filters)"))
     override fun fetchSearchAnime(page: Int, query: String, filters: FilterList): Observable<AnimesPage> {
         return runBlocking {
             Observable.just(getSearchAnime(page, query, filters))
@@ -170,9 +185,10 @@ actual class LocalSource(
             json.encodeToStream(anime.toJson(), it)
         }
     }
+    fun updateMangaInfo(manga: SManga) = updateAnimeInfo(manga)
 
-    private fun SAnime.toJson(): AnimeDetails {
-        return AnimeDetails(title, author, artist, description, genre?.split(", "), status)
+    private fun SAnime.toJson(): MangaDetails {
+        return MangaDetails(title, author, artist, description, genre?.split(", "), status)
     }
     // SY <--
 
@@ -182,12 +198,12 @@ actual class LocalSource(
             anime.thumbnail_url = it.uri.toString()
         }
 
-        val animeDirFiles = fileSystem.getFilesInAnimeDirectory(anime.url)
+        val animeDirFiles = fileSystem.getFilesInMangaDirectory(anime.url)
 
         animeDirFiles
             .firstOrNull { it.extension == "json" && it.nameWithoutExtension == "details" }
             ?.let { file ->
-                json.decodeFromStream<AnimeDetails>(file.openInputStream()).run {
+                json.decodeFromStream<MangaDetails>(file.openInputStream()).run {
                     title?.let { anime.title = it }
                     author?.let { anime.author = it }
                     artist?.let { anime.artist = it }
@@ -202,7 +218,7 @@ actual class LocalSource(
 
     // Episodes
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withIOContext {
-        val episodesData = fileSystem.getFilesInAnimeDirectory(anime.url)
+        val episodesData = fileSystem.getFilesInMangaDirectory(anime.url)
             .firstOrNull {
                 it.extension == "json" && it.nameWithoutExtension == "episodes"
             }?.let { file ->
@@ -211,7 +227,7 @@ actual class LocalSource(
                 }.getOrNull()
             }
 
-        val episodes = fileSystem.getFilesInAnimeDirectory(anime.url)
+        val episodes = fileSystem.getFilesInMangaDirectory(anime.url)
             // Only keep supported formats
             .filter { Archive.isSupported(it) }
             .map { episodeFile ->
@@ -220,7 +236,7 @@ actual class LocalSource(
                     name = episodeFile.nameWithoutExtension.orEmpty()
                     date_upload = episodeFile.lastModified()
 
-                    val episodeNumber = EpisodeRecognition.parseEpisodeNumber(
+                    val episodeNumber = EpisodeRecognition.parseChapterNumber(
                         anime.title,
                         this.name,
                         this.episode_number.toDouble(),
@@ -279,7 +295,7 @@ actual class LocalSource(
         val outFile = tempFile.path
 
         val episodeName = episode.url.split('/', limit = 2).last()
-        val animeDir = fileSystem.getAnimeDirectory(anime.url)!!
+        val animeDir = fileSystem.getMangaDirectory(anime.url)!!
         val episodeFile = animeDir.findFile(episodeName)!!
         val episodeFilename = { episodeFile.toFFmpegString(context) }
 
@@ -300,7 +316,7 @@ actual class LocalSource(
 
     companion object {
         const val ID = 0L
-        const val HELP_URL = "https://aniyomi.org/help/guides/local-anime/"
+        const val HELP_URL = "https://anikku-app.github.io/help/guides/local-anime/"
 
         private const val DEFAULT_COVER_NAME = "cover.jpg"
         private val LATEST_THRESHOLD = TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS)

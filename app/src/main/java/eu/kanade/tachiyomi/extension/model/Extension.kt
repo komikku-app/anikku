@@ -41,9 +41,6 @@ sealed class Extension {
         val isObsolete: Boolean = false,
         val isShared: Boolean,
         val repoUrl: String? = null,
-        // SY -->
-        val isRedundant: Boolean = false,
-        // SY <--
     ) : Extension()
 
     data class Available(
@@ -59,13 +56,13 @@ sealed class Extension {
         override val signatureHash: String,
         override val repoName: String,
         // KMK <--
-        val sources: List<AnimeSource>,
+        val sources: List<Source>,
         val apkName: String,
         val iconUrl: String,
         val repoUrl: String,
     ) : Extension() {
 
-        data class AnimeSource(
+        data class Source(
             val id: Long,
             val lang: String,
             val name: String,

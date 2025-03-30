@@ -25,10 +25,7 @@ fun BaseBrowseItem(
                 onClick = onClickItem,
                 onLongClick = onLongClickItem,
             )
-            .padding(
-                horizontal = MaterialTheme.padding.medium,
-                vertical = MaterialTheme.padding.small,
-            ),
+            .padding(horizontal = MaterialTheme.padding.medium, vertical = MaterialTheme.padding.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon()

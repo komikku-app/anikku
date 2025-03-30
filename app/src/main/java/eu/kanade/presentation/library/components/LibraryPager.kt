@@ -22,8 +22,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.tachiyomi.ui.library.LibraryItem
-import tachiyomi.domain.library.model.LibraryAnime
 import tachiyomi.domain.library.model.LibraryDisplayMode
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.util.plus
@@ -33,15 +33,15 @@ fun LibraryPager(
     state: PagerState,
     contentPadding: PaddingValues,
     hasActiveFilters: Boolean,
-    selectedAnime: List<LibraryAnime>,
+    selectedManga: List<LibraryManga>,
     searchQuery: String?,
     onGlobalSearchClicked: () -> Unit,
     getDisplayMode: (Int) -> PreferenceMutableState<LibraryDisplayMode>,
     getColumnsForOrientation: (Boolean) -> PreferenceMutableState<Int>,
     getLibraryForPage: (Int) -> List<LibraryItem>,
-    onClickAnime: (LibraryAnime) -> Unit,
-    onLongClickAnime: (LibraryAnime) -> Unit,
-    onClickContinueWatching: ((LibraryAnime) -> Unit)?,
+    onClickManga: (LibraryManga) -> Unit,
+    onLongClickManga: (LibraryManga) -> Unit,
+    onClickContinueReading: ((LibraryManga) -> Unit)?,
 ) {
     var containerHeight by remember { mutableIntStateOf(0) }
     HorizontalPager(
@@ -81,10 +81,10 @@ fun LibraryPager(
                     entries = columns,
                     containerHeight = containerHeight,
                     contentPadding = contentPadding,
-                    selection = selectedAnime,
-                    onClick = onClickAnime,
-                    onClickContinueWatching = onClickContinueWatching,
-                    onLongClick = onLongClickAnime,
+                    selection = selectedManga,
+                    onClick = onClickManga,
+                    onLongClick = onLongClickManga,
+                    onClickContinueReading = onClickContinueReading,
                     searchQuery = searchQuery,
                     onGlobalSearchClicked = onGlobalSearchClicked,
                 )
@@ -95,10 +95,10 @@ fun LibraryPager(
                     showTitle = displayMode is LibraryDisplayMode.CompactGrid,
                     columns = columns,
                     contentPadding = contentPadding,
-                    selection = selectedAnime,
-                    onClick = onClickAnime,
-                    onClickContinueWatching = onClickContinueWatching,
-                    onLongClick = onLongClickAnime,
+                    selection = selectedManga,
+                    onClick = onClickManga,
+                    onLongClick = onLongClickManga,
+                    onClickContinueReading = onClickContinueReading,
                     searchQuery = searchQuery,
                     onGlobalSearchClicked = onGlobalSearchClicked,
                 )
@@ -108,10 +108,10 @@ fun LibraryPager(
                     items = library,
                     columns = columns,
                     contentPadding = contentPadding,
-                    selection = selectedAnime,
-                    onClick = onClickAnime,
-                    onLongClick = onLongClickAnime,
-                    onClickContinueWatching = onClickContinueWatching,
+                    selection = selectedManga,
+                    onClick = onClickManga,
+                    onLongClick = onLongClickManga,
+                    onClickContinueReading = onClickContinueReading,
                     searchQuery = searchQuery,
                     onGlobalSearchClicked = onGlobalSearchClicked,
                 )
@@ -122,10 +122,10 @@ fun LibraryPager(
                     items = library,
                     columns = columns,
                     contentPadding = contentPadding,
-                    selection = selectedAnime,
-                    onClick = onClickAnime,
-                    onLongClick = onLongClickAnime,
-                    onClickContinueWatching = onClickContinueWatching,
+                    selection = selectedManga,
+                    onClick = onClickManga,
+                    onLongClick = onLongClickManga,
+                    onClickContinueReading = onClickContinueReading,
                     searchQuery = searchQuery,
                     onGlobalSearchClicked = onGlobalSearchClicked,
                     usePanoramaCover = true,

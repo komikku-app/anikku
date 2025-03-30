@@ -30,7 +30,7 @@ import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.ui.player.CastManager
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -43,7 +43,7 @@ fun CastQualityDialog(
     TachiyomiTheme {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text(stringResource(TLMR.strings.title_cast_quality)) },
+            title = { Text(stringResource(AMR.strings.title_cast_quality)) },
             text = {
                 LazyColumn {
                     val hosterState = viewModel.hosterState.value
@@ -135,19 +135,19 @@ fun QueueItemRow(
                 onClick = { castManager.moveQueueItem(item.itemId, 0) },
                 modifier = Modifier.size(32.dp),
             ) {
-                Icon(Icons.Default.KeyboardArrowUp, stringResource(TLMR.strings.move_to_top), Modifier.size(20.dp))
+                Icon(Icons.Default.KeyboardArrowUp, stringResource(AMR.strings.move_to_top), Modifier.size(20.dp))
             }
             IconButton(
                 onClick = { castManager.moveQueueItem(item.itemId, Int.MAX_VALUE) },
                 modifier = Modifier.size(32.dp),
             ) {
-                Icon(Icons.Default.KeyboardArrowDown, stringResource(TLMR.strings.move_to_bottom), Modifier.size(20.dp))
+                Icon(Icons.Default.KeyboardArrowDown, stringResource(AMR.strings.move_to_bottom), Modifier.size(20.dp))
             }
             IconButton(
                 onClick = { castManager.removeQueueItem(item.itemId) },
                 modifier = Modifier.size(32.dp),
             ) {
-                Icon(Icons.Default.Close, stringResource(TLMR.strings.cast_remove_from_queue), Modifier.size(20.dp))
+                Icon(Icons.Default.Close, stringResource(AMR.strings.cast_remove_from_queue), Modifier.size(20.dp))
             }
         }
     }

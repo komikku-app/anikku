@@ -22,15 +22,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
-import eu.kanade.presentation.anime.components.AnimeBottomActionMenu
-import eu.kanade.presentation.anime.components.EpisodeDownloadAction
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
+import eu.kanade.presentation.manga.components.MangaBottomActionMenu
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel
-import eu.kanade.tachiyomi.ui.updates.groupByDateAndAnime
+import eu.kanade.tachiyomi.ui.updates.groupByDateAndManga
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -57,15 +57,15 @@ fun UpdateScreen(
     onInvertSelection: () -> Unit,
     onCalendarClicked: () -> Unit,
     onUpdateLibrary: () -> Boolean,
-    onDownloadEpisode: (List<UpdatesItem>, EpisodeDownloadAction) -> Unit,
+    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
     // AM (FILLERMARK) -->
     onMultiFillermarkClicked: (List<UpdatesItem>, fillermark: Boolean) -> Unit,
     // <-- AM (FILLERMARK)
-    onMultiMarkAsSeenClicked: (List<UpdatesItem>, seen: Boolean) -> Unit,
+    onMultiMarkAsReadClicked: (List<UpdatesItem>, read: Boolean) -> Unit,
     onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
-    onOpenEpisode: (UpdatesItem, altPlayer: Boolean) -> Unit,
+    onOpenChapter: (UpdatesItem, altPlayer: Boolean) -> Unit,
     // KMK -->
     collapseToggle: (key: String) -> Unit,
     // KMK <--
@@ -94,14 +94,14 @@ fun UpdateScreen(
         bottomBar = {
             UpdatesBottomBar(
                 selected = state.selected,
-                onDownloadEpisode = onDownloadEpisode,
+                onDownloadChapter = onDownloadChapter,
                 onMultiBookmarkClicked = onMultiBookmarkClicked,
                 // AM (FILLERMARK) -->
                 onMultiFillermarkClicked = onMultiFillermarkClicked,
                 // <-- AM (FILLERMARK)
-                onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
+                onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
                 onMultiDeleteClicked = onMultiDeleteClicked,
-                onOpenEpisode = onOpenEpisode,
+                onOpenEpisode = onOpenChapter,
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -143,7 +143,7 @@ fun UpdateScreen(
                                     when (it) {
                                         is UpdatesUiModel.Header, is UpdatesUiModel.Leader -> true
                                         is UpdatesUiModel.Item ->
-                                            state.expandedState.contains(it.item.update.groupByDateAndAnime())
+                                            state.expandedState.contains(it.item.update.groupByDateAndManga())
                                     }
                                 },
                             expandedState = state.expandedState,
@@ -153,8 +153,8 @@ fun UpdateScreen(
                             selectionMode = state.selectionMode,
                             onUpdateSelected = onUpdateSelected,
                             onClickCover = onClickCover,
-                            onClickUpdate = onOpenEpisode,
-                            onDownloadEpisode = onDownloadEpisode,
+                            onClickUpdate = onOpenChapter,
+                            onDownloadChapter = onDownloadChapter,
                         )
                     }
                 }
@@ -231,17 +231,17 @@ private fun UpdatesAppBar(
 @Composable
 private fun UpdatesBottomBar(
     selected: List<UpdatesItem>,
-    onDownloadEpisode: (List<UpdatesItem>, EpisodeDownloadAction) -> Unit,
+    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
     // AM (FILLERMARK) -->
     onMultiFillermarkClicked: (List<UpdatesItem>, fillermark: Boolean) -> Unit,
     // <-- AM (FILLERMARK)
-    onMultiMarkAsSeenClicked: (List<UpdatesItem>, seen: Boolean) -> Unit,
+    onMultiMarkAsReadClicked: (List<UpdatesItem>, read: Boolean) -> Unit,
     onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
     onOpenEpisode: (UpdatesItem, altPlayer: Boolean) -> Unit,
 ) {
     val playerPreferences: PlayerPreferences = Injekt.get()
-    AnimeBottomActionMenu(
+    MangaBottomActionMenu(
         visible = selected.isNotEmpty(),
         modifier = Modifier.fillMaxWidth(),
         onBookmarkClicked = {
@@ -258,14 +258,14 @@ private fun UpdatesBottomBar(
             onMultiFillermarkClicked.invoke(selected, false)
         }.takeIf { selected.fastAll { it.update.fillermark } },
         // <-- AM (FILLERMARK)
-        onMarkAsSeenClicked = {
-            onMultiMarkAsSeenClicked(selected, true)
-        }.takeIf { selected.fastAny { !it.update.seen } },
-        onMarkAsUnseenClicked = {
-            onMultiMarkAsSeenClicked(selected, false)
-        }.takeIf { selected.fastAny { it.update.seen || it.update.lastSecondSeen > 0L } },
+        onMarkAsReadClicked = {
+            onMultiMarkAsReadClicked(selected, true)
+        }.takeIf { selected.fastAny { !it.update.read } },
+        onMarkAsUnreadClicked = {
+            onMultiMarkAsReadClicked(selected, false)
+        }.takeIf { selected.fastAny { it.update.read || it.update.lastPageRead > 0L } },
         onDownloadClicked = {
-            onDownloadEpisode(selected, EpisodeDownloadAction.START)
+            onDownloadChapter(selected, ChapterDownloadAction.START)
         }.takeIf {
             selected.fastAny { it.downloadStateProvider() != Download.State.DOWNLOADED }
         },
@@ -285,7 +285,7 @@ sealed interface UpdatesUiModel {
     data class Header(val date: LocalDate) : UpdatesUiModel
     open class Item(open val item: UpdatesItem, open val isExpandable: Boolean = false) : UpdatesUiModel
     // KMK -->
-    /** The first [Item] in a group of episodes from same manga */
+    /** The first [Item] in a group of chapters from same manga */
     data class Leader(override val item: UpdatesItem, override val isExpandable: Boolean) : Item(item)
     // KMK <--
 }

@@ -20,8 +20,8 @@ import eu.kanade.tachiyomi.ui.library.LibraryItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.library.model.LibraryAnime
 import tachiyomi.domain.library.model.LibraryDisplayMode
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.presentation.core.components.material.PullRefresh
 import kotlin.time.Duration.Companion.seconds
 
@@ -29,22 +29,22 @@ import kotlin.time.Duration.Companion.seconds
 fun LibraryContent(
     categories: List<Category>,
     searchQuery: String?,
-    selection: List<LibraryAnime>,
+    selection: List<LibraryManga>,
     contentPadding: PaddingValues,
     currentPage: () -> Int,
     hasActiveFilters: Boolean,
     showPageTabs: Boolean,
     onChangeCurrentPage: (Int) -> Unit,
-    onAnimeClicked: (Long) -> Unit,
-    onContinueWatchingClicked: ((LibraryAnime) -> Unit)?,
-    onToggleSelection: (LibraryAnime) -> Unit,
-    onToggleRangeSelection: (LibraryAnime) -> Unit,
+    onMangaClicked: (Long) -> Unit,
+    onContinueReadingClicked: ((LibraryManga) -> Unit)?,
+    onToggleSelection: (LibraryManga) -> Unit,
+    onToggleRangeSelection: (LibraryManga) -> Unit,
     onRefresh: (Category?) -> Boolean,
     onGlobalSearchClicked: () -> Unit,
-    getNumberOfAnimeForCategory: (Category) -> Int?,
+    getNumberOfMangaForCategory: (Category) -> Int?,
     getDisplayMode: (Int) -> PreferenceMutableState<LibraryDisplayMode>,
     getColumnsForOrientation: (Boolean) -> PreferenceMutableState<Int>,
-    getAnimeLibraryForPage: (Int) -> List<LibraryItem>,
+    getLibraryForPage: (Int) -> List<LibraryItem>,
 ) {
     Column(
         modifier = Modifier.padding(
@@ -53,8 +53,10 @@ fun LibraryContent(
             end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
         ),
     ) {
-        val coercedCurrentPage = remember { currentPage().coerceAtMost(categories.lastIndex) }
+        // SY -->
+        val coercedCurrentPage = remember(categories) { currentPage().coerceIn(0, categories.lastIndex) }
         val pagerState = rememberPagerState(coercedCurrentPage) { categories.size }
+        // SY <--
 
         val scope = rememberCoroutineScope()
         var isRefreshing by remember(pagerState.currentPage) { mutableStateOf(false) }
@@ -68,23 +70,23 @@ fun LibraryContent(
             LibraryTabs(
                 categories = categories,
                 pagerState = pagerState,
-                getNumberOfItemsForCategory = getNumberOfAnimeForCategory,
+                getNumberOfMangaForCategory = getNumberOfMangaForCategory,
             ) { scope.launch { pagerState.animateScrollToPage(it) } }
         }
 
         val notSelectionMode = selection.isEmpty()
-        val onClickAnime = { anime: LibraryAnime ->
+        val onClickManga = { manga: LibraryManga ->
             if (notSelectionMode) {
-                onAnimeClicked(anime.anime.id)
+                onMangaClicked(manga.manga.id)
             } else {
-                onToggleSelection(anime)
+                onToggleSelection(manga)
             }
         }
 
         PullRefresh(
             refreshing = isRefreshing,
             onRefresh = {
-                val started = onRefresh(categories[currentPage()])
+                val started = onRefresh(categories.getOrNull(currentPage()) ?: return@PullRefresh)
                 if (!started) return@PullRefresh
                 scope.launch {
                     // Fake refresh status but hide it after a second as it's a long running task
@@ -99,15 +101,15 @@ fun LibraryContent(
                 state = pagerState,
                 contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding()),
                 hasActiveFilters = hasActiveFilters,
-                selectedAnime = selection,
+                selectedManga = selection,
                 searchQuery = searchQuery,
                 onGlobalSearchClicked = onGlobalSearchClicked,
                 getDisplayMode = getDisplayMode,
                 getColumnsForOrientation = getColumnsForOrientation,
-                getLibraryForPage = getAnimeLibraryForPage,
-                onClickAnime = onClickAnime,
-                onLongClickAnime = onToggleRangeSelection,
-                onClickContinueWatching = onContinueWatchingClicked,
+                getLibraryForPage = getLibraryForPage,
+                onClickManga = onClickManga,
+                onLongClickManga = onToggleRangeSelection,
+                onClickContinueReading = onContinueReadingClicked,
             )
         }
 

@@ -40,18 +40,18 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.anime.components.AnimeCover
-import eu.kanade.presentation.anime.components.DotSeparatorText
-import eu.kanade.presentation.anime.components.EpisodeDownloadAction
-import eu.kanade.presentation.anime.components.EpisodeDownloadIndicator
-import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
 import eu.kanade.presentation.components.relativeDateText
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
+import eu.kanade.presentation.manga.components.ChapterDownloadIndicator
+import eu.kanade.presentation.manga.components.DotSeparatorText
+import eu.kanade.presentation.manga.components.MangaCover
+import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
-import eu.kanade.tachiyomi.ui.updates.groupByDateAndAnime
+import eu.kanade.tachiyomi.ui.updates.groupByDateAndManga
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
@@ -93,7 +93,7 @@ internal fun LazyListScope.updatesUiItems(
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
     onClickCover: (UpdatesItem) -> Unit,
     onClickUpdate: (UpdatesItem, altPlayer: Boolean) -> Unit,
-    onDownloadEpisode: (List<UpdatesItem>, EpisodeDownloadAction) -> Unit,
+    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
 ) {
     items(
         items = uiModels,
@@ -106,7 +106,7 @@ internal fun LazyListScope.updatesUiItems(
         key = {
             when (it) {
                 is UpdatesUiModel.Header -> "updatesHeader-${it.hashCode()}"
-                is UpdatesUiModel.Item -> "updates-${it.item.update.animeId}-${it.item.update.episodeId}"
+                is UpdatesUiModel.Item -> "updates-${it.item.update.mangaId}-${it.item.update.chapterId}"
             }
         },
     ) { item ->
@@ -126,13 +126,13 @@ internal fun LazyListScope.updatesUiItems(
                     modifier = Modifier.animateItemFastScroll(),
                     update = updatesItem.update,
                     selected = updatesItem.selected,
-                    watchProgress = updatesItem.update.lastSecondSeen
-                        .takeIf { !updatesItem.update.seen && it > 0L }
+                    readProgress = updatesItem.update.lastPageRead
+                        .takeIf { !updatesItem.update.read && it > 0L }
                         ?.let {
                             stringResource(
                                 MR.strings.episode_progress,
                                 formatProgress(it),
-                                formatProgress(updatesItem.update.totalSeconds),
+                                formatProgress(updatesItem.update.totalPages),
                             )
                         },
                     onLongClick = {
@@ -145,8 +145,8 @@ internal fun LazyListScope.updatesUiItems(
                         }
                     },
                     onClickCover = { onClickCover(updatesItem) }.takeIf { !selectionMode },
-                    onDownloadEpisode = { action: EpisodeDownloadAction ->
-                        onDownloadEpisode(listOf(updatesItem), action)
+                    onDownloadChapter = { action: ChapterDownloadAction ->
+                        onDownloadChapter(listOf(updatesItem), action)
                     }.takeIf { !selectionMode },
                     downloadStateProvider = updatesItem.downloadStateProvider,
                     downloadProgressProvider = updatesItem.downloadProgressProvider,
@@ -156,7 +156,7 @@ internal fun LazyListScope.updatesUiItems(
                     // KMK -->
                     isLeader = item is UpdatesUiModel.Leader,
                     isExpandable = item.isExpandable,
-                    expanded = expandedState.contains(updatesItem.update.groupByDateAndAnime()),
+                    expanded = expandedState.contains(updatesItem.update.groupByDateAndManga()),
                     collapseToggle = collapseToggle,
                     usePanoramaCover = usePanoramaCover,
                     // KMK <--
@@ -170,11 +170,11 @@ internal fun LazyListScope.updatesUiItems(
 private fun UpdatesUiItem(
     update: UpdatesWithRelations,
     selected: Boolean,
-    watchProgress: String?,
+    readProgress: String?,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onClickCover: (() -> Unit)?,
-    onDownloadEpisode: ((EpisodeDownloadAction) -> Unit)?,
+    onDownloadChapter: ((ChapterDownloadAction) -> Unit)?,
     // Download Indicator
     downloadStateProvider: () -> Download.State,
     downloadProgressProvider: () -> Int,
@@ -192,7 +192,7 @@ private fun UpdatesUiItem(
     // KMK <--
 ) {
     val haptic = LocalHapticFeedback.current
-    val textAlpha = if (update.seen) DISABLED_ALPHA else 1f
+    val textAlpha = if (update.read) DISABLED_ALPHA else 1f
 
     Row(
         modifier = modifier
@@ -219,7 +219,7 @@ private fun UpdatesUiItem(
         val onBgColor = mangaCover.dominantCoverColors?.second
         if (isLeader) {
             if (usePanoramaCover && coverIsWide) {
-                AnimeCover.Panorama(
+                MangaCover.Panorama(
                     modifier = Modifier
                         .padding(top = MaterialTheme.padding.small)
                         .width(UpdateItemPanoramaWidth),
@@ -228,7 +228,7 @@ private fun UpdatesUiItem(
                     // KMK -->
                     bgColor = bgColor,
                     tint = onBgColor,
-                    size = AnimeCover.Size.Medium,
+                    size = MangaCover.Size.Medium,
                     onCoverLoaded = { _, result ->
                         val image = result.result.image
                         coverRatio.floatValue = image.height.toFloat() / image.width
@@ -237,7 +237,7 @@ private fun UpdatesUiItem(
                 )
             } else {
                 // KMK <--
-                AnimeCover.Book(
+                MangaCover.Book(
                     modifier = Modifier
                         // KMK -->
                         .padding(top = MaterialTheme.padding.small)
@@ -248,7 +248,7 @@ private fun UpdatesUiItem(
                     // KMK -->
                     bgColor = bgColor,
                     tint = onBgColor,
-                    size = AnimeCover.Size.Medium,
+                    size = MangaCover.Size.Medium,
                     onCoverLoaded = { _, result ->
                         val image = result.result.image
                         coverRatio.floatValue = image.height.toFloat() / image.width
@@ -269,7 +269,7 @@ private fun UpdatesUiItem(
                 .weight(1f),
         ) {
             Text(
-                text = update.animeTitle,
+                text = update.mangaTitle,
                 maxLines = 1,
                 style = MaterialTheme.typography.bodyMedium,
                 color = LocalContentColor.current.copy(alpha = textAlpha),
@@ -278,7 +278,7 @@ private fun UpdatesUiItem(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 var textHeight by remember { mutableIntStateOf(0) }
-                if (!update.seen) {
+                if (!update.read) {
                     Icon(
                         imageVector = Icons.Filled.Circle,
                         contentDescription = stringResource(MR.strings.unread),
@@ -299,7 +299,7 @@ private fun UpdatesUiItem(
                     Spacer(modifier = Modifier.width(2.dp))
                 }
                 Text(
-                    text = update.episodeName,
+                    text = update.chapterName,
                     maxLines = 1,
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalContentColor.current.copy(alpha = textAlpha),
@@ -308,10 +308,10 @@ private fun UpdatesUiItem(
                     modifier = Modifier
                         .weight(weight = 1f, fill = false),
                 )
-                if (watchProgress != null) {
+                if (readProgress != null) {
                     DotSeparatorText()
                     Text(
-                        text = watchProgress,
+                        text = readProgress,
                         maxLines = 1,
                         color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
                         overflow = TextOverflow.Ellipsis,
@@ -324,7 +324,7 @@ private fun UpdatesUiItem(
         if (isLeader && isExpandable) {
             CollapseButton(
                 expanded = expanded,
-                collapseToggle = { collapseToggle(update.groupByDateAndAnime()) },
+                collapseToggle = { collapseToggle(update.groupByDateAndManga()) },
             )
         }
         // KMK <--
@@ -332,17 +332,17 @@ private fun UpdatesUiItem(
         // AM (FILE_SIZE) -->
         var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
         if (downloadStateProvider() == Download.State.DOWNLOADED &&
-            storagePreferences.showEpisodeFileSize().get() &&
+            storagePreferences.showChapterFileSize().get() &&
             fileSizeAsync == null
         ) {
             LaunchedEffect(update, Unit) {
                 fileSizeAsync = withIOContext {
-                    downloadProvider.getEpisodeFileSize(
-                        update.episodeName,
+                    downloadProvider.getChapterFileSize(
+                        update.chapterName,
                         null,
                         update.scanlator,
                         // AM (CUSTOM_INFORMATION) -->
-                        update.ogAnimeTitle,
+                        update.ogMangaTitle,
                         // <-- AM (CUSTOM_INFORMATION)
                         sourceManager.getOrStub(update.sourceId),
                     )
@@ -352,12 +352,12 @@ private fun UpdatesUiItem(
         }
         // <-- AM (FILE_SIZE)
 
-        EpisodeDownloadIndicator(
-            enabled = onDownloadEpisode != null,
+        ChapterDownloadIndicator(
+            enabled = onDownloadChapter != null,
             modifier = Modifier.padding(start = 4.dp),
             downloadStateProvider = downloadStateProvider,
             downloadProgressProvider = downloadProgressProvider,
-            onClick = { onDownloadEpisode?.invoke(it) },
+            onClick = { onDownloadChapter?.invoke(it) },
             // AM (FILE_SIZE) -->
             fileSize = fileSizeAsync,
             // <-- AM (FILE_SIZE)

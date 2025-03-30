@@ -7,7 +7,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class ExtensionRepoRestorer(
-    private val animeHandler: DatabaseHandler = Injekt.get(),
+    private val handler: DatabaseHandler = Injekt.get(),
     private val getExtensionRepos: GetExtensionRepo = Injekt.get(),
 ) {
 
@@ -26,7 +26,7 @@ class ExtensionRepoRestorer(
         } else if (shaExists != null) {
             error("${shaExists.name} has the same signing key fingerprint")
         } else {
-            animeHandler.await {
+            handler.await {
                 extension_reposQueries.insert(
                     backupRepo.baseUrl,
                     backupRepo.name,

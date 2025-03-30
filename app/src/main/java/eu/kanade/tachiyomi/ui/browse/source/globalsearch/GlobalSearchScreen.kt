@@ -16,14 +16,14 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.presentation.browse.GlobalSearchScreen
 import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.AddDuplicateMangaDialog
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimeCategoryDialog
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
-import eu.kanade.tachiyomi.ui.browse.RemoveAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangaCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangasCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.RemoveMangaDialog
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.presentation.core.screens.LoadingScreen
 
@@ -71,9 +71,14 @@ class GlobalSearchScreen(
                 when (val result = state.items.values.singleOrNull()) {
                     SearchItemResult.Loading -> return@LaunchedEffect
                     is SearchItemResult.Success -> {
-                        val anime = result.result.singleOrNull()
-                        if (anime != null) {
-                            navigator.replace(AnimeScreen(anime.id, true))
+                        val manga = result.result.singleOrNull()
+                        if (manga != null) {
+                            // KMK -->
+                            scope.launchIO {
+                                val localManga = screenModel.networkToLocalManga.getLocal(manga)
+                                // KMK <--
+                                navigator.replace(MangaScreen(localManga.id, true))
+                            }
                         } else {
                             // Backoff to result screen
                             showSingleLoadingScreen = false
@@ -88,7 +93,7 @@ class GlobalSearchScreen(
                 navigateUp = navigator::pop,
                 onChangeSearchQuery = screenModel::updateSearchQuery,
                 onSearch = { screenModel.search() },
-                getAnime = { screenModel.getAnime(it) },
+                getManga = { screenModel.getManga(it) },
                 onChangeSearchFilter = screenModel::setSourceFilter,
                 onToggleResults = screenModel::toggleFilterResults,
                 onClickSource = {
@@ -97,24 +102,24 @@ class GlobalSearchScreen(
                 onClickItem = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (bulkFavoriteState.selectionMode) {
                             bulkFavoriteScreenModel.toggleSelection(manga)
                         } else {
                             // KMK <--
-                            navigator.push(AnimeScreen(manga.id, true))
+                            navigator.push(MangaScreen(manga.id, true))
                         }
                     }
                 },
                 onLongClickItem = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (!bulkFavoriteState.selectionMode) {
                             bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                         } else {
                             // KMK <--
-                            navigator.push(AnimeScreen(manga.id, true))
+                            navigator.push(MangaScreen(manga.id, true))
                         }
                     }
                 },
@@ -128,13 +133,13 @@ class GlobalSearchScreen(
         // KMK -->
         when (bulkFavoriteState.dialog) {
             is BulkFavoriteScreenModel.Dialog.AddDuplicateManga ->
-                AddDuplicateAnimeDialog(bulkFavoriteScreenModel)
+                AddDuplicateMangaDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.RemoveManga ->
-                RemoveAnimeDialog(bulkFavoriteScreenModel)
+                RemoveMangaDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.ChangeMangaCategory ->
-                ChangeAnimeCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangaCategoryDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
-                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangasCategoryDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
                 AllowDuplicateDialog(bulkFavoriteScreenModel)
             else -> {}

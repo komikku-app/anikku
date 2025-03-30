@@ -32,7 +32,7 @@ data class BackupTracking(
     fun getTrackImpl(): Track {
         return Track(
             id = -1,
-            animeId = -1,
+            mangaId = -1,
             trackerId = this@BackupTracking.syncId.toLong(),
             remoteId = if (this@BackupTracking.mediaIdInt != 0) {
                 this@BackupTracking.mediaIdInt.toLong()
@@ -41,8 +41,8 @@ data class BackupTracking(
             },
             libraryId = this@BackupTracking.libraryId,
             title = this@BackupTracking.title,
-            lastEpisodeSeen = this@BackupTracking.lastEpisodeSeen.toDouble(),
-            totalEpisodes = this@BackupTracking.totalEpisodes.toLong(),
+            lastChapterRead = this@BackupTracking.lastEpisodeSeen.toDouble(),
+            totalChapters = this@BackupTracking.totalEpisodes.toLong(),
             score = this@BackupTracking.score.toDouble(),
             status = this@BackupTracking.status.toLong(),
             startDate = this@BackupTracking.startedWatchingDate,

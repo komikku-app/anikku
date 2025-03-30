@@ -49,7 +49,7 @@ import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.track.components.TrackLogoIcon
 import eu.kanade.tachiyomi.data.track.Tracker
-import eu.kanade.tachiyomi.ui.anime.track.TrackItem
+import eu.kanade.tachiyomi.ui.manga.track.TrackItem
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.i18n.MR
@@ -61,7 +61,7 @@ fun TrackInfoDialogHome(
     trackItems: List<TrackItem>,
     dateFormat: DateTimeFormatter,
     onStatusClick: (TrackItem) -> Unit,
-    onEpisodeClick: (TrackItem) -> Unit,
+    onChapterClick: (TrackItem) -> Unit,
     onScoreClick: (TrackItem) -> Unit,
     onStartDateEdit: (TrackItem) -> Unit,
     onEndDateEdit: (TrackItem) -> Unit,
@@ -82,31 +82,27 @@ fun TrackInfoDialogHome(
         trackItems.forEach { item ->
             if (item.track != null) {
                 val supportsScoring = item.tracker.getScoreList().isNotEmpty()
-                val supportsReadingDates = item.tracker.supportsWatchingDates
+                val supportsReadingDates = item.tracker.supportsReadingDates
                 TrackInfoItem(
                     title = item.track.title,
                     tracker = item.tracker,
-                    status = item.tracker.getStatusForAnime(item.track.status),
+                    status = item.tracker.getStatus(item.track.status),
                     onStatusClick = { onStatusClick(item) },
-                    episodes = "${item.track.lastEpisodeSeen.toInt()}".let {
-                        val totalEpisodes = item.track.totalEpisodes
-                        if (totalEpisodes > 0) {
-                            // Add known total episode count
-                            "$it / $totalEpisodes"
+                    chapters = "${item.track.lastChapterRead.toInt()}".let {
+                        val totalChapters = item.track.totalChapters
+                        if (totalChapters > 0) {
+                            // Add known total chapter count
+                            "$it / $totalChapters"
                         } else {
                             it
                         }
                     },
-                    onEpisodesClick = { onEpisodeClick(item) },
+                    onChaptersClick = { onChapterClick(item) },
                     score = item.tracker.displayScore(item.track)
                         .takeIf { supportsScoring && item.track.score != 0.0 },
                     onScoreClick = { onScoreClick(item) }
                         .takeIf { supportsScoring },
-                    startDate = remember(item.track.startDate) {
-                        dateFormat.format(
-                            item.track.startDate.toLocalDate(),
-                        )
-                    }
+                    startDate = remember(item.track.startDate) { dateFormat.format(item.track.startDate.toLocalDate()) }
                         .takeIf { supportsReadingDates && item.track.startDate != 0L },
                     onStartDateClick = { onStartDateEdit(item) } // TODO
                         .takeIf { supportsReadingDates },
@@ -135,8 +131,8 @@ private fun TrackInfoItem(
     tracker: Tracker,
     status: StringResource?,
     onStatusClick: () -> Unit,
-    episodes: String,
-    onEpisodesClick: () -> Unit,
+    chapters: String,
+    onChaptersClick: () -> Unit,
     score: String?,
     onScoreClick: (() -> Unit)?,
     startDate: String?,
@@ -205,8 +201,8 @@ private fun TrackInfoItem(
                     VerticalDivider()
                     TrackDetailsItem(
                         modifier = Modifier.weight(1f),
-                        text = episodes,
-                        onClick = onEpisodesClick,
+                        text = chapters,
+                        onClick = onChaptersClick,
                     )
                     if (onScoreClick != null) {
                         VerticalDivider()

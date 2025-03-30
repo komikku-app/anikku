@@ -5,10 +5,14 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import eu.kanade.domain.track.store.DelayedTrackingStore
 import eu.kanade.tachiyomi.BuildConfig
-import eu.kanade.tachiyomi.data.cache.ChapterCache
+import eu.kanade.tachiyomi.core.security.SecurityPreferences
+import eu.kanade.tachiyomi.data.BackupRestoreStatus
+import eu.kanade.tachiyomi.data.LibraryUpdateStatus
+import eu.kanade.tachiyomi.data.SyncStatus
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.download.DownloadCache
@@ -25,7 +29,9 @@ import eu.kanade.tachiyomi.ui.player.ExternalIntents
 import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
-import nl.adaptivity.xmlutil.XmlDeclMode.Charset
+import mihon.core.archive.CbzCrypto
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
+import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.core.XmlVersion
 import nl.adaptivity.xmlutil.serialization.XML
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
@@ -37,6 +43,7 @@ import tachiyomi.data.DateColumnAdapter
 import tachiyomi.data.History
 import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.UpdateStrategyColumnAdapter
+import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.source.local.image.LocalCoverManager
@@ -46,40 +53,63 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.api.addSingleton
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
+
+// SY -->
+private const val LEGACY_DATABASE_NAME = "tachiyomi.animedb"
+// SY <--
 
 class AppModule(val app: Application) : InjektModule {
+    // SY -->
+    private val securityPreferences: SecurityPreferences by injectLazy()
+    // SY <--
 
     override fun InjektRegistrar.registerInjectables() {
         addSingleton(app)
 
-        val sqlDriverAnime = AndroidSqliteDriver(
-            schema = Database.Schema,
-            context = app,
-            name = "tachiyomi.animedb",
-            factory = if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // Support database inspector in Android Studio
-                FrameworkSQLiteOpenHelperFactory()
-            } else {
-                RequerySQLiteOpenHelperFactory()
-            },
-            callback = object : AndroidSqliteDriver.Callback(Database.Schema) {
-                override fun onOpen(db: SupportSQLiteDatabase) {
-                    super.onOpen(db)
-                    setPragma(db, "foreign_keys = ON")
-                    setPragma(db, "journal_mode = WAL")
-                    setPragma(db, "synchronous = NORMAL")
-                }
-                private fun setPragma(db: SupportSQLiteDatabase, pragma: String) {
-                    val cursor = db.query("PRAGMA $pragma")
-                    cursor.moveToFirst()
-                    cursor.close()
-                }
-            },
-        )
+        addSingletonFactory<SqlDriver> {
+            // SY -->
+            if (securityPreferences.encryptDatabase().get()) {
+                System.loadLibrary("sqlcipher")
+            }
 
+            // SY <--
+            AndroidSqliteDriver(
+                schema = Database.Schema,
+                context = app,
+                // SY -->
+                name = if (securityPreferences.encryptDatabase().get()) {
+                    CbzCrypto.DATABASE_NAME
+                } else {
+                    LEGACY_DATABASE_NAME
+                },
+                factory = if (securityPreferences.encryptDatabase().get()) {
+                    SupportOpenHelperFactory(CbzCrypto.getDecryptedPasswordSql(), null, false, 25)
+                } else if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    // Support database inspector in Android Studio
+                    FrameworkSQLiteOpenHelperFactory()
+                } else {
+                    RequerySQLiteOpenHelperFactory()
+                },
+                // SY <--
+                callback = object : AndroidSqliteDriver.Callback(Database.Schema) {
+                    override fun onOpen(db: SupportSQLiteDatabase) {
+                        super.onOpen(db)
+                        setPragma(db, "foreign_keys = ON")
+                        setPragma(db, "journal_mode = WAL")
+                        setPragma(db, "synchronous = NORMAL")
+                    }
+                    private fun setPragma(db: SupportSQLiteDatabase, pragma: String) {
+                        val cursor = db.query("PRAGMA $pragma")
+                        cursor.moveToFirst()
+                        cursor.close()
+                    }
+                },
+            )
+        }
         addSingletonFactory {
             Database(
-                driver = sqlDriverAnime,
+                driver = get(),
                 historyAdapter = History.Adapter(
                     last_seenAdapter = DateColumnAdapter,
                 ),
@@ -89,13 +119,7 @@ class AppModule(val app: Application) : InjektModule {
                 ),
             )
         }
-
-        addSingletonFactory<DatabaseHandler> {
-            AndroidDatabaseHandler(
-                get(),
-                sqlDriverAnime,
-            )
-        }
+        addSingletonFactory<DatabaseHandler> { AndroidDatabaseHandler(get(), get()) }
 
         addSingletonFactory {
             Json {
@@ -109,7 +133,7 @@ class AppModule(val app: Application) : InjektModule {
                     ignoreUnknownChildren()
                 }
                 autoPolymorphic = true
-                xmlDeclMode = Charset
+                xmlDeclMode = XmlDeclMode.Charset
                 indent = 2
                 xmlVersion = XmlVersion.XML10
             }
@@ -118,15 +142,12 @@ class AppModule(val app: Application) : InjektModule {
             ProtoBuf
         }
 
-        addSingletonFactory { ChapterCache(app) }
-
         addSingletonFactory { CoverCache(app) }
 
         addSingletonFactory { NetworkHelper(app, get(), BuildConfig.DEBUG) }
         addSingletonFactory { JavaScriptEngine(app) }
 
         addSingletonFactory<SourceManager> { AndroidSourceManager(app, get(), get()) }
-
         addSingletonFactory { ExtensionManager(app) }
 
         addSingletonFactory { DownloadProvider(app) }
@@ -139,10 +160,8 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { ImageSaver(app) }
 
         addSingletonFactory { AndroidStorageFolderProvider(app) }
-
         addSingletonFactory { LocalSourceFileSystem(get()) }
         addSingletonFactory { LocalCoverManager(app, get()) }
-
         addSingletonFactory { StorageManager(app, get()) }
 
         addSingletonFactory { ExternalIntents() }
@@ -150,6 +169,11 @@ class AppModule(val app: Application) : InjektModule {
         // AM (CONNECTIONS) -->
         addSingletonFactory { ConnectionsManager() }
         // <-- AM (CONNECTIONS)
+        // KMK -->
+        addSingletonFactory { BackupRestoreStatus() }
+        addSingletonFactory { SyncStatus() }
+        addSingletonFactory { LibraryUpdateStatus() }
+        // KMK <--
 
         // Asynchronously init expensive components for a faster cold start
         ContextCompat.getMainExecutor(app).execute {
@@ -161,8 +185,9 @@ class AppModule(val app: Application) : InjektModule {
 
             get<DownloadManager>()
 
-            // get<GetCustomAnimeInfo>()
-            // get<GetCustomAnimeInfo>()
+            // SY -->
+            get<GetCustomMangaInfo>()
+            // SY <--
         }
 
         addSingletonFactory { GoogleDriveService(app) }

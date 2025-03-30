@@ -30,6 +30,13 @@ kotlin {
             }
         }
     }
+
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xexpect-actual-classes",
+            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
+        )
+    }
 }
 
 android {
@@ -43,15 +50,5 @@ android {
     dependencies {
         // FFmpeg-kit
         implementation(libs.ffmpeg.kit)
-    }
-}
-
-tasks {
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        compilerOptions.freeCompilerArgs.addAll(
-            listOf(
-                "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-            ),
-        )
     }
 }

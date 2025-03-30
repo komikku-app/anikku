@@ -60,7 +60,7 @@ object SettingsBrowseScreen : SearchableSettings {
                 preferenceItems = persistentListOf(
                     // KMK -->
                     Preference.PreferenceItem.SwitchPreference(
-                        pref = sourcePreferences.relatedAnimes(),
+                        pref = sourcePreferences.relatedMangas(),
                         title = stringResource(KMR.strings.pref_source_related_mangas),
                         subtitle = stringResource(KMR.strings.pref_source_related_mangas_summary),
                     ),
@@ -84,6 +84,11 @@ object SettingsBrowseScreen : SearchableSettings {
                         pref = uiPreferences.useNewSourceNavigation(),
                         title = stringResource(SYMR.strings.pref_source_navigation),
                         subtitle = stringResource(SYMR.strings.pref_source_navigation_summery),
+                    ),
+                    Preference.PreferenceItem.SwitchPreference(
+                        pref = unsortedPreferences.allowLocalSourceHiddenFolders(),
+                        title = stringResource(SYMR.strings.pref_local_source_hidden_folders),
+                        subtitle = stringResource(SYMR.strings.pref_local_source_hidden_folders_summery),
                     ),
                 ),
             ),

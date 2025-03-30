@@ -30,17 +30,17 @@ class DownloadHolder(private val view: View, val adapter: DownloadAdapter) :
     private lateinit var download: Download
 
     /**
-     * Binds this holder with the given category.
+     * Binds this holder with the given download.
      *
-     * @param download the download to bind.
+     * @param download The download to bind.
      */
     fun bind(download: Download) {
         this.download = download
         // Update the chapter name.
-        binding.chapterTitle.text = download.episode.name
+        binding.chapterTitle.text = download.chapter.name
 
         // Update the manga title
-        binding.mangaFullTitle.text = download.anime.title
+        binding.mangaFullTitle.text = download.manga.title
 
         // Update the progress bar and the number of downloaded pages
         val video = download.video
@@ -53,6 +53,10 @@ class DownloadHolder(private val view: View, val adapter: DownloadAdapter) :
             notifyProgress()
             notifyDownloadedPages()
         }
+        // KMK -->
+        binding.downloadProgress.trackColor = adapter.progressTrackColor
+        binding.downloadProgress.setIndicatorColor(adapter.progressIndicatorColor)
+        // KMK <--
     }
 
     /**

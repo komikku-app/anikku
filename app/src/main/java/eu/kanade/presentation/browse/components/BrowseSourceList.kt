@@ -14,23 +14,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import eu.kanade.presentation.library.components.AnimeListItem
-import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
+import eu.kanade.presentation.library.components.CommonMangaItemDefaults
+import eu.kanade.presentation.library.components.MangaListItem
 import kotlinx.coroutines.flow.StateFlow
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.AnimeCover
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.presentation.core.util.plus
 
 @Composable
 fun BrowseSourceList(
-    animeList: LazyPagingItems<StateFlow<Anime>>,
+    mangaList: LazyPagingItems<StateFlow<Manga>>,
     entries: Int,
     topBarHeight: Int,
     contentPadding: PaddingValues,
-    onAnimeClick: (Anime) -> Unit,
-    onAnimeLongClick: (Anime) -> Unit,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
     // KMK -->
-    selection: List<Anime>,
+    selection: List<Manga>,
     // KMK <--
 ) {
     var containerHeight by remember { mutableIntStateOf(0) }
@@ -42,27 +42,28 @@ fun BrowseSourceList(
             },
     ) {
         item {
-            if (animeList.loadState.prepend is LoadState.Loading) {
+            if (mangaList.loadState.prepend is LoadState.Loading) {
                 BrowseSourceLoadingItem()
             }
         }
 
-        items(count = animeList.itemCount) { index ->
-            val anime by animeList[index]?.collectAsState() ?: return@items
+        items(count = mangaList.itemCount) { index ->
+            val manga by mangaList[index]?.collectAsState() ?: return@items
+
             BrowseSourceListItem(
-                anime = anime,
-                onClick = { onAnimeClick(anime) },
-                onLongClick = { onAnimeLongClick(anime) },
+                manga = manga,
+                onClick = { onMangaClick(manga) },
+                onLongClick = { onMangaLongClick(manga) },
                 entries = entries,
                 containerHeight = containerHeight,
                 // KMK -->
-                isSelected = selection.fastAny { selected -> selected.id == anime.id },
+                isSelected = selection.fastAny { selected -> selected.id == manga.id },
                 // KMK <--
             )
         }
 
         item {
-            if (animeList.loadState.refresh is LoadState.Loading || animeList.loadState.append is LoadState.Loading) {
+            if (mangaList.loadState.refresh is LoadState.Loading || mangaList.loadState.append is LoadState.Loading) {
                 BrowseSourceLoadingItem()
             }
         }
@@ -71,7 +72,7 @@ fun BrowseSourceList(
 
 @Composable
 internal fun BrowseSourceListItem(
-    anime: Anime,
+    manga: Manga,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = onClick,
     entries: Int,
@@ -80,21 +81,21 @@ internal fun BrowseSourceListItem(
     isSelected: Boolean = false,
     // KMK <--
 ) {
-    AnimeListItem(
-        title = anime.title,
-        coverData = AnimeCover(
-            animeId = anime.id,
-            sourceId = anime.source,
-            isAnimeFavorite = anime.favorite,
-            ogUrl = anime.thumbnailUrl,
-            lastModified = anime.coverLastModified,
+    MangaListItem(
+        title = manga.title,
+        coverData = MangaCover(
+            mangaId = manga.id,
+            sourceId = manga.source,
+            isMangaFavorite = manga.favorite,
+            ogUrl = manga.thumbnailUrl,
+            lastModified = manga.coverLastModified,
         ),
         // KMK -->
         isSelected = isSelected,
         // KMK <--
-        coverAlpha = if (anime.favorite) CommonAnimeItemDefaults.BrowseFavoriteCoverAlpha else 1f,
+        coverAlpha = if (manga.favorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         badge = {
-            InLibraryBadge(enabled = anime.favorite)
+            InLibraryBadge(enabled = manga.favorite)
         },
         onLongClick = onLongClick,
         onClick = onClick,

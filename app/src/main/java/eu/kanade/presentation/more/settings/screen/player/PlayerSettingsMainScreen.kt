@@ -49,6 +49,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
 object PlayerSettingsMainScreen : Screen() {
+    private fun readResolve(): Any = PlayerSettingsMainScreen
+
     @Composable
     override fun Content() {
         Content(twoPane = false)

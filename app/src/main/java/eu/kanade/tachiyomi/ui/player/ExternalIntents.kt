@@ -49,7 +49,7 @@ import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.InsertTrack
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.source.local.LocalSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -155,7 +155,9 @@ class ExternalIntents {
                 downloadManager.isEpisodeDownloaded(
                     episodeName = episode.name,
                     episodeScanlator = episode.scanlator,
-                    animeTitle = anime.title,
+                    // SY -->
+                    animeTitle = anime.ogTitle,
+                    // SY <--
                     sourceId = anime.source,
                     skipCache = true,
                 )
@@ -180,7 +182,7 @@ class ExternalIntents {
         val preserveWatchPos = playerPreferences.preserveWatchingPosition().get()
         val isEpisodeWatched = episode.lastSecondSeen == episode.totalSeconds
 
-        return if (episode.seen && (!preserveWatchPos || (preserveWatchPos && isEpisodeWatched))) {
+        return if (episode.seen && (!preserveWatchPos || isEpisodeWatched)) {
             1L
         } else {
             episode.lastSecondSeen
@@ -293,7 +295,7 @@ class ExternalIntents {
                 }
             } else {
                 withUIContext {
-                    context.toast(TLMR.strings.install_amnis, 8)
+                    context.toast(AMR.strings.install_amnis, 8)
                 }
             }
             data = uri
@@ -504,17 +506,17 @@ class ExternalIntents {
             updateEpisode.await(
                 EpisodeUpdate(
                     id = currEp.id,
-                    seen = seen,
+                    read = seen,
                     bookmark = currEp.bookmark,
                     // AM (FILLERMARK) -->
                     fillermark = currEp.fillermark,
                     // <-- AM (FILLERMARK)
-                    lastSecondSeen = lastSecondSeen,
-                    totalSeconds = totalSeconds,
+                    lastPageRead = lastSecondSeen,
+                    totalPages = totalSeconds,
                 ),
             )
             if (trackPreferences.autoUpdateTrack().get() && currEp.seen) {
-                updateTrackEpisodeSeen(currEp.episodeNumber.toDouble(), anime)
+                updateTrackEpisodeSeen(currEp.episodeNumber, anime)
             }
             if (seen) {
                 deleteEpisodeIfNeeded(currentEpisode, anime)
@@ -572,7 +574,7 @@ class ExternalIntents {
                         tracker.isLoggedIn &&
                         episodeNumber > track.lastEpisodeSeen
                     ) {
-                        val updatedTrack = track.copy(lastEpisodeSeen = episodeNumber)
+                        val updatedTrack = track.copy(lastChapterRead = episodeNumber)
 
                         // We want these to execute even if the presenter is destroyed and leaks
                         // for a while. The view can still be garbage collected.
@@ -582,7 +584,7 @@ class ExternalIntents {
                                     tracker.update(updatedTrack.toDbTrack(), true)
                                     insertTrack.await(updatedTrack)
                                 } else {
-                                    delayedTrackingStore.add(track.animeId, lastEpisodeSeen = episodeNumber)
+                                    delayedTrackingStore.add(track.animeId, lastChapterRead = episodeNumber)
                                     DelayedTrackingUpdateJob.setupTask(context)
                                 }
                             }

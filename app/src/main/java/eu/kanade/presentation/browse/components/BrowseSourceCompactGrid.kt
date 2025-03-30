@@ -12,49 +12,50 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import eu.kanade.presentation.library.components.AnimeCompactGridItem
-import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
+import eu.kanade.presentation.library.components.CommonMangaItemDefaults
+import eu.kanade.presentation.library.components.MangaCompactGridItem
 import kotlinx.coroutines.flow.StateFlow
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.AnimeCover
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.presentation.core.util.plus
 
 @Composable
 fun BrowseSourceCompactGrid(
-    animeList: LazyPagingItems<StateFlow<Anime>>,
+    mangaList: LazyPagingItems<StateFlow<Manga>>,
     columns: GridCells,
     contentPadding: PaddingValues,
-    onAnimeClick: (Anime) -> Unit,
-    onAnimeLongClick: (Anime) -> Unit,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
     // KMK -->
-    selection: List<Anime>,
+    selection: List<Manga>,
     // KMK <--
 ) {
     LazyVerticalGrid(
         columns = columns,
         contentPadding = contentPadding + PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(CommonAnimeItemDefaults.GridVerticalSpacer),
-        horizontalArrangement = Arrangement.spacedBy(CommonAnimeItemDefaults.GridHorizontalSpacer),
+        verticalArrangement = Arrangement.spacedBy(CommonMangaItemDefaults.GridVerticalSpacer),
+        horizontalArrangement = Arrangement.spacedBy(CommonMangaItemDefaults.GridHorizontalSpacer),
     ) {
-        if (animeList.loadState.prepend is LoadState.Loading) {
+        if (mangaList.loadState.prepend is LoadState.Loading) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 BrowseSourceLoadingItem()
             }
         }
 
-        items(count = animeList.itemCount) { index ->
-            val anime by animeList[index]?.collectAsState() ?: return@items
+        items(count = mangaList.itemCount) { index ->
+            val manga by mangaList[index]?.collectAsState() ?: return@items
+
             BrowseSourceCompactGridItem(
-                anime = anime,
-                onClick = { onAnimeClick(anime) },
-                onLongClick = { onAnimeLongClick(anime) },
+                manga = manga,
+                onClick = { onMangaClick(manga) },
+                onLongClick = { onMangaLongClick(manga) },
                 // KMK -->
-                isSelected = selection.fastAny { selected -> selected.id == anime.id },
+                isSelected = selection.fastAny { selected -> selected.id == manga.id },
                 // KMK <--
             )
         }
 
-        if (animeList.loadState.refresh is LoadState.Loading || animeList.loadState.append is LoadState.Loading) {
+        if (mangaList.loadState.refresh is LoadState.Loading || mangaList.loadState.append is LoadState.Loading) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 BrowseSourceLoadingItem()
             }
@@ -64,28 +65,28 @@ fun BrowseSourceCompactGrid(
 
 @Composable
 internal fun BrowseSourceCompactGridItem(
-    anime: Anime,
+    manga: Manga,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = onClick,
     // KMK -->
     isSelected: Boolean = false,
     // KMK <--
 ) {
-    AnimeCompactGridItem(
-        title = anime.title,
-        coverData = AnimeCover(
-            animeId = anime.id,
-            sourceId = anime.source,
-            isAnimeFavorite = anime.favorite,
-            ogUrl = anime.thumbnailUrl,
-            lastModified = anime.coverLastModified,
+    MangaCompactGridItem(
+        title = manga.title,
+        coverData = MangaCover(
+            mangaId = manga.id,
+            sourceId = manga.source,
+            isMangaFavorite = manga.favorite,
+            ogUrl = manga.thumbnailUrl,
+            lastModified = manga.coverLastModified,
         ),
         // KMK -->
         isSelected = isSelected,
         // KMK <--
-        coverAlpha = if (anime.favorite) CommonAnimeItemDefaults.BrowseFavoriteCoverAlpha else 1f,
+        coverAlpha = if (manga.favorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         coverBadgeStart = {
-            InLibraryBadge(enabled = anime.favorite)
+            InLibraryBadge(enabled = manga.favorite)
         },
         onLongClick = onLongClick,
         onClick = onClick,

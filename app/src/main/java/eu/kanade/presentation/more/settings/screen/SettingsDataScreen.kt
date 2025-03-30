@@ -28,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,7 +51,6 @@ import eu.kanade.presentation.more.settings.widget.PrefsHorizontalPadding
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.backup.create.BackupCreateJob
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
-import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.sync.SyncManager
@@ -69,25 +67,23 @@ import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
-import tachiyomi.core.common.util.lang.launchNonCancellable
-import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.backup.service.BackupPreferences
-import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
-import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-@Suppress("TooManyFunctions")
 object SettingsDataScreen : SearchableSettings {
+    private fun readResolve(): Any = SettingsDataScreen
 
     val restorePreferenceKeyString = MR.strings.label_backup
-    const val HELP_URL = "https://aniyomi.org/docs/faq/storage"
+    const val HELP_URL = "https://anikku-app.github.io/docs/faq/storage"
 
     @ReadOnlyComposable
     @Composable
@@ -161,7 +157,7 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val storageDir by storageDirPref.collectAsState()
 
-        if (!storageDirPref.isSet()) {
+        if (storageDir == storageDirPref.defaultValue()) {
             return stringResource(MR.strings.no_location_set)
         }
 
@@ -195,6 +191,7 @@ object SettingsDataScreen : SearchableSettings {
     private fun getBackupAndRestoreGroup(backupPreferences: BackupPreferences): Preference.PreferenceGroup {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
+
         val lastAutoBackup by backupPreferences.lastAutoBackupTimestamp().collectAsState()
 
         val chooseBackup = rememberLauncherForActivityResult(
@@ -266,6 +263,8 @@ object SettingsDataScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_backup_interval),
                     entries = persistentMapOf(
                         0 to stringResource(MR.strings.off),
+                        1 to stringResource(SYMR.strings.update_1hour),
+                        3 to stringResource(SYMR.strings.update_3hour),
                         6 to stringResource(MR.strings.update_6hour),
                         12 to stringResource(MR.strings.update_12hour),
                         24 to stringResource(MR.strings.update_24hour),
@@ -281,24 +280,23 @@ object SettingsDataScreen : SearchableSettings {
                     stringResource(MR.strings.backup_info) + "\n\n" +
                         stringResource(MR.strings.last_auto_backup_info, relativeTimeSpanString(lastAutoBackup)),
                 ),
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = backupPreferences.showRestoringProgressBanner(),
+                    title = stringResource(KMR.strings.pref_show_restoring_progress_banner),
+                ),
+                // KMK <--
             ),
         )
     }
 
     @Composable
     private fun getDataGroup(storagePreferences: StoragePreferences): Preference.PreferenceGroup {
-        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val scope = rememberCoroutineScope()
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
-
-        val chapterCache = remember { Injekt.get<ChapterCache>() }
-        var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
-        val cacheReadableSize = remember(cacheReadableSizeSema) { chapterCache.readableSize }
 
         // AM (FILE_SIZE) -->
         LaunchedEffect(Unit) {
-            storagePreferences.showEpisodeFileSize().changes()
+            storagePreferences.showChapterFileSize().changes()
                 .drop(1)
                 .collectLatest { value ->
                     if (value) {
@@ -311,7 +309,6 @@ object SettingsDataScreen : SearchableSettings {
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_storage_usage),
             preferenceItems = persistentListOf(
-
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(MR.strings.pref_storage_usage),
                 ) {
@@ -326,8 +323,8 @@ object SettingsDataScreen : SearchableSettings {
 
                 // AM (FILE_SIZE) -->
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = storagePreferences.showEpisodeFileSize(),
-                    title = stringResource(TLMR.strings.pref_show_downloaded_episode_file_size),
+                    pref = storagePreferences.showChapterFileSize(),
+                    title = stringResource(AMR.strings.pref_show_downloaded_episode_file_size),
                 ),
                 // <-- AM (FILE_SIZE)
 
@@ -337,29 +334,6 @@ object SettingsDataScreen : SearchableSettings {
                     onClick = {
                         navigator.push(StorageScreen)
                     },
-                ),
-
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_clear_chapter_cache),
-                    subtitle = stringResource(MR.strings.used_cache, cacheReadableSize),
-                    onClick = {
-                        scope.launchNonCancellable {
-                            try {
-                                val deletedFiles = chapterCache.clear()
-                                withUIContext {
-                                    context.toast(context.stringResource(MR.strings.cache_deleted, deletedFiles))
-                                    cacheReadableSizeSema++
-                                }
-                            } catch (e: Throwable) {
-                                logcat(LogPriority.ERROR, e)
-                                withUIContext { context.toast(MR.strings.cache_delete_error) }
-                            }
-                        }
-                    },
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = libraryPreferences.autoClearChapterCache(),
-                    title = stringResource(MR.strings.pref_auto_clear_chapter_cache),
                 ),
             ),
         )
@@ -404,16 +378,37 @@ object SettingsDataScreen : SearchableSettings {
         syncServiceType: SyncManager.SyncService,
         syncPreferences: SyncPreferences,
     ): List<Preference> {
-        return when (syncServiceType) {
+        val navigator = LocalNavigator.currentOrThrow
+        val preferences = when (syncServiceType) {
             SyncManager.SyncService.NONE -> emptyList()
             SyncManager.SyncService.SYNCYOMI -> getSelfHostPreferences(syncPreferences)
             SyncManager.SyncService.GOOGLE_DRIVE -> getGoogleDrivePreferences()
+        }
+
+        return if (syncServiceType != SyncManager.SyncService.NONE) {
+            preferences + Preference.PreferenceItem.TextPreference(
+                title = stringResource(SYMR.strings.pref_choose_what_to_sync),
+                onClick = {
+                    navigator.push(SyncSettingsSelector())
+                },
+            )
+        } else {
+            preferences
         }
     }
 
     @Composable
     private fun getAdditionalPreferences(syncPreferences: SyncPreferences): List<Preference> {
-        return listOf(getSyncNowPref(), getAutomaticSyncGroup(syncPreferences))
+        return listOf(
+            getSyncNowPref(),
+            getAutomaticSyncGroup(syncPreferences),
+            // KMK -->
+            Preference.PreferenceItem.SwitchPreference(
+                pref = syncPreferences.showSyncingProgressBanner(),
+                title = stringResource(KMR.strings.pref_show_syncing_progress_banner),
+            ),
+            // KMK <--
+        )
     }
 
     @Composable
@@ -525,7 +520,7 @@ object SettingsDataScreen : SearchableSettings {
 
     @Composable
     private fun getSyncNowPref(): Preference.PreferenceGroup {
-        val navigator = LocalNavigator.currentOrThrow
+        val context = LocalContext.current
         return Preference.PreferenceGroup(
             title = stringResource(SYMR.strings.pref_sync_now_group_title),
             preferenceItems = persistentListOf(
@@ -534,7 +529,11 @@ object SettingsDataScreen : SearchableSettings {
                     title = stringResource(SYMR.strings.pref_sync_now),
                     subtitle = stringResource(SYMR.strings.pref_sync_now_subtitle),
                     onClick = {
-                        navigator.push(SyncSettingsSelector())
+                        if (!SyncDataJob.isRunning(context)) {
+                            SyncDataJob.startNow(context, manual = true)
+                        } else {
+                            context.toast(SYMR.strings.sync_in_progress)
+                        }
                     },
                 ),
             ),
@@ -552,7 +551,6 @@ object SettingsDataScreen : SearchableSettings {
     }
 
     @Composable
-    @Suppress("MagicNumber")
     private fun getAutomaticSyncGroup(syncPreferences: SyncPreferences): Preference.PreferenceGroup {
         val context = LocalContext.current
         val syncIntervalPref = syncPreferences.syncInterval()

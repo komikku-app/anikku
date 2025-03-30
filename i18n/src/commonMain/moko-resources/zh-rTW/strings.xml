@@ -524,7 +524,7 @@
     <string name="pref_verbose_logging_summary">傾印詳細記錄至系統日誌 (將降低應用程式效能)</string>
     <string name="connected_to_wifi">僅透過 Wi-Fi</string>
     <string name="update_72hour">每 3 天</string>
-    <string name="download_queue_size_warning">警告：大量批次下載可能壅塞來源，甚至使其封鎖 Anikku。輕觸以瞭解詳情。</string>
+    <string name="download_queue_size_warning">警告：大量批次下載可能壅塞來源，甚至使其封鎖 Aniyomi。輕觸以瞭解詳情。</string>
     <string name="ext_update_all">全部更新</string>
     <string name="channel_app_updates">應用程式更新</string>
     <string name="pref_auto_clear_chapter_cache">啟動應用程式時清除章節快取</string>
@@ -759,7 +759,7 @@
     <string name="error_repo_exists">已有該儲存庫！</string>
     <string name="pref_library_update_smart_update">智慧更新</string>
     <string name="invalid_repo_name">無效的儲存庫網址</string>
-    <string name="action_add_repo_message">將額外的擴充套件儲存庫新增至 Anikku。此處應填入一個結尾為「index.min.json」的網址。</string>
+    <string name="action_add_repo_message">將額外的擴充套件儲存庫新增至 Aniyomi。此處應填入一個結尾為「index.min.json」的網址。</string>
     <string name="delete_repo_confirmation">確定要刪除「%s」儲存庫嗎？</string>
     <string name="action_delete_repo">刪除儲存庫</string>
     <string name="action_add_repo">新增儲存庫</string>
@@ -796,8 +796,8 @@
     <string name="also_set_chapter_settings_for_library">同時套用至其餘在媒體櫃中的作品</string>
     <string name="dialog_with_checkbox_reset">重設此作品所有章節</string>
     <string name="download_insufficient_space">由於儲存空間不足，無法下載章節</string>
-    <string name="download_queue_size_warning">警告：大量批次下載可能壅塞來源並 (或) 使其封鎖 Anikku。輕觸以瞭解詳情。</string>
-    <string name="information_webview_required">WebView 為 Anikku 的必要元件</string>
+    <string name="download_queue_size_warning">警告：大量批次下載可能壅塞來源並 (或) 使其封鎖 Aniyomi。輕觸以瞭解詳情。</string>
+    <string name="information_webview_required">WebView 為 Aniyomi 的必要元件</string>
     <string name="download_notifier_download_paused_chapters">下載已暫停</string>
     <string name="channel_new_chapters_episodes">章節/劇集更新</string>
     <string name="label_manga_library">漫畫</string>
@@ -883,7 +883,7 @@
     <string name="action_edit_anime_categories">編輯動漫類別</string>
     <string name="pref_bottom_nav_no_updates">將更新移至“更多”選項</string>
     <string name="pref_bottom_nav_no_manga">將漫畫移至“更多”選項</string>
-    <string name="unlock_app_title">解鎖 Anikku</string>
+    <string name="unlock_app_title">解鎖 Aniyomi</string>
     <string name="pref_library_manga_columns">每行漫畫數量</string>
     <string name="label_watched_episodes">看過</string>
     <string name="pref_library_anime_columns">每行動漫數量</string>
@@ -962,7 +962,6 @@
     <string name="pref_waiting_time_aniskip_8">8 秒</string>
     <string name="data_saver_ignore_jpeg">忽略 Jpeg 圖片</string>
     <string name="not_interesting">沒興趣</string>
-    <string name="player_aniskip_mixedOp">跳過 MixedOp</string>
     <string name="label_anime_extensions">動漫擴展</string>
     <string name="label_manga_extensions">漫畫擴展</string>
     <string name="confirm_exit">再按一次以離開</string>
@@ -989,8 +988,6 @@
     <string name="pref_waiting_time_aniskip_6">6 秒</string>
     <string name="pref_waiting_time_aniskip_7">7 秒</string>
     <string name="pref_waiting_time_aniskip_9">9 秒</string>
-    <string name="player_aniskip_ed">跳過片尾</string>
-    <string name="player_aniskip_recap">跳過回顧</string>
     <string name="pref_enable_auto_skip_ani_skip">啟用自動跳過</string>
     <string name="pref_waiting_time_aniskip">按鈕逾時</string>
     <string name="pref_enable_netflix_style_aniskip">啟用 Netflix 風格</string>
@@ -1038,7 +1035,6 @@
     <string name="enable_auto_play">自動播放已開啟</string>
     <string name="disable_auto_play">自動播放已關閉</string>
     <string name="action_change_intro_length">更改簡介長度</string>
-    <string name="player_aniskip_op">跳過片頭</string>
     <string name="pref_category_player_aniskip_info">AniSkip 需要使用 MAL 或 Anilist 追蹤動畫才能運作</string>
     <string name="pref_backup_flags">備份選項</string>
     <string name="extension_settings">擴充設定</string>
@@ -1048,7 +1044,7 @@
     <string name="bandwidth_data_saver_server">Bandwidth Hero 代理伺服器</string>
     <string name="unseen">未看</string>
     <string name="label_anime_extension_repos">動漫擴充庫</string>
-    <string name="onboarding_storage_action_create_folder">建立預設的 Anikku 資料夾</string>
+    <string name="onboarding_storage_action_create_folder">建立預設的 Aniyomi 資料夾</string>
     <string name="download_speed_limit">下載速度限制</string>
     <string name="download_speed_limit_hint">設定為 0 以停用速度限制。</string>
     <string name="data_saver_downloader">在下載器中使用資料保護程序</string>
@@ -1060,11 +1056,7 @@
     <string name="pref_player_audio_channels">音訊頻道</string>
     <string name="pref_player_audio_channels_reverse_stereo">反向立體聲</string>
     <string name="pref_player_audio_channels_stereo">立體聲</string>
-    <string name="download_threads_number_summary">用於下載的執行緒數，如果太高可能會導致你的 IP 被封鎖，通常 4 是一個很好的數字，以避免來源伺服器負載過重。</string>
     <string name="pref_player_audio_channels_auto_safe">自動安全</string>
-    <string name="download_threads_number">執行緒數</string>
-    <string name="safe_download">動漫的安全下載模式</string>
-    <string name="safe_download_summary">啟用單執行緒和無範圍下載模式</string>
     <string name="pref_mpv_scripts">啟用 MPV 腳本</string>
     <string name="pref_mpv_scripts_summary">需要外部儲存權限。</string>
     <string name="action_replace_repo">取代</string>

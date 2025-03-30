@@ -15,8 +15,8 @@ class RemoveHistory(
         repository.resetHistory(history.id)
     }
 
-    suspend fun await(animeId: Long) {
-        repository.resetHistoryByAnimeId(animeId)
+    suspend fun await(mangaId: Long) {
+        repository.resetHistoryByMangaId(mangaId)
     }
 
     // SY -->

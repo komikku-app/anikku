@@ -58,10 +58,10 @@ class SourceRepositoryImpl(
             }
     }
 
-    override fun getSourcesWithNonLibraryAnime(): Flow<List<SourceWithCount>> {
-        val sourceIdWithNonLibraryAnime =
+    override fun getSourcesWithNonLibraryManga(): Flow<List<SourceWithCount>> {
+        val sourceIdWithNonLibraryManga =
             handler.subscribeToList { animesQueries.getSourceIdsWithNonLibraryAnime() }
-        return sourceIdWithNonLibraryAnime.map { sourceId ->
+        return sourceIdWithNonLibraryManga.map { sourceId ->
             sourceId.map { (sourceId, count) ->
                 val source = sourceManager.getOrStub(sourceId)
                 val domainSource = mapSourceToDomainSource(source).copy(

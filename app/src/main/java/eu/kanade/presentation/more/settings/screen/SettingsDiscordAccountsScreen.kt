@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
 import logcat.logcat
 import mihon.core.migration.Migrator.scope
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -78,7 +78,7 @@ private fun DiscordAccountsScreenContent() {
     val screenModel = remember { DiscordAccountsScreenModel() }
     val state by screenModel.state.collectAsState()
 
-    val noAccountsFoundString = stringResource(TLMR.strings.no_accounts_found)
+    val noAccountsFoundString = stringResource(AMR.strings.no_accounts_found)
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -91,7 +91,7 @@ private fun DiscordAccountsScreenContent() {
     Scaffold(
         topBar = {
             AppBar(
-                title = stringResource(TLMR.strings.discord_accounts),
+                title = stringResource(AMR.strings.discord_accounts),
                 navigateUp = navigator::pop,
                 actions = {
                     IconButton(
@@ -266,7 +266,7 @@ private fun DiscordAccountItem(
                 )
                 if (account.isActive) {
                     Text(
-                        text = stringResource(TLMR.strings.active_account),
+                        text = stringResource(AMR.strings.active_account),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )

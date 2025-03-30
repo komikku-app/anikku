@@ -4,11 +4,11 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.preference.getEnum
-import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.model.GroupLibraryMode
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.model.LibraryGroup
 import tachiyomi.domain.library.model.LibrarySort
+import tachiyomi.domain.manga.model.Manga
 
 class LibraryPreferences(
     private val preferenceStore: PreferenceStore,
@@ -63,7 +63,7 @@ class LibraryPreferences(
             DEVICE_ONLY_ON_WIFI,
         ),
     )
-    fun autoUpdateAnimeRestrictions() = preferenceStore.getStringSet(
+    fun autoUpdateMangaRestrictions() = preferenceStore.getStringSet(
         "library_update_manga_restriction",
         setOf(
             ANIME_HAS_UNSEEN,
@@ -75,7 +75,7 @@ class LibraryPreferences(
 
     fun autoUpdateMetadata() = preferenceStore.getBoolean("auto_update_metadata", false)
 
-    fun showContinueWatchingButton() = preferenceStore.getBoolean(
+    fun showContinueReadingButton() = preferenceStore.getBoolean(
         "display_continue_reading_button",
         false,
     )
@@ -87,7 +87,7 @@ class LibraryPreferences(
         TriState.DISABLED,
     )
 
-    fun filterUnseen() = preferenceStore.getEnum("pref_filter_animelib_unread_v2", TriState.DISABLED)
+    fun filterUnread() = preferenceStore.getEnum("pref_filter_animelib_unread_v2", TriState.DISABLED)
 
     fun filterStarted() = preferenceStore.getEnum(
         "pref_filter_animelib_started_v2",
@@ -100,7 +100,7 @@ class LibraryPreferences(
     )
 
     // AM (FILLERMARK) -->
-    fun filterFillermarkedAnime() =
+    fun filterFillermarked() =
         preferenceStore.getEnum("pref_filter_animelib_fillermarked_v2", TriState.DISABLED)
     // <-- AM (FILLERMARK)
 
@@ -176,74 +176,72 @@ class LibraryPreferences(
 
     // Mixture Item
 
-    fun filterEpisodeBySeen() = preferenceStore.getLong(
+    fun filterChapterByRead() = preferenceStore.getLong(
         "default_episode_filter_by_seen",
-        Anime.SHOW_ALL,
+        Manga.SHOW_ALL,
     )
 
-    fun filterEpisodeByDownloaded() = preferenceStore.getLong(
+    fun filterChapterByDownloaded() = preferenceStore.getLong(
         "default_episode_filter_by_downloaded",
-        Anime.SHOW_ALL,
+        Manga.SHOW_ALL,
     )
 
-    fun filterEpisodeByBookmarked() = preferenceStore.getLong(
+    fun filterChapterByBookmarked() = preferenceStore.getLong(
         "default_episode_filter_by_bookmarked",
-        Anime.SHOW_ALL,
+        Manga.SHOW_ALL,
     )
 
     // AM (FILLERMARK) -->
-    fun filterEpisodeByFillermarked() =
-        preferenceStore.getLong("default_episode_filter_by_fillermarked", Anime.SHOW_ALL)
+    fun filterChapterByFillermarked() =
+        preferenceStore.getLong("default_episode_filter_by_fillermarked", Manga.SHOW_ALL)
     // <-- AM (FILLERMARK)
 
     // and upload date
-    fun sortEpisodeBySourceOrNumber() = preferenceStore.getLong(
+    fun sortChapterBySourceOrNumber() = preferenceStore.getLong(
         "default_episode_sort_by_source_or_number",
-        Anime.EPISODE_SORTING_SOURCE,
+        Manga.EPISODE_SORTING_SOURCE,
     )
 
-    fun displayEpisodeByNameOrNumber() = preferenceStore.getLong(
+    fun displayChapterByNameOrNumber() = preferenceStore.getLong(
         "default_chapter_display_by_name_or_number",
-        Anime.EPISODE_DISPLAY_NAME,
+        Manga.EPISODE_DISPLAY_NAME,
     )
 
-    fun sortEpisodeByAscendingOrDescending() = preferenceStore.getLong(
+    fun sortChapterByAscendingOrDescending() = preferenceStore.getLong(
         "default_chapter_sort_by_ascending_or_descending",
-        Anime.EPISODE_SORT_DESC,
+        Manga.EPISODE_SORT_DESC,
     )
 
-    fun setEpisodeSettingsDefault(anime: Anime) {
-        filterEpisodeBySeen().set(anime.unseenFilterRaw)
-        filterEpisodeByDownloaded().set(anime.downloadedFilterRaw)
-        filterEpisodeByBookmarked().set(anime.bookmarkedFilterRaw)
+    fun setChapterSettingsDefault(manga: Manga) {
+        filterChapterByRead().set(manga.unreadFilterRaw)
+        filterChapterByDownloaded().set(manga.downloadedFilterRaw)
+        filterChapterByBookmarked().set(manga.bookmarkedFilterRaw)
         // AM (FILLERMARK) -->
-        filterEpisodeByFillermarked().set(anime.fillermarkedFilterRaw)
+        filterChapterByFillermarked().set(manga.fillermarkedFilterRaw)
         // <-- AM (FILLERMARK)
-        sortEpisodeBySourceOrNumber().set(anime.sorting)
-        displayEpisodeByNameOrNumber().set(anime.displayMode)
-        sortEpisodeByAscendingOrDescending().set(
-            if (anime.sortDescending()) Anime.EPISODE_SORT_DESC else Anime.EPISODE_SORT_ASC,
+        sortChapterBySourceOrNumber().set(manga.sorting)
+        displayChapterByNameOrNumber().set(manga.displayMode)
+        sortChapterByAscendingOrDescending().set(
+            if (manga.sortDescending()) Manga.EPISODE_SORT_DESC else Manga.EPISODE_SORT_ASC,
         )
     }
 
-    fun autoClearChapterCache() = preferenceStore.getBoolean("auto_clear_chapter_cache", false)
-
     // region Swipe Actions
 
-    fun swipeEpisodeStartAction() = preferenceStore.getEnum(
+    fun swipeToStartAction() = preferenceStore.getEnum(
         "pref_episode_swipe_end_action",
-        EpisodeSwipeAction.ToggleBookmark,
+        ChapterSwipeAction.ToggleBookmark,
     )
 
-    fun swipeEpisodeEndAction() = preferenceStore.getEnum(
+    fun swipeToEndAction() = preferenceStore.getEnum(
         "pref_episode_swipe_start_action",
-        EpisodeSwipeAction.ToggleSeen,
+        ChapterSwipeAction.ToggleRead,
     )
 
     // endregion
 
-    enum class EpisodeSwipeAction {
-        ToggleSeen,
+    enum class ChapterSwipeAction {
+        ToggleRead,
         ToggleBookmark,
 
         // AM (FILLERMARK) -->

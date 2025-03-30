@@ -8,7 +8,7 @@ expect class LocalSourceFileSystem {
 
     fun getFilesInBaseDirectory(): List<UniFile>
 
-    fun getAnimeDirectory(name: String): UniFile?
+    fun getMangaDirectory(name: String): UniFile?
 
-    fun getFilesInAnimeDirectory(name: String): List<UniFile>
+    fun getFilesInMangaDirectory(name: String): List<UniFile>
 }

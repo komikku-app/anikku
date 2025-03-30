@@ -18,12 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
-import eu.kanade.presentation.library.components.AnimeComfortableGridItem
-import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.AnimeCover
-import tachiyomi.domain.anime.model.asAnimeCover
+import eu.kanade.presentation.library.components.CommonMangaItemDefaults
+import eu.kanade.presentation.library.components.MangaComfortableGridItem
+import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaCover
+import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -33,12 +33,12 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun GlobalSearchCardRow(
-    titles: List<Anime>,
-    getAnime: @Composable (Anime) -> State<Anime>,
-    onClick: (Anime) -> Unit,
-    onLongClick: (Anime) -> Unit,
+    titles: List<Manga>,
+    getManga: @Composable (Manga) -> State<Manga>,
+    onClick: (Manga) -> Unit,
+    onLongClick: (Manga) -> Unit,
     // KMK -->
-    selection: List<Anime>,
+    selection: List<Manga>,
     // KMK <--
 ) {
     if (titles.isEmpty()) {
@@ -51,10 +51,10 @@ fun GlobalSearchCardRow(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
     ) {
         items(titles) {
-            val title by getAnime(it)
-            AnimeItem(
+            val title by getManga(it)
+            MangaItem(
                 title = title.title,
-                cover = title.asAnimeCover(),
+                cover = title.asMangaCover(),
                 isFavorite = title.favorite,
                 onClick = { onClick(title) },
                 onLongClick = { onLongClick(title) },
@@ -67,9 +67,9 @@ fun GlobalSearchCardRow(
 }
 
 @Composable
-internal fun AnimeItem(
+internal fun MangaItem(
     title: String,
-    cover: AnimeCover,
+    cover: MangaCover,
     isFavorite: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -89,7 +89,7 @@ internal fun AnimeItem(
             // KMK <--
         ),
     ) {
-        AnimeComfortableGridItem(
+        MangaComfortableGridItem(
             title = title,
             titleMaxLines = 3,
             coverData = cover,
@@ -102,7 +102,7 @@ internal fun AnimeItem(
             usePanoramaCover = panoramaCover,
             fitToPanoramaCover = true,
             // KMK <--
-            coverAlpha = if (isFavorite) CommonAnimeItemDefaults.BrowseFavoriteCoverAlpha else 1f,
+            coverAlpha = if (isFavorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
             onClick = onClick,
             onLongClick = onLongClick,
         )
