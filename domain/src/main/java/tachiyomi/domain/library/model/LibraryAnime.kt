@@ -1,9 +1,9 @@
 package tachiyomi.domain.library.model
 
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 
 data class LibraryAnime(
-    val anime: Anime,
+    val manga: Manga,
     val category: Long,
     val totalEpisodes: Long,
     val seenCount: Long,
@@ -15,7 +15,7 @@ data class LibraryAnime(
     val episodeFetchedAt: Long,
     val lastSeen: Long,
 ) {
-    val id: Long = anime.id
+    val id: Long = manga.id
 
     val unseenCount
         get() = totalEpisodes - seenCount

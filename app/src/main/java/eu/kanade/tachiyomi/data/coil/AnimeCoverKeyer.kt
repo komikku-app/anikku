@@ -2,12 +2,12 @@ package eu.kanade.tachiyomi.data.coil
 
 import coil3.key.Keyer
 import coil3.request.Options
-import eu.kanade.domain.anime.model.hasCustomCover
+import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.tachiyomi.data.cache.CoverCache
-import tachiyomi.domain.anime.model.AnimeCover
+import tachiyomi.domain.manga.model.MangaCover
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import tachiyomi.domain.anime.model.Anime as DomainAnime
+import tachiyomi.domain.manga.model.Manga as DomainAnime
 
 class AnimeKeyer : Keyer<DomainAnime> {
     override fun key(data: DomainAnime, options: Options): String {
@@ -21,8 +21,8 @@ class AnimeKeyer : Keyer<DomainAnime> {
 
 class AnimeCoverKeyer(
     private val coverCache: CoverCache = Injekt.get(),
-) : Keyer<AnimeCover> {
-    override fun key(data: AnimeCover, options: Options): String {
+) : Keyer<MangaCover> {
+    override fun key(data: MangaCover, options: Options): String {
         return if (coverCache.getCustomCoverFile(data.animeId).exists()) {
             "${data.animeId};${data.lastModified}"
         } else {

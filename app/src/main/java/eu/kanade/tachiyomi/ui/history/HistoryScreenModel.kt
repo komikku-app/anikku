@@ -23,7 +23,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.interactor.GetHistory
 import tachiyomi.domain.history.interactor.GetNextEpisodes
 import tachiyomi.domain.history.interactor.RemoveHistory
@@ -71,7 +71,7 @@ class HistoryScreenModel(
             }
     }
 
-    suspend fun getNextEpisode(): Episode? {
+    suspend fun getNextEpisode(): Chapter? {
         return withIOContext { getNextEpisodes.await(onlyUnseen = false).firstOrNull() }
     }
 
@@ -81,8 +81,8 @@ class HistoryScreenModel(
         }
     }
 
-    private suspend fun sendNextEpisodeEvent(episodes: List<Episode>) {
-        val episode = episodes.firstOrNull()
+    private suspend fun sendNextEpisodeEvent(chapters: List<Chapter>) {
+        val episode = chapters.firstOrNull()
         _events.send(Event.OpenEpisode(episode))
     }
 
@@ -127,7 +127,7 @@ class HistoryScreenModel(
     }
 
     sealed interface Event {
-        data class OpenEpisode(val episode: Episode?) : Event
+        data class OpenEpisode(val chapter: Chapter?) : Event
         data object InternalError : Event
         data object HistoryCleared : Event
     }

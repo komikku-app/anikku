@@ -1,35 +1,35 @@
 package tachiyomi.domain.history.interactor
 
 import exh.source.MERGED_SOURCE_ID
-import tachiyomi.domain.anime.interactor.GetAnime
-import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
-import tachiyomi.domain.episode.interactor.GetMergedEpisodesByAnimeId
-import tachiyomi.domain.episode.model.Episode
-import tachiyomi.domain.episode.service.getEpisodeSort
+import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
+import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.history.repository.HistoryRepository
+import tachiyomi.domain.manga.interactor.GetManga
 import kotlin.math.max
 
 class GetNextEpisodes(
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
     // SY -->
-    private val getMergedEpisodesByAnimeId: GetMergedEpisodesByAnimeId,
+    private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId,
     // SY <--
-    private val getAnime: GetAnime,
+    private val getManga: GetManga,
     private val historyRepository: HistoryRepository,
 ) {
 
-    suspend fun await(onlyUnseen: Boolean = true): List<Episode> {
+    suspend fun await(onlyUnseen: Boolean = true): List<Chapter> {
         val history = historyRepository.getLastHistory() ?: return emptyList()
         return await(history.animeId, history.episodeId, onlyUnseen)
     }
 
-    suspend fun await(animeId: Long, onlyUnseen: Boolean = true): List<Episode> {
-        val anime = getAnime.await(animeId) ?: return emptyList()
+    suspend fun await(animeId: Long, onlyUnseen: Boolean = true): List<Chapter> {
+        val anime = getManga.await(animeId) ?: return emptyList()
 
         // SY -->
         if (anime.source == MERGED_SOURCE_ID) {
-            val episodes = getMergedEpisodesByAnimeId.await(animeId, applyScanlatorFilter = true)
-                .sortedWith(getEpisodeSort(anime, sortDescending = false))
+            val episodes = getMergedChaptersByMangaId.await(animeId, applyScanlatorFilter = true)
+                .sortedWith(getChapterSort(anime, sortDescending = false))
 
             return if (onlyUnseen) {
                 episodes.filterNot { it.seen }
@@ -39,8 +39,8 @@ class GetNextEpisodes(
         }
         // SY <--
 
-        val episodes = getEpisodesByAnimeId.await(animeId, applyScanlatorFilter = true)
-            .sortedWith(getEpisodeSort(anime, sortDescending = false))
+        val episodes = getChaptersByMangaId.await(animeId, applyScanlatorFilter = true)
+            .sortedWith(getChapterSort(anime, sortDescending = false))
 
         return if (onlyUnseen) {
             episodes.filterNot { it.seen }
@@ -53,7 +53,7 @@ class GetNextEpisodes(
         animeId: Long,
         fromEpisodeId: Long,
         onlyUnseen: Boolean = true,
-    ): List<Episode> {
+    ): List<Chapter> {
         val episodes = await(animeId, onlyUnseen)
         val currEpisodeIndex = episodes.indexOfFirst { it.id == fromEpisodeId }
         val nextEpisodes = episodes.subList(max(0, currEpisodeIndex), episodes.size)

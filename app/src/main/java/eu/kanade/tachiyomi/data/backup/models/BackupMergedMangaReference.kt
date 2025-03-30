@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.data.backup.models
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import tachiyomi.domain.anime.model.MergedAnimeReference
+import tachiyomi.domain.manga.model.MergedMangaReference
 
 /*
 * SY merged manga backup class
@@ -18,8 +18,8 @@ data class BackupMergedMangaReference(
     @ProtoNumber(7) var mangaUrl: String,
     @ProtoNumber(8) var mangaSourceId: Long,
 ) {
-    fun getMergedMangaReference(): MergedAnimeReference {
-        return MergedAnimeReference(
+    fun getMergedMangaReference(): MergedMangaReference {
+        return MergedMangaReference(
             isInfoAnime = isInfoManga,
             getEpisodeUpdates = getChapterUpdates,
             episodeSortMode = chapterSortMode,

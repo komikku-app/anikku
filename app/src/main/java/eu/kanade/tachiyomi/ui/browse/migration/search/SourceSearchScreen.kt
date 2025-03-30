@@ -36,7 +36,7 @@ import kotlinx.collections.immutable.persistentListOf
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.core.common.Constants
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -47,7 +47,7 @@ import tachiyomi.source.local.LocalSource
  * Opened when click on a source in [MigrateSearchScreen]
  */
 data class SourceSearchScreen(
-    private val oldManga: Anime,
+    private val oldManga: Manga,
     private val sourceId: Long,
     private val query: String?,
 ) : Screen() {
@@ -137,7 +137,7 @@ data class SourceSearchScreen(
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
-            val openMigrateDialog: (Anime) -> Unit = {
+            val openMigrateDialog: (Manga) -> Unit = {
                 // SY -->
                 navigator.items
                     .filterIsInstance<MigrationListScreen>()
@@ -148,7 +148,7 @@ data class SourceSearchScreen(
             }
             BrowseSourceContent(
                 source = screenModel.source,
-                animeList = mangaList,
+                mangaList = mangaList,
                 columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 displayMode = screenModel.displayMode,
                 snackbarHostState = snackbarHostState,
@@ -168,7 +168,7 @@ data class SourceSearchScreen(
                 onAnimeClick = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (bulkFavoriteState.selectionMode) {
                             bulkFavoriteScreenModel.toggleSelection(manga)
                         } else {
@@ -180,7 +180,7 @@ data class SourceSearchScreen(
                 onAnimeLongClick = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         // KMK <--
                         navigator.push(AnimeScreen(manga.id, true))
                     }

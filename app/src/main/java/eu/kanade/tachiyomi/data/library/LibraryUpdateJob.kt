@@ -16,9 +16,9 @@ import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import eu.kanade.domain.anime.interactor.UpdateAnime
-import eu.kanade.domain.anime.model.toSAnime
-import eu.kanade.domain.episode.interactor.SyncEpisodesWithSource
+import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
+import eu.kanade.domain.manga.interactor.UpdateManga
+import eu.kanade.domain.manga.model.toSAnime
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
@@ -26,7 +26,7 @@ import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.source.UnmeteredSource
-import eu.kanade.tachiyomi.source.model.SAnime
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.util.system.isConnectedToWifi
 import eu.kanade.tachiyomi.util.system.isRunning
@@ -47,12 +47,8 @@ import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.source.NoResultsException
-import tachiyomi.domain.anime.interactor.FetchInterval
-import tachiyomi.domain.anime.interactor.GetAnime
-import tachiyomi.domain.anime.interactor.GetLibraryAnime
-import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.GroupLibraryMode
 import tachiyomi.domain.library.model.LibraryAnime
 import tachiyomi.domain.library.model.LibraryGroup
@@ -69,6 +65,10 @@ import tachiyomi.domain.libraryUpdateError.interactor.InsertLibraryUpdateErrors
 import tachiyomi.domain.libraryUpdateError.model.LibraryUpdateError
 import tachiyomi.domain.libraryUpdateErrorMessage.interactor.InsertLibraryUpdateErrorMessages
 import tachiyomi.domain.libraryUpdateErrorMessage.model.LibraryUpdateErrorMessage
+import tachiyomi.domain.manga.interactor.FetchInterval
+import tachiyomi.domain.manga.interactor.GetLibraryManga
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.model.SourceNotInstalledException
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
@@ -89,10 +89,10 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     private val libraryPreferences: LibraryPreferences = Injekt.get()
     private val downloadManager: DownloadManager = Injekt.get()
     private val coverCache: CoverCache = Injekt.get()
-    private val getLibraryAnime: GetLibraryAnime = Injekt.get()
-    private val getAnime: GetAnime = Injekt.get()
-    private val updateAnime: UpdateAnime = Injekt.get()
-    private val syncEpisodesWithSource: SyncEpisodesWithSource = Injekt.get()
+    private val getLibraryManga: GetLibraryManga = Injekt.get()
+    private val getManga: GetManga = Injekt.get()
+    private val updateManga: UpdateManga = Injekt.get()
+    private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get()
     private val getTracks: GetTracks = Injekt.get()
     private val fetchInterval: FetchInterval = Injekt.get()
     private val filterEpisodesForDownload: FilterEpisodesForDownload = Injekt.get()
@@ -179,7 +179,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
      */
     @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod", "ComplexCondition")
     private suspend fun addAnimeToQueue(categoryId: Long, group: Int, groupExtra: String?) {
-        val libraryAnime = getLibraryAnime.await()
+        val libraryAnime = getLibraryManga.await()
 
         // SY -->
         val groupAnimeLibraryUpdateType = libraryPreferences.groupLibraryUpdateType().get()
@@ -204,13 +204,13 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
             val categoriesToExclude = libraryPreferences.updateCategoriesExclude().get().map { it.toLong() }
             val excludedAnimeIds = if (categoriesToExclude.isNotEmpty()) {
-                libraryAnime.filter { it.category in categoriesToExclude }.map { it.anime.id }
+                libraryAnime.filter { it.category in categoriesToExclude }.map { it.manga.id }
             } else {
                 emptyList()
             }
 
             includedAnime
-                .filterNot { it.anime.id in excludedAnimeIds }
+                .filterNot { it.manga.id in excludedAnimeIds }
         } else {
             when (group) {
                 LibraryGroup.BY_TRACK_STATUS -> {
@@ -226,25 +226,25 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 }
                 LibraryGroup.BY_SOURCE -> {
                     val sourceExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
-                    val source = libraryAnime.map { it.anime.source }
+                    val source = libraryAnime.map { it.manga.source }
                         .distinct()
                         .sorted()
                         .getOrNull(sourceExtra ?: -1)
 
-                    if (source != null) libraryAnime.filter { it.anime.source == source } else emptyList()
+                    if (source != null) libraryAnime.filter { it.manga.source == source } else emptyList()
                 }
                 LibraryGroup.BY_TAG -> {
                     val tagExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
-                    val tag = libraryAnime.map { it.anime.genre }
+                    val tag = libraryAnime.map { it.manga.genre }
                         .distinct()
                         .getOrNull(tagExtra ?: -1)
 
-                    if (tag != null) libraryAnime.filter { it.anime.genre == tag } else emptyList()
+                    if (tag != null) libraryAnime.filter { it.manga.genre == tag } else emptyList()
                 }
                 LibraryGroup.BY_STATUS -> {
                     val statusExtra = groupExtra?.toLongOrNull() ?: -1
                     libraryAnime.filter {
-                        it.anime.status == statusExtra
+                        it.manga.status == statusExtra
                     }
                 }
                 LibraryGroup.UNGROUPED -> libraryAnime
@@ -254,56 +254,56 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         }
 
         val restrictions = libraryPreferences.autoUpdateAnimeRestrictions().get()
-        val skippedUpdates = mutableListOf<Pair<Anime, String?>>()
+        val skippedUpdates = mutableListOf<Pair<Manga, String?>>()
         val (_, fetchWindowUpperBound) = fetchInterval.getWindow(ZonedDateTime.now())
 
         animeToUpdate = listToUpdate
             // SY -->
-            .distinctBy { it.anime.id }
+            .distinctBy { it.manga.id }
             // SY <--
             .filter {
                 when {
-                    it.anime.updateStrategy != UpdateStrategy.ALWAYS_UPDATE -> {
+                    it.manga.updateStrategy != UpdateStrategy.ALWAYS_UPDATE -> {
                         skippedUpdates.add(
-                            it.anime to context.stringResource(MR.strings.skipped_reason_not_always_update),
+                            it.manga to context.stringResource(MR.strings.skipped_reason_not_always_update),
                         )
                         false
                     }
 
-                    ANIME_NON_COMPLETED in restrictions && it.anime.status.toInt() == SAnime.COMPLETED -> {
+                    ANIME_NON_COMPLETED in restrictions && it.manga.status.toInt() == SManga.COMPLETED -> {
                         skippedUpdates.add(
-                            it.anime to context.stringResource(MR.strings.skipped_reason_completed),
+                            it.manga to context.stringResource(MR.strings.skipped_reason_completed),
                         )
                         false
                     }
 
                     ANIME_HAS_UNSEEN in restrictions && it.unseenCount != 0L -> {
                         skippedUpdates.add(
-                            it.anime to context.stringResource(MR.strings.skipped_reason_not_caught_up),
+                            it.manga to context.stringResource(MR.strings.skipped_reason_not_caught_up),
                         )
                         false
                     }
 
                     ANIME_NON_SEEN in restrictions && it.totalEpisodes > 0L && !it.hasStarted -> {
                         skippedUpdates.add(
-                            it.anime to context.stringResource(MR.strings.skipped_reason_not_started),
+                            it.manga to context.stringResource(MR.strings.skipped_reason_not_started),
                         )
                         false
                     }
 
-                    ANIME_OUTSIDE_RELEASE_PERIOD in restrictions && it.anime.nextUpdate > fetchWindowUpperBound -> {
+                    ANIME_OUTSIDE_RELEASE_PERIOD in restrictions && it.manga.nextUpdate > fetchWindowUpperBound -> {
                         skippedUpdates.add(
-                            it.anime to context.stringResource(MR.strings.skipped_reason_not_in_release_period),
+                            it.manga to context.stringResource(MR.strings.skipped_reason_not_in_release_period),
                         )
                         false
                     }
                     else -> true
                 }
             }
-            .sortedBy { it.anime.title }
+            .sortedBy { it.manga.title }
         // Warn when excessively checking a single source
         val maxUpdatesFromSource = animeToUpdate
-            .groupBy { it.anime.source + (0..4).random() }
+            .groupBy { it.manga.source + (0..4).random() }
             .filterKeys { sourceManager.get(it) !is UnmeteredSource }
             .maxOfOrNull { it.value.size } ?: 0
         if (maxUpdatesFromSource > ANIME_PER_SOURCE_QUEUE_WARNING_THRESHOLD) {
@@ -324,7 +324,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     /**
      * Method that updates anime in [animeToUpdate]. It's called in a background thread, so it's safe
      * to do heavy operations or network calls here.
-     * For each anime it calls [updateAnime] and updates the notification showing the current
+     * For each anime it calls [updateManga] and updates the notification showing the current
      * progress.
      *
      * @return an observable delivering the progress of each update.
@@ -333,28 +333,28 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     private suspend fun updateEpisodeList() {
         val semaphore = Semaphore(5)
         val progressCount = AtomicInteger(0)
-        val currentlyUpdatingAnime = CopyOnWriteArrayList<Anime>()
-        val newUpdates = CopyOnWriteArrayList<Pair<Anime, Array<Episode>>>()
-        val failedUpdates = CopyOnWriteArrayList<Pair<Anime, String?>>()
+        val currentlyUpdatingManga = CopyOnWriteArrayList<Manga>()
+        val newUpdates = CopyOnWriteArrayList<Pair<Manga, Array<Chapter>>>()
+        val failedUpdates = CopyOnWriteArrayList<Pair<Manga, String?>>()
         val hasDownloads = AtomicBoolean(false)
         val fetchWindow = fetchInterval.getWindow(ZonedDateTime.now())
 
         coroutineScope {
-            animeToUpdate.groupBy { it.anime.source + (0..4).random() }.values
+            animeToUpdate.groupBy { it.manga.source + (0..4).random() }.values
                 .map { animeInSource ->
                     async {
                         semaphore.withPermit {
                             animeInSource.forEach { libraryAnime ->
-                                val anime = libraryAnime.anime
+                                val anime = libraryAnime.manga
                                 ensureActive()
 
                                 // Don't continue to update if anime is not in library
-                                if (getAnime.await(anime.id)?.favorite != true) {
+                                if (getManga.await(anime.id)?.favorite != true) {
                                     return@forEach
                                 }
 
                                 withUpdateNotification(
-                                    currentlyUpdatingAnime,
+                                    currentlyUpdatingManga,
                                     progressCount,
                                     anime,
                                 ) {
@@ -416,47 +416,47 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         }
     }
 
-    private fun downloadEpisodes(anime: Anime, episodes: List<Episode>) {
+    private fun downloadEpisodes(manga: Manga, chapters: List<Chapter>) {
         // We don't want to start downloading while the library is updating, because websites
         // may don't like it and they could ban the user.
-        downloadManager.downloadEpisodes(anime, episodes, false)
+        downloadManager.downloadEpisodes(manga, chapters, false)
     }
 
     /**
      * Updates the episodes for the given anime and adds them to the database.
      *
-     * @param anime the anime to update.
+     * @param manga the anime to update.
      * @return a pair of the inserted and removed episodes.
      */
-    private suspend fun updateAnime(anime: Anime, fetchWindow: Pair<Long, Long>): List<Episode> {
-        val source = sourceManager.getOrStub(anime.source)
+    private suspend fun updateAnime(manga: Manga, fetchWindow: Pair<Long, Long>): List<Chapter> {
+        val source = sourceManager.getOrStub(manga.source)
 
         // Update anime metadata if needed
         if (libraryPreferences.autoUpdateMetadata().get()) {
-            val networkAnime = source.getAnimeDetails(anime.toSAnime())
-            updateAnime.awaitUpdateFromSource(anime, networkAnime, manualFetch = false, coverCache)
+            val networkAnime = source.getAnimeDetails(manga.toSAnime())
+            updateManga.awaitUpdateFromSource(manga, networkAnime, manualFetch = false, coverCache)
         }
 
-        val episodes = source.getEpisodeList(anime.toSAnime())
+        val episodes = source.getEpisodeList(manga.toSAnime())
 
         // Get anime from database to account for if it was removed during the update and
         // to get latest data so it doesn't get overwritten later on
-        val dbAnime = getAnime.await(anime.id)?.takeIf { it.favorite } ?: return emptyList()
+        val dbAnime = getManga.await(manga.id)?.takeIf { it.favorite } ?: return emptyList()
 
-        return syncEpisodesWithSource.await(episodes, dbAnime, source, false, fetchWindow)
+        return syncChaptersWithSource.await(episodes, dbAnime, source, false, fetchWindow)
     }
 
     private suspend fun withUpdateNotification(
-        updatingAnime: CopyOnWriteArrayList<Anime>,
+        updatingManga: CopyOnWriteArrayList<Manga>,
         completed: AtomicInteger,
-        anime: Anime,
+        manga: Manga,
         block: suspend () -> Unit,
     ) = coroutineScope {
         ensureActive()
 
-        updatingAnime.add(anime)
+        updatingManga.add(manga)
         notifier.showProgressNotification(
-            updatingAnime,
+            updatingManga,
             completed.get(),
             animeToUpdate.size,
         )
@@ -465,10 +465,10 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
         ensureActive()
 
-        updatingAnime.remove(anime)
+        updatingManga.remove(manga)
         completed.getAndIncrement()
         notifier.showProgressNotification(
-            updatingAnime,
+            updatingManga,
             completed.get(),
             animeToUpdate.size,
         )
@@ -479,7 +479,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         deleteLibraryUpdateErrors.deleteMangaError(mangaId = mangaId)
     }
 
-    private suspend fun writeErrorToDB(error: Pair<Anime, String?>) {
+    private suspend fun writeErrorToDB(error: Pair<Manga, String?>) {
         val errorMessage = error.second ?: "???"
         val errorMessageId = insertLibraryUpdateErrorMessages.get(errorMessage)
             ?: insertLibraryUpdateErrorMessages.insert(
@@ -491,7 +491,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         )
     }
 
-    private suspend fun writeErrorsToDB(errors: List<Pair<Anime, String?>>) {
+    private suspend fun writeErrorsToDB(errors: List<Pair<Manga, String?>>) {
         val libraryErrors = errors.groupBy({ it.second }, { it.first })
         val errorMessages = insertLibraryUpdateErrorMessages.insertAll(
             libraryUpdateErrorMessages = libraryErrors.keys.map { errorMessage ->

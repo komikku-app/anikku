@@ -30,9 +30,9 @@ import eu.kanade.tachiyomi.util.system.notify
 import tachiyomi.core.common.Constants
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchUI
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
@@ -87,11 +87,11 @@ class LibraryUpdateNotifier(
     /**
      * Shows the notification containing the currently updating anime and the progress.
      *
-     * @param anime the anime that are being updated.
+     * @param mangas the anime that are being updated.
      * @param current the current progress.
      * @param total the total progress.
      */
-    fun showProgressNotification(anime: List<Anime>, current: Int, total: Int) {
+    fun showProgressNotification(mangas: List<Manga>, current: Int, total: Int) {
         progressNotificationBuilder
             .setContentTitle(
                 context.stringResource(
@@ -101,7 +101,7 @@ class LibraryUpdateNotifier(
             )
 
         if (!securityPreferences.hideNotificationContent().get()) {
-            val updatingText = anime.joinToString("\n") { it.title.chop(40) }
+            val updatingText = mangas.joinToString("\n") { it.title.chop(40) }
             progressNotificationBuilder.setStyle(NotificationCompat.BigTextStyle().bigText(updatingText))
         }
 
@@ -135,7 +135,7 @@ class LibraryUpdateNotifier(
      */
     fun showQueueSizeWarningNotificationIfNeeded(animeToUpdate: List<LibraryAnime>) {
         val maxUpdatesFromSource = animeToUpdate
-            .groupBy { it.anime.source }
+            .groupBy { it.manga.source }
             .filterKeys { sourceManager.get(it) !is UnmeteredSource }
             .maxOfOrNull { it.value.size } ?: 0
 
@@ -185,7 +185,7 @@ class LibraryUpdateNotifier(
      *
      * @param updates a list of anime with new updates.
      */
-    fun showUpdateNotifications(updates: List<Pair<Anime, Array<Episode>>>) {
+    fun showUpdateNotifications(updates: List<Pair<Manga, Array<Chapter>>>) {
         // Parent group notification
         context.notify(
             Notifications.ID_NEW_EPISODES,
@@ -241,12 +241,12 @@ class LibraryUpdateNotifier(
         }
     }
 
-    private suspend fun createNewEpisodesNotification(anime: Anime, episodes: Array<Episode>): Notification {
-        val icon = getAnimeIcon(anime)
+    private suspend fun createNewEpisodesNotification(manga: Manga, chapters: Array<Chapter>): Notification {
+        val icon = getAnimeIcon(manga)
         return context.notificationBuilder(Notifications.CHANNEL_NEW_CHAPTERS_EPISODES) {
-            setContentTitle(anime.title)
+            setContentTitle(manga.title)
 
-            val description = getNewEpisodesDescription(episodes)
+            val description = getNewEpisodesDescription(chapters)
             setContentText(description)
             setStyle(NotificationCompat.BigTextStyle().bigText(description))
 
@@ -262,7 +262,7 @@ class LibraryUpdateNotifier(
 
             // Open first episode on tap
             setContentIntent(
-                NotificationReceiver.openEpisodePendingActivity(context, anime, episodes.first()),
+                NotificationReceiver.openEpisodePendingActivity(context, manga, chapters.first()),
             )
             setAutoCancel(true)
 
@@ -272,8 +272,8 @@ class LibraryUpdateNotifier(
                 context.stringResource(MR.strings.action_mark_as_seen),
                 NotificationReceiver.markAsViewedPendingBroadcast(
                     context,
-                    anime,
-                    episodes,
+                    manga,
+                    chapters,
                     Notifications.ID_NEW_EPISODES,
                 ),
             )
@@ -283,20 +283,20 @@ class LibraryUpdateNotifier(
                 context.stringResource(MR.strings.action_view_episodes),
                 NotificationReceiver.openEpisodePendingActivity(
                     context,
-                    anime,
+                    manga,
                     Notifications.ID_NEW_EPISODES,
                 ),
             )
             // Download chapters action
             // Only add the action when chapters is within threshold
-            if (episodes.size <= Downloader.EPISODES_PER_SOURCE_QUEUE_WARNING_THRESHOLD) {
+            if (chapters.size <= Downloader.EPISODES_PER_SOURCE_QUEUE_WARNING_THRESHOLD) {
                 addAction(
                     android.R.drawable.stat_sys_download_done,
                     context.stringResource(MR.strings.action_download),
                     NotificationReceiver.downloadEpisodesPendingBroadcast(
                         context,
-                        anime,
-                        episodes,
+                        manga,
+                        chapters,
                         Notifications.ID_NEW_CHAPTERS,
                     ),
                 )
@@ -311,9 +311,9 @@ class LibraryUpdateNotifier(
         context.cancelNotification(Notifications.ID_LIBRARY_PROGRESS)
     }
 
-    private suspend fun getAnimeIcon(anime: Anime): Bitmap? {
+    private suspend fun getAnimeIcon(manga: Manga): Bitmap? {
         val request = ImageRequest.Builder(context)
-            .data(anime)
+            .data(manga)
             .transformations(CircleCropTransformation())
             .size(NOTIF_ICON_SIZE)
             .build()
@@ -321,8 +321,8 @@ class LibraryUpdateNotifier(
         return drawable?.getBitmapOrNull()
     }
 
-    private fun getNewEpisodesDescription(episodes: Array<Episode>): String {
-        val displayableEpisodeNumbers = episodes
+    private fun getNewEpisodesDescription(chapters: Array<Chapter>): String {
+        val displayableEpisodeNumbers = chapters
             .filter { it.isRecognizedNumber }
             .sortedBy { it.episodeNumber }
             .map { formatEpisodeNumber(it.episodeNumber) }
@@ -334,21 +334,21 @@ class LibraryUpdateNotifier(
                 // "1 new episode" or "5 new episodes"
                 context.resources.getQuantityString(
                     R.plurals.notification_episodes_generic,
-                    episodes.size,
-                    episodes.size,
+                    chapters.size,
+                    chapters.size,
                 )
             }
             // Only 1 episode has a parsed episode number
             1 -> {
-                val remaining = episodes.size - displayableEpisodeNumbers.size
+                val remaining = chapters.size - displayableEpisodeNumbers.size
                 if (remaining == 0) {
-                    // "Episode 2.5"
+                    // "Chapter 2.5"
                     context.stringResource(
                         MR.strings.notification_episodes_single,
                         displayableEpisodeNumbers.first(),
                     )
                 } else {
-                    // "Episode 2.5 and 10 more"
+                    // "Chapter 2.5 and 10 more"
                     context.stringResource(
                         MR.strings.notification_episodes_single_and_more,
                         displayableEpisodeNumbers.first(),

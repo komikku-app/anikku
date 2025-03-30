@@ -181,7 +181,7 @@ fun feedTab(
                         onClickManga = {
                             // KMK -->
                             scope.launchIO {
-                                val manga = screenModel.networkToLocalAnime.getLocal(it)
+                                val manga = screenModel.networkToLocalManga.getLocal(it)
                                 if (bulkFavoriteState.selectionMode) {
                                     bulkFavoriteScreenModel.toggleSelection(manga)
                                 } else {
@@ -193,7 +193,7 @@ fun feedTab(
                         // KMK -->
                         onLongClickManga = {
                             scope.launchIO {
-                                val manga = screenModel.networkToLocalAnime.getLocal(it)
+                                val manga = screenModel.networkToLocalManga.getLocal(it)
                                 if (!bulkFavoriteState.selectionMode) {
                                     bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                                 } else {
@@ -204,7 +204,7 @@ fun feedTab(
                         selection = bulkFavoriteState.selection,
                         // KMK <--
                         onRefresh = screenModel::init,
-                        getAnimeState = { manga -> screenModel.getManga(initialManga = manga) },
+                        getMangaState = { manga -> screenModel.getManga(initialManga = manga) },
                     )
                 }
             }

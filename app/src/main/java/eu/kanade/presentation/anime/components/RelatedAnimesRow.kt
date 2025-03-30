@@ -21,16 +21,16 @@ import eu.kanade.presentation.browse.components.AnimeItem
 import eu.kanade.presentation.browse.components.EmptyResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.asAnimeCover
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.asAnimeCover
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
 fun RelatedAnimesRow(
     relatedAnimes: List<RelatedAnime>?,
-    getAnimeState: @Composable (Anime) -> State<Anime>,
-    onAnimeClick: (Anime) -> Unit,
-    onAnimeLongClick: (Anime) -> Unit,
+    getMangaState: @Composable (Manga) -> State<Manga>,
+    onAnimeClick: (Manga) -> Unit,
+    onAnimeLongClick: (Manga) -> Unit,
 ) {
     when {
         relatedAnimes == null -> {
@@ -40,7 +40,7 @@ fun RelatedAnimesRow(
         relatedAnimes.isNotEmpty() -> {
             RelatedAnimeCardRow(
                 relatedAnimes = relatedAnimes,
-                getManga = { getAnimeState(it) },
+                getManga = { getMangaState(it) },
                 onMangaClick = onAnimeClick,
                 onMangaLongClick = onAnimeLongClick,
             )
@@ -55,9 +55,9 @@ fun RelatedAnimesRow(
 @Composable
 fun RelatedAnimeCardRow(
     relatedAnimes: List<RelatedAnime>,
-    getManga: @Composable (Anime) -> State<Anime>,
-    onMangaClick: (Anime) -> Unit,
-    onMangaLongClick: (Anime) -> Unit,
+    getManga: @Composable (Manga) -> State<Manga>,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
 ) {
     val mangas = relatedAnimes.filterIsInstance<RelatedAnime.Success>().map { it.mangaList }.flatten()
     val loading = relatedAnimes.filterIsInstance<RelatedAnime.Loading>().firstOrNull()

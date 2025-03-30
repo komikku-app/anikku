@@ -24,7 +24,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.core.common.Constants
-import tachiyomi.domain.anime.model.AnimeCover
+import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.widget.util.calculateRowAndColumnCount
@@ -89,7 +89,7 @@ fun UpdatesWidget(
                                         cover = cover,
                                         modifier = GlanceModifier.clickable(actionStartActivity(intent)),
                                         // KMK -->
-                                        color = AnimeCover.dominantCoverColorMap[animeId]?.first?.let { Color(it) },
+                                        color = MangaCover.dominantCoverColorMap[animeId]?.first?.let { Color(it) },
                                         // KMK <--
                                     )
                                 }

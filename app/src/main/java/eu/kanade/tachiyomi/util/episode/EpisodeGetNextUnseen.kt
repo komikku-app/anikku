@@ -1,23 +1,23 @@
 package eu.kanade.tachiyomi.util.episode
 
-import eu.kanade.domain.episode.model.applyFilters
+import eu.kanade.domain.chapter.model.applyFilters
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.ui.anime.EpisodeList
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.manga.model.Manga
 
 /**
  * Gets next unseen episode with filters and sorting applied
  */
-fun List<Episode>.getNextUnseen(
-    anime: Anime,
+fun List<Chapter>.getNextUnseen(
+    manga: Manga,
     downloadManager: DownloadManager,
     // SY -->
-    mergedManga: Map<Long, Anime>,
+    mergedManga: Map<Long, Manga>,
     // SY <--
-): Episode? {
-    return applyFilters(anime, downloadManager/* SY --> */, mergedManga/* SY <-- */).let { episodes ->
-        if (anime.sortDescending()) {
+): Chapter? {
+    return applyFilters(manga, downloadManager/* SY --> */, mergedManga/* SY <-- */).let { episodes ->
+        if (manga.sortDescending()) {
             episodes.findLast { !it.seen }
         } else {
             episodes.find { !it.seen }
@@ -28,12 +28,12 @@ fun List<Episode>.getNextUnseen(
 /**
  * Gets next unseen episode with filters and sorting applied
  */
-fun List<EpisodeList.Item>.getNextUnseen(anime: Anime): Episode? {
-    return applyFilters(anime).let { episodes ->
-        if (anime.sortDescending()) {
-            episodes.findLast { !it.episode.seen }
+fun List<EpisodeList.Item>.getNextUnseen(manga: Manga): Chapter? {
+    return applyFilters(manga).let { episodes ->
+        if (manga.sortDescending()) {
+            episodes.findLast { !it.chapter.seen }
         } else {
-            episodes.find { !it.episode.seen }
+            episodes.find { !it.chapter.seen }
         }
-    }?.episode
+    }?.chapter
 }

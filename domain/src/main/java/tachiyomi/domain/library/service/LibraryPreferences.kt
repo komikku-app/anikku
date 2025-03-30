@@ -4,11 +4,11 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.preference.getEnum
-import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.model.GroupLibraryMode
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.model.LibraryGroup
 import tachiyomi.domain.library.model.LibrarySort
+import tachiyomi.domain.manga.model.Manga
 
 class LibraryPreferences(
     private val preferenceStore: PreferenceStore,
@@ -178,51 +178,51 @@ class LibraryPreferences(
 
     fun filterEpisodeBySeen() = preferenceStore.getLong(
         "default_episode_filter_by_seen",
-        Anime.SHOW_ALL,
+        Manga.SHOW_ALL,
     )
 
     fun filterEpisodeByDownloaded() = preferenceStore.getLong(
         "default_episode_filter_by_downloaded",
-        Anime.SHOW_ALL,
+        Manga.SHOW_ALL,
     )
 
     fun filterEpisodeByBookmarked() = preferenceStore.getLong(
         "default_episode_filter_by_bookmarked",
-        Anime.SHOW_ALL,
+        Manga.SHOW_ALL,
     )
 
     // AM (FILLERMARK) -->
     fun filterEpisodeByFillermarked() =
-        preferenceStore.getLong("default_episode_filter_by_fillermarked", Anime.SHOW_ALL)
+        preferenceStore.getLong("default_episode_filter_by_fillermarked", Manga.SHOW_ALL)
     // <-- AM (FILLERMARK)
 
     // and upload date
     fun sortEpisodeBySourceOrNumber() = preferenceStore.getLong(
         "default_episode_sort_by_source_or_number",
-        Anime.EPISODE_SORTING_SOURCE,
+        Manga.EPISODE_SORTING_SOURCE,
     )
 
     fun displayEpisodeByNameOrNumber() = preferenceStore.getLong(
         "default_chapter_display_by_name_or_number",
-        Anime.EPISODE_DISPLAY_NAME,
+        Manga.EPISODE_DISPLAY_NAME,
     )
 
     fun sortEpisodeByAscendingOrDescending() = preferenceStore.getLong(
         "default_chapter_sort_by_ascending_or_descending",
-        Anime.EPISODE_SORT_DESC,
+        Manga.EPISODE_SORT_DESC,
     )
 
-    fun setEpisodeSettingsDefault(anime: Anime) {
-        filterEpisodeBySeen().set(anime.unseenFilterRaw)
-        filterEpisodeByDownloaded().set(anime.downloadedFilterRaw)
-        filterEpisodeByBookmarked().set(anime.bookmarkedFilterRaw)
+    fun setEpisodeSettingsDefault(manga: Manga) {
+        filterEpisodeBySeen().set(manga.unseenFilterRaw)
+        filterEpisodeByDownloaded().set(manga.downloadedFilterRaw)
+        filterEpisodeByBookmarked().set(manga.bookmarkedFilterRaw)
         // AM (FILLERMARK) -->
-        filterEpisodeByFillermarked().set(anime.fillermarkedFilterRaw)
+        filterEpisodeByFillermarked().set(manga.fillermarkedFilterRaw)
         // <-- AM (FILLERMARK)
-        sortEpisodeBySourceOrNumber().set(anime.sorting)
-        displayEpisodeByNameOrNumber().set(anime.displayMode)
+        sortEpisodeBySourceOrNumber().set(manga.sorting)
+        displayEpisodeByNameOrNumber().set(manga.displayMode)
         sortEpisodeByAscendingOrDescending().set(
-            if (anime.sortDescending()) Anime.EPISODE_SORT_DESC else Anime.EPISODE_SORT_ASC,
+            if (manga.sortDescending()) Manga.EPISODE_SORT_DESC else Manga.EPISODE_SORT_ASC,
         )
     }
 

@@ -1,8 +1,8 @@
 package tachiyomi.data.history
 
-import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.history.model.History
 import tachiyomi.domain.history.model.HistoryWithRelations
+import tachiyomi.domain.manga.model.MangaCover
 import java.util.Date
 
 object HistoryMapper {
@@ -40,7 +40,7 @@ object HistoryMapper {
         episodeNumber = episodeNumber,
         seenAt = seenAt,
         watchDuration = watchDuration,
-        coverData = AnimeCover(
+        coverData = MangaCover(
             animeId = animeId,
             sourceId = sourceId,
             isAnimeFavorite = isFavorite,

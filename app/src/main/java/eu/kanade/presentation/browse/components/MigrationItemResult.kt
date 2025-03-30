@@ -26,7 +26,7 @@ import eu.kanade.presentation.util.rememberResourceBitmapPainter
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingAnime
 import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -35,10 +35,10 @@ fun MigrationItemResult(
     modifier: Modifier,
     migrationItem: MigratingAnime,
     result: MigratingAnime.SearchResult,
-    getManga: suspend (MigratingAnime.SearchResult.Result) -> Anime?,
+    getManga: suspend (MigratingAnime.SearchResult.Result) -> Manga?,
     getEpisodeInfo: suspend (MigratingAnime.SearchResult.Result) -> MigratingAnime.EpisodeInfo,
-    getSourceName: (Anime) -> String,
-    onMigrationItemClick: (Anime) -> Unit,
+    getSourceName: (Manga) -> String,
+    onMigrationItemClick: (Manga) -> Unit,
 ) {
     Box(modifier.height(IntrinsicSize.Min)) {
         when (result) {
@@ -73,7 +73,7 @@ fun MigrationItemResult(
                 )
             }
             is MigratingAnime.SearchResult.Result -> {
-                val item by produceState<Triple<Anime, MigratingAnime.EpisodeInfo, String>?>(
+                val item by produceState<Triple<Manga, MigratingAnime.EpisodeInfo, String>?>(
                     initialValue = null,
                     migrationItem,
                     result,

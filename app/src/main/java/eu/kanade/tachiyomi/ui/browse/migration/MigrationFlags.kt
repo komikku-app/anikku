@@ -1,10 +1,10 @@
 package eu.kanade.tachiyomi.ui.browse.migration
 
 import dev.icerock.moko.resources.StringResource
-import eu.kanade.domain.anime.model.hasCustomCover
+import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 
@@ -61,20 +61,20 @@ object MigrationFlags {
     }
 
     /** Returns information about applicable flags with default selections. */
-    fun getFlags(anime: Anime?, defaultSelectedBitMap: Int): List<MigrationFlag> {
+    fun getFlags(manga: Manga?, defaultSelectedBitMap: Int): List<MigrationFlag> {
         val flags = mutableListOf<MigrationFlag>()
         flags += MigrationFlag.create(CHAPTERS, defaultSelectedBitMap, MR.strings.episodes)
         flags += MigrationFlag.create(CATEGORIES, defaultSelectedBitMap, MR.strings.categories)
 
-        if (anime != null) {
-            if (anime.hasCustomCover(coverCache)) {
+        if (manga != null) {
+            if (manga.hasCustomCover(coverCache)) {
                 flags += MigrationFlag.create(
                     CUSTOM_COVER,
                     defaultSelectedBitMap,
                     MR.strings.custom_cover,
                 )
             }
-            if (downloadCache.getDownloadCount(anime) > 0) {
+            if (downloadCache.getDownloadCount(manga) > 0) {
                 flags += MigrationFlag.create(
                     DELETE_CHAPTERS,
                     defaultSelectedBitMap,

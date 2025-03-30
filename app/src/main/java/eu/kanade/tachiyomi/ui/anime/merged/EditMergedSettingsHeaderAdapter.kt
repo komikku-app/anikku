@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import eu.kanade.tachiyomi.databinding.EditMergedSettingsHeaderBinding
 import exh.log.xLogD
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.domain.anime.model.MergedAnimeReference
+import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.injectLazy
@@ -54,10 +54,10 @@ class EditMergedSettingsHeaderAdapter(private val state: EditMergedSettingsState
             state.mergeReference?.let {
                 binding.dedupeModeSpinner.setSelection(
                     when (it.episodeSortMode) {
-                        MergedAnimeReference.EPISODE_SORT_NO_DEDUPE -> 0
-                        MergedAnimeReference.EPISODE_SORT_PRIORITY -> 1
-                        MergedAnimeReference.EPISODE_SORT_MOST_EPISODES -> 2
-                        MergedAnimeReference.EPISODE_SORT_HIGHEST_EPISODE_NUMBER -> 3
+                        MergedMangaReference.EPISODE_SORT_NO_DEDUPE -> 0
+                        MergedMangaReference.EPISODE_SORT_PRIORITY -> 1
+                        MergedMangaReference.EPISODE_SORT_MOST_EPISODES -> 2
+                        MergedMangaReference.EPISODE_SORT_HIGHEST_EPISODE_NUMBER -> 3
                         else -> 0
                     },
                 )
@@ -71,11 +71,11 @@ class EditMergedSettingsHeaderAdapter(private val state: EditMergedSettingsState
                 ) {
                     state.mergeReference = state.mergeReference?.copy(
                         episodeSortMode = when (position) {
-                            0 -> MergedAnimeReference.EPISODE_SORT_NO_DEDUPE
-                            1 -> MergedAnimeReference.EPISODE_SORT_PRIORITY
-                            2 -> MergedAnimeReference.EPISODE_SORT_MOST_EPISODES
-                            3 -> MergedAnimeReference.EPISODE_SORT_HIGHEST_EPISODE_NUMBER
-                            else -> MergedAnimeReference.EPISODE_SORT_NO_DEDUPE
+                            0 -> MergedMangaReference.EPISODE_SORT_NO_DEDUPE
+                            1 -> MergedMangaReference.EPISODE_SORT_PRIORITY
+                            2 -> MergedMangaReference.EPISODE_SORT_MOST_EPISODES
+                            3 -> MergedMangaReference.EPISODE_SORT_HIGHEST_EPISODE_NUMBER
+                            else -> MergedMangaReference.EPISODE_SORT_NO_DEDUPE
                         },
                     )
                     xLogD(state.mergeReference?.episodeSortMode)
@@ -84,7 +84,7 @@ class EditMergedSettingsHeaderAdapter(private val state: EditMergedSettingsState
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                     state.mergeReference = state.mergeReference?.copy(
-                        episodeSortMode = MergedAnimeReference.EPISODE_SORT_NO_DEDUPE,
+                        episodeSortMode = MergedMangaReference.EPISODE_SORT_NO_DEDUPE,
                     )
                 }
             }
@@ -135,7 +135,7 @@ class EditMergedSettingsHeaderAdapter(private val state: EditMergedSettingsState
             }
 
             binding.dedupeSwitch.isChecked = state.mergeReference?.let {
-                it.episodeSortMode != MergedAnimeReference.EPISODE_SORT_NONE
+                it.episodeSortMode != MergedMangaReference.EPISODE_SORT_NONE
             } ?: false
             binding.dedupeSwitch.setOnCheckedChangeListener { _, isChecked ->
                 binding.dedupeModeSpinner.isEnabled = isChecked
@@ -145,8 +145,8 @@ class EditMergedSettingsHeaderAdapter(private val state: EditMergedSettingsState
                 }
                 state.mergeReference = state.mergeReference?.copy(
                     episodeSortMode = when (isChecked) {
-                        true -> MergedAnimeReference.EPISODE_SORT_NO_DEDUPE
-                        false -> MergedAnimeReference.EPISODE_SORT_NONE
+                        true -> MergedMangaReference.EPISODE_SORT_NO_DEDUPE
+                        false -> MergedMangaReference.EPISODE_SORT_NONE
                     },
                 )
 
@@ -162,7 +162,7 @@ class EditMergedSettingsHeaderAdapter(private val state: EditMergedSettingsState
     }
 
     fun canMove() =
-        state.mergeReference?.let { it.episodeSortMode == MergedAnimeReference.EPISODE_SORT_PRIORITY } ?: false
+        state.mergeReference?.let { it.episodeSortMode == MergedMangaReference.EPISODE_SORT_PRIORITY } ?: false
 
     interface SortingListener {
         fun onSetPrioritySort(isPriorityOrder: Boolean)

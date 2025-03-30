@@ -82,9 +82,9 @@ import coil3.request.crossfade
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.source.model.SAnime
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
@@ -100,7 +100,7 @@ import uy.kohesive.injekt.api.get
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
-import tachiyomi.domain.anime.model.AnimeCover as DomainAnimeCover
+import tachiyomi.domain.manga.model.MangaCover as DomainAnimeCover
 
 private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTILINE))
 
@@ -108,7 +108,7 @@ private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTIL
 fun AnimeInfoBox(
     isTabletUi: Boolean,
     appBarPadding: Dp,
-    anime: Anime,
+    manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
@@ -130,7 +130,7 @@ fun AnimeInfoBox(
         )
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data(anime)
+                .data(manga)
                 .crossfade(true)
                 .build(),
             contentDescription = null,
@@ -167,7 +167,7 @@ fun AnimeInfoBox(
             if (!isTabletUi) {
                 AnimeAndSourceTitlesSmall(
                     appBarPadding = appBarPadding,
-                    anime = anime,
+                    manga = manga,
                     sourceName = sourceName,
                     isStubSource = isStubSource,
                     onCoverClick = onCoverClick,
@@ -181,7 +181,7 @@ fun AnimeInfoBox(
             } else {
                 AnimeAndSourceTitlesLarge(
                     appBarPadding = appBarPadding,
-                    anime = anime,
+                    manga = manga,
                     sourceName = sourceName,
                     isStubSource = isStubSource,
                     onCoverClick = onCoverClick,
@@ -385,7 +385,7 @@ fun ExpandableAnimeDescription(
 @Composable
 private fun AnimeAndSourceTitlesLarge(
     appBarPadding: Dp,
-    anime: Anime,
+    manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
@@ -407,7 +407,7 @@ private fun AnimeAndSourceTitlesLarge(
             AnimeCover.Panorama(
                 modifier = Modifier.fillMaxWidth(0.65f),
                 data = ImageRequest.Builder(LocalContext.current)
-                    .data(anime)
+                    .data(manga)
                     .crossfade(true)
                     .build(),
                 contentDescription = stringResource(MR.strings.manga_cover),
@@ -425,7 +425,7 @@ private fun AnimeAndSourceTitlesLarge(
             AnimeCover.Book(
                 modifier = Modifier.fillMaxWidth(0.65f),
                 data = ImageRequest.Builder(LocalContext.current)
-                    .data(anime)
+                    .data(manga)
                     .crossfade(true)
                     .build(),
                 contentDescription = stringResource(MR.strings.manga_cover),
@@ -441,10 +441,10 @@ private fun AnimeAndSourceTitlesLarge(
         }
         Spacer(modifier = Modifier.height(16.dp))
         AnimeContentInfo(
-            title = anime.title,
-            author = anime.author,
-            artist = anime.artist,
-            status = anime.status,
+            title = manga.title,
+            author = manga.author,
+            artist = manga.artist,
+            status = manga.status,
             sourceName = sourceName,
             isStubSource = isStubSource,
             doSearch = doSearch,
@@ -456,7 +456,7 @@ private fun AnimeAndSourceTitlesLarge(
 @Composable
 private fun AnimeAndSourceTitlesSmall(
     appBarPadding: Dp,
-    anime: Anime,
+    manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
@@ -483,7 +483,7 @@ private fun AnimeAndSourceTitlesSmall(
                     .align(Alignment.CenterVertically),
                 // KMK <--
                 data = ImageRequest.Builder(LocalContext.current)
-                    .data(anime)
+                    .data(manga)
                     .crossfade(true)
                     .build(),
                 contentDescription = stringResource(MR.strings.manga_cover),
@@ -505,7 +505,7 @@ private fun AnimeAndSourceTitlesSmall(
                     .align(Alignment.CenterVertically),
                 // KMK <--
                 data = ImageRequest.Builder(LocalContext.current)
-                    .data(anime)
+                    .data(manga)
                     .crossfade(true)
                     .build(),
                 contentDescription = stringResource(MR.strings.manga_cover),
@@ -523,10 +523,10 @@ private fun AnimeAndSourceTitlesSmall(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             AnimeContentInfo(
-                title = anime.title,
-                author = anime.author,
-                artist = anime.artist,
-                status = anime.status,
+                title = manga.title,
+                author = manga.author,
+                artist = manga.artist,
+                status = manga.status,
                 sourceName = sourceName,
                 isStubSource = isStubSource,
                 doSearch = doSearch,
@@ -629,12 +629,12 @@ private fun ColumnScope.AnimeContentInfo(
     ) {
         Icon(
             imageVector = when (status) {
-                SAnime.ONGOING.toLong() -> Icons.Outlined.Schedule
-                SAnime.COMPLETED.toLong() -> Icons.Outlined.DoneAll
-                SAnime.LICENSED.toLong() -> Icons.Outlined.AttachMoney
-                SAnime.PUBLISHING_FINISHED.toLong() -> Icons.Outlined.Done
-                SAnime.CANCELLED.toLong() -> Icons.Outlined.Close
-                SAnime.ON_HIATUS.toLong() -> Icons.Outlined.Pause
+                SManga.ONGOING.toLong() -> Icons.Outlined.Schedule
+                SManga.COMPLETED.toLong() -> Icons.Outlined.DoneAll
+                SManga.LICENSED.toLong() -> Icons.Outlined.AttachMoney
+                SManga.PUBLISHING_FINISHED.toLong() -> Icons.Outlined.Done
+                SManga.CANCELLED.toLong() -> Icons.Outlined.Close
+                SManga.ON_HIATUS.toLong() -> Icons.Outlined.Pause
                 else -> Icons.Outlined.Block
             },
             contentDescription = null,
@@ -645,12 +645,12 @@ private fun ColumnScope.AnimeContentInfo(
         ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
             Text(
                 text = when (status) {
-                    SAnime.ONGOING.toLong() -> stringResource(MR.strings.ongoing)
-                    SAnime.COMPLETED.toLong() -> stringResource(MR.strings.completed)
-                    SAnime.LICENSED.toLong() -> stringResource(MR.strings.licensed)
-                    SAnime.PUBLISHING_FINISHED.toLong() -> stringResource(MR.strings.publishing_finished)
-                    SAnime.CANCELLED.toLong() -> stringResource(MR.strings.cancelled)
-                    SAnime.ON_HIATUS.toLong() -> stringResource(MR.strings.on_hiatus)
+                    SManga.ONGOING.toLong() -> stringResource(MR.strings.ongoing)
+                    SManga.COMPLETED.toLong() -> stringResource(MR.strings.completed)
+                    SManga.LICENSED.toLong() -> stringResource(MR.strings.licensed)
+                    SManga.PUBLISHING_FINISHED.toLong() -> stringResource(MR.strings.publishing_finished)
+                    SManga.CANCELLED.toLong() -> stringResource(MR.strings.cancelled)
+                    SManga.ON_HIATUS.toLong() -> stringResource(MR.strings.on_hiatus)
                     else -> stringResource(MR.strings.unknown)
                 },
                 overflow = TextOverflow.Ellipsis,

@@ -62,11 +62,11 @@ import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.UnsortedPreferences
-import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.LibraryAnime
 import tachiyomi.domain.library.model.LibraryGroup
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -163,7 +163,7 @@ data object LibraryTab : Tab {
                         scope.launch {
                             val randomItem = screenModel.getRandomLibraryItemForCurrentCategory()
                             if (randomItem != null) {
-                                navigator.push(AnimeScreen(randomItem.libraryAnime.anime.id))
+                                navigator.push(AnimeScreen(randomItem.libraryAnime.manga.id))
                             } else {
                                 snackbarHostState.showSnackbar(
                                     context.stringResource(MR.strings.information_no_entries_found),
@@ -190,13 +190,13 @@ data object LibraryTab : Tab {
                     onMarkAsSeenClicked = { screenModel.markSeenSelection(true) },
                     onMarkAsUnseenClicked = { screenModel.markSeenSelection(false) },
                     onDownloadClicked = screenModel::runDownloadActionSelection
-                        .takeIf { state.selection.fastAll { !it.anime.isLocal() } },
+                        .takeIf { state.selection.fastAll { !it.manga.isLocal() } },
                     onDeleteClicked = screenModel::openDeleteAnimeDialog,
                     // SY -->
                     onClickMigrate = {
                         val selectedMangaIds = state.selection
-                            .filterNot { it.anime.source == MERGED_SOURCE_ID }
-                            .map { it.anime.id }
+                            .filterNot { it.manga.source == MERGED_SOURCE_ID }
+                            .map { it.manga.id }
                         screenModel.clearSelection()
                         if (selectedMangaIds.isNotEmpty()) {
                             PreMigrationScreen.navigateToMigration(
@@ -213,7 +213,7 @@ data object LibraryTab : Tab {
                     // KMK -->
                     onClickMerge = {
                         if (state.selection.size == 1) {
-                            val manga = state.selection.first().anime
+                            val manga = state.selection.first().manga
                             // Invoke merging for this manga
                             screenModel.clearSelection()
                             val smartSearchConfig = SourcesScreen.SmartSearchConfig(manga.title, manga.id)
@@ -223,7 +223,7 @@ data object LibraryTab : Tab {
                             val selection = state.selection
                             screenModel.clearSelection()
                             scope.launchIO {
-                                val mergingMangas = selection.filterNot { it.anime.source == MERGED_SOURCE_ID }
+                                val mergingMangas = selection.filterNot { it.manga.source == MERGED_SOURCE_ID }
                                 val mergedMangaId = screenModel.smartSearchMerge(selection)
                                 snackbarHostState.showSnackbar(context.stringResource(SYMR.strings.entry_merged))
                                 if (mergedMangaId != null) {
@@ -234,7 +234,7 @@ data object LibraryTab : Tab {
                                     )
                                     if (result == SnackbarResult.ActionPerformed) {
                                         screenModel.removeAnimes(
-                                            animeList = mergingMangas.map { it.anime },
+                                            mangaList = mergingMangas.map { it.manga },
                                             deleteFromLibrary = true,
                                             deleteEpisodes = false,
                                         )
@@ -283,7 +283,7 @@ data object LibraryTab : Tab {
                         onAnimeClicked = { navigator.push(AnimeScreen(it)) },
                         onContinueWatchingClicked = { it: LibraryAnime ->
                             scope.launchIO {
-                                val episode = screenModel.getNextUnseenEpisode(it.anime)
+                                val episode = screenModel.getNextUnseenEpisode(it.manga)
                                 if (episode != null) openEpisode(context, episode)
                             }
                             Unit
@@ -330,16 +330,16 @@ data object LibraryTab : Tab {
                     },
                     onConfirm = { include, exclude ->
                         screenModel.clearSelection()
-                        screenModel.setAnimeCategories(dialog.anime, include, exclude)
+                        screenModel.setAnimeCategories(dialog.mangas, include, exclude)
                     },
                 )
             }
             is LibraryScreenModel.Dialog.DeleteAnime -> {
                 DeleteLibraryAnimeDialog(
-                    containsLocalAnime = dialog.anime.any(Anime::isLocal),
+                    containsLocalAnime = dialog.mangas.any(Manga::isLocal),
                     onDismissRequest = onDismissRequest,
                     onConfirm = { deleteAnime, deleteEpisode ->
-                        screenModel.removeAnimes(dialog.anime, deleteAnime, deleteEpisode)
+                        screenModel.removeAnimes(dialog.mangas, deleteAnime, deleteEpisode)
                         screenModel.clearSelection()
                     },
                 )
@@ -382,13 +382,13 @@ data object LibraryTab : Tab {
         }
     }
 
-    private suspend fun openEpisode(context: Context, episode: Episode) {
+    private suspend fun openEpisode(context: Context, chapter: Chapter) {
         val playerPreferences: PlayerPreferences by injectLazy()
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
         MainActivity.startPlayerActivity(
             context,
-            episode.animeId,
-            episode.id,
+            chapter.animeId,
+            chapter.id,
             extPlayer,
         )
     }

@@ -1,11 +1,11 @@
 package eu.kanade.domain
 
 import android.app.Application
-import eu.kanade.domain.anime.interactor.CreateSortTag
-import eu.kanade.domain.anime.interactor.DeleteSortTag
-import eu.kanade.domain.anime.interactor.GetSortTag
-import eu.kanade.domain.anime.interactor.ReorderSortTag
-import eu.kanade.domain.anime.interactor.SmartSearchMerge
+import eu.kanade.domain.manga.interactor.CreateSortTag
+import eu.kanade.domain.manga.interactor.DeleteSortTag
+import eu.kanade.domain.manga.interactor.GetSortTag
+import eu.kanade.domain.manga.interactor.ReorderSortTag
+import eu.kanade.domain.manga.interactor.SmartSearchMerge
 import eu.kanade.domain.source.interactor.CreateSourceCategory
 import eu.kanade.domain.source.interactor.DeleteSourceCategory
 import eu.kanade.domain.source.interactor.GetExhSavedSearch
@@ -14,30 +14,30 @@ import eu.kanade.domain.source.interactor.GetSourceCategories
 import eu.kanade.domain.source.interactor.RenameSourceCategory
 import eu.kanade.domain.source.interactor.SetSourceCategories
 import eu.kanade.domain.source.interactor.ToggleExcludeFromDataSaver
-import tachiyomi.data.anime.AnimeMergeRepositoryImpl
-import tachiyomi.data.anime.CustomAnimeRepositoryImpl
+import tachiyomi.data.anime.CustomMangaRepositoryImpl
+import tachiyomi.data.anime.MangaMergeRepositoryImpl
 import tachiyomi.data.source.FeedSavedSearchRepositoryImpl
 import tachiyomi.data.source.SavedSearchRepositoryImpl
-import tachiyomi.domain.anime.interactor.DeleteAnimeById
-import tachiyomi.domain.anime.interactor.DeleteByMergeId
-import tachiyomi.domain.anime.interactor.DeleteMergeById
-import tachiyomi.domain.anime.interactor.GetAllAnime
-import tachiyomi.domain.anime.interactor.GetAnimeBySource
-import tachiyomi.domain.anime.interactor.GetCustomAnimeInfo
-import tachiyomi.domain.anime.interactor.GetMergedAnime
-import tachiyomi.domain.anime.interactor.GetMergedAnimeById
-import tachiyomi.domain.anime.interactor.GetMergedAnimeForDownloading
-import tachiyomi.domain.anime.interactor.GetMergedReferencesById
-import tachiyomi.domain.anime.interactor.GetSeenAnimeNotInLibraryView
-import tachiyomi.domain.anime.interactor.InsertMergedReference
-import tachiyomi.domain.anime.interactor.SetCustomAnimeInfo
-import tachiyomi.domain.anime.interactor.UpdateMergedSettings
-import tachiyomi.domain.anime.repository.AnimeMergeRepository
-import tachiyomi.domain.anime.repository.CustomAnimeRepository
-import tachiyomi.domain.episode.interactor.DeleteEpisodes
-import tachiyomi.domain.episode.interactor.GetEpisodeByUrl
-import tachiyomi.domain.episode.interactor.GetMergedEpisodesByAnimeId
+import tachiyomi.domain.chapter.interactor.DeleteChapters
+import tachiyomi.domain.chapter.interactor.GetChapterByUrl
+import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.history.interactor.GetHistoryByAnimeId
+import tachiyomi.domain.manga.interactor.DeleteByMergeId
+import tachiyomi.domain.manga.interactor.DeleteMangaById
+import tachiyomi.domain.manga.interactor.DeleteMergeById
+import tachiyomi.domain.manga.interactor.GetAllManga
+import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
+import tachiyomi.domain.manga.interactor.GetMangaBySource
+import tachiyomi.domain.manga.interactor.GetMergedManga
+import tachiyomi.domain.manga.interactor.GetMergedMangaById
+import tachiyomi.domain.manga.interactor.GetMergedMangaForDownloading
+import tachiyomi.domain.manga.interactor.GetMergedReferencesById
+import tachiyomi.domain.manga.interactor.GetReadMangaNotInLibraryView
+import tachiyomi.domain.manga.interactor.InsertMergedReference
+import tachiyomi.domain.manga.interactor.SetCustomMangaInfo
+import tachiyomi.domain.manga.interactor.UpdateMergedSettings
+import tachiyomi.domain.manga.repository.CustomMangaRepository
+import tachiyomi.domain.manga.repository.MangaMergeRepository
 import tachiyomi.domain.source.interactor.CountFeedSavedSearchBySourceId
 import tachiyomi.domain.source.interactor.CountFeedSavedSearchGlobal
 import tachiyomi.domain.source.interactor.DeleteFeedSavedSearchById
@@ -66,13 +66,13 @@ class SYDomainModule : InjektModule {
         addFactory { GetShowLatest(get()) }
         addFactory { ToggleExcludeFromDataSaver(get()) }
         addFactory { SetSourceCategories(get()) }
-        addFactory { GetAllAnime(get()) }
-        addFactory { GetAnimeBySource(get()) }
-        addFactory { DeleteEpisodes(get()) }
-        addFactory { DeleteAnimeById(get()) }
+        addFactory { GetAllManga(get()) }
+        addFactory { GetMangaBySource(get()) }
+        addFactory { DeleteChapters(get()) }
+        addFactory { DeleteMangaById(get()) }
         addFactory { FilterSerializer() }
         addFactory { GetHistoryByAnimeId(get()) }
-        addFactory { GetEpisodeByUrl(get()) }
+        addFactory { GetChapterByUrl(get()) }
         addFactory { GetSourceCategories(get()) }
         addFactory { CreateSourceCategory(get()) }
         addFactory { RenameSourceCategory(get(), get()) }
@@ -81,18 +81,18 @@ class SYDomainModule : InjektModule {
         addFactory { CreateSortTag(get(), get()) }
         addFactory { DeleteSortTag(get(), get()) }
         addFactory { ReorderSortTag(get(), get()) }
-        addFactory { GetSeenAnimeNotInLibraryView(get()) }
+        addFactory { GetReadMangaNotInLibraryView(get()) }
 
-        addSingletonFactory<AnimeMergeRepository> { AnimeMergeRepositoryImpl(get()) }
-        addFactory { GetMergedAnime(get()) }
-        addFactory { GetMergedAnimeById(get()) }
+        addSingletonFactory<MangaMergeRepository> { MangaMergeRepositoryImpl(get()) }
+        addFactory { GetMergedManga(get()) }
+        addFactory { GetMergedMangaById(get()) }
         addFactory { GetMergedReferencesById(get()) }
-        addFactory { GetMergedEpisodesByAnimeId(get(), get()) }
+        addFactory { GetMergedChaptersByMangaId(get(), get()) }
         addFactory { InsertMergedReference(get()) }
         addFactory { UpdateMergedSettings(get()) }
         addFactory { DeleteByMergeId(get()) }
         addFactory { DeleteMergeById(get()) }
-        addFactory { GetMergedAnimeForDownloading(get()) }
+        addFactory { GetMergedMangaForDownloading(get()) }
         // KMK -->
         addFactory { SmartSearchMerge(get()) }
         // KMK <--
@@ -117,8 +117,8 @@ class SYDomainModule : InjektModule {
         addFactory { ReorderFeed(get()) }
         // KMK <--
 
-        addSingletonFactory<CustomAnimeRepository> { CustomAnimeRepositoryImpl(get<Application>()) }
-        addFactory { GetCustomAnimeInfo(get()) }
-        addFactory { SetCustomAnimeInfo(get()) }
+        addSingletonFactory<CustomMangaRepository> { CustomMangaRepositoryImpl(get<Application>()) }
+        addFactory { GetCustomMangaInfo(get()) }
+        addFactory { SetCustomMangaInfo(get()) }
     }
 }

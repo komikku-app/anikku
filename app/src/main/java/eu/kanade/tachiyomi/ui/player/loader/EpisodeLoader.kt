@@ -13,8 +13,8 @@ import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import kotlinx.coroutines.CancellationException
 import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.MergedAnimeReference
 import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.io.LocalSourceFileSystem
@@ -39,7 +39,7 @@ class EpisodeLoader {
             anime: Anime,
             source: Source,
             sourceManager: SourceManager? = null,
-            mergedReferences: List<MergedAnimeReference> = emptyList(),
+            mergedReferences: List<MergedMangaReference> = emptyList(),
             mergedManga: Map<Long, Anime> = emptyMap(),
         ): List<Hoster> {
             val isDownloaded = isDownload(episode, anime)
@@ -171,7 +171,7 @@ class EpisodeLoader {
         }
 
         /**
-         * Returns a list of hosters when the [episode] is online.
+         * Returns a list of hosters when the [Episode] is online.
          *
          * @param source the online source of the episode.
          * @param hoster the hoster.

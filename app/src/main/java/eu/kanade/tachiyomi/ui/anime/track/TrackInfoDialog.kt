@@ -70,7 +70,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.interactor.GetAnime
+import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.DeleteTrack
 import tachiyomi.domain.track.interactor.GetTracks
@@ -215,7 +215,7 @@ data class TrackInfoDialogHomeScreen(
         fun registerEnhancedTracking(item: TrackItem) {
             item.tracker as EnhancedTracker
             screenModelScope.launchNonCancellable {
-                val anime = Injekt.get<GetAnime>().await(animeId) ?: return@launchNonCancellable
+                val anime = Injekt.get<GetManga>().await(animeId) ?: return@launchNonCancellable
                 try {
                     val matchResult = item.tracker.match(anime) ?: throw Exception()
                     item.tracker.register(matchResult, animeId)

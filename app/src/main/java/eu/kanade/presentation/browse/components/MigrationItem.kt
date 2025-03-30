@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.anime.components.AnimeCover
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingAnime
 import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.Badge
 import tachiyomi.presentation.core.components.BadgeGroup
@@ -37,7 +37,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun MigrationItem(
     modifier: Modifier,
-    manga: Anime,
+    manga: Manga,
     sourcesString: String,
     episodeInfo: MigratingAnime.EpisodeInfo,
     onClick: () -> Unit,

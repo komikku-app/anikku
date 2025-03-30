@@ -9,7 +9,7 @@ import coil3.asDrawable
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.size.Size
-import eu.kanade.domain.anime.interactor.UpdateAnime
+import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
@@ -25,25 +25,25 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.interactor.GetAnime
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class AnimeCoverScreenModel(
     private val animeId: Long,
-    private val getAnime: GetAnime = Injekt.get(),
+    private val getManga: GetManga = Injekt.get(),
     private val imageSaver: ImageSaver = Injekt.get(),
     private val coverCache: CoverCache = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
+    private val updateManga: UpdateManga = Injekt.get(),
 
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-) : StateScreenModel<Anime?>(null) {
+) : StateScreenModel<Manga?>(null) {
 
     init {
         screenModelScope.launchIO {
-            getAnime.subscribe(animeId)
+            getManga.subscribe(animeId)
                 .collect { newAnime -> mutableState.update { newAnime } }
         }
     }
@@ -122,7 +122,7 @@ class AnimeCoverScreenModel(
         screenModelScope.launchIO {
             context.contentResolver.openInputStream(data)?.use {
                 try {
-                    anime.editCover(Injekt.get(), it, updateAnime, coverCache)
+                    anime.editCover(Injekt.get(), it, updateManga, coverCache)
                     notifyCoverUpdated(context)
                 } catch (e: Exception) {
                     notifyFailedCoverUpdate(context, e)
@@ -136,7 +136,7 @@ class AnimeCoverScreenModel(
         screenModelScope.launchIO {
             try {
                 coverCache.deleteCustomCover(animeId)
-                updateAnime.awaitUpdateCoverLastModified(animeId)
+                updateManga.awaitUpdateCoverLastModified(animeId)
                 notifyCoverUpdated(context)
             } catch (e: Exception) {
                 notifyFailedCoverUpdate(context, e)

@@ -57,12 +57,12 @@ class DownloadItem(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other is DownloadItem) {
-            return download.episode.id == other.download.episode.id
+            return download.chapter.id == other.download.chapter.id
         }
         return false
     }
 
     override fun hashCode(): Int {
-        return download.episode.id.toInt()
+        return download.chapter.id.toInt()
     }
 }

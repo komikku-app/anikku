@@ -17,7 +17,7 @@ import androidx.compose.ui.util.fastAny
 import eu.kanade.presentation.browse.RelatedAnimeTitle
 import eu.kanade.presentation.browse.RelatedAnimesLoadingItem
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -30,13 +30,13 @@ fun RelatedAnimesList(
     relatedAnimes: List<RelatedAnime>,
     entries: Int,
     topBarHeight: Int,
-    getManga: @Composable (Anime) -> State<Anime>,
+    getManga: @Composable (Manga) -> State<Manga>,
     contentPadding: PaddingValues,
-    onMangaClick: (Anime) -> Unit,
-    onMangaLongClick: (Anime) -> Unit,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
     onKeywordClick: (String) -> Unit,
     onKeywordLongClick: (String) -> Unit,
-    selection: List<Anime>,
+    selection: List<Manga>,
 ) {
     var containerHeight by remember { mutableIntStateOf(0) }
     FastScrollLazyColumn(
@@ -98,7 +98,7 @@ fun RelatedAnimesList(
                 ) { index ->
                     val manga by getManga(relatedAnime.mangaList[index])
                     BrowseSourceListItem(
-                        anime = manga,
+                        manga = manga,
                         onClick = { onMangaClick(manga) },
                         onLongClick = { onMangaLongClick(manga) },
                         entries = entries,

@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.util.fastAny
 import eu.kanade.tachiyomi.ui.library.LibraryItem
-import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.manga.model.MangaCover
 
 @Composable
 internal fun LibraryComfortableGrid(
@@ -36,11 +36,11 @@ internal fun LibraryComfortableGrid(
             items = items,
             contentType = { "anime_library_comfortable_grid_item" },
         ) { libraryItem ->
-            val anime = libraryItem.libraryAnime.anime
+            val anime = libraryItem.libraryAnime.manga
             AnimeComfortableGridItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },
                 title = anime.title,
-                coverData = AnimeCover(
+                coverData = MangaCover(
                     animeId = anime.id,
                     sourceId = anime.source,
                     isAnimeFavorite = anime.favorite,

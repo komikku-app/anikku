@@ -29,9 +29,9 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImage
 import eu.kanade.tachiyomi.R
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.asAnimeCover
-import tachiyomi.domain.anime.model.AnimeCover as DomainMangaCover
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.asAnimeCover
+import tachiyomi.domain.manga.model.MangaCover as DomainMangaCover
 
 enum class AnimeCover(val ratio: Float) {
     Square(1f / 1f),
@@ -138,7 +138,7 @@ enum class AnimeCover(val ratio: Float) {
                 succeed = true
                 if (onCoverLoaded != null) {
                     when (data) {
-                        is Anime -> onCoverLoaded(data.asAnimeCover(), result)
+                        is Manga -> onCoverLoaded(data.asAnimeCover(), result)
                         is DomainMangaCover -> onCoverLoaded(data, result)
                     }
                 }

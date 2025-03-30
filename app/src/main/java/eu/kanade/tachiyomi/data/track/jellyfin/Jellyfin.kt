@@ -12,7 +12,7 @@ import eu.kanade.tachiyomi.source.Source
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import okhttp3.Dns
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
@@ -88,19 +88,19 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
 
     override fun getAcceptedSources() = listOf("eu.kanade.tachiyomi.animeextension.all.jellyfin.Jellyfin")
 
-    override suspend fun match(anime: Anime): TrackSearch? =
+    override suspend fun match(manga: Manga): TrackSearch? =
         try {
-            api.getTrackSearch(anime.url)
+            api.getTrackSearch(manga.url)
         } catch (e: Exception) {
             null
         }
 
-    override fun isTrackFrom(track: DomainTrack, anime: Anime, source: Source?): Boolean =
-        track.remoteUrl == anime.url && source?.let { accept(it) } == true
+    override fun isTrackFrom(track: DomainTrack, manga: Manga, source: Source?): Boolean =
+        track.remoteUrl == manga.url && source?.let { accept(it) } == true
 
-    override fun migrateTrack(track: DomainTrack, anime: Anime, newSource: Source): DomainTrack? {
+    override fun migrateTrack(track: DomainTrack, manga: Manga, newSource: Source): DomainTrack? {
         return if (accept(newSource)) {
-            track.copy(remoteUrl = anime.url)
+            track.copy(remoteUrl = manga.url)
         } else {
             null
         }

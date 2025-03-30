@@ -1,6 +1,6 @@
 package tachiyomi.data.anime
 
-import tachiyomi.domain.anime.model.MergedAnimeReference
+import tachiyomi.domain.manga.model.MergedMangaReference
 
 object MergedAnimeMapper {
     fun map(
@@ -15,8 +15,8 @@ object MergedAnimeMapper {
         animeId: Long?,
         animeUrl: String,
         animeSourceId: Long,
-    ): MergedAnimeReference {
-        return MergedAnimeReference(
+    ): MergedMangaReference {
+        return MergedMangaReference(
             id = id,
             isInfoAnime = isInfoAnime,
             getEpisodeUpdates = getEpisodeUpdates,

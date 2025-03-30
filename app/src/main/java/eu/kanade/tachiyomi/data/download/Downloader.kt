@@ -51,9 +51,9 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.download.service.DownloadPreferences
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
@@ -280,31 +280,31 @@ class Downloader(
     /**
      * Creates a download object for every episode and adds them to the downloads queue.
      *
-     * @param anime the anime of the episodes to download.
-     * @param episodes the list of episodes to download.
+     * @param manga the anime of the episodes to download.
+     * @param chapters the list of episodes to download.
      * @param autoStart whether to start the downloader after enqueing the episodes.
      */
     fun queueEpisodes(
-        anime: Anime,
-        episodes: List<Episode>,
+        manga: Manga,
+        chapters: List<Chapter>,
         autoStart: Boolean,
         changeDownloader: Boolean = false,
         video: Video? = null,
     ) {
-        if (episodes.isEmpty()) return
+        if (chapters.isEmpty()) return
 
-        val source = sourceManager.get(anime.source) as? HttpSource ?: return
+        val source = sourceManager.get(manga.source) as? HttpSource ?: return
         val wasEmpty = queueState.value.isEmpty()
 
-        val episodesToQueue = episodes.asSequence()
+        val episodesToQueue = chapters.asSequence()
             // Filter out those already downloaded.
-            .filter { provider.findEpisodeDir(it.name, it.scanlator, anime.title, source) == null }
+            .filter { provider.findEpisodeDir(it.name, it.scanlator, manga.title, source) == null }
             // Add episodes to queue from the start.
             .sortedByDescending { it.sourceOrder }
             // Filter out those already enqueued.
-            .filter { episode -> queueState.value.none { it.episode.id == episode.id } }
+            .filter { episode -> queueState.value.none { it.chapter.id == episode.id } }
             // Create a download for each one.
-            .map { Download(source, anime, it, changeDownloader, video) }
+            .map { Download(source, manga, it, changeDownloader, video) }
             .toList()
 
         if (episodesToQueue.isNotEmpty()) {
@@ -346,20 +346,20 @@ class Downloader(
     private suspend fun downloadEpisode(download: Download) {
         // This try catch manages errors during download
         try {
-            val animeDir = provider.getAnimeDir(download.anime.title, download.source)
+            val animeDir = provider.getAnimeDir(download.manga.title, download.source)
 
             val availSpace = DiskUtil.getAvailableStorageSpace(animeDir)
             if (availSpace != -1L && availSpace < MIN_DISK_SPACE) {
                 throw Exception(context.stringResource(MR.strings.download_insufficient_space))
             }
 
-            val episodeDirname = provider.getEpisodeDirName(download.episode.name, download.episode.scanlator)
+            val episodeDirname = provider.getEpisodeDirName(download.chapter.name, download.chapter.scanlator)
             val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
 
             if (download.video == null) {
                 // Pull video from network and add them to download object
                 try {
-                    val hosters = EpisodeLoader.getHosters(download.episode, download.anime, download.source)
+                    val hosters = EpisodeLoader.getHosters(download.chapter, download.manga, download.source)
                     val fetchedVideo = HosterLoader.getBestVideo(download.source, hosters)!!
 
                     download.video = fetchedVideo
@@ -374,7 +374,7 @@ class Downloader(
             ensureSuccessfulAnimeDownload(download, animeDir, tmpDir, episodeDirname)
         } catch (e: Exception) {
             download.status = Download.State.ERROR
-            notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
+            notifier.onError(e.message, download.chapter.name, download.manga.title, download.manga.id)
         } finally {
             notifier.dismissProgress()
         }
@@ -397,7 +397,7 @@ class Downloader(
         var progressJob: Job? = null
 
         // Get filename from download info
-        val filename = DiskUtil.buildValidFilename(download.episode.name)
+        val filename = DiskUtil.buildValidFilename(download.chapter.name)
 
         // Delete temp file if it exists
         tmpDir.findFile("$filename.tmp")?.delete()
@@ -427,7 +427,7 @@ class Downloader(
                         downloadVideo(download, tmpDir, filename)
                     } else {
                         val betterFileName = DiskUtil.buildValidFilename(
-                            "${download.anime.title} - ${download.episode.name}",
+                            "${download.manga.title} - ${download.chapter.name}",
                         )
                         downloadVideoExternal(download.video!!, download.source, tmpDir, betterFileName)
                     }
@@ -440,7 +440,7 @@ class Downloader(
             progressJob?.cancel()
         } catch (e: Exception) {
             video.status = Video.State.ERROR
-            notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
+            notifier.onError(e.message, download.chapter.name, download.manga.title, download.manga.id)
             progressJob?.cancel()
 
             logcat(LogPriority.ERROR, e)
@@ -477,9 +477,9 @@ class Downloader(
                 } catch (e: Exception) {
                     notifier.onError(
                         e.message + ", retrying..",
-                        download.episode.name,
-                        download.anime.title,
-                        download.anime.id,
+                        download.chapter.name,
+                        download.manga.title,
+                        download.manga.id,
                     )
                     delay(2 * 1000L)
                     null
@@ -790,11 +790,11 @@ class Downloader(
 
         download.status = if (downloadedVideo.size == 1) {
             // Only rename the directory if it's downloaded
-            val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
+            val filename = DiskUtil.buildValidFilename("${download.manga.title} - ${download.chapter.name}")
             tmpDir.findFile("${filename}_tmp.mkv")?.delete()
             tmpDir.renameTo(dirname)
 
-            cache.addEpisode(dirname, animeDir, download.anime)
+            cache.addEpisode(dirname, animeDir, download.manga)
 
             DiskUtil.createNoMediaFile(tmpDir, context)
             Download.State.DOWNLOADED
@@ -845,13 +845,13 @@ class Downloader(
         }
     }
 
-    fun removeFromQueue(episodes: List<Episode>) {
-        val episodeIds = episodes.map { it.id }
-        removeFromQueueIf { it.episode.id in episodeIds }
+    fun removeFromQueue(chapters: List<Chapter>) {
+        val episodeIds = chapters.map { it.id }
+        removeFromQueueIf { it.chapter.id in episodeIds }
     }
 
-    fun removeFromQueue(anime: Anime) {
-        removeFromQueueIf { it.anime.id == anime.id }
+    fun removeFromQueue(manga: Manga) {
+        removeFromQueueIf { it.manga.id == manga.id }
     }
 
     private fun internalClearQueue() {

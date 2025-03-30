@@ -34,7 +34,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -129,7 +129,7 @@ data object HistoryTab : Tab {
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
                     HistoryScreenModel.Event.HistoryCleared ->
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
-                    is HistoryScreenModel.Event.OpenEpisode -> openEpisode(context, e.episode)
+                    is HistoryScreenModel.Event.OpenEpisode -> openEpisode(context, e.chapter)
                 }
             }
         }
@@ -145,14 +145,14 @@ data object HistoryTab : Tab {
         }
     }
 
-    private suspend fun openEpisode(context: Context, episode: Episode?) {
+    private suspend fun openEpisode(context: Context, chapter: Chapter?) {
         val playerPreferences: PlayerPreferences by injectLazy()
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
-        if (episode != null) {
+        if (chapter != null) {
             MainActivity.startPlayerActivity(
                 context,
-                episode.animeId,
-                episode.id,
+                chapter.animeId,
+                chapter.id,
                 extPlayer,
             )
         } else {

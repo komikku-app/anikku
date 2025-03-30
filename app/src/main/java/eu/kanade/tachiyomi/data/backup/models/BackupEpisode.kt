@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.data.backup.models
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 
 @Serializable
 data class BackupEpisode(
@@ -27,8 +27,8 @@ data class BackupEpisode(
     @ProtoNumber(11) var lastModifiedAt: Long = 0,
     @ProtoNumber(12) var version: Long = 0,
 ) {
-    fun toEpisodeImpl(): Episode {
-        return Episode.create().copy(
+    fun toEpisodeImpl(): Chapter {
+        return Chapter.create().copy(
             url = this@BackupEpisode.url,
             name = this@BackupEpisode.name,
             episodeNumber = this@BackupEpisode.episodeNumber.toDouble(),

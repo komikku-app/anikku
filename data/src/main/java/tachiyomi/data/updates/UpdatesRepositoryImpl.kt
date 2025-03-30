@@ -2,7 +2,7 @@ package tachiyomi.data.updates
 
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.DatabaseHandler
-import tachiyomi.domain.anime.model.AnimeCover
+import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.domain.updates.repository.UpdatesRepository
 
@@ -82,7 +82,7 @@ class UpdatesRepositoryImpl(
         totalSeconds = totalSeconds,
         sourceId = sourceId,
         dateFetch = dateFetch,
-        coverData = AnimeCover(
+        coverData = MangaCover(
             animeId = animeId,
             sourceId = sourceId,
             isAnimeFavorite = favorite,

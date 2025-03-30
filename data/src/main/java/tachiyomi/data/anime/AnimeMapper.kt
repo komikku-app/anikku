@@ -1,8 +1,8 @@
 package tachiyomi.data.anime
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
-import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.manga.model.Manga
 
 object AnimeMapper {
     fun mapAnime(
@@ -35,7 +35,7 @@ object AnimeMapper {
         version: Long,
         @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
-    ): Anime = Anime(
+    ): Manga = Manga(
         id = id,
         source = source,
         favorite = favorite,
@@ -103,7 +103,7 @@ object AnimeMapper {
         // <-- AM (FILLERMARK)
         category: Long,
     ): LibraryAnime = LibraryAnime(
-        anime = mapAnime(
+        manga = mapAnime(
             id,
             source,
             url,

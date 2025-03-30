@@ -17,13 +17,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import eu.kanade.domain.anime.model.downloadedFilter
-import eu.kanade.domain.anime.model.forceDownloaded
+import eu.kanade.domain.manga.model.downloadedFilter
+import eu.kanade.domain.manga.model.forceDownloaded
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.preference.TriState
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.RadioItem
@@ -34,7 +34,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun EpisodeSettingsDialog(
     onDismissRequest: () -> Unit,
-    anime: Anime? = null,
+    manga: Manga? = null,
     onDownloadFilterChanged: (TriState) -> Unit,
     onUnseenFilterChanged: (TriState) -> Unit,
     onBookmarkedFilterChanged: (TriState) -> Unit,
@@ -78,29 +78,29 @@ fun EpisodeSettingsDialog(
             when (page) {
                 0 -> {
                     FilterPage(
-                        downloadFilter = anime?.downloadedFilter ?: TriState.DISABLED,
+                        downloadFilter = manga?.downloadedFilter ?: TriState.DISABLED,
                         onDownloadFilterChanged = onDownloadFilterChanged
-                            .takeUnless { anime?.forceDownloaded() == true },
-                        unseenFilter = anime?.unseenFilter ?: TriState.DISABLED,
+                            .takeUnless { manga?.forceDownloaded() == true },
+                        unseenFilter = manga?.unseenFilter ?: TriState.DISABLED,
                         onUnseenFilterChanged = onUnseenFilterChanged,
-                        bookmarkedFilter = anime?.bookmarkedFilter ?: TriState.DISABLED,
+                        bookmarkedFilter = manga?.bookmarkedFilter ?: TriState.DISABLED,
                         onBookmarkedFilterChanged = onBookmarkedFilterChanged,
                         // AM (FILLERMARK) -->
-                        fillermarkedFilter = anime?.fillermarkedFilter ?: TriState.DISABLED,
+                        fillermarkedFilter = manga?.fillermarkedFilter ?: TriState.DISABLED,
                         onFillermarkedFilterChanged = onFillermarkedFilterChanged,
                         // <-- AM (FILLERMARK)
                     )
                 }
                 1 -> {
                     SortPage(
-                        sortingMode = anime?.sorting ?: 0,
-                        sortDescending = anime?.sortDescending() ?: false,
+                        sortingMode = manga?.sorting ?: 0,
+                        sortDescending = manga?.sortDescending() ?: false,
                         onItemSelected = onSortModeChanged,
                     )
                 }
                 2 -> {
                     DisplayPage(
-                        displayMode = anime?.displayMode ?: 0,
+                        displayMode = manga?.displayMode ?: 0,
                         onItemSelected = onDisplayModeChanged,
                     )
                 }
@@ -153,10 +153,10 @@ private fun ColumnScope.SortPage(
     onItemSelected: (Long) -> Unit,
 ) {
     listOf(
-        MR.strings.sort_by_source to Anime.EPISODE_SORTING_SOURCE,
-        MR.strings.sort_by_episode_number to Anime.EPISODE_SORTING_NUMBER,
-        MR.strings.sort_by_upload_date to Anime.EPISODE_SORTING_UPLOAD_DATE,
-        MR.strings.action_sort_alpha to Anime.EPISODE_SORTING_ALPHABET,
+        MR.strings.sort_by_source to Manga.EPISODE_SORTING_SOURCE,
+        MR.strings.sort_by_episode_number to Manga.EPISODE_SORTING_NUMBER,
+        MR.strings.sort_by_upload_date to Manga.EPISODE_SORTING_UPLOAD_DATE,
+        MR.strings.action_sort_alpha to Manga.EPISODE_SORTING_ALPHABET,
     ).map { (titleRes, mode) ->
         SortItem(
             label = stringResource(titleRes),
@@ -172,8 +172,8 @@ private fun ColumnScope.DisplayPage(
     onItemSelected: (Long) -> Unit,
 ) {
     listOf(
-        MR.strings.show_title to Anime.EPISODE_DISPLAY_NAME,
-        MR.strings.show_episode_number to Anime.EPISODE_DISPLAY_NUMBER,
+        MR.strings.show_title to Manga.EPISODE_DISPLAY_NAME,
+        MR.strings.show_episode_number to Manga.EPISODE_DISPLAY_NUMBER,
     ).map { (titleRes, mode) ->
         RadioItem(
             label = stringResource(titleRes),

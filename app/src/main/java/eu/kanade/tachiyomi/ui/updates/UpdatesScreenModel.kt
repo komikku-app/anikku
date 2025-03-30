@@ -9,7 +9,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
-import eu.kanade.domain.episode.interactor.SetSeenStatus
+import eu.kanade.domain.chapter.interactor.SetReadStatus
 import eu.kanade.presentation.anime.components.EpisodeDownloadAction
 import eu.kanade.presentation.updates.UpdatesUiModel
 import eu.kanade.tachiyomi.data.download.DownloadCache
@@ -36,12 +36,12 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.interactor.GetAnime
+import tachiyomi.domain.chapter.interactor.GetChapter
+import tachiyomi.domain.chapter.interactor.UpdateChapter
+import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.download.service.DownloadPreferences
-import tachiyomi.domain.episode.interactor.GetEpisode
-import tachiyomi.domain.episode.interactor.UpdateEpisode
-import tachiyomi.domain.episode.model.EpisodeUpdate
 import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.updates.interactor.GetUpdates
 import tachiyomi.domain.updates.model.UpdatesWithRelations
@@ -53,11 +53,11 @@ class UpdatesScreenModel(
     private val sourceManager: SourceManager = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
     private val downloadCache: DownloadCache = Injekt.get(),
-    private val updateEpisode: UpdateEpisode = Injekt.get(),
-    private val setSeenStatus: SetSeenStatus = Injekt.get(),
+    private val updateChapter: UpdateChapter = Injekt.get(),
+    private val setReadStatus: SetReadStatus = Injekt.get(),
     private val getUpdates: GetUpdates = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val getEpisode: GetEpisode = Injekt.get(),
+    private val getManga: GetManga = Injekt.get(),
+    private val getChapter: GetChapter = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     downloadPreferences: DownloadPreferences = Injekt.get(),
@@ -151,7 +151,7 @@ class UpdatesScreenModel(
     private fun updateDownloadState(download: Download) {
         mutableState.update { state ->
             val newItems = state.items.mutate { list ->
-                val modifiedIndex = list.indexOfFirst { it.update.episodeId == download.episode.id }
+                val modifiedIndex = list.indexOfFirst { it.update.episodeId == download.chapter.id }
                 if (modifiedIndex < 0) return@mutate
 
                 val item = list[modifiedIndex]
@@ -211,10 +211,10 @@ class UpdatesScreenModel(
      */
     fun markUpdatesSeen(updates: List<UpdatesItem>, seen: Boolean) {
         screenModelScope.launchIO {
-            setSeenStatus.await(
+            setReadStatus.await(
                 seen = seen,
-                episodes = updates
-                    .mapNotNull { getEpisode.await(it.update.episodeId) }
+                chapters = updates
+                    .mapNotNull { getChapter.await(it.update.episodeId) }
                     .toTypedArray(),
             )
         }
@@ -229,8 +229,8 @@ class UpdatesScreenModel(
         screenModelScope.launchIO {
             updates
                 .filterNot { it.update.bookmark == bookmark }
-                .map { EpisodeUpdate(id = it.update.episodeId, bookmark = bookmark) }
-                .let { updateEpisode.awaitAll(it) }
+                .map { ChapterUpdate(id = it.update.episodeId, bookmark = bookmark) }
+                .let { updateChapter.awaitAll(it) }
         }
         toggleAllSelection(false)
     }
@@ -244,8 +244,8 @@ class UpdatesScreenModel(
         screenModelScope.launchIO {
             updates
                 .filterNot { it.update.fillermark == fillermark }
-                .map { EpisodeUpdate(id = it.update.episodeId, fillermark = fillermark) }
-                .let { updateEpisode.awaitAll(it) }
+                .map { ChapterUpdate(id = it.update.episodeId, fillermark = fillermark) }
+                .let { updateChapter.awaitAll(it) }
         }
         toggleAllSelection(false)
     }
@@ -260,10 +260,10 @@ class UpdatesScreenModel(
             val groupedUpdates = updatesItem.groupBy { it.update.animeId }.values
             for (updates in groupedUpdates) {
                 val animeId = updates.first().update.animeId
-                val anime = getAnime.await(animeId) ?: continue
+                val anime = getManga.await(animeId) ?: continue
                 // Don't download if source isn't available
                 sourceManager.get(anime.source) ?: continue
-                val episodes = updates.mapNotNull { getEpisode.await(it.update.episodeId) }
+                val episodes = updates.mapNotNull { getChapter.await(it.update.episodeId) }
                 downloadManager.downloadEpisodes(anime, episodes, true, alt)
             }
         }
@@ -280,9 +280,9 @@ class UpdatesScreenModel(
                 .groupBy { it.update.animeId }
                 .entries
                 .forEach { (animeId, updates) ->
-                    val anime = getAnime.await(animeId) ?: return@forEach
+                    val anime = getManga.await(animeId) ?: return@forEach
                     val source = sourceManager.get(anime.source) ?: return@forEach
-                    val episodes = updates.mapNotNull { getEpisode.await(it.update.episodeId) }
+                    val episodes = updates.mapNotNull { getChapter.await(it.update.episodeId) }
                     downloadManager.deleteEpisodes(
                         episodes,
                         anime,

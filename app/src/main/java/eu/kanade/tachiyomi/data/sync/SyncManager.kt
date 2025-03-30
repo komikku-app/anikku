@@ -22,8 +22,8 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.Episodes
 import tachiyomi.data.anime.AnimeMapper.mapAnime
-import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.manga.model.Manga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.File
@@ -241,23 +241,23 @@ class SyncManager(
      *
      * @return a list of all anime stored in the database
      */
-    private suspend fun getAllAnimeFromDB(): List<Anime> {
+    private suspend fun getAllAnimeFromDB(): List<Manga> {
         return handler.awaitList { animesQueries.getAllAnime(::mapAnime) }
     }
 
-    private suspend fun getAllAnimeThatNeedsSync(): List<Anime> {
+    private suspend fun getAllAnimeThatNeedsSync(): List<Manga> {
         return handler.awaitList { animesQueries.getAnimesWithFavoriteTimestamp(::mapAnime) }
     }
 
-    private suspend fun isAnimeDifferent(localAnime: Anime, remoteAnime: BackupAnime): Boolean {
-        val localEpisodes = handler.await { episodesQueries.getEpisodesByAnimeId(localAnime.id, 0).executeAsList() }
-        val localCategories = getCategories.await(localAnime.id).map { it.order }
+    private suspend fun isAnimeDifferent(localManga: Manga, remoteAnime: BackupAnime): Boolean {
+        val localEpisodes = handler.await { episodesQueries.getEpisodesByAnimeId(localManga.id, 0).executeAsList() }
+        val localCategories = getCategories.await(localManga.id).map { it.order }
 
         if (areEpisodesDifferent(localEpisodes, remoteAnime.episodes)) {
             return true
         }
 
-        if (localAnime.version != remoteAnime.version) {
+        if (localManga.version != remoteAnime.version) {
             return true
         }
 

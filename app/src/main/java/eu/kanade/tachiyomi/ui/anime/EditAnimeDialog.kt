@@ -51,7 +51,7 @@ import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.databinding.EditAnimeDialogBinding
-import eu.kanade.tachiyomi.source.model.SAnime
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.lang.chop
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.toast
@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.model.Track
 import tachiyomi.i18n.MR
@@ -82,7 +82,7 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun EditAnimeDialog(
-    manga: Anime,
+    manga: Manga,
     // KMK -->
     coverRatio: MutableFloatState,
     // KMK <--
@@ -135,12 +135,12 @@ fun EditAnimeDialog(
                         binding.mangaGenresTags.getTextStrings(),
                         binding.status.selectedItemPosition.let {
                             when (it) {
-                                1 -> SAnime.ONGOING
-                                2 -> SAnime.COMPLETED
-                                3 -> SAnime.LICENSED
-                                4 -> SAnime.PUBLISHING_FINISHED
-                                5 -> SAnime.CANCELLED
-                                6 -> SAnime.ON_HIATUS
+                                1 -> SManga.ONGOING
+                                2 -> SManga.COMPLETED
+                                3 -> SManga.LICENSED
+                                4 -> SManga.PUBLISHING_FINISHED
+                                5 -> SManga.CANCELLED
+                                6 -> SManga.ON_HIATUS
                                 else -> null
                             }
                         }?.toLong(),
@@ -258,7 +258,7 @@ data class EditAnimeDialogColors(
 // KMK <--
 
 private fun onViewCreated(
-    manga: Anime,
+    manga: Manga,
     context: Context,
     binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
@@ -303,13 +303,13 @@ private fun onViewCreated(
     if (manga.status != manga.ogStatus) {
         binding.status.setSelection(
             when (manga.status.toInt()) {
-                SAnime.UNKNOWN -> 0
-                SAnime.ONGOING -> 1
-                SAnime.COMPLETED -> 2
-                SAnime.LICENSED -> 3
-                SAnime.PUBLISHING_FINISHED, 61 -> 4
-                SAnime.CANCELLED, 62 -> 5
-                SAnime.ON_HIATUS, 63 -> 6
+                SManga.UNKNOWN -> 0
+                SManga.ONGOING -> 1
+                SManga.COMPLETED -> 2
+                SManga.LICENSED -> 3
+                SManga.PUBLISHING_FINISHED, 61 -> 4
+                SManga.CANCELLED, 62 -> 5
+                SManga.ON_HIATUS, 63 -> 6
                 else -> 0
             },
         )
@@ -433,7 +433,7 @@ private fun onViewCreated(
     }
 }
 
-private suspend fun getTrackers(manga: Anime, binding: EditAnimeDialogBinding, context: Context, getTracks: GetTracks, trackerManager: TrackerManager, tracks: MutableState<List<Pair<Track, Tracker>>>, showTrackerSelectionDialogue: MutableState<Boolean>) {
+private suspend fun getTrackers(manga: Manga, binding: EditAnimeDialogBinding, context: Context, getTracks: GetTracks, trackerManager: TrackerManager, tracks: MutableState<List<Pair<Track, Tracker>>>, showTrackerSelectionDialogue: MutableState<Boolean>) {
     tracks.value = getTracks.await(manga.id).map { track ->
         track to trackerManager.get(track.trackerId)!!
     }
@@ -479,7 +479,7 @@ private suspend fun autofillFromTracker(binding: EditAnimeDialogBinding, track: 
 }
 
 private fun resetTags(
-    manga: Anime,
+    manga: Manga,
     binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
     // KMK -->
@@ -494,7 +494,7 @@ private fun resetTags(
 }
 
 private fun loadCover(
-    manga: Anime,
+    manga: Manga,
     binding: EditAnimeDialogBinding,
     // KMK -->
     coverRatio: MutableFloatState,
@@ -516,7 +516,7 @@ private fun loadCover(
 }
 
 private fun resetInfo(
-    manga: Anime,
+    manga: Manga,
     binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
     // KMK -->

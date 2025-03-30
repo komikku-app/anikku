@@ -88,7 +88,7 @@ class GlobalSearchScreen(
                 navigateUp = navigator::pop,
                 onChangeSearchQuery = screenModel::updateSearchQuery,
                 onSearch = { screenModel.search() },
-                getAnime = { screenModel.getAnime(it) },
+                getManga = { screenModel.getAnime(it) },
                 onChangeSearchFilter = screenModel::setSourceFilter,
                 onToggleResults = screenModel::toggleFilterResults,
                 onClickSource = {
@@ -97,7 +97,7 @@ class GlobalSearchScreen(
                 onClickItem = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (bulkFavoriteState.selectionMode) {
                             bulkFavoriteScreenModel.toggleSelection(manga)
                         } else {
@@ -109,7 +109,7 @@ class GlobalSearchScreen(
                 onLongClickItem = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (!bulkFavoriteState.selectionMode) {
                             bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                         } else {

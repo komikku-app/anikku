@@ -4,10 +4,10 @@ import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
-import eu.kanade.domain.anime.interactor.CreateSortTag
-import eu.kanade.domain.anime.interactor.DeleteSortTag
-import eu.kanade.domain.anime.interactor.GetSortTag
-import eu.kanade.domain.anime.interactor.ReorderSortTag
+import eu.kanade.domain.manga.interactor.CreateSortTag
+import eu.kanade.domain.manga.interactor.DeleteSortTag
+import eu.kanade.domain.manga.interactor.GetSortTag
+import eu.kanade.domain.manga.interactor.ReorderSortTag
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel

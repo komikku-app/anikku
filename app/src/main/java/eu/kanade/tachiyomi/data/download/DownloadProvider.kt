@@ -9,8 +9,8 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.source.local.io.LocalSourceFileSystem
@@ -100,13 +100,13 @@ class DownloadProvider(
     /**
      * Returns a list of downloaded directories for the episodes that exist.
      *
-     * @param episodes the episodes to query.
-     * @param anime the anime of the episode.
+     * @param chapters the episodes to query.
+     * @param manga the anime of the episode.
      * @param source the source of the episode.
      */
-    fun findEpisodeDirs(episodes: List<Episode>, anime: Anime, source: Source): Pair<UniFile?, List<UniFile>> {
-        val animeDir = findAnimeDir(anime.title, source) ?: return null to emptyList()
-        return animeDir to episodes.mapNotNull { episode ->
+    fun findEpisodeDirs(chapters: List<Chapter>, manga: Manga, source: Source): Pair<UniFile?, List<UniFile>> {
+        val animeDir = findAnimeDir(manga.title, source) ?: return null to emptyList()
+        return animeDir to chapters.mapNotNull { episode ->
             getValidEpisodeDirNames(episode.name, episode.scanlator).asSequence()
                 .mapNotNull { animeDir.findFile(it) }
                 .firstOrNull()
@@ -173,9 +173,9 @@ class DownloadProvider(
         )
     }
 
-    fun isEpisodeDirNameChanged(oldEpisode: Episode, newEpisode: Episode): Boolean {
-        return oldEpisode.name != newEpisode.name ||
-            oldEpisode.scanlator?.takeIf { it.isNotBlank() } != newEpisode.scanlator?.takeIf { it.isNotBlank() }
+    fun isEpisodeDirNameChanged(oldChapter: Chapter, newChapter: Chapter): Boolean {
+        return oldChapter.name != newChapter.name ||
+            oldChapter.scanlator?.takeIf { it.isNotBlank() } != newChapter.scanlator?.takeIf { it.isNotBlank() }
     }
 
     /**

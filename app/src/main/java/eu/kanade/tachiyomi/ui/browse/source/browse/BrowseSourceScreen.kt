@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.paging.compose.collectAsLazyPagingItems
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -327,7 +326,7 @@ data class BrowseSourceScreen(
         ) { paddingValues ->
             BrowseSourceContent(
                 source = screenModel.source,
-                animeList = mangaList,
+                mangaList = mangaList,
                 columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 entries = screenModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),
                 topBarHeight = topBarHeight,
@@ -340,7 +339,7 @@ data class BrowseSourceScreen(
                 onAnimeClick = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (bulkFavoriteState.selectionMode) {
                             bulkFavoriteScreenModel.toggleSelection(manga)
                         } else {
@@ -362,7 +361,7 @@ data class BrowseSourceScreen(
                 onAnimeLongClick = {
                     // KMK -->
                     scope.launchIO {
-                        val manga = screenModel.networkToLocalAnime.getLocal(it)
+                        val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (bulkFavoriteState.selectionMode) {
                             navigator.push(AnimeScreen(manga.id, true))
                         } else {
@@ -418,7 +417,7 @@ data class BrowseSourceScreen(
             is BrowseSourceScreenModel.Dialog.AddDuplicateAnime -> {
                 DuplicateAnimeDialog(
                     onDismissRequest = onDismissRequest,
-                    onConfirm = { screenModel.addFavorite(dialog.anime) },
+                    onConfirm = { screenModel.addFavorite(dialog.manga) },
                     onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
                     onMigrate = {
                         // SY -->
@@ -426,7 +425,7 @@ data class BrowseSourceScreen(
                             Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
                             navigator,
                             dialog.duplicate.id,
-                            dialog.anime.id,
+                            dialog.manga.id,
                         )
                         // SY <--
                     },
@@ -439,9 +438,9 @@ data class BrowseSourceScreen(
                 RemoveAnimeDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = {
-                        screenModel.changeAnimeFavorite(dialog.anime)
+                        screenModel.changeAnimeFavorite(dialog.manga)
                     },
-                    animeToRemove = dialog.anime,
+                    mangaToRemove = dialog.manga,
                 )
             }
             is BrowseSourceScreenModel.Dialog.ChangeAnimeCategory -> {
@@ -450,8 +449,8 @@ data class BrowseSourceScreen(
                     onDismissRequest = onDismissRequest,
                     onEditCategories = { navigator.push(CategoryScreen()) },
                     onConfirm = { include, _ ->
-                        screenModel.changeAnimeFavorite(dialog.anime)
-                        screenModel.moveAnimeToCategories(dialog.anime, include)
+                        screenModel.changeAnimeFavorite(dialog.manga)
+                        screenModel.moveAnimeToCategories(dialog.manga, include)
                     },
                 )
             }

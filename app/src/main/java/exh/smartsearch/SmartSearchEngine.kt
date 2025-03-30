@@ -1,14 +1,14 @@
 package exh.smartsearch
 
-import eu.kanade.domain.anime.model.toDomainAnime
+import eu.kanade.domain.manga.model.toDomainAnime
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.SAnime
+import eu.kanade.tachiyomi.source.model.SManga
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import java.util.Locale
 
 class SmartSearchEngine(
@@ -16,7 +16,7 @@ class SmartSearchEngine(
 ) {
     private val normalizedLevenshtein = NormalizedLevenshtein()
 
-    suspend fun smartSearch(source: CatalogueSource, title: String): Anime? {
+    suspend fun smartSearch(source: CatalogueSource, title: String): Manga? {
         val cleanedTitle = cleanSmartSearchTitle(title)
 
         val queries = getSmartSearchQueries(cleanedTitle)
@@ -46,7 +46,7 @@ class SmartSearchEngine(
         return eligibleAnime.maxByOrNull { it.dist }?.manga?.toDomainAnime(source.id)
     }
 
-    suspend fun normalSearch(source: CatalogueSource, title: String): Anime? {
+    suspend fun normalSearch(source: CatalogueSource, title: String): Manga? {
         val eligibleManga = supervisorScope {
             val searchQuery = if (extraSearchParams != null) {
                 "$title ${extraSearchParams.trim()}"
@@ -181,4 +181,4 @@ class SmartSearchEngine(
     }
 }
 
-data class SearchEntry(val manga: SAnime, val dist: Double)
+data class SearchEntry(val manga: SManga, val dist: Double)

@@ -74,7 +74,7 @@ fun RelatedAnimesScreen(
             } else {
                 BrowseSourceSimpleToolbar(
                     navigateUp = navigateUp,
-                    title = successState.anime.title,
+                    title = successState.manga.title,
                     displayMode = displayMode,
                     onDisplayModeChange = { displayMode = it },
                     scrollBehavior = scrollBehavior,
@@ -95,7 +95,7 @@ fun RelatedAnimesScreen(
             contentPadding = paddingValues,
             onMangaClick = {
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = screenModel.networkToLocalManga.getLocal(it)
                     if (bulkFavoriteState.selectionMode) {
                         bulkFavoriteScreenModel.toggleSelection(manga)
                     } else {
@@ -105,7 +105,7 @@ fun RelatedAnimesScreen(
             },
             onMangaLongClick = {
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = screenModel.networkToLocalManga.getLocal(it)
                     if (!bulkFavoriteState.selectionMode) {
                         bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                     } else {

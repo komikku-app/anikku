@@ -10,9 +10,9 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
-import eu.kanade.domain.anime.interactor.UpdateAnime
-import eu.kanade.domain.anime.model.copyFrom
-import eu.kanade.domain.anime.model.toSAnime
+import eu.kanade.domain.manga.interactor.UpdateManga
+import eu.kanade.domain.manga.model.copyFrom
+import eu.kanade.domain.manga.model.toSAnime
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.prepUpdateCover
@@ -28,10 +28,10 @@ import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.interactor.GetLibraryAnime
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.toAnimeUpdate
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.manga.interactor.GetLibraryManga
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.toAnimeUpdate
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -43,8 +43,8 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
 
     private val sourceManager: SourceManager = Injekt.get()
     private val coverCache: CoverCache = Injekt.get()
-    private val getLibraryAnime: GetLibraryAnime = Injekt.get()
-    private val updateAnime: UpdateAnime = Injekt.get()
+    private val getLibraryManga: GetLibraryManga = Injekt.get()
+    private val updateManga: UpdateManga = Injekt.get()
 
     private val notifier = LibraryUpdateNotifier(context)
 
@@ -95,27 +95,27 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
      * Adds list of anime to be updated.
      */
     private suspend fun addAnimeToQueue() {
-        animeToUpdate = getLibraryAnime.await()
+        animeToUpdate = getLibraryManga.await()
         notifier.showQueueSizeWarningNotificationIfNeeded(animeToUpdate)
     }
 
     private suspend fun updateMetadata() {
         val semaphore = Semaphore(5)
         val progressCount = AtomicInteger(0)
-        val currentlyUpdatingAnime = CopyOnWriteArrayList<Anime>()
+        val currentlyUpdatingManga = CopyOnWriteArrayList<Manga>()
 
         coroutineScope {
-            animeToUpdate.groupBy { it.anime.source }
+            animeToUpdate.groupBy { it.manga.source }
                 .values
                 .map { animeInSource ->
                     async {
                         semaphore.withPermit {
                             animeInSource.forEach { libraryAnime ->
-                                val anime = libraryAnime.anime
+                                val anime = libraryAnime.manga
                                 ensureActive()
 
                                 withUpdateNotification(
-                                    currentlyUpdatingAnime,
+                                    currentlyUpdatingManga,
                                     progressCount,
                                     anime,
                                 ) {
@@ -125,7 +125,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
                                         val updatedAnime = anime.prepUpdateCover(coverCache, networkAnime, true)
                                             .copyFrom(networkAnime)
                                         try {
-                                            updateAnime.await(updatedAnime.toAnimeUpdate())
+                                            updateManga.await(updatedAnime.toAnimeUpdate())
                                         } catch (e: Exception) {
                                             logcat(LogPriority.ERROR) { "Anime doesn't exist anymore" }
                                         }
@@ -145,16 +145,16 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
     }
 
     private suspend fun withUpdateNotification(
-        updatingAnime: CopyOnWriteArrayList<Anime>,
+        updatingManga: CopyOnWriteArrayList<Manga>,
         completed: AtomicInteger,
-        anime: Anime,
+        manga: Manga,
         block: suspend () -> Unit,
     ) = coroutineScope {
         ensureActive()
 
-        updatingAnime.add(anime)
+        updatingManga.add(manga)
         notifier.showProgressNotification(
-            updatingAnime,
+            updatingManga,
             completed.get(),
             animeToUpdate.size,
         )
@@ -163,10 +163,10 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
 
         ensureActive()
 
-        updatingAnime.remove(anime)
+        updatingManga.remove(manga)
         completed.getAndIncrement()
         notifier.showProgressNotification(
-            updatingAnime,
+            updatingManga,
             completed.get(),
             animeToUpdate.size,
         )

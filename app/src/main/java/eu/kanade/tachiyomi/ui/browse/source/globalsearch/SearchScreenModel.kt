@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.produceState
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import eu.kanade.domain.anime.model.toDomainAnime
+import eu.kanade.domain.manga.model.toDomainAnime
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.ExtensionManager
@@ -26,9 +26,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tachiyomi.core.common.preference.toggle
-import tachiyomi.domain.anime.interactor.GetAnime
-import tachiyomi.domain.anime.interactor.NetworkToLocalAnime
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.interactor.NetworkToLocalManga
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -39,8 +39,8 @@ abstract class SearchScreenModel(
     sourcePreferences: SourcePreferences = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
     private val extensionManager: ExtensionManager = Injekt.get(),
-    internal val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
+    internal val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
+    private val getManga: GetManga = Injekt.get(),
     private val preferences: SourcePreferences = Injekt.get(),
 ) : StateScreenModel<SearchScreenModel.State>(initialState) {
 
@@ -80,9 +80,9 @@ abstract class SearchScreenModel(
     }
 
     @Composable
-    fun getAnime(initialAnime: Anime): androidx.compose.runtime.State<Anime> {
-        return produceState(initialValue = initialAnime) {
-            getAnime.subscribe(initialAnime.url, initialAnime.source)
+    fun getAnime(initialManga: Manga): androidx.compose.runtime.State<Manga> {
+        return produceState(initialValue = initialManga) {
+            getManga.subscribe(initialManga.url, initialManga.source)
                 .filterNotNull()
                 .collectLatest { anime ->
                     value = anime
@@ -251,7 +251,7 @@ sealed interface SearchItemResult {
     ) : SearchItemResult
 
     data class Success(
-        val result: List<Anime>,
+        val result: List<Manga>,
     ) : SearchItemResult {
         val isEmpty: Boolean
             get() = result.isEmpty()

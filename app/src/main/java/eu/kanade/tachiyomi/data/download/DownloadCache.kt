@@ -46,8 +46,8 @@ import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StorageManager
 import uy.kohesive.injekt.Injekt
@@ -178,14 +178,14 @@ class DownloadCache(
      * This method is quick, but might count other junk files
      * It's still maybe useful while developing the clean-up features
      *
-     * @param anime the anime to check.
+     * @param manga the anime to check.
      */
-    fun getDownloadCount(anime: Anime): Int {
+    fun getDownloadCount(manga: Manga): Int {
         renewCache()
 
-        val sourceDir = rootDownloadsDir.sourceDirs[anime.source]
+        val sourceDir = rootDownloadsDir.sourceDirs[manga.source]
         if (sourceDir != null) {
-            val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(anime.title)]
+            val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(manga.title)]
             if (animeDir != null) {
                 return animeDir.episodeDirs.size
             }
@@ -207,14 +207,14 @@ class DownloadCache(
     /**
      * Returns the total size of downloaded chapters for an anime.
      *
-     * @param anime the anime to check.
+     * @param manga the anime to check.
      */
-    fun getDownloadSize(anime: Anime): Long {
+    fun getDownloadSize(manga: Manga): Long {
         renewCache()
 
-        return rootDownloadsDir.sourceDirs[anime.source]?.animeDirs?.get(
+        return rootDownloadsDir.sourceDirs[manga.source]?.animeDirs?.get(
             provider.getAnimeDirName(
-                anime.title,
+                manga.title,
             ),
         )?.dir?.size() ?: 0
     }
@@ -224,21 +224,21 @@ class DownloadCache(
      *
      * @param episodeDirName the downloaded episode's directory name.
      * @param animeUniFile the directory of the anime.
-     * @param anime the anime of the episode.
+     * @param manga the anime of the episode.
      */
-    suspend fun addEpisode(episodeDirName: String, animeUniFile: UniFile, anime: Anime) {
+    suspend fun addEpisode(episodeDirName: String, animeUniFile: UniFile, manga: Manga) {
         rootDownloadsDirMutex.withLock {
             // Retrieve the cached source directory or cache a new one
-            var sourceDir = rootDownloadsDir.sourceDirs[anime.source]
+            var sourceDir = rootDownloadsDir.sourceDirs[manga.source]
             if (sourceDir == null) {
-                val source = sourceManager.get(anime.source) ?: return
+                val source = sourceManager.get(manga.source) ?: return
                 val sourceUniFile = provider.findSourceDir(source) ?: return
                 sourceDir = SourceDirectory(sourceUniFile)
-                rootDownloadsDir.sourceDirs += anime.source to sourceDir
+                rootDownloadsDir.sourceDirs += manga.source to sourceDir
             }
 
             // Retrieve the cached anime directory or cache a new one
-            val animeDirName = provider.getAnimeDirName(anime.title)
+            val animeDirName = provider.getAnimeDirName(manga.title)
             var animeDir = sourceDir.animeDirs[animeDirName]
             if (animeDir == null) {
                 animeDir = AnimeDirectory(animeUniFile)
@@ -255,14 +255,14 @@ class DownloadCache(
     /**
      * Removes an episode that has been deleted from this cache.
      *
-     * @param episode the episode to remove.
-     * @param anime the anime of the episode.
+     * @param chapter the episode to remove.
+     * @param manga the anime of the episode.
      */
-    suspend fun removeEpisode(episode: Episode, anime: Anime) {
+    suspend fun removeEpisode(chapter: Chapter, manga: Manga) {
         rootDownloadsDirMutex.withLock {
-            val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
-            val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(anime.title)] ?: return
-            provider.getValidEpisodeDirNames(episode.name, episode.scanlator).forEach {
+            val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
+            val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(manga.title)] ?: return
+            provider.getValidEpisodeDirNames(chapter.name, chapter.scanlator).forEach {
                 if (it in animeDir.episodeDirs) {
                     animeDir.episodeDirs -= it
                 }
@@ -275,14 +275,14 @@ class DownloadCache(
     /**
      * Removes a list of episodes that have been deleted from this cache.
      *
-     * @param episodes the list of episode to remove.
-     * @param anime the anime of the episode.
+     * @param chapters the list of episode to remove.
+     * @param manga the anime of the episode.
      */
-    suspend fun removeEpisodes(episodes: List<Episode>, anime: Anime) {
+    suspend fun removeEpisodes(chapters: List<Chapter>, manga: Manga) {
         rootDownloadsDirMutex.withLock {
-            val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
-            val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(anime.title)] ?: return
-            episodes.forEach { episode ->
+            val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
+            val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(manga.title)] ?: return
+            chapters.forEach { episode ->
                 provider.getValidEpisodeDirNames(episode.name, episode.scanlator).forEach {
                     if (it in animeDir.episodeDirs) {
                         animeDir.episodeDirs -= it
@@ -297,12 +297,12 @@ class DownloadCache(
     /**
      * Removes an anime that has been deleted from this cache.
      *
-     * @param anime the anime to remove.
+     * @param manga the anime to remove.
      */
-    suspend fun removeAnime(anime: Anime) {
+    suspend fun removeAnime(manga: Manga) {
         rootDownloadsDirMutex.withLock {
-            val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
-            val animeDirName = provider.getAnimeDirName(anime.title)
+            val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
+            val animeDirName = provider.getAnimeDirName(manga.title)
             if (sourceDir.animeDirs.containsKey(animeDirName)) {
                 sourceDir.animeDirs -= animeDirName
             }

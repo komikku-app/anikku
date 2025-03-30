@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import mihon.domain.upcoming.interactor.GetUpcomingAnime
-import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.domain.manga.model.Manga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.time.LocalDate
@@ -61,14 +61,14 @@ class UpcomingScreenModel(
         // KMK <--
     }
 
-    private fun List<Anime>.toUpcomingUIModels(): ImmutableList<UpcomingUIModel> {
+    private fun List<Manga>.toUpcomingUIModels(): ImmutableList<UpcomingUIModel> {
         var mangaCount = 0
         return fastMap { UpcomingUIModel.Item(it) }
             .insertSeparatorsReversed { before, after ->
                 if (after != null) mangaCount++
 
-                val beforeDate = before?.anime?.expectedNextUpdate?.toLocalDate()
-                val afterDate = after?.anime?.expectedNextUpdate?.toLocalDate()
+                val beforeDate = before?.manga?.expectedNextUpdate?.toLocalDate()
+                val afterDate = after?.manga?.expectedNextUpdate?.toLocalDate()
 
                 if (beforeDate != afterDate && afterDate != null) {
                     UpcomingUIModel.Header(afterDate, mangaCount).also { mangaCount = 0 }

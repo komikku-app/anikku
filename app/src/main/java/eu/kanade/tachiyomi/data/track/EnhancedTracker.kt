@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.data.track
 
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.source.Source
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.track.model.Track
 
 /**
@@ -28,15 +28,15 @@ interface EnhancedTracker {
     /**
      * Similar to [Tracker].search, but only returns zero or one match.
      */
-    suspend fun match(anime: Anime): TrackSearch?
+    suspend fun match(manga: Manga): TrackSearch?
 
     /**
      * Checks whether the provided source/track/anime triplet is from this [Tracker]
      */
-    fun isTrackFrom(track: Track, anime: Anime, source: Source?): Boolean
+    fun isTrackFrom(track: Track, manga: Manga, source: Source?): Boolean
 
     /**
      * Migrates the given track for the anime to the newSource, if possible
      */
-    fun migrateTrack(track: Track, anime: Anime, newSource: Source): Track?
+    fun migrateTrack(track: Track, manga: Manga, newSource: Source): Track?
 }

@@ -41,10 +41,9 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.SourceFilterDialog
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
-import exh.source.isEhBasedSource
 import exh.util.nullIfBlank
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.interactor.GetRemoteAnime
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.domain.source.model.StubSource
@@ -129,7 +128,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     onClickManga = {
                         // KMK -->
                         scope.launchIO {
-                            val manga = screenModel.networkToLocalAnime.getLocal(it)
+                            val manga = screenModel.networkToLocalManga.getLocal(it)
                             if (bulkFavoriteState.selectionMode) {
                                 bulkFavoriteScreenModel.toggleSelection(manga)
                             } else {
@@ -167,7 +166,6 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                         }
                     }.takeIf {
                         !screenModel.source.isLocalOrStub() &&
-                            !screenModel.source.isEhBasedSource() &&
                             screenModel.state.value.items
                                 .filterIsInstance<SourceFeedUI.SourceSavedSearch>()
                                 .isNotEmpty()
@@ -180,7 +178,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                         },
                     onLongClickManga = {
                         scope.launchIO {
-                            val manga = screenModel.networkToLocalAnime.getLocal(it)
+                            val manga = screenModel.networkToLocalManga.getLocal(it)
                             if (!bulkFavoriteState.selectionMode) {
                                 bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                             } else {
@@ -302,7 +300,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
         // KMK <--
     }
 
-    private fun onMangaClick(navigator: Navigator, manga: Anime) {
+    private fun onMangaClick(navigator: Navigator, manga: Manga) {
         navigator.push(AnimeScreen(manga.id, true))
     }
 

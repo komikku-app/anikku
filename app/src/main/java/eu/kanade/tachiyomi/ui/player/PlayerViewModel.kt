@@ -106,21 +106,21 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.anime.interactor.GetAnime
-import tachiyomi.domain.anime.interactor.GetMergedAnimeById
-import tachiyomi.domain.anime.interactor.GetMergedReferencesById
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
-import tachiyomi.domain.episode.interactor.GetMergedEpisodesByAnimeId
 import tachiyomi.domain.episode.interactor.UpdateEpisode
 import tachiyomi.domain.episode.model.EpisodeUpdate
 import tachiyomi.domain.episode.service.getEpisodeSort
 import tachiyomi.domain.history.interactor.GetNextEpisodes
 import tachiyomi.domain.history.interactor.UpsertHistory
 import tachiyomi.domain.history.model.HistoryUpdate
+import tachiyomi.domain.manga.interactor.GetMergedMangaById
+import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.MR
@@ -165,9 +165,9 @@ class PlayerViewModel @JvmOverloads constructor(
     private val trackSelect: TrackSelect = Injekt.get(),
     // SY -->
     uiPreferences: UiPreferences = Injekt.get(),
-    private val getMergedAnimeById: GetMergedAnimeById = Injekt.get(),
+    private val getMergedMangaById: GetMergedMangaById = Injekt.get(),
     private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
-    private val getMergedEpisodesByAnimeId: GetMergedEpisodesByAnimeId = Injekt.get(),
+    private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId = Injekt.get(),
     // SY <--
 ) : ViewModel() {
 
@@ -1208,7 +1208,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 }
                 val mergedManga = if (source is MergedSource) {
                     runBlocking {
-                        getMergedAnimeById.await(anime.id)
+                        getMergedMangaById.await(anime.id)
                     }.associateBy { it.id }
                 } else {
                     emptyMap()
@@ -1295,8 +1295,8 @@ class PlayerViewModel @JvmOverloads constructor(
         // SY -->
         val (episodes, mangaMap) = runBlocking {
             if (anime.source == MERGED_SOURCE_ID) {
-                getMergedEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to
-                    getMergedAnimeById.await(anime.id)
+                getMergedChaptersByMangaId.await(anime.id, applyScanlatorFilter = true) to
+                    getMergedMangaById.await(anime.id)
                         .associateBy { it.id }
             } else {
                 getEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to null

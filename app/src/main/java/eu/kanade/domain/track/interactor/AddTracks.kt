@@ -12,9 +12,9 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
+import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.history.interactor.GetHistory
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.track.interactor.InsertTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -23,14 +23,14 @@ import java.time.ZoneOffset
 class AddTracks(
     private val insertTrack: InsertTrack,
     private val syncEpisodeProgressWithTrack: SyncEpisodeProgressWithTrack,
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
     private val trackerManager: TrackerManager,
 ) {
 
     // TODO: update all trackers based on common data
     suspend fun bind(tracker: Tracker, item: Track, animeId: Long) = withNonCancellableContext {
         withIOContext {
-            val allEpisodes = getEpisodesByAnimeId.await(animeId)
+            val allEpisodes = getChaptersByMangaId.await(animeId)
             val hasSeenEpisodes = allEpisodes.any { it.seen }
             tracker.bind(item, hasSeenEpisodes)
 
@@ -77,20 +77,20 @@ class AddTracks(
         }
     }
 
-    suspend fun bindEnhancedTrackers(anime: Anime, source: Source) = withNonCancellableContext {
+    suspend fun bindEnhancedTrackers(manga: Manga, source: Source) = withNonCancellableContext {
         withIOContext {
             trackerManager.loggedInTrackers()
                 .filterIsInstance<EnhancedTracker>()
                 .filter { it.accept(source) }
                 .forEach { service ->
                     try {
-                        service.match(anime)?.let { track ->
-                            track.anime_id = anime.id
+                        service.match(manga)?.let { track ->
+                            track.anime_id = manga.id
                             (service as Tracker).bind(track)
                             insertTrack.await(track.toDomainTrack(idRequired = false)!!)
 
                             syncEpisodeProgressWithTrack.await(
-                                anime.id,
+                                manga.id,
                                 track.toDomainTrack(idRequired = false)!!,
                                 service,
                             )
@@ -99,7 +99,7 @@ class AddTracks(
                         logcat(
                             LogPriority.WARN,
                             e,
-                        ) { "Could not match anime: ${anime.title} with service $service" }
+                        ) { "Could not match anime: ${manga.title} with service $service" }
                     }
                 }
         }

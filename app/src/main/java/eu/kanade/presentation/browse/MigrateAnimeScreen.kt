@@ -46,7 +46,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -61,7 +61,7 @@ fun MigrateAnimeScreen(
     title: String,
     state: MigrateAnimeScreenModel.State,
     onClickItem: (MigrateAnimeItem) -> Unit,
-    onClickCover: (Anime) -> Unit,
+    onClickCover: (Manga) -> Unit,
     // KMK -->
     onMultiMigrateClicked: (() -> Unit),
     onSelectAll: (Boolean) -> Unit,
@@ -146,7 +146,7 @@ private fun MigrateAnimeContent(
     contentPadding: PaddingValues,
     state: MigrateAnimeScreenModel.State,
     onClickItem: (MigrateAnimeItem) -> Unit,
-    onClickCover: (Anime) -> Unit,
+    onClickCover: (Manga) -> Unit,
     // KMK -->
     onAnimeSelected: (MigrateAnimeItem, Boolean, Boolean, Boolean) -> Unit,
     listState: LazyListState,
@@ -158,7 +158,7 @@ private fun MigrateAnimeContent(
         // KMK <--
         items(items = state.titles) {
             MigrateAnimeItem(
-                anime = it.anime,
+                manga = it.manga,
                 onClickItem = {
                     // KMK -->
                     when {
@@ -168,7 +168,7 @@ private fun MigrateAnimeContent(
                     }
                 },
                 onClickCover = {
-                    onClickCover(it.anime)
+                    onClickCover(it.manga)
                     // KMK -->
                 }.takeIf { !state.selectionMode },
                 onLongClick = { onAnimeSelected(it, !it.selected, true, true) },
@@ -182,7 +182,7 @@ private fun MigrateAnimeContent(
 
 @Composable
 private fun MigrateAnimeItem(
-    anime: Anime,
+    manga: Manga,
     onClickItem: () -> Unit,
     onClickCover: (() -> Unit)?,
     // KMK -->
@@ -193,7 +193,7 @@ private fun MigrateAnimeItem(
 ) {
     BaseAnimeListItem(
         modifier = modifier,
-        anime = anime,
+        manga = manga,
         onClickItem = onClickItem,
         onClickCover = { onClickCover?.invoke() },
         // KMK -->

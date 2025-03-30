@@ -84,7 +84,7 @@ class DownloadQueueScreenModel(
                         val (selectedSeries, otherSeries) = adapter?.currentItems
                             ?.filterIsInstance<DownloadItem>()
                             ?.map(DownloadItem::download)
-                            ?.partition { item.download.anime.id == it.anime.id }
+                            ?.partition { item.download.manga.id == it.manga.id }
                             ?: Pair(emptyList(), emptyList())
                         if (menuItem.itemId == R.id.move_to_top_series) {
                             reorder(selectedSeries + otherSeries)
@@ -98,7 +98,7 @@ class DownloadQueueScreenModel(
                     R.id.cancel_series -> {
                         val allAnimeDownloadsForSeries = adapter?.currentItems
                             ?.filterIsInstance<DownloadItem>()
-                            ?.filter { item.download.anime.id == it.download.anime.id }
+                            ?.filter { item.download.manga.id == it.download.manga.id }
                             ?.map(DownloadItem::download)
                         if (!allAnimeDownloadsForSeries.isNullOrEmpty()) {
                             cancel(allAnimeDownloadsForSeries)
@@ -237,6 +237,6 @@ class DownloadQueueScreenModel(
      * @return the holder of the download or null if it's not bound.
      */
     private fun getHolder(download: Download): DownloadHolder? {
-        return controllerBinding.root.findViewHolderForItemId(download.episode.id) as? DownloadHolder
+        return controllerBinding.root.findViewHolderForItemId(download.chapter.id) as? DownloadHolder
     }
 }

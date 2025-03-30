@@ -48,7 +48,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.BadgeGroup
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
-import tachiyomi.domain.anime.model.AnimeCover as EntryCoverModel
+import tachiyomi.domain.manga.model.MangaCover as EntryCoverModel
 
 object CommonAnimeItemDefaults {
     val GridHorizontalSpacer = 4.dp

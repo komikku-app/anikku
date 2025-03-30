@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.backup.models
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 
 @Serializable
 data class BackupAnime(
@@ -52,8 +52,8 @@ data class BackupAnime(
     @ProtoNumber(804) var customDescription: String? = null,
     @ProtoNumber(805) var customGenre: List<String>? = null,
 ) {
-    fun getAnimeImpl(): Anime {
-        return Anime.create().copy(
+    fun getAnimeImpl(): Manga {
+        return Manga.create().copy(
             url = this@BackupAnime.url,
             // SY -->
             ogTitle = this@BackupAnime.title,

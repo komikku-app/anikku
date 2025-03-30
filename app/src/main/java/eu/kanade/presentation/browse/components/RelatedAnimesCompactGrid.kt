@@ -16,7 +16,7 @@ import eu.kanade.presentation.browse.RelatedAnimesLoadingItem
 import eu.kanade.presentation.browse.header
 import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
 import eu.kanade.tachiyomi.ui.anime.RelatedAnime
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyVerticalGrid
@@ -27,14 +27,14 @@ import tachiyomi.presentation.core.util.plus
 @Composable
 fun RelatedAnimesCompactGrid(
     relatedAnimes: List<RelatedAnime>,
-    getManga: @Composable (Anime) -> State<Anime>,
+    getManga: @Composable (Manga) -> State<Manga>,
     columns: GridCells,
     contentPadding: PaddingValues,
-    onMangaClick: (Anime) -> Unit,
-    onMangaLongClick: (Anime) -> Unit,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
     onKeywordClick: (String) -> Unit,
     onKeywordLongClick: (String) -> Unit,
-    selection: List<Anime>,
+    selection: List<Manga>,
 ) {
     FastScrollLazyVerticalGrid(
         columns = columns,
@@ -84,7 +84,7 @@ fun RelatedAnimesCompactGrid(
                 ) { index ->
                     val manga by getManga(relatedAnime.mangaList[index])
                     BrowseSourceCompactGridItem(
-                        anime = manga,
+                        manga = manga,
                         onClick = { onMangaClick(manga) },
                         onLongClick = { onMangaLongClick(manga) },
                         isSelected = selection.fastAny { selected -> selected.id == manga.id },

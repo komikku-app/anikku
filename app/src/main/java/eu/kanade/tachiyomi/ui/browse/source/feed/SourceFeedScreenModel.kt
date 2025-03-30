@@ -9,7 +9,7 @@ import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.core.preference.asState
-import eu.kanade.domain.anime.model.toDomainAnime
+import eu.kanade.domain.manga.model.toDomainAnime
 import eu.kanade.domain.source.interactor.GetExhSavedSearch
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.SourceFeedUI
@@ -36,8 +36,8 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
-import tachiyomi.domain.anime.interactor.GetAnime
-import tachiyomi.domain.anime.interactor.NetworkToLocalAnime
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.source.interactor.CountFeedSavedSearchBySourceId
 import tachiyomi.domain.source.interactor.DeleteFeedSavedSearchById
 import tachiyomi.domain.source.interactor.GetFeedSavedSearchBySourceId
@@ -55,14 +55,14 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.util.concurrent.Executors
-import tachiyomi.domain.anime.model.Anime as DomainManga
+import tachiyomi.domain.manga.model.Manga as DomainManga
 
 open class SourceFeedScreenModel(
     val sourceId: Long,
     uiPreferences: UiPreferences = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
+    private val getAnime: GetManga = Injekt.get(),
+    val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     private val getFeedSavedSearchBySourceId: GetFeedSavedSearchBySourceId = Injekt.get(),
     private val getSavedSearchBySourceIdFeed: GetSavedSearchBySourceIdFeed = Injekt.get(),
     private val countFeedSavedSearchBySourceId: CountFeedSavedSearchBySourceId = Injekt.get(),

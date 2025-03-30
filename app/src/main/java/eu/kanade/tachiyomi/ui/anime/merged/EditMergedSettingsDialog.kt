@@ -26,8 +26,8 @@ import eu.kanade.tachiyomi.databinding.EditMergedSettingsDialogBinding
 import eu.kanade.tachiyomi.ui.anime.MergedAnimeData
 import eu.kanade.tachiyomi.util.system.toast
 import exh.source.MERGED_SOURCE_ID
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.model.MergedAnimeReference
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -35,20 +35,20 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Stable
 class EditMergedSettingsState(
     private val context: Context,
-    private val onDeleteClick: (MergedAnimeReference) -> Unit,
+    private val onDeleteClick: (MergedMangaReference) -> Unit,
     private val onDismissRequest: () -> Unit,
-    private val onPositiveClick: (List<MergedAnimeReference>) -> Unit,
+    private val onPositiveClick: (List<MergedMangaReference>) -> Unit,
 ) : EditMergedMangaAdapter.EditMergedMangaItemListener {
-    var mergedMangas: List<Pair<Anime?, MergedAnimeReference>> by mutableStateOf(emptyList())
-    var mergeReference: MergedAnimeReference? by mutableStateOf(null)
+    var mergedMangas: List<Pair<Manga?, MergedMangaReference>> by mutableStateOf(emptyList())
+    var mergeReference: MergedMangaReference? by mutableStateOf(null)
     private var mergedMangaAdapter: EditMergedMangaAdapter? by mutableStateOf(null)
     private var mergedMangaHeaderAdapter: EditMergedSettingsHeaderAdapter? by mutableStateOf(null)
 
     fun onViewCreated(
         context: Context,
         binding: EditMergedSettingsDialogBinding,
-        mergedManga: List<Anime>,
-        mergedReferences: List<MergedAnimeReference>,
+        mergedManga: List<Manga>,
+        mergedReferences: List<MergedMangaReference>,
     ) {
         if (mergedReferences.isEmpty() || mergedReferences.size == 1) {
             context.toast(SYMR.strings.merged_references_invalid)
@@ -60,7 +60,7 @@ class EditMergedSettingsState(
         mergeReference = mergedReferences.firstOrNull { it.animeSourceId == MERGED_SOURCE_ID }
 
         val isPriorityOrder =
-            mergeReference?.let { it.episodeSortMode == MergedAnimeReference.EPISODE_SORT_PRIORITY } ?: false
+            mergeReference?.let { it.episodeSortMode == MergedMangaReference.EPISODE_SORT_PRIORITY } ?: false
 
         mergedMangaAdapter = EditMergedMangaAdapter(this, isPriorityOrder)
         mergedMangaHeaderAdapter = EditMergedSettingsHeaderAdapter(this, mergedMangaAdapter!!)
@@ -73,7 +73,7 @@ class EditMergedSettingsState(
         mergedMangaAdapter?.updateDataSet(
             mergedMangas.map {
                 it.toModel()
-            }.sortedBy { it.mergedAnimeReference.episodePriority },
+            }.sortedBy { it.mergedMangaReference.episodePriority },
         )
     }
 
@@ -82,7 +82,7 @@ class EditMergedSettingsState(
         mergedMangas = mergedMangas.map { (manga, reference) ->
             manga to reference.copy(
                 episodePriority = mergedMangaAdapter.currentItems.indexOfFirst {
-                    reference.id == it.mergedAnimeReference.id
+                    reference.id == it.mergedMangaReference.id
                 },
             )
         }
@@ -90,7 +90,7 @@ class EditMergedSettingsState(
 
     override fun onDeleteClick(position: Int) {
         val mergedMangaAdapter = mergedMangaAdapter ?: return
-        val mergeMangaReference = mergedMangaAdapter.currentItems.getOrNull(position)?.mergedAnimeReference ?: return
+        val mergeMangaReference = mergedMangaAdapter.currentItems.getOrNull(position)?.mergedMangaReference ?: return
 
         MaterialAlertDialogBuilder(context)
             .setTitle(SYMR.strings.delete_merged_entry.getString(context))
@@ -115,7 +115,7 @@ class EditMergedSettingsState(
     }
 
     private fun toggleChapterUpdates(position: Int) {
-        val adapterReference = mergedMangaAdapter?.currentItems?.getOrNull(position)?.mergedAnimeReference
+        val adapterReference = mergedMangaAdapter?.currentItems?.getOrNull(position)?.mergedMangaReference
             ?: return
         mergedMangas = mergedMangas.map { pair ->
             val (manga, reference) = pair
@@ -145,7 +145,7 @@ class EditMergedSettingsState(
     }
 
     private fun toggleChapterDownloads(position: Int) {
-        val adapterReference = mergedMangaAdapter?.currentItems?.getOrNull(position)?.mergedAnimeReference
+        val adapterReference = mergedMangaAdapter?.currentItems?.getOrNull(position)?.mergedMangaReference
             ?: return
         mergedMangas = mergedMangas.map { pair ->
             val (manga, reference) = pair
@@ -173,8 +173,8 @@ class EditMergedSettingsState(
 fun EditMergedSettingsDialog(
     onDismissRequest: () -> Unit,
     mergedData: MergedAnimeData,
-    onDeleteClick: (MergedAnimeReference) -> Unit,
-    onPositiveClick: (List<MergedAnimeReference>) -> Unit,
+    onDeleteClick: (MergedMangaReference) -> Unit,
+    onPositiveClick: (List<MergedMangaReference>) -> Unit,
 ) {
     val context = LocalContext.current
     val state = remember {
@@ -201,7 +201,7 @@ fun EditMergedSettingsDialog(
                 AndroidView(
                     factory = { factoryContext ->
                         val binding = EditMergedSettingsDialogBinding.inflate(LayoutInflater.from(factoryContext))
-                        state.onViewCreated(factoryContext, binding, mergedData.anime.values.toList(), mergedData.references)
+                        state.onViewCreated(factoryContext, binding, mergedData.manga.values.toList(), mergedData.references)
                         binding.root
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -214,6 +214,6 @@ fun EditMergedSettingsDialog(
     )
 }
 
-private fun Pair<Anime?, MergedAnimeReference>.toModel(): EditMergedMangaItem {
+private fun Pair<Manga?, MergedMangaReference>.toModel(): EditMergedMangaItem {
     return EditMergedMangaItem(first, second)
 }

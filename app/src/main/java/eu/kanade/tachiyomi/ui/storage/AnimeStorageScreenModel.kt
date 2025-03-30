@@ -5,16 +5,16 @@ import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import kotlinx.coroutines.flow.map
 import tachiyomi.core.common.util.lang.launchNonCancellable
-import tachiyomi.domain.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.manga.interactor.GetLibraryManga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class AnimeStorageScreenModel(
     downloadCache: DownloadCache = Injekt.get(),
-    private val getLibraries: GetLibraryAnime = Injekt.get(),
+    private val getLibraries: GetLibraryManga = Injekt.get(),
     getCategories: GetCategories = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
@@ -28,18 +28,18 @@ class AnimeStorageScreenModel(
                 categories.filterNot { !showHiddenCategories && it.hidden }
             }
     },
-    getDownloadSize = { downloadManager.getDownloadSize(anime) },
-    getDownloadCount = { downloadManager.getDownloadCount(anime) },
+    getDownloadSize = { downloadManager.getDownloadSize(manga) },
+    getDownloadCount = { downloadManager.getDownloadCount(manga) },
     getId = { id },
     getCategoryId = { category },
-    getTitle = { anime.title },
-    getThumbnail = { anime.thumbnailUrl },
+    getTitle = { manga.title },
+    getThumbnail = { manga.thumbnailUrl },
 ) {
     override fun deleteEntry(id: Long) {
         screenModelScope.launchNonCancellable {
             val anime = getLibraries.await().find {
                 it.id == id
-            }?.anime ?: return@launchNonCancellable
+            }?.manga ?: return@launchNonCancellable
             val source = sourceManager.get(anime.source) ?: return@launchNonCancellable
             downloadManager.deleteAnime(anime, source)
         }

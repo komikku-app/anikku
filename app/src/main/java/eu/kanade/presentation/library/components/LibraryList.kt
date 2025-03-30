@@ -9,8 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import eu.kanade.tachiyomi.ui.library.LibraryItem
-import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.util.plus
 
@@ -45,11 +45,11 @@ internal fun LibraryList(
             items = items,
             contentType = { "anime_library_list_item" },
         ) { libraryItem ->
-            val anime = libraryItem.libraryAnime.anime
+            val anime = libraryItem.libraryAnime.manga
             AnimeListItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },
                 title = anime.title,
-                coverData = AnimeCover(
+                coverData = MangaCover(
                     animeId = anime.id,
                     sourceId = anime.source,
                     isAnimeFavorite = anime.favorite,

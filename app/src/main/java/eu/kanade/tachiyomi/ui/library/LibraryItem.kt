@@ -26,15 +26,15 @@ data class LibraryItem(
      * @return true if the anime matches the query, false otherwise.
      */
     fun matches(constraint: String): Boolean {
-        val sourceName by lazy { sourceManager.getOrStub(libraryAnime.anime.source).getNameForAnimeInfo() }
-        return libraryAnime.anime.title.contains(constraint, true) ||
-            (libraryAnime.anime.author?.contains(constraint, true) ?: false) ||
-            (libraryAnime.anime.artist?.contains(constraint, true) ?: false) ||
-            (libraryAnime.anime.description?.contains(constraint, true) ?: false) ||
+        val sourceName by lazy { sourceManager.getOrStub(libraryAnime.manga.source).getNameForAnimeInfo() }
+        return libraryAnime.manga.title.contains(constraint, true) ||
+            (libraryAnime.manga.author?.contains(constraint, true) ?: false) ||
+            (libraryAnime.manga.artist?.contains(constraint, true) ?: false) ||
+            (libraryAnime.manga.description?.contains(constraint, true) ?: false) ||
             constraint.split(",").map { it.trim() }.all { subconstraint ->
                 checkNegatableConstraint(subconstraint) {
                     sourceName.contains(it, true) ||
-                        (libraryAnime.anime.genre?.any { genre -> genre.equals(it, true) } ?: false)
+                        (libraryAnime.manga.genre?.any { genre -> genre.equals(it, true) } ?: false)
                 }
             }
     }

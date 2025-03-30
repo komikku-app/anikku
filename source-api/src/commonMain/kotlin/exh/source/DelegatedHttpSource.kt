@@ -1,10 +1,10 @@
 package exh.source
 
-import eu.kanade.tachiyomi.source.model.AnimesPage
+import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.SAnime
-import eu.kanade.tachiyomi.source.model.SEpisode
-import eu.kanade.tachiyomi.source.model.Video
+import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,7 +22,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a [AnimesPage] object.
+     * Parses the response from the site and returns a [MangasPage] object.
      *
      * @param response the response from the site.
      */
@@ -40,7 +40,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a [AnimesPage] object.
+     * Parses the response from the site and returns a [MangasPage] object.
      *
      * @param response the response from the site.
      */
@@ -56,7 +56,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a [AnimesPage] object.
+     * Parses the response from the site and returns a [MangasPage] object.
      *
      * @param response the response from the site.
      */
@@ -80,7 +80,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
         throw UnsupportedOperationException("Should never be called!")
 
     /**
-     * Parses the response from the site and returns a SEpisode Object.
+     * Parses the response from the site and returns a SChapter Object.
      *
      * @param response the response from the site.
      */
@@ -155,12 +155,12 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param page the page number to retrieve.
      */
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getPopularAnime(page)"))
-    override fun fetchPopularAnime(page: Int): Observable<AnimesPage> {
+    override fun fetchPopularAnime(page: Int): Observable<MangasPage> {
         ensureDelegateCompatible()
         return delegate.fetchPopularAnime(page)
     }
 
-    override suspend fun getPopularAnime(page: Int): AnimesPage {
+    override suspend fun getPopularAnime(page: Int): MangasPage {
         ensureDelegateCompatible()
         return delegate.getPopularAnime(page)
     }
@@ -174,12 +174,12 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param filters the list of filters to apply.
      */
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getSearchAnime(page, query, filters)"))
-    override fun fetchSearchAnime(page: Int, query: String, filters: FilterList): Observable<AnimesPage> {
+    override fun fetchSearchAnime(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
         ensureDelegateCompatible()
         return delegate.fetchSearchAnime(page, query, filters)
     }
 
-    override suspend fun getSearchAnime(page: Int, query: String, filters: FilterList): AnimesPage {
+    override suspend fun getSearchAnime(page: Int, query: String, filters: FilterList): MangasPage {
         ensureDelegateCompatible()
         return delegate.getSearchAnime(page, query, filters)
     }
@@ -190,12 +190,12 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param page the page number to retrieve.
      */
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getLatestUpdates(page)"))
-    override fun fetchLatestUpdates(page: Int): Observable<AnimesPage> {
+    override fun fetchLatestUpdates(page: Int): Observable<MangasPage> {
         ensureDelegateCompatible()
         return delegate.fetchLatestUpdates(page)
     }
 
-    override suspend fun getLatestUpdates(page: Int): AnimesPage {
+    override suspend fun getLatestUpdates(page: Int): MangasPage {
         ensureDelegateCompatible()
         return delegate.getLatestUpdates(page)
     }
@@ -207,7 +207,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param anime the anime to be updated.
      */
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getAnimeDetails(anime)"))
-    override fun fetchAnimeDetails(anime: SAnime): Observable<SAnime> {
+    override fun fetchAnimeDetails(anime: SManga): Observable<SManga> {
         ensureDelegateCompatible()
         return delegate.fetchAnimeDetails(anime)
     }
@@ -215,7 +215,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
     /**
      * [1.x API] Get the updated details for a anime.
      */
-    override suspend fun getAnimeDetails(anime: SAnime): SAnime {
+    override suspend fun getAnimeDetails(anime: SManga): SManga {
         ensureDelegateCompatible()
         return delegate.getAnimeDetails(anime)
     }
@@ -226,7 +226,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      *
      * @param anime the anime to be updated.
      */
-    override fun animeDetailsRequest(anime: SAnime): Request {
+    override fun animeDetailsRequest(anime: SManga): Request {
         ensureDelegateCompatible()
         return delegate.animeDetailsRequest(anime)
     }
@@ -238,7 +238,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param anime the anime to look for episodes.
      */
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getEpisodeList(anime)"))
-    override fun fetchEpisodeList(anime: SAnime): Observable<List<SEpisode>> {
+    override fun fetchEpisodeList(anime: SManga): Observable<List<SChapter>> {
         ensureDelegateCompatible()
         return delegate.fetchEpisodeList(anime)
     }
@@ -246,7 +246,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
     /**
      * [1.x API] Get all the available episodes for a anime.
      */
-    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> {
+    override suspend fun getEpisodeList(anime: SManga): List<SChapter> {
         ensureDelegateCompatible()
         return delegate.getEpisodeList(anime)
     }
@@ -257,7 +257,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param episode the episode whose video list has to be fetched.
      */
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getVideoList(episode)"))
-    override fun fetchVideoList(episode: SEpisode): Observable<List<Video>> {
+    override fun fetchVideoList(episode: SChapter): Observable<List<Video>> {
         ensureDelegateCompatible()
         return delegate.fetchVideoList(episode)
     }
@@ -265,7 +265,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
     /**
      * [1.x API] Get the list of videos a episode has.
      */
-    override suspend fun getVideoList(episode: SEpisode): List<Video> {
+    override suspend fun getVideoList(episode: SChapter): List<Video> {
         ensureDelegateCompatible()
         return delegate.getVideoList(episode)
     }
@@ -294,7 +294,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param anime the anime
      * @return url of the anime
      */
-    override fun getAnimeUrl(anime: SAnime): String {
+    override fun getAnimeUrl(anime: SManga): String {
         ensureDelegateCompatible()
         return delegate.getAnimeUrl(anime)
     }
@@ -306,7 +306,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param episode the episode
      * @return url of the episode
      */
-    override fun getEpisodeUrl(episode: SEpisode): String {
+    override fun getEpisodeUrl(episode: SChapter): String {
         ensureDelegateCompatible()
         return delegate.getEpisodeUrl(episode)
     }
@@ -318,7 +318,7 @@ abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
      * @param episode the episode to be added.
      * @param anime the anime of the episode.
      */
-    override fun prepareNewEpisode(episode: SEpisode, anime: SAnime) {
+    override fun prepareNewEpisode(episode: SChapter, anime: SManga) {
         ensureDelegateCompatible()
         return delegate.prepareNewEpisode(episode, anime)
     }

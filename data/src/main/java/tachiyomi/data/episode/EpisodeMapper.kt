@@ -1,6 +1,6 @@
 package tachiyomi.data.episode
 
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
 
 object EpisodeMapper {
     fun mapEpisode(
@@ -24,7 +24,7 @@ object EpisodeMapper {
         version: Long,
         @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
-    ): Episode = Episode(
+    ): Chapter = Chapter(
         id = id,
         animeId = animeId,
         seen = seen,

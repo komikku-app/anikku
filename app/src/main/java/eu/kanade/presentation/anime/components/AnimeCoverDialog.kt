@@ -50,7 +50,7 @@ import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import kotlinx.collections.immutable.persistentListOf
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -58,7 +58,7 @@ import tachiyomi.presentation.core.util.clickableNoIndication
 
 @Composable
 fun AnimeCoverDialog(
-    anime: Anime,
+    manga: Manga,
     isCustomCover: Boolean,
     snackbarHostState: SnackbarHostState,
     onShareClick: () -> Unit,
@@ -126,7 +126,7 @@ fun AnimeCoverDialog(
                                 ),
                             ),
                         )
-                        if (onEditClick != null && anime.favorite) {
+                        if (onEditClick != null && manga.favorite) {
                             Box {
                                 var expanded by remember { mutableStateOf(false) }
                                 IconButton(
@@ -203,7 +203,7 @@ fun AnimeCoverDialog(
                     },
                     update = { view ->
                         val request = ImageRequest.Builder(view.context)
-                            .data(anime)
+                            .data(manga)
                             .size(Size.ORIGINAL)
                             .memoryCachePolicy(CachePolicy.DISABLED)
                             .target { image ->

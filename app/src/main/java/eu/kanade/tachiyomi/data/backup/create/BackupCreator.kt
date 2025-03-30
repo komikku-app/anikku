@@ -32,11 +32,11 @@ import okio.gzip
 import okio.sink
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.interactor.GetFavorites
-import tachiyomi.domain.anime.interactor.GetMergedAnime
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.anime.repository.AnimeRepository
 import tachiyomi.domain.backup.service.BackupPreferences
+import tachiyomi.domain.manga.interactor.GetFavorites
+import tachiyomi.domain.manga.interactor.GetMergedManga
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -53,7 +53,7 @@ class BackupCreator(
     private val parser: ProtoBuf = Injekt.get(),
     private val getFavorites: GetFavorites = Injekt.get(),
     private val backupPreferences: BackupPreferences = Injekt.get(),
-    private val animeRepository: AnimeRepository = Injekt.get(),
+    private val mangaRepository: MangaRepository = Injekt.get(),
 
     private val categoriesBackupCreator: CategoriesBackupCreator = CategoriesBackupCreator(),
     private val animeBackupCreator: AnimeBackupCreator = AnimeBackupCreator(),
@@ -67,7 +67,7 @@ class BackupCreator(
     // KMK <--
     // SY -->
     private val savedSearchBackupCreator: SavedSearchBackupCreator = SavedSearchBackupCreator(),
-    private val getMergedAnime: GetMergedAnime = Injekt.get(),
+    private val getMergedManga: GetMergedManga = Injekt.get(),
     // SY <--
 ) {
 
@@ -95,9 +95,9 @@ class BackupCreator(
                 throw IllegalStateException(context.stringResource(MR.strings.create_backup_file_error))
             }
 
-            val nonFavoriteAnime = if (options.seenEntries) animeRepository.getSeenAnimeNotInLibrary() else emptyList()
+            val nonFavoriteAnime = if (options.seenEntries) mangaRepository.getSeenAnimeNotInLibrary() else emptyList()
             // SY -->
-            val mergedManga = getMergedAnime.await()
+            val mergedManga = getMergedManga.await()
             // SY <--
             val backupAnime = backupAnimes(getFavorites.await() + nonFavoriteAnime /* SY --> */ + mergedManga /* SY <-- */, options)
 
@@ -156,10 +156,10 @@ class BackupCreator(
         return categoriesBackupCreator()
     }
 
-    suspend fun backupAnimes(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
+    suspend fun backupAnimes(mangas: List<Manga>, options: BackupOptions): List<BackupAnime> {
         if (!options.libraryEntries) return emptyList()
 
-        return animeBackupCreator(animes, options)
+        return animeBackupCreator(mangas, options)
     }
 
     fun backupAnimeSources(animes: List<BackupAnime>): List<BackupSource> {

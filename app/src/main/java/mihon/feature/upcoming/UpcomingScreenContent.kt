@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 import mihon.feature.upcoming.components.UpcomingItem
 import mihon.feature.upcoming.components.calendar.Calendar
 import tachiyomi.core.common.Constants
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -49,7 +49,7 @@ import java.time.YearMonth
 fun UpcomingScreenContent(
     state: UpcomingScreenModel.State,
     setSelectedYearMonth: (YearMonth) -> Unit,
-    onClickUpcoming: (manga: Anime) -> Unit,
+    onClickUpcoming: (manga: Manga) -> Unit,
     // KMK -->
     showUpdatingMangas: () -> Unit,
     hideUpdatingMangas: () -> Unit,
@@ -211,7 +211,7 @@ private fun UpcomingScreenSmallImpl(
     selectedYearMonth: YearMonth,
     setSelectedYearMonth: (YearMonth) -> Unit,
     onClickDay: (LocalDate) -> Unit,
-    onClickUpcoming: (manga: Anime) -> Unit,
+    onClickUpcoming: (manga: Manga) -> Unit,
     // KMK -->
     isShowingUpdatingMangas: Boolean,
     // KMK <--
@@ -241,8 +241,8 @@ private fun UpcomingScreenSmallImpl(
             when (item) {
                 is UpcomingUIModel.Item -> {
                     UpcomingItem(
-                        upcoming = item.anime,
-                        onClick = { onClickUpcoming(item.anime) },
+                        upcoming = item.manga,
+                        onClick = { onClickUpcoming(item.manga) },
                     )
                 }
 
@@ -266,7 +266,7 @@ private fun UpcomingScreenLargeImpl(
     selectedYearMonth: YearMonth,
     setSelectedYearMonth: (YearMonth) -> Unit,
     onClickDay: (LocalDate) -> Unit,
-    onClickUpcoming: (manga: Anime) -> Unit,
+    onClickUpcoming: (manga: Manga) -> Unit,
     // KMK -->
     isShowingUpdatingMangas: Boolean,
     // KMK <--
@@ -296,8 +296,8 @@ private fun UpcomingScreenLargeImpl(
                     when (item) {
                         is UpcomingUIModel.Item -> {
                             UpcomingItem(
-                                upcoming = item.anime,
-                                onClick = { onClickUpcoming(item.anime) },
+                                upcoming = item.manga,
+                                onClick = { onClickUpcoming(item.manga) },
                             )
                         }
 

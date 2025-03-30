@@ -11,16 +11,16 @@ import eu.kanade.presentation.more.stats.StatsScreenState
 import eu.kanade.presentation.more.stats.data.StatsData
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.TrackerManager
-import eu.kanade.tachiyomi.source.model.SAnime
+import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.anime.interactor.GetLibraryAnime
-import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
+import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.library.model.LibraryAnime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_HAS_UNSEEN
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_NON_COMPLETED
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_NON_SEEN
+import tachiyomi.domain.manga.interactor.GetLibraryManga
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.model.Track
 import tachiyomi.source.local.isLocal
@@ -29,8 +29,8 @@ import uy.kohesive.injekt.api.get
 
 class StatsScreenModel(
     private val downloadManager: DownloadManager = Injekt.get(),
-    private val getAnimelibAnime: GetLibraryAnime = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
+    private val getAnimelibAnime: GetLibraryManga = Injekt.get(),
+    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
     private val getTracks: GetTracks = Injekt.get(),
     private val preferences: LibraryPreferences = Injekt.get(),
     private val trackerManager: TrackerManager = Injekt.get(),
@@ -52,7 +52,7 @@ class StatsScreenModel(
             val overviewStatData = StatsData.AnimeOverview(
                 libraryAnimeCount = distinctLibraryAnime.size,
                 completedAnimeCount = distinctLibraryAnime.count {
-                    it.anime.status.toInt() == SAnime.COMPLETED && it.unseenCount == 0L
+                    it.manga.status.toInt() == SManga.COMPLETED && it.unseenCount == 0L
                 },
                 totalSeenDuration = getWatchTime(distinctLibraryAnime),
             )
@@ -60,7 +60,7 @@ class StatsScreenModel(
             val titlesStatData = StatsData.AnimeTitles(
                 globalUpdateItemCount = getGlobalUpdateItemCount(animelibAnime),
                 startedAnimeCount = distinctLibraryAnime.count { it.hasStarted },
-                localAnimeCount = distinctLibraryAnime.count { it.anime.isLocal() },
+                localAnimeCount = distinctLibraryAnime.count { it.manga.isLocal() },
             )
 
             val chaptersStatData = StatsData.Episodes(
@@ -105,10 +105,10 @@ class StatsScreenModel(
 
         val updateRestrictions = preferences.autoUpdateAnimeRestrictions().get()
         return includedAnime
-            .fastFilterNot { it.anime.id in excludedMangaIds }
-            .fastDistinctBy { it.anime.id }
+            .fastFilterNot { it.manga.id in excludedMangaIds }
+            .fastDistinctBy { it.manga.id }
             .fastCountNot {
-                (ANIME_NON_COMPLETED in updateRestrictions && it.anime.status.toInt() == SAnime.COMPLETED) ||
+                (ANIME_NON_COMPLETED in updateRestrictions && it.manga.status.toInt() == SManga.COMPLETED) ||
                     (ANIME_HAS_UNSEEN in updateRestrictions && it.unseenCount != 0L) ||
                     (ANIME_NON_SEEN in updateRestrictions && it.totalEpisodes > 0 && !it.hasStarted)
             }
@@ -127,7 +127,7 @@ class StatsScreenModel(
     private suspend fun getWatchTime(libraryAnimeList: List<LibraryAnime>): Long {
         var watchTime = 0L
         libraryAnimeList.forEach { libraryAnime ->
-            getEpisodesByAnimeId.await(libraryAnime.anime.id).forEach { episode ->
+            getChaptersByMangaId.await(libraryAnime.manga.id).forEach { episode ->
                 watchTime += if (episode.seen) {
                     episode.totalSeconds
                 } else {

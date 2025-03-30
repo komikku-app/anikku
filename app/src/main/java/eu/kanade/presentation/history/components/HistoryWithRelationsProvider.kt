@@ -1,8 +1,8 @@
 package eu.kanade.presentation.history.components
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import tachiyomi.domain.anime.model.AnimeCover
 import tachiyomi.domain.history.model.HistoryWithRelations
+import tachiyomi.domain.manga.model.MangaCover
 import java.util.Date
 
 internal class HistoryWithRelationsProvider : PreviewParameterProvider<HistoryWithRelations> {
@@ -17,7 +17,7 @@ internal class HistoryWithRelationsProvider : PreviewParameterProvider<HistoryWi
         episodeNumber = 10.2,
         seenAt = Date(1697247357L),
         watchDuration = 123L,
-        coverData = AnimeCover(
+        coverData = MangaCover(
             animeId = 3L,
             sourceId = 4L,
             isAnimeFavorite = false,
@@ -36,7 +36,7 @@ internal class HistoryWithRelationsProvider : PreviewParameterProvider<HistoryWi
         episodeNumber = 10.2,
         seenAt = null,
         watchDuration = 123L,
-        coverData = AnimeCover(
+        coverData = MangaCover(
             animeId = 3L,
             sourceId = 4L,
             isAnimeFavorite = false,
@@ -55,7 +55,7 @@ internal class HistoryWithRelationsProvider : PreviewParameterProvider<HistoryWi
         episodeNumber = -2.0,
         seenAt = Date(1697247357L),
         watchDuration = 123L,
-        coverData = AnimeCover(
+        coverData = MangaCover(
             animeId = 3L,
             sourceId = 4L,
             isAnimeFavorite = false,

@@ -5,8 +5,8 @@ import androidx.core.content.edit
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import tachiyomi.domain.anime.model.Anime
-import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.manga.model.Manga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -36,16 +36,16 @@ class DownloadPendingDeleter(
     /**
      * Adds a list of episodes for future deletion.
      *
-     * @param episodes the episodes to be deleted.
-     * @param anime the anime of the episodes.
+     * @param chapters the episodes to be deleted.
+     * @param manga the anime of the episodes.
      */
     @Synchronized
-    fun addEpisodes(episodes: List<Episode>, anime: Anime) {
+    fun addEpisodes(chapters: List<Chapter>, manga: Manga) {
         val lastEntry = lastAddedEntry
 
-        val newEntry = if (lastEntry != null && lastEntry.anime.id == anime.id) {
+        val newEntry = if (lastEntry != null && lastEntry.anime.id == manga.id) {
             // Append new episodes
-            val newEpisodes = lastEntry.episodes.addUniqueById(episodes)
+            val newEpisodes = lastEntry.episodes.addUniqueById(chapters)
 
             // If no episodes were added, do nothing
             if (newEpisodes.size == lastEntry.episodes.size) return
@@ -53,13 +53,13 @@ class DownloadPendingDeleter(
             // Last entry matches the anime, reuse it to avoid decoding json from preferences
             lastEntry.copy(episodes = newEpisodes)
         } else {
-            val existingEntry = preferences.getString(anime.id.toString(), null)
+            val existingEntry = preferences.getString(manga.id.toString(), null)
             if (existingEntry != null) {
                 // Existing entry found on preferences, decode json and add the new episode
                 val savedEntry = json.decodeFromString<Entry>(existingEntry)
 
                 // Append new episodes
-                val newEpisodes = savedEntry.episodes.addUniqueById(episodes)
+                val newEpisodes = savedEntry.episodes.addUniqueById(chapters)
 
                 // If no episodes were added, do nothing
                 if (newEpisodes.size == savedEntry.episodes.size) return
@@ -67,7 +67,7 @@ class DownloadPendingDeleter(
                 savedEntry.copy(episodes = newEpisodes)
             } else {
                 // No entry has been found yet, create a new one
-                Entry(episodes.map { it.toEntry() }, anime.toEntry())
+                Entry(chapters.map { it.toEntry() }, manga.toEntry())
             }
         }
 
@@ -86,7 +86,7 @@ class DownloadPendingDeleter(
      * downloader, so don't use them for anything else.
      */
     @Synchronized
-    fun getPendingEpisodes(): Map<Anime, List<Episode>> {
+    fun getPendingEpisodes(): Map<Manga, List<Chapter>> {
         val entries = decodeAll()
         preferences.edit {
             clear()
@@ -114,9 +114,9 @@ class DownloadPendingDeleter(
     /**
      * Returns a copy of episode entries ensuring no duplicates by episode id.
      */
-    private fun List<EpisodeEntry>.addUniqueById(episodes: List<Episode>): List<EpisodeEntry> {
+    private fun List<EpisodeEntry>.addUniqueById(chapters: List<Chapter>): List<EpisodeEntry> {
         val newList = toMutableList()
-        for (episode in episodes) {
+        for (episode in chapters) {
             if (none { it.id == episode.id }) {
                 newList.add(episode.toEntry())
             }
@@ -127,17 +127,17 @@ class DownloadPendingDeleter(
     /**
      * Returns a anime entry from a anime model.
      */
-    private fun Anime.toEntry() = AnimeEntry(id, url, title, source)
+    private fun Manga.toEntry() = AnimeEntry(id, url, title, source)
 
     /**
      * Returns a episode entry from a episode model.
      */
-    private fun Episode.toEntry() = EpisodeEntry(id, url, name, scanlator)
+    private fun Chapter.toEntry() = EpisodeEntry(id, url, name, scanlator)
 
     /**
      * Returns a anime model from a anime entry.
      */
-    private fun AnimeEntry.toModel() = Anime.create().copy(
+    private fun AnimeEntry.toModel() = Manga.create().copy(
         url = url,
         // SY -->
         ogTitle = title,
@@ -149,7 +149,7 @@ class DownloadPendingDeleter(
     /**
      * Returns a episode model from a episode entry.
      */
-    private fun EpisodeEntry.toModel() = Episode.create().copy(
+    private fun EpisodeEntry.toModel() = Chapter.create().copy(
         id = id,
         url = url,
         name = name,

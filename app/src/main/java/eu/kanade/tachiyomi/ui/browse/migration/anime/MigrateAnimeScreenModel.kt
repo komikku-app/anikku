@@ -18,8 +18,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.anime.interactor.GetFavorites
-import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.manga.interactor.GetFavorites
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -60,7 +60,7 @@ class MigrateAnimeScreenModel(
                 // KMK <--
                 .map { manga ->
                     manga
-                        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.anime.title })
+                        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.manga.title })
                         .toImmutableList()
                 }
                 .collectLatest { list ->
@@ -70,10 +70,10 @@ class MigrateAnimeScreenModel(
     }
 
     // KMK -->
-    private fun toMigrationMangaScreenItems(animes: List<Anime>): List<MigrateAnimeItem> {
-        return animes.map { manga ->
+    private fun toMigrationMangaScreenItems(mangas: List<Manga>): List<MigrateAnimeItem> {
+        return mangas.map { manga ->
             MigrateAnimeItem(
-                anime = manga,
+                manga = manga,
                 selected = manga.id in selectedMangaIds,
             )
         }
@@ -87,7 +87,7 @@ class MigrateAnimeScreenModel(
     ) {
         mutableState.update { state ->
             val newItems = state.titles.toMutableList().apply {
-                val selectedIndex = indexOfFirst { it.anime.id == item.anime.id }
+                val selectedIndex = indexOfFirst { it.manga.id == item.manga.id }
                 if (selectedIndex < 0) return@apply
 
                 val selectedItem = get(selectedIndex)
@@ -95,7 +95,7 @@ class MigrateAnimeScreenModel(
 
                 val firstSelection = none { it.selected }
                 set(selectedIndex, selectedItem.copy(selected = selected))
-                selectedMangaIds.addOrRemove(item.anime.id, selected)
+                selectedMangaIds.addOrRemove(item.manga.id, selected)
 
                 if (selected && userSelected && fromLongPress) {
                     if (firstSelection) {
@@ -118,7 +118,7 @@ class MigrateAnimeScreenModel(
                         range.forEach {
                             val inBetweenItem = get(it)
                             if (!inBetweenItem.selected) {
-                                selectedMangaIds.add(inBetweenItem.anime.id)
+                                selectedMangaIds.add(inBetweenItem.manga.id)
                                 set(it, inBetweenItem.copy(selected = true))
                             }
                         }
@@ -146,7 +146,7 @@ class MigrateAnimeScreenModel(
     fun toggleAllSelection(selected: Boolean) {
         mutableState.update { state ->
             val newItems = state.titles.map {
-                selectedMangaIds.addOrRemove(it.anime.id, selected)
+                selectedMangaIds.addOrRemove(it.manga.id, selected)
                 it.copy(selected = selected)
             }
             state.copy(titleList = newItems.toImmutableList())
@@ -159,7 +159,7 @@ class MigrateAnimeScreenModel(
     fun invertSelection() {
         mutableState.update { state ->
             val newItems = state.titles.map {
-                selectedMangaIds.addOrRemove(it.anime.id, !it.selected)
+                selectedMangaIds.addOrRemove(it.manga.id, !it.selected)
                 it.copy(selected = !it.selected)
             }
             state.copy(titleList = newItems.toImmutableList())
@@ -197,7 +197,7 @@ sealed interface MigrationAnimeEvent {
 // KMK -->
 @Immutable
 data class MigrateAnimeItem(
-    val anime: Anime,
+    val manga: Manga,
     val selected: Boolean,
 )
 // KMK <--

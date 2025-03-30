@@ -5,17 +5,17 @@ import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
-import tachiyomi.domain.episode.interactor.UpdateEpisode
-import tachiyomi.domain.episode.model.toEpisodeUpdate
+import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
+import tachiyomi.domain.chapter.interactor.UpdateChapter
+import tachiyomi.domain.chapter.model.toChapterUpdate
 import tachiyomi.domain.track.interactor.InsertTrack
 import tachiyomi.domain.track.model.Track
 import kotlin.math.max
 
 class SyncEpisodeProgressWithTrack(
-    private val updateEpisode: UpdateEpisode,
+    private val updateChapter: UpdateChapter,
     private val insertTrack: InsertTrack,
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
 ) {
 
     suspend fun await(
@@ -27,13 +27,13 @@ class SyncEpisodeProgressWithTrack(
             return
         }
 
-        val sortedEpisodes = getEpisodesByAnimeId.await(animeId)
+        val sortedEpisodes = getChaptersByMangaId.await(animeId)
             .sortedBy { it.episodeNumber }
             .filter { it.isRecognizedNumber }
 
         val episodeUpdates = sortedEpisodes
             .filter { episode -> episode.episodeNumber <= remoteTrack.lastEpisodeSeen && !episode.seen }
-            .map { it.copy(seen = true).toEpisodeUpdate() }
+            .map { it.copy(seen = true).toChapterUpdate() }
 
         // only take into account continuous watching
         val localLastSeen = sortedEpisodes.takeWhile { it.seen }.lastOrNull()?.episodeNumber ?: 0F
@@ -42,7 +42,7 @@ class SyncEpisodeProgressWithTrack(
 
         try {
             tracker.update(updatedTrack.toDbTrack())
-            updateEpisode.awaitAll(episodeUpdates)
+            updateChapter.awaitAll(episodeUpdates)
             insertTrack.await(updatedTrack)
         } catch (e: Throwable) {
             logcat(LogPriority.WARN, e)
