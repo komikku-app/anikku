@@ -328,6 +328,7 @@ class MangaRestorer(
                 dateAdded = manga.dateAdded,
                 updateStrategy = manga.updateStrategy,
                 version = manga.version,
+                notes = manga.notes,
             )
             animesQueries.selectLastInsertedRowId()
         }
