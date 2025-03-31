@@ -136,7 +136,7 @@ object SettingsDownloadScreen : SearchableSettings {
                     pref = downloadPreferences.removeBookmarkedChapters(),
                     title = stringResource(MR.strings.pref_remove_bookmarked_chapters),
                 ),
-                getExcludedAnimeCategoriesPreference(
+                getExcludedMangaCategoriesPreference(
                     downloadPreferences = downloadPreferences,
                     categories = { animeCategories },
                 ),
@@ -145,7 +145,7 @@ object SettingsDownloadScreen : SearchableSettings {
     }
 
     @Composable
-    private fun getExcludedAnimeCategoriesPreference(
+    private fun getExcludedMangaCategoriesPreference(
         downloadPreferences: DownloadPreferences,
         categories: () -> List<Category>,
     ): Preference.PreferenceItem.MultiSelectListPreference {

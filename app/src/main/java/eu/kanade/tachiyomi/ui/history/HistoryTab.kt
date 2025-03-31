@@ -86,7 +86,7 @@ data object HistoryTab : Tab {
             snackbarHostState = snackbarHostState,
             onSearchQueryChange = screenModel::updateSearchQuery,
             onClickCover = { navigator.push(MangaScreen(it)) },
-            onClickResume = screenModel::getNextEpisodeForAnime,
+            onClickResume = screenModel::getNextChapterForManga,
             onDialogChange = screenModel::setDialog,
         )
 
@@ -129,14 +129,14 @@ data object HistoryTab : Tab {
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
                     HistoryScreenModel.Event.HistoryCleared ->
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
-                    is HistoryScreenModel.Event.OpenEpisode -> openEpisode(context, e.chapter)
+                    is HistoryScreenModel.Event.OpenEpisode -> openChapter(context, e.chapter)
                 }
             }
         }
 
         LaunchedEffect(Unit) {
             resumeLastEpisodeSeenEvent.receiveAsFlow().collectLatest {
-                openEpisode(context, screenModel.getNextEpisode())
+                openChapter(context, screenModel.getNextChapter())
             }
         }
 
@@ -145,7 +145,7 @@ data object HistoryTab : Tab {
         }
     }
 
-    private suspend fun openEpisode(context: Context, chapter: Chapter?) {
+    private suspend fun openChapter(context: Context, chapter: Chapter?) {
         val playerPreferences: PlayerPreferences by injectLazy()
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
         if (chapter != null) {

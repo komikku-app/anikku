@@ -19,7 +19,7 @@ object NotificationHandler {
      *
      * @param context context of application
      */
-    internal fun openAnimeDownloadManagerPendingActivity(context: Context): PendingIntent {
+    internal fun openMangaDownloadManagerPendingActivity(context: Context): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             action = Constants.SHORTCUT_ANIME_DOWNLOADS

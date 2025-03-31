@@ -78,7 +78,7 @@ fun MangaToolbar(
     fun onHomeClicked() = navigator?.popUntil { screen ->
         screen is SourceFeedScreen || screen is BrowseSourceScreen
     }
-    val isHomeEnabled = Injekt.get<UiPreferences>().showHomeOnRelatedAnimes().get()
+    val isHomeEnabled = Injekt.get<UiPreferences>().showHomeOnRelatedMangas().get()
     // KMK <--
     Column(
         modifier = modifier,

@@ -50,7 +50,7 @@ class EpisodeLoader {
                     } ?: error("Merge reference null")
                     val actualSource = sourceManager?.get(mangaReference.animeSourceId)
                         ?: error("Source ${mangaReference.animeSourceId} was null")
-                    val manga = mergedManga[episode.animeId] ?: error("Manga for merged episode was null")
+                    val manga = mergedManga[episode.animeId] ?: error("Anime for merged episode was null")
                     val isMergedMangaDownloaded = isDownload(episode, manga)
                     when {
                         isMergedMangaDownloaded -> getHostersOnDownloaded(

@@ -22,7 +22,7 @@ import java.time.ZoneOffset
 
 class AddTracks(
     private val insertTrack: InsertTrack,
-    private val syncEpisodeProgressWithTrack: SyncEpisodeProgressWithTrack,
+    private val syncChapterProgressWithTrack: SyncChapterProgressWithTrack,
     private val getChaptersByMangaId: GetChaptersByMangaId,
     private val trackerManager: TrackerManager,
 ) {
@@ -38,7 +38,7 @@ class AddTracks(
 
             insertTrack.await(track)
 
-            // TODO: merge into [SyncEpisodeProgressWithTrack]?
+            // TODO: merge into [SyncChapterProgressWithTrack]?
             // Update episode progress if newer episodes marked seen locally
             if (hasSeenEpisodes) {
                 val latestLocalSeenEpisodeNumber = allEpisodes
@@ -73,7 +73,7 @@ class AddTracks(
                 }
             }
 
-            syncEpisodeProgressWithTrack.await(animeId, track, tracker)
+            syncChapterProgressWithTrack.await(animeId, track, tracker)
         }
     }
 
@@ -89,7 +89,7 @@ class AddTracks(
                             (service as Tracker).bind(track)
                             insertTrack.await(track.toDomainTrack(idRequired = false)!!)
 
-                            syncEpisodeProgressWithTrack.await(
+                            syncChapterProgressWithTrack.await(
                                 manga.id,
                                 track.toDomainTrack(idRequired = false)!!,
                                 service,

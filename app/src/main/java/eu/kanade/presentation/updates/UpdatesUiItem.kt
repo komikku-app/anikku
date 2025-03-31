@@ -51,7 +51,7 @@ import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
-import eu.kanade.tachiyomi.ui.updates.groupByDateAndAnime
+import eu.kanade.tachiyomi.ui.updates.groupByDateAndManga
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
@@ -156,7 +156,7 @@ internal fun LazyListScope.updatesUiItems(
                     // KMK -->
                     isLeader = item is UpdatesUiModel.Leader,
                     isExpandable = item.isExpandable,
-                    expanded = expandedState.contains(updatesItem.update.groupByDateAndAnime()),
+                    expanded = expandedState.contains(updatesItem.update.groupByDateAndManga()),
                     collapseToggle = collapseToggle,
                     usePanoramaCover = usePanoramaCover,
                     // KMK <--
@@ -324,7 +324,7 @@ private fun UpdatesUiItem(
         if (isLeader && isExpandable) {
             CollapseButton(
                 expanded = expanded,
-                collapseToggle = { collapseToggle(update.groupByDateAndAnime()) },
+                collapseToggle = { collapseToggle(update.groupByDateAndManga()) },
             )
         }
         // KMK <--

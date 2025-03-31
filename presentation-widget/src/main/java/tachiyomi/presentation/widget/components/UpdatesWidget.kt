@@ -85,7 +85,7 @@ fun UpdatesWidget(
                                         // https://issuetracker.google.com/issues/238793260
                                         addCategory(animeId.toString())
                                     }
-                                    UpdatesAnimeCover(
+                                    UpdatesMangaCover(
                                         cover = cover,
                                         modifier = GlanceModifier.clickable(actionStartActivity(intent)),
                                         // KMK -->

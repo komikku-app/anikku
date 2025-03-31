@@ -14,9 +14,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.util.fastAny
-import eu.kanade.presentation.browse.RelatedAnimeTitle
-import eu.kanade.presentation.browse.RelatedAnimesLoadingItem
-import eu.kanade.tachiyomi.ui.manga.RelatedAnime
+import eu.kanade.presentation.browse.RelatedMangaTitle
+import eu.kanade.presentation.browse.RelatedMangasLoadingItem
+import eu.kanade.tachiyomi.ui.manga.RelatedManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
@@ -26,8 +26,8 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun RelatedAnimesList(
-    relatedAnimes: List<RelatedAnime>,
+fun RelatedMangasList(
+    relatedMangas: List<RelatedManga>,
     entries: Int,
     topBarHeight: Int,
     getManga: @Composable (Manga) -> State<Manga>,
@@ -47,12 +47,12 @@ fun RelatedAnimesList(
                 containerHeight = layoutCoordinates.size.height - topBarHeight
             },
     ) {
-        relatedAnimes.forEach { related ->
-            val isLoading = related is RelatedAnime.Loading
+        relatedMangas.forEach { related ->
+            val isLoading = related is RelatedManga.Loading
             if (isLoading) {
                 item(key = "${related.hashCode()}#divider") { HorizontalDivider() }
                 stickyHeader(key = "$STICKY_HEADER_KEY_PREFIX${related.hashCode()}#header") {
-                    RelatedAnimeTitle(
+                    RelatedMangaTitle(
                         title = stringResource(MR.strings.loading),
                         subtitle = null,
                         onClick = {},
@@ -65,24 +65,24 @@ fun RelatedAnimesList(
                             .background(MaterialTheme.colorScheme.background),
                     )
                 }
-                item(key = "${related.hashCode()}#content") { RelatedAnimesLoadingItem() }
+                item(key = "${related.hashCode()}#content") { RelatedMangasLoadingItem() }
             } else {
-                val relatedAnime = related as RelatedAnime.Success
+                val relatedManga = related as RelatedManga.Success
                 item(key = "${related.hashCode()}#divider") { HorizontalDivider() }
                 stickyHeader(key = "$STICKY_HEADER_KEY_PREFIX${related.hashCode()}#header") {
-                    RelatedAnimeTitle(
-                        title = if (relatedAnime.keyword.isNotBlank()) {
+                    RelatedMangaTitle(
+                        title = if (relatedManga.keyword.isNotBlank()) {
                             stringResource(KMR.strings.related_mangas_more)
                         } else {
                             stringResource(KMR.strings.related_mangas_website_suggestions)
                         },
-                        showArrow = relatedAnime.keyword.isNotBlank(),
+                        showArrow = relatedManga.keyword.isNotBlank(),
                         subtitle = null,
                         onClick = {
-                            if (relatedAnime.keyword.isNotBlank()) onKeywordClick(relatedAnime.keyword)
+                            if (relatedManga.keyword.isNotBlank()) onKeywordClick(relatedManga.keyword)
                         },
                         onLongClick = {
-                            if (relatedAnime.keyword.isNotBlank()) onKeywordLongClick(relatedAnime.keyword)
+                            if (relatedManga.keyword.isNotBlank()) onKeywordLongClick(relatedManga.keyword)
                         },
                         modifier = Modifier
                             .padding(
@@ -93,10 +93,10 @@ fun RelatedAnimesList(
                     )
                 }
                 items(
-                    key = { "related-list-${relatedAnime.mangaList[it].url.hashCode()}" },
-                    count = relatedAnime.mangaList.size,
+                    key = { "related-list-${relatedManga.mangaList[it].url.hashCode()}" },
+                    count = relatedManga.mangaList.size,
                 ) { index ->
-                    val manga by getManga(relatedAnime.mangaList[index])
+                    val manga by getManga(relatedManga.mangaList[index])
                     BrowseSourceListItem(
                         manga = manga,
                         onClick = { onMangaClick(manga) },

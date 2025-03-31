@@ -44,8 +44,8 @@ class StatsScreenModel(
 
             val distinctLibraryManga = animelibAnime.fastDistinctBy { it.id }
 
-            val animeTrackMap = getAnimeTrackMap(distinctLibraryManga)
-            val scoredAnimeTrackerMap = getScoredAnimeTrackMap(animeTrackMap)
+            val animeTrackMap = getMangaTrackMap(distinctLibraryManga)
+            val scoredAnimeTrackerMap = getScoredMangaTrackMap(animeTrackMap)
 
             val meanScore = getTrackMeanScore(scoredAnimeTrackerMap)
 
@@ -76,7 +76,7 @@ class StatsScreenModel(
             )
 
             mutableState.update {
-                StatsScreenState.SuccessAnime(
+                StatsScreenState.SuccessManga(
                     overview = overviewStatData,
                     titles = titlesStatData,
                     episodes = chaptersStatData,
@@ -114,7 +114,7 @@ class StatsScreenModel(
             }
     }
 
-    private suspend fun getAnimeTrackMap(libraryManga: List<LibraryManga>): Map<Long, List<Track>> {
+    private suspend fun getMangaTrackMap(libraryManga: List<LibraryManga>): Map<Long, List<Track>> {
         val loggedInTrackerIds = loggedInTrackers.map { it.id }.toHashSet()
         return libraryManga.associate { anime ->
             val tracks = getTracks.await(anime.id)
@@ -139,7 +139,7 @@ class StatsScreenModel(
         return watchTime
     }
 
-    private fun getScoredAnimeTrackMap(trackMap: Map<Long, List<Track>>): Map<Long, List<Track>> {
+    private fun getScoredMangaTrackMap(trackMap: Map<Long, List<Track>>): Map<Long, List<Track>> {
         return trackMap.mapNotNull { (animeId, tracks) ->
             val trackList = tracks.mapNotNull { track ->
                 track.takeIf { it.score > 0.0 }

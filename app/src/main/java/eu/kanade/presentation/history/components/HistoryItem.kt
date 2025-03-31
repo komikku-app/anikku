@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
-import eu.kanade.presentation.util.formatEpisodeNumber
+import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.util.lang.toTimestampString
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
@@ -111,7 +111,7 @@ fun HistoryItem(
                 text = if (history.episodeNumber > -1) {
                     stringResource(
                         MR.strings.recent_anime_time,
-                        formatEpisodeNumber(history.episodeNumber),
+                        formatChapterNumber(history.episodeNumber),
                         seenAt,
                     )
                 } else {

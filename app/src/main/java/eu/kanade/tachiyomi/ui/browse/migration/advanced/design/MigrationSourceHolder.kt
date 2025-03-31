@@ -5,7 +5,7 @@ import android.view.View
 import eu.davidea.viewholders.FlexibleViewHolder
 import eu.kanade.tachiyomi.databinding.MigrationSourceItemBinding
 import eu.kanade.tachiyomi.extension.ExtensionManager
-import eu.kanade.tachiyomi.source.getNameForAnimeInfo
+import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.online.HttpSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -21,7 +21,7 @@ class MigrationSourceHolder(view: View, val adapter: MigrationSourceAdapter) :
         // Set capitalized title.
         val sourceName =
             // KMK -->
-            source.getNameForAnimeInfo()
+            source.getNameForMangaInfo()
         // KMK <--
         binding.title.text = sourceName
         // Update circle letter image.

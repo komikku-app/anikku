@@ -5,22 +5,22 @@ import android.net.Uri
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.backup.BackupFileValidator
-import eu.kanade.tachiyomi.data.backup.create.creators.AnimeBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.CategoriesBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.CustomButtonBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionRepoBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionsBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.FeedBackupCreator
+import eu.kanade.tachiyomi.data.backup.create.creators.MangaBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.PreferenceBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.SavedSearchBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.SourcesBackupCreator
 import eu.kanade.tachiyomi.data.backup.models.Backup
-import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupCustomButtons
 import eu.kanade.tachiyomi.data.backup.models.BackupExtension
 import eu.kanade.tachiyomi.data.backup.models.BackupExtensionRepos
 import eu.kanade.tachiyomi.data.backup.models.BackupFeed
+import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
 import eu.kanade.tachiyomi.data.backup.models.BackupSource
@@ -56,7 +56,7 @@ class BackupCreator(
     private val mangaRepository: MangaRepository = Injekt.get(),
 
     private val categoriesBackupCreator: CategoriesBackupCreator = CategoriesBackupCreator(),
-    private val animeBackupCreator: AnimeBackupCreator = AnimeBackupCreator(),
+    private val mangaBackupCreator: MangaBackupCreator = MangaBackupCreator(),
     private val preferenceBackupCreator: PreferenceBackupCreator = PreferenceBackupCreator(),
     private val extensionRepoBackupCreator: ExtensionRepoBackupCreator = ExtensionRepoBackupCreator(),
     private val customButtonBackupCreator: CustomButtonBackupCreator = CustomButtonBackupCreator(),
@@ -99,12 +99,12 @@ class BackupCreator(
             // SY -->
             val mergedManga = getMergedManga.await()
             // SY <--
-            val backupAnime = backupAnimes(getFavorites.await() + nonFavoriteAnime /* SY --> */ + mergedManga /* SY <-- */, options)
+            val backupAnime = backupMangas(getFavorites.await() + nonFavoriteAnime /* SY --> */ + mergedManga /* SY <-- */, options)
 
             val backup = Backup(
-                backupAnime = backupAnime,
-                backupCategories = backupAnimeCategories(options),
-                backupSources = backupAnimeSources(backupAnime),
+                backupManga = backupAnime,
+                backupCategories = backupMangaCategories(options),
+                backupSources = backupMangaSources(backupAnime),
                 backupPreferences = backupAppPreferences(options),
                 backupExtensionRepo = backupExtensionRepos(options),
                 backupCustomButton = backupCustomButtons(options),
@@ -150,19 +150,19 @@ class BackupCreator(
         }
     }
 
-    suspend fun backupAnimeCategories(options: BackupOptions): List<BackupCategory> {
+    suspend fun backupMangaCategories(options: BackupOptions): List<BackupCategory> {
         if (!options.categories) return emptyList()
 
         return categoriesBackupCreator()
     }
 
-    suspend fun backupAnimes(mangas: List<Manga>, options: BackupOptions): List<BackupAnime> {
+    suspend fun backupMangas(mangas: List<Manga>, options: BackupOptions): List<BackupManga> {
         if (!options.libraryEntries) return emptyList()
 
-        return animeBackupCreator(mangas, options)
+        return mangaBackupCreator(mangas, options)
     }
 
-    fun backupAnimeSources(animes: List<BackupAnime>): List<BackupSource> {
+    fun backupMangaSources(animes: List<BackupManga>): List<BackupSource> {
         return sourcesBackupCreator(animes)
     }
 

@@ -19,7 +19,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.track.interactor.AddTracks
-import eu.kanade.presentation.browse.components.RemoveAnimeDialog
+import eu.kanade.presentation.browse.components.RemoveMangaDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.BulkSelectionToolbar
@@ -465,7 +465,7 @@ fun RemoveAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val dialog = bulkFavoriteState.dialog as BulkFavoriteScreenModel.Dialog.RemoveManga
 
-    RemoveAnimeDialog(
+    RemoveMangaDialog(
         onDismissRequest = bulkFavoriteScreenModel::dismissDialog,
         onConfirm = {
             bulkFavoriteScreenModel.changeMangaFavorite(dialog.manga)

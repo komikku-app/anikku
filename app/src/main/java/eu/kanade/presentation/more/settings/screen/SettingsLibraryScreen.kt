@@ -68,7 +68,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 libraryPreferences,
             ),
             getGlobalUpdateGroup(allAnimeCategories, libraryPreferences),
-            getEpisodeSwipeActionsGroup(libraryPreferences),
+            getChapterSwipeActionsGroup(libraryPreferences),
             getMigrationCategory(unsortedPreferences),
             // SY <--
         )
@@ -247,7 +247,7 @@ object SettingsLibraryScreen : SearchableSettings {
     }
 
     @Composable
-    private fun getEpisodeSwipeActionsGroup(
+    private fun getChapterSwipeActionsGroup(
         libraryPreferences: LibraryPreferences,
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(

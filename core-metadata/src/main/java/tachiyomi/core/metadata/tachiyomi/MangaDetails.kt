@@ -3,7 +3,7 @@ package tachiyomi.core.metadata.tachiyomi
 import kotlinx.serialization.Serializable
 
 @Serializable
-class AnimeDetails(
+class MangaDetails(
     val title: String? = null,
     val author: String? = null,
     val artist: String? = null,

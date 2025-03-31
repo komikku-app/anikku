@@ -9,7 +9,7 @@ import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun ResetInfoAnimeDialog(
+fun ResetInfoMangaDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {

@@ -2,7 +2,7 @@ package eu.kanade.domain.manga.interactor
 
 import android.app.Application
 import eu.kanade.domain.manga.model.copyFrom
-import eu.kanade.domain.manga.model.toSAnime
+import eu.kanade.domain.manga.model.toSManga
 import exh.source.MERGED_SOURCE_ID
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -90,7 +90,7 @@ class SmartSearchMerge(
                     ogTitle = originalAnime.title,
                     source = MERGED_SOURCE_ID,
                 )
-                .copyFrom(originalAnime.toSAnime())
+                .copyFrom(originalAnime.toSManga())
                 .copy(
                     favorite = true,
                     lastUpdate = originalAnime.lastUpdate,

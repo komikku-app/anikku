@@ -46,7 +46,7 @@ internal fun LibraryList(
             contentType = { "anime_library_list_item" },
         ) { libraryItem ->
             val anime = libraryItem.libraryManga.manga
-            AnimeListItem(
+            MangaListItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },
                 title = anime.title,
                 coverData = MangaCover(

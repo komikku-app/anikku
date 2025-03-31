@@ -11,11 +11,11 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.util.fastAny
-import eu.kanade.presentation.browse.RelatedAnimeTitle
-import eu.kanade.presentation.browse.RelatedAnimesLoadingItem
+import eu.kanade.presentation.browse.RelatedMangaTitle
+import eu.kanade.presentation.browse.RelatedMangasLoadingItem
 import eu.kanade.presentation.browse.header
-import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
-import eu.kanade.tachiyomi.ui.manga.RelatedAnime
+import eu.kanade.presentation.library.components.CommonMangaItemDefaults
+import eu.kanade.tachiyomi.ui.manga.RelatedManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
@@ -25,8 +25,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.plus
 
 @Composable
-fun RelatedAnimesComfortableGrid(
-    relatedAnimes: List<RelatedAnime>,
+fun RelatedMangasComfortableGrid(
+    relatedMangas: List<RelatedManga>,
     getManga: @Composable (Manga) -> State<Manga>,
     columns: GridCells,
     contentPadding: PaddingValues,
@@ -42,14 +42,14 @@ fun RelatedAnimesComfortableGrid(
         contentPadding = contentPadding + PaddingValues(horizontal = MaterialTheme.padding.small),
         // padding for scrollbar
         topContentPadding = contentPadding.calculateTopPadding(),
-        verticalArrangement = Arrangement.spacedBy(CommonAnimeItemDefaults.GridVerticalSpacer),
-        horizontalArrangement = Arrangement.spacedBy(CommonAnimeItemDefaults.GridHorizontalSpacer),
+        verticalArrangement = Arrangement.spacedBy(CommonMangaItemDefaults.GridVerticalSpacer),
+        horizontalArrangement = Arrangement.spacedBy(CommonMangaItemDefaults.GridHorizontalSpacer),
     ) {
-        relatedAnimes.forEach { related ->
-            val isLoading = related is RelatedAnime.Loading
+        relatedMangas.forEach { related ->
+            val isLoading = related is RelatedManga.Loading
             if (isLoading) {
                 header(key = "${related.hashCode()}#header") {
-                    RelatedAnimeTitle(
+                    RelatedMangaTitle(
                         title = stringResource(MR.strings.loading),
                         subtitle = null,
                         onClick = {},
@@ -57,33 +57,33 @@ fun RelatedAnimesComfortableGrid(
                         modifier = Modifier.background(MaterialTheme.colorScheme.background),
                     )
                 }
-                header(key = "${related.hashCode()}#content") { RelatedAnimesLoadingItem() }
+                header(key = "${related.hashCode()}#content") { RelatedMangasLoadingItem() }
             } else {
-                val relatedAnime = related as RelatedAnime.Success
+                val relatedManga = related as RelatedManga.Success
                 header(key = "${related.hashCode()}#divider") { HorizontalDivider() }
                 header(key = "${related.hashCode()}#header") {
-                    RelatedAnimeTitle(
-                        title = if (relatedAnime.keyword.isNotBlank()) {
+                    RelatedMangaTitle(
+                        title = if (relatedManga.keyword.isNotBlank()) {
                             stringResource(KMR.strings.related_mangas_more)
                         } else {
                             stringResource(KMR.strings.related_mangas_website_suggestions)
                         },
-                        showArrow = relatedAnime.keyword.isNotBlank(),
+                        showArrow = relatedManga.keyword.isNotBlank(),
                         subtitle = null,
                         onClick = {
-                            if (relatedAnime.keyword.isNotBlank()) onKeywordClick(relatedAnime.keyword)
+                            if (relatedManga.keyword.isNotBlank()) onKeywordClick(relatedManga.keyword)
                         },
                         onLongClick = {
-                            if (relatedAnime.keyword.isNotBlank()) onKeywordLongClick(relatedAnime.keyword)
+                            if (relatedManga.keyword.isNotBlank()) onKeywordLongClick(relatedManga.keyword)
                         },
                         modifier = Modifier.background(MaterialTheme.colorScheme.background),
                     )
                 }
                 items(
-                    key = { "related-comfort-${relatedAnime.mangaList[it].url.hashCode()}" },
-                    count = relatedAnime.mangaList.size,
+                    key = { "related-comfort-${relatedManga.mangaList[it].url.hashCode()}" },
+                    count = relatedManga.mangaList.size,
                 ) { index ->
-                    val manga by getManga(relatedAnime.mangaList[index])
+                    val manga by getManga(relatedManga.mangaList[index])
                     BrowseSourceComfortableGridItem(
                         manga = manga,
                         onClick = { onMangaClick(manga) },

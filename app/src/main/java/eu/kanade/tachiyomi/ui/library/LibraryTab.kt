@@ -33,7 +33,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.library.DeleteLibraryMangaDialog
 import eu.kanade.presentation.library.LibrarySettingsDialog
-import eu.kanade.presentation.library.ResetInfoAnimeDialog
+import eu.kanade.presentation.library.ResetInfoMangaDialog
 import eu.kanade.presentation.library.components.LibraryContent
 import eu.kanade.presentation.library.components.LibraryToolbar
 import eu.kanade.presentation.manga.components.LibraryBottomActionMenu
@@ -283,7 +283,7 @@ data object LibraryTab : Tab {
                         onAnimeClicked = { navigator.push(MangaScreen(it)) },
                         onContinueWatchingClicked = { it: LibraryManga ->
                             scope.launchIO {
-                                val episode = screenModel.getNextUnseenEpisode(it.manga)
+                                val episode = screenModel.getNextUnreadChapter(it.manga)
                                 if (episode != null) openEpisode(context, episode)
                             }
                             Unit
@@ -345,7 +345,7 @@ data object LibraryTab : Tab {
                 )
             }
             is LibraryScreenModel.Dialog.ResetInfoAnime -> {
-                ResetInfoAnimeDialog(
+                ResetInfoMangaDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = {
                         screenModel.resetInfo()

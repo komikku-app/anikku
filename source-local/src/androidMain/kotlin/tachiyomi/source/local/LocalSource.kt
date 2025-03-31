@@ -25,8 +25,8 @@ import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.core.metadata.tachiyomi.AnimeDetails
 import tachiyomi.core.metadata.tachiyomi.EpisodeDetails
+import tachiyomi.core.metadata.tachiyomi.MangaDetails
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.source.local.filter.OrderBy
@@ -171,8 +171,8 @@ actual class LocalSource(
         }
     }
 
-    private fun SAnime.toJson(): AnimeDetails {
-        return AnimeDetails(title, author, artist, description, genre?.split(", "), status)
+    private fun SAnime.toJson(): MangaDetails {
+        return MangaDetails(title, author, artist, description, genre?.split(", "), status)
     }
     // SY <--
 
@@ -187,7 +187,7 @@ actual class LocalSource(
         animeDirFiles
             .firstOrNull { it.extension == "json" && it.nameWithoutExtension == "details" }
             ?.let { file ->
-                json.decodeFromStream<AnimeDetails>(file.openInputStream()).run {
+                json.decodeFromStream<MangaDetails>(file.openInputStream()).run {
                     title?.let { anime.title = it }
                     author?.let { anime.author = it }
                     artist?.let { anime.artist = it }

@@ -76,19 +76,19 @@ internal class DownloadNotifier(private val context: Context) {
                 clearActions()
                 // Open download manager when clicked
                 setContentIntent(
-                    NotificationHandler.openAnimeDownloadManagerPendingActivity(context),
+                    NotificationHandler.openMangaDownloadManagerPendingActivity(context),
                 )
                 isDownloading = true
                 // Pause action
                 addAction(
                     R.drawable.ic_pause_24dp,
                     context.stringResource(MR.strings.action_pause),
-                    NotificationReceiver.pauseAnimeDownloadsPendingBroadcast(context),
+                    NotificationReceiver.pauseMangaDownloadsPendingBroadcast(context),
                 )
                 addAction(
                     R.drawable.ic_book_24dp,
                     context.stringResource(MR.strings.action_show_anime),
-                    NotificationReceiver.openAnimeEntryPendingActivity(context, download.manga.id),
+                    NotificationReceiver.openMangaEntryPendingActivity(context, download.manga.id),
                 )
             }
 
@@ -134,18 +134,18 @@ internal class DownloadNotifier(private val context: Context) {
             setOngoing(false)
             clearActions()
             // Open download manager when clicked
-            setContentIntent(NotificationHandler.openAnimeDownloadManagerPendingActivity(context))
+            setContentIntent(NotificationHandler.openMangaDownloadManagerPendingActivity(context))
             // Resume action
             addAction(
                 R.drawable.ic_play_arrow_24dp,
                 context.stringResource(MR.strings.action_resume),
-                NotificationReceiver.resumeAnimeDownloadsPendingBroadcast(context),
+                NotificationReceiver.resumeMangaDownloadsPendingBroadcast(context),
             )
             // Clear action
             addAction(
                 R.drawable.ic_close_24dp,
                 context.stringResource(MR.strings.action_cancel_all),
-                NotificationReceiver.clearAnimeDownloadsPendingBroadcast(context),
+                NotificationReceiver.clearMangaDownloadsPendingBroadcast(context),
             )
 
             show(Notifications.ID_DOWNLOAD_EPISODE_PROGRESS)
@@ -179,12 +179,12 @@ internal class DownloadNotifier(private val context: Context) {
             setSmallIcon(R.drawable.ic_warning_white_24dp)
             setAutoCancel(true)
             clearActions()
-            setContentIntent(NotificationHandler.openAnimeDownloadManagerPendingActivity(context))
+            setContentIntent(NotificationHandler.openMangaDownloadManagerPendingActivity(context))
             if (animeId != null) {
                 addAction(
                     R.drawable.ic_book_24dp,
                     context.stringResource(MR.strings.action_show_anime),
-                    NotificationReceiver.openAnimeEntryPendingActivity(context, animeId),
+                    NotificationReceiver.openMangaEntryPendingActivity(context, animeId),
                 )
             }
             setProgress(0, 0, false)
@@ -217,12 +217,12 @@ internal class DownloadNotifier(private val context: Context) {
             setContentText(error ?: context.stringResource(MR.strings.download_notifier_unknown_error))
             setSmallIcon(R.drawable.ic_warning_white_24dp)
             clearActions()
-            setContentIntent(NotificationHandler.openAnimeDownloadManagerPendingActivity(context))
+            setContentIntent(NotificationHandler.openMangaDownloadManagerPendingActivity(context))
             if (animeId != null) {
                 addAction(
                     R.drawable.ic_book_24dp,
                     context.stringResource(MR.strings.action_show_anime),
-                    NotificationReceiver.openAnimeEntryPendingActivity(context, animeId),
+                    NotificationReceiver.openMangaEntryPendingActivity(context, animeId),
                 )
             }
             setProgress(0, 0, false)

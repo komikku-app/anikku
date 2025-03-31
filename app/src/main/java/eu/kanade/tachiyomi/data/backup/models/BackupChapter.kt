@@ -5,7 +5,7 @@ import kotlinx.serialization.protobuf.ProtoNumber
 import tachiyomi.domain.chapter.model.Chapter
 
 @Serializable
-data class BackupEpisode(
+data class BackupChapter(
     // in 1.x some of these values have different names
     // url is called key in 1.x
     @ProtoNumber(1) var url: String,
@@ -27,29 +27,29 @@ data class BackupEpisode(
     @ProtoNumber(11) var lastModifiedAt: Long = 0,
     @ProtoNumber(12) var version: Long = 0,
 ) {
-    fun toEpisodeImpl(): Chapter {
+    fun toChapterImpl(): Chapter {
         return Chapter.create().copy(
-            url = this@BackupEpisode.url,
-            name = this@BackupEpisode.name,
-            episodeNumber = this@BackupEpisode.episodeNumber.toDouble(),
-            scanlator = this@BackupEpisode.scanlator,
-            seen = this@BackupEpisode.seen,
-            bookmark = this@BackupEpisode.bookmark,
+            url = this@BackupChapter.url,
+            name = this@BackupChapter.name,
+            episodeNumber = this@BackupChapter.episodeNumber.toDouble(),
+            scanlator = this@BackupChapter.scanlator,
+            seen = this@BackupChapter.seen,
+            bookmark = this@BackupChapter.bookmark,
             // AM (FILLERMARK) -->
-            fillermark = this@BackupEpisode.fillermark,
+            fillermark = this@BackupChapter.fillermark,
             // <-- AM (FILLERMARK)
-            lastSecondSeen = this@BackupEpisode.lastSecondSeen,
-            totalSeconds = this@BackupEpisode.totalSeconds,
-            dateFetch = this@BackupEpisode.dateFetch,
-            dateUpload = this@BackupEpisode.dateUpload,
-            sourceOrder = this@BackupEpisode.sourceOrder,
-            lastModifiedAt = this@BackupEpisode.lastModifiedAt,
-            version = this@BackupEpisode.version,
+            lastSecondSeen = this@BackupChapter.lastSecondSeen,
+            totalSeconds = this@BackupChapter.totalSeconds,
+            dateFetch = this@BackupChapter.dateFetch,
+            dateUpload = this@BackupChapter.dateUpload,
+            sourceOrder = this@BackupChapter.sourceOrder,
+            lastModifiedAt = this@BackupChapter.lastModifiedAt,
+            version = this@BackupChapter.version,
         )
     }
 }
 
-val backupEpisodeMapper = {
+val backupChapterMapper = {
         _: Long,
         _: Long,
         url: String,
@@ -70,7 +70,7 @@ val backupEpisodeMapper = {
         version: Long,
         _: Long,
     ->
-    BackupEpisode(
+    BackupChapter(
         url = url,
         name = name,
         episodeNumber = episodeNumber.toFloat(),

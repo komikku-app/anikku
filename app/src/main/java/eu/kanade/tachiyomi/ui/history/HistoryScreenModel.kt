@@ -71,17 +71,17 @@ class HistoryScreenModel(
             }
     }
 
-    suspend fun getNextEpisode(): Chapter? {
+    suspend fun getNextChapter(): Chapter? {
         return withIOContext { getNextChapters.await(onlyUnread = false).firstOrNull() }
     }
 
-    fun getNextEpisodeForAnime(animeId: Long, episodeId: Long) {
+    fun getNextChapterForManga(animeId: Long, episodeId: Long) {
         screenModelScope.launchIO {
-            sendNextEpisodeEvent(getNextChapters.await(animeId, episodeId, onlyUnread = false))
+            sendNextChapterEvent(getNextChapters.await(animeId, episodeId, onlyUnread = false))
         }
     }
 
-    private suspend fun sendNextEpisodeEvent(chapters: List<Chapter>) {
+    private suspend fun sendNextChapterEvent(chapters: List<Chapter>) {
         val episode = chapters.firstOrNull()
         _events.send(Event.OpenEpisode(episode))
     }

@@ -1,6 +1,6 @@
 package exh.smartsearch
 
-import eu.kanade.domain.manga.model.toDomainAnime
+import eu.kanade.domain.manga.model.toDomainManga
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
@@ -43,7 +43,7 @@ class SmartSearchEngine(
             }.flatMap { it.await() }
         }
 
-        return eligibleAnime.maxByOrNull { it.dist }?.manga?.toDomainAnime(source.id)
+        return eligibleAnime.maxByOrNull { it.dist }?.manga?.toDomainManga(source.id)
     }
 
     suspend fun normalSearch(source: CatalogueSource, title: String): Manga? {
@@ -67,7 +67,7 @@ class SmartSearchEngine(
             }
         }
 
-        return eligibleManga.maxByOrNull { it.dist }?.manga?.toDomainAnime(source.id)
+        return eligibleManga.maxByOrNull { it.dist }?.manga?.toDomainManga(source.id)
     }
 
     private fun getSmartSearchQueries(cleanedTitle: String): List<String> {

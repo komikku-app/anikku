@@ -16,7 +16,7 @@ fun Source.getPreferenceKey(): String = "source_$id"
 
 fun Source.toStubSource(): StubSource = StubSource(id = id, lang = lang, name = name)
 
-fun Source.getNameForAnimeInfo(
+fun Source.getNameForMangaInfo(
     // SY -->
     mergeSources: List<Source>? = null,
     // SY <--

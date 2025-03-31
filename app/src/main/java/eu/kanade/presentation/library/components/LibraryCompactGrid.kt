@@ -35,7 +35,7 @@ fun LibraryCompactGrid(
             contentType = { "anime_library_compact_grid_item" },
         ) { libraryItem ->
             val anime = libraryItem.libraryManga.manga
-            AnimeCompactGridItem(
+            MangaCompactGridItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },
                 title = anime.title.takeIf { showTitle },
                 coverData = MangaCover(

@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.source.online.all
 
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
-import eu.kanade.domain.manga.model.toSAnime
+import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.model.copy
@@ -101,9 +101,9 @@ class MergedSource : HttpSource() {
             val animeInfoReference = animeReferences.firstOrNull { it.isInfoAnime }
                 ?: animeReferences.firstOrNull { it.animeId != it.mergeId }
             val dbAnime = animeInfoReference?.run {
-                getManga.await(animeUrl, animeSourceId)?.toSAnime()
+                getManga.await(animeUrl, animeSourceId)?.toSManga()
             }
-            (dbAnime ?: mergedAnime.toSAnime()).copy(
+            (dbAnime ?: mergedAnime.toSManga()).copy(
                 url = anime.url,
             )
         }
@@ -135,7 +135,7 @@ class MergedSource : HttpSource() {
                                 try {
                                     val (source, loadedAnime, reference) = it.load()
                                     if (loadedAnime != null && reference.getEpisodeUpdates) {
-                                        val episodeList = source.getEpisodeList(loadedAnime.toSAnime())
+                                        val episodeList = source.getEpisodeList(loadedAnime.toSManga())
                                         val results =
                                             syncChaptersWithSource.await(episodeList, loadedAnime, source)
 
@@ -178,7 +178,7 @@ class MergedSource : HttpSource() {
                     url = animeUrl,
                 ),
             )
-            updateManga.awaitUpdateFromSource(newManga, source.getAnimeDetails(newManga.toSAnime()), false)
+            updateManga.awaitUpdateFromSource(newManga, source.getAnimeDetails(newManga.toSManga()), false)
             anime = getManga.await(newManga.id)!!
         }
         return LoadedAnimeSource(source, anime, this)

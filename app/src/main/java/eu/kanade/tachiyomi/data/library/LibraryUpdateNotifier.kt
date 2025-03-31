@@ -13,7 +13,7 @@ import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
-import eu.kanade.presentation.util.formatEpisodeNumber
+import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.download.Downloader
@@ -56,7 +56,7 @@ class LibraryUpdateNotifier(
      * Pending intent of action that cancels the library update
      */
     private val cancelIntent by lazy {
-        NotificationReceiver.cancelAnimelibUpdatePendingBroadcast(context)
+        NotificationReceiver.cancelLibraryUpdatePendingBroadcast(context)
     }
 
     /**
@@ -233,7 +233,7 @@ class LibraryUpdateNotifier(
                     updates.map { (anime, episodes) ->
                         NotificationManagerCompat.NotificationWithIdAndTag(
                             anime.id.hashCode(),
-                            createNewEpisodesNotification(anime, episodes),
+                            createNewChaptersNotification(anime, episodes),
                         )
                     },
                 )
@@ -241,12 +241,12 @@ class LibraryUpdateNotifier(
         }
     }
 
-    private suspend fun createNewEpisodesNotification(manga: Manga, chapters: Array<Chapter>): Notification {
-        val icon = getAnimeIcon(manga)
+    private suspend fun createNewChaptersNotification(manga: Manga, chapters: Array<Chapter>): Notification {
+        val icon = getMangaIcon(manga)
         return context.notificationBuilder(Notifications.CHANNEL_NEW_CHAPTERS_EPISODES) {
             setContentTitle(manga.title)
 
-            val description = getNewEpisodesDescription(chapters)
+            val description = getNewChaptersDescription(chapters)
             setContentText(description)
             setStyle(NotificationCompat.BigTextStyle().bigText(description))
 
@@ -262,7 +262,7 @@ class LibraryUpdateNotifier(
 
             // Open first episode on tap
             setContentIntent(
-                NotificationReceiver.openEpisodePendingActivity(context, manga, chapters.first()),
+                NotificationReceiver.openChapterPendingActivity(context, manga, chapters.first()),
             )
             setAutoCancel(true)
 
@@ -281,7 +281,7 @@ class LibraryUpdateNotifier(
             addAction(
                 R.drawable.ic_book_24dp,
                 context.stringResource(MR.strings.action_view_episodes),
-                NotificationReceiver.openEpisodePendingActivity(
+                NotificationReceiver.openChapterPendingActivity(
                     context,
                     manga,
                     Notifications.ID_NEW_EPISODES,
@@ -293,7 +293,7 @@ class LibraryUpdateNotifier(
                 addAction(
                     android.R.drawable.stat_sys_download_done,
                     context.stringResource(MR.strings.action_download),
-                    NotificationReceiver.downloadEpisodesPendingBroadcast(
+                    NotificationReceiver.downloadChaptersPendingBroadcast(
                         context,
                         manga,
                         chapters,
@@ -311,7 +311,7 @@ class LibraryUpdateNotifier(
         context.cancelNotification(Notifications.ID_LIBRARY_PROGRESS)
     }
 
-    private suspend fun getAnimeIcon(manga: Manga): Bitmap? {
+    private suspend fun getMangaIcon(manga: Manga): Bitmap? {
         val request = ImageRequest.Builder(context)
             .data(manga)
             .transformations(CircleCropTransformation())
@@ -321,11 +321,11 @@ class LibraryUpdateNotifier(
         return drawable?.getBitmapOrNull()
     }
 
-    private fun getNewEpisodesDescription(chapters: Array<Chapter>): String {
+    private fun getNewChaptersDescription(chapters: Array<Chapter>): String {
         val displayableEpisodeNumbers = chapters
             .filter { it.isRecognizedNumber }
             .sortedBy { it.episodeNumber }
-            .map { formatEpisodeNumber(it.episodeNumber) }
+            .map { formatChapterNumber(it.episodeNumber) }
             .toSet()
 
         return when (displayableEpisodeNumbers.size) {

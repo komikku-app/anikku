@@ -70,14 +70,14 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.browse.RelatedAnimeTitle
+import eu.kanade.presentation.browse.RelatedMangaTitle
 import eu.kanade.presentation.components.relativeDateTimeText
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.ChapterHeader
 import eu.kanade.presentation.manga.components.ExpandableMangaDescription
 import eu.kanade.presentation.manga.components.MangaActionRow
 import eu.kanade.presentation.manga.components.MangaBottomActionMenu
-import eu.kanade.presentation.manga.components.MangaEpisodeListItem
+import eu.kanade.presentation.manga.components.MangaChapterListItem
 import eu.kanade.presentation.manga.components.MangaInfoBox
 import eu.kanade.presentation.manga.components.MangaInfoButtons
 import eu.kanade.presentation.manga.components.MangaToolbar
@@ -85,12 +85,12 @@ import eu.kanade.presentation.manga.components.MissingChapterCountListItem
 import eu.kanade.presentation.manga.components.NextEpisodeAiringListItem
 import eu.kanade.presentation.manga.components.OutlinedButtonWithArrow
 import eu.kanade.presentation.manga.components.RelatedMangasRow
-import eu.kanade.presentation.util.formatEpisodeNumber
+import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
-import eu.kanade.tachiyomi.source.getNameForAnimeInfo
+import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.manga.ChapterList
@@ -420,9 +420,9 @@ private fun MangaScreenSmallImpl(
 
     // KMK -->
     val uiPreferences = Injekt.get<UiPreferences>()
-    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
-    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
-    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
+    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedMangas().collectAsState()
+    val expandRelatedAnimes by uiPreferences.expandRelatedMangas().collectAsState()
+    val showRelatedAnimesInOverflow by uiPreferences.relatedMangasInOverflow().collectAsState()
 
     var layoutSize by remember { mutableStateOf(IntSize.Zero) }
     var fabSize by remember { mutableStateOf(IntSize.Zero) }
@@ -607,7 +607,7 @@ private fun MangaScreenSmallImpl(
                             isTabletUi = false,
                             appBarPadding = topPadding,
                             manga = state.manga,
-                            sourceName = remember { state.source.getNameForAnimeInfo(state.mergedData?.sources) },
+                            sourceName = remember { state.source.getNameForMangaInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
@@ -665,7 +665,7 @@ private fun MangaScreenSmallImpl(
                                     contentType = MangaScreenItem.RELATED_ANIMES,
                                 ) {
                                     Column {
-                                        RelatedAnimeTitle(
+                                        RelatedMangaTitle(
                                             title = stringResource(KMR.strings.pref_source_related_mangas),
                                             subtitle = null,
                                             onClick = onRelatedAnimesScreenClick,
@@ -674,7 +674,7 @@ private fun MangaScreenSmallImpl(
                                                 .padding(horizontal = MaterialTheme.padding.medium),
                                         )
                                         RelatedMangasRow(
-                                            relatedAnimes = state.relatedAnimesSorted,
+                                            relatedMangas = state.relatedAnimesSorted,
                                             getMangaState = getMangaState,
                                             onAnimeClick = onRelatedAnimeClick,
                                             onAnimeLongClick = onRelatedAnimeLongClick,
@@ -749,7 +749,7 @@ private fun MangaScreenSmallImpl(
                                 NextEpisodeAiringListItem(
                                     title = stringResource(
                                         MR.strings.display_mode_episode,
-                                        formatEpisodeNumber(state.airingEpisodeNumber),
+                                        formatChapterNumber(state.airingEpisodeNumber),
                                     ),
                                     date = formatTime(state.airingTime, useDayFormat = true),
                                 )
@@ -867,9 +867,9 @@ private fun MangaScreenLargeImpl(
 
     // KMK -->
     val uiPreferences = Injekt.get<UiPreferences>()
-    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
-    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
-    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
+    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedMangas().collectAsState()
+    val expandRelatedAnimes by uiPreferences.expandRelatedMangas().collectAsState()
+    val showRelatedAnimesInOverflow by uiPreferences.relatedMangasInOverflow().collectAsState()
 
     var layoutSize by remember { mutableStateOf(IntSize.Zero) }
     var fabSize by remember { mutableStateOf(IntSize.Zero) }
@@ -1048,7 +1048,7 @@ private fun MangaScreenLargeImpl(
                             isTabletUi = true,
                             appBarPadding = contentPadding.calculateTopPadding(),
                             manga = state.manga,
-                            sourceName = remember { state.source.getNameForAnimeInfo(state.mergedData?.sources) },
+                            sourceName = remember { state.source.getNameForMangaInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
@@ -1116,7 +1116,7 @@ private fun MangaScreenLargeImpl(
                                             contentType = MangaScreenItem.RELATED_ANIMES,
                                         ) {
                                             Column {
-                                                RelatedAnimeTitle(
+                                                RelatedMangaTitle(
                                                     title = stringResource(KMR.strings.pref_source_related_mangas)
                                                         .uppercase(),
                                                     subtitle = null,
@@ -1126,7 +1126,7 @@ private fun MangaScreenLargeImpl(
                                                         .padding(horizontal = MaterialTheme.padding.medium),
                                                 )
                                                 RelatedMangasRow(
-                                                    relatedAnimes = state.relatedAnimesSorted,
+                                                    relatedMangas = state.relatedAnimesSorted,
                                                     getMangaState = getMangaState,
                                                     onAnimeClick = onRelatedAnimeClick,
                                                     onAnimeLongClick = onRelatedAnimeLongClick,
@@ -1184,7 +1184,7 @@ private fun MangaScreenLargeImpl(
                                         NextEpisodeAiringListItem(
                                             title = stringResource(
                                                 MR.strings.display_mode_episode,
-                                                formatEpisodeNumber(state.airingEpisodeNumber),
+                                                formatChapterNumber(state.airingEpisodeNumber),
                                             ),
                                             date = formatTime(state.airingTime, useDayFormat = true),
                                         )
@@ -1332,11 +1332,11 @@ private fun LazyListScope.sharedChapterItems(
                     }
                 }
                 // <-- AM (FILE_SIZE)
-                MangaEpisodeListItem(
+                MangaChapterListItem(
                     title = if (manga.displayMode == Manga.EPISODE_DISPLAY_NUMBER) {
                         stringResource(
                             MR.strings.display_mode_episode,
-                            formatEpisodeNumber(item.chapter.episodeNumber),
+                            formatChapterNumber(item.chapter.episodeNumber),
                         )
                     } else {
                         item.chapter.name

@@ -34,7 +34,7 @@ class ExtensionUpdateNotifier(
                 setStyle(NotificationCompat.BigTextStyle().bigText(extNames))
             }
             setSmallIcon(R.drawable.ic_extension_24dp)
-            setContentIntent(NotificationReceiver.openAnimeExtensionsPendingActivity(context))
+            setContentIntent(NotificationReceiver.openMangaExtensionsPendingActivity(context))
             setAutoCancel(true)
         }
     }

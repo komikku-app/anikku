@@ -37,7 +37,7 @@ import eu.kanade.presentation.browse.components.GlobalSearchResultItem
 import eu.kanade.presentation.browse.components.SourceIcon
 import eu.kanade.presentation.components.SourcesSearchBox
 import eu.kanade.tachiyomi.source.CatalogueSource
-import eu.kanade.tachiyomi.source.getNameForAnimeInfo
+import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -217,7 +217,7 @@ fun FeedAddDialog(
                 )
                 SourceIcon(source = source)
                 Spacer(modifier = Modifier.width(MaterialTheme.padding.extraSmall))
-                Text(text = it.getNameForAnimeInfo())
+                Text(text = it.getNameForMangaInfo())
             }
         }
     // KMK <--

@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.Navigator
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.presentation.browse.RelatedAnimesContent
+import eu.kanade.presentation.browse.RelatedMangasContent
 import eu.kanade.presentation.browse.components.BrowseSourceSimpleToolbar
 import eu.kanade.presentation.components.BulkSelectionToolbar
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
@@ -58,15 +58,15 @@ fun RelatedMangasScreen(
                     onChangeCategoryClick = bulkFavoriteScreenModel::addFavorite,
                     onSelectAll = {
                         successState.relatedAnimesSorted?.forEach {
-                            val relatedAnime = it as RelatedAnime.Success
-                            relatedAnime.mangaList.forEach { manga ->
+                            val relatedManga = it as RelatedManga.Success
+                            relatedManga.mangaList.forEach { manga ->
                                 bulkFavoriteScreenModel.select(manga)
                             }
                         }
                     },
                     onReverseSelection = {
                         successState.relatedAnimesSorted
-                            ?.map { it as RelatedAnime.Success }
+                            ?.map { it as RelatedManga.Success }
                             ?.flatMap { it.mangaList }
                             ?.let { bulkFavoriteScreenModel.reverseSelection(it) }
                     },
@@ -85,8 +85,8 @@ fun RelatedMangasScreen(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { paddingValues ->
-        RelatedAnimesContent(
-            relatedAnimes = successState.relatedAnimesSorted,
+        RelatedMangasContent(
+            relatedMangas = successState.relatedAnimesSorted,
             getMangaState = { manga -> screenModel.getManga(initialManga = manga) },
             columns = getColumnsPreference(LocalConfiguration.current.orientation),
             entries = getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),

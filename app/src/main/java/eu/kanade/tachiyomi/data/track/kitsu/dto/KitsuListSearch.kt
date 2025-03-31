@@ -14,7 +14,7 @@ data class KitsuListSearchResult(
 ) {
     fun firstToAnimeTrack(): TrackSearch {
         require(data.isNotEmpty()) { "Missing User data from Kitsu" }
-        require(included.isNotEmpty()) { "Missing Manga data from Kitsu" }
+        require(included.isNotEmpty()) { "Missing Anime data from Kitsu" }
 
         val userData = data[0]
         val userDataAttrs = userData.attributes

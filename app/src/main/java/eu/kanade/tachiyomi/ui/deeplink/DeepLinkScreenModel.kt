@@ -4,8 +4,8 @@ import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
-import eu.kanade.domain.manga.model.toDomainAnime
-import eu.kanade.domain.manga.model.toSAnime
+import eu.kanade.domain.manga.model.toDomainManga
+import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.tachiyomi.animesource.online.UriType
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -38,11 +38,11 @@ class DeepLinkScreenModel(
                 .firstOrNull { it.getUriType(query) != UriType.Unknown }
 
             val anime = source?.getAnime(query)?.let {
-                getAnimeFromSAnime(it, source.id)
+                getMangaFromSManga(it, source.id)
             }
 
             val episode = if (source?.getUriType(query) == UriType.Episode && anime != null) {
-                source.getEpisode(query)?.let { getEpisodeFromSEpisode(it, anime, source) }
+                source.getEpisode(query)?.let { getChapterFromSChapter(it, anime, source) }
             } else {
                 null
             }
@@ -61,11 +61,11 @@ class DeepLinkScreenModel(
         }
     }
 
-    private suspend fun getEpisodeFromSEpisode(sChapter: SChapter, manga: Manga, source: Source): Chapter? {
+    private suspend fun getChapterFromSChapter(sChapter: SChapter, manga: Manga, source: Source): Chapter? {
         val localEpisode = getChapterByUrlAndMangaId.await(sChapter.url, manga.id)
 
         return if (localEpisode == null) {
-            val sourceEpisodes = source.getEpisodeList(manga.toSAnime())
+            val sourceEpisodes = source.getEpisodeList(manga.toSManga())
             val newEpisodes = syncChaptersWithSource.await(sourceEpisodes, manga, source, false)
             newEpisodes.find { it.url == sChapter.url }
         } else {
@@ -73,9 +73,9 @@ class DeepLinkScreenModel(
         }
     }
 
-    private suspend fun getAnimeFromSAnime(sManga: SManga, sourceId: Long): Manga {
+    private suspend fun getMangaFromSManga(sManga: SManga, sourceId: Long): Manga {
         return getMangaByUrlAndSourceId.await(sManga.url, sourceId)
-            ?: networkToLocalManga.await(sManga.toDomainAnime(sourceId))
+            ?: networkToLocalManga.await(sManga.toDomainManga(sourceId))
     }
 
     sealed interface State {

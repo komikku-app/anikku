@@ -187,7 +187,7 @@ class LibraryScreenModel(
             .launchIn(screenModelScope)
 
         combine(
-            getAnimelibItemPreferencesFlow(),
+            getLibraryItemPreferencesFlow(),
             getTrackingFilterFlow(),
         ) { prefs, trackFilter ->
             (
@@ -227,7 +227,7 @@ class LibraryScreenModel(
         trackMap: Map<Long, List<Track>>,
         trackingFilter: Map<Long, TriState>,
     ): AnimeLibraryMap {
-        val prefs = getAnimelibItemPreferencesFlow().first()
+        val prefs = getLibraryItemPreferencesFlow().first()
         val downloadedOnly = prefs.globalFilterDownloaded
         val skipOutsideReleasePeriod = prefs.skipOutsideReleasePeriod
         val filterDownloaded = if (downloadedOnly) TriState.ENABLED_IS else prefs.filterDownloaded
@@ -405,7 +405,7 @@ class LibraryScreenModel(
         }
     }
 
-    private fun getAnimelibItemPreferencesFlow(): Flow<ItemPreferences> {
+    private fun getLibraryItemPreferencesFlow(): Flow<ItemPreferences> {
         return combine(
             libraryPreferences.downloadBadge().changes(),
             libraryPreferences.localBadge().changes(),
@@ -456,7 +456,7 @@ class LibraryScreenModel(
     private fun getLibraryFlow(): Flow<AnimeLibraryMap> {
         val animelibAnimesFlow = combine(
             getLibraryManga.subscribe(),
-            getAnimelibItemPreferencesFlow(),
+            getLibraryItemPreferencesFlow(),
             downloadCache.changes,
         ) { libraryMangaList, prefs, _ ->
             libraryMangaList
@@ -589,7 +589,7 @@ class LibraryScreenModel(
             .reduce { set1, set2 -> set1.intersect(set2) }
     }
 
-    suspend fun getNextUnseenEpisode(manga: Manga): Chapter? {
+    suspend fun getNextUnreadChapter(manga: Manga): Chapter? {
         // SY -->
         val mergedManga = getMergedMangaById.await(manga.id).associateBy { it.id }
         return if (manga.id == MERGED_SOURCE_ID) {
@@ -616,11 +616,11 @@ class LibraryScreenModel(
         val selection = state.value.selection
         val animes = selection.map { it.manga }.toList()
         when (action) {
-            DownloadAction.NEXT_1_EPISODE -> downloadUnseenEpisodes(animes, 1)
-            DownloadAction.NEXT_5_EPISODES -> downloadUnseenEpisodes(animes, 5)
-            DownloadAction.NEXT_10_EPISODES -> downloadUnseenEpisodes(animes, 10)
-            DownloadAction.NEXT_25_EPISODES -> downloadUnseenEpisodes(animes, 25)
-            DownloadAction.UNSEEN_EPISODES -> downloadUnseenEpisodes(animes, null)
+            DownloadAction.NEXT_1_EPISODE -> downloadUnreadChapters(animes, 1)
+            DownloadAction.NEXT_5_EPISODES -> downloadUnreadChapters(animes, 5)
+            DownloadAction.NEXT_10_EPISODES -> downloadUnreadChapters(animes, 10)
+            DownloadAction.NEXT_25_EPISODES -> downloadUnreadChapters(animes, 25)
+            DownloadAction.UNSEEN_EPISODES -> downloadUnreadChapters(animes, null)
         }
         clearSelection()
     }
@@ -631,7 +631,7 @@ class LibraryScreenModel(
      * @param mangas the list of manga.
      * @param amount the amount to queue or null to queue all
      */
-    private fun downloadUnseenEpisodes(mangas: List<Manga>, amount: Int?) {
+    private fun downloadUnreadChapters(mangas: List<Manga>, amount: Int?) {
         screenModelScope.launchNonCancellable {
             mangas.forEach { anime ->
                 // SY -->

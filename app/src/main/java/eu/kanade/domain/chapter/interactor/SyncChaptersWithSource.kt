@@ -1,9 +1,9 @@
 package eu.kanade.domain.chapter.interactor
 
-import eu.kanade.domain.chapter.model.copyFromSEpisode
+import eu.kanade.domain.chapter.model.copyFromSChapter
 import eu.kanade.domain.chapter.model.toSChapter
 import eu.kanade.domain.manga.interactor.UpdateManga
-import eu.kanade.domain.manga.model.toSAnime
+import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.source.Source
@@ -60,7 +60,7 @@ class SyncChaptersWithSource(
             .distinctBy { it.url }
             .mapIndexed { i, sEpisode ->
                 Chapter.create()
-                    .copyFromSEpisode(sEpisode)
+                    .copyFromSChapter(sEpisode)
                     .copy(name = with(ChapterSanitizer) { sEpisode.name.sanitize(manga.title) })
                     .copy(animeId = manga.id, sourceOrder = i.toLong())
             }
@@ -85,8 +85,8 @@ class SyncChaptersWithSource(
             // Update metadata from source if necessary.
             if (source is HttpSource) {
                 val sEpisode = episode.toSChapter()
-                source.prepareNewEpisode(sEpisode, manga.toSAnime())
-                episode = episode.copyFromSEpisode(sEpisode)
+                source.prepareNewEpisode(sEpisode, manga.toSManga())
+                episode = episode.copyFromSChapter(sEpisode)
             }
 
             // Recognize episode number for the episode.

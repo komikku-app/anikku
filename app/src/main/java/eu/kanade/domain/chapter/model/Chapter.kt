@@ -16,7 +16,7 @@ fun Chapter.toSChapter(): SChapter {
     }
 }
 
-fun Chapter.copyFromSEpisode(sChapter: SChapter): Chapter {
+fun Chapter.copyFromSChapter(sChapter: SChapter): Chapter {
     return this.copy(
         name = sChapter.name,
         url = sChapter.url,

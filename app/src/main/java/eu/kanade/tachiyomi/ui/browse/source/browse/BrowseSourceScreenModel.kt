@@ -17,7 +17,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.manga.interactor.UpdateManga
-import eu.kanade.domain.manga.model.toDomainAnime
+import eu.kanade.domain.manga.model.toDomainManga
 import eu.kanade.domain.source.interactor.GetExhSavedSearch
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.interactor.AddTracks
@@ -193,7 +193,7 @@ open class BrowseSourceScreenModel(
                 getRemoteManga.subscribe(sourceId, listing.query ?: "", listing.filters)
             }.flow.map { pagingData ->
                 pagingData.map {
-                    networkToLocalManga.await(it.toDomainAnime(sourceId))
+                    networkToLocalManga.await(it.toDomainManga(sourceId))
                         .let { localAnime -> getManga.subscribe(localAnime.url, localAnime.source) }
                         .filterNotNull()
                         .stateIn(ioCoroutineScope)
@@ -341,7 +341,7 @@ open class BrowseSourceScreenModel(
      *
      * @param manga the manga to update.
      */
-    fun changeAnimeFavorite(manga: Manga) {
+    fun changeMangaFavorite(manga: Manga) {
         screenModelScope.launch {
             var new = manga.copy(
                 favorite = !manga.favorite,
@@ -371,15 +371,15 @@ open class BrowseSourceScreenModel(
             when {
                 // Default category set
                 defaultCategory != null -> {
-                    moveAnimeToCategories(manga, defaultCategory)
+                    moveMangaToCategories(manga, defaultCategory)
 
-                    changeAnimeFavorite(manga)
+                    changeMangaFavorite(manga)
                 }
                 // Automatic 'Default' or no categories
                 defaultCategoryId == 0 || categories.isEmpty() -> {
-                    moveAnimeToCategories(manga)
+                    moveMangaToCategories(manga)
 
-                    changeAnimeFavorite(manga)
+                    changeMangaFavorite(manga)
                 }
 
                 // Choose a category
@@ -408,15 +408,15 @@ open class BrowseSourceScreenModel(
             .orEmpty()
     }
 
-    suspend fun getDuplicateAnimelibAnime(manga: Manga): Manga? {
+    suspend fun getDuplicateLibraryAnime(manga: Manga): Manga? {
         return getDuplicateAnimelibAnime.await(manga).getOrNull(0)
     }
 
-    private fun moveAnimeToCategories(manga: Manga, vararg categories: Category) {
-        moveAnimeToCategories(manga, categories.filter { it.id != 0L }.map { it.id })
+    private fun moveMangaToCategories(manga: Manga, vararg categories: Category) {
+        moveMangaToCategories(manga, categories.filter { it.id != 0L }.map { it.id })
     }
 
-    fun moveAnimeToCategories(manga: Manga, categoryIds: List<Long>) {
+    fun moveMangaToCategories(manga: Manga, categoryIds: List<Long>) {
         screenModelScope.launchIO {
             setMangaCategories.await(
                 mangaId = manga.id,

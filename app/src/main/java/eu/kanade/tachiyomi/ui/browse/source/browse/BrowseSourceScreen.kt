@@ -43,7 +43,7 @@ import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.presentation.browse.BrowseSourceContent
 import eu.kanade.presentation.browse.MissingSourceScreen
 import eu.kanade.presentation.browse.components.BrowseSourceToolbar
-import eu.kanade.presentation.browse.components.RemoveAnimeDialog
+import eu.kanade.presentation.browse.components.RemoveMangaDialog
 import eu.kanade.presentation.browse.components.SavedSearchCreateDialog
 import eu.kanade.presentation.browse.components.SavedSearchDeleteDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
@@ -366,7 +366,7 @@ data class BrowseSourceScreen(
                             navigator.push(MangaScreen(manga.id, true))
                         } else {
                             // KMK <--
-                            val duplicateManga = screenModel.getDuplicateAnimelibAnime(manga)
+                            val duplicateManga = screenModel.getDuplicateLibraryAnime(manga)
                             when {
                                 manga.favorite -> screenModel.setDialog(
                                     BrowseSourceScreenModel.Dialog.RemoveAnime(manga),
@@ -435,10 +435,10 @@ data class BrowseSourceScreen(
                 )
             }
             is BrowseSourceScreenModel.Dialog.RemoveAnime -> {
-                RemoveAnimeDialog(
+                RemoveMangaDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = {
-                        screenModel.changeAnimeFavorite(dialog.manga)
+                        screenModel.changeMangaFavorite(dialog.manga)
                     },
                     mangaToRemove = dialog.manga,
                 )
@@ -449,8 +449,8 @@ data class BrowseSourceScreen(
                     onDismissRequest = onDismissRequest,
                     onEditCategories = { navigator.push(CategoryScreen()) },
                     onConfirm = { include, _ ->
-                        screenModel.changeAnimeFavorite(dialog.manga)
-                        screenModel.moveAnimeToCategories(dialog.manga, include)
+                        screenModel.changeMangaFavorite(dialog.manga)
+                        screenModel.moveMangaToCategories(dialog.manga, include)
                     },
                 )
             }

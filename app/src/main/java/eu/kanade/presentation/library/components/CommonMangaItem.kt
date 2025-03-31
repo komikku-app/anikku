@@ -50,7 +50,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
 import tachiyomi.domain.manga.model.MangaCover as EntryCoverModel
 
-object CommonAnimeItemDefaults {
+object CommonMangaItemDefaults {
     val GridHorizontalSpacer = 4.dp
     val GridVerticalSpacer = 4.dp
 
@@ -74,7 +74,7 @@ private const val GRID_SELECTED_COVER_ALPHA = 0.76f
  * Accepts null [title] for a cover-only view.
  */
 @Composable
-fun AnimeCompactGridItem(
+fun MangaCompactGridItem(
     coverData: EntryCoverModel,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -97,7 +97,7 @@ fun AnimeCompactGridItem(
         onClick = onClick,
         onLongClick = onLongClick,
     ) {
-        AnimeGridCover(
+        MangaGridCover(
             cover = {
                 MangaCover.Book(
                     modifier = Modifier
@@ -137,7 +137,7 @@ fun AnimeCompactGridItem(
 }
 
 /**
- * Title overlay for [AnimeCompactGridItem]
+ * Title overlay for [MangaCompactGridItem]
  */
 @Composable
 private fun BoxScope.CoverTextOverlay(
@@ -193,7 +193,7 @@ private fun BoxScope.CoverTextOverlay(
  * Layout of grid list item with title below the cover.
  */
 @Composable
-fun AnimeComfortableGridItem(
+fun MangaComfortableGridItem(
     coverData: EntryCoverModel,
     title: String,
     onClick: () -> Unit,
@@ -222,7 +222,7 @@ fun AnimeComfortableGridItem(
         onLongClick = onLongClick,
     ) {
         Column {
-            AnimeGridCover(
+            MangaGridCover(
                 cover = {
                     if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
                         MangaCover.Panorama(
@@ -305,7 +305,7 @@ fun AnimeComfortableGridItem(
  * Common cover layout to add contents to be drawn on top of the cover.
  */
 @Composable
-private fun AnimeGridCover(
+private fun MangaGridCover(
     modifier: Modifier = Modifier,
     cover: @Composable BoxScope.() -> Unit = {},
     // KMK -->
@@ -406,7 +406,7 @@ private fun Modifier.selectedOutline(
  * Layout of list item.
  */
 @Composable
-fun AnimeListItem(
+fun MangaListItem(
     coverData: EntryCoverModel,
     title: String,
     onClick: () -> Unit,

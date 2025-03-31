@@ -100,7 +100,7 @@ import uy.kohesive.injekt.api.get
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
-import tachiyomi.domain.manga.model.MangaCover as DomainAnimeCover
+import tachiyomi.domain.manga.model.MangaCover as DomainMangaCover
 
 private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTILINE))
 
@@ -115,12 +115,12 @@ fun MangaInfoBox(
     doSearch: (query: String, global: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     // KMK -->
-    onCoverLoaded: (DomainAnimeCover) -> Unit,
+    onCoverLoaded: (DomainMangaCover) -> Unit,
     coverRatio: MutableFloatState,
     // KMK <--
 ) {
     // KMK -->
-    val usePanoramaCover by Injekt.get<UiPreferences>().usePanoramaCoverAnimeInfo().collectAsState()
+    val usePanoramaCover by Injekt.get<UiPreferences>().usePanoramaCoverMangaInfo().collectAsState()
     // KMK <--
     Box(modifier = modifier) {
         // Backdrop
@@ -391,7 +391,7 @@ private fun MangaAndSourceTitlesLarge(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
     // KMK -->
-    onCoverLoaded: (DomainAnimeCover) -> Unit,
+    onCoverLoaded: (DomainMangaCover) -> Unit,
     coverRatio: MutableFloatState,
     usePanoramaCover: Boolean = false,
     // KMK <--
@@ -462,7 +462,7 @@ private fun MangaAndSourceTitlesSmall(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
     // KMK -->
-    onCoverLoaded: (DomainAnimeCover) -> Unit,
+    onCoverLoaded: (DomainMangaCover) -> Unit,
     coverRatio: MutableFloatState,
     usePanoramaCover: Boolean = false,
     // KMK <--

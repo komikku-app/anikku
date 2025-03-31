@@ -18,8 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.library.components.AnimeComfortableGridItem
-import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
+import eu.kanade.presentation.library.components.CommonMangaItemDefaults
+import eu.kanade.presentation.library.components.MangaComfortableGridItem
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
@@ -52,7 +52,7 @@ fun GlobalSearchCardRow(
     ) {
         items(titles) {
             val title by getManga(it)
-            AnimeItem(
+            MangaItem(
                 title = title.title,
                 cover = title.asMangaCover(),
                 isFavorite = title.favorite,
@@ -67,7 +67,7 @@ fun GlobalSearchCardRow(
 }
 
 @Composable
-internal fun AnimeItem(
+internal fun MangaItem(
     title: String,
     cover: MangaCover,
     isFavorite: Boolean,
@@ -89,7 +89,7 @@ internal fun AnimeItem(
             // KMK <--
         ),
     ) {
-        AnimeComfortableGridItem(
+        MangaComfortableGridItem(
             title = title,
             titleMaxLines = 3,
             coverData = cover,
@@ -102,7 +102,7 @@ internal fun AnimeItem(
             usePanoramaCover = panoramaCover,
             fitToPanoramaCover = true,
             // KMK <--
-            coverAlpha = if (isFavorite) CommonAnimeItemDefaults.BrowseFavoriteCoverAlpha else 1f,
+            coverAlpha = if (isFavorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
             onClick = onClick,
             onLongClick = onLongClick,
         )

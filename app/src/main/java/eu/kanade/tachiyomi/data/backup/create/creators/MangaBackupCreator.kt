@@ -1,10 +1,10 @@
 package eu.kanade.tachiyomi.data.backup.create.creators
 
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
-import eu.kanade.tachiyomi.data.backup.models.BackupAnime
-import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
+import eu.kanade.tachiyomi.data.backup.models.BackupChapter
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
-import eu.kanade.tachiyomi.data.backup.models.backupEpisodeMapper
+import eu.kanade.tachiyomi.data.backup.models.BackupManga
+import eu.kanade.tachiyomi.data.backup.models.backupChapterMapper
 import eu.kanade.tachiyomi.data.backup.models.backupMergedMangaReferenceMapper
 import eu.kanade.tachiyomi.data.backup.models.backupTrackMapper
 import exh.source.MERGED_SOURCE_ID
@@ -17,7 +17,7 @@ import tachiyomi.domain.manga.model.Manga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeBackupCreator(
+class MangaBackupCreator(
     private val handler: DatabaseHandler = Injekt.get(),
     private val getCategories: GetCategories = Injekt.get(),
     private val getHistory: GetHistory = Injekt.get(),
@@ -26,15 +26,15 @@ class AnimeBackupCreator(
     // SY <--
 ) {
 
-    suspend operator fun invoke(mangas: List<Manga>, options: BackupOptions): List<BackupAnime> {
+    suspend operator fun invoke(mangas: List<Manga>, options: BackupOptions): List<BackupManga> {
         return mangas.map {
-            backupAnime(it, options)
+            backupManga(it, options)
         }
     }
 
-    private suspend fun backupAnime(manga: Manga, options: BackupOptions): BackupAnime {
+    private suspend fun backupManga(manga: Manga, options: BackupOptions): BackupManga {
         // Entry for this manga
-        val animeObject = manga.toBackupAnime(
+        val animeObject = manga.toBackupManga(
             // SY -->
             if (options.customInfo) {
                 getCustomMangaInfo.get(manga.id)
@@ -62,10 +62,10 @@ class AnimeBackupCreator(
                 episodesQueries.getEpisodesByAnimeId(
                     animeId = manga.id,
                     applyScanlatorFilter = 0, // false
-                    mapper = backupEpisodeMapper,
+                    mapper = backupChapterMapper,
                 )
             }
-                .takeUnless(List<BackupEpisode>::isEmpty)
+                .takeUnless(List<BackupChapter>::isEmpty)
                 ?.let { animeObject.episodes = it }
         }
 
@@ -101,8 +101,8 @@ class AnimeBackupCreator(
     }
 }
 
-private fun Manga.toBackupAnime(/* SY --> */customMangaInfo: CustomMangaInfo?/* SY <-- */) =
-    BackupAnime(
+private fun Manga.toBackupManga(/* SY --> */customMangaInfo: CustomMangaInfo?/* SY <-- */) =
+    BackupManga(
         url = this.url,
         title = this.title,
         artist = this.artist,

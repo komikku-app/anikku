@@ -12,7 +12,7 @@ import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.copyFrom
-import eu.kanade.domain.manga.model.toSAnime
+import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.prepUpdateCover
@@ -57,7 +57,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
             logcat(LogPriority.ERROR, e) { "Not allowed to set foreground job" }
         }
 
-        addAnimeToQueue()
+        addMangaToQueue()
 
         return withIOContext {
             try {
@@ -94,7 +94,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
     /**
      * Adds list of manga to be updated.
      */
-    private suspend fun addAnimeToQueue() {
+    private suspend fun addMangaToQueue() {
         animeToUpdate = getLibraryManga.await()
         notifier.showQueueSizeWarningNotificationIfNeeded(animeToUpdate)
     }
@@ -121,7 +121,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
                                 ) {
                                     val source = sourceManager.get(anime.source) ?: return@withUpdateNotification
                                     try {
-                                        val networkAnime = source.getAnimeDetails(anime.toSAnime())
+                                        val networkAnime = source.getAnimeDetails(anime.toSManga())
                                         val updatedAnime = anime.prepUpdateCover(coverCache, networkAnime, true)
                                             .copyFrom(networkAnime)
                                         try {

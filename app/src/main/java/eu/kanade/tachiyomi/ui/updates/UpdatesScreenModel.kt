@@ -497,5 +497,5 @@ data class UpdatesItem(
 )
 
 // KMK -->
-fun UpdatesWithRelations.groupByDateAndAnime() = "${dateFetch.toLocalDate().toEpochDay()}-$animeId"
+fun UpdatesWithRelations.groupByDateAndManga() = "${dateFetch.toLocalDate().toEpochDay()}-$animeId"
 // KMK <--

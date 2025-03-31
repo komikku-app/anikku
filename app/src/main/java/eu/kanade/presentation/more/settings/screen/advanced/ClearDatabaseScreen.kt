@@ -78,7 +78,7 @@ class ClearDatabaseScreen : Screen() {
                             TextButton(
                                 onClick = {
                                     scope.launchUI {
-                                        model.removeAnimeBySourceId()
+                                        model.removeMangaBySourceId()
                                         model.clearSelection()
                                         model.hideConfirmation()
                                         context.toast(MR.strings.clear_database_completed)
@@ -231,7 +231,7 @@ private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenMod
         }
     }
 
-    suspend fun removeAnimeBySourceId() = withNonCancellableContext {
+    suspend fun removeMangaBySourceId() = withNonCancellableContext {
         val state = state.value as? State.Ready ?: return@withNonCancellableContext
         database.animesQueries.deleteAnimesNotInLibraryBySourceIds(state.selection)
         database.historyQueries.removeResettedHistory()

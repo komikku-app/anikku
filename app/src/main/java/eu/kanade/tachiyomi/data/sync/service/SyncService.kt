@@ -3,9 +3,9 @@ package eu.kanade.tachiyomi.data.sync.service
 import android.content.Context
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.backup.models.Backup
-import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
-import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
+import eu.kanade.tachiyomi.data.backup.models.BackupChapter
+import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
 import eu.kanade.tachiyomi.data.backup.models.BackupSource
@@ -42,16 +42,16 @@ abstract class SyncService(
                 remoteSyncData.backup?.backupCategories,
             )
 
-        val mergedAnimeList = mergeAnimeLists(
-            localSyncData.backup?.backupAnime,
-            remoteSyncData.backup?.backupAnime,
+        val mergedAnimeList = mergeMangaLists(
+            localSyncData.backup?.backupManga,
+            remoteSyncData.backup?.backupManga,
             localSyncData.backup?.backupCategories ?: emptyList(),
             remoteSyncData.backup?.backupCategories ?: emptyList(),
             mergedAnimeCategoriesList,
         )
 
         val mergedAnimeSourcesList =
-            mergeAnimeSourcesLists(localSyncData.backup?.backupSources, remoteSyncData.backup?.backupSources)
+            mergeMangaSourcesLists(localSyncData.backup?.backupSources, remoteSyncData.backup?.backupSources)
         val mergedPreferencesList =
             mergePreferencesLists(localSyncData.backup?.backupPreferences, remoteSyncData.backup?.backupPreferences)
         val mergedSourcePreferencesList = mergeSourcePreferencesLists(
@@ -68,7 +68,7 @@ abstract class SyncService(
 
         // Create the merged Backup object
         val mergedBackup = Backup(
-            backupAnime = mergedAnimeList,
+            backupManga = mergedAnimeList,
             backupCategories = mergedAnimeCategoriesList,
             backupSources = mergedAnimeSourcesList,
             backupPreferences = mergedPreferencesList,
@@ -87,21 +87,21 @@ abstract class SyncService(
     }
 
     /**
-     * Merges two lists of BackupAnime objects, selecting the most recent manga based on the lastModifiedAt value.
+     * Merges two lists of BackupManga objects, selecting the most recent manga based on the lastModifiedAt value.
      * If lastModifiedAt is null for a manga, it treats that manga as the oldest possible for comparison purposes.
      * This function is designed to reconcile local and remote manga lists, ensuring the most up-to-date manga is retained.
      *
-     * @param localAnimeList The list of local BackupAnime objects or null.
-     * @param remoteAnimeList The list of remote BackupAnime objects or null.
-     * @return A list of BackupAnime objects, each representing the most recent version of the manga from either local or remote sources.
+     * @param localAnimeList The list of local BackupManga objects or null.
+     * @param remoteAnimeList The list of remote BackupManga objects or null.
+     * @return A list of BackupManga objects, each representing the most recent version of the manga from either local or remote sources.
      */
-    private fun mergeAnimeLists(
-        localAnimeList: List<BackupAnime>?,
-        remoteAnimeList: List<BackupAnime>?,
+    private fun mergeMangaLists(
+        localAnimeList: List<BackupManga>?,
+        remoteAnimeList: List<BackupManga>?,
         localCategories: List<BackupCategory>,
         remoteCategories: List<BackupCategory>,
         mergedCategories: List<BackupCategory>,
-    ): List<BackupAnime> {
+    ): List<BackupManga> {
         val logTag = "MergeAnimeLists"
 
         val localAnimeListSafe = localAnimeList.orEmpty()
@@ -111,7 +111,7 @@ abstract class SyncService(
             "Starting merge. Local list size: ${localAnimeListSafe.size}, Remote list size: ${remoteAnimeListSafe.size}"
         }
 
-        fun animeCompositeKey(anime: BackupAnime): String {
+        fun animeCompositeKey(anime: BackupManga): String {
             return "${anime.source}|${anime.url}|${anime.title.lowercase().trim()}|${anime.author?.lowercase()?.trim()}"
         }
 
@@ -123,7 +123,7 @@ abstract class SyncService(
         val remoteCategoriesMapByOrder = remoteCategories.associateBy { it.order }
         val mergedCategoriesMapByName = mergedCategories.associateBy { it.name }
 
-        fun updateCategories(theAnime: BackupAnime, theMap: Map<Long, BackupCategory>): BackupAnime {
+        fun updateCategories(theAnime: BackupManga, theMap: Map<Long, BackupCategory>): BackupManga {
             return theAnime.copy(
                 categories = theAnime.categories.mapNotNull {
                     theMap[it]?.let { category ->
@@ -152,7 +152,7 @@ abstract class SyncService(
                             "Keeping local version of ${local.title} with merged episodes."
                         }
                         updateCategories(
-                            local.copy(episodes = mergeEpisodes(local.episodes, remote.episodes)),
+                            local.copy(episodes = mergeChapters(local.episodes, remote.episodes)),
                             localCategoriesMapByOrder,
                         )
                     } else {
@@ -160,7 +160,7 @@ abstract class SyncService(
                             "Keeping remote version of ${remote.title} with merged episodes."
                         }
                         updateCategories(
-                            remote.copy(episodes = mergeEpisodes(local.episodes, remote.episodes)),
+                            remote.copy(episodes = mergeChapters(local.episodes, remote.episodes)),
                             remoteCategoriesMapByOrder,
                         )
                     }
@@ -181,13 +181,13 @@ abstract class SyncService(
     }
 
 /**
-     * Merges two lists of BackupEpisode objects, selecting the most recent episode based on the lastModifiedAt value.
+     * Merges two lists of BackupChapter objects, selecting the most recent episode based on the lastModifiedAt value.
      * If lastModifiedAt is null for a episode, it treats that episode as the oldest possible for comparison purposes.
      * This function is designed to reconcile local and remote episode lists, ensuring the most up-to-date episode is retained.
      *
-     * @param localEpisodes The list of local BackupEpisode objects.
-     * @param remoteEpisodes The list of remote BackupEpisode objects.
-     * @return A list of BackupEpisode objects, each representing the most recent version of the episode from either local or remote sources.
+     * @param localEpisodes The list of local BackupChapter objects.
+     * @param remoteEpisodes The list of remote BackupChapter objects.
+     * @return A list of BackupChapter objects, each representing the most recent version of the episode from either local or remote sources.
      *
      * - This function is used in scenarios where local and remote episode lists need to be synchronized.
      * - It iterates over the union of the URLs from both local and remote episodes.
@@ -197,13 +197,13 @@ abstract class SyncService(
      * - If lastModifiedAt is null or missing, the episode is considered the oldest for safety, ensuring that any episode with a valid timestamp is preferred.
      * - The resulting list contains the most recent episodes from the combined set of local and remote episodes.
      */
-    private fun mergeEpisodes(
-        localEpisodes: List<BackupEpisode>,
-        remoteEpisodes: List<BackupEpisode>,
-    ): List<BackupEpisode> {
+    private fun mergeChapters(
+        localEpisodes: List<BackupChapter>,
+        remoteEpisodes: List<BackupChapter>,
+    ): List<BackupChapter> {
         val logTag = "MergeEpisodes"
 
-        fun episodeCompositeKey(episode: BackupEpisode): String {
+        fun episodeCompositeKey(episode: BackupChapter): String {
             return "${episode.url}|${episode.name}|${episode.episodeNumber}"
         }
 
@@ -310,7 +310,7 @@ abstract class SyncService(
         return mergedCategoriesMap.values.toList()
     }
 
-    private fun mergeAnimeSourcesLists(
+    private fun mergeMangaSourcesLists(
         localSources: List<BackupSource>?,
         remoteSources: List<BackupSource>?,
     ): List<BackupSource> {

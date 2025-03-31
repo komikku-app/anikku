@@ -7,10 +7,10 @@ import eu.kanade.tachiyomi.data.cache.CoverCache
 import tachiyomi.domain.manga.model.MangaCover
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import tachiyomi.domain.manga.model.Manga as DomainAnime
+import tachiyomi.domain.manga.model.Manga as DomainManga
 
-class AnimeKeyer : Keyer<DomainAnime> {
-    override fun key(data: DomainAnime, options: Options): String {
+class MangaKeyer : Keyer<DomainManga> {
+    override fun key(data: DomainManga, options: Options): String {
         return if (data.hasCustomCover()) {
             "${data.id};${data.coverLastModified}"
         } else {
@@ -19,7 +19,7 @@ class AnimeKeyer : Keyer<DomainAnime> {
     }
 }
 
-class AnimeCoverKeyer(
+class MangaCoverKeyer(
     private val coverCache: CoverCache = Injekt.get(),
 ) : Keyer<MangaCover> {
     override fun key(data: MangaCover, options: Options): String {

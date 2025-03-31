@@ -39,8 +39,8 @@ import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.manga.components.BaseMangaListItem
 import eu.kanade.presentation.manga.components.Button
 import eu.kanade.presentation.util.animateItemFastScroll
-import eu.kanade.tachiyomi.ui.browse.migration.anime.MigrateAnimeItem
-import eu.kanade.tachiyomi.ui.browse.migration.anime.MigrateAnimeScreenModel
+import eu.kanade.tachiyomi.ui.browse.migration.manga.MigrateMangaItem
+import eu.kanade.tachiyomi.ui.browse.migration.manga.MigrateMangaScreenModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -56,17 +56,17 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
-fun MigrateAnimeScreen(
+fun MigrateMangaScreen(
     navigateUp: () -> Unit,
     title: String,
-    state: MigrateAnimeScreenModel.State,
-    onClickItem: (MigrateAnimeItem) -> Unit,
+    state: MigrateMangaScreenModel.State,
+    onClickItem: (MigrateMangaItem) -> Unit,
     onClickCover: (Manga) -> Unit,
     // KMK -->
     onMultiMigrateClicked: (() -> Unit),
     onSelectAll: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
-    onAnimeSelected: (MigrateAnimeItem, Boolean, Boolean, Boolean) -> Unit,
+    onAnimeSelected: (MigrateMangaItem, Boolean, Boolean, Boolean) -> Unit,
 ) {
     BackHandler(enabled = state.selectionMode, onBack = { onSelectAll(false) })
 
@@ -89,7 +89,7 @@ fun MigrateAnimeScreen(
     Scaffold(
         topBar = { scrollBehavior ->
             // KMK -->
-            MigrateAnimeAppBar(
+            MigrateMangaAppBar(
                 title = title,
                 itemCnt = state.titles.size,
                 navigateUp = navigateUp,
@@ -101,7 +101,7 @@ fun MigrateAnimeScreen(
             )
         },
         bottomBar = {
-            MigrateAnimeBottomBar(
+            MigrateMangaBottomBar(
                 selected = state.selected,
                 onMultiMigrateClicked = onMultiMigrateClicked,
                 enableScrollToTop = enableScrollToTop,
@@ -128,7 +128,7 @@ fun MigrateAnimeScreen(
             return@Scaffold
         }
 
-        MigrateAnimeContent(
+        MigrateMangaContent(
             contentPadding = contentPadding,
             state = state,
             onClickItem = onClickItem,
@@ -142,13 +142,13 @@ fun MigrateAnimeScreen(
 }
 
 @Composable
-private fun MigrateAnimeContent(
+private fun MigrateMangaContent(
     contentPadding: PaddingValues,
-    state: MigrateAnimeScreenModel.State,
-    onClickItem: (MigrateAnimeItem) -> Unit,
+    state: MigrateMangaScreenModel.State,
+    onClickItem: (MigrateMangaItem) -> Unit,
     onClickCover: (Manga) -> Unit,
     // KMK -->
-    onAnimeSelected: (MigrateAnimeItem, Boolean, Boolean, Boolean) -> Unit,
+    onAnimeSelected: (MigrateMangaItem, Boolean, Boolean, Boolean) -> Unit,
     listState: LazyListState,
 ) {
     FastScrollLazyColumn(
@@ -157,7 +157,7 @@ private fun MigrateAnimeContent(
     ) {
         // KMK <--
         items(items = state.titles) {
-            MigrateAnimeItem(
+            MigrateMangaItem(
                 manga = it.manga,
                 onClickItem = {
                     // KMK -->
@@ -181,7 +181,7 @@ private fun MigrateAnimeContent(
 }
 
 @Composable
-private fun MigrateAnimeItem(
+private fun MigrateMangaItem(
     manga: Manga,
     onClickItem: () -> Unit,
     onClickCover: (() -> Unit)?,
@@ -205,7 +205,7 @@ private fun MigrateAnimeItem(
 
 // KMK -->
 @Composable
-private fun MigrateAnimeAppBar(
+private fun MigrateMangaAppBar(
     title: String,
     itemCnt: Int,
     navigateUp: () -> Unit,
@@ -254,9 +254,9 @@ private fun MigrateAnimeAppBar(
 }
 
 @Composable
-private fun MigrateAnimeBottomBar(
+private fun MigrateMangaBottomBar(
     modifier: Modifier = Modifier,
-    selected: List<MigrateAnimeItem>,
+    selected: List<MigrateMangaItem>,
     onMultiMigrateClicked: (() -> Unit),
     enableScrollToTop: Boolean,
     enableScrollToBottom: Boolean,

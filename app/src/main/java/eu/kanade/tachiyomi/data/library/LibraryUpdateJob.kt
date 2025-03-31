@@ -18,7 +18,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
-import eu.kanade.domain.manga.model.toSAnime
+import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
@@ -138,11 +138,11 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         val group = inputData.getInt(KEY_GROUP, LibraryGroup.BY_DEFAULT)
         val groupExtra = inputData.getString(KEY_GROUP_EXTRA)
         // SY <--
-        addAnimeToQueue(categoryId, group, groupExtra)
+        addMangaToQueue(categoryId, group, groupExtra)
 
         return withIOContext {
             try {
-                updateEpisodeList()
+                updateChapterList()
                 Result.success()
             } catch (e: Exception) {
                 if (e is CancellationException) {
@@ -178,7 +178,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
      * @param categoryId the ID of the category to update, or -1 if no category specified.
      */
     @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod", "ComplexCondition")
-    private suspend fun addAnimeToQueue(categoryId: Long, group: Int, groupExtra: String?) {
+    private suspend fun addMangaToQueue(categoryId: Long, group: Int, groupExtra: String?) {
         val libraryManga = getLibraryManga.await()
 
         // SY -->
@@ -330,7 +330,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
      * @return an observable delivering the progress of each update.
      */
     @Suppress("MagicNumber", "LongMethod")
-    private suspend fun updateEpisodeList() {
+    private suspend fun updateChapterList() {
         val semaphore = Semaphore(5)
         val progressCount = AtomicInteger(0)
         val currentlyUpdatingManga = CopyOnWriteArrayList<Manga>()
@@ -366,7 +366,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             val episodesToDownload = filterChaptersForDownload.await(anime, newEpisodes)
 
                                             if (episodesToDownload.isNotEmpty()) {
-                                                downloadEpisodes(anime, episodesToDownload)
+                                                downloadChapters(anime, episodesToDownload)
                                                 hasDownloads.set(true)
                                             }
 
@@ -416,7 +416,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         }
     }
 
-    private fun downloadEpisodes(manga: Manga, chapters: List<Chapter>) {
+    private fun downloadChapters(manga: Manga, chapters: List<Chapter>) {
         // We don't want to start downloading while the library is updating, because websites
         // may don't like it and they could ban the user.
         downloadManager.downloadEpisodes(manga, chapters, false)
@@ -433,11 +433,11 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
         // Update manga metadata if needed
         if (libraryPreferences.autoUpdateMetadata().get()) {
-            val networkAnime = source.getAnimeDetails(manga.toSAnime())
+            val networkAnime = source.getAnimeDetails(manga.toSManga())
             updateManga.awaitUpdateFromSource(manga, networkAnime, manualFetch = false, coverCache)
         }
 
-        val episodes = source.getEpisodeList(manga.toSAnime())
+        val episodes = source.getEpisodeList(manga.toSManga())
 
         // Get manga from database to account for if it was removed during the update and
         // to get latest data so it doesn't get overwritten later on

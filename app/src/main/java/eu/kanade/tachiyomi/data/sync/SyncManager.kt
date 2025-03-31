@@ -6,11 +6,11 @@ import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.backup.create.BackupCreator
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
 import eu.kanade.tachiyomi.data.backup.models.Backup
-import eu.kanade.tachiyomi.data.backup.models.BackupAnime
-import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
+import eu.kanade.tachiyomi.data.backup.models.BackupChapter
+import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
 import eu.kanade.tachiyomi.data.backup.restore.RestoreOptions
-import eu.kanade.tachiyomi.data.backup.restore.restorers.AnimeRestorer
+import eu.kanade.tachiyomi.data.backup.restore.restorers.MangaRestorer
 import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.data.sync.service.SyncData
 import eu.kanade.tachiyomi.data.sync.service.SyncYomiSyncService
@@ -49,7 +49,7 @@ class SyncManager(
 ) {
     private val backupCreator: BackupCreator = BackupCreator(context, false)
     private val notifier: SyncNotifier = SyncNotifier(context)
-    private val animeRestorer: AnimeRestorer = AnimeRestorer()
+    private val mangaRestorer: MangaRestorer = MangaRestorer()
 
     enum class SyncService(val value: Int) {
         NONE(0),
@@ -76,7 +76,7 @@ class SyncManager(
         }
 
         val syncOptions = syncPreferences.getSyncSettings()
-        val databaseAnime = getAllAnimeThatNeedsSync()
+        val databaseAnime = getAllMangaThatNeedsSync()
 
         val backupOptions = BackupOptions(
             libraryEntries = syncOptions.libraryEntries,
@@ -97,11 +97,11 @@ class SyncManager(
         )
 
         logcat(LogPriority.DEBUG) { "Begin create backup" }
-        val backupAnime = backupCreator.backupAnimes(databaseAnime, backupOptions)
+        val backupAnime = backupCreator.backupMangas(databaseAnime, backupOptions)
         val backup = Backup(
-            backupAnime = backupAnime,
-            backupCategories = backupCreator.backupAnimeCategories(backupOptions),
-            backupSources = backupCreator.backupAnimeSources(backupAnime),
+            backupManga = backupAnime,
+            backupCategories = backupCreator.backupMangaCategories(backupOptions),
+            backupSources = backupCreator.backupMangaSources(backupAnime),
             backupPreferences = backupCreator.backupAppPreferences(backupOptions),
             backupExtensionRepo = backupCreator.backupExtensionRepos(backupOptions),
             backupSourcePreferences = backupCreator.backupSourcePreferences(backupOptions),
@@ -160,7 +160,7 @@ class SyncManager(
         }
 
         // Stop the sync early if the remote backup is null or empty
-        if (remoteBackup.backupAnime.isEmpty()) {
+        if (remoteBackup.backupManga.isEmpty()) {
             notifier.showSyncError("No data found on remote server.")
             return
         }
@@ -174,10 +174,10 @@ class SyncManager(
         }
 
         val (animeFilteredFavorites, animeNonFavorites) = aniFilterFavoritesAndNonFavorites(remoteBackup)
-        animeUpdateNonFavorites(animeNonFavorites)
+        mangaUpdateNonFavorites(animeNonFavorites)
 
         val newSyncData = backup.copy(
-            backupAnime = animeFilteredFavorites,
+            backupManga = animeFilteredFavorites,
             backupCategories = remoteBackup.backupCategories,
             backupSources = remoteBackup.backupSources,
             backupPreferences = remoteBackup.backupPreferences,
@@ -241,19 +241,19 @@ class SyncManager(
      *
      * @return a list of all manga stored in the database
      */
-    private suspend fun getAllAnimeFromDB(): List<Manga> {
+    private suspend fun getAllMangaFromDB(): List<Manga> {
         return handler.awaitList { animesQueries.getAllAnime(::mapManga) }
     }
 
-    private suspend fun getAllAnimeThatNeedsSync(): List<Manga> {
+    private suspend fun getAllMangaThatNeedsSync(): List<Manga> {
         return handler.awaitList { animesQueries.getAnimesWithFavoriteTimestamp(::mapManga) }
     }
 
-    private suspend fun isAnimeDifferent(localManga: Manga, remoteAnime: BackupAnime): Boolean {
+    private suspend fun isMangaDifferent(localManga: Manga, remoteAnime: BackupManga): Boolean {
         val localEpisodes = handler.await { episodesQueries.getEpisodesByAnimeId(localManga.id, 0).executeAsList() }
         val localCategories = getCategories.await(localManga.id).map { it.order }
 
-        if (areEpisodesDifferent(localEpisodes, remoteAnime.episodes)) {
+        if (areChaptersDifferent(localEpisodes, remoteAnime.episodes)) {
             return true
         }
 
@@ -268,7 +268,7 @@ class SyncManager(
         return false
     }
 
-    private fun areEpisodesDifferent(localEpisodes: List<Episodes>, remoteEpisodes: List<BackupEpisode>): Boolean {
+    private fun areChaptersDifferent(localEpisodes: List<Episodes>, remoteEpisodes: List<BackupChapter>): Boolean {
         val localEpisodeMap = localEpisodes.associateBy { it.url }
         val remoteEpisodeMap = remoteEpisodes.associateBy { it.url }
 
@@ -295,26 +295,26 @@ class SyncManager(
      * @return a Pair of lists, where the first list contains different favorite manga
      * and the second list contains non-favorite manga.
      */
-    private suspend fun aniFilterFavoritesAndNonFavorites(backup: Backup): Pair<List<BackupAnime>, List<BackupAnime>> {
-        val favorites = mutableListOf<BackupAnime>()
-        val nonFavorites = mutableListOf<BackupAnime>()
+    private suspend fun aniFilterFavoritesAndNonFavorites(backup: Backup): Pair<List<BackupManga>, List<BackupManga>> {
+        val favorites = mutableListOf<BackupManga>()
+        val nonFavorites = mutableListOf<BackupManga>()
         val logTag = "filterFavoritesAndNonFavorites"
 
         val elapsedTimeMillis = measureTimeMillis {
-            val databaseAnime = getAllAnimeFromDB()
+            val databaseAnime = getAllMangaFromDB()
             val localAnimeMap = databaseAnime.associateBy {
                 Triple(it.source, it.url, it.title)
             }
 
             logcat(LogPriority.DEBUG, logTag) { "Starting to filter favorites and non-favorites from backup data." }
 
-            backup.backupAnime.forEach { remoteAnime ->
+            backup.backupManga.forEach { remoteAnime ->
                 val compositeKey = Triple(remoteAnime.source, remoteAnime.url, remoteAnime.title)
                 val localAnime = localAnimeMap[compositeKey]
                 when {
                     // Checks if the manga is in favorites and needs updating or adding
                     remoteAnime.favorite -> {
-                        if (localAnime == null || isAnimeDifferent(localAnime, remoteAnime)) {
+                        if (localAnime == null || isMangaDifferent(localAnime, remoteAnime)) {
                             logcat(LogPriority.DEBUG, logTag) { "Adding to favorites: ${remoteAnime.title}" }
                             favorites.add(remoteAnime)
                         } else {
@@ -342,10 +342,10 @@ class SyncManager(
 
     /**
      * Updates the non-favorite manga in the local database with their favorite status from the backup.
-     * @param nonFavorites the list of non-favorite BackupAnime objects from the backup.
+     * @param nonFavorites the list of non-favorite BackupManga objects from the backup.
      */
-    private suspend fun animeUpdateNonFavorites(nonFavorites: List<BackupAnime>) {
-        val localAnimeList = getAllAnimeFromDB()
+    private suspend fun mangaUpdateNonFavorites(nonFavorites: List<BackupManga>) {
+        val localAnimeList = getAllMangaFromDB()
 
         val localAnimeMap = localAnimeList.associateBy { Triple(it.source, it.url, it.title) }
 
@@ -354,7 +354,7 @@ class SyncManager(
             localAnimeMap[key]?.let { localAnime ->
                 if (localAnime.favorite != nonFavorite.favorite) {
                     val updatedAnime = localAnime.copy(favorite = nonFavorite.favorite)
-                    animeRestorer.updateAnime(updatedAnime)
+                    mangaRestorer.updateManga(updatedAnime)
                 }
             }
         }

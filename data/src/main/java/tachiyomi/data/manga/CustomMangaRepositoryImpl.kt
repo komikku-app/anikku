@@ -30,7 +30,7 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
         return animesJson
             .mapNotNull { animeJson ->
                 val id = animeJson.id ?: return@mapNotNull null
-                id to animeJson.toAnime()
+                id to animeJson.toManga()
             }
             .toMap()
             .toMutableMap()
@@ -78,7 +78,7 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
         val status: Long? = null,
     ) {
 
-        fun toAnime() = CustomMangaInfo(
+        fun toManga() = CustomMangaInfo(
             id = this@AnimeJson.id!!,
             title = this@AnimeJson.title?.takeUnless { it.isBlank() },
             author = this@AnimeJson.author,

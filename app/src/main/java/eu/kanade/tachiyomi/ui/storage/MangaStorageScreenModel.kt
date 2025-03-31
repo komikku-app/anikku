@@ -12,7 +12,7 @@ import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeStorageScreenModel(
+class MangaStorageScreenModel(
     downloadCache: DownloadCache = Injekt.get(),
     private val getLibraries: GetLibraryManga = Injekt.get(),
     getCategories: GetCategories = Injekt.get(),

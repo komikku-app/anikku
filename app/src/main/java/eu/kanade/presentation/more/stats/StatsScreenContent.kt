@@ -31,7 +31,7 @@ import kotlin.time.toDuration
 
 @Composable
 fun StatsScreenContent(
-    state: StatsScreenState.SuccessAnime,
+    state: StatsScreenState.SuccessManga,
     paddingValues: PaddingValues,
 ) {
     val statListState = rememberLazyListState()

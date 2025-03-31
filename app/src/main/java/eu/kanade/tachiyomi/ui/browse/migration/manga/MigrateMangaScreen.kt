@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.migration.anime
+package eu.kanade.tachiyomi.ui.browse.migration.manga
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -8,7 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import eu.kanade.presentation.browse.MigrateAnimeScreen
+import eu.kanade.presentation.browse.MigrateMangaScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
@@ -21,7 +21,7 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-data class MigrateAnimeScreen(
+data class MigrateMangaScreen(
     private val sourceId: Long,
 ) : Screen() {
 
@@ -29,7 +29,7 @@ data class MigrateAnimeScreen(
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { MigrateAnimeScreenModel(sourceId) }
+        val screenModel = rememberScreenModel { MigrateMangaScreenModel(sourceId) }
 
         val state by screenModel.state.collectAsState()
 
@@ -38,7 +38,7 @@ data class MigrateAnimeScreen(
             return
         }
 
-        MigrateAnimeScreen(
+        MigrateMangaScreen(
             navigateUp = navigator::pop,
             title = state.source?.name ?: "???",
             state = state,
@@ -78,7 +78,7 @@ data class MigrateAnimeScreen(
         LaunchedEffect(Unit) {
             screenModel.events.collectLatest { event ->
                 when (event) {
-                    MigrationAnimeEvent.FailedFetchingFavorites -> {
+                    MigrationMangaEvent.FailedFetchingFavorites -> {
                         context.toast(MR.strings.internal_error)
                     }
                 }

@@ -46,7 +46,7 @@ object StatsScreen : Screen {
                 LoadingScreen()
             } else {
                 StatsScreenContent(
-                    state = state as StatsScreenState.SuccessAnime,
+                    state = state as StatsScreenState.SuccessManga,
                     paddingValues = contentPadding,
                 )
             }

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.migration.anime
+package eu.kanade.tachiyomi.ui.browse.migration.manga
 
 import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
@@ -24,14 +24,14 @@ import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class MigrateAnimeScreenModel(
+class MigrateMangaScreenModel(
     private val sourceId: Long,
     private val sourceManager: SourceManager = Injekt.get(),
     private val getFavorites: GetFavorites = Injekt.get(),
-) : StateScreenModel<MigrateAnimeScreenModel.State>(State()) {
+) : StateScreenModel<MigrateMangaScreenModel.State>(State()) {
 
-    private val _events: Channel<MigrationAnimeEvent> = Channel()
-    val events: Flow<MigrationAnimeEvent> = _events.receiveAsFlow()
+    private val _events: Channel<MigrationMangaEvent> = Channel()
+    val events: Flow<MigrationMangaEvent> = _events.receiveAsFlow()
 
     // KMK -->
     // First and last selected index in list
@@ -48,7 +48,7 @@ class MigrateAnimeScreenModel(
             getFavorites.subscribe(sourceId)
                 .catch {
                     logcat(LogPriority.ERROR, it)
-                    _events.send(MigrationAnimeEvent.FailedFetchingFavorites)
+                    _events.send(MigrationMangaEvent.FailedFetchingFavorites)
                     mutableState.update { state ->
                         state.copy(titleList = persistentListOf())
                     }
@@ -70,9 +70,9 @@ class MigrateAnimeScreenModel(
     }
 
     // KMK -->
-    private fun toMigrationMangaScreenItems(mangas: List<Manga>): List<MigrateAnimeItem> {
+    private fun toMigrationMangaScreenItems(mangas: List<Manga>): List<MigrateMangaItem> {
         return mangas.map { manga ->
-            MigrateAnimeItem(
+            MigrateMangaItem(
                 manga = manga,
                 selected = manga.id in selectedMangaIds,
             )
@@ -80,7 +80,7 @@ class MigrateAnimeScreenModel(
     }
 
     fun toggleSelection(
-        item: MigrateAnimeItem,
+        item: MigrateMangaItem,
         selected: Boolean,
         userSelected: Boolean = false,
         fromLongPress: Boolean = false,
@@ -172,14 +172,14 @@ class MigrateAnimeScreenModel(
     @Immutable
     data class State(
         val source: Source? = null,
-        private val titleList: ImmutableList<MigrateAnimeItem>? = null,
+        private val titleList: ImmutableList<MigrateMangaItem>? = null,
     ) {
         // KMK -->
         val selected = titles.filter { it.selected }
         val selectionMode = selected.isNotEmpty()
         // KMK <--
 
-        val titles: ImmutableList<MigrateAnimeItem>
+        val titles: ImmutableList<MigrateMangaItem>
             get() = titleList ?: persistentListOf()
 
         val isLoading: Boolean
@@ -190,13 +190,13 @@ class MigrateAnimeScreenModel(
     }
 }
 
-sealed interface MigrationAnimeEvent {
-    data object FailedFetchingFavorites : MigrationAnimeEvent
+sealed interface MigrationMangaEvent {
+    data object FailedFetchingFavorites : MigrationMangaEvent
 }
 
 // KMK -->
 @Immutable
-data class MigrateAnimeItem(
+data class MigrateMangaItem(
     val manga: Manga,
     val selected: Boolean,
 )

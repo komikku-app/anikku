@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Object that holds info about a covers size ratio + dominant colors
  * @author Jays2Kings
  */
-object AnimeCoverMetadata {
+object MangaCoverMetadata {
     private val preferences by injectLazy<LibraryPreferences>()
     private val coverCache by injectLazy<CoverCache>()
 
@@ -51,7 +51,7 @@ object AnimeCoverMetadata {
 
     /**
      * [setRatioAndColors] generate cover's color & ratio by reading cover's bitmap from [CoverCache].
-     * It's called along with [AnimeCoverFetcher.fetch] everytime a cover is **displayed** (anywhere).
+     * It's called along with [MangaCoverFetcher.fetch] everytime a cover is **displayed** (anywhere).
      *
      * When called:
      *  - It removes saved colors from saved Prefs of [MangaCover.dominantCoverColorMap] if manga is not favorite.

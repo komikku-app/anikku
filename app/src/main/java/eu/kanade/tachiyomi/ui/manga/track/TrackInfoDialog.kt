@@ -41,8 +41,8 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.model.toDbTrack
 import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.presentation.track.TrackChapterSelector
 import eu.kanade.presentation.track.TrackDateSelector
-import eu.kanade.presentation.track.TrackEpisodeSelector
 import eu.kanade.presentation.track.TrackInfoDialogHome
 import eu.kanade.presentation.track.TrackScoreSelector
 import eu.kanade.presentation.track.TrackStatusSelector
@@ -233,7 +233,7 @@ data class TrackInfoDialogHomeScreen(
                 .filter { it.first != null }
                 .forEach { (track, e) ->
                     logcat(LogPriority.ERROR, e) {
-                        "Failed to refresh track data mangaId=$animeId for service ${track!!.id}"
+                        "Failed to refresh track data animeId=$animeId for service ${track!!.id}"
                     }
                     withUIContext {
                         context.toast(
@@ -335,7 +335,7 @@ private data class TrackEpisodeSelectorScreen(
         }
         val state by screenModel.state.collectAsState()
 
-        TrackEpisodeSelector(
+        TrackChapterSelector(
             selection = state.selection,
             onSelectionChange = screenModel::setSelection,
             range = remember { screenModel.getRange() },
@@ -802,7 +802,7 @@ private data class TrackerRemoveScreen(
                     FilledTonalButton(
                         onClick = {
                             screenModel.unregisterTracking(serviceId)
-                            if (removeRemoteTrack) screenModel.deleteAnimeFromService()
+                            if (removeRemoteTrack) screenModel.deleteMangaFromService()
                             navigator.pop()
                         },
                         colors = ButtonDefaults.filledTonalButtonColors(
@@ -828,7 +828,7 @@ private data class TrackerRemoveScreen(
 
         fun isDeletable() = tracker is DeletableTracker
 
-        fun deleteAnimeFromService() {
+        fun deleteMangaFromService() {
             screenModelScope.launchNonCancellable {
                 try {
                     (tracker as DeletableTracker).delete(track)

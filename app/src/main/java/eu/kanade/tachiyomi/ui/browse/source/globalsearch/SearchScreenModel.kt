@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.produceState
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import eu.kanade.domain.manga.model.toDomainAnime
+import eu.kanade.domain.manga.model.toDomainManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.ExtensionManager
@@ -80,7 +80,7 @@ abstract class SearchScreenModel(
     }
 
     @Composable
-    fun getAnime(initialManga: Manga): androidx.compose.runtime.State<Manga> {
+    fun getManga(initialManga: Manga): androidx.compose.runtime.State<Manga> {
         return produceState(initialValue = initialManga) {
             getManga.subscribe(initialManga.url, initialManga.source)
                 .filterNotNull()
@@ -188,7 +188,7 @@ abstract class SearchScreenModel(
 
                         val titles = page.animes.map {
                             // KMK -->
-                            it.toDomainAnime(source.id)
+                            it.toDomainManga(source.id)
                             // KMK <--
                         }
 
