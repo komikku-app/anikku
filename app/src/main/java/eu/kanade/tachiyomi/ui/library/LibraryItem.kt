@@ -20,10 +20,10 @@ data class LibraryItem(
     private val sourceManager: SourceManager = Injekt.get(),
 ) {
     /**
-     * Checks if a query matches the anime
+     * Checks if a query matches the manga
      *
      * @param constraint the query to check.
-     * @return true if the anime matches the query, false otherwise.
+     * @return true if the manga matches the query, false otherwise.
      */
     fun matches(constraint: String): Boolean {
         val sourceName by lazy { sourceManager.getOrStub(libraryManga.manga.source).getNameForAnimeInfo() }

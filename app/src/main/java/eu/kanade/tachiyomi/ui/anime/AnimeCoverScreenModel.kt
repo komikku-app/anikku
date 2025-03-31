@@ -84,7 +84,7 @@ class AnimeCoverScreenModel(
     }
 
     /**
-     * Save anime cover Bitmap to picture or temporary share directory.
+     * Save manga cover Bitmap to picture or temporary share directory.
      *
      * @param context The context for building and executing the ImageRequest
      * @return the uri to saved file

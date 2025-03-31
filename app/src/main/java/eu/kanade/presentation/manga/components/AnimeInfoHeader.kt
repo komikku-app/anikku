@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime.components
+package eu.kanade.presentation.manga.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState

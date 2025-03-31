@@ -19,9 +19,9 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.chapter.interactor.SetReadStatus
 import eu.kanade.domain.manga.interactor.SmartSearchMerge
 import eu.kanade.domain.manga.interactor.UpdateManga
-import eu.kanade.presentation.anime.DownloadAction
 import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
+import eu.kanade.presentation.manga.DownloadAction
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
@@ -93,7 +93,7 @@ import kotlin.random.Random
 import tachiyomi.domain.source.model.Source as DomainSource
 
 /**
- * Typealias for the library anime, using the category as keys, and list of anime as values.
+ * Typealias for the library manga, using the category as keys, and list of manga as values.
  */
 typealias AnimeLibraryMap = Map<Category, List<LibraryItem>>
 
@@ -451,7 +451,7 @@ class LibraryScreenModel(
     }
 
     /**
-     * Get the categories and all its anime from the database.
+     * Get the categories and all its manga from the database.
      */
     private fun getLibraryFlow(): Flow<AnimeLibraryMap> {
         val animelibAnimesFlow = combine(
@@ -578,9 +578,9 @@ class LibraryScreenModel(
     }
 
     /**
-     * Returns the common categories for the given list of anime.
+     * Returns the common categories for the given list of manga.
      *
-     * @param mangas the list of anime.
+     * @param mangas the list of manga.
      */
     private suspend fun getCommonCategories(mangas: List<Manga>): Collection<Category> {
         if (mangas.isEmpty()) return emptyList()
@@ -601,9 +601,9 @@ class LibraryScreenModel(
     }
 
     /**
-     * Returns the mix (non-common) categories for the given list of anime.
+     * Returns the mix (non-common) categories for the given list of manga.
      *
-     * @param mangas the list of anime.
+     * @param mangas the list of manga.
      */
     private suspend fun getMixCategories(mangas: List<Manga>): Collection<Category> {
         if (mangas.isEmpty()) return emptyList()
@@ -628,7 +628,7 @@ class LibraryScreenModel(
     /**
      * Queues the amount specified of unseen episodes from the list of animes given.
      *
-     * @param mangas the list of anime.
+     * @param mangas the list of manga.
      * @param amount the amount to queue or null to queue all
      */
     private fun downloadUnseenEpisodes(mangas: List<Manga>, amount: Int?) {
@@ -714,10 +714,10 @@ class LibraryScreenModel(
     }
 
     /**
-     * Remove the selected anime.
+     * Remove the selected manga.
      *
-     * @param mangaList the list of anime to delete.
-     * @param deleteFromLibrary whether to delete anime from library.
+     * @param mangaList the list of manga to delete.
+     * @param deleteFromLibrary whether to delete manga from library.
      * @param deleteEpisodes whether to delete downloaded episodes.
      */
     fun removeAnimes(mangaList: List<Manga>, deleteFromLibrary: Boolean, deleteEpisodes: Boolean) {
@@ -759,9 +759,9 @@ class LibraryScreenModel(
     }
 
     /**
-     * Bulk update categories of anime using old and new common categories.
+     * Bulk update categories of manga using old and new common categories.
      *
-     * @param mangaList the list of anime to move.
+     * @param mangaList the list of manga to move.
      * @param addCategories the categories to add for all animes.
      * @param removeCategories the categories to remove in all animes.
      */
@@ -831,8 +831,8 @@ class LibraryScreenModel(
     }
 
     /**
-     * Selects all nimes between and including the given anime and the last pressed anime from the
-     * same category as the given anime
+     * Selects all nimes between and including the given manga and the last pressed manga from the
+     * same category as the given manga
      */
     fun toggleRangeSelection(anime: LibraryManga) {
         mutableState.update { state ->
@@ -900,7 +900,7 @@ class LibraryScreenModel(
 
     fun openChangeCategoryDialog() {
         screenModelScope.launchIO {
-            // Create a copy of selected anime
+            // Create a copy of selected manga
             val animeList = state.value.selection.map { it.manga }
 
             // Hide the default category because it has a different behavior than the ones from db.
@@ -948,7 +948,7 @@ class LibraryScreenModel(
     }
 
     // SY -->
-    /** Returns first unread chapter of a anime */
+    /** Returns first unread chapter of a manga */
     suspend fun getFirstUnseen(manga: Manga): Chapter? {
         return getNextChapters.await(manga.id).firstOrNull()
     }

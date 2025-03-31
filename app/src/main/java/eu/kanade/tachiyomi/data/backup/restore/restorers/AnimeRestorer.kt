@@ -63,7 +63,7 @@ class AnimeRestorer(
     }
 
     /**
-     * Restore a single anime
+     * Restore a single manga
      */
     suspend fun restore(
         backupAnime: BackupAnime,
@@ -290,7 +290,7 @@ class AnimeRestorer(
     }
 
     /**
-     * Inserts anime and returns id
+     * Inserts manga and returns id
      *
      * @return id of [Manga], null if not found
      */
@@ -350,9 +350,9 @@ class AnimeRestorer(
     }
 
     /**
-     * Restores the categories a anime is in.
+     * Restores the categories a manga is in.
      *
-     * @param manga the anime whose categories have to be restored.
+     * @param manga the manga whose categories have to be restored.
      * @param categories the categories to restore.
      */
     private suspend fun restoreCategories(

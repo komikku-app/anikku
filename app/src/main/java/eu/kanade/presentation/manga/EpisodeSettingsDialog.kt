@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime
+package eu.kanade.presentation.manga
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

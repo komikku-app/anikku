@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime
+package eu.kanade.presentation.manga
 
 import android.content.Context
 import android.widget.Toast

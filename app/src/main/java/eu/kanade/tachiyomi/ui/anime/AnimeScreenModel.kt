@@ -36,8 +36,8 @@ import eu.kanade.domain.track.interactor.TrackEpisode
 import eu.kanade.domain.track.model.AutoTrackState
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.anime.DownloadAction
-import eu.kanade.presentation.anime.components.EpisodeDownloadAction
+import eu.kanade.presentation.manga.DownloadAction
+import eu.kanade.presentation.manga.components.EpisodeDownloadAction
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.coil.getBestColor
@@ -470,7 +470,7 @@ class AnimeScreenModel(
     // Anime info - start
 
     /**
-     * Fetch anime information from source.
+     * Fetch manga information from source.
      */
     private suspend fun fetchAnimeFromSource(manualFetch: Boolean = false) {
         val state = successState ?: return
@@ -624,7 +624,7 @@ class AnimeScreenModel(
     }
 
     /**
-     * Update favorite status of anime, (removes / adds) anime (to / from) library.
+     * Update favorite status of manga, (removes / adds) manga (to / from) library.
      */
     fun toggleFavorite(
         onRemoved: () -> Unit,
@@ -731,7 +731,7 @@ class AnimeScreenModel(
     }
 
     /**
-     * Returns true if the anime has any downloads.
+     * Returns true if the manga has any downloads.
      */
     private fun hasDownloads(): Boolean {
         val anime = successState?.manga ?: return false
@@ -739,7 +739,7 @@ class AnimeScreenModel(
     }
 
     /**
-     * Deletes all the downloads for the anime.
+     * Deletes all the downloads for the manga.
      */
     private fun deleteDownloads() {
         val state = successState ?: return
@@ -764,10 +764,10 @@ class AnimeScreenModel(
     }
 
     /**
-     * Gets the category id's the anime is in, if the anime is not in a category, returns the default id.
+     * Gets the category id's the manga is in, if the manga is not in a category, returns the default id.
      *
-     * @param manga the anime to get categories from.
-     * @return Array of category ids the anime is in, if none returns default id
+     * @param manga the manga to get categories from.
+     * @return Array of category ids the manga is in, if none returns default id
      */
     private suspend fun getAnimeCategoryIds(manga: Manga): List<Long> {
         return getCategories.await(manga.id)
@@ -784,7 +784,7 @@ class AnimeScreenModel(
     }
 
     /**
-     * Move the given anime to categories.
+     * Move the given manga to categories.
      *
      * @param categories the selected categories.
      */
@@ -800,7 +800,7 @@ class AnimeScreenModel(
     }
 
     /**
-     * Move the given anime to the category.
+     * Move the given manga to the category.
      *
      * @param category the selected category, or null for default category.
      */

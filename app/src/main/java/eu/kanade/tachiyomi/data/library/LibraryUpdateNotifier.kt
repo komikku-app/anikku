@@ -85,9 +85,9 @@ class LibraryUpdateNotifier(
     }
 
     /**
-     * Shows the notification containing the currently updating anime and the progress.
+     * Shows the notification containing the currently updating manga and the progress.
      *
-     * @param mangas the anime that are being updated.
+     * @param mangas the manga that are being updated.
      * @param current the current progress.
      * @param total the total progress.
      */
@@ -183,7 +183,7 @@ class LibraryUpdateNotifier(
     /**
      * Shows the notification containing the result of the update done by the service.
      *
-     * @param updates a list of anime with new updates.
+     * @param updates a list of manga with new updates.
      */
     fun showUpdateNotifications(updates: List<Pair<Manga, Array<Chapter>>>) {
         // Parent group notification
@@ -226,7 +226,7 @@ class LibraryUpdateNotifier(
             setAutoCancel(true)
         }
 
-        // Per-anime notification
+        // Per-manga notification
         if (!securityPreferences.hideNotificationContent().get()) {
             launchUI {
                 context.notify(

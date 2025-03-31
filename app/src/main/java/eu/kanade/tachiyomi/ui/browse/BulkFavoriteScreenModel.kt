@@ -19,12 +19,12 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.track.interactor.AddTracks
-import eu.kanade.presentation.anime.DuplicateAnimeDialog
-import eu.kanade.presentation.anime.DuplicateAnimesDialog
 import eu.kanade.presentation.browse.components.RemoveAnimeDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.BulkSelectionToolbar
+import eu.kanade.presentation.manga.DuplicateAnimeDialog
+import eu.kanade.presentation.manga.DuplicateAnimesDialog
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen

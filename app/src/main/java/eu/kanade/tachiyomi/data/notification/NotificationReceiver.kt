@@ -92,7 +92,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     intent.getLongExtra(EXTRA_CHAPTER_ID, -1),
                 )
             }
-            // Mark updated anime episodes as seen
+            // Mark updated manga episodes as seen
             ACTION_MARK_AS_SEEN -> {
                 val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
                 if (notificationId > -1) {
@@ -108,7 +108,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     markAsSeen(urls, animeId)
                 }
             }
-            // Download anime episodes
+            // Download manga episodes
             ACTION_DOWNLOAD_EPISODE -> {
                 val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
                 if (notificationId > -1) {
@@ -161,7 +161,7 @@ class NotificationReceiver : BroadcastReceiver() {
      * Starts player activity
      *
      * @param context context of application
-     * @param animeId id of anime
+     * @param animeId id of manga
      * @param episodeId id of episode
      */
     private fun openEpisode(context: Context, animeId: Long, episodeId: Long) {
@@ -214,10 +214,10 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     /**
-     * Method called when user wants to mark anime episodes as seen
+     * Method called when user wants to mark manga episodes as seen
      *
      * @param episodeUrls URLs of episodes to mark as seen
-     * @param animeId id of anime
+     * @param animeId id of manga
      */
     private fun markAsSeen(episodeUrls: Array<String>, animeId: Long) {
         val downloadPreferences: DownloadPreferences = Injekt.get()
@@ -430,7 +430,7 @@ class NotificationReceiver : BroadcastReceiver() {
          * Returns [PendingIntent] that starts a watcher activity containing episode.
          *
          * @param context context of application
-         * @param manga anime of episode
+         * @param manga manga of episode
          * @param chapter episode that needs to be opened
          */
         internal fun openEpisodePendingActivity(context: Context, manga: Manga, chapter: Chapter): PendingIntent {
@@ -444,10 +444,10 @@ class NotificationReceiver : BroadcastReceiver() {
         }
 
         /**
-         * Returns [PendingIntent] that opens the anime info controller.
+         * Returns [PendingIntent] that opens the manga info controller.
          *
          * @param context context of application
-         * @param manga anime of episode
+         * @param manga manga of episode
          */
         internal fun openEpisodePendingActivity(context: Context, manga: Manga, groupId: Int): PendingIntent {
             val newIntent =
@@ -468,7 +468,7 @@ class NotificationReceiver : BroadcastReceiver() {
          * Returns [PendingIntent] that marks an episode as seen and deletes it if preferred
          *
          * @param context context of application
-         * @param manga anime of episode
+         * @param manga manga of episode
          */
         internal fun markAsViewedPendingBroadcast(
             context: Context,
@@ -495,7 +495,7 @@ class NotificationReceiver : BroadcastReceiver() {
          * Returns [PendingIntent] that downloads episodes
          *
          * @param context context of application
-         * @param manga anime of episode
+         * @param manga manga of episode
          */
         internal fun downloadEpisodesPendingBroadcast(
             context: Context,
@@ -519,7 +519,7 @@ class NotificationReceiver : BroadcastReceiver() {
         }
 
         /**
-         * Returns [PendingIntent] that opens the anime info controller
+         * Returns [PendingIntent] that opens the manga info controller
          *
          * @param context context of application
          * @param animeId id of the entry to open

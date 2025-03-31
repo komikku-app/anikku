@@ -38,7 +38,7 @@ class UpdateManga(
             ""
         }
 
-        // if the anime isn't a favorite, set its title from source and update in db
+        // if the manga isn't a favorite, set its title from source and update in db
         // SY -->
         val title = if (remoteTitle.isNotBlank() && localManga.ogTitle != remoteTitle) {
             remoteTitle

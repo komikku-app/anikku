@@ -65,7 +65,7 @@ class SyncManager(
     /**
      * Syncs data with a sync service.
      *
-     * This function retrieves local data (favorites, anime, extensions, and categories)
+     * This function retrieves local data (favorites, manga, extensions, and categories)
      * from the database using the BackupManager, then synchronizes the data with a sync service.
      */
     suspend fun syncData() {
@@ -237,9 +237,9 @@ class SyncManager(
     }
 
     /**
-     * Retrieves all anime from the local database.
+     * Retrieves all manga from the local database.
      *
-     * @return a list of all anime stored in the database
+     * @return a list of all manga stored in the database
      */
     private suspend fun getAllAnimeFromDB(): List<Manga> {
         return handler.awaitList { animesQueries.getAllAnime(::mapManga) }
@@ -289,11 +289,11 @@ class SyncManager(
     }
 
     /**
-     * Filters the favorite and non-favorite anime from the backup and checks
-     * if the favorite anime is different from the local database.
+     * Filters the favorite and non-favorite manga from the backup and checks
+     * if the favorite manga is different from the local database.
      * @param backup the Backup object containing the backup data.
-     * @return a Pair of lists, where the first list contains different favorite anime
-     * and the second list contains non-favorite anime.
+     * @return a Pair of lists, where the first list contains different favorite manga
+     * and the second list contains non-favorite manga.
      */
     private suspend fun aniFilterFavoritesAndNonFavorites(backup: Backup): Pair<List<BackupAnime>, List<BackupAnime>> {
         val favorites = mutableListOf<BackupAnime>()
@@ -312,7 +312,7 @@ class SyncManager(
                 val compositeKey = Triple(remoteAnime.source, remoteAnime.url, remoteAnime.title)
                 val localAnime = localAnimeMap[compositeKey]
                 when {
-                    // Checks if the anime is in favorites and needs updating or adding
+                    // Checks if the manga is in favorites and needs updating or adding
                     remoteAnime.favorite -> {
                         if (localAnime == null || isAnimeDifferent(localAnime, remoteAnime)) {
                             logcat(LogPriority.DEBUG, logTag) { "Adding to favorites: ${remoteAnime.title}" }
@@ -341,7 +341,7 @@ class SyncManager(
     }
 
     /**
-     * Updates the non-favorite anime in the local database with their favorite status from the backup.
+     * Updates the non-favorite manga in the local database with their favorite status from the backup.
      * @param nonFavorites the list of non-favorite BackupAnime objects from the backup.
      */
     private suspend fun animeUpdateNonFavorites(nonFavorites: List<BackupAnime>) {

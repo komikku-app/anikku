@@ -36,9 +36,9 @@ import uy.kohesive.injekt.api.get
 import java.util.Locale
 
 /**
- * The manager of anime extensions installed as another apk which extend the available sources. It handles
- * the retrieval of remotely available anime extensions as well as installing, updating and removing them.
- * To avoid malicious distribution, every anime extension must be signed and it will only be loaded if its
+ * The manager of manga extensions installed as another apk which extend the available sources. It handles
+ * the retrieval of remotely available manga extensions as well as installing, updating and removing them.
+ * To avoid malicious distribution, every manga extension must be signed and it will only be loaded if its
  * signature is trusted, otherwise the user will be prompted with a warning to trust it before being
  * loaded.
  *
@@ -57,12 +57,12 @@ class ExtensionManager(
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
     /**
-     * API where all the available anime extensions can be found.
+     * API where all the available manga extensions can be found.
      */
     private val api = ExtensionApi()
 
     /**
-     * The installer which installs, updates and uninstalls the anime extensions.
+     * The installer which installs, updates and uninstalls the manga extensions.
      */
     private val installer by lazy { ExtensionInstaller(context) }
 
@@ -136,7 +136,7 @@ class ExtensionManager(
     }
 
     /**
-     * Finds the available anime extensions in the [api] and updates [availableExtensionsMapFlow].
+     * Finds the available manga extensions in the [api] and updates [availableExtensionsMapFlow].
      */
     suspend fun findAvailableExtensions() {
         val extensions: List<Extension.Available> = try {
@@ -228,22 +228,22 @@ class ExtensionManager(
     }
 
     /**
-     * Returns a flow of the installation process for the given anime extension. It will complete
-     * once the anime extension is installed or throws an error. The process will be canceled if
+     * Returns a flow of the installation process for the given manga extension. It will complete
+     * once the manga extension is installed or throws an error. The process will be canceled if
      * unsubscribed before its completion.
      *
-     * @param extension The anime extension to be installed.
+     * @param extension The manga extension to be installed.
      */
     fun installExtension(extension: Extension.Available): Flow<InstallStep> {
         return installer.downloadAndInstall(api.getApkUrl(extension), extension)
     }
 
     /**
-     * Returns a flow of the installation process for the given anime extension. It will complete
-     * once the anime extension is updated or throws an error. The process will be canceled if
+     * Returns a flow of the installation process for the given manga extension. It will complete
+     * once the manga extension is updated or throws an error. The process will be canceled if
      * unsubscribed before its completion.
      *
-     * @param extension The anime extension to be updated.
+     * @param extension The manga extension to be updated.
      */
     fun updateExtension(extension: Extension.Installed): Flow<InstallStep> {
         val availableExt = availableExtensionsMapFlow.value[extension.pkgName] ?: return emptyFlow()
@@ -255,7 +255,7 @@ class ExtensionManager(
     }
 
     /**
-     * Sets to "installing" status of an anime extension installation.
+     * Sets to "installing" status of an manga extension installation.
      *
      * @param downloadId The id of the download.
      */
@@ -268,7 +268,7 @@ class ExtensionManager(
     }
 
     /**
-     * Uninstalls the anime extension that matches the given package name.
+     * Uninstalls the manga extension that matches the given package name.
      *
      * @param extension The extension to uninstall.
      */
@@ -295,19 +295,19 @@ class ExtensionManager(
     }
 
     /**
-     * Registers the given anime extension in this and the source managers.
+     * Registers the given manga extension in this and the source managers.
      *
-     * @param extension The anime extension to be registered.
+     * @param extension The manga extension to be registered.
      */
     private fun registerNewExtension(extension: Extension.Installed) {
         installedExtensionsMapFlow.value += extension
     }
 
     /**
-     * Registers the given updated anime extension in this and the source managers previously removing
+     * Registers the given updated manga extension in this and the source managers previously removing
      * the outdated ones.
      *
-     * @param extension The anime extension to be registered.
+     * @param extension The manga extension to be registered.
      */
     private fun registerUpdatedExtension(extension: Extension.Installed) {
         installedExtensionsMapFlow.value += extension
@@ -325,7 +325,7 @@ class ExtensionManager(
     }
 
     /**
-     * Listener which receives events of the anime extensions being installed, updated or removed.
+     * Listener which receives events of the manga extensions being installed, updated or removed.
      */
     private inner class InstallationListener : ExtensionInstallReceiver.Listener {
 
@@ -353,7 +353,7 @@ class ExtensionManager(
     }
 
     /**
-     * Extension method to set the update field of an installed anime extension.
+     * Extension method to set the update field of an installed manga extension.
      */
     private fun Extension.Installed.withUpdateCheck(): Extension.Installed {
         return if (updateExists()) {

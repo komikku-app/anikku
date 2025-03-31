@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime
+package eu.kanade.presentation.manga
 
 enum class DownloadAction {
     NEXT_1_EPISODE,

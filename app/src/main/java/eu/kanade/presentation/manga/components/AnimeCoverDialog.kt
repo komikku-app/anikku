@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime.components
+package eu.kanade.presentation.manga.components
 
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -44,10 +44,10 @@ import coil3.imageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Size
-import eu.kanade.presentation.anime.EditCoverAction
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DropdownMenu
+import eu.kanade.presentation.manga.EditCoverAction
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.manga.model.Manga

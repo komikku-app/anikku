@@ -33,7 +33,7 @@ class AnimeBackupCreator(
     }
 
     private suspend fun backupAnime(manga: Manga, options: BackupOptions): BackupAnime {
-        // Entry for this anime
+        // Entry for this manga
         val animeObject = manga.toBackupAnime(
             // SY -->
             if (options.customInfo) {
@@ -70,7 +70,7 @@ class AnimeBackupCreator(
         }
 
         if (options.categories) {
-            // Backup categories for this anime
+            // Backup categories for this manga
             val categoriesForAnime = getCategories.await(manga.id)
             if (categoriesForAnime.isNotEmpty()) {
                 animeObject.categories = categoriesForAnime.map { it.order }

@@ -37,7 +37,7 @@ class DownloadPendingDeleter(
      * Adds a list of episodes for future deletion.
      *
      * @param chapters the episodes to be deleted.
-     * @param manga the anime of the episodes.
+     * @param manga the manga of the episodes.
      */
     @Synchronized
     fun addEpisodes(chapters: List<Chapter>, manga: Manga) {
@@ -50,7 +50,7 @@ class DownloadPendingDeleter(
             // If no episodes were added, do nothing
             if (newEpisodes.size == lastEntry.episodes.size) return
 
-            // Last entry matches the anime, reuse it to avoid decoding json from preferences
+            // Last entry matches the manga, reuse it to avoid decoding json from preferences
             lastEntry.copy(episodes = newEpisodes)
         } else {
             val existingEntry = preferences.getString(manga.id.toString(), null)
@@ -80,9 +80,9 @@ class DownloadPendingDeleter(
     }
 
     /**
-     * Returns the list of episodes to be deleted grouped by its anime.
+     * Returns the list of episodes to be deleted grouped by its manga.
      *
-     * Note: the returned list of anime and episodes only contain basic information needed by the
+     * Note: the returned list of manga and episodes only contain basic information needed by the
      * downloader, so don't use them for anything else.
      */
     @Synchronized
@@ -125,7 +125,7 @@ class DownloadPendingDeleter(
     }
 
     /**
-     * Returns a anime entry from a anime model.
+     * Returns a manga entry from a manga model.
      */
     private fun Manga.toEntry() = AnimeEntry(id, url, title, source)
 
@@ -135,7 +135,7 @@ class DownloadPendingDeleter(
     private fun Chapter.toEntry() = EpisodeEntry(id, url, name, scanlator)
 
     /**
-     * Returns a anime model from a anime entry.
+     * Returns a manga model from a manga entry.
      */
     private fun AnimeEntry.toModel() = Manga.create().copy(
         url = url,
@@ -157,7 +157,7 @@ class DownloadPendingDeleter(
     )
 
     /**
-     * Class used to save an entry of episodes with their anime into preferences.
+     * Class used to save an entry of episodes with their manga into preferences.
      */
     @Serializable
     private data class Entry(
@@ -177,7 +177,7 @@ class DownloadPendingDeleter(
     )
 
     /**
-     * Class used to save an entry for an anime into preferences.
+     * Class used to save an entry for an manga into preferences.
      */
     @Serializable
     private data class AnimeEntry(

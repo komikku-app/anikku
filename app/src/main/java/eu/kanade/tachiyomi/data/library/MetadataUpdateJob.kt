@@ -92,7 +92,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
     }
 
     /**
-     * Adds list of anime to be updated.
+     * Adds list of manga to be updated.
      */
     private suspend fun addAnimeToQueue() {
         animeToUpdate = getLibraryManga.await()

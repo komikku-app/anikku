@@ -280,7 +280,7 @@ class Downloader(
     /**
      * Creates a download object for every episode and adds them to the downloads queue.
      *
-     * @param manga the anime of the episodes to download.
+     * @param manga the manga of the episodes to download.
      * @param chapters the list of episodes to download.
      * @param autoStart whether to start the downloader after enqueing the episodes.
      */
@@ -775,7 +775,7 @@ class Downloader(
      * Checks if the download was successful.
      *
      * @param download the download to check.
-     * @param animeDir the anime directory of the download.
+     * @param animeDir the manga directory of the download.
      * @param tmpDir the directory where the download is currently stored.
      * @param dirname the real (non temporary) directory name of the download.
      */

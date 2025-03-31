@@ -173,7 +173,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     }
 
     /**
-     * Adds list of anime to be updated.
+     * Adds list of manga to be updated.
      *
      * @param categoryId the ID of the category to update, or -1 if no category specified.
      */
@@ -322,9 +322,9 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     }
 
     /**
-     * Method that updates anime in [animeToUpdate]. It's called in a background thread, so it's safe
+     * Method that updates manga in [animeToUpdate]. It's called in a background thread, so it's safe
      * to do heavy operations or network calls here.
-     * For each anime it calls [updateManga] and updates the notification showing the current
+     * For each manga it calls [updateManga] and updates the notification showing the current
      * progress.
      *
      * @return an observable delivering the progress of each update.
@@ -348,7 +348,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                 val anime = libraryManga.manga
                                 ensureActive()
 
-                                // Don't continue to update if anime is not in library
+                                // Don't continue to update if manga is not in library
                                 if (getManga.await(anime.id)?.favorite != true) {
                                     return@forEach
                                 }
@@ -373,7 +373,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             libraryPreferences.newUpdatesCount()
                                                 .getAndSet { it + newEpisodes.size }
 
-                                            // Convert to the anime that contains new episodes
+                                            // Convert to the manga that contains new episodes
                                             newUpdates.add(anime to newEpisodes.toTypedArray())
                                         }
                                         clearErrorFromDB(mangaId = anime.id)
@@ -423,15 +423,15 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     }
 
     /**
-     * Updates the episodes for the given anime and adds them to the database.
+     * Updates the episodes for the given manga and adds them to the database.
      *
-     * @param manga the anime to update.
+     * @param manga the manga to update.
      * @return a pair of the inserted and removed episodes.
      */
     private suspend fun updateAnime(manga: Manga, fetchWindow: Pair<Long, Long>): List<Chapter> {
         val source = sourceManager.getOrStub(manga.source)
 
-        // Update anime metadata if needed
+        // Update manga metadata if needed
         if (libraryPreferences.autoUpdateMetadata().get()) {
             val networkAnime = source.getAnimeDetails(manga.toSAnime())
             updateManga.awaitUpdateFromSource(manga, networkAnime, manualFetch = false, coverCache)
@@ -439,7 +439,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
         val episodes = source.getEpisodeList(manga.toSAnime())
 
-        // Get anime from database to account for if it was removed during the update and
+        // Get manga from database to account for if it was removed during the update and
         // to get latest data so it doesn't get overwritten later on
         val dbAnime = getManga.await(manga.id)?.takeIf { it.favorite } ?: return emptyList()
 

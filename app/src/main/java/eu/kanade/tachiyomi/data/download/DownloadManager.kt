@@ -131,7 +131,7 @@ class DownloadManager(
     /**
      * Tells the downloader to enqueue the given list of episodes.
      *
-     * @param manga the anime of the episodes.
+     * @param manga the manga of the episodes.
      * @param chapters the list of episodes to enqueue.
      * @param autoStart whether to start the downloader after enqueuing the episodes.
      * @param alt whether to use the alternative downloader
@@ -167,7 +167,7 @@ class DownloadManager(
      * Builds the page list of a downloaded episode.
      *
      * @param source the source of the episode.
-     * @param manga the anime of the episode.
+     * @param manga the manga of the episode.
      * @param chapter the downloaded episode.
      * @return an observable containing the list of pages from the episode.
      */
@@ -196,7 +196,7 @@ class DownloadManager(
      *
      * @param episodeName the name of the episode to query.
      * @param episodeScanlator scanlator of the episode to query
-     * @param animeTitle the title of the anime to query.
+     * @param animeTitle the title of the manga to query.
      * @param sourceId the id of the source of the episode.
      * @param skipCache whether to skip the directory cache and check in the filesystem.
      */
@@ -224,9 +224,9 @@ class DownloadManager(
     }
 
     /**
-     * Returns the amount of downloaded/local episodes for an anime.
+     * Returns the amount of downloaded/local episodes for an manga.
      *
-     * @param manga the anime to check.
+     * @param manga the manga to check.
      */
     fun getDownloadCount(manga: Manga): Int {
         return if (manga.source == LocalSource.ID) {
@@ -245,9 +245,9 @@ class DownloadManager(
     }
 
     /**
-     * Returns the size of downloaded/local episodes for an anime.
+     * Returns the size of downloaded/local episodes for an manga.
      *
-     * @param manga the anime to check.
+     * @param manga the manga to check.
      */
     fun getDownloadSize(manga: Manga): Long {
         return if (manga.source == LocalSource.ID) {
@@ -266,7 +266,7 @@ class DownloadManager(
      * Deletes the directories of a list of downloaded episodes.
      *
      * @param chapters the list of episodes to delete.
-     * @param manga the anime of the episodes.
+     * @param manga the manga of the episodes.
      * @param source the source of the episodes.
      */
     fun deleteEpisodes(chapters: List<Chapter>, manga: Manga, source: Source) {
@@ -285,7 +285,7 @@ class DownloadManager(
             episodeDirs.forEach { it.delete() }
             cache.removeEpisodes(filteredEpisodes, manga)
 
-            // Delete anime directory if empty
+            // Delete manga directory if empty
             if (animeDir?.listFiles()?.isEmpty() == true) {
                 deleteAnime(manga, source, removeQueued = false)
             }
@@ -293,10 +293,10 @@ class DownloadManager(
     }
 
     /**
-     * Deletes the directory of a downloaded anime.
+     * Deletes the directory of a downloaded manga.
      *
-     * @param manga the anime to delete.
-     * @param source the source of the anime.
+     * @param manga the manga to delete.
+     * @param source the source of the manga.
      * @param removeQueued whether to also remove queued downloads.
      */
     fun deleteAnime(manga: Manga, source: Source, removeQueued: Boolean = true) {
@@ -336,7 +336,7 @@ class DownloadManager(
      * Adds a list of episodes to be deleted later.
      *
      * @param chapters the list of episodes to delete.
-     * @param manga the anime of the episodes.
+     * @param manga the manga of the episodes.
      */
     suspend fun enqueueEpisodesToDelete(chapters: List<Chapter>, manga: Manga) {
         pendingDeleter.addEpisodes(getEpisodesToDelete(chapters, manga), manga)
@@ -382,8 +382,8 @@ class DownloadManager(
     /**
      * Renames an already downloaded episode
      *
-     * @param source the source of the anime.
-     * @param manga the anime of the episode.
+     * @param source the source of the manga.
+     * @param manga the manga of the episode.
      * @param oldChapter the existing episode with the old name.
      * @param newChapter the target episode with the new name.
      */

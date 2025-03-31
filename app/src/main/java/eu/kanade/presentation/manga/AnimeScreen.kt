@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime
+package eu.kanade.presentation.manga
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -70,21 +70,21 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.anime.components.AnimeActionRow
-import eu.kanade.presentation.anime.components.AnimeBottomActionMenu
-import eu.kanade.presentation.anime.components.AnimeEpisodeListItem
-import eu.kanade.presentation.anime.components.AnimeInfoBox
-import eu.kanade.presentation.anime.components.AnimeInfoButtons
-import eu.kanade.presentation.anime.components.AnimeToolbar
-import eu.kanade.presentation.anime.components.EpisodeDownloadAction
-import eu.kanade.presentation.anime.components.EpisodeHeader
-import eu.kanade.presentation.anime.components.ExpandableAnimeDescription
-import eu.kanade.presentation.anime.components.MissingEpisodeCountListItem
-import eu.kanade.presentation.anime.components.NextEpisodeAiringListItem
-import eu.kanade.presentation.anime.components.OutlinedButtonWithArrow
-import eu.kanade.presentation.anime.components.RelatedAnimesRow
 import eu.kanade.presentation.browse.RelatedAnimeTitle
 import eu.kanade.presentation.components.relativeDateTimeText
+import eu.kanade.presentation.manga.components.AnimeActionRow
+import eu.kanade.presentation.manga.components.AnimeBottomActionMenu
+import eu.kanade.presentation.manga.components.AnimeEpisodeListItem
+import eu.kanade.presentation.manga.components.AnimeInfoBox
+import eu.kanade.presentation.manga.components.AnimeInfoButtons
+import eu.kanade.presentation.manga.components.AnimeToolbar
+import eu.kanade.presentation.manga.components.EpisodeDownloadAction
+import eu.kanade.presentation.manga.components.EpisodeHeader
+import eu.kanade.presentation.manga.components.ExpandableAnimeDescription
+import eu.kanade.presentation.manga.components.MissingEpisodeCountListItem
+import eu.kanade.presentation.manga.components.NextEpisodeAiringListItem
+import eu.kanade.presentation.manga.components.OutlinedButtonWithArrow
+import eu.kanade.presentation.manga.components.RelatedAnimesRow
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -1298,7 +1298,7 @@ private fun LazyListScope.sharedEpisodeItems(
         key = { item ->
             when (item) {
                 // KMK: using hashcode to prevent edge-cases where the missing count might duplicate,
-                // especially on merged anime
+                // especially on merged manga
                 is EpisodeList.MissingCount -> "missing-count-${item.hashCode()}"
                 is EpisodeList.Item -> "episode-${item.id}"
             }

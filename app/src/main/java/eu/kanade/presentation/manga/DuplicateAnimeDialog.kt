@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime
+package eu.kanade.presentation.manga
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,10 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.anime.components.AnimeCover
-import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
 import eu.kanade.presentation.components.AdaptiveSheet
 import eu.kanade.presentation.components.TabbedDialogPaddings
+import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import eu.kanade.presentation.more.settings.LocalPreferenceMinHeight
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import tachiyomi.domain.manga.model.Manga

@@ -337,9 +337,9 @@ open class BrowseSourceScreenModel(
     }
 
     /**
-     * Adds or removes an anime from the library.
+     * Adds or removes an manga from the library.
      *
-     * @param manga the anime to update.
+     * @param manga the manga to update.
      */
     fun changeAnimeFavorite(manga: Manga) {
         screenModelScope.launch {

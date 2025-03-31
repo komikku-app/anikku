@@ -44,7 +44,7 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.anime.components.RatioSwitchToPanorama
+import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import eu.kanade.presentation.track.components.TrackLogoIcon
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.track.EnhancedTracker

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.anime.components
+package eu.kanade.presentation.manga.components
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement

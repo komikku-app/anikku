@@ -171,6 +171,6 @@ class SmartSearchMerge(
             return mergedManga
         }
 
-        // Note that if the anime are merged in a different order, this won't trigger, but I don't care lol
+        // Note that if the manga are merged in a different order, this won't trigger, but I don't care lol
     }
 }

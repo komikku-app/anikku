@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.anime.components.AnimeCover
+import eu.kanade.presentation.manga.components.AnimeCover
 import eu.kanade.tachiyomi.util.toSize
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding

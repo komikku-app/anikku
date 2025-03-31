@@ -32,7 +32,7 @@ class CoverCache(private val context: Context) {
     /**
      * Returns the cover from cache.
      *
-     * @param animeThumbnailUrl thumbnail url for the anime.
+     * @param animeThumbnailUrl thumbnail url for the manga.
      * @return cover image.
      */
     fun getCoverFile(animeThumbnailUrl: String?): File? {
@@ -44,7 +44,7 @@ class CoverCache(private val context: Context) {
     /**
      * Returns the custom cover from cache.
      *
-     * @param animeId the anime id.
+     * @param animeId the manga id.
      * @return cover image.
      */
     fun getCustomCoverFile(animeId: Long?): File {
@@ -52,9 +52,9 @@ class CoverCache(private val context: Context) {
     }
 
     /**
-     * Saves the given stream as the anime's custom cover to cache.
+     * Saves the given stream as the manga's custom cover to cache.
      *
-     * @param manga the anime.
+     * @param manga the manga.
      * @param inputStream the stream to copy.
      * @throws IOException if there's any error.
      */
@@ -66,9 +66,9 @@ class CoverCache(private val context: Context) {
     }
 
     /**
-     * Delete the cover files of the anime from the cache.
+     * Delete the cover files of the manga from the cache.
      *
-     * @param manga the anime.
+     * @param manga the manga.
      * @param deleteCustomCover whether the custom cover should be deleted.
      * @return number of files that were deleted.
      */
@@ -87,9 +87,9 @@ class CoverCache(private val context: Context) {
     }
 
     /**
-     * Delete custom cover of the anime from the cache
+     * Delete custom cover of the manga from the cache
      *
-     * @param animeId the anime id.
+     * @param animeId the manga id.
      * @return whether the cover was deleted.
      */
     fun deleteCustomCover(animeId: Long?): Boolean {

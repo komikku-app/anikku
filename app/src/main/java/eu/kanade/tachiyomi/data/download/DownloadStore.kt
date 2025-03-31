@@ -141,7 +141,7 @@ class DownloadStore(
 /**
  * Class used for download serialization
  *
- * @param animeId the id of the anime.
+ * @param animeId the id of the manga.
  * @param episodeId the id of the episode.
  * @param order the order of the download in the queue.
  */

@@ -20,7 +20,7 @@ import uy.kohesive.injekt.api.get
 
 /**
  * This class is used to provide the directories where the downloads should be saved.
- * It uses the following path scheme: /<root downloads dir>/<source name>/<anime>/<episode>
+ * It uses the following path scheme: /<root downloads dir>/<source name>/<manga>/<episode>
  *
  * @param context the application context.
  */
@@ -36,10 +36,10 @@ class DownloadProvider(
         get() = storageManager.getDownloadsDirectory()
 
     /**
-     * Returns the download directory for an anime. For internal use only.
+     * Returns the download directory for an manga. For internal use only.
      *
-     * @param animeTitle the title of the anime to query.
-     * @param source the source of the anime.
+     * @param animeTitle the title of the manga to query.
+     * @param source the source of the manga.
      */
     internal fun getAnimeDir(animeTitle: String, source: Source): UniFile {
         try {
@@ -67,10 +67,10 @@ class DownloadProvider(
     }
 
     /**
-     * Returns the download directory for an anime if it exists.
+     * Returns the download directory for an manga if it exists.
      *
-     * @param animeTitle the title of the anime to query.
-     * @param source the source of the anime.
+     * @param animeTitle the title of the manga to query.
+     * @param source the source of the manga.
      */
     fun findAnimeDir(animeTitle: String, source: Source): UniFile? {
         val sourceDir = findSourceDir(source)
@@ -82,7 +82,7 @@ class DownloadProvider(
      *
      * @param episodeName the name of the episode to query.
      * @param episodeScanlator scanlator of the episode to query
-     * @param animeTitle the title of the anime to query.
+     * @param animeTitle the title of the manga to query.
      * @param source the source of the episode.
      */
     fun findEpisodeDir(
@@ -101,7 +101,7 @@ class DownloadProvider(
      * Returns a list of downloaded directories for the episodes that exist.
      *
      * @param chapters the episodes to query.
-     * @param manga the anime of the episode.
+     * @param manga the manga of the episode.
      * @param source the source of the episode.
      */
     fun findEpisodeDirs(chapters: List<Chapter>, manga: Manga, source: Source): Pair<UniFile?, List<UniFile>> {
@@ -123,9 +123,9 @@ class DownloadProvider(
     }
 
     /**
-     * Returns the download directory name for an anime.
+     * Returns the download directory name for an manga.
      *
-     * @param animeTitle the title of the anime to query.
+     * @param animeTitle the title of the manga to query.
      */
     fun getAnimeDirName(animeTitle: String): String {
         return DiskUtil.buildValidFilename(animeTitle)
@@ -197,8 +197,8 @@ class DownloadProvider(
      *
      * @param episodeName the name of the episode to query.
      * @param episodeScanlator scanlator of the episode to query
-     * @param animeTitle the title of the anime
-     * @param source the source of the anime
+     * @param animeTitle the title of the manga
+     * @param source the source of the manga
      */
     fun getEpisodeFileSize(
         episodeName: String,
