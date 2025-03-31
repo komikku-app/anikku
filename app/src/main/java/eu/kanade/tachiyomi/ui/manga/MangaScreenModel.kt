@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime
+package eu.kanade.tachiyomi.ui.manga
 
 import android.content.Context
 import androidx.compose.material3.SnackbarDuration
@@ -54,14 +54,14 @@ import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
-import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.isLoading
-import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.removeDuplicates
-import eu.kanade.tachiyomi.ui.anime.RelatedAnime.Companion.sorted
-import eu.kanade.tachiyomi.ui.anime.track.TrackItem
+import eu.kanade.tachiyomi.ui.manga.RelatedAnime.Companion.isLoading
+import eu.kanade.tachiyomi.ui.manga.RelatedAnime.Companion.removeDuplicates
+import eu.kanade.tachiyomi.ui.manga.RelatedAnime.Companion.sorted
+import eu.kanade.tachiyomi.ui.manga.track.TrackItem
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.AniChartApi
-import eu.kanade.tachiyomi.util.episode.getNextUnseen
+import eu.kanade.tachiyomi.util.chapter.getNextUnread
 import eu.kanade.tachiyomi.util.removeCovers
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toast
@@ -137,7 +137,7 @@ import java.util.Calendar
 import kotlin.math.floor
 import androidx.compose.runtime.State as RuntimeState
 
-class AnimeScreenModel(
+class MangaScreenModel(
     private val context: Context,
     private val lifecycle: Lifecycle,
     private val mangaId: Long,
@@ -192,7 +192,7 @@ class AnimeScreenModel(
     // AM (FILE_SIZE) -->
     storagePreferences: StoragePreferences = Injekt.get(),
     // <-- AM (FILE_SIZE)
-) : StateScreenModel<AnimeScreenModel.State>(State.Loading) {
+) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
 
     private val successState: State.Success?
         get() = state.value as? State.Success
@@ -210,7 +210,7 @@ class AnimeScreenModel(
     private val isFavorited: Boolean
         get() = manga?.favorite ?: false
 
-    private val processedEpisodes: List<EpisodeList.Item>?
+    private val processedEpisodes: List<ChapterList.Item>?
         get() = successState?.processedEpisodes
 
     val episodeSwipeStartAction = libraryPreferences.swipeEpisodeEndAction().get()
@@ -875,7 +875,7 @@ class AnimeScreenModel(
         // SY -->
         mergedData: MergedAnimeData?,
         // SY <--
-    ): List<EpisodeList.Item> {
+    ): List<ChapterList.Item> {
         val isLocal = anime.isLocal()
         return map { episode ->
             val activeDownload = if (isLocal) {
@@ -904,7 +904,7 @@ class AnimeScreenModel(
                 else -> Download.State.NOT_DOWNLOADED
             }
 
-            EpisodeList.Item(
+            ChapterList.Item(
                 chapter = episode,
                 downloadState = downloadState,
                 downloadProgress = activeDownload?.progress ?: 0,
@@ -1029,7 +1029,7 @@ class AnimeScreenModel(
     /**
      * @throws IllegalStateException if the swipe action is [LibraryPreferences.EpisodeSwipeAction.Disabled]
      */
-    fun episodeSwipe(episodeItem: EpisodeList.Item, swipeAction: LibraryPreferences.EpisodeSwipeAction) {
+    fun episodeSwipe(episodeItem: ChapterList.Item, swipeAction: LibraryPreferences.EpisodeSwipeAction) {
         screenModelScope.launch {
             executeEpisodeSwipeAction(episodeItem, swipeAction)
         }
@@ -1039,7 +1039,7 @@ class AnimeScreenModel(
      * @throws IllegalStateException if the swipe action is [LibraryPreferences.EpisodeSwipeAction.Disabled]
      */
     private fun executeEpisodeSwipeAction(
-        episodeItem: EpisodeList.Item,
+        episodeItem: ChapterList.Item,
         swipeAction: LibraryPreferences.EpisodeSwipeAction,
     ) {
         val episode = episodeItem.chapter
@@ -1079,7 +1079,7 @@ class AnimeScreenModel(
      */
     fun getNextUnseenEpisode(): Chapter? {
         val successState = successState ?: return null
-        return successState.episodes.getNextUnseen(successState.manga)
+        return successState.episodes.getNextUnread(successState.manga)
     }
 
     private fun getUnseenEpisodes(): List<Chapter> {
@@ -1127,7 +1127,7 @@ class AnimeScreenModel(
     }
 
     fun runEpisodeDownloadActions(
-        items: List<EpisodeList.Item>,
+        items: List<ChapterList.Item>,
         action: ChapterDownloadAction,
     ) {
         when (action) {
@@ -1426,7 +1426,7 @@ class AnimeScreenModel(
     }
 
     fun toggleSelection(
-        item: EpisodeList.Item,
+        item: ChapterList.Item,
         selected: Boolean,
         userSelected: Boolean = false,
         fromLongPress: Boolean = false,
@@ -1662,7 +1662,7 @@ class AnimeScreenModel(
             val manga: Manga,
             val source: Source,
             val isFromSource: Boolean,
-            val episodes: List<EpisodeList.Item>,
+            val episodes: List<ChapterList.Item>,
             val trackingCount: Int = 0,
             val hasLoggedInTrackers: Boolean = false,
             val isRefreshingData: Boolean = false,
@@ -1715,7 +1715,7 @@ class AnimeScreenModel(
                 // KMK <--
             }
 
-            val episodeListItems by lazy {
+            val chapterListItems by lazy {
                 processedEpisodes.insertSeparators { before, after ->
                     val (lowerEpisode, higherEpisode) = if (manga.sortDescending()) {
                         after to before
@@ -1734,7 +1734,7 @@ class AnimeScreenModel(
                     }
                         .takeIf { it > 0 }
                         ?.let { missingCount ->
-                            EpisodeList.MissingCount(
+                            ChapterList.MissingCount(
                                 id = "${lowerEpisode?.id}-${higherEpisode.id}",
                                 count = missingCount,
                             )
@@ -1760,7 +1760,7 @@ class AnimeScreenModel(
              * Applies the view filters to the list of episodes obtained from the database.
              * @return an observable of the list of episodes filtered and sorted.
              */
-            private fun List<EpisodeList.Item>.applyFilters(manga: Manga): Sequence<EpisodeList.Item> {
+            private fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item> {
                 val isLocalAnime = manga.isLocal()
                 val unseenFilter = manga.unseenFilter
                 val downloadedFilter = manga.downloadedFilter
@@ -1795,12 +1795,12 @@ data class MergedAnimeData(
 // SY <--
 
 @Immutable
-sealed class EpisodeList {
+sealed class ChapterList {
     @Immutable
     data class MissingCount(
         val id: String,
         val count: Int,
-    ) : EpisodeList()
+    ) : ChapterList()
 
     @Immutable
     data class Item(
@@ -1814,7 +1814,7 @@ sealed class EpisodeList {
         // SY -->
         val sourceName: String?,
         // SY <--
-    ) : EpisodeList() {
+    ) : ChapterList() {
         val id = chapter.id
         val isDownloaded = downloadState == Download.State.DOWNLOADED
     }

@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.browse.components.RelatedAnimesComfortableGrid
 import eu.kanade.presentation.browse.components.RelatedAnimesCompactGrid
 import eu.kanade.presentation.browse.components.RelatedAnimesList
-import eu.kanade.tachiyomi.ui.anime.RelatedAnime
+import eu.kanade.tachiyomi.ui.manga.RelatedAnime
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR

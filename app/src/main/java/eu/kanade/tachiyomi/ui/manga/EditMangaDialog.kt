@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime
+package eu.kanade.tachiyomi.ui.manga
 
 import android.content.Context
 import android.content.res.ColorStateList
@@ -81,7 +81,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
-fun EditAnimeDialog(
+fun EditMangaDialog(
     manga: Manga,
     // KMK -->
     coverRatio: MutableFloatState,
@@ -107,7 +107,7 @@ fun EditAnimeDialog(
     val tracks = remember { mutableStateOf(emptyList<Pair<Track, Tracker>>()) }
 
     // KMK -->
-    val colors = EditAnimeDialogColors(
+    val colors = EditMangaDialogColors(
         textColor = MaterialTheme.colorScheme.onSurfaceVariant.toArgb(),
         textHighlightColor = MaterialTheme.colorScheme.inversePrimary.toArgb(),
         iconColor = MaterialTheme.colorScheme.primary.toArgb(),
@@ -244,7 +244,7 @@ private fun TrackerSelectDialog(
 }
 
 // KMK -->
-data class EditAnimeDialogColors(
+data class EditMangaDialogColors(
     @ColorInt val textColor: Int,
     @ColorInt val textHighlightColor: Int,
     @ColorInt val iconColor: Int,
@@ -267,7 +267,7 @@ private fun onViewCreated(
     tracks: MutableState<List<Pair<Track, Tracker>>>,
     showTrackerSelectionDialogue: MutableState<Boolean>,
     // KMK -->
-    colors: EditAnimeDialogColors,
+    colors: EditMangaDialogColors,
     coverRatio: MutableFloatState,
     // KMK <--
 ) {
@@ -483,7 +483,7 @@ private fun resetTags(
     binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
     // KMK -->
-    colors: EditAnimeDialogColors,
+    colors: EditMangaDialogColors,
     // KMK <--
 ) {
     if (manga.genre.isNullOrEmpty() || manga.isLocal()) {
@@ -520,7 +520,7 @@ private fun resetInfo(
     binding: EditAnimeDialogBinding,
     scope: CoroutineScope,
     // KMK -->
-    colors: EditAnimeDialogColors,
+    colors: EditMangaDialogColors,
     // KMK <--
 ) {
     binding.title.text?.clear()
@@ -535,7 +535,7 @@ private fun ChipGroup.setChips(
     items: List<String>,
     scope: CoroutineScope,
     // KMK -->
-    colors: EditAnimeDialogColors,
+    colors: EditMangaDialogColors,
     // KMK <--
 ) {
     removeAllViews()
@@ -631,7 +631,7 @@ private class SpinnerAdapter(
     context: Context,
     @LayoutRes val resource: Int,
     objects: List<String>,
-    val colors: EditAnimeDialogColors,
+    val colors: EditMangaDialogColors,
 ) : ArrayAdapter<String>(context, resource, objects) {
     private val mInflater = LayoutInflater.from(context)
 

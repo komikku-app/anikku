@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime.merged
+package eu.kanade.tachiyomi.ui.manga.merged
 
 import android.view.LayoutInflater
 import android.view.View

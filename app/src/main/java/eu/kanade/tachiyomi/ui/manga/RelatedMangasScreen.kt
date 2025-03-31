@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime
+package eu.kanade.tachiyomi.ui.manga
 
 import android.content.res.Configuration
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -30,13 +30,13 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
-fun RelatedAnimesScreen(
-    screenModel: AnimeScreenModel,
+fun RelatedMangasScreen(
+    screenModel: MangaScreenModel,
     bulkFavoriteScreenModel: BulkFavoriteScreenModel,
     navigateUp: () -> Unit,
     navigator: Navigator,
     scope: CoroutineScope,
-    successState: AnimeScreenModel.State.Success,
+    successState: MangaScreenModel.State.Success,
 ) {
     val sourcePreferences: SourcePreferences = Injekt.get()
     var displayMode by sourcePreferences.sourceDisplayMode().asState(scope)
@@ -99,7 +99,7 @@ fun RelatedAnimesScreen(
                     if (bulkFavoriteState.selectionMode) {
                         bulkFavoriteScreenModel.toggleSelection(manga)
                     } else {
-                        navigator.push(AnimeScreen(manga.id, true))
+                        navigator.push(MangaScreen(manga.id, true))
                     }
                 }
             },
@@ -109,7 +109,7 @@ fun RelatedAnimesScreen(
                     if (!bulkFavoriteState.selectionMode) {
                         bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                     } else {
-                        navigator.push(AnimeScreen(manga.id, true))
+                        navigator.push(MangaScreen(manga.id, true))
                     }
                 }
             },

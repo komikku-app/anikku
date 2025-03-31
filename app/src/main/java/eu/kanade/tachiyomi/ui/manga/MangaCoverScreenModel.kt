@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime
+package eu.kanade.tachiyomi.ui.manga
 
 import android.content.Context
 import android.net.Uri
@@ -31,7 +31,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeCoverScreenModel(
+class MangaCoverScreenModel(
     private val animeId: Long,
     private val getManga: GetManga = Injekt.get(),
     private val imageSaver: ImageSaver = Injekt.get(),

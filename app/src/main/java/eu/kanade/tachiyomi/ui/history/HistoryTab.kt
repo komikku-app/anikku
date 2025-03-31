@@ -27,8 +27,8 @@ import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
@@ -85,7 +85,7 @@ data object HistoryTab : Tab {
             state = state,
             snackbarHostState = snackbarHostState,
             onSearchQueryChange = screenModel::updateSearchQuery,
-            onClickCover = { navigator.push(AnimeScreen(it)) },
+            onClickCover = { navigator.push(MangaScreen(it)) },
             onClickResume = screenModel::getNextEpisodeForAnime,
             onDialogChange = screenModel::setDialog,
         )

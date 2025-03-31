@@ -31,9 +31,9 @@ import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DownloadDropdownMenu
 import eu.kanade.presentation.components.UpIcon
 import eu.kanade.presentation.manga.DownloadAction
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
@@ -101,7 +101,7 @@ fun MangaToolbar(
                     // KMK -->
                     if (isHomeEnabled && navigator != null) {
                         if (navigator.size >= 2 &&
-                            navigator.items[navigator.size - 2] is AnimeScreen ||
+                            navigator.items[navigator.size - 2] is MangaScreen ||
                             navigator.size >= 5
                         ) {
                             IconButton(onClick = { onHomeClicked() }) {

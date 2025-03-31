@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.util.episode
+package eu.kanade.tachiyomi.util.chapter
 
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import tachiyomi.domain.chapter.model.Chapter

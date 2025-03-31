@@ -53,7 +53,6 @@ import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.online.HttpSource
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
 import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
@@ -62,6 +61,7 @@ import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScree
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
 import exh.ui.smartsearch.SmartSearchScreen
@@ -345,7 +345,7 @@ data class BrowseSourceScreen(
                         } else {
                             // KMK <--
                             navigator.push(
-                                AnimeScreen(
+                                MangaScreen(
                                     manga.id,
                                     // KMK -->
                                     // Finding the entry to be merged to, so we don't want to expand description
@@ -363,7 +363,7 @@ data class BrowseSourceScreen(
                     scope.launchIO {
                         val manga = screenModel.networkToLocalManga.getLocal(it)
                         if (bulkFavoriteState.selectionMode) {
-                            navigator.push(AnimeScreen(manga.id, true))
+                            navigator.push(MangaScreen(manga.id, true))
                         } else {
                             // KMK <--
                             val duplicateManga = screenModel.getDuplicateAnimelibAnime(manga)
@@ -418,7 +418,7 @@ data class BrowseSourceScreen(
                 DuplicateMangaDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = { screenModel.addFavorite(dialog.manga) },
-                    onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
+                    onOpenAnime = { navigator.push(MangaScreen(dialog.duplicate.id)) },
                     onMigrate = {
                         // SY -->
                         PreMigrationScreen.navigateToMigration(

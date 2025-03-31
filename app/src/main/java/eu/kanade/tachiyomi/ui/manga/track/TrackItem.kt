@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime.track
+package eu.kanade.tachiyomi.ui.manga.track
 
 import eu.kanade.tachiyomi.data.track.Tracker
 import tachiyomi.domain.track.model.Track

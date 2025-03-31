@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime.merged
+package eu.kanade.tachiyomi.ui.manga.merged
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eu.kanade.tachiyomi.databinding.EditMergedSettingsDialogBinding
-import eu.kanade.tachiyomi.ui.anime.MergedAnimeData
+import eu.kanade.tachiyomi.ui.manga.MergedAnimeData
 import eu.kanade.tachiyomi.util.system.toast
 import exh.source.MERGED_SOURCE_ID
 import tachiyomi.domain.manga.model.Manga

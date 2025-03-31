@@ -28,7 +28,6 @@ import eu.kanade.presentation.browse.components.FeedSortAlphabeticallyDialog
 import eu.kanade.presentation.browse.components.SourceFeedDeleteDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
@@ -38,6 +37,7 @@ import eu.kanade.tachiyomi.ui.browse.RemoveAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -186,7 +186,7 @@ fun feedTab(
                                     bulkFavoriteScreenModel.toggleSelection(manga)
                                 } else {
                                     // KMK <--
-                                    navigator.push(AnimeScreen(manga.id, true))
+                                    navigator.push(MangaScreen(manga.id, true))
                                 }
                             }
                         },
@@ -197,7 +197,7 @@ fun feedTab(
                                 if (!bulkFavoriteState.selectionMode) {
                                     bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                                 } else {
-                                    navigator.push(AnimeScreen(manga.id, true))
+                                    navigator.push(MangaScreen(manga.id, true))
                                 }
                             }
                         },

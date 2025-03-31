@@ -26,9 +26,9 @@ import eu.kanade.presentation.components.BulkSelectionToolbar
 import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.manga.DuplicateMangasDialog
 import eu.kanade.tachiyomi.data.cache.CoverCache
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.util.removeCovers
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentList
@@ -327,7 +327,7 @@ class BulkFavoriteScreenModel(
                     false -> Instant.now().toEpochMilli()
                 },
             )
-            // TODO: also allow deleting episodes when remove favorite (just like in [AnimeScreenModel])
+            // TODO: also allow deleting episodes when remove favorite (just like in [MangaScreenModel])
             if (!new.favorite) {
                 new = new.removeCovers(coverCache)
             } else {
@@ -447,7 +447,7 @@ fun AddDuplicateAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     DuplicateMangaDialog(
         onDismissRequest = bulkFavoriteScreenModel::dismissDialog,
         onConfirm = { bulkFavoriteScreenModel.addFavorite(dialog.manga) },
-        onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
+        onOpenAnime = { navigator.push(MangaScreen(dialog.duplicate.id)) },
         onMigrate = {
             PreMigrationScreen.navigateToMigration(
                 Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
@@ -520,7 +520,7 @@ fun AllowDuplicateDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
             bulkFavoriteScreenModel.addFavoriteDuplicate(skipAllDuplicates = true)
         },
         onOpenManga = {
-            navigator.push(AnimeScreen(dialog.duplicatedManga.second.id))
+            navigator.push(MangaScreen(dialog.duplicatedManga.second.id))
         },
         onAllowDuplicate = {
             bulkFavoriteScreenModel.addFavorite(startIdx = dialog.duplicatedManga.first + 1)

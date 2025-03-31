@@ -73,8 +73,8 @@ import eu.kanade.tachiyomi.util.AniSkipApi
 import eu.kanade.tachiyomi.util.SkipType
 import eu.kanade.tachiyomi.util.Stamp
 import eu.kanade.tachiyomi.util.TrackSelect
+import eu.kanade.tachiyomi.util.chapter.filterDownloadedEpisodes
 import eu.kanade.tachiyomi.util.editCover
-import eu.kanade.tachiyomi.util.episode.filterDownloadedEpisodes
 import eu.kanade.tachiyomi.util.lang.byteSize
 import eu.kanade.tachiyomi.util.lang.takeBytes
 import eu.kanade.tachiyomi.util.storage.DiskUtil

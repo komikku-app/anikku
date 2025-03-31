@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.anime.track
+package eu.kanade.tachiyomi.ui.manga.track
 
 import android.app.Application
 import android.content.Context

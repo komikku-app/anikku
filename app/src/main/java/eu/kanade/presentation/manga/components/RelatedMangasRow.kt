@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.browse.components.AnimeItem
 import eu.kanade.presentation.browse.components.EmptyResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
-import eu.kanade.tachiyomi.ui.anime.RelatedAnime
+import eu.kanade.tachiyomi.ui.manga.RelatedAnime
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.presentation.core.components.material.padding

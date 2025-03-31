@@ -29,7 +29,6 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.online.HttpSource
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
@@ -39,6 +38,7 @@ import eu.kanade.tachiyomi.ui.browse.RemoveAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.extension.details.ExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.SourceFilterDialog
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
 import exh.util.nullIfBlank
@@ -182,7 +182,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                             if (!bulkFavoriteState.selectionMode) {
                                 bulkFavoriteScreenModel.addRemoveManga(manga, haptic)
                             } else {
-                                navigator.push(AnimeScreen(manga.id, true))
+                                navigator.push(MangaScreen(manga.id, true))
                             }
                         }
                     },
@@ -301,7 +301,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
     }
 
     private fun onMangaClick(navigator: Navigator, manga: Manga) {
-        navigator.push(AnimeScreen(manga.id, true))
+        navigator.push(MangaScreen(manga.id, true))
     }
 
     private fun onBrowseClick(navigator: Navigator, sourceId: Long, search: String? = null, savedSearch: Long? = null, filters: String? = null) {

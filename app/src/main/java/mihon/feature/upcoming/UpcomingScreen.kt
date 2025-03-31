@@ -7,7 +7,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_OUTSIDE_RELEASE_PERIOD
 
 class UpcomingScreen : Screen() {
@@ -22,7 +22,7 @@ class UpcomingScreen : Screen() {
         UpcomingScreenContent(
             state = state,
             setSelectedYearMonth = screenModel::setSelectedYearMonth,
-            onClickUpcoming = { navigator.push(AnimeScreen(it.id)) },
+            onClickUpcoming = { navigator.push(MangaScreen(it.id)) },
             // KMK -->
             showUpdatingMangas = screenModel::showUpdatingMangas,
             hideUpdatingMangas = screenModel::hideUpdatingMangas,

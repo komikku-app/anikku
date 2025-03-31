@@ -47,12 +47,12 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.isTabletUi
-import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.BrowseTab
 import eu.kanade.tachiyomi.ui.download.DownloadQueueScreen
 import eu.kanade.tachiyomi.ui.history.HistoryTab
 import eu.kanade.tachiyomi.ui.library.LibraryTab
 import eu.kanade.tachiyomi.ui.libraryUpdateError.LibraryUpdateErrorScreen
+import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.more.MoreTab
 import eu.kanade.tachiyomi.ui.player.CastManager
 import eu.kanade.tachiyomi.ui.player.cast.CastMiniController
@@ -235,7 +235,7 @@ object HomeScreen : Screen() {
                         }
 
                         if (it is Tab.Library && it.animeIdToOpen != null) {
-                            navigator.push(AnimeScreen(it.animeIdToOpen))
+                            navigator.push(MangaScreen(it.animeIdToOpen))
                         }
                         if (it is Tab.More) {
                             if (it.toDownloads) {

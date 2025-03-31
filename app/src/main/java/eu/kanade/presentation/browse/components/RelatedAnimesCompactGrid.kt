@@ -15,7 +15,7 @@ import eu.kanade.presentation.browse.RelatedAnimeTitle
 import eu.kanade.presentation.browse.RelatedAnimesLoadingItem
 import eu.kanade.presentation.browse.header
 import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
-import eu.kanade.tachiyomi.ui.anime.RelatedAnime
+import eu.kanade.tachiyomi.ui.manga.RelatedAnime
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR

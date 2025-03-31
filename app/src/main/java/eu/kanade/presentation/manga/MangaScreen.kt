@@ -92,10 +92,10 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.getNameForAnimeInfo
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.ui.anime.AnimeScreenModel
-import eu.kanade.tachiyomi.ui.anime.EpisodeList
-import eu.kanade.tachiyomi.ui.anime.MergedAnimeData
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
+import eu.kanade.tachiyomi.ui.manga.ChapterList
+import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
+import eu.kanade.tachiyomi.ui.manga.MergedAnimeData
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import exh.source.MERGED_SOURCE_ID
 import kotlinx.coroutines.delay
@@ -127,7 +127,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun MangaScreen(
-    state: AnimeScreenModel.State.Success,
+    state: MangaScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
     isTabletUi: Boolean,
@@ -140,7 +140,7 @@ fun MangaScreen(
     // <-- AM (FILE_SIZE)
     onBackClicked: () -> Unit,
     onEpisodeClicked: (chapter: Chapter, alt: Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<ChapterList.Item>, ChapterDownloadAction) -> Unit)?,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
@@ -181,10 +181,10 @@ fun MangaScreen(
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
 
     // For episode swipe
-    onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
+    onEpisodeSwipe: (ChapterList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
 
     // Chapter selection
-    onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onEpisodeSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllEpisodeSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
 
@@ -335,7 +335,7 @@ fun MangaScreen(
 
 @Composable
 private fun MangaScreenSmallImpl(
-    state: AnimeScreenModel.State.Success,
+    state: MangaScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
     episodeSwipeStartAction: LibraryPreferences.EpisodeSwipeAction,
@@ -347,7 +347,7 @@ private fun MangaScreenSmallImpl(
     // <-- AM (FILE_SIZE)
     onBackClicked: () -> Unit,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<ChapterList.Item>, ChapterDownloadAction) -> Unit)?,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
@@ -390,10 +390,10 @@ private fun MangaScreenSmallImpl(
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
 
     // For episode swipe
-    onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
+    onEpisodeSwipe: (ChapterList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
 
     // Chapter selection
-    onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onEpisodeSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllEpisodeSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
 
@@ -410,7 +410,7 @@ private fun MangaScreenSmallImpl(
     val episodeListState = rememberLazyListState()
 
     val episodes = remember(state) { state.processedEpisodes }
-    val listItem = remember(state) { state.episodeListItems }
+    val listItem = remember(state) { state.chapterListItems }
 
     val isAnySelected by remember {
         derivedStateOf {
@@ -781,7 +781,7 @@ private fun MangaScreenSmallImpl(
 
 @Composable
 private fun MangaScreenLargeImpl(
-    state: AnimeScreenModel.State.Success,
+    state: MangaScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
     episodeSwipeStartAction: LibraryPreferences.EpisodeSwipeAction,
@@ -793,7 +793,7 @@ private fun MangaScreenLargeImpl(
     // <-- AM (FILE_SIZE)
     onBackClicked: () -> Unit,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<ChapterList.Item>, ChapterDownloadAction) -> Unit)?,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
@@ -836,10 +836,10 @@ private fun MangaScreenLargeImpl(
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
 
     // For swipe actions
-    onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
+    onEpisodeSwipe: (ChapterList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
 
     // Chapter selection
-    onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onEpisodeSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllEpisodeSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
 
@@ -857,7 +857,7 @@ private fun MangaScreenLargeImpl(
     val density = LocalDensity.current
 
     val episodes = remember(state) { state.processedEpisodes }
-    val listItem = remember(state) { state.episodeListItems }
+    val listItem = remember(state) { state.chapterListItems }
 
     val isAnySelected by remember {
         derivedStateOf {
@@ -1218,7 +1218,7 @@ private fun MangaScreenLargeImpl(
 
 @Composable
 private fun SharedMangaBottomActionMenu(
-    selected: List<EpisodeList.Item>,
+    selected: List<ChapterList.Item>,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
     onMultiBookmarkClicked: (List<Chapter>, bookmarked: Boolean) -> Unit,
     // AM (FILLERMARK) -->
@@ -1226,7 +1226,7 @@ private fun SharedMangaBottomActionMenu(
     // <-- AM (FILLERMARK)
     onMultiMarkAsSeenClicked: (List<Chapter>, markAsSeen: Boolean) -> Unit,
     onMarkPreviousAsSeenClicked: (Chapter) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<ChapterList.Item>, ChapterDownloadAction) -> Unit)?,
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
     fillFraction: Float,
     alwaysUseExternalPlayer: Boolean,
@@ -1284,14 +1284,14 @@ private fun LazyListScope.sharedChapterItems(
     showFileSize: Boolean,
     // <-- AM (FILE_SIZE)
     mergedData: MergedAnimeData?,
-    episodes: List<EpisodeList>,
+    episodes: List<ChapterList>,
     isAnyEpisodeSelected: Boolean,
     episodeSwipeStartAction: LibraryPreferences.EpisodeSwipeAction,
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
-    onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
-    onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
+    onDownloadEpisode: ((List<ChapterList.Item>, ChapterDownloadAction) -> Unit)?,
+    onEpisodeSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onEpisodeSwipe: (ChapterList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
 ) {
     items(
         items = episodes,
@@ -1299,8 +1299,8 @@ private fun LazyListScope.sharedChapterItems(
             when (item) {
                 // KMK: using hashcode to prevent edge-cases where the missing count might duplicate,
                 // especially on merged manga
-                is EpisodeList.MissingCount -> "missing-count-${item.hashCode()}"
-                is EpisodeList.Item -> "episode-${item.id}"
+                is ChapterList.MissingCount -> "missing-count-${item.hashCode()}"
+                is ChapterList.Item -> "episode-${item.id}"
             }
         },
         contentType = { MangaScreenItem.EPISODE },
@@ -1308,10 +1308,10 @@ private fun LazyListScope.sharedChapterItems(
         val haptic = LocalHapticFeedback.current
 
         when (item) {
-            is EpisodeList.MissingCount -> {
+            is ChapterList.MissingCount -> {
                 MissingChapterCountListItem(count = item.count)
             }
-            is EpisodeList.Item -> {
+            is ChapterList.Item -> {
                 // AM (FILE_SIZE) -->
                 var fileSizeAsync: Long? by remember { mutableStateOf(item.fileSize) }
                 val isEpisodeDownloaded = item.downloadState == Download.State.DOWNLOADED
@@ -1394,7 +1394,7 @@ private fun LazyListScope.sharedChapterItems(
 }
 
 private fun onChapterItemClick(
-    episodeItem: EpisodeList.Item,
+    episodeItem: ChapterList.Item,
     isAnyEpisodeSelected: Boolean,
     onToggleSelection: (Boolean) -> Unit,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
