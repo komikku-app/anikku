@@ -26,7 +26,7 @@ import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
-fun RelatedAnimesRow(
+fun RelatedMangasRow(
     relatedAnimes: List<RelatedAnime>?,
     getMangaState: @Composable (Manga) -> State<Manga>,
     onAnimeClick: (Manga) -> Unit,
@@ -38,7 +38,7 @@ fun RelatedAnimesRow(
         }
 
         relatedAnimes.isNotEmpty() -> {
-            RelatedAnimeCardRow(
+            RelatedMangaCardRow(
                 relatedAnimes = relatedAnimes,
                 getManga = { getMangaState(it) },
                 onMangaClick = onAnimeClick,
@@ -53,7 +53,7 @@ fun RelatedAnimesRow(
 }
 
 @Composable
-fun RelatedAnimeCardRow(
+fun RelatedMangaCardRow(
     relatedAnimes: List<RelatedAnime>,
     getManga: @Composable (Manga) -> State<Manga>,
     onMangaClick: (Manga) -> Unit,
@@ -79,18 +79,18 @@ fun RelatedAnimeCardRow(
         }
         if (loading != null) {
             item {
-                RelatedAnimeLoadingItem()
+                RelatedMangaLoadingItem()
             }
         }
     }
 }
 
 @Composable
-fun RelatedAnimeLoadingItem() {
+fun RelatedMangaLoadingItem() {
     Box(
         modifier = Modifier
             .width(96.dp)
-            .aspectRatio(AnimeCover.Book.ratio)
+            .aspectRatio(MangaCover.Book.ratio)
             .padding(vertical = MaterialTheme.padding.medium),
     ) {
         CircularProgressIndicator(

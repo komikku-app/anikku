@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
-import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.isDynamicColorAvailable
@@ -192,7 +192,7 @@ fun AppThemePreviewItem(
                     shape = MaterialTheme.shapes.small,
                 )
                 .fillMaxWidth(0.5f)
-                .aspectRatio(AnimeCover.Book.ratio),
+                .aspectRatio(MangaCover.Book.ratio),
         ) {
             Row(
                 modifier = Modifier

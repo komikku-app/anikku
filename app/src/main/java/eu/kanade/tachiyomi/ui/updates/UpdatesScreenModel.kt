@@ -10,7 +10,7 @@ import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.chapter.interactor.SetReadStatus
-import eu.kanade.presentation.manga.components.EpisodeDownloadAction
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.updates.UpdatesUiModel
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
@@ -164,28 +164,28 @@ class UpdatesScreenModel(
         }
     }
 
-    fun downloadEpisodes(items: List<UpdatesItem>, action: EpisodeDownloadAction) {
+    fun downloadEpisodes(items: List<UpdatesItem>, action: ChapterDownloadAction) {
         if (items.isEmpty()) return
         screenModelScope.launch {
             when (action) {
-                EpisodeDownloadAction.START -> {
+                ChapterDownloadAction.START -> {
                     downloadEpisodes(items)
                     if (items.any { it.downloadStateProvider() == Download.State.ERROR }) {
                         downloadManager.startDownloads()
                     }
                 }
-                EpisodeDownloadAction.START_NOW -> {
+                ChapterDownloadAction.START_NOW -> {
                     val episodeId = items.singleOrNull()?.update?.episodeId ?: return@launch
                     startDownloadingNow(episodeId)
                 }
-                EpisodeDownloadAction.CANCEL -> {
+                ChapterDownloadAction.CANCEL -> {
                     val episodeId = items.singleOrNull()?.update?.episodeId ?: return@launch
                     cancelDownload(episodeId)
                 }
-                EpisodeDownloadAction.DELETE -> {
+                ChapterDownloadAction.DELETE -> {
                     deleteEpisodes(items)
                 }
-                EpisodeDownloadAction.SHOW_QUALITIES -> {
+                ChapterDownloadAction.SHOW_QUALITIES -> {
                     val update = items.singleOrNull()?.update ?: return@launch
                     showQualitiesDialog(update)
                 }

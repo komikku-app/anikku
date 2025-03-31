@@ -72,19 +72,19 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.RelatedAnimeTitle
 import eu.kanade.presentation.components.relativeDateTimeText
-import eu.kanade.presentation.manga.components.AnimeActionRow
-import eu.kanade.presentation.manga.components.AnimeBottomActionMenu
-import eu.kanade.presentation.manga.components.AnimeEpisodeListItem
-import eu.kanade.presentation.manga.components.AnimeInfoBox
-import eu.kanade.presentation.manga.components.AnimeInfoButtons
-import eu.kanade.presentation.manga.components.AnimeToolbar
-import eu.kanade.presentation.manga.components.EpisodeDownloadAction
-import eu.kanade.presentation.manga.components.EpisodeHeader
-import eu.kanade.presentation.manga.components.ExpandableAnimeDescription
-import eu.kanade.presentation.manga.components.MissingEpisodeCountListItem
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
+import eu.kanade.presentation.manga.components.ChapterHeader
+import eu.kanade.presentation.manga.components.ExpandableMangaDescription
+import eu.kanade.presentation.manga.components.MangaActionRow
+import eu.kanade.presentation.manga.components.MangaBottomActionMenu
+import eu.kanade.presentation.manga.components.MangaEpisodeListItem
+import eu.kanade.presentation.manga.components.MangaInfoBox
+import eu.kanade.presentation.manga.components.MangaInfoButtons
+import eu.kanade.presentation.manga.components.MangaToolbar
+import eu.kanade.presentation.manga.components.MissingChapterCountListItem
 import eu.kanade.presentation.manga.components.NextEpisodeAiringListItem
 import eu.kanade.presentation.manga.components.OutlinedButtonWithArrow
-import eu.kanade.presentation.manga.components.RelatedAnimesRow
+import eu.kanade.presentation.manga.components.RelatedMangasRow
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -126,7 +126,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 @Composable
-fun AnimeScreen(
+fun MangaScreen(
     state: AnimeScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
@@ -140,7 +140,7 @@ fun AnimeScreen(
     // <-- AM (FILE_SIZE)
     onBackClicked: () -> Unit,
     onEpisodeClicked: (chapter: Chapter, alt: Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
@@ -211,7 +211,7 @@ fun AnimeScreen(
     }.takeIf { state.source is ConfigurableSource }
 
     if (!isTabletUi) {
-        AnimeScreenSmallImpl(
+        MangaScreenSmallImpl(
             state = state,
             snackbarHostState = snackbarHostState,
             nextUpdate = nextUpdate,
@@ -271,7 +271,7 @@ fun AnimeScreen(
             // KMK <--
         )
     } else {
-        AnimeScreenLargeImpl(
+        MangaScreenLargeImpl(
             state = state,
             snackbarHostState = snackbarHostState,
             nextUpdate = nextUpdate,
@@ -334,7 +334,7 @@ fun AnimeScreen(
 }
 
 @Composable
-private fun AnimeScreenSmallImpl(
+private fun MangaScreenSmallImpl(
     state: AnimeScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
@@ -347,7 +347,7 @@ private fun AnimeScreenSmallImpl(
     // <-- AM (FILE_SIZE)
     onBackClicked: () -> Unit,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
@@ -460,7 +460,7 @@ private fun AnimeScreenSmallImpl(
                 if (!isFirstItemVisible || isFirstItemScrolled) 1f else 0f,
                 label = "Top Bar Background",
             )
-            AnimeToolbar(
+            MangaToolbar(
                 title = state.manga.title,
                 titleAlphaProvider = { animatedTitleAlpha },
                 backgroundAlphaProvider = { animatedBgAlpha },
@@ -495,7 +495,7 @@ private fun AnimeScreenSmallImpl(
             val selectedEpisodes = remember(episodes) {
                 episodes.filter { it.selected }
             }
-            SharedAnimeBottomActionMenu(
+            SharedMangaBottomActionMenu(
                 selected = selectedEpisodes,
                 onEpisodeClicked = onEpisodeClicked,
                 onMultiBookmarkClicked = onMultiBookmarkClicked,
@@ -600,10 +600,10 @@ private fun AnimeScreenSmallImpl(
                     ),
                 ) {
                     item(
-                        key = AnimeScreenItem.INFO_BOX,
-                        contentType = AnimeScreenItem.INFO_BOX,
+                        key = MangaScreenItem.INFO_BOX,
+                        contentType = MangaScreenItem.INFO_BOX,
                     ) {
-                        AnimeInfoBox(
+                        MangaInfoBox(
                             isTabletUi = false,
                             appBarPadding = topPadding,
                             manga = state.manga,
@@ -619,10 +619,10 @@ private fun AnimeScreenSmallImpl(
                     }
 
                     item(
-                        key = AnimeScreenItem.ACTION_ROW,
-                        contentType = AnimeScreenItem.ACTION_ROW,
+                        key = MangaScreenItem.ACTION_ROW,
+                        contentType = MangaScreenItem.ACTION_ROW,
                     ) {
-                        AnimeActionRow(
+                        MangaActionRow(
                             favorite = state.manga.favorite,
                             trackingCount = state.trackingCount,
                             nextUpdate = nextUpdate,
@@ -640,10 +640,10 @@ private fun AnimeScreenSmallImpl(
                     }
 
                     item(
-                        key = AnimeScreenItem.DESCRIPTION_WITH_TAG,
-                        contentType = AnimeScreenItem.DESCRIPTION_WITH_TAG,
+                        key = MangaScreenItem.DESCRIPTION_WITH_TAG,
+                        contentType = MangaScreenItem.DESCRIPTION_WITH_TAG,
                     ) {
-                        ExpandableAnimeDescription(
+                        ExpandableMangaDescription(
                             defaultExpandState = state.isFromSource,
                             description = state.manga.description,
                             tagsProvider = { state.manga.genre },
@@ -661,8 +661,8 @@ private fun AnimeScreenSmallImpl(
                             if (state.relatedAnimesSorted?.isNotEmpty() != false) {
                                 item { HorizontalDivider() }
                                 item(
-                                    key = AnimeScreenItem.RELATED_ANIMES,
-                                    contentType = AnimeScreenItem.RELATED_ANIMES,
+                                    key = MangaScreenItem.RELATED_ANIMES,
+                                    contentType = MangaScreenItem.RELATED_ANIMES,
                                 ) {
                                     Column {
                                         RelatedAnimeTitle(
@@ -673,7 +673,7 @@ private fun AnimeScreenSmallImpl(
                                             modifier = Modifier
                                                 .padding(horizontal = MaterialTheme.padding.medium),
                                         )
-                                        RelatedAnimesRow(
+                                        RelatedMangasRow(
                                             relatedAnimes = state.relatedAnimesSorted,
                                             getMangaState = getMangaState,
                                             onAnimeClick = onRelatedAnimeClick,
@@ -685,8 +685,8 @@ private fun AnimeScreenSmallImpl(
                             }
                         } else if (!showRelatedAnimesInOverflow) {
                             item(
-                                key = AnimeScreenItem.RELATED_ANIMES,
-                                contentType = AnimeScreenItem.RELATED_ANIMES,
+                                key = MangaScreenItem.RELATED_ANIMES,
+                                contentType = MangaScreenItem.RELATED_ANIMES,
                             ) {
                                 OutlinedButtonWithArrow(
                                     text = stringResource(KMR.strings.pref_source_related_mangas)
@@ -701,10 +701,10 @@ private fun AnimeScreenSmallImpl(
                     // SY -->
                     if (state.showMergeWithAnother) {
                         item(
-                            key = AnimeScreenItem.INFO_BUTTONS,
-                            contentType = AnimeScreenItem.INFO_BUTTONS,
+                            key = MangaScreenItem.INFO_BUTTONS,
+                            contentType = MangaScreenItem.INFO_BUTTONS,
                         ) {
-                            AnimeInfoButtons(
+                            MangaInfoButtons(
                                 showRecommendsButton = true,
                                 showMergeWithAnotherButton = state.showMergeWithAnother,
                                 onRecommendClicked = { },
@@ -715,13 +715,13 @@ private fun AnimeScreenSmallImpl(
                     // SY <--
 
                     item(
-                        key = AnimeScreenItem.EPISODE_HEADER,
-                        contentType = AnimeScreenItem.EPISODE_HEADER,
+                        key = MangaScreenItem.EPISODE_HEADER,
+                        contentType = MangaScreenItem.EPISODE_HEADER,
                     ) {
                         val missingEpisodeCount = remember(episodes) {
                             episodes.map { it.chapter.episodeNumber }.missingChaptersCount()
                         }
-                        EpisodeHeader(
+                        ChapterHeader(
                             enabled = !isAnySelected,
                             episodeCount = episodes.size,
                             missingEpisodeCount = missingEpisodeCount,
@@ -731,8 +731,8 @@ private fun AnimeScreenSmallImpl(
 
                     if (state.airingTime > 0L) {
                         item(
-                            key = AnimeScreenItem.AIRING_TIME,
-                            contentType = AnimeScreenItem.AIRING_TIME,
+                            key = MangaScreenItem.AIRING_TIME,
+                            contentType = MangaScreenItem.AIRING_TIME,
                         ) {
                             // Handles the second by second countdown
                             var timer by remember { mutableLongStateOf(state.airingTime) }
@@ -757,7 +757,7 @@ private fun AnimeScreenSmallImpl(
                         }
                     }
 
-                    sharedEpisodeItems(
+                    sharedChapterItems(
                         manga = state.manga,
                         // AM (FILE_SIZE) -->
                         source = state.source,
@@ -780,7 +780,7 @@ private fun AnimeScreenSmallImpl(
 }
 
 @Composable
-private fun AnimeScreenLargeImpl(
+private fun MangaScreenLargeImpl(
     state: AnimeScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
@@ -793,7 +793,7 @@ private fun AnimeScreenLargeImpl(
     // <-- AM (FILE_SIZE)
     onBackClicked: () -> Unit,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
@@ -898,7 +898,7 @@ private fun AnimeScreenLargeImpl(
             val selectedEpisodeCount = remember(episodes) {
                 episodes.count { it.selected }
             }
-            AnimeToolbar(
+            MangaToolbar(
                 modifier = Modifier.onSizeChanged { topBarHeight = it.height },
                 title = state.manga.title,
                 titleAlphaProvider = { if (isAnySelected) 1f else 0f },
@@ -939,7 +939,7 @@ private fun AnimeScreenLargeImpl(
                 val selectedEpisodes = remember(episodes) {
                     episodes.filter { it.selected }
                 }
-                SharedAnimeBottomActionMenu(
+                SharedMangaBottomActionMenu(
                     selected = selectedEpisodes,
                     onEpisodeClicked = onEpisodeClicked,
                     onMultiBookmarkClicked = onMultiBookmarkClicked,
@@ -1044,7 +1044,7 @@ private fun AnimeScreenLargeImpl(
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = contentPadding.calculateBottomPadding()),
                     ) {
-                        AnimeInfoBox(
+                        MangaInfoBox(
                             isTabletUi = true,
                             appBarPadding = contentPadding.calculateTopPadding(),
                             manga = state.manga,
@@ -1057,7 +1057,7 @@ private fun AnimeScreenLargeImpl(
                             coverRatio = coverRatio,
                             // KMK <--
                         )
-                        AnimeActionRow(
+                        MangaActionRow(
                             favorite = state.manga.favorite,
                             trackingCount = state.trackingCount,
                             nextUpdate = nextUpdate,
@@ -1072,7 +1072,7 @@ private fun AnimeScreenLargeImpl(
                             onMergeClicked = onMergeClicked.takeUnless { state.showMergeInOverflow },
                             // SY <--
                         )
-                        ExpandableAnimeDescription(
+                        ExpandableMangaDescription(
                             defaultExpandState = true,
                             description = state.manga.description,
                             tagsProvider = { state.manga.genre },
@@ -1081,7 +1081,7 @@ private fun AnimeScreenLargeImpl(
                         )
                         // SY -->
                         if (state.showMergeWithAnother) {
-                            AnimeInfoButtons(
+                            MangaInfoButtons(
                                 showRecommendsButton = true,
                                 showMergeWithAnotherButton = state.showMergeWithAnother,
                                 onRecommendClicked = { },
@@ -1112,8 +1112,8 @@ private fun AnimeScreenLargeImpl(
                                 if (expandRelatedAnimes) {
                                     if (state.relatedAnimesSorted?.isNotEmpty() != false) {
                                         item(
-                                            key = AnimeScreenItem.RELATED_ANIMES,
-                                            contentType = AnimeScreenItem.RELATED_ANIMES,
+                                            key = MangaScreenItem.RELATED_ANIMES,
+                                            contentType = MangaScreenItem.RELATED_ANIMES,
                                         ) {
                                             Column {
                                                 RelatedAnimeTitle(
@@ -1125,7 +1125,7 @@ private fun AnimeScreenLargeImpl(
                                                     modifier = Modifier
                                                         .padding(horizontal = MaterialTheme.padding.medium),
                                                 )
-                                                RelatedAnimesRow(
+                                                RelatedMangasRow(
                                                     relatedAnimes = state.relatedAnimesSorted,
                                                     getMangaState = getMangaState,
                                                     onAnimeClick = onRelatedAnimeClick,
@@ -1137,8 +1137,8 @@ private fun AnimeScreenLargeImpl(
                                     }
                                 } else if (!showRelatedAnimesInOverflow) {
                                     item(
-                                        key = AnimeScreenItem.RELATED_ANIMES,
-                                        contentType = AnimeScreenItem.RELATED_ANIMES,
+                                        key = MangaScreenItem.RELATED_ANIMES,
+                                        contentType = MangaScreenItem.RELATED_ANIMES,
                                     ) {
                                         OutlinedButtonWithArrow(
                                             text = stringResource(KMR.strings.pref_source_related_mangas),
@@ -1150,13 +1150,13 @@ private fun AnimeScreenLargeImpl(
                             // KMK <--
 
                             item(
-                                key = AnimeScreenItem.EPISODE_HEADER,
-                                contentType = AnimeScreenItem.EPISODE_HEADER,
+                                key = MangaScreenItem.EPISODE_HEADER,
+                                contentType = MangaScreenItem.EPISODE_HEADER,
                             ) {
                                 val missingEpisodeCount = remember(episodes) {
                                     episodes.map { it.chapter.episodeNumber }.missingChaptersCount()
                                 }
-                                EpisodeHeader(
+                                ChapterHeader(
                                     enabled = !isAnySelected,
                                     episodeCount = episodes.size,
                                     missingEpisodeCount = missingEpisodeCount,
@@ -1166,8 +1166,8 @@ private fun AnimeScreenLargeImpl(
 
                             if (state.airingTime > 0L) {
                                 item(
-                                    key = AnimeScreenItem.AIRING_TIME,
-                                    contentType = AnimeScreenItem.AIRING_TIME,
+                                    key = MangaScreenItem.AIRING_TIME,
+                                    contentType = MangaScreenItem.AIRING_TIME,
                                 ) {
                                     // Handles the second by second countdown
                                     var timer by remember { mutableLongStateOf(state.airingTime) }
@@ -1192,7 +1192,7 @@ private fun AnimeScreenLargeImpl(
                                 }
                             }
 
-                            sharedEpisodeItems(
+                            sharedChapterItems(
                                 manga = state.manga,
                                 // AM (FILE_SIZE) -->
                                 source = state.source,
@@ -1217,7 +1217,7 @@ private fun AnimeScreenLargeImpl(
 }
 
 @Composable
-private fun SharedAnimeBottomActionMenu(
+private fun SharedMangaBottomActionMenu(
     selected: List<EpisodeList.Item>,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
     onMultiBookmarkClicked: (List<Chapter>, bookmarked: Boolean) -> Unit,
@@ -1226,13 +1226,13 @@ private fun SharedAnimeBottomActionMenu(
     // <-- AM (FILLERMARK)
     onMultiMarkAsSeenClicked: (List<Chapter>, markAsSeen: Boolean) -> Unit,
     onMarkPreviousAsSeenClicked: (Chapter) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
     fillFraction: Float,
     alwaysUseExternalPlayer: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    AnimeBottomActionMenu(
+    MangaBottomActionMenu(
         visible = selected.isNotEmpty(),
         modifier = modifier.fillMaxWidth(fillFraction),
         onBookmarkClicked = {
@@ -1259,7 +1259,7 @@ private fun SharedAnimeBottomActionMenu(
             onMarkPreviousAsSeenClicked(selected[0].chapter)
         }.takeIf { selected.size == 1 },
         onDownloadClicked = {
-            onDownloadEpisode!!(selected.toList(), EpisodeDownloadAction.START)
+            onDownloadEpisode!!(selected.toList(), ChapterDownloadAction.START)
         }.takeIf {
             onDownloadEpisode != null && selected.fastAny { it.downloadState != Download.State.DOWNLOADED }
         },
@@ -1277,7 +1277,7 @@ private fun SharedAnimeBottomActionMenu(
     )
 }
 
-private fun LazyListScope.sharedEpisodeItems(
+private fun LazyListScope.sharedChapterItems(
     manga: Manga,
     // AM (FILE_SIZE) -->
     source: Source,
@@ -1289,7 +1289,7 @@ private fun LazyListScope.sharedEpisodeItems(
     episodeSwipeStartAction: LibraryPreferences.EpisodeSwipeAction,
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
-    onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((List<EpisodeList.Item>, ChapterDownloadAction) -> Unit)?,
     onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
     onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
 ) {
@@ -1303,13 +1303,13 @@ private fun LazyListScope.sharedEpisodeItems(
                 is EpisodeList.Item -> "episode-${item.id}"
             }
         },
-        contentType = { AnimeScreenItem.EPISODE },
+        contentType = { MangaScreenItem.EPISODE },
     ) { item ->
         val haptic = LocalHapticFeedback.current
 
         when (item) {
             is EpisodeList.MissingCount -> {
-                MissingEpisodeCountListItem(count = item.count)
+                MissingChapterCountListItem(count = item.count)
             }
             is EpisodeList.Item -> {
                 // AM (FILE_SIZE) -->
@@ -1332,7 +1332,7 @@ private fun LazyListScope.sharedEpisodeItems(
                     }
                 }
                 // <-- AM (FILE_SIZE)
-                AnimeEpisodeListItem(
+                MangaEpisodeListItem(
                     title = if (manga.displayMode == Manga.EPISODE_DISPLAY_NUMBER) {
                         stringResource(
                             MR.strings.display_mode_episode,
@@ -1369,7 +1369,7 @@ private fun LazyListScope.sharedEpisodeItems(
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     },
                     onClick = {
-                        onEpisodeItemClick(
+                        onChapterItemClick(
                             episodeItem = item,
                             isAnyEpisodeSelected = isAnyEpisodeSelected,
                             onToggleSelection = { onEpisodeSelected(item, !item.selected, true, false) },
@@ -1393,7 +1393,7 @@ private fun LazyListScope.sharedEpisodeItems(
     }
 }
 
-private fun onEpisodeItemClick(
+private fun onChapterItemClick(
     episodeItem: EpisodeList.Item,
     isAnyEpisodeSelected: Boolean,
     onToggleSelection: (Boolean) -> Unit,

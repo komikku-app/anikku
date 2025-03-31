@@ -20,7 +20,7 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun EpisodeHeader(
+fun ChapterHeader(
     enabled: Boolean,
     episodeCount: Int?,
     missingEpisodeCount: Int,
@@ -53,13 +53,13 @@ fun EpisodeHeader(
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
-            MissingEpisodesWarning(missingEpisodeCount)
+            MissingChaptersWarning(missingEpisodeCount)
         }
     }
 }
 
 @Composable
-private fun MissingEpisodesWarning(count: Int) {
+private fun MissingChaptersWarning(count: Int) {
     if (count == 0) {
         return
     }

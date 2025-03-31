@@ -32,7 +32,7 @@ import tachiyomi.presentation.core.components.TriStateItem
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun EpisodeSettingsDialog(
+fun ChapterSettingsDialog(
     onDismissRequest: () -> Unit,
     manga: Manga? = null,
     onDownloadFilterChanged: (TriState) -> Unit,

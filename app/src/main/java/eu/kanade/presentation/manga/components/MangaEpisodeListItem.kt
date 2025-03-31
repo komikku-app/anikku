@@ -52,7 +52,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
 
 @Composable
-fun AnimeEpisodeListItem(
+fun MangaEpisodeListItem(
     title: String,
     date: String?,
     watchProgress: String?,
@@ -70,7 +70,7 @@ fun AnimeEpisodeListItem(
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     onLongClick: () -> Unit,
     onClick: () -> Unit,
-    onDownloadClick: ((EpisodeDownloadAction) -> Unit)?,
+    onDownloadClick: ((ChapterDownloadAction) -> Unit)?,
     onEpisodeSwipe: (LibraryPreferences.EpisodeSwipeAction) -> Unit,
     // AM (FILE_SIZE) -->
     fileSize: Long?,
@@ -201,7 +201,7 @@ fun AnimeEpisodeListItem(
                 }
             }
 
-            EpisodeDownloadIndicator(
+            ChapterDownloadIndicator(
                 enabled = downloadIndicatorEnabled,
                 modifier = Modifier.padding(start = 4.dp),
                 downloadStateProvider = downloadStateProvider,

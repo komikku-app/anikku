@@ -42,7 +42,7 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-enum class EpisodeDownloadAction {
+enum class ChapterDownloadAction {
     START,
     START_NOW,
     CANCEL,
@@ -51,11 +51,11 @@ enum class EpisodeDownloadAction {
 }
 
 @Composable
-fun EpisodeDownloadIndicator(
+fun ChapterDownloadIndicator(
     enabled: Boolean,
     downloadStateProvider: () -> Download.State,
     downloadProgressProvider: () -> Int,
-    onClick: (EpisodeDownloadAction) -> Unit,
+    onClick: (ChapterDownloadAction) -> Unit,
     // AM (FILE_SIZE) -->
     fileSize: Long?,
     // <-- AM (FILE_SIZE)
@@ -94,7 +94,7 @@ fun EpisodeDownloadIndicator(
 private fun NotDownloadedIndicator(
     enabled: Boolean,
     modifier: Modifier = Modifier,
-    onClick: (EpisodeDownloadAction) -> Unit,
+    onClick: (ChapterDownloadAction) -> Unit,
 ) {
     Box(
         modifier = modifier
@@ -102,8 +102,8 @@ private fun NotDownloadedIndicator(
             .commonClickable(
                 enabled = enabled,
                 hapticFeedback = LocalHapticFeedback.current,
-                onLongClick = { onClick(EpisodeDownloadAction.SHOW_QUALITIES) },
-                onClick = { onClick(EpisodeDownloadAction.START) },
+                onLongClick = { onClick(ChapterDownloadAction.SHOW_QUALITIES) },
+                onClick = { onClick(ChapterDownloadAction.START) },
             )
             .secondaryItemAlpha(),
         contentAlignment = Alignment.Center,
@@ -122,7 +122,7 @@ private fun DownloadingIndicator(
     enabled: Boolean,
     downloadState: Download.State,
     downloadProgressProvider: () -> Int,
-    onClick: (EpisodeDownloadAction) -> Unit,
+    onClick: (ChapterDownloadAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
@@ -132,7 +132,7 @@ private fun DownloadingIndicator(
             .commonClickable(
                 enabled = enabled,
                 hapticFeedback = LocalHapticFeedback.current,
-                onLongClick = { onClick(EpisodeDownloadAction.CANCEL) },
+                onLongClick = { onClick(ChapterDownloadAction.CANCEL) },
                 onClick = { isMenuExpanded = true },
             ),
         contentAlignment = Alignment.Center,
@@ -176,14 +176,14 @@ private fun DownloadingIndicator(
             DropdownMenuItem(
                 text = { Text(text = stringResource(MR.strings.action_start_downloading_now)) },
                 onClick = {
-                    onClick(EpisodeDownloadAction.START_NOW)
+                    onClick(ChapterDownloadAction.START_NOW)
                     isMenuExpanded = false
                 },
             )
             DropdownMenuItem(
                 text = { Text(text = stringResource(MR.strings.action_cancel)) },
                 onClick = {
-                    onClick(EpisodeDownloadAction.CANCEL)
+                    onClick(ChapterDownloadAction.CANCEL)
                     isMenuExpanded = false
                 },
             )
@@ -200,7 +200,7 @@ private fun DownloadingIndicator(
 @Composable
 private fun DownloadedIndicator(
     enabled: Boolean,
-    onClick: (EpisodeDownloadAction) -> Unit,
+    onClick: (ChapterDownloadAction) -> Unit,
     // AM (FILE_SIZE) -->
     fileSize: Long?,
     // <-- AM (FILE_SIZE)
@@ -241,7 +241,7 @@ private fun DownloadedIndicator(
             DropdownMenuItem(
                 text = { Text(text = stringResource(MR.strings.action_delete)) },
                 onClick = {
-                    onClick(EpisodeDownloadAction.DELETE)
+                    onClick(ChapterDownloadAction.DELETE)
                     isMenuExpanded = false
                 },
             )
@@ -265,7 +265,7 @@ private fun formatFileSize(fileSize: Long): String {
 private fun ErrorIndicator(
     enabled: Boolean,
     modifier: Modifier = Modifier,
-    onClick: (EpisodeDownloadAction) -> Unit,
+    onClick: (ChapterDownloadAction) -> Unit,
 ) {
     Box(
         modifier = modifier
@@ -273,8 +273,8 @@ private fun ErrorIndicator(
             .commonClickable(
                 enabled = enabled,
                 hapticFeedback = LocalHapticFeedback.current,
-                onLongClick = { onClick(EpisodeDownloadAction.START) },
-                onClick = { onClick(EpisodeDownloadAction.START) },
+                onLongClick = { onClick(ChapterDownloadAction.START) },
+                onClick = { onClick(ChapterDownloadAction.START) },
             ),
         contentAlignment = Alignment.Center,
     ) {

@@ -24,8 +24,8 @@ import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.manga.components.AnimeBottomActionMenu
-import eu.kanade.presentation.manga.components.EpisodeDownloadAction
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
+import eu.kanade.presentation.manga.components.MangaBottomActionMenu
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
@@ -57,7 +57,7 @@ fun UpdateScreen(
     onInvertSelection: () -> Unit,
     onCalendarClicked: () -> Unit,
     onUpdateLibrary: () -> Boolean,
-    onDownloadEpisode: (List<UpdatesItem>, EpisodeDownloadAction) -> Unit,
+    onDownloadEpisode: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
     // AM (FILLERMARK) -->
     onMultiFillermarkClicked: (List<UpdatesItem>, fillermark: Boolean) -> Unit,
@@ -231,7 +231,7 @@ private fun UpdatesAppBar(
 @Composable
 private fun UpdatesBottomBar(
     selected: List<UpdatesItem>,
-    onDownloadEpisode: (List<UpdatesItem>, EpisodeDownloadAction) -> Unit,
+    onDownloadEpisode: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
     // AM (FILLERMARK) -->
     onMultiFillermarkClicked: (List<UpdatesItem>, fillermark: Boolean) -> Unit,
@@ -241,7 +241,7 @@ private fun UpdatesBottomBar(
     onOpenEpisode: (UpdatesItem, altPlayer: Boolean) -> Unit,
 ) {
     val playerPreferences: PlayerPreferences = Injekt.get()
-    AnimeBottomActionMenu(
+    MangaBottomActionMenu(
         visible = selected.isNotEmpty(),
         modifier = Modifier.fillMaxWidth(),
         onBookmarkClicked = {
@@ -265,7 +265,7 @@ private fun UpdatesBottomBar(
             onMultiMarkAsSeenClicked(selected, false)
         }.takeIf { selected.fastAny { it.update.seen || it.update.lastSecondSeen > 0L } },
         onDownloadClicked = {
-            onDownloadEpisode(selected, EpisodeDownloadAction.START)
+            onDownloadEpisode(selected, ChapterDownloadAction.START)
         }.takeIf {
             selected.fastAny { it.downloadStateProvider() != Download.State.DOWNLOADED }
         },

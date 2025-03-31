@@ -21,7 +21,7 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.util.selectedBackground
 
 @Composable
-fun BaseAnimeListItem(
+fun BaseMangaListItem(
     manga: Manga,
     modifier: Modifier = Modifier,
     onClickItem: () -> Unit = {},
@@ -62,13 +62,13 @@ fun BaseAnimeListItem(
 }
 
 private val defaultCover: @Composable RowScope.(Manga, () -> Unit) -> Unit = { anime, onClick ->
-    AnimeCover.Book(
+    MangaCover.Book(
         modifier = Modifier
             .fillMaxHeight(),
         data = anime,
         onClick = onClick,
         // KMK -->
-        size = AnimeCover.Size.Big,
+        size = MangaCover.Size.Big,
         // KMK <--
     )
 }

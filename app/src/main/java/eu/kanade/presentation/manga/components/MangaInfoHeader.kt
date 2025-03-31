@@ -105,7 +105,7 @@ import tachiyomi.domain.manga.model.MangaCover as DomainAnimeCover
 private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTILINE))
 
 @Composable
-fun AnimeInfoBox(
+fun MangaInfoBox(
     isTabletUi: Boolean,
     appBarPadding: Dp,
     manga: Manga,
@@ -165,7 +165,7 @@ fun AnimeInfoBox(
         // Anime & source info
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
             if (!isTabletUi) {
-                AnimeAndSourceTitlesSmall(
+                MangaAndSourceTitlesSmall(
                     appBarPadding = appBarPadding,
                     manga = manga,
                     sourceName = sourceName,
@@ -179,7 +179,7 @@ fun AnimeInfoBox(
                     // KMK <--
                 )
             } else {
-                AnimeAndSourceTitlesLarge(
+                MangaAndSourceTitlesLarge(
                     appBarPadding = appBarPadding,
                     manga = manga,
                     sourceName = sourceName,
@@ -198,7 +198,7 @@ fun AnimeInfoBox(
 }
 
 @Composable
-fun AnimeActionRow(
+fun MangaActionRow(
     favorite: Boolean,
     trackingCount: Int,
     nextUpdate: Instant?,
@@ -227,7 +227,7 @@ fun AnimeActionRow(
     }
 
     Row(modifier = modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp)) {
-        AnimeActionButton(
+        MangaActionButton(
             title = if (favorite) {
                 stringResource(MR.strings.in_library)
             } else {
@@ -238,7 +238,7 @@ fun AnimeActionRow(
             onClick = onAddToLibraryClicked,
             onLongClick = onEditCategory,
         )
-        AnimeActionButton(
+        MangaActionButton(
             title = when (nextUpdateDays) {
                 null -> stringResource(MR.strings.not_applicable)
                 0 -> stringResource(MR.strings.manga_interval_expected_update_soon)
@@ -252,7 +252,7 @@ fun AnimeActionRow(
             color = if (isUserIntervalMode) MaterialTheme.colorScheme.primary else defaultActionButtonColor,
             onClick = { onEditIntervalClicked?.invoke() },
         )
-        AnimeActionButton(
+        MangaActionButton(
             title = if (trackingCount == 0) {
                 stringResource(MR.strings.manga_tracking_tab)
             } else {
@@ -264,7 +264,7 @@ fun AnimeActionRow(
         )
 
         if (onWebViewClicked != null) {
-            AnimeActionButton(
+            MangaActionButton(
                 title = stringResource(MR.strings.action_web_view),
                 icon = Icons.Outlined.Public,
                 color = MaterialTheme.colorScheme.primary, // KMK: defaultActionButtonColor
@@ -274,7 +274,7 @@ fun AnimeActionRow(
         }
         // SY -->
         if (onMergeClicked != null) {
-            AnimeActionButton(
+            MangaActionButton(
                 title = stringResource(SYMR.strings.merge),
                 icon = Icons.AutoMirrored.Outlined.CallMerge,
                 color = MaterialTheme.colorScheme.primary, // KMK: defaultActionButtonColor
@@ -286,7 +286,7 @@ fun AnimeActionRow(
 }
 
 @Composable
-fun ExpandableAnimeDescription(
+fun ExpandableMangaDescription(
     defaultExpandState: Boolean,
     description: String?,
     tagsProvider: () -> List<String>?,
@@ -305,7 +305,7 @@ fun ExpandableAnimeDescription(
                 .replace(whitespaceLineRegex, "\n")
                 .trimEnd()
         }
-        AnimeSummary(
+        MangaSummary(
             expandedDescription = desc,
             shrunkDescription = trimmedDescription,
             expanded = expanded,
@@ -383,7 +383,7 @@ fun ExpandableAnimeDescription(
 }
 
 @Composable
-private fun AnimeAndSourceTitlesLarge(
+private fun MangaAndSourceTitlesLarge(
     appBarPadding: Dp,
     manga: Manga,
     sourceName: String,
@@ -404,7 +404,7 @@ private fun AnimeAndSourceTitlesLarge(
     ) {
         // KMK -->
         if (usePanoramaCover && coverRatio.floatValue <= RatioSwitchToPanorama) {
-            AnimeCover.Panorama(
+            MangaCover.Panorama(
                 modifier = Modifier.fillMaxWidth(0.65f),
                 data = ImageRequest.Builder(LocalContext.current)
                     .data(manga)
@@ -422,7 +422,7 @@ private fun AnimeAndSourceTitlesLarge(
             )
         } else {
             // KMK <--
-            AnimeCover.Book(
+            MangaCover.Book(
                 modifier = Modifier.fillMaxWidth(0.65f),
                 data = ImageRequest.Builder(LocalContext.current)
                     .data(manga)
@@ -440,7 +440,7 @@ private fun AnimeAndSourceTitlesLarge(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        AnimeContentInfo(
+        MangaContentInfo(
             title = manga.title,
             author = manga.author,
             artist = manga.artist,
@@ -454,7 +454,7 @@ private fun AnimeAndSourceTitlesLarge(
 }
 
 @Composable
-private fun AnimeAndSourceTitlesSmall(
+private fun MangaAndSourceTitlesSmall(
     appBarPadding: Dp,
     manga: Manga,
     sourceName: String,
@@ -476,7 +476,7 @@ private fun AnimeAndSourceTitlesSmall(
     ) {
         // KMK -->
         if (usePanoramaCover && coverRatio.floatValue <= RatioSwitchToPanorama) {
-            AnimeCover.Panorama(
+            MangaCover.Panorama(
                 modifier = Modifier
                     .sizeIn(maxHeight = 100.dp)
                     // KMK -->
@@ -498,7 +498,7 @@ private fun AnimeAndSourceTitlesSmall(
             )
         } else {
             // KMK <--
-            AnimeCover.Book(
+            MangaCover.Book(
                 modifier = Modifier
                     .sizeIn(maxWidth = 100.dp)
                     // KMK -->
@@ -522,7 +522,7 @@ private fun AnimeAndSourceTitlesSmall(
         Column(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            AnimeContentInfo(
+            MangaContentInfo(
                 title = manga.title,
                 author = manga.author,
                 artist = manga.artist,
@@ -537,7 +537,7 @@ private fun AnimeAndSourceTitlesSmall(
 
 @Suppress("UnusedReceiverParameter")
 @Composable
-private fun ColumnScope.AnimeContentInfo(
+private fun ColumnScope.MangaContentInfo(
     title: String,
     author: String?,
     artist: String?,
@@ -683,7 +683,7 @@ private fun ColumnScope.AnimeContentInfo(
 }
 
 @Composable
-private fun AnimeSummary(
+private fun MangaSummary(
     expandedDescription: String,
     shrunkDescription: String,
     expanded: Boolean,
@@ -782,7 +782,7 @@ private fun TagsChip(
 }
 
 @Composable
-private fun RowScope.AnimeActionButton(
+private fun RowScope.MangaActionButton(
     title: String,
     icon: ImageVector,
     color: Color,

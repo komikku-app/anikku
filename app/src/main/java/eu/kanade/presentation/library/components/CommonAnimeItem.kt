@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.BadgeGroup
@@ -99,7 +99,7 @@ fun AnimeCompactGridItem(
     ) {
         AnimeGridCover(
             cover = {
-                AnimeCover.Book(
+                MangaCover.Book(
                     modifier = Modifier
                         // KMK -->
                         // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
@@ -225,7 +225,7 @@ fun AnimeComfortableGridItem(
             AnimeGridCover(
                 cover = {
                     if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
-                        AnimeCover.Panorama(
+                        MangaCover.Panorama(
                             modifier = Modifier
                                 // KMK -->
                                 // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
@@ -244,7 +244,7 @@ fun AnimeComfortableGridItem(
                         )
                     } else {
                         // KMK <--
-                        AnimeCover.Book(
+                        MangaCover.Book(
                             modifier = Modifier
                                 // KMK -->
                                 // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
@@ -270,9 +270,9 @@ fun AnimeComfortableGridItem(
                 },
                 // KMK -->
                 ratio = if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
-                    AnimeCover.Panorama.ratio
+                    MangaCover.Panorama.ratio
                 } else {
-                    AnimeCover.Book.ratio
+                    MangaCover.Book.ratio
                 },
                 // KMK <--
                 badgesStart = coverBadgeStart,
@@ -309,7 +309,7 @@ private fun AnimeGridCover(
     modifier: Modifier = Modifier,
     cover: @Composable BoxScope.() -> Unit = {},
     // KMK -->
-    ratio: Float = AnimeCover.Book.ratio,
+    ratio: Float = MangaCover.Book.ratio,
     // KMK <--
     badgesStart: (@Composable RowScope.() -> Unit)? = null,
     badgesEnd: (@Composable RowScope.() -> Unit)? = null,
@@ -444,7 +444,7 @@ fun AnimeListItem(
             .padding(horizontal = 16.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AnimeCover.Book(
+        MangaCover.Book(
             modifier = Modifier
                 // KMK -->
                 // .alpha(coverAlpha)
@@ -455,7 +455,7 @@ fun AnimeListItem(
             alpha = coverAlpha,
             bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
             tint = onBgColor,
-            size = AnimeCover.Size.Big,
+            size = MangaCover.Size.Big,
             // KMK <--
         )
         Text(

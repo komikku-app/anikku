@@ -15,7 +15,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.libraryUpdateError.LibraryUpdateErrorItem
 import tachiyomi.domain.libraryUpdateError.model.LibraryUpdateErrorWithRelations
@@ -110,7 +110,7 @@ private fun LibraryUpdateErrorUiItem(
             .padding(horizontal = MaterialTheme.padding.medium),
         verticalAlignment = Alignment.Top,
     ) {
-        AnimeCover.Square(
+        MangaCover.Square(
             modifier = Modifier
                 .padding(vertical = 6.dp)
                 .height(48.dp),

@@ -23,8 +23,8 @@ import eu.kanade.presentation.browse.components.RemoveAnimeDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.BulkSelectionToolbar
-import eu.kanade.presentation.manga.DuplicateAnimeDialog
-import eu.kanade.presentation.manga.DuplicateAnimesDialog
+import eu.kanade.presentation.manga.DuplicateMangaDialog
+import eu.kanade.presentation.manga.DuplicateMangasDialog
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
@@ -127,7 +127,7 @@ class BulkFavoriteScreenModel(
     /**
      * Called when user click on [BulkSelectionToolbar]'s `Favorite` button.
      * It will then look for any duplicated mangas.
-     * - If there is any, it will show the [DuplicateAnimesDialog].
+     * - If there is any, it will show the [DuplicateMangasDialog].
      * - If not then it will call the [addFavoriteDuplicate].
      */
     fun addFavorite(startIdx: Int = 0) {
@@ -444,7 +444,7 @@ fun AddDuplicateAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val dialog = bulkFavoriteState.dialog as BulkFavoriteScreenModel.Dialog.AddDuplicateManga
 
-    DuplicateAnimeDialog(
+    DuplicateMangaDialog(
         onDismissRequest = bulkFavoriteScreenModel::dismissDialog,
         onConfirm = { bulkFavoriteScreenModel.addFavorite(dialog.manga) },
         onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
@@ -513,7 +513,7 @@ fun AllowDuplicateDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val dialog = bulkFavoriteState.dialog as BulkFavoriteScreenModel.Dialog.AllowDuplicate
 
-    DuplicateAnimesDialog(
+    DuplicateMangasDialog(
         onDismissRequest = bulkFavoriteScreenModel::dismissDialog,
         onAllowAllDuplicate = bulkFavoriteScreenModel::addFavoriteDuplicate,
         onSkipAllDuplicate = {

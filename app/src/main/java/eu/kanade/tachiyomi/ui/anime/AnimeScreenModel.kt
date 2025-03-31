@@ -37,7 +37,7 @@ import eu.kanade.domain.track.model.AutoTrackState
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.manga.DownloadAction
-import eu.kanade.presentation.manga.components.EpisodeDownloadAction
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.coil.getBestColor
@@ -1056,14 +1056,14 @@ class AnimeScreenModel(
             }
             // <-- AM (FILLERMARK)
             LibraryPreferences.EpisodeSwipeAction.Download -> {
-                val downloadAction: EpisodeDownloadAction = when (episodeItem.downloadState) {
+                val downloadAction: ChapterDownloadAction = when (episodeItem.downloadState) {
                     Download.State.ERROR,
                     Download.State.NOT_DOWNLOADED,
-                    -> EpisodeDownloadAction.START_NOW
+                    -> ChapterDownloadAction.START_NOW
                     Download.State.QUEUE,
                     Download.State.DOWNLOADING,
-                    -> EpisodeDownloadAction.CANCEL
-                    Download.State.DOWNLOADED -> EpisodeDownloadAction.DELETE
+                    -> ChapterDownloadAction.CANCEL
+                    Download.State.DOWNLOADED -> ChapterDownloadAction.DELETE
                 }
                 runEpisodeDownloadActions(
                     items = listOf(episodeItem),
@@ -1128,27 +1128,27 @@ class AnimeScreenModel(
 
     fun runEpisodeDownloadActions(
         items: List<EpisodeList.Item>,
-        action: EpisodeDownloadAction,
+        action: ChapterDownloadAction,
     ) {
         when (action) {
-            EpisodeDownloadAction.START -> {
+            ChapterDownloadAction.START -> {
                 startDownload(items.map { it.chapter }, false)
                 if (items.any { it.downloadState == Download.State.ERROR }) {
                     downloadManager.startDownloads()
                 }
             }
-            EpisodeDownloadAction.START_NOW -> {
+            ChapterDownloadAction.START_NOW -> {
                 val episode = items.singleOrNull()?.chapter ?: return
                 startDownload(listOf(episode), true)
             }
-            EpisodeDownloadAction.CANCEL -> {
+            ChapterDownloadAction.CANCEL -> {
                 val episodeId = items.singleOrNull()?.id ?: return
                 cancelDownload(episodeId)
             }
-            EpisodeDownloadAction.DELETE -> {
+            ChapterDownloadAction.DELETE -> {
                 deleteEpisodes(items.map { it.chapter })
             }
-            EpisodeDownloadAction.SHOW_QUALITIES -> {
+            ChapterDownloadAction.SHOW_QUALITIES -> {
                 val episode = items.singleOrNull()?.chapter ?: return
                 showQualitiesDialog(episode)
             }

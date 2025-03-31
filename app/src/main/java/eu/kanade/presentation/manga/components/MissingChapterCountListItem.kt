@@ -18,7 +18,7 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
-fun MissingEpisodeCountListItem(
+fun MissingChapterCountListItem(
     count: Int,
     modifier: Modifier = Modifier,
 ) {
@@ -46,7 +46,7 @@ fun MissingEpisodeCountListItem(
 private fun Preview() {
     TachiyomiPreviewTheme {
         Surface {
-            MissingEpisodeCountListItem(count = 42)
+            MissingChapterCountListItem(count = 42)
         }
     }
 }

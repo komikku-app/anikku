@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.formatEpisodeNumber
@@ -62,14 +62,14 @@ fun HistoryItem(
         val bgColor = animeCover.dominantCoverColors?.first?.let { Color(it) }
         val onBgColor = animeCover.dominantCoverColors?.second
         if (usePanoramaCover && coverIsWide) {
-            AnimeCover.Panorama(
+            MangaCover.Panorama(
                 modifier = Modifier.fillMaxHeight(),
                 data = animeCover,
                 onClick = onClickCover,
                 // KMK -->
                 bgColor = bgColor,
                 tint = onBgColor,
-                size = AnimeCover.Size.Medium,
+                size = MangaCover.Size.Medium,
                 onCoverLoaded = { _, result ->
                     val image = result.result.image
                     coverRatio.floatValue = image.height.toFloat() / image.width
@@ -78,14 +78,14 @@ fun HistoryItem(
             )
         } else {
             // KMK <--
-            AnimeCover.Book(
+            MangaCover.Book(
                 modifier = Modifier.fillMaxHeight(),
                 data = animeCover,
                 onClick = onClickCover,
                 // KMK -->
                 bgColor = bgColor,
                 tint = onBgColor,
-                size = AnimeCover.Size.Medium,
+                size = MangaCover.Size.Medium,
                 onCoverLoaded = { _, result ->
                     val image = result.result.image
                     coverRatio.floatValue = image.height.toFloat() / image.width

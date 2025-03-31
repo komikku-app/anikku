@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.util.rememberResourceBitmapPainter
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingAnime
@@ -46,7 +46,7 @@ fun MigrationItemResult(
                 modifier = Modifier
                     .widthIn(max = 150.dp)
                     .fillMaxSize()
-                    .aspectRatio(AnimeCover.Book.ratio),
+                    .aspectRatio(MangaCover.Book.ratio),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -62,7 +62,7 @@ fun MigrationItemResult(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(AnimeCover.Book.ratio)
+                        .aspectRatio(MangaCover.Book.ratio)
                         .clip(MaterialTheme.shapes.extraSmall),
                     contentScale = ContentScale.Crop,
                 )

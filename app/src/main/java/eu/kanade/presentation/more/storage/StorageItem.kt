@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.tachiyomi.util.toSize
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
@@ -63,7 +63,7 @@ fun StorageItem(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.medium),
         verticalAlignment = Alignment.CenterVertically,
         content = {
-            AnimeCover.Square(
+            MangaCover.Square(
                 modifier = Modifier.height(48.dp),
                 data = item.thumbnail,
                 contentDescription = item.title,

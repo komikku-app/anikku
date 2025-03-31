@@ -36,7 +36,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.manga.components.BaseAnimeListItem
+import eu.kanade.presentation.manga.components.BaseMangaListItem
 import eu.kanade.presentation.manga.components.Button
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.migration.anime.MigrateAnimeItem
@@ -191,7 +191,7 @@ private fun MigrateAnimeItem(
     // KMK <--
     modifier: Modifier = Modifier,
 ) {
-    BaseAnimeListItem(
+    BaseMangaListItem(
         modifier = modifier,
         manga = manga,
         onClickItem = onClickItem,

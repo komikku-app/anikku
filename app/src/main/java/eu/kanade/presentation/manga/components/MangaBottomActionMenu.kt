@@ -76,7 +76,7 @@ import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
-fun AnimeBottomActionMenu(
+fun MangaBottomActionMenu(
     visible: Boolean,
     modifier: Modifier = Modifier,
     onBookmarkClicked: (() -> Unit)? = null,

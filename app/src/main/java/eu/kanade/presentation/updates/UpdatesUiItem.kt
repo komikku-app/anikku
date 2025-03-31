@@ -41,10 +41,10 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.relativeDateText
-import eu.kanade.presentation.manga.components.AnimeCover
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
+import eu.kanade.presentation.manga.components.ChapterDownloadIndicator
 import eu.kanade.presentation.manga.components.DotSeparatorText
-import eu.kanade.presentation.manga.components.EpisodeDownloadAction
-import eu.kanade.presentation.manga.components.EpisodeDownloadIndicator
+import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.relativeTimeSpanString
@@ -93,7 +93,7 @@ internal fun LazyListScope.updatesUiItems(
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
     onClickCover: (UpdatesItem) -> Unit,
     onClickUpdate: (UpdatesItem, altPlayer: Boolean) -> Unit,
-    onDownloadEpisode: (List<UpdatesItem>, EpisodeDownloadAction) -> Unit,
+    onDownloadEpisode: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
 ) {
     items(
         items = uiModels,
@@ -145,7 +145,7 @@ internal fun LazyListScope.updatesUiItems(
                         }
                     },
                     onClickCover = { onClickCover(updatesItem) }.takeIf { !selectionMode },
-                    onDownloadEpisode = { action: EpisodeDownloadAction ->
+                    onDownloadEpisode = { action: ChapterDownloadAction ->
                         onDownloadEpisode(listOf(updatesItem), action)
                     }.takeIf { !selectionMode },
                     downloadStateProvider = updatesItem.downloadStateProvider,
@@ -174,7 +174,7 @@ private fun UpdatesUiItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onClickCover: (() -> Unit)?,
-    onDownloadEpisode: ((EpisodeDownloadAction) -> Unit)?,
+    onDownloadEpisode: ((ChapterDownloadAction) -> Unit)?,
     // Download Indicator
     downloadStateProvider: () -> Download.State,
     downloadProgressProvider: () -> Int,
@@ -219,7 +219,7 @@ private fun UpdatesUiItem(
         val onBgColor = mangaCover.dominantCoverColors?.second
         if (isLeader) {
             if (usePanoramaCover && coverIsWide) {
-                AnimeCover.Panorama(
+                MangaCover.Panorama(
                     modifier = Modifier
                         .padding(top = MaterialTheme.padding.small)
                         .width(UpdateItemPanoramaWidth),
@@ -228,7 +228,7 @@ private fun UpdatesUiItem(
                     // KMK -->
                     bgColor = bgColor,
                     tint = onBgColor,
-                    size = AnimeCover.Size.Medium,
+                    size = MangaCover.Size.Medium,
                     onCoverLoaded = { _, result ->
                         val image = result.result.image
                         coverRatio.floatValue = image.height.toFloat() / image.width
@@ -237,7 +237,7 @@ private fun UpdatesUiItem(
                 )
             } else {
                 // KMK <--
-                AnimeCover.Book(
+                MangaCover.Book(
                     modifier = Modifier
                         // KMK -->
                         .padding(top = MaterialTheme.padding.small)
@@ -248,7 +248,7 @@ private fun UpdatesUiItem(
                     // KMK -->
                     bgColor = bgColor,
                     tint = onBgColor,
-                    size = AnimeCover.Size.Medium,
+                    size = MangaCover.Size.Medium,
                     onCoverLoaded = { _, result ->
                         val image = result.result.image
                         coverRatio.floatValue = image.height.toFloat() / image.width
@@ -352,7 +352,7 @@ private fun UpdatesUiItem(
         }
         // <-- AM (FILE_SIZE)
 
-        EpisodeDownloadIndicator(
+        ChapterDownloadIndicator(
             enabled = onDownloadEpisode != null,
             modifier = Modifier.padding(start = 4.dp),
             downloadStateProvider = downloadStateProvider,
