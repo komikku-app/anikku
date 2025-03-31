@@ -54,7 +54,6 @@ import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.toHost
 import eu.kanade.tachiyomi.animesource.model.TimeStamp
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.database.models.Episode
-import eu.kanade.tachiyomi.data.database.models.isRecognizedNumber
 import eu.kanade.tachiyomi.data.database.models.toDomainEpisode
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -314,6 +313,11 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val _primaryButton = MutableStateFlow<CustomButton?>(null)
     val primaryButton = _primaryButton.asStateFlow()
+
+    private val unfilteredEpisodeList by lazy {
+        val anime = currentAnime.value!!
+        runBlocking { getEpisodesByAnimeId.await(anime.id) }
+    }
 
     init {
         viewModelScope.launchIO {
@@ -1637,14 +1641,14 @@ class PlayerViewModel @JvmOverloads constructor(
             .contains(LibraryPreferences.MARK_DUPLICATE_CHAPTER_READ_EXISTING)
         if (!markDuplicateAsSeen) return
 
-        val duplicateUnseenEpisodes = currentPlaylist.value
+        val duplicateUnseenEpisodes = unfilteredEpisodeList
             .mapNotNull { episode ->
                 if (
                     !episode.seen &&
                     episode.isRecognizedNumber &&
-                    episode.episode_number == currentEp.episode_number
+                    episode.episodeNumber.toFloat() == currentEp.episode_number
                 ) {
-                    EpisodeUpdate(id = episode.id!!, read = true)
+                    EpisodeUpdate(id = episode.id, read = true)
                 } else {
                     null
                 }
