@@ -194,6 +194,35 @@ WHERE _id = :animeId;
 
 selectLastInsertedRowId:
 SELECT last_insert_rowid();
+
+insertNetworkAnime {
+    -- Insert the anime if it doesn't exist already
+    INSERT INTO animes(
+        source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+        last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+        update_strategy, calculate_interval, last_modified_at, version
+    )
+    SELECT
+        :source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite,
+        :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded,
+        :updateStrategy, :calculateInterval, 0, :version
+    WHERE NOT EXISTS(SELECT 0 FROM animes WHERE source = :source AND url = :url);
+
+    -- Update the title if it is not favorite
+    UPDATE animes
+    SET title = :title
+    WHERE source = :source
+    AND url = :url
+    AND favorite = 0;
+
+    -- Finally return the manga
+    SELECT *
+    FROM animes
+    WHERE source = :source
+    AND url = :url
+    LIMIT 1;
+}
+
 getBySource:
 SELECT * FROM animes WHERE source = :sourceId;
 

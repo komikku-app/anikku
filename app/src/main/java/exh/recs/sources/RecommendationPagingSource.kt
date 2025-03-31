@@ -9,8 +9,8 @@ import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.data.source.BaseSourcePagingSource
 import tachiyomi.data.source.NoResultsException
-import tachiyomi.data.source.SourcePagingSource
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
@@ -24,7 +24,7 @@ import uy.kohesive.injekt.injectLazy
 abstract class RecommendationPagingSource(
     source: CatalogueSource?,
     protected val manga: Manga,
-) : SourcePagingSource(source) {
+) : BaseSourcePagingSource(source) {
     // Display name
     abstract val name: String
 

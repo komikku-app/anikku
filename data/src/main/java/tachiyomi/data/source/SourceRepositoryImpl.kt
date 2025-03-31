@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.map
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.domain.source.model.SourceWithCount
 import tachiyomi.domain.source.model.StubSource
-import tachiyomi.domain.source.repository.SourcePagingSourceType
+import tachiyomi.domain.source.repository.SourcePagingSource
 import tachiyomi.domain.source.repository.SourceRepository
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.source.model.Source as DomainSource
@@ -76,17 +76,17 @@ class SourceRepositoryImpl(
         sourceId: Long,
         query: String,
         filterList: FilterList,
-    ): SourcePagingSourceType {
+    ): SourcePagingSource {
         val source = sourceManager.get(sourceId) as CatalogueSource
         return SourceSearchPagingSource(source, query, filterList)
     }
 
-    override fun getPopular(sourceId: Long): SourcePagingSourceType {
+    override fun getPopular(sourceId: Long): SourcePagingSource {
         val source = sourceManager.get(sourceId) as CatalogueSource
         return SourcePopularPagingSource(source)
     }
 
-    override fun getLatest(sourceId: Long): SourcePagingSourceType {
+    override fun getLatest(sourceId: Long): SourcePagingSource {
         val source = sourceManager.get(sourceId) as CatalogueSource
         return SourceLatestPagingSource(source)
     }
