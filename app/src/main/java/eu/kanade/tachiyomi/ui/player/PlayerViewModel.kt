@@ -50,7 +50,7 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.database.models.Episode
-import eu.kanade.tachiyomi.data.database.models.toDomainEpisode
+import eu.kanade.tachiyomi.data.database.models.toDomainChapter
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.saver.Image
@@ -59,7 +59,6 @@ import eu.kanade.tachiyomi.data.saver.Location
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
-import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.IndexedSegment
@@ -116,7 +115,7 @@ import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.episode.interactor.UpdateEpisode
 import tachiyomi.domain.episode.model.EpisodeUpdate
 import tachiyomi.domain.episode.service.getEpisodeSort
-import tachiyomi.domain.history.interactor.GetNextEpisodes
+import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.history.interactor.UpsertHistory
 import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.manga.interactor.GetMergedMangaById
@@ -151,7 +150,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val trackPreferences: TrackPreferences = Injekt.get(),
     private val trackEpisode: TrackEpisode = Injekt.get(),
     private val getAnime: GetAnime = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
+    private val getNextChapters: GetNextChapters = Injekt.get(),
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
     private val getAnimeCategories: GetCategories = Injekt.get(),
     private val getTracks: GetTracks = Injekt.get(),
@@ -186,7 +185,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _currentAnime = MutableStateFlow<Anime?>(null)
     val currentAnime = _currentAnime.asStateFlow()
 
-    private val _currentSource = MutableStateFlow<Source?>(null)
+    private val _currentSource = MutableStateFlow<AnimeSource?>(null)
     val currentSource = _currentSource.asStateFlow()
 
     private val _isEpisodeOnline = MutableStateFlow(false)
@@ -355,7 +354,7 @@ class PlayerViewModel @JvmOverloads constructor(
         val source = currentSource.value ?: return null
         return source is HttpSource &&
             !EpisodeLoader.isDownload(
-                episode.toDomainEpisode()!!,
+                episode.toDomainChapter()!!,
                 anime,
             )
     }
@@ -1255,7 +1254,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     qualityIndex = Pair(hostIndex, vidIndex)
                 } else {
                     EpisodeLoader.getHosters(
-                        episode = currentEp.toDomainEpisode()!!,
+                        episode = currentEp.toDomainChapter()!!,
                         anime = anime,
                         source = source,
                         sourceManager = sourceManager,
@@ -1554,7 +1553,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     currentEpisode.value
                         ?: throw ExceptionWithStringResource("No episode loaded", MR.strings.no_episode_loaded)
                 currentHosterList = EpisodeLoader.getHosters(
-                    currentEpisode.toDomainEpisode()!!,
+                    currentEpisode.toDomainChapter()!!,
                     anime,
                     source,
                 )
@@ -1616,14 +1615,14 @@ class PlayerViewModel @JvmOverloads constructor(
 
         val nextEpisode = currentPlaylist.value[getCurrentEpisodeIndex() + 1]
         val episodesAreDownloaded =
-            EpisodeLoader.isDownload(currentEpisode.toDomainEpisode()!!, anime) &&
-                EpisodeLoader.isDownload(nextEpisode.toDomainEpisode()!!, anime)
+            EpisodeLoader.isDownload(currentEpisode.toDomainChapter()!!, anime) &&
+                EpisodeLoader.isDownload(nextEpisode.toDomainChapter()!!, anime)
 
         viewModelScope.launchIO {
             if (!episodesAreDownloaded) {
                 return@launchIO
             }
-            val episodesToDownload = getNextEpisodes.await(anime.id, nextEpisode.id!!)
+            val episodesToDownload = getNextChapters.await(anime.id, nextEpisode.id!!)
                 .take(downloadAheadAmount)
             downloadManager.downloadEpisodes(anime, episodesToDownload)
         }
@@ -1856,7 +1855,7 @@ class PlayerViewModel @JvmOverloads constructor(
         if (!episode.seen) return
         val anime = currentAnime.value ?: return
         viewModelScope.launchNonCancellable {
-            downloadManager.enqueueEpisodesToDelete(listOf(episode.toDomainEpisode()!!), anime)
+            downloadManager.enqueueEpisodesToDelete(listOf(episode.toDomainChapter()!!), anime)
         }
     }
 

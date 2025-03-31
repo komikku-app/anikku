@@ -23,8 +23,8 @@ class AnimeCoverKeyer(
     private val coverCache: CoverCache = Injekt.get(),
 ) : Keyer<MangaCover> {
     override fun key(data: MangaCover, options: Options): String {
-        return if (coverCache.getCustomCoverFile(data.animeId).exists()) {
-            "${data.animeId};${data.lastModified}"
+        return if (coverCache.getCustomCoverFile(data.mangaId).exists()) {
+            "${data.mangaId};${data.lastModified}"
         } else {
             "${data.url};${data.lastModified}"
         }

@@ -42,7 +42,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.source.interactor.GetRemoteAnime
+import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -167,10 +167,10 @@ fun feedTab(
                                     source.id,
                                     // KMK -->
                                     listingQuery = if (!source.supportsLatest) {
-                                        GetRemoteAnime.QUERY_POPULAR
+                                        GetRemoteManga.QUERY_POPULAR
                                     } else {
                                         // KMK <--
-                                        GetRemoteAnime.QUERY_LATEST
+                                        GetRemoteManga.QUERY_LATEST
                                     },
                                 ),
                             )

@@ -88,7 +88,7 @@ class UpdateManga(
         window: Pair<Long, Long> = fetchInterval.getWindow(dateTime),
     ): Boolean {
         return mangaRepository.update(
-            fetchInterval.toAnimeUpdate(manga, dateTime, window),
+            fetchInterval.toMangaUpdate(manga, dateTime, window),
         )
     }
 

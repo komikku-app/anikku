@@ -25,7 +25,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.interactor.GetHistory
-import tachiyomi.domain.history.interactor.GetNextEpisodes
+import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.history.interactor.RemoveHistory
 import tachiyomi.domain.history.model.HistoryWithRelations
 import uy.kohesive.injekt.Injekt
@@ -33,7 +33,7 @@ import uy.kohesive.injekt.api.get
 
 class HistoryScreenModel(
     private val getHistory: GetHistory = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
+    private val getNextChapters: GetNextChapters = Injekt.get(),
     private val removeHistory: RemoveHistory = Injekt.get(),
 ) : StateScreenModel<HistoryScreenModel.State>(State()) {
 
@@ -72,12 +72,12 @@ class HistoryScreenModel(
     }
 
     suspend fun getNextEpisode(): Chapter? {
-        return withIOContext { getNextEpisodes.await(onlyUnseen = false).firstOrNull() }
+        return withIOContext { getNextChapters.await(onlyUnread = false).firstOrNull() }
     }
 
     fun getNextEpisodeForAnime(animeId: Long, episodeId: Long) {
         screenModelScope.launchIO {
-            sendNextEpisodeEvent(getNextEpisodes.await(animeId, episodeId, onlyUnseen = false))
+            sendNextEpisodeEvent(getNextChapters.await(animeId, episodeId, onlyUnread = false))
         }
     }
 

@@ -90,7 +90,7 @@ class SyncChaptersWithSource(
             }
 
             // Recognize episode number for the episode.
-            val episodeNumber = ChapterRecognition.parseEpisodeNumber(
+            val episodeNumber = ChapterRecognition.parseChapterNumber(
                 manga.title,
                 episode.name,
                 episode.episodeNumber,
@@ -192,7 +192,7 @@ class SyncChaptersWithSource(
 
         if (removedEpisodes.isNotEmpty()) {
             val toDeleteIds = removedEpisodes.map { it.id }
-            chapterRepository.removeEpisodesWithIds(toDeleteIds)
+            chapterRepository.removeChaptersWithIds(toDeleteIds)
         }
 
         if (updatedToAdd.isNotEmpty()) {

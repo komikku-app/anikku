@@ -4,7 +4,7 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.track.Tracker
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -123,7 +123,7 @@ data class DummyTracker(
 
     override suspend fun getAnimeMetadata(
         track: Track,
-    ) = TrackAnimeMetadata(
+    ) = TrackMangaMetadata(
         0, "test", "test", "test", "test", "test",
     )
 

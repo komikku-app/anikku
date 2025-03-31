@@ -14,7 +14,7 @@ class FetchInterval(
     private val getChaptersByMangaId: GetChaptersByMangaId,
 ) {
 
-    suspend fun toAnimeUpdate(
+    suspend fun toMangaUpdate(
         manga: Manga,
         dateTime: ZonedDateTime,
         window: Pair<Long, Long>,

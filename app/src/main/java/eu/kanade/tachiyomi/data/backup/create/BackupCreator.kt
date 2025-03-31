@@ -95,7 +95,7 @@ class BackupCreator(
                 throw IllegalStateException(context.stringResource(MR.strings.create_backup_file_error))
             }
 
-            val nonFavoriteAnime = if (options.seenEntries) mangaRepository.getSeenAnimeNotInLibrary() else emptyList()
+            val nonFavoriteAnime = if (options.seenEntries) mangaRepository.getReadMangaNotInLibrary() else emptyList()
             // SY -->
             val mergedManga = getMergedManga.await()
             // SY <--

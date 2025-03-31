@@ -12,7 +12,7 @@ class GetMergedMangaById(
 
     suspend fun await(id: Long): List<Manga> {
         return try {
-            mangaMergeRepository.getMergedAnimeById(id)
+            mangaMergeRepository.getMergedMangaById(id)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             emptyList()
@@ -20,6 +20,6 @@ class GetMergedMangaById(
     }
 
     suspend fun subscribe(id: Long): Flow<List<Manga>> {
-        return mangaMergeRepository.subscribeMergedAnimeById(id)
+        return mangaMergeRepository.subscribeMergedMangaById(id)
     }
 }

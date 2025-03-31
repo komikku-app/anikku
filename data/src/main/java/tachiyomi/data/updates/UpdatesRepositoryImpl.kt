@@ -83,9 +83,9 @@ class UpdatesRepositoryImpl(
         sourceId = sourceId,
         dateFetch = dateFetch,
         coverData = MangaCover(
-            animeId = animeId,
+            mangaId = animeId,
             sourceId = sourceId,
-            isAnimeFavorite = favorite,
+            isMangaFavorite = favorite,
             ogUrl = thumbnailUrl,
             lastModified = coverLastModified,
         ),

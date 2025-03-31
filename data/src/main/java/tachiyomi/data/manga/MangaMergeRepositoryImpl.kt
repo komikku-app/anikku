@@ -13,19 +13,19 @@ class MangaMergeRepositoryImpl(
     private val handler: DatabaseHandler,
 ) : MangaMergeRepository {
 
-    override suspend fun getMergedAnime(): List<Manga> {
+    override suspend fun getMergedManga(): List<Manga> {
         return handler.awaitList { mergedQueries.selectAllMergedAnimes(MangaMapper::mapManga) }
     }
 
-    override suspend fun subscribeMergedAnime(): Flow<List<Manga>> {
+    override suspend fun subscribeMergedManga(): Flow<List<Manga>> {
         return handler.subscribeToList { mergedQueries.selectAllMergedAnimes(MangaMapper::mapManga) }
     }
 
-    override suspend fun getMergedAnimeById(id: Long): List<Manga> {
+    override suspend fun getMergedMangaById(id: Long): List<Manga> {
         return handler.awaitList { mergedQueries.selectMergedAnimesById(id, MangaMapper::mapManga) }
     }
 
-    override suspend fun subscribeMergedAnimeById(id: Long): Flow<List<Manga>> {
+    override suspend fun subscribeMergedMangaById(id: Long): Flow<List<Manga>> {
         return handler.subscribeToList { mergedQueries.selectMergedAnimesById(id, MangaMapper::mapManga) }
     }
 
@@ -121,7 +121,7 @@ class MangaMergeRepositoryImpl(
         }
     }
 
-    override suspend fun getMergeAnimeForDownloading(mergeId: Long): List<Manga> {
+    override suspend fun getMergeMangaForDownloading(mergeId: Long): List<Manga> {
         return handler.awaitList { mergedQueries.selectMergedAnimesForDownloadingById(mergeId, MangaMapper::mapManga) }
     }
 }

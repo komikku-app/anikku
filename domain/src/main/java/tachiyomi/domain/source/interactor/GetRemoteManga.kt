@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import tachiyomi.domain.source.repository.SourcePagingSourceType
 import tachiyomi.domain.source.repository.SourceRepository
 
-class GetRemoteAnime(
+class GetRemoteManga(
     private val repository: SourceRepository,
 ) {
 

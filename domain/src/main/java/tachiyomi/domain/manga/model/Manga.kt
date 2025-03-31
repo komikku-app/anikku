@@ -39,32 +39,32 @@ data class Manga(
 ) : Serializable {
 
     // SY -->
-    private val customAnimeInfo = if (favorite) {
+    private val customMangaInfo = if (favorite) {
         getCustomMangaInfo.get(id)
     } else {
         null
     }
 
     val title: String
-        get() = customAnimeInfo?.title ?: ogTitle
+        get() = customMangaInfo?.title ?: ogTitle
 
     val author: String?
-        get() = customAnimeInfo?.author ?: ogAuthor
+        get() = customMangaInfo?.author ?: ogAuthor
 
     val artist: String?
-        get() = customAnimeInfo?.artist ?: ogArtist
+        get() = customMangaInfo?.artist ?: ogArtist
 
     val thumbnailUrl: String?
-        get() = customAnimeInfo?.thumbnailUrl ?: ogThumbnailUrl
+        get() = customMangaInfo?.thumbnailUrl ?: ogThumbnailUrl
 
     val description: String?
-        get() = customAnimeInfo?.description ?: ogDescription
+        get() = customMangaInfo?.description ?: ogDescription
 
     val genre: List<String>?
-        get() = customAnimeInfo?.genre ?: ogGenre
+        get() = customMangaInfo?.genre ?: ogGenre
 
     val status: Long
-        get() = customAnimeInfo?.status ?: ogStatus
+        get() = customMangaInfo?.status ?: ogStatus
     // SY <--
 
     val expectedNextUpdate: Instant?

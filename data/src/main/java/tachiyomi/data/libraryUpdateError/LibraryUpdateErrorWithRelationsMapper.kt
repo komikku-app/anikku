@@ -11,9 +11,9 @@ val libraryUpdateErrorWithRelationsMapper:
             animeTitle = animeTitle,
             animeSource = animeSource,
             mangaCover = MangaCover(
-                animeId = animeId,
+                mangaId = animeId,
                 sourceId = animeSource,
-                isAnimeFavorite = favorite,
+                isMangaFavorite = favorite,
                 ogUrl = animeThumbnail,
                 lastModified = coverLastModified,
             ),

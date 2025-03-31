@@ -101,9 +101,9 @@ class HistoryScreenModelStateProvider : PreviewParameterProvider<HistoryScreenMo
                         seenAt = Date.from(Instant.now()),
                         watchDuration = Random.nextLong(),
                         coverData = MangaCover(
-                            animeId = Random.nextLong(),
+                            mangaId = Random.nextLong(),
                             sourceId = Random.nextLong(),
-                            isAnimeFavorite = Random.nextBoolean(),
+                            isMangaFavorite = Random.nextBoolean(),
                             ogUrl = "https://example.com/cover.png",
                             lastModified = Random.nextLong(),
                         ),

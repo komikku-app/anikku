@@ -11,7 +11,7 @@ class SetMangaViewerFlags(
 ) {
 
     suspend fun awaitSetSkipIntroLength(id: Long, flag: Long) {
-        val anime = mangaRepository.getAnimeById(id)
+        val anime = mangaRepository.getMangaById(id)
         mangaRepository.update(
             MangaUpdate(
                 id = id,
@@ -29,7 +29,7 @@ class SetMangaViewerFlags(
     }
 
     private suspend fun awaitSetNextEpisodeToAir(id: Long, flag: Long) {
-        val anime = mangaRepository.getAnimeById(id)
+        val anime = mangaRepository.getMangaById(id)
         mangaRepository.update(
             MangaUpdate(
                 id = id,
@@ -39,7 +39,7 @@ class SetMangaViewerFlags(
     }
 
     private suspend fun awaitSetNextEpisodeAiringAt(id: Long, flag: Long) {
-        val anime = mangaRepository.getAnimeById(id)
+        val anime = mangaRepository.getMangaById(id)
         mangaRepository.update(
             MangaUpdate(
                 id = id,

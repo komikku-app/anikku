@@ -31,7 +31,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.interactor.GetLibraryManga
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.manga.model.toAnimeUpdate
+import tachiyomi.domain.manga.model.toMangaUpdate
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -125,7 +125,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
                                         val updatedAnime = anime.prepUpdateCover(coverCache, networkAnime, true)
                                             .copyFrom(networkAnime)
                                         try {
-                                            updateManga.await(updatedAnime.toAnimeUpdate())
+                                            updateManga.await(updatedAnime.toMangaUpdate())
                                         } catch (e: Exception) {
                                             logcat(LogPriority.ERROR) { "Anime doesn't exist anymore" }
                                         }

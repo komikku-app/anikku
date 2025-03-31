@@ -44,7 +44,7 @@ import eu.kanade.tachiyomi.util.system.toast
 import exh.util.nullIfBlank
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.source.interactor.GetRemoteAnime
+import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.i18n.kmk.KMR
@@ -313,15 +313,15 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
 
     private fun onLatestClick(navigator: Navigator, source: Source) {
         // KMK -->
-        // navigator.replace(BrowseSourceScreen(source.id, GetRemoteAnime.QUERY_LATEST))
-        navigator.push(BrowseSourceScreen(source.id, GetRemoteAnime.QUERY_LATEST))
+        // navigator.replace(BrowseSourceScreen(source.id, GetRemoteManga.QUERY_LATEST))
+        navigator.push(BrowseSourceScreen(source.id, GetRemoteManga.QUERY_LATEST))
         // KMK <--
     }
 
     private fun onBrowseClick(navigator: Navigator, source: Source) {
         // KMK -->
-        // navigator.replace(BrowseSourceScreen(source.id, GetRemoteAnime.QUERY_POPULAR))
-        navigator.push(BrowseSourceScreen(source.id, GetRemoteAnime.QUERY_POPULAR))
+        // navigator.replace(BrowseSourceScreen(source.id, GetRemoteManga.QUERY_POPULAR))
+        navigator.push(BrowseSourceScreen(source.id, GetRemoteManga.QUERY_POPULAR))
         // KMK <--
     }
 

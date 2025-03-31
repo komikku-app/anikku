@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.myanimelist
 import android.net.Uri
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnime
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnimeMetadata
@@ -194,7 +194,7 @@ class MyAnimeListApi(
         }
     }
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         return withIOContext {
             val url = "$BASE_API_URL/anime".toUri().buildUpon()
                 .appendPath(track.remoteId.toString())
@@ -208,7 +208,7 @@ class MyAnimeListApi(
                     .awaitSuccess()
                     .parseAs<MALAnimeMetadata>()
                     .let { anime ->
-                        TrackAnimeMetadata(
+                        TrackMangaMetadata(
                             remoteId = anime.id,
                             title = anime.title,
                             thumbnailUrl = anime.covers.large?.ifEmpty { null } ?: anime.covers.medium,

@@ -65,10 +65,10 @@ import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.history.interactor.GetNextEpisodes
-import tachiyomi.domain.library.model.LibraryManga
+import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.model.LibraryGroup
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.library.model.LibrarySort
 import tachiyomi.domain.library.model.sort
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -82,7 +82,7 @@ import tachiyomi.domain.manga.model.applyFilter
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
-import tachiyomi.domain.track.interactor.GetTracksPerAnime
+import tachiyomi.domain.track.interactor.GetTracksPerManga
 import tachiyomi.domain.track.model.Track
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.source.local.LocalSource
@@ -101,8 +101,8 @@ typealias AnimeLibraryMap = Map<Category, List<LibraryItem>>
 class LibraryScreenModel(
     private val getLibraryManga: GetLibraryManga = Injekt.get(),
     private val getCategories: GetCategories = Injekt.get(),
-    private val getTracksPerAnime: GetTracksPerAnime = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
+    private val getTracksPerManga: GetTracksPerManga = Injekt.get(),
+    private val getNextChapters: GetNextChapters = Injekt.get(),
     private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
     private val setReadStatus: SetReadStatus = Injekt.get(),
     private val updateManga: UpdateManga = Injekt.get(),
@@ -132,7 +132,7 @@ class LibraryScreenModel(
             combine(
                 state.map { it.searchQuery }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS),
                 getLibraryFlow(),
-                getTracksPerAnime.subscribe(),
+                getTracksPerManga.subscribe(),
                 combine(
                     getTrackingFilterFlow(),
                     downloadCache.changes,
@@ -638,7 +638,7 @@ class LibraryScreenModel(
                 if (anime.source == MERGED_SOURCE_ID) {
                     val mergedMangas = getMergedMangaById.await(anime.id)
                         .associateBy { it.id }
-                    getNextEpisodes.await(anime.id)
+                    getNextChapters.await(anime.id)
                         .let { if (amount != null) it.take(amount) else it }
                         .groupBy { it.animeId }
                         .forEach ab@{ (mangaId, chapters) ->
@@ -660,7 +660,7 @@ class LibraryScreenModel(
                 }
 
                 // SY <--
-                val episodes = getNextEpisodes.await(anime.id)
+                val episodes = getNextChapters.await(anime.id)
                     .fastFilterNot { episode ->
                         downloadManager.getQueuedDownloadOrNull(episode.id) != null ||
                             downloadManager.isEpisodeDownloaded(
@@ -950,7 +950,7 @@ class LibraryScreenModel(
     // SY -->
     /** Returns first unread chapter of a anime */
     suspend fun getFirstUnseen(manga: Manga): Chapter? {
-        return getNextEpisodes.await(manga.id).firstOrNull()
+        return getNextChapters.await(manga.id).firstOrNull()
     }
 
     @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod")

@@ -13,7 +13,7 @@ class GetCategories(
     }
 
     fun subscribe(mangaId: Long): Flow<List<Category>> {
-        return categoryRepository.getCategoriesByAnimeIdAsFlow(mangaId)
+        return categoryRepository.getCategoriesByMangaIdAsFlow(mangaId)
     }
 
     suspend fun await(): List<Category> {
@@ -21,6 +21,6 @@ class GetCategories(
     }
 
     suspend fun await(mangaId: Long): List<Category> {
-        return categoryRepository.getCategoriesByAnimeId(mangaId)
+        return categoryRepository.getCategoriesByMangaId(mangaId)
     }
 }

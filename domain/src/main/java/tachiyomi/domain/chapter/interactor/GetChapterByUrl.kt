@@ -11,7 +11,7 @@ class GetChapterByUrl(
 
     suspend fun await(url: String): List<Chapter> {
         return try {
-            chapterRepository.getEpisodeByUrl(url)
+            chapterRepository.getChapterByUrl(url)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             emptyList()

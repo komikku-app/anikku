@@ -37,15 +37,15 @@ class LibraryUpdateErrorRepositoryImpl(
         }
     }
 
-    override suspend fun deleteAnimeError(animeId: Long) {
+    override suspend fun deleteMangaError(mangaId: Long) {
         return handler.await {
             libraryUpdateErrorQueries.deleteAnimeError(
-                animeId = animeId,
+                animeId = mangaId,
             )
         }
     }
 
-    override suspend fun cleanUnrelevantAnimeErrors() {
+    override suspend fun cleanUnrelevantMangaErrors() {
         return handler.await {
             libraryUpdateErrorQueries.cleanUnrelevantAnimeErrors()
         }

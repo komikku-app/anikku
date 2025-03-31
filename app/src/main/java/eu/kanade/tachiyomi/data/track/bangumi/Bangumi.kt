@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMOAuth
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -77,7 +77,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
         return api.searchAnime(query)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         throw NotImplementedError("Not implemented.")
     }
 

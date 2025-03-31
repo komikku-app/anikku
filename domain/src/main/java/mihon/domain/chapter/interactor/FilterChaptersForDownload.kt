@@ -54,6 +54,7 @@ class FilterChaptersForDownload(
             .filter { it.seen && it.isRecognizedNumber }
             .map { it.episodeNumber }
             .toSet()
+
         return newChapters.filterNot { it.episodeNumber in readChapterNumbers }
     }
 

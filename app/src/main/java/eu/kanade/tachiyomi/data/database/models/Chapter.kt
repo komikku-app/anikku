@@ -33,7 +33,7 @@ interface Chapter : SChapter, Serializable {
     var version: Long
 }
 
-fun Chapter.toDomainEpisode(): DomainChapter? {
+fun Chapter.toDomainChapter(): DomainChapter? {
     if (id == null || anime_id == null) return null
     return DomainChapter(
         id = id!!,

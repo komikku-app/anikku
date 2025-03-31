@@ -4,7 +4,7 @@ import tachiyomi.domain.manga.model.CustomMangaInfo
 
 interface CustomMangaRepository {
 
-    fun get(animeId: Long): CustomMangaInfo?
+    fun get(mangaId: Long): CustomMangaInfo?
 
-    fun set(animeInfo: CustomMangaInfo)
+    fun set(mangaInfo: CustomMangaInfo)
 }

@@ -83,9 +83,9 @@ internal fun BrowseSourceListItem(
     AnimeListItem(
         title = manga.title,
         coverData = MangaCover(
-            animeId = manga.id,
+            mangaId = manga.id,
             sourceId = manga.source,
-            isAnimeFavorite = manga.favorite,
+            isMangaFavorite = manga.favorite,
             ogUrl = manga.thumbnailUrl,
             lastModified = manga.coverLastModified,
         ),

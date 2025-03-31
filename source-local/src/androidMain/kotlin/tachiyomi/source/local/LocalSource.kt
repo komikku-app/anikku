@@ -220,7 +220,7 @@ actual class LocalSource(
                     name = episodeFile.nameWithoutExtension.orEmpty()
                     date_upload = episodeFile.lastModified()
 
-                    val episodeNumber = EpisodeRecognition.parseEpisodeNumber(
+                    val episodeNumber = EpisodeRecognition.parseChapterNumber(
                         anime.title,
                         this.name,
                         this.episode_number.toDouble(),

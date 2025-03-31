@@ -7,17 +7,17 @@ import tachiyomi.domain.manga.model.MangaUpdate
 
 interface MangaRepository {
 
-    suspend fun getAnimeById(id: Long): Manga
+    suspend fun getMangaById(id: Long): Manga
 
-    suspend fun getAnimeByIdAsFlow(id: Long): Flow<Manga>
+    suspend fun getMangaByIdAsFlow(id: Long): Flow<Manga>
 
-    suspend fun getAnimeByUrlAndSourceId(url: String, sourceId: Long): Manga?
+    suspend fun getMangaByUrlAndSourceId(url: String, sourceId: Long): Manga?
 
-    fun getAnimeByUrlAndSourceIdAsFlow(url: String, sourceId: Long): Flow<Manga?>
+    fun getMangaByUrlAndSourceIdAsFlow(url: String, sourceId: Long): Flow<Manga?>
 
     suspend fun getFavorites(): List<Manga>
 
-    suspend fun getSeenAnimeNotInLibrary(): List<Manga>
+    suspend fun getReadMangaNotInLibrary(): List<Manga>
 
     suspend fun getLibraryManga(): List<LibraryManga>
 
@@ -27,11 +27,11 @@ interface MangaRepository {
 
     suspend fun getDuplicateLibraryManga(id: Long, title: String): List<Manga>
 
-    suspend fun getUpcomingAnime(statuses: Set<Long>): Flow<List<Manga>>
+    suspend fun getUpcomingManga(statuses: Set<Long>): Flow<List<Manga>>
 
     suspend fun resetViewerFlags(): Boolean
 
-    suspend fun setAnimeCategories(animeId: Long, categoryIds: List<Long>)
+    suspend fun setMangaCategories(mangaId: Long, categoryIds: List<Long>)
 
     suspend fun insert(manga: Manga): Long?
 
@@ -40,12 +40,12 @@ interface MangaRepository {
     suspend fun updateAll(mangaUpdates: List<MangaUpdate>): Boolean
 
     // SY -->
-    suspend fun getAnimeBySourceId(sourceId: Long): List<Manga>
+    suspend fun getMangaBySourceId(sourceId: Long): List<Manga>
 
     suspend fun getAll(): List<Manga>
 
-    suspend fun deleteAnime(animeId: Long)
+    suspend fun deleteManga(mangaId: Long)
 
-    suspend fun getSeenAnimeNotInLibraryView(): List<LibraryManga>
+    suspend fun getReadMangaNotInLibraryView(): List<LibraryManga>
     // SY <--
 }

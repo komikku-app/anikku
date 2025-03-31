@@ -30,7 +30,7 @@ class GetUpcomingManga(
     )
 
     suspend fun subscribe(): Flow<List<Manga>> {
-        return mangaRepository.getUpcomingAnime(includedStatuses)
+        return mangaRepository.getUpcomingManga(includedStatuses)
     }
 
     // KMK -->

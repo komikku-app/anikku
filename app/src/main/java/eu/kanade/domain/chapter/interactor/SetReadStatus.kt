@@ -56,7 +56,7 @@ class SetReadStatus(
                 .groupBy { it.animeId }
                 .forEach { (animeId, episodes) ->
                     deleteDownload.awaitAll(
-                        manga = mangaRepository.getAnimeById(animeId),
+                        manga = mangaRepository.getMangaById(animeId),
                         chapters = episodes.toTypedArray(),
                     )
                 }
@@ -69,7 +69,7 @@ class SetReadStatus(
         await(
             seen = seen,
             chapters = chapterRepository
-                .getEpisodeByAnimeId(animeId)
+                .getChapterByMangaId(animeId)
                 .toTypedArray(),
         )
     }

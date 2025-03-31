@@ -7,7 +7,6 @@ import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.DownloadManager
-import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
@@ -37,7 +36,7 @@ class EpisodeLoader {
         suspend fun getHosters(
             episode: Episode,
             anime: Anime,
-            source: Source,
+            source: AnimeSource,
             sourceManager: SourceManager? = null,
             mergedReferences: List<MergedMangaReference> = emptyList(),
             mergedManga: Map<Long, Anime> = emptyMap(),
@@ -116,7 +115,7 @@ class EpisodeLoader {
         private fun getHostersOnDownloaded(
             episode: Episode,
             anime: Anime,
-            source: Source,
+            source: AnimeSource,
         ): List<Hoster> {
             val downloadManager: DownloadManager = Injekt.get()
             return try {

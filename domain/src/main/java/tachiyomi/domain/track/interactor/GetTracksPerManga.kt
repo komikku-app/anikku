@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.map
 import tachiyomi.domain.track.model.Track
 import tachiyomi.domain.track.repository.TrackRepository
 
-class GetTracksPerAnime(
+class GetTracksPerManga(
     private val trackRepository: TrackRepository,
 ) {
 

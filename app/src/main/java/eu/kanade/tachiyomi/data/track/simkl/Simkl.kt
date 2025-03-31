@@ -5,7 +5,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklOAuth
 import kotlinx.collections.immutable.ImmutableList
@@ -133,7 +133,7 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
         trackPreferences.trackToken(this).set(json.encodeToString(oauth))
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         return api.getSimklAnimeMetadata(track)
     }
 

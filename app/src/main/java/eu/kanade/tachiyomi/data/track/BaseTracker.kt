@@ -6,7 +6,7 @@ import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.model.toDomainTrack
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.flow.Flow
@@ -121,7 +121,7 @@ abstract class BaseTracker(
         updateRemote(track)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         throw NotImplementedError("Not implemented.")
     }
 

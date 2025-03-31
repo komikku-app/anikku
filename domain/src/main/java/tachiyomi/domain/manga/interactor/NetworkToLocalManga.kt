@@ -34,7 +34,7 @@ class NetworkToLocalManga(
     // KMK <--
 
     private suspend fun getManga(url: String, sourceId: Long): Manga? {
-        return mangaRepository.getAnimeByUrlAndSourceId(url, sourceId)
+        return mangaRepository.getMangaByUrlAndSourceId(url, sourceId)
     }
 
     private suspend fun insertManga(manga: Manga): Long? {

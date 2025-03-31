@@ -17,15 +17,15 @@ class MangaRepositoryImpl(
     private val handler: DatabaseHandler,
 ) : MangaRepository {
 
-    override suspend fun getAnimeById(id: Long): Manga {
+    override suspend fun getMangaById(id: Long): Manga {
         return handler.awaitOne { animesQueries.getAnimeById(id, MangaMapper::mapManga) }
     }
 
-    override suspend fun getAnimeByIdAsFlow(id: Long): Flow<Manga> {
+    override suspend fun getMangaByIdAsFlow(id: Long): Flow<Manga> {
         return handler.subscribeToOne { animesQueries.getAnimeById(id, MangaMapper::mapManga) }
     }
 
-    override suspend fun getAnimeByUrlAndSourceId(url: String, sourceId: Long): Manga? {
+    override suspend fun getMangaByUrlAndSourceId(url: String, sourceId: Long): Manga? {
         return handler.awaitOneOrNull {
             animesQueries.getAnimeByUrlAndSource(
                 url,
@@ -35,7 +35,7 @@ class MangaRepositoryImpl(
         }
     }
 
-    override fun getAnimeByUrlAndSourceIdAsFlow(url: String, sourceId: Long): Flow<Manga?> {
+    override fun getMangaByUrlAndSourceIdAsFlow(url: String, sourceId: Long): Flow<Manga?> {
         return handler.subscribeToOneOrNull {
             animesQueries.getAnimeByUrlAndSource(
                 url,
@@ -49,7 +49,7 @@ class MangaRepositoryImpl(
         return handler.awaitList { animesQueries.getFavorites(MangaMapper::mapManga) }
     }
 
-    override suspend fun getSeenAnimeNotInLibrary(): List<Manga> {
+    override suspend fun getReadMangaNotInLibrary(): List<Manga> {
         return handler.awaitList { animesQueries.getSeenAnimeNotInLibrary(MangaMapper::mapManga) }
     }
 
@@ -71,7 +71,7 @@ class MangaRepositoryImpl(
         }
     }
 
-    override suspend fun getUpcomingAnime(statuses: Set<Long>): Flow<List<Manga>> {
+    override suspend fun getUpcomingManga(statuses: Set<Long>): Flow<List<Manga>> {
         val epochMillis = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() * 1000
         return handler.subscribeToList {
             animesQueries.getUpcomingAnime(epochMillis, statuses, MangaMapper::mapManga)
@@ -88,11 +88,11 @@ class MangaRepositoryImpl(
         }
     }
 
-    override suspend fun setAnimeCategories(animeId: Long, categoryIds: List<Long>) {
+    override suspend fun setMangaCategories(mangaId: Long, categoryIds: List<Long>) {
         handler.await(inTransaction = true) {
-            animes_categoriesQueries.deleteAnimeCategoryByAnimeId(animeId)
+            animes_categoriesQueries.deleteAnimeCategoryByAnimeId(mangaId)
             categoryIds.map { categoryId ->
-                animes_categoriesQueries.insert(animeId, categoryId)
+                animes_categoriesQueries.insert(mangaId, categoryId)
             }
         }
     }
@@ -182,7 +182,7 @@ class MangaRepositoryImpl(
     }
 
     // SY -->
-    override suspend fun getAnimeBySourceId(sourceId: Long): List<Manga> {
+    override suspend fun getMangaBySourceId(sourceId: Long): List<Manga> {
         return handler.awaitList { animesQueries.getBySource(sourceId, MangaMapper::mapManga) }
     }
 
@@ -190,11 +190,11 @@ class MangaRepositoryImpl(
         return handler.awaitList { animesQueries.getAll(MangaMapper::mapManga) }
     }
 
-    override suspend fun deleteAnime(animeId: Long) {
-        handler.await { animesQueries.deleteById(animeId) }
+    override suspend fun deleteManga(mangaId: Long) {
+        handler.await { animesQueries.deleteById(mangaId) }
     }
 
-    override suspend fun getSeenAnimeNotInLibraryView(): List<LibraryManga> {
+    override suspend fun getReadMangaNotInLibraryView(): List<LibraryManga> {
         return handler.awaitList { libraryViewQueries.seenAnimeNonLibrary(MangaMapper::mapLibraryManga) }
     }
     // SY <--

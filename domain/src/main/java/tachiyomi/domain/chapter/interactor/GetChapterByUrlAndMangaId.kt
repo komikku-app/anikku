@@ -9,7 +9,7 @@ class GetChapterByUrlAndMangaId(
 
     suspend fun await(url: String, sourceId: Long): Chapter? {
         return try {
-            chapterRepository.getEpisodeByUrlAndAnimeId(url, sourceId)
+            chapterRepository.getChapterByUrlAndMangaId(url, sourceId)
         } catch (e: Exception) {
             null
         }

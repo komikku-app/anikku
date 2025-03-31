@@ -41,9 +41,9 @@ internal fun LibraryComfortableGrid(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },
                 title = anime.title,
                 coverData = MangaCover(
-                    animeId = anime.id,
+                    mangaId = anime.id,
                     sourceId = anime.source,
-                    isAnimeFavorite = anime.favorite,
+                    isMangaFavorite = anime.favorite,
                     ogUrl = anime.thumbnailUrl,
                     lastModified = anime.coverLastModified,
                 ),

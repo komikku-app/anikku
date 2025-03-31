@@ -23,7 +23,7 @@ import eu.kanade.presentation.library.components.AnimeComfortableGridItem
 import eu.kanade.presentation.library.components.CommonAnimeItemDefaults
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
-import tachiyomi.domain.manga.model.asAnimeCover
+import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -54,7 +54,7 @@ fun GlobalSearchCardRow(
             val title by getManga(it)
             AnimeItem(
                 title = title.title,
-                cover = title.asAnimeCover(),
+                cover = title.asMangaCover(),
                 isFavorite = title.favorite,
                 onClick = { onClick(title) },
                 onLongClick = { onLongClick(title) },

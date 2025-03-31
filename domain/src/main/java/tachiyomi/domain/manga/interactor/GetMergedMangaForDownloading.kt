@@ -8,6 +8,6 @@ class GetMergedMangaForDownloading(
 ) {
 
     suspend fun await(mergeId: Long): List<Manga> {
-        return mangaMergeRepository.getMergeAnimeForDownloading(mergeId)
+        return mangaMergeRepository.getMergeMangaForDownloading(mergeId)
     }
 }

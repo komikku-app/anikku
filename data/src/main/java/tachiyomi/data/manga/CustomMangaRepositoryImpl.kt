@@ -13,13 +13,13 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
 
     private val customAnimeMap = fetchCustomData()
 
-    override fun get(animeId: Long) = customAnimeMap[animeId]
+    override fun get(mangaId: Long) = customAnimeMap[mangaId]
 
     private fun fetchCustomData(): MutableMap<Long, CustomMangaInfo> {
         if (!editJson.exists() || !editJson.isFile) return mutableMapOf()
 
         val json = try {
-            Json.decodeFromString<AnimeList>(
+            Json.decodeFromString<MangaList>(
                 editJson.bufferedReader().use { it.readText() },
             )
         } catch (e: Exception) {
@@ -36,19 +36,19 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
             .toMutableMap()
     }
 
-    override fun set(animeInfo: CustomMangaInfo) {
+    override fun set(mangaInfo: CustomMangaInfo) {
         if (
-            animeInfo.title == null &&
-            animeInfo.author == null &&
-            animeInfo.artist == null &&
-            animeInfo.thumbnailUrl == null &&
-            animeInfo.description == null &&
-            animeInfo.genre == null &&
-            animeInfo.status == null
+            mangaInfo.title == null &&
+            mangaInfo.author == null &&
+            mangaInfo.artist == null &&
+            mangaInfo.thumbnailUrl == null &&
+            mangaInfo.description == null &&
+            mangaInfo.genre == null &&
+            mangaInfo.status == null
         ) {
-            customAnimeMap.remove(animeInfo.id)
+            customAnimeMap.remove(mangaInfo.id)
         } else {
-            customAnimeMap[animeInfo.id] = animeInfo
+            customAnimeMap[mangaInfo.id] = mangaInfo
         }
         saveCustomInfo()
     }
@@ -57,12 +57,12 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
         val jsonElements = customAnimeMap.values.map { it.toJson() }
         if (jsonElements.isNotEmpty()) {
             editJson.delete()
-            editJson.writeText(Json.encodeToString(AnimeList(jsonElements)))
+            editJson.writeText(Json.encodeToString(MangaList(jsonElements)))
         }
     }
 
     @Serializable
-    data class AnimeList(
+    data class MangaList(
         val animes: List<AnimeJson>? = null,
     )
 

@@ -11,16 +11,16 @@ class GetChapter(
 
     suspend fun await(id: Long): Chapter? {
         return try {
-            chapterRepository.getEpisodeById(id)
+            chapterRepository.getChapterById(id)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             null
         }
     }
 
-    suspend fun await(url: String, animeId: Long): Chapter? {
+    suspend fun await(url: String, mangaId: Long): Chapter? {
         return try {
-            chapterRepository.getEpisodeByUrlAndAnimeId(url, animeId)
+            chapterRepository.getChapterByUrlAndMangaId(url, mangaId)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             null

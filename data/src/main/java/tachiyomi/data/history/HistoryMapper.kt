@@ -41,9 +41,9 @@ object HistoryMapper {
         seenAt = seenAt,
         watchDuration = watchDuration,
         coverData = MangaCover(
-            animeId = animeId,
+            mangaId = animeId,
             sourceId = sourceId,
-            isAnimeFavorite = isFavorite,
+            isMangaFavorite = isFavorite,
             ogUrl = thumbnailUrl,
             lastModified = coverLastModified,
         ),

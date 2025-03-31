@@ -5,20 +5,20 @@ import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Contains the required data for AnimeCoverFetcher
+ * Contains the required data for MangaCoverFetcher
  */
 data class MangaCover(
-    val animeId: Long,
+    val mangaId: Long,
     val sourceId: Long,
-    val isAnimeFavorite: Boolean,
+    val isMangaFavorite: Boolean,
     // SY -->
     val ogUrl: String?,
     // SY <--
     val lastModified: Long,
 ) {
     // SY -->
-    private val customThumbnailUrl = if (isAnimeFavorite) {
-        getCustomMangaInfo.get(animeId)?.thumbnailUrl
+    private val customThumbnailUrl = if (isMangaFavorite) {
+        getCustomMangaInfo.get(mangaId)?.thumbnailUrl
     } else {
         null
     }
@@ -33,9 +33,9 @@ data class MangaCover(
      * It reads/saves to a hashmap in [MangaCover.vibrantCoverColorMap] for multiple mangas.
      */
     var vibrantCoverColor: Int?
-        get() = vibrantCoverColorMap[animeId]
+        get() = vibrantCoverColorMap[mangaId]
         set(value) {
-            vibrantCoverColorMap[animeId] = value
+            vibrantCoverColorMap[mangaId] = value
         }
 
     /**
@@ -54,17 +54,17 @@ data class MangaCover(
      */
     @Suppress("KDocUnresolvedReference")
     var dominantCoverColors: Pair<Int, Int>?
-        get() = dominantCoverColorMap[animeId]
+        get() = dominantCoverColorMap[mangaId]
         set(value) {
             value ?: return
-            dominantCoverColorMap[animeId] = value.first to value.second
+            dominantCoverColorMap[mangaId] = value.first to value.second
         }
 
     var ratio: Float?
-        get() = coverRatioMap[animeId]
+        get() = coverRatioMap[mangaId]
         set(value) {
             value ?: return
-            coverRatioMap[animeId] = value
+            coverRatioMap[mangaId] = value
         }
 
     companion object {
@@ -92,11 +92,11 @@ data class MangaCover(
     }
 }
 
-fun Manga.asAnimeCover(): MangaCover {
+fun Manga.asMangaCover(): MangaCover {
     return MangaCover(
-        animeId = id,
+        mangaId = id,
         sourceId = source,
-        isAnimeFavorite = favorite,
+        isMangaFavorite = favorite,
         ogUrl = thumbnailUrl,
         lastModified = coverLastModified,
     )

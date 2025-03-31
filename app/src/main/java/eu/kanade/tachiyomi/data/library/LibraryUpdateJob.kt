@@ -50,8 +50,8 @@ import tachiyomi.data.source.NoResultsException
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.GroupLibraryMode
-import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.library.model.LibraryGroup
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_HAS_UNSEEN
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_NON_COMPLETED

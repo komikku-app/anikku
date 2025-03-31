@@ -125,9 +125,9 @@ abstract class BaseUpdatesGridGlanceWidget(
                     val request = ImageRequest.Builder(context)
                         .data(
                             MangaCover(
-                                animeId = updatesView.animeId,
+                                mangaId = updatesView.animeId,
                                 sourceId = updatesView.sourceId,
-                                isAnimeFavorite = true,
+                                isMangaFavorite = true,
                                 ogUrl = updatesView.coverData.url,
                                 lastModified = updatesView.coverData.lastModified,
                             ),

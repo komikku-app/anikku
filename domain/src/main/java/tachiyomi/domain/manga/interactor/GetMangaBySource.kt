@@ -8,6 +8,6 @@ class GetMangaBySource(
 ) {
 
     suspend fun await(sourceId: Long): List<Manga> {
-        return mangaRepository.getAnimeBySourceId(sourceId)
+        return mangaRepository.getMangaBySourceId(sourceId)
     }
 }

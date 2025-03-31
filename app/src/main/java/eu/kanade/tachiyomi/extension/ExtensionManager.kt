@@ -171,8 +171,8 @@ class ExtensionManager(
         // Use the source lang as some aren't present on the animeextension level.
         val availableLanguages = animeextensions
             .flatMap(Extension.Available::sources)
-            .distinctBy(Extension.Available.AnimeSource::lang)
-            .map(Extension.Available.AnimeSource::lang)
+            .distinctBy(Extension.Available.Source::lang)
+            .map(Extension.Available.Source::lang)
 
         val deviceLanguage = Locale.getDefault().language
         val defaultLanguages = preferences.enabledLanguages().defaultValue()

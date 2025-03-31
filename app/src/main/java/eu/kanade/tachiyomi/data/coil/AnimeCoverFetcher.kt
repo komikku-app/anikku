@@ -35,7 +35,7 @@ import okio.source
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
-import tachiyomi.domain.manga.model.asAnimeCover
+import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -374,7 +374,7 @@ class AnimeCoverFetcher(
             return AnimeCoverFetcher(
                 // KMK -->
                 // url = data.thumbnailUrl,
-                mangaCover = data.asAnimeCover(),
+                mangaCover = data.asMangaCover(),
                 // KMK <--
                 isLibraryManga = data.favorite,
                 options = options,
@@ -401,10 +401,10 @@ class AnimeCoverFetcher(
                 // url = data.url,
                 mangaCover = data,
                 // KMK <--
-                isLibraryManga = data.isAnimeFavorite,
+                isLibraryManga = data.isMangaFavorite,
                 options = options,
                 coverFileLazy = lazy { coverCache.getCoverFile(data.url) },
-                customCoverFileLazy = lazy { coverCache.getCustomCoverFile(data.animeId) },
+                customCoverFileLazy = lazy { coverCache.getCustomCoverFile(data.mangaId) },
                 diskCacheKeyLazy = lazy { imageLoader.components.key(data, options)!! },
                 sourceLazy = lazy { sourceManager.get(data.sourceId) as? HttpSource },
                 callFactoryLazy = callFactoryLazy,

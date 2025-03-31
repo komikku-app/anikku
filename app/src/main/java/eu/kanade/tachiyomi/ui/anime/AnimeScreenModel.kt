@@ -122,7 +122,7 @@ import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MergeMangaSettingsUpdate
 import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.manga.model.applyFilter
-import tachiyomi.domain.manga.model.asAnimeCover
+import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
@@ -417,11 +417,11 @@ class AnimeScreenModel(
                     screenModelScope.launchIO {
                         if (it == null) return@launchIO
                         val mangaCover = when (model) {
-                            is Manga -> model.asAnimeCover()
+                            is Manga -> model.asMangaCover()
                             is MangaCover -> model
                             else -> return@launchIO
                         }
-                        if (mangaCover.isAnimeFavorite) {
+                        if (mangaCover.isMangaFavorite) {
                             it.dominantSwatch?.let { swatch ->
                                 mangaCover.dominantCoverColors = swatch.rgb to swatch.titleTextColor
                             }
@@ -724,7 +724,7 @@ class AnimeScreenModel(
                     manga.copy(fetchInterval = -interval),
                 )
             ) {
-                val updatedAnime = mangaRepository.getAnimeById(manga.id)
+                val updatedAnime = mangaRepository.getMangaById(manga.id)
                 updateSuccessState { it.copy(manga = updatedAnime) }
             }
         }
@@ -955,7 +955,7 @@ class AnimeScreenModel(
             screenModelScope.launch {
                 snackbarHostState.showSnackbar(message = message)
             }
-            val newManga = mangaRepository.getAnimeById(mangaId)
+            val newManga = mangaRepository.getMangaById(mangaId)
             updateSuccessState { it.copy(manga = newManga, isRefreshingData = false) }
         }
     }
@@ -1691,7 +1691,7 @@ class AnimeScreenModel(
              * a list of <keyword, related mangas>
              */
             val relatedAnimeCollection: List<RelatedAnime>? = null,
-            val seedColor: Color? = manga.asAnimeCover().vibrantCoverColor?.let { Color(it) },
+            val seedColor: Color? = manga.asMangaCover().vibrantCoverColor?.let { Color(it) },
             // KMK <--
         ) : State {
             // KMK -->

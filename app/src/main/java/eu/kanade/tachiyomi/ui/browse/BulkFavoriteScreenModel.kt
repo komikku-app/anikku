@@ -51,7 +51,7 @@ import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.manga.model.toAnimeUpdate
+import tachiyomi.domain.manga.model.toMangaUpdate
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -335,7 +335,7 @@ class BulkFavoriteScreenModel(
                 addTracks.bindEnhancedTrackers(manga, source)
             }
 
-            updateManga.await(new.toAnimeUpdate())
+            updateManga.await(new.toMangaUpdate())
         }
     }
 

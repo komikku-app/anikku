@@ -34,7 +34,7 @@ class GetMergedChaptersByMangaId(
         applyScanlatorFilter: Boolean = false,
     ): Flow<List<Chapter>> {
         return try {
-            chapterRepository.getMergedEpisodeByAnimeIdAsFlow(mangaId, applyScanlatorFilter)
+            chapterRepository.getMergedChapterByMangaIdAsFlow(mangaId, applyScanlatorFilter)
                 .combine(getMergedReferencesById.subscribe(mangaId)) { chapters, references ->
                     transformMergedChapters(references, chapters, dedupe)
                 }
@@ -49,7 +49,7 @@ class GetMergedChaptersByMangaId(
         applyScanlatorFilter: Boolean = false,
     ): List<Chapter> {
         return try {
-            chapterRepository.getMergedEpisodeByAnimeId(mangaId, applyScanlatorFilter)
+            chapterRepository.getMergedChapterByMangaId(mangaId, applyScanlatorFilter)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             emptyList()
