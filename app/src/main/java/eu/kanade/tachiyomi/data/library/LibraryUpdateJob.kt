@@ -41,7 +41,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
-import mihon.domain.episode.interactor.FilterEpisodesForDownload
+import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.util.lang.withIOContext
@@ -95,7 +95,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get()
     private val getTracks: GetTracks = Injekt.get()
     private val fetchInterval: FetchInterval = Injekt.get()
-    private val filterEpisodesForDownload: FilterEpisodesForDownload = Injekt.get()
+    private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get()
 
     private val notifier = LibraryUpdateNotifier(context)
 
@@ -363,7 +363,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             .sortedByDescending { it.sourceOrder }
 
                                         if (newEpisodes.isNotEmpty()) {
-                                            val episodesToDownload = filterEpisodesForDownload.await(anime, newEpisodes)
+                                            val episodesToDownload = filterChaptersForDownload.await(anime, newEpisodes)
 
                                             if (episodesToDownload.isNotEmpty()) {
                                                 downloadEpisodes(anime, episodesToDownload)

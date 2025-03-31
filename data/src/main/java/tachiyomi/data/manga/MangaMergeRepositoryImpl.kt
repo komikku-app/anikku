@@ -1,4 +1,4 @@
-package tachiyomi.data.anime
+package tachiyomi.data.manga
 
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
@@ -14,27 +14,27 @@ class MangaMergeRepositoryImpl(
 ) : MangaMergeRepository {
 
     override suspend fun getMergedAnime(): List<Manga> {
-        return handler.awaitList { mergedQueries.selectAllMergedAnimes(AnimeMapper::mapAnime) }
+        return handler.awaitList { mergedQueries.selectAllMergedAnimes(MangaMapper::mapManga) }
     }
 
     override suspend fun subscribeMergedAnime(): Flow<List<Manga>> {
-        return handler.subscribeToList { mergedQueries.selectAllMergedAnimes(AnimeMapper::mapAnime) }
+        return handler.subscribeToList { mergedQueries.selectAllMergedAnimes(MangaMapper::mapManga) }
     }
 
     override suspend fun getMergedAnimeById(id: Long): List<Manga> {
-        return handler.awaitList { mergedQueries.selectMergedAnimesById(id, AnimeMapper::mapAnime) }
+        return handler.awaitList { mergedQueries.selectMergedAnimesById(id, MangaMapper::mapManga) }
     }
 
     override suspend fun subscribeMergedAnimeById(id: Long): Flow<List<Manga>> {
-        return handler.subscribeToList { mergedQueries.selectMergedAnimesById(id, AnimeMapper::mapAnime) }
+        return handler.subscribeToList { mergedQueries.selectMergedAnimesById(id, MangaMapper::mapManga) }
     }
 
     override suspend fun getReferencesById(id: Long): List<MergedMangaReference> {
-        return handler.awaitList { mergedQueries.selectByMergeId(id, MergedAnimeMapper::map) }
+        return handler.awaitList { mergedQueries.selectByMergeId(id, MergedMangaMapper::map) }
     }
 
     override suspend fun subscribeReferencesById(id: Long): Flow<List<MergedMangaReference>> {
-        return handler.subscribeToList { mergedQueries.selectByMergeId(id, MergedAnimeMapper::map) }
+        return handler.subscribeToList { mergedQueries.selectByMergeId(id, MergedMangaMapper::map) }
     }
 
     override suspend fun updateSettings(update: MergeMangaSettingsUpdate): Boolean {
@@ -122,6 +122,6 @@ class MangaMergeRepositoryImpl(
     }
 
     override suspend fun getMergeAnimeForDownloading(mergeId: Long): List<Manga> {
-        return handler.awaitList { mergedQueries.selectMergedAnimesForDownloadingById(mergeId, AnimeMapper::mapAnime) }
+        return handler.awaitList { mergedQueries.selectMergedAnimesForDownloadingById(mergeId, MangaMapper::mapManga) }
     }
 }

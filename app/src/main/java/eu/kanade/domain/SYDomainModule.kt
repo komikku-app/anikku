@@ -14,8 +14,8 @@ import eu.kanade.domain.source.interactor.GetSourceCategories
 import eu.kanade.domain.source.interactor.RenameSourceCategory
 import eu.kanade.domain.source.interactor.SetSourceCategories
 import eu.kanade.domain.source.interactor.ToggleExcludeFromDataSaver
-import tachiyomi.data.anime.CustomMangaRepositoryImpl
-import tachiyomi.data.anime.MangaMergeRepositoryImpl
+import tachiyomi.data.manga.CustomMangaRepositoryImpl
+import tachiyomi.data.manga.MangaMergeRepositoryImpl
 import tachiyomi.data.source.FeedSavedSearchRepositoryImpl
 import tachiyomi.data.source.SavedSearchRepositoryImpl
 import tachiyomi.domain.chapter.interactor.DeleteChapters

@@ -1,11 +1,11 @@
-package tachiyomi.data.anime
+package tachiyomi.data.manga
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import tachiyomi.domain.library.model.LibraryAnime
 import tachiyomi.domain.manga.model.Manga
 
-object AnimeMapper {
-    fun mapAnime(
+object MangaMapper {
+    fun mapManga(
         id: Long,
         source: Long,
         url: String,
@@ -63,7 +63,7 @@ object AnimeMapper {
         version = version,
     )
 
-    fun mapLibraryAnime(
+    fun mapLibraryManga(
         id: Long,
         source: Long,
         url: String,
@@ -103,7 +103,7 @@ object AnimeMapper {
         // <-- AM (FILLERMARK)
         category: Long,
     ): LibraryAnime = LibraryAnime(
-        manga = mapAnime(
+        manga = mapManga(
             id,
             source,
             url,

@@ -22,7 +22,7 @@ import eu.kanade.domain.track.interactor.SyncEpisodeProgressWithTrack
 import eu.kanade.domain.track.interactor.TrackEpisode
 import eu.kanade.tachiyomi.util.TrackSelect
 import mihon.data.repository.ExtensionRepoRepositoryImpl
-import mihon.domain.episode.interactor.FilterEpisodesForDownload
+import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import mihon.domain.extensionrepo.interactor.CreateExtensionRepo
 import mihon.domain.extensionrepo.interactor.DeleteExtensionRepo
 import mihon.domain.extensionrepo.interactor.GetExtensionRepo
@@ -31,11 +31,11 @@ import mihon.domain.extensionrepo.interactor.ReplaceExtensionRepo
 import mihon.domain.extensionrepo.interactor.UpdateExtensionRepo
 import mihon.domain.extensionrepo.repository.ExtensionRepoRepository
 import mihon.domain.extensionrepo.service.ExtensionRepoService
-import mihon.domain.upcoming.interactor.GetUpcomingAnime
-import tachiyomi.data.anime.MangaRepositoryImpl
+import mihon.domain.upcoming.interactor.GetUpcomingManga
+import tachiyomi.data.manga.MangaRepositoryImpl
 import tachiyomi.data.category.CategoryRepositoryImpl
 import tachiyomi.data.custombutton.CustomButtonRepositoryImpl
-import tachiyomi.data.episode.ChapterRepositoryImpl
+import tachiyomi.data.chapter.ChapterRepositoryImpl
 import tachiyomi.data.history.HistoryRepositoryImpl
 import tachiyomi.data.release.ReleaseServiceImpl
 import tachiyomi.data.source.SourceRepositoryImpl
@@ -130,7 +130,7 @@ class DomainModule : InjektModule {
         addFactory { GetMangaByUrlAndSourceId(get()) }
         addFactory { GetManga(get()) }
         addFactory { GetNextEpisodes(get(), get(), get(), get()) }
-        addFactory { GetUpcomingAnime(get()) }
+        addFactory { GetUpcomingManga(get()) }
         addFactory { ResetViewerFlags(get()) }
         addFactory { SetMangaChapterFlags(get()) }
         addFactory { FetchInterval(get()) }
@@ -164,7 +164,7 @@ class DomainModule : InjektModule {
         addFactory { ShouldUpdateDbChapter() }
         addFactory { SyncChaptersWithSource(get(), get(), get(), get(), get(), get(), get()) }
         // addFactory { GetAvailableScanlators(get()) }
-        addFactory { FilterEpisodesForDownload(get(), get(), get(), get()) }
+        addFactory { FilterChaptersForDownload(get(), get(), get(), get()) }
 
         addSingletonFactory<HistoryRepository> { HistoryRepositoryImpl(get()) }
         addFactory { GetHistory(get()) }

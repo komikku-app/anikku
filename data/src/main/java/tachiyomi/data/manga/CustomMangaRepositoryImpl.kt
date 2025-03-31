@@ -1,4 +1,4 @@
-package tachiyomi.data.anime
+package tachiyomi.data.manga
 
 import android.content.Context
 import kotlinx.serialization.Serializable

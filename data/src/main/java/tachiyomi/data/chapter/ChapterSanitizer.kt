@@ -1,14 +1,14 @@
-package tachiyomi.data.episode
+package tachiyomi.data.chapter
 
-object EpisodeSanitizer {
+object ChapterSanitizer {
 
     fun String.sanitize(title: String): String {
         return trim()
             .removePrefix(title)
-            .trim(*EPISODE_TRIM_CHARS)
+            .trim(*CHAPTER_TRIM_CHARS)
     }
 
-    private val EPISODE_TRIM_CHARS = arrayOf(
+    private val CHAPTER_TRIM_CHARS = arrayOf(
         // Whitespace
         ' ',
         '\u0009',

@@ -21,7 +21,7 @@ import logcat.logcat
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.Episodes
-import tachiyomi.data.anime.AnimeMapper.mapAnime
+import tachiyomi.data.manga.MangaMapper.mapManga
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.manga.model.Manga
 import uy.kohesive.injekt.Injekt
@@ -242,11 +242,11 @@ class SyncManager(
      * @return a list of all anime stored in the database
      */
     private suspend fun getAllAnimeFromDB(): List<Manga> {
-        return handler.awaitList { animesQueries.getAllAnime(::mapAnime) }
+        return handler.awaitList { animesQueries.getAllAnime(::mapManga) }
     }
 
     private suspend fun getAllAnimeThatNeedsSync(): List<Manga> {
-        return handler.awaitList { animesQueries.getAnimesWithFavoriteTimestamp(::mapAnime) }
+        return handler.awaitList { animesQueries.getAnimesWithFavoriteTimestamp(::mapManga) }
     }
 
     private suspend fun isAnimeDifferent(localManga: Manga, remoteAnime: BackupAnime): Boolean {

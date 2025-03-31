@@ -19,7 +19,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import mihon.domain.episode.interactor.FilterEpisodesForDownload
+import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import okhttp3.Response
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.chapter.model.Chapter
@@ -39,7 +39,7 @@ class MergedSource : HttpSource() {
     private val updateManga: UpdateManga by injectLazy()
     private val sourceManager: SourceManager by injectLazy()
     private val downloadManager: DownloadManager by injectLazy()
-    private val filterEpisodesForDownload: FilterEpisodesForDownload by injectLazy()
+    private val filterChaptersForDownload: FilterChaptersForDownload by injectLazy()
 
     override val id: Long = MERGED_SOURCE_ID
 
@@ -140,7 +140,7 @@ class MergedSource : HttpSource() {
                                             syncChaptersWithSource.await(episodeList, loadedAnime, source)
 
                                         if (downloadEpisodes && reference.downloadEpisodes) {
-                                            val episodesToDownload = filterEpisodesForDownload.await(manga, results)
+                                            val episodesToDownload = filterChaptersForDownload.await(manga, results)
                                             if (episodesToDownload.isNotEmpty()) {
                                                 downloadManager.downloadEpisodes(
                                                     loadedAnime,

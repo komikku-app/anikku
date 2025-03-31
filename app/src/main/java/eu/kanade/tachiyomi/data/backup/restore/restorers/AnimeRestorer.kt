@@ -9,8 +9,8 @@ import eu.kanade.tachiyomi.data.backup.models.BackupMergedMangaReference
 import eu.kanade.tachiyomi.data.backup.models.BackupTracking
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.UpdateStrategyColumnAdapter
-import tachiyomi.data.anime.AnimeMapper
-import tachiyomi.data.anime.MergedAnimeMapper
+import tachiyomi.data.manga.MangaMapper
+import tachiyomi.data.manga.MergedMangaMapper
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
@@ -490,7 +490,7 @@ class AnimeRestorer(
     ) {
         // Get merged manga references from file and from db
         val dbMergedMangaReferences = handler.awaitList {
-            mergedQueries.selectAll(MergedAnimeMapper::map)
+            mergedQueries.selectAll(MergedMangaMapper::map)
         }
 
         // Iterate over them
@@ -508,7 +508,7 @@ class AnimeRestorer(
                     animesQueries.getAnimeByUrlAndSource(
                         backupMergedMangaReference.mangaUrl,
                         backupMergedMangaReference.mangaSourceId,
-                        AnimeMapper::mapAnime,
+                        MangaMapper::mapManga,
                     )
                 } ?: return@forEach
                 backupMergedMangaReference.getMergedMangaReference().run {

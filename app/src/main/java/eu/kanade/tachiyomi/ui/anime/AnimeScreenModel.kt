@@ -82,7 +82,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import logcat.LogPriority
-import mihon.domain.episode.interactor.FilterEpisodesForDownload
+import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
@@ -186,7 +186,7 @@ class AnimeScreenModel(
     private val addTracks: AddTracks = Injekt.get(),
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
-    private val filterEpisodesForDownload: FilterEpisodesForDownload = Injekt.get(),
+    private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
     internal val setMangaViewerFlags: SetMangaViewerFlags = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     // AM (FILE_SIZE) -->
@@ -1307,7 +1307,7 @@ class AnimeScreenModel(
     private fun downloadNewEpisodes(chapters: List<Chapter>) {
         screenModelScope.launchNonCancellable {
             val anime = successState?.manga ?: return@launchNonCancellable
-            val episodesToDownload = filterEpisodesForDownload.await(anime, chapters)
+            val episodesToDownload = filterChaptersForDownload.await(anime, chapters)
 
             if (episodesToDownload.isNotEmpty()) {
                 downloadEpisodes(episodesToDownload)

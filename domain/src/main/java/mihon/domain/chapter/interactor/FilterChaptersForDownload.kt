@@ -1,4 +1,4 @@
-package mihon.domain.episode.interactor
+package mihon.domain.chapter.interactor
 
 import exh.source.MERGED_SOURCE_ID
 import tachiyomi.domain.category.interactor.GetCategories
@@ -15,7 +15,7 @@ import tachiyomi.domain.manga.model.Manga
  * @property downloadPreferences User preferences related to chapter downloads.
  * @property getCategories Interactor for retrieving categories associated with a manga.
  */
-class FilterEpisodesForDownload(
+class FilterChaptersForDownload(
     private val getChaptersByMangaId: GetChaptersByMangaId,
     private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId,
     private val downloadPreferences: DownloadPreferences,

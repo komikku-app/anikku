@@ -16,7 +16,7 @@ import uy.kohesive.injekt.api.get
 import java.time.LocalDate
 import java.time.ZoneId
 
-class GetUpcomingAnime(
+class GetUpcomingManga(
     private val mangaRepository: MangaRepository,
 ) {
     // KMK -->
