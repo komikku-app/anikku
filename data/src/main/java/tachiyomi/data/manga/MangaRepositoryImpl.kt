@@ -6,7 +6,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.UpdateStrategyColumnAdapter
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.repository.MangaRepository
@@ -53,11 +53,11 @@ class MangaRepositoryImpl(
         return handler.awaitList { animesQueries.getSeenAnimeNotInLibrary(MangaMapper::mapManga) }
     }
 
-    override suspend fun getLibraryAnime(): List<LibraryAnime> {
+    override suspend fun getLibraryManga(): List<LibraryManga> {
         return handler.awaitList { libraryViewQueries.library(MangaMapper::mapLibraryManga) }
     }
 
-    override fun getLibraryAnimeAsFlow(): Flow<List<LibraryAnime>> {
+    override fun getLibraryMangaAsFlow(): Flow<List<LibraryManga>> {
         return handler.subscribeToList { libraryViewQueries.library(MangaMapper::mapLibraryManga) }
     }
 
@@ -65,7 +65,7 @@ class MangaRepositoryImpl(
         return handler.subscribeToList { animesQueries.getFavoriteBySourceId(sourceId, MangaMapper::mapManga) }
     }
 
-    override suspend fun getDuplicateLibraryAnime(id: Long, title: String): List<Manga> {
+    override suspend fun getDuplicateLibraryManga(id: Long, title: String): List<Manga> {
         return handler.awaitList {
             animesQueries.getDuplicateLibraryAnime(title, id, MangaMapper::mapManga)
         }
@@ -194,7 +194,7 @@ class MangaRepositoryImpl(
         handler.await { animesQueries.deleteById(animeId) }
     }
 
-    override suspend fun getSeenAnimeNotInLibraryView(): List<LibraryAnime> {
+    override suspend fun getSeenAnimeNotInLibraryView(): List<LibraryManga> {
         return handler.awaitList { libraryViewQueries.seenAnimeNonLibrary(MangaMapper::mapLibraryManga) }
     }
     // SY <--

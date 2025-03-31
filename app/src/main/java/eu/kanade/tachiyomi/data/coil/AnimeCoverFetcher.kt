@@ -59,7 +59,7 @@ class AnimeCoverFetcher(
     private val url: String? = mangaCover.url,
     // private val url: String?,
     // KMK <--
-    private val isLibraryAnime: Boolean,
+    private val isLibraryManga: Boolean,
     private val options: Options,
     private val coverFileLazy: Lazy<File?>,
     private val customCoverFileLazy: Lazy<File>,
@@ -134,7 +134,7 @@ class AnimeCoverFetcher(
 
     private suspend fun httpLoader(): FetchResult {
         // Only cache separately if it's a library item
-        val libraryCoverCacheFile = if (isLibraryAnime) {
+        val libraryCoverCacheFile = if (isLibraryManga) {
             coverFileLazy.value ?: error("No cover specified")
         } else {
             null
@@ -376,7 +376,7 @@ class AnimeCoverFetcher(
                 // url = data.thumbnailUrl,
                 mangaCover = data.asAnimeCover(),
                 // KMK <--
-                isLibraryAnime = data.favorite,
+                isLibraryManga = data.favorite,
                 options = options,
                 coverFileLazy = lazy { coverCache.getCoverFile(data.thumbnailUrl) },
                 customCoverFileLazy = lazy { coverCache.getCustomCoverFile(data.id) },
@@ -401,7 +401,7 @@ class AnimeCoverFetcher(
                 // url = data.url,
                 mangaCover = data,
                 // KMK <--
-                isLibraryAnime = data.isAnimeFavorite,
+                isLibraryManga = data.isAnimeFavorite,
                 options = options,
                 coverFileLazy = lazy { coverCache.getCoverFile(data.url) },
                 customCoverFileLazy = lazy { coverCache.getCustomCoverFile(data.animeId) },

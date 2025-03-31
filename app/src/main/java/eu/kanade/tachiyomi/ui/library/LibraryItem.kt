@@ -1,14 +1,14 @@
 package eu.kanade.tachiyomi.ui.library
 
 import eu.kanade.tachiyomi.source.getNameForAnimeInfo
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.source.model.Source
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 data class LibraryItem(
-    val libraryAnime: LibraryAnime,
+    val libraryManga: LibraryManga,
     var downloadCount: Long = -1,
     var unseenCount: Long = -1,
     var isLocal: Boolean = false,
@@ -26,15 +26,15 @@ data class LibraryItem(
      * @return true if the anime matches the query, false otherwise.
      */
     fun matches(constraint: String): Boolean {
-        val sourceName by lazy { sourceManager.getOrStub(libraryAnime.manga.source).getNameForAnimeInfo() }
-        return libraryAnime.manga.title.contains(constraint, true) ||
-            (libraryAnime.manga.author?.contains(constraint, true) ?: false) ||
-            (libraryAnime.manga.artist?.contains(constraint, true) ?: false) ||
-            (libraryAnime.manga.description?.contains(constraint, true) ?: false) ||
+        val sourceName by lazy { sourceManager.getOrStub(libraryManga.manga.source).getNameForAnimeInfo() }
+        return libraryManga.manga.title.contains(constraint, true) ||
+            (libraryManga.manga.author?.contains(constraint, true) ?: false) ||
+            (libraryManga.manga.artist?.contains(constraint, true) ?: false) ||
+            (libraryManga.manga.description?.contains(constraint, true) ?: false) ||
             constraint.split(",").map { it.trim() }.all { subconstraint ->
                 checkNegatableConstraint(subconstraint) {
                     sourceName.contains(it, true) ||
-                        (libraryAnime.manga.genre?.any { genre -> genre.equals(it, true) } ?: false)
+                        (libraryManga.manga.genre?.any { genre -> genre.equals(it, true) } ?: false)
                 }
             }
     }

@@ -50,7 +50,7 @@ import tachiyomi.data.source.NoResultsException
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.GroupLibraryMode
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.library.model.LibraryGroup
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.ANIME_HAS_UNSEEN
@@ -105,7 +105,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     private val insertLibraryUpdateErrorMessages: InsertLibraryUpdateErrorMessages = Injekt.get()
     // KMK <--
 
-    private var animeToUpdate: List<LibraryAnime> = mutableListOf()
+    private var animeToUpdate: List<LibraryManga> = mutableListOf()
 
     override suspend fun doWork(): Result {
         if (tags.contains(WORK_NAME_AUTO)) {
@@ -179,14 +179,14 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
      */
     @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod", "ComplexCondition")
     private suspend fun addAnimeToQueue(categoryId: Long, group: Int, groupExtra: String?) {
-        val libraryAnime = getLibraryManga.await()
+        val libraryManga = getLibraryManga.await()
 
         // SY -->
         val groupAnimeLibraryUpdateType = libraryPreferences.groupLibraryUpdateType().get()
         // SY <--
 
         val listToUpdate = if (categoryId != -1L) {
-            libraryAnime.filter { it.category == categoryId }
+            libraryManga.filter { it.category == categoryId }
         } else if (
             group == LibraryGroup.BY_DEFAULT ||
             groupAnimeLibraryUpdateType == GroupLibraryMode.GLOBAL ||
@@ -197,14 +197,14 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         ) {
             val categoriesToUpdate = libraryPreferences.updateCategories().get().map { it.toLong() }
             val includedAnime = if (categoriesToUpdate.isNotEmpty()) {
-                libraryAnime.filter { it.category in categoriesToUpdate }
+                libraryManga.filter { it.category in categoriesToUpdate }
             } else {
-                libraryAnime
+                libraryManga
             }
 
             val categoriesToExclude = libraryPreferences.updateCategoriesExclude().get().map { it.toLong() }
             val excludedAnimeIds = if (categoriesToExclude.isNotEmpty()) {
-                libraryAnime.filter { it.category in categoriesToExclude }.map { it.manga.id }
+                libraryManga.filter { it.category in categoriesToExclude }.map { it.manga.id }
             } else {
                 emptyList()
             }
@@ -217,7 +217,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                     val trackingExtra = groupExtra?.toIntOrNull() ?: -1
                     val tracks = runBlocking { getTracks.await() }.groupBy { it.animeId }
 
-                    libraryAnime.filter { (anime) ->
+                    libraryManga.filter { (anime) ->
                         val status = tracks[anime.id]?.firstNotNullOfOrNull { track ->
                             TrackStatus.parseTrackerStatus(track.trackerId, track.status)
                         } ?: TrackStatus.OTHER
@@ -226,29 +226,29 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 }
                 LibraryGroup.BY_SOURCE -> {
                     val sourceExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
-                    val source = libraryAnime.map { it.manga.source }
+                    val source = libraryManga.map { it.manga.source }
                         .distinct()
                         .sorted()
                         .getOrNull(sourceExtra ?: -1)
 
-                    if (source != null) libraryAnime.filter { it.manga.source == source } else emptyList()
+                    if (source != null) libraryManga.filter { it.manga.source == source } else emptyList()
                 }
                 LibraryGroup.BY_TAG -> {
                     val tagExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
-                    val tag = libraryAnime.map { it.manga.genre }
+                    val tag = libraryManga.map { it.manga.genre }
                         .distinct()
                         .getOrNull(tagExtra ?: -1)
 
-                    if (tag != null) libraryAnime.filter { it.manga.genre == tag } else emptyList()
+                    if (tag != null) libraryManga.filter { it.manga.genre == tag } else emptyList()
                 }
                 LibraryGroup.BY_STATUS -> {
                     val statusExtra = groupExtra?.toLongOrNull() ?: -1
-                    libraryAnime.filter {
+                    libraryManga.filter {
                         it.manga.status == statusExtra
                     }
                 }
-                LibraryGroup.UNGROUPED -> libraryAnime
-                else -> libraryAnime
+                LibraryGroup.UNGROUPED -> libraryManga
+                else -> libraryManga
             }
             // SY <--
         }
@@ -344,8 +344,8 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 .map { animeInSource ->
                     async {
                         semaphore.withPermit {
-                            animeInSource.forEach { libraryAnime ->
-                                val anime = libraryAnime.manga
+                            animeInSource.forEach { libraryManga ->
+                                val anime = libraryManga.manga
                                 ensureActive()
 
                                 // Don't continue to update if anime is not in library

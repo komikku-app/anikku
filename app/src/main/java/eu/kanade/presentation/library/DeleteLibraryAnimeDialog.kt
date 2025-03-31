@@ -16,7 +16,7 @@ import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun DeleteLibraryAnimeDialog(
+fun DeleteLibraryMangaDialog(
     containsLocalAnime: Boolean,
     onDismissRequest: () -> Unit,
     onConfirm: (Boolean, Boolean) -> Unit,

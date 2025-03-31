@@ -28,7 +28,7 @@ import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.interactor.GetLibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.toAnimeUpdate
@@ -48,7 +48,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
 
     private val notifier = LibraryUpdateNotifier(context)
 
-    private var animeToUpdate: List<LibraryAnime> = mutableListOf()
+    private var animeToUpdate: List<LibraryManga> = mutableListOf()
 
     override suspend fun doWork(): Result {
         try {
@@ -110,8 +110,8 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
                 .map { animeInSource ->
                     async {
                         semaphore.withPermit {
-                            animeInSource.forEach { libraryAnime ->
-                                val anime = libraryAnime.manga
+                            animeInSource.forEach { libraryManga ->
+                                val anime = libraryManga.manga
                                 ensureActive()
 
                                 withUpdateNotification(

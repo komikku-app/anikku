@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.util.fastAny
 import eu.kanade.tachiyomi.ui.library.LibraryItem
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.MangaCover
 
 @Composable
@@ -16,10 +16,10 @@ fun LibraryCompactGrid(
     showTitle: Boolean,
     columns: Int,
     contentPadding: PaddingValues,
-    selection: List<LibraryAnime>,
-    onClick: (LibraryAnime) -> Unit,
-    onLongClick: (LibraryAnime) -> Unit,
-    onClickContinueWatching: ((LibraryAnime) -> Unit)?,
+    selection: List<LibraryManga>,
+    onClick: (LibraryManga) -> Unit,
+    onLongClick: (LibraryManga) -> Unit,
+    onClickContinueWatching: ((LibraryManga) -> Unit)?,
     searchQuery: String?,
     onGlobalSearchClicked: () -> Unit,
 ) {
@@ -34,9 +34,9 @@ fun LibraryCompactGrid(
             items = items,
             contentType = { "anime_library_compact_grid_item" },
         ) { libraryItem ->
-            val anime = libraryItem.libraryAnime.manga
+            val anime = libraryItem.libraryManga.manga
             AnimeCompactGridItem(
-                isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },
+                isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },
                 title = anime.title.takeIf { showTitle },
                 coverData = MangaCover(
                     animeId = anime.id,
@@ -61,10 +61,10 @@ fun LibraryCompactGrid(
                     SourceIconBadge(source = libraryItem.source)
                     // KMK <--
                 },
-                onLongClick = { onLongClick(libraryItem.libraryAnime) },
-                onClick = { onClick(libraryItem.libraryAnime) },
+                onLongClick = { onLongClick(libraryItem.libraryManga) },
+                onClick = { onClick(libraryItem.libraryManga) },
                 onClickContinueWatching = if (onClickContinueWatching != null && libraryItem.unseenCount > 0) {
-                    { onClickContinueWatching(libraryItem.libraryAnime) }
+                    { onClickContinueWatching(libraryItem.libraryManga) }
                 } else {
                     null
                 },

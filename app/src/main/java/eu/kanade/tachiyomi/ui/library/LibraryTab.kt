@@ -32,7 +32,7 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.presentation.anime.components.LibraryBottomActionMenu
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
-import eu.kanade.presentation.library.DeleteLibraryAnimeDialog
+import eu.kanade.presentation.library.DeleteLibraryMangaDialog
 import eu.kanade.presentation.library.LibrarySettingsDialog
 import eu.kanade.presentation.library.ResetInfoAnimeDialog
 import eu.kanade.presentation.library.components.LibraryContent
@@ -64,7 +64,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.library.model.LibraryGroup
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
@@ -163,7 +163,7 @@ data object LibraryTab : Tab {
                         scope.launch {
                             val randomItem = screenModel.getRandomLibraryItemForCurrentCategory()
                             if (randomItem != null) {
-                                navigator.push(AnimeScreen(randomItem.libraryAnime.manga.id))
+                                navigator.push(AnimeScreen(randomItem.libraryManga.manga.id))
                             } else {
                                 snackbarHostState.showSnackbar(
                                     context.stringResource(MR.strings.information_no_entries_found),
@@ -281,7 +281,7 @@ data object LibraryTab : Tab {
                         showPageTabs = state.showCategoryTabs || !state.searchQuery.isNullOrEmpty(),
                         onChangeCurrentPage = { screenModel.activeCategoryIndex = it },
                         onAnimeClicked = { navigator.push(AnimeScreen(it)) },
-                        onContinueWatchingClicked = { it: LibraryAnime ->
+                        onContinueWatchingClicked = { it: LibraryManga ->
                             scope.launchIO {
                                 val episode = screenModel.getNextUnseenEpisode(it.manga)
                                 if (episode != null) openEpisode(context, episode)
@@ -335,7 +335,7 @@ data object LibraryTab : Tab {
                 )
             }
             is LibraryScreenModel.Dialog.DeleteAnime -> {
-                DeleteLibraryAnimeDialog(
+                DeleteLibraryMangaDialog(
                     containsLocalAnime = dialog.mangas.any(Manga::isLocal),
                     onDismissRequest = onDismissRequest,
                     onConfirm = { deleteAnime, deleteEpisode ->

@@ -2,7 +2,7 @@ package tachiyomi.domain.library.model
 
 import tachiyomi.domain.manga.model.Manga
 
-data class LibraryAnime(
+data class LibraryManga(
     val manga: Manga,
     val category: Long,
     val totalEpisodes: Long,

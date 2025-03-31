@@ -1,7 +1,7 @@
 package tachiyomi.data.manga
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 
 object MangaMapper {
@@ -102,7 +102,7 @@ object MangaMapper {
         fillermarkCount: Double,
         // <-- AM (FILLERMARK)
         category: Long,
-    ): LibraryAnime = LibraryAnime(
+    ): LibraryManga = LibraryManga(
         manga = mapManga(
             id,
             source,

@@ -71,7 +71,7 @@ private fun LazyItemScope.OverviewSection(
             modifier = Modifier.height(IntrinsicSize.Min),
         ) {
             StatsOverviewItem(
-                title = data.libraryAnimeCount.toString(),
+                title = data.libraryMangaCount.toString(),
                 subtitle = stringResource(MR.strings.in_library),
                 icon = Icons.Outlined.CollectionsBookmark,
             )

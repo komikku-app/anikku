@@ -88,7 +88,7 @@ import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.domain.release.interactor.GetApplicationRelease
 import tachiyomi.domain.release.service.ReleaseService
 import tachiyomi.domain.source.interactor.GetRemoteAnime
-import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryAnime
+import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryManga
 import tachiyomi.domain.source.repository.SourceRepository
 import tachiyomi.domain.source.repository.StubSourceRepository
 import tachiyomi.domain.track.interactor.DeleteTrack
@@ -187,7 +187,7 @@ class DomainModule : InjektModule {
         addFactory { GetLanguagesWithSources(get(), get()) }
         addFactory { GetRemoteAnime(get()) }
         addFactory { GetSourcesWithFavoriteCount(get(), get()) }
-        addFactory { GetSourcesWithNonLibraryAnime(get()) }
+        addFactory { GetSourcesWithNonLibraryManga(get()) }
         addFactory { SetMigrateSorting(get()) }
         addFactory { ToggleLanguage(get()) }
         addFactory { ToggleSource(get()) }

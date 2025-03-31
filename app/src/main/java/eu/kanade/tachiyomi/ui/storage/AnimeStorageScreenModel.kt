@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.data.download.DownloadManager
 import kotlinx.coroutines.flow.map
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.category.interactor.GetCategories
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.interactor.GetLibraryManga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
@@ -18,7 +18,7 @@ class AnimeStorageScreenModel(
     getCategories: GetCategories = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
-) : CommonStorageScreenModel<LibraryAnime>(
+) : CommonStorageScreenModel<LibraryManga>(
     downloadCacheChanges = downloadCache.changes,
     downloadCacheIsInitializing = downloadCache.isInitializing,
     libraries = getLibraries.subscribe(),

@@ -63,7 +63,7 @@ class BulkFavoriteScreenModel(
     initialState: State = State(),
     private val sourceManager: SourceManager = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val getDuplicateLibraryAnime: GetDuplicateLibraryManga = Injekt.get(),
+    private val getDuplicateLibraryManga: GetDuplicateLibraryManga = Injekt.get(),
     private val getCategories: GetCategories = Injekt.get(),
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val updateManga: UpdateManga = Injekt.get(),
@@ -195,7 +195,7 @@ class BulkFavoriteScreenModel(
 
     private suspend fun getNotDuplicateLibraryMangas(): List<Manga> {
         return state.value.selection.filterNot { manga ->
-            getDuplicateLibraryAnime.await(manga).isNotEmpty()
+            getDuplicateLibraryManga.await(manga).isNotEmpty()
         }
     }
 
@@ -203,7 +203,7 @@ class BulkFavoriteScreenModel(
         val mangas = state.value.selection
         mangas.fastForEachIndexed { index, manga ->
             if (index < startIdx) return@fastForEachIndexed
-            val dup = getDuplicateLibraryAnime.await(manga)
+            val dup = getDuplicateLibraryManga.await(manga)
             if (dup.isEmpty()) return@fastForEachIndexed
             return Pair(index, dup.first())
         }
@@ -295,7 +295,7 @@ class BulkFavoriteScreenModel(
     }
 
     private suspend fun getDuplicateLibraryManga(manga: Manga): Manga? {
-        return getDuplicateLibraryAnime.await(manga).getOrNull(0)
+        return getDuplicateLibraryManga.await(manga).getOrNull(0)
     }
 
     private fun moveMangaToCategories(manga: Manga, vararg categories: Category) {

@@ -46,7 +46,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.data.Database
-import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryAnime
+import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryManga
 import tachiyomi.domain.source.model.Source
 import tachiyomi.domain.source.model.SourceWithCount
 import tachiyomi.i18n.MR
@@ -213,12 +213,12 @@ class ClearDatabaseScreen : Screen() {
 private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenModel.State>(
     State.Loading,
 ) {
-    private val getSourcesWithNonLibraryAnime: GetSourcesWithNonLibraryAnime = Injekt.get()
+    private val getSourcesWithNonLibraryManga: GetSourcesWithNonLibraryManga = Injekt.get()
     private val database: Database = Injekt.get()
 
     init {
         screenModelScope.launchIO {
-            getSourcesWithNonLibraryAnime.subscribe()
+            getSourcesWithNonLibraryManga.subscribe()
                 .collectLatest { list ->
                     mutableState.update { old ->
                         val items = list.sortedBy { it.name }

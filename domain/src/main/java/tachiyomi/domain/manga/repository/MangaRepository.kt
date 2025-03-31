@@ -1,7 +1,7 @@
 package tachiyomi.domain.manga.repository
 
 import kotlinx.coroutines.flow.Flow
-import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 
@@ -19,13 +19,13 @@ interface MangaRepository {
 
     suspend fun getSeenAnimeNotInLibrary(): List<Manga>
 
-    suspend fun getLibraryAnime(): List<LibraryAnime>
+    suspend fun getLibraryManga(): List<LibraryManga>
 
-    fun getLibraryAnimeAsFlow(): Flow<List<LibraryAnime>>
+    fun getLibraryMangaAsFlow(): Flow<List<LibraryManga>>
 
     fun getFavoritesBySourceId(sourceId: Long): Flow<List<Manga>>
 
-    suspend fun getDuplicateLibraryAnime(id: Long, title: String): List<Manga>
+    suspend fun getDuplicateLibraryManga(id: Long, title: String): List<Manga>
 
     suspend fun getUpcomingAnime(statuses: Set<Long>): Flow<List<Manga>>
 
@@ -46,6 +46,6 @@ interface MangaRepository {
 
     suspend fun deleteAnime(animeId: Long)
 
-    suspend fun getSeenAnimeNotInLibraryView(): List<LibraryAnime>
+    suspend fun getSeenAnimeNotInLibraryView(): List<LibraryManga>
     // SY <--
 }

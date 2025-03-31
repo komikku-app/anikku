@@ -3,7 +3,7 @@ package eu.kanade.presentation.more.stats.data
 sealed interface StatsData {
 
     data class AnimeOverview(
-        val libraryAnimeCount: Int,
+        val libraryMangaCount: Int,
         val completedAnimeCount: Int,
         val totalSeenDuration: Long,
     ) : StatsData
