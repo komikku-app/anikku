@@ -127,6 +127,7 @@ fun MangaInfoBox(
 ) {
     // KMK -->
     val usePanoramaCover by Injekt.get<UiPreferences>().usePanoramaCoverMangaInfo().collectAsState()
+    val topAlignCover by Injekt.get<UiPreferences>().topAlignCover().collectAsState()
     // KMK <--
     Box(modifier = modifier) {
         // Backdrop
@@ -184,6 +185,7 @@ fun MangaInfoBox(
                     onCoverLoaded = onCoverLoaded,
                     coverRatio = coverRatio,
                     usePanoramaCover = usePanoramaCover,
+                    topAlignCover = topAlignCover,
                     // KMK <--
                 )
             } else {
@@ -537,6 +539,7 @@ private fun MangaAndSourceTitlesSmall(
     onCoverLoaded: (DomainMangaCover) -> Unit,
     coverRatio: MutableFloatState,
     usePanoramaCover: Boolean = false,
+    topAlignCover: Boolean = false,
     // KMK <--
 ) {
     Row(
@@ -544,7 +547,7 @@ private fun MangaAndSourceTitlesSmall(
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = if (topAlignCover) Alignment.Top else Alignment.CenterVertically,
     ) {
         // KMK -->
         if (usePanoramaCover && coverRatio.floatValue <= RatioSwitchToPanorama) {
@@ -552,7 +555,7 @@ private fun MangaAndSourceTitlesSmall(
                 modifier = Modifier
                     .sizeIn(maxHeight = 100.dp)
                     // KMK -->
-                    .align(Alignment.CenterVertically),
+                    .align(if (topAlignCover) Alignment.Top else Alignment.CenterVertically),
                 // KMK <--
                 data = ImageRequest.Builder(LocalContext.current)
                     .data(manga)
@@ -574,7 +577,7 @@ private fun MangaAndSourceTitlesSmall(
                 modifier = Modifier
                     .sizeIn(maxWidth = 100.dp)
                     // KMK -->
-                    .align(Alignment.CenterVertically),
+                    .align(if (topAlignCover) Alignment.Top else Alignment.CenterVertically),
                 // KMK <--
                 data = ImageRequest.Builder(LocalContext.current)
                     .data(manga)

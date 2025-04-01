@@ -194,6 +194,7 @@
         <!-- Komikku -->
     <string name="sync_progress_from_trackers_up_to_episode">Sync progress from Trackers up to episode %d</string>
     <string name="download_cache_renew_interval_info_anime">If set to "manual", either refresh each anime or using the "Reindex downloads" action in "Advanced"</string>
+    <string name="pref_top_align_cover_summary_anime">Show the cover aligned to the top alongside anime info</string>
 
         <!-- Aniyomi -->
     <string name="pref_library_summary_episode">Categories, global update, episode swipe</string>

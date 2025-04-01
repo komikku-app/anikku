@@ -27,6 +27,7 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -202,6 +203,11 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.usePanoramaCoverMangaInfo(),
                     title = stringResource(KMR.strings.pref_panorama_cover),
                     subtitle = stringResource(KMR.strings.pref_panorama_cover_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.topAlignCover(),
+                    title = stringResource(KMR.strings.pref_top_align_cover),
+                    subtitle = stringResource(AMR.strings.pref_top_align_cover_summary_anime),
                 ),
             ),
         )
