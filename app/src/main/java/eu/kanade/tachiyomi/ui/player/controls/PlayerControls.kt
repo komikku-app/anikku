@@ -418,7 +418,7 @@ fun PlayerControls(
                     TopLeftPlayerControls(
                         animeTitle = animeTitle,
                         mediaTitle = mediaTitle,
-                        onTitleClick = { viewModel.showDialog(Dialogs.EpisodeList) },
+                        onTitleClick = { viewModel.showEpisodeListDialog() },
                         onBackClick = onBackPress,
                     )
                 }
@@ -622,8 +622,7 @@ fun PlayerControls(
 
         PlayerDialogs(
             dialogShown = dialog,
-
-            episodeDisplayMode = anime!!.displayMode,
+            episodeDisplayMode = anime?.displayMode,
             episodeList = playlist,
             currentEpisodeIndex = viewModel.getCurrentEpisodeIndex(),
             dateRelativeTime = viewModel.relativeTime,
