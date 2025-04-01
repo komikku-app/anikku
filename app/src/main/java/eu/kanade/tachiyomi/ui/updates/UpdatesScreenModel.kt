@@ -151,7 +151,7 @@ class UpdatesScreenModel(
     private fun updateDownloadState(download: Download) {
         mutableState.update { state ->
             val newItems = state.items.mutate { list ->
-                val modifiedIndex = list.indexOfFirst { it.update.episodeId == download.chapter.id }
+                val modifiedIndex = list.indexOfFirst { it.update.episodeId == download.episode.id }
                 if (modifiedIndex < 0) return@mutate
 
                 val item = list[modifiedIndex]
@@ -283,7 +283,7 @@ class UpdatesScreenModel(
                     val anime = getManga.await(animeId) ?: return@forEach
                     val source = sourceManager.get(anime.source) ?: return@forEach
                     val episodes = updates.mapNotNull { getChapter.await(it.update.episodeId) }
-                    downloadManager.deleteEpisodes(
+                    downloadManager.deleteChapters(
                         episodes,
                         anime,
                         source,

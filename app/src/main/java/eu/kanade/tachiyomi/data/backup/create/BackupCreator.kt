@@ -95,16 +95,16 @@ class BackupCreator(
                 throw IllegalStateException(context.stringResource(MR.strings.create_backup_file_error))
             }
 
-            val nonFavoriteAnime = if (options.seenEntries) mangaRepository.getReadMangaNotInLibrary() else emptyList()
+            val nonFavoriteManga = if (options.seenEntries) mangaRepository.getReadMangaNotInLibrary() else emptyList()
             // SY -->
             val mergedManga = getMergedManga.await()
             // SY <--
-            val backupAnime = backupMangas(getFavorites.await() + nonFavoriteAnime /* SY --> */ + mergedManga /* SY <-- */, options)
+            val backupManga = backupMangas(getFavorites.await() + nonFavoriteManga /* SY --> */ + mergedManga /* SY <-- */, options)
 
             val backup = Backup(
-                backupManga = backupAnime,
-                backupCategories = backupMangaCategories(options),
-                backupSources = backupMangaSources(backupAnime),
+                backupManga = backupManga,
+                backupCategories = backupCategories(options),
+                backupSources = backupMangaSources(backupManga),
                 backupPreferences = backupAppPreferences(options),
                 backupExtensionRepo = backupExtensionRepos(options),
                 backupCustomButton = backupCustomButtons(options),
@@ -150,7 +150,7 @@ class BackupCreator(
         }
     }
 
-    suspend fun backupMangaCategories(options: BackupOptions): List<BackupCategory> {
+    suspend fun backupCategories(options: BackupOptions): List<BackupCategory> {
         if (!options.categories) return emptyList()
 
         return categoriesBackupCreator()
@@ -162,8 +162,8 @@ class BackupCreator(
         return mangaBackupCreator(mangas, options)
     }
 
-    fun backupMangaSources(animes: List<BackupManga>): List<BackupSource> {
-        return sourcesBackupCreator(animes)
+    fun backupMangaSources(mangas: List<BackupManga>): List<BackupSource> {
+        return sourcesBackupCreator(mangas)
     }
 
     fun backupAppPreferences(options: BackupOptions): List<BackupPreference> {

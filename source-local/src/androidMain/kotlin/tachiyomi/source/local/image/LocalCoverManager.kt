@@ -17,7 +17,7 @@ actual class LocalCoverManager(
 ) {
 
     actual fun find(animeUrl: String): UniFile? {
-        return fileSystem.getFilesInAnimeDirectory(animeUrl)
+        return fileSystem.getFilesInMangaDirectory(animeUrl)
             // Get all file whose names start with "cover"
             .filter { it.isFile && it.nameWithoutExtension.equals("cover", ignoreCase = true) }
             // Get the first actual image
@@ -25,7 +25,7 @@ actual class LocalCoverManager(
     }
 
     actual fun update(anime: SAnime, inputStream: InputStream): UniFile? {
-        val directory = fileSystem.getAnimeDirectory(anime.url)
+        val directory = fileSystem.getMangaDirectory(anime.url)
         if (directory == null) {
             inputStream.close()
             return null

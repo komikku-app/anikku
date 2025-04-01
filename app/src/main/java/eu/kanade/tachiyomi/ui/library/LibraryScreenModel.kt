@@ -644,7 +644,7 @@ class LibraryScreenModel(
                         .forEach ab@{ (mangaId, chapters) ->
                             val mergedManga = mergedMangas[mangaId] ?: return@ab
                             val downloadChapters = chapters.fastFilterNot { chapter ->
-                                downloadManager.queueState.value.fastAny { chapter.id == it.chapter.id } ||
+                                downloadManager.queueState.value.fastAny { chapter.id == it.episode.id } ||
                                     downloadManager.isEpisodeDownloaded(
                                         chapter.name,
                                         chapter.scanlator,
@@ -747,10 +747,10 @@ class LibraryScreenModel(
                             mergedMangas.forEach merge@{ mergedManga ->
                                 val mergedSource =
                                     sources.firstOrNull { mergedManga.source == it.id } as? HttpSource ?: return@merge
-                                downloadManager.deleteAnime(mergedManga, mergedSource)
+                                downloadManager.deleteManga(mergedManga, mergedSource)
                             }
                         } else {
-                            downloadManager.deleteAnime(anime, source)
+                            downloadManager.deleteManga(anime, source)
                         }
                     }
                 }

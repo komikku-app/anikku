@@ -49,7 +49,7 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.database.models.Episode
-import eu.kanade.tachiyomi.data.database.models.toDomainChapter
+import eu.kanade.tachiyomi.data.database.models.toDomainEpisode
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.saver.Image
@@ -354,7 +354,7 @@ class PlayerViewModel @JvmOverloads constructor(
         val source = currentSource.value ?: return null
         return source is HttpSource &&
             !EpisodeLoader.isDownload(
-                episode.toDomainChapter()!!,
+                episode.toDomainEpisode()!!,
                 anime,
             )
     }
@@ -1254,7 +1254,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     qualityIndex = Pair(hostIndex, vidIndex)
                 } else {
                     EpisodeLoader.getHosters(
-                        episode = currentEp.toDomainChapter()!!,
+                        episode = currentEp.toDomainEpisode()!!,
                         anime = anime,
                         source = source,
                         sourceManager = sourceManager,
@@ -1553,7 +1553,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     currentEpisode.value
                         ?: throw ExceptionWithStringResource("No episode loaded", MR.strings.no_episode_loaded)
                 currentHosterList = EpisodeLoader.getHosters(
-                    currentEpisode.toDomainChapter()!!,
+                    currentEpisode.toDomainEpisode()!!,
                     anime,
                     source,
                 )
@@ -1615,8 +1615,8 @@ class PlayerViewModel @JvmOverloads constructor(
 
         val nextEpisode = currentPlaylist.value[getCurrentEpisodeIndex() + 1]
         val episodesAreDownloaded =
-            EpisodeLoader.isDownload(currentEpisode.toDomainChapter()!!, anime) &&
-                EpisodeLoader.isDownload(nextEpisode.toDomainChapter()!!, anime)
+            EpisodeLoader.isDownload(currentEpisode.toDomainEpisode()!!, anime) &&
+                EpisodeLoader.isDownload(nextEpisode.toDomainEpisode()!!, anime)
 
         viewModelScope.launchIO {
             if (!episodesAreDownloaded) {
@@ -1855,7 +1855,7 @@ class PlayerViewModel @JvmOverloads constructor(
         if (!episode.seen) return
         val anime = currentAnime.value ?: return
         viewModelScope.launchNonCancellable {
-            downloadManager.enqueueEpisodesToDelete(listOf(episode.toDomainChapter()!!), anime)
+            downloadManager.enqueueEpisodesToDelete(listOf(episode.toDomainEpisode()!!), anime)
         }
     }
 

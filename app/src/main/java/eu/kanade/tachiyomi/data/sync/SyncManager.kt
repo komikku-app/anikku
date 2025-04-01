@@ -100,7 +100,7 @@ class SyncManager(
         val backupAnime = backupCreator.backupMangas(databaseAnime, backupOptions)
         val backup = Backup(
             backupManga = backupAnime,
-            backupCategories = backupCreator.backupMangaCategories(backupOptions),
+            backupCategories = backupCreator.backupCategories(backupOptions),
             backupSources = backupCreator.backupMangaSources(backupAnime),
             backupPreferences = backupCreator.backupAppPreferences(backupOptions),
             backupExtensionRepo = backupCreator.backupExtensionRepos(backupOptions),

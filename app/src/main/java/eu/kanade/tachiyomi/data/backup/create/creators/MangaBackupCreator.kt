@@ -34,7 +34,7 @@ class MangaBackupCreator(
 
     private suspend fun backupManga(manga: Manga, options: BackupOptions): BackupManga {
         // Entry for this manga
-        val animeObject = manga.toBackupManga(
+        val mangaObject = manga.toBackupManga(
             // SY -->
             if (options.customInfo) {
                 getCustomMangaInfo.get(manga.id)
@@ -46,18 +46,18 @@ class MangaBackupCreator(
 
         // SY -->
         if (manga.source == MERGED_SOURCE_ID) {
-            animeObject.mergedMangaReferences = handler.awaitList {
+            mangaObject.mergedMangaReferences = handler.awaitList {
                 mergedQueries.selectByMergeId(manga.id, backupMergedMangaReferenceMapper)
             }
         }
         // SY <--
 
-        animeObject.excludedScanlators = handler.awaitList {
+        mangaObject.excludedScanlators = handler.awaitList {
             excluded_scanlatorsQueries.getExcludedScanlatorsByAnimeId(manga.id)
         }
 
         if (options.episodes) {
-            // Backup all the episodes
+            // Backup all the chapters
             handler.awaitList {
                 episodesQueries.getEpisodesByAnimeId(
                     animeId = manga.id,
@@ -66,38 +66,38 @@ class MangaBackupCreator(
                 )
             }
                 .takeUnless(List<BackupChapter>::isEmpty)
-                ?.let { animeObject.episodes = it }
+                ?.let { mangaObject.episodes = it }
         }
 
         if (options.categories) {
             // Backup categories for this manga
-            val categoriesForAnime = getCategories.await(manga.id)
-            if (categoriesForAnime.isNotEmpty()) {
-                animeObject.categories = categoriesForAnime.map { it.order }
+            val categoriesForManga = getCategories.await(manga.id)
+            if (categoriesForManga.isNotEmpty()) {
+                mangaObject.categories = categoriesForManga.map { it.order }
             }
         }
 
         if (options.tracking) {
             val tracks = handler.awaitList { anime_syncQueries.getTracksByAnimeId(manga.id, backupTrackMapper) }
             if (tracks.isNotEmpty()) {
-                animeObject.tracking = tracks
+                mangaObject.tracking = tracks
             }
         }
 
         if (options.history) {
-            val historyByAnimeId = getHistory.await(manga.id)
-            if (historyByAnimeId.isNotEmpty()) {
-                val history = historyByAnimeId.map { history ->
-                    val episode = handler.awaitOne { episodesQueries.getEpisodeById(history.episodeId) }
-                    BackupHistory(episode.url, history.seenAt?.time ?: 0L, history.watchDuration)
+            val historyByMangaId = getHistory.await(manga.id)
+            if (historyByMangaId.isNotEmpty()) {
+                val history = historyByMangaId.map { history ->
+                    val chapter = handler.awaitOne { episodesQueries.getEpisodeById(history.episodeId) }
+                    BackupHistory(chapter.url, history.seenAt?.time ?: 0L, history.watchDuration)
                 }
                 if (history.isNotEmpty()) {
-                    animeObject.history = history
+                    mangaObject.history = history
                 }
             }
         }
 
-        return animeObject
+        return mangaObject
     }
 }
 

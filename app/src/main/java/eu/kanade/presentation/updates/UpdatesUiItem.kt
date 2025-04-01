@@ -337,7 +337,7 @@ private fun UpdatesUiItem(
         ) {
             LaunchedEffect(update, Unit) {
                 fileSizeAsync = withIOContext {
-                    downloadProvider.getEpisodeFileSize(
+                    downloadProvider.getChapterFileSize(
                         update.episodeName,
                         null,
                         update.scanlator,

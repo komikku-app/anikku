@@ -1318,7 +1318,7 @@ private fun LazyListScope.sharedChapterItems(
                 if (isEpisodeDownloaded && showFileSize && fileSizeAsync == null) {
                     LaunchedEffect(item, Unit) {
                         fileSizeAsync = withIOContext {
-                            downloadProvider.getEpisodeFileSize(
+                            downloadProvider.getChapterFileSize(
                                 item.chapter.name,
                                 item.chapter.url,
                                 item.chapter.scanlator,

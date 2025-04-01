@@ -747,10 +747,10 @@ class MangaScreenModel(
         if (state.source is MergedSource) {
             val mergedManga = state.mergedData?.manga?.map { it.value to sourceManager.getOrStub(it.value.source) }
             mergedManga?.forEach { (manga, source) ->
-                downloadManager.deleteAnime(manga, source)
+                downloadManager.deleteManga(manga, source)
             }
         } else {
-            /* SY <-- */ downloadManager.deleteAnime(state.manga, state.source)
+            /* SY <-- */ downloadManager.deleteManga(state.manga, state.source)
         }
     }
 
@@ -821,9 +821,9 @@ class MangaScreenModel(
             downloadManager.statusFlow()
                 .filter {
                     /* SY --> */ if (isMergedSource) {
-                        it.manga.id in mergedIds
+                        it.anime.id in mergedIds
                     } else {
-                        /* SY <-- */ it.manga.id ==
+                        /* SY <-- */ it.anime.id ==
                             successState?.manga?.id
                     }
                 }
@@ -840,9 +840,9 @@ class MangaScreenModel(
             downloadManager.progressFlow()
                 .filter {
                     /* SY --> */ if (isMergedSource) {
-                        it.manga.id in mergedIds
+                        it.anime.id in mergedIds
                     } else {
-                        /* SY <-- */ it.manga.id ==
+                        /* SY <-- */ it.anime.id ==
                             successState?.manga?.id
                     }
                 }
@@ -858,7 +858,7 @@ class MangaScreenModel(
 
     private fun updateDownloadState(download: Download) {
         updateSuccessState { successState ->
-            val modifiedIndex = successState.episodes.indexOfFirst { it.id == download.chapter.id }
+            val modifiedIndex = successState.episodes.indexOfFirst { it.id == download.episode.id }
             if (modifiedIndex < 0) return@updateSuccessState successState
 
             val newEpisodes = successState.episodes.toMutableList().apply {
@@ -1292,7 +1292,7 @@ class MangaScreenModel(
         screenModelScope.launchNonCancellable {
             try {
                 successState?.let { state ->
-                    downloadManager.deleteEpisodes(
+                    downloadManager.deleteChapters(
                         chapters,
                         state.manga,
                         state.source,

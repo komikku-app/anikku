@@ -232,7 +232,7 @@ class NotificationReceiver : BroadcastReceiver() {
                         if (anime != null) {
                             val source = sourceManager.get(anime.source)
                             if (source != null) {
-                                downloadManager.deleteEpisodes(listOf(it), anime, source)
+                                downloadManager.deleteChapters(listOf(it), anime, source)
                             }
                         }
                     }
@@ -297,7 +297,7 @@ class NotificationReceiver : BroadcastReceiver() {
          * @param context context of application
          * @return [PendingIntent]
          */
-        internal fun resumeMangaDownloadsPendingBroadcast(context: Context): PendingIntent {
+        internal fun resumeDownloadsPendingBroadcast(context: Context): PendingIntent {
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_RESUME_ANIME_DOWNLOADS
             }
@@ -315,7 +315,7 @@ class NotificationReceiver : BroadcastReceiver() {
          * @param context context of application
          * @return [PendingIntent]
          */
-        internal fun pauseMangaDownloadsPendingBroadcast(context: Context): PendingIntent {
+        internal fun pauseDownloadsPendingBroadcast(context: Context): PendingIntent {
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_PAUSE_ANIME_DOWNLOADS
             }
@@ -333,7 +333,7 @@ class NotificationReceiver : BroadcastReceiver() {
          * @param context context of application
          * @return [PendingIntent]
          */
-        internal fun clearMangaDownloadsPendingBroadcast(context: Context): PendingIntent {
+        internal fun clearDownloadsPendingBroadcast(context: Context): PendingIntent {
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_CLEAR_ANIME_DOWNLOADS
             }
@@ -524,7 +524,7 @@ class NotificationReceiver : BroadcastReceiver() {
          * @param context context of application
          * @param animeId id of the entry to open
          */
-        internal fun openMangaEntryPendingActivity(context: Context, animeId: Long): PendingIntent {
+        internal fun openEntryPendingActivity(context: Context, animeId: Long): PendingIntent {
             val newIntent = Intent(context, MainActivity::class.java).setAction(Constants.SHORTCUT_ANIME)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .putExtra(Constants.ANIME_EXTRA, animeId)

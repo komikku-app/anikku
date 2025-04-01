@@ -420,7 +420,7 @@ class MigrationListScreenModel(
         if (MigrationFlags.hasDeleteChapters(flags)) {
             val oldSource = sourceManager.get(prevManga.source)
             if (oldSource != null) {
-                downloadManager.deleteAnime(prevManga, oldSource)
+                downloadManager.deleteManga(prevManga, oldSource)
             }
         }
         // Update favorite status

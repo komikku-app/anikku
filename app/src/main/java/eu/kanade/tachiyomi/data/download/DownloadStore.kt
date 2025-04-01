@@ -84,7 +84,7 @@ class DownloadStore(
      * @param download the download.
      */
     private fun getKey(download: Download): String {
-        return download.chapter.id.toString()
+        return download.episode.id.toString()
     }
 
     /**
@@ -99,13 +99,13 @@ class DownloadStore(
         val downloads = mutableListOf<Download>()
         if (objs.isNotEmpty()) {
             val cachedManga = mutableMapOf<Long, Manga?>()
-            for ((animeId, episodeId) in objs) {
-                val anime = cachedManga.getOrPut(animeId) {
-                    runBlocking { getManga.await(animeId) }
+            for ((mangaId, chapterId) in objs) {
+                val manga = cachedManga.getOrPut(mangaId) {
+                    runBlocking { getManga.await(mangaId) }
                 } ?: continue
-                val source = sourceManager.get(anime.source) as? HttpSource ?: continue
-                val episode = runBlocking { getChapter.await(episodeId) } ?: continue
-                downloads.add(Download(source, anime, episode))
+                val source = sourceManager.get(manga.source) as? HttpSource ?: continue
+                val chapter = runBlocking { getChapter.await(chapterId) } ?: continue
+                downloads.add(Download(source, manga, chapter))
             }
         }
 
@@ -120,7 +120,7 @@ class DownloadStore(
      * @param download the download to serialize.
      */
     private fun serialize(download: Download): String {
-        val obj = AnimeDownloadObject(download.manga.id, download.chapter.id!!, counter++)
+        val obj = DownloadObject(download.anime.id, download.episode.id, counter++)
         return json.encodeToString(obj)
     }
 
@@ -129,9 +129,9 @@ class DownloadStore(
      *
      * @param string the download as string.
      */
-    private fun deserialize(string: String): AnimeDownloadObject? {
+    private fun deserialize(string: String): DownloadObject? {
         return try {
-            json.decodeFromString<AnimeDownloadObject>(string)
+            json.decodeFromString<DownloadObject>(string)
         } catch (e: Exception) {
             null
         }
@@ -141,9 +141,9 @@ class DownloadStore(
 /**
  * Class used for download serialization
  *
- * @param animeId the id of the manga.
- * @param episodeId the id of the episode.
+ * @param mangaId the id of the manga.
+ * @param chapterId the id of the chapter.
  * @param order the order of the download in the queue.
  */
 @Serializable
-private data class AnimeDownloadObject(val animeId: Long, val episodeId: Long, val order: Int)
+private data class DownloadObject(val mangaId: Long, val chapterId: Long, val order: Int)

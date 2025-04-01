@@ -232,7 +232,7 @@ data object DownloadQueueScreen : Screen {
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.chapter.dateUpload },
+                                    { it.download.episode.dateUpload },
                                     true,
                                 )
                                 closeMenu()
@@ -242,7 +242,7 @@ data object DownloadQueueScreen : Screen {
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.chapter.dateUpload },
+                                    { it.download.episode.dateUpload },
                                     false,
                                 )
                                 closeMenu()
@@ -261,7 +261,7 @@ data object DownloadQueueScreen : Screen {
                             text = { Text(text = stringResource(MR.strings.action_asc)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.chapter.episodeNumber },
+                                    { it.download.episode.episodeNumber },
                                     false,
                                 )
                                 closeMenu()
@@ -271,7 +271,7 @@ data object DownloadQueueScreen : Screen {
                             text = { Text(text = stringResource(MR.strings.action_desc)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.chapter.episodeNumber },
+                                    { it.download.episode.episodeNumber },
                                     true,
                                 )
                                 closeMenu()

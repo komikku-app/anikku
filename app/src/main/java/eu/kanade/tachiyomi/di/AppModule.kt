@@ -8,7 +8,6 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import eu.kanade.domain.track.store.DelayedTrackingStore
 import eu.kanade.tachiyomi.BuildConfig
-import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.download.DownloadCache
@@ -117,8 +116,6 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory<ProtoBuf> {
             ProtoBuf
         }
-
-        addSingletonFactory { ChapterCache(app) }
 
         addSingletonFactory { CoverCache(app) }
 

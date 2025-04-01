@@ -70,17 +70,17 @@ class MangaRestorer(
         backupCategories: List<BackupCategory>,
     ) {
         handler.await(inTransaction = true) {
-            val dbAnime = findExistingManga(backupManga)
-            val anime = backupManga.getMangaImpl()
-            val restoredAnime = if (dbAnime == null) {
-                restoreNewManga(anime)
+            val dbManga = findExistingManga(backupManga)
+            val manga = backupManga.getMangaImpl()
+            val restoredManga = if (dbManga == null) {
+                restoreNewManga(manga)
             } else {
-                restoreExistingManga(anime, dbAnime)
+                restoreExistingManga(manga, dbManga)
             }
 
             restoreMangaDetails(
-                manga = restoredAnime,
-                episodes = backupManga.episodes,
+                manga = restoredManga,
+                chapters = backupManga.episodes,
                 categories = backupManga.categories,
                 backupCategories = backupCategories,
                 history = backupManga.history,
@@ -168,24 +168,24 @@ class MangaRestorer(
     }
 
     private suspend fun restoreChapters(manga: Manga, backupChapters: List<BackupChapter>) {
-        val dbEpisodesByUrl = getChaptersByMangaId.await(manga.id)
+        val dbChaptersByUrl = getChaptersByMangaId.await(manga.id)
             .associateBy { it.url }
 
-        val (existingEpisodes, newEpisodes) = backupChapters
-            .mapNotNull { backupEpisode ->
-                val episode = backupEpisode.toChapterImpl().copy(animeId = manga.id)
-                val dbEpisode = dbEpisodesByUrl[episode.url]
+        val (existingChapters, newChapters) = backupChapters
+            .mapNotNull { backupChapter ->
+                val chapter = backupChapter.toChapterImpl().copy(animeId = manga.id)
+                val dbChapter = dbChaptersByUrl[chapter.url]
 
                 when {
-                    dbEpisode == null -> episode // New episode
-                    episode.forComparison() == dbEpisode.forComparison() -> null // Same state; skip
-                    else -> updateChapterBasedOnSyncState(episode, dbEpisode) // Update existed episode
+                    dbChapter == null -> chapter // New chapter
+                    chapter.forComparison() == dbChapter.forComparison() -> null // Same state; skip
+                    else -> updateChapterBasedOnSyncState(chapter, dbChapter) // Update existed chapter
                 }
             }
             .partition { it.id > 0 }
 
-        insertNewChapters(newEpisodes)
-        updateExistingChapters(existingEpisodes)
+        insertNewChapters(newChapters)
+        updateExistingChapters(existingChapters)
     }
 
     private fun updateChapterBasedOnSyncState(chapter: Chapter, dbChapter: Chapter): Chapter {
@@ -237,24 +237,24 @@ class MangaRestorer(
 
     private suspend fun insertNewChapters(chapters: List<Chapter>) {
         handler.await(true) {
-            chapters.forEach { episode ->
+            chapters.forEach { chapter ->
                 episodesQueries.insert(
-                    episode.animeId,
-                    episode.url,
-                    episode.name,
-                    episode.scanlator,
-                    episode.seen,
-                    episode.bookmark,
+                    chapter.animeId,
+                    chapter.url,
+                    chapter.name,
+                    chapter.scanlator,
+                    chapter.seen,
+                    chapter.bookmark,
                     // AM (FILLERMARK) -->
-                    episode.fillermark,
+                    chapter.fillermark,
                     // <-- AM (FILLERMARK)
-                    episode.lastSecondSeen,
-                    episode.totalSeconds,
-                    episode.episodeNumber,
-                    episode.sourceOrder,
-                    episode.dateFetch,
-                    episode.dateUpload,
-                    episode.version,
+                    chapter.lastSecondSeen,
+                    chapter.totalSeconds,
+                    chapter.episodeNumber,
+                    chapter.sourceOrder,
+                    chapter.dateFetch,
+                    chapter.dateUpload,
+                    chapter.version,
                 )
             }
         }
@@ -262,27 +262,27 @@ class MangaRestorer(
 
     private suspend fun updateExistingChapters(chapters: List<Chapter>) {
         handler.await(true) {
-            chapters.forEach { episode ->
+            chapters.forEach { chapter ->
                 episodesQueries.update(
                     animeId = null,
                     url = null,
                     name = null,
                     scanlator = null,
-                    seen = episode.seen,
-                    bookmark = episode.bookmark,
+                    seen = chapter.seen,
+                    bookmark = chapter.bookmark,
                     // AM (FILLERMARK) -->
-                    fillermark = episode.fillermark,
+                    fillermark = chapter.fillermark,
                     // <-- AM (FILLERMARK)
-                    lastSecondSeen = episode.lastSecondSeen,
-                    totalSeconds = episode.totalSeconds,
+                    lastSecondSeen = chapter.lastSecondSeen,
+                    totalSeconds = chapter.totalSeconds,
                     episodeNumber = null,
-                    sourceOrder = if (isSync) episode.sourceOrder else null,
+                    sourceOrder = if (isSync) chapter.sourceOrder else null,
                     dateFetch = null,
                     // KMK -->
-                    dateUpload = episode.dateUpload,
+                    dateUpload = chapter.dateUpload,
                     // KMK <--
-                    episodeId = episode.id,
-                    version = episode.version,
+                    episodeId = chapter.id,
+                    version = chapter.version,
                     isSyncing = 1,
                 )
             }
@@ -324,7 +324,7 @@ class MangaRestorer(
 
     private suspend fun restoreMangaDetails(
         manga: Manga,
-        episodes: List<BackupChapter>,
+        chapters: List<BackupChapter>,
         categories: List<Long>,
         backupCategories: List<BackupCategory>,
         history: List<BackupHistory>,
@@ -336,7 +336,7 @@ class MangaRestorer(
         // SY <--
     ): Manga {
         restoreCategories(manga, categories, backupCategories)
-        restoreChapters(manga, episodes)
+        restoreChapters(manga, chapters)
         restoreTracking(manga, tracks)
         restoreHistory(manga, history)
         restoreExcludedScanlators(manga, excludedScanlators)
@@ -365,7 +365,7 @@ class MangaRestorer(
 
         val backupCategoriesByOrder = backupCategories.associateBy { it.order }
 
-        val animeCategoriesToUpdate = categories.mapNotNull { backupCategoryOrder ->
+        val mangaCategoriesToUpdate = categories.mapNotNull { backupCategoryOrder ->
             backupCategoriesByOrder[backupCategoryOrder]?.let { backupCategory ->
                 dbCategoriesByName[backupCategory.name]?.let { dbCategory ->
                     Pair(manga.id, dbCategory.id)
@@ -373,11 +373,11 @@ class MangaRestorer(
             }
         }
 
-        if (animeCategoriesToUpdate.isNotEmpty()) {
+        if (mangaCategoriesToUpdate.isNotEmpty()) {
             handler.await(true) {
                 animes_categoriesQueries.deleteAnimeCategoryByAnimeId(manga.id)
-                animeCategoriesToUpdate.forEach { (animeId, categoryId) ->
-                    animes_categoriesQueries.insert(animeId, categoryId)
+                mangaCategoriesToUpdate.forEach { (mangaId, categoryId) ->
+                    animes_categoriesQueries.insert(mangaId, categoryId)
                 }
             }
         }
@@ -389,14 +389,14 @@ class MangaRestorer(
             val item = history.getHistoryImpl()
 
             if (dbHistory == null) {
-                val episode = handler.awaitList { episodesQueries.getEpisodeByUrl(history.url) }
+                val chapter = handler.awaitList { episodesQueries.getEpisodeByUrl(history.url) }
                     .find { it.anime_id == manga.id }
-                return@mapNotNull if (episode == null) {
+                return@mapNotNull if (chapter == null) {
                     // Chapter doesn't exist; skip
                     null
                 } else {
                     // New history entry
-                    item.copy(episodeId = episode._id)
+                    item.copy(episodeId = chapter._id)
                 }
             }
 

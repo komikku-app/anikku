@@ -61,7 +61,7 @@ class BackupRestorer(
     /**
      * Mapping of source ID to source name from backup data
      */
-    private var animeSourceMapping: Map<Long, String> = emptyMap()
+    private var sourceMapping: Map<Long, String> = emptyMap()
 
     suspend fun restore(uri: Uri, options: RestoreOptions) {
         val startTime = System.currentTimeMillis()
@@ -85,8 +85,8 @@ class BackupRestorer(
         val backup = BackupDecoder(context).decode(uri)
 
         // Store source mapping for error messages
-        val backupAnimeMaps = backup.backupSources
-        animeSourceMapping = backupAnimeMaps.associate { it.sourceId to it.name }
+        val backupMaps = backup.backupSources
+        sourceMapping = backupMaps.associate { it.sourceId to it.name }
 
         if (options.libraryEntries) {
             restoreAmount += backup.backupManga.size
@@ -117,7 +117,7 @@ class BackupRestorer(
 
         coroutineScope {
             if (options.categories) {
-                restoreCategories(backupAnimeCategories = backup.backupCategories)
+                restoreCategories(backup.backupCategories)
             }
             // SY -->
             if (options.savedSearchesFeeds) {
@@ -152,9 +152,9 @@ class BackupRestorer(
         }
     }
 
-    private fun CoroutineScope.restoreCategories(backupAnimeCategories: List<BackupCategory>) = launch {
+    private fun CoroutineScope.restoreCategories(backupCategories: List<BackupCategory>) = launch {
         ensureActive()
-        categoriesRestorer(backupAnimeCategories)
+        categoriesRestorer(backupCategories)
 
         restoreProgress += 1
         notifier.showRestoreProgress(
@@ -190,7 +190,7 @@ class BackupRestorer(
 
     private fun CoroutineScope.restoreManga(
         backupMangas: List<BackupManga>,
-        backupAnimeCategories: List<BackupCategory>,
+        backupCategories: List<BackupCategory>,
     ) = launch {
         mangaRestorer.sortByNew(backupMangas)
             /* SY --> */.sortedBy { it.source == MERGED_SOURCE_ID } /* SY <-- */
@@ -198,9 +198,9 @@ class BackupRestorer(
                 ensureActive()
 
                 try {
-                    mangaRestorer.restore(it, backupAnimeCategories)
+                    mangaRestorer.restore(it, backupCategories)
                 } catch (e: Exception) {
-                    val sourceName = animeSourceMapping[it.source] ?: it.source.toString()
+                    val sourceName = sourceMapping[it.source] ?: it.source.toString()
                     errors.add(Date() to "${it.title} [$sourceName]: ${e.message}")
                 }
 
@@ -236,9 +236,9 @@ class BackupRestorer(
     }
 
     private fun CoroutineScope.restoreExtensionRepos(
-        backupAnimeExtensionRepo: List<BackupExtensionRepos>,
+        backupExtensionRepo: List<BackupExtensionRepos>,
     ) = launch {
-        backupAnimeExtensionRepo
+        backupExtensionRepo
             .forEach {
                 ensureActive()
 

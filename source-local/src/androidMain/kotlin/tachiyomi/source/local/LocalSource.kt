@@ -182,7 +182,7 @@ actual class LocalSource(
             anime.thumbnail_url = it.uri.toString()
         }
 
-        val animeDirFiles = fileSystem.getFilesInAnimeDirectory(anime.url)
+        val animeDirFiles = fileSystem.getFilesInMangaDirectory(anime.url)
 
         animeDirFiles
             .firstOrNull { it.extension == "json" && it.nameWithoutExtension == "details" }
@@ -202,7 +202,7 @@ actual class LocalSource(
 
     // Episodes
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withIOContext {
-        val episodesData = fileSystem.getFilesInAnimeDirectory(anime.url)
+        val episodesData = fileSystem.getFilesInMangaDirectory(anime.url)
             .firstOrNull {
                 it.extension == "json" && it.nameWithoutExtension == "episodes"
             }?.let { file ->
@@ -211,7 +211,7 @@ actual class LocalSource(
                 }.getOrNull()
             }
 
-        val episodes = fileSystem.getFilesInAnimeDirectory(anime.url)
+        val episodes = fileSystem.getFilesInMangaDirectory(anime.url)
             // Only keep supported formats
             .filter { Archive.isSupported(it) }
             .map { episodeFile ->
@@ -279,7 +279,7 @@ actual class LocalSource(
         val outFile = tempFile.path
 
         val episodeName = episode.url.split('/', limit = 2).last()
-        val animeDir = fileSystem.getAnimeDirectory(anime.url)!!
+        val animeDir = fileSystem.getMangaDirectory(anime.url)!!
         val episodeFile = animeDir.findFile(episodeName)!!
         val episodeFilename = { episodeFile.toFFmpegString(context) }
 

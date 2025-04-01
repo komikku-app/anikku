@@ -41,7 +41,7 @@ class MangaStorageScreenModel(
                 it.id == id
             }?.manga ?: return@launchNonCancellable
             val source = sourceManager.get(anime.source) ?: return@launchNonCancellable
-            downloadManager.deleteAnime(anime, source)
+            downloadManager.deleteManga(anime, source)
         }
     }
 }

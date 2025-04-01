@@ -20,6 +20,7 @@ import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.sync.SyncPreferences
+import eu.kanade.tachiyomi.data.LibraryUpdateStatus
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.notification.Notifications
@@ -30,6 +31,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.util.system.isConnectedToWifi
 import eu.kanade.tachiyomi.util.system.isRunning
+import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
 import exh.util.nullIfBlank
 import kotlinx.coroutines.CancellationException
@@ -100,19 +102,22 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     private val notifier = LibraryUpdateNotifier(context)
 
     // KMK -->
+    private val libraryUpdateStatus: LibraryUpdateStatus = Injekt.get()
     private val deleteLibraryUpdateErrors: DeleteLibraryUpdateErrors = Injekt.get()
     private val insertLibraryUpdateErrors: InsertLibraryUpdateErrors = Injekt.get()
     private val insertLibraryUpdateErrorMessages: InsertLibraryUpdateErrorMessages = Injekt.get()
     // KMK <--
 
-    private var animeToUpdate: List<LibraryManga> = mutableListOf()
+    private var mangaToUpdate: List<LibraryManga> = mutableListOf()
 
     override suspend fun doWork(): Result {
         if (tags.contains(WORK_NAME_AUTO)) {
-            val preferences = Injekt.get<LibraryPreferences>()
-            val restrictions = preferences.autoUpdateDeviceRestrictions().get()
-            if ((DEVICE_ONLY_ON_WIFI in restrictions) && !context.isConnectedToWifi()) {
-                return Result.failure()
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                val preferences = Injekt.get<LibraryPreferences>()
+                val restrictions = preferences.autoUpdateDeviceRestrictions().get()
+                if ((DEVICE_ONLY_ON_WIFI in restrictions) && !context.isConnectedToWifi()) {
+                    return Result.retry()
+                }
             }
 
             // Find a running manual worker. If exists, try again later
@@ -122,14 +127,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         }
 
         // KMK -->
+        libraryUpdateStatus.start()
+
         deleteLibraryUpdateErrors.cleanUnrelevantMangaErrors()
         // KMK <--
 
-        try {
-            setForeground(getForegroundInfo())
-        } catch (e: IllegalStateException) {
-            logcat(LogPriority.ERROR, e) { "Not allowed to set foreground job" }
-        }
+        setForegroundSafely()
 
         libraryPreferences.lastUpdatedTimestamp().set(Instant.now().toEpochMilli())
 
@@ -154,6 +157,9 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 }
             } finally {
                 notifier.cancelProgressNotification()
+                // KMK -->
+                libraryUpdateStatus.stop()
+                // KMK <--
             }
         }
     }
@@ -168,7 +174,6 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             } else {
                 0
             },
-
         )
     }
 
@@ -177,26 +182,24 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
      *
      * @param categoryId the ID of the category to update, or -1 if no category specified.
      */
-    @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod", "ComplexCondition")
     private suspend fun addMangaToQueue(categoryId: Long, group: Int, groupExtra: String?) {
         val libraryManga = getLibraryManga.await()
-
         // SY -->
-        val groupAnimeLibraryUpdateType = libraryPreferences.groupLibraryUpdateType().get()
+        val groupLibraryUpdateType = libraryPreferences.groupLibraryUpdateType().get()
         // SY <--
 
         val listToUpdate = if (categoryId != -1L) {
             libraryManga.filter { it.category == categoryId }
         } else if (
             group == LibraryGroup.BY_DEFAULT ||
-            groupAnimeLibraryUpdateType == GroupLibraryMode.GLOBAL ||
+            groupLibraryUpdateType == GroupLibraryMode.GLOBAL ||
             (
-                groupAnimeLibraryUpdateType == GroupLibraryMode.ALL_BUT_UNGROUPED &&
+                groupLibraryUpdateType == GroupLibraryMode.ALL_BUT_UNGROUPED &&
                     group == LibraryGroup.UNGROUPED
                 )
         ) {
-            val categoriesToUpdate = libraryPreferences.updateCategories().get().map { it.toLong() }
-            val includedAnime = if (categoriesToUpdate.isNotEmpty()) {
+            val categoriesToUpdate = libraryPreferences.updateCategories().get().map(String::toLong)
+            val includedManga = if (categoriesToUpdate.isNotEmpty()) {
                 libraryManga.filter { it.category in categoriesToUpdate }
             } else {
                 libraryManga
@@ -209,7 +212,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 emptyList()
             }
 
-            includedAnime
+            includedManga
                 .filterNot { it.manga.id in excludedAnimeIds }
         } else {
             when (group) {
@@ -257,7 +260,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         val skippedUpdates = mutableListOf<Pair<Manga, String?>>()
         val (_, fetchWindowUpperBound) = fetchInterval.getWindow(ZonedDateTime.now())
 
-        animeToUpdate = listToUpdate
+        mangaToUpdate = listToUpdate
             // SY -->
             .distinctBy { it.manga.id }
             // SY <--
@@ -302,12 +305,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             }
             .sortedBy { it.manga.title }
         // Warn when excessively checking a single source
-        val maxUpdatesFromSource = animeToUpdate
+        val maxUpdatesFromSource = mangaToUpdate
             .groupBy { it.manga.source + (0..4).random() }
             .filterKeys { sourceManager.get(it) !is UnmeteredSource }
             .maxOfOrNull { it.value.size } ?: 0
         if (maxUpdatesFromSource > ANIME_PER_SOURCE_QUEUE_WARNING_THRESHOLD) {
-            notifier.showQueueSizeWarningNotificationIfNeeded(animeToUpdate)
+            notifier.showQueueSizeWarningNotificationIfNeeded(mangaToUpdate)
         }
 
         if (skippedUpdates.isNotEmpty()) {
@@ -322,7 +325,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     }
 
     /**
-     * Method that updates manga in [animeToUpdate]. It's called in a background thread, so it's safe
+     * Method that updates manga in [mangaToUpdate]. It's called in a background thread, so it's safe
      * to do heavy operations or network calls here.
      * For each manga it calls [updateManga] and updates the notification showing the current
      * progress.
@@ -340,7 +343,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         val fetchWindow = fetchInterval.getWindow(ZonedDateTime.now())
 
         coroutineScope {
-            animeToUpdate.groupBy { it.manga.source + (0..4).random() }.values
+            mangaToUpdate.groupBy { it.manga.source + (0..4).random() }.values
                 .map { animeInSource ->
                     async {
                         semaphore.withPermit {
@@ -458,7 +461,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         notifier.showProgressNotification(
             updatingManga,
             completed.get(),
-            animeToUpdate.size,
+            mangaToUpdate.size,
         )
 
         block()
@@ -470,7 +473,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         notifier.showProgressNotification(
             updatingManga,
             completed.get(),
-            animeToUpdate.size,
+            mangaToUpdate.size,
         )
     }
 

@@ -1,10 +1,13 @@
 package eu.kanade.tachiyomi.data.download
 
 import android.content.Context
+import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.util.size
+import eu.kanade.tachiyomi.util.storage.DiskUtil
+import exh.log.xLogE
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.drop
@@ -20,8 +23,10 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
@@ -32,9 +37,9 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 /**
- * This class is used to manage episode downloads in the application. It must be instantiated once
- * and retrieved through dependency injection. You can use this class to queue new episodes or query
- * downloaded episodes.
+ * This class is used to manage chapter downloads in the application. It must be instantiated once
+ * and retrieved through dependency injection. You can use this class to queue new chapters or query
+ * downloaded chapters.
  */
 class DownloadManager(
     private val context: Context,
@@ -47,7 +52,7 @@ class DownloadManager(
 ) {
 
     /**
-     * Downloader whose only task is to download episodes.
+     * Downloader whose only task is to download chapters.
      */
     private val downloader = Downloader(context, provider, cache, sourceManager)
 
@@ -55,7 +60,7 @@ class DownloadManager(
         get() = downloader.isRunning
 
     /**
-     * Queue to delay the deletion of a list of episodes until triggered.
+     * Queue to delay the deletion of a list of chapters until triggered.
      */
     private val pendingDeleter = DownloadPendingDeleter(context)
 
@@ -86,6 +91,7 @@ class DownloadManager(
      * Tells the downloader to pause downloads.
      */
     fun pauseDownloads() {
+        downloader.pause()
         downloader.stop()
     }
 
@@ -98,19 +104,19 @@ class DownloadManager(
     }
 
     /**
-     * Returns the download from queue if the episode is queued for download
-     * else it will return null which means that the episode is not queued for download
+     * Returns the download from queue if the chapter is queued for download
+     * else it will return null which means that the chapter is not queued for download
      *
-     * @param episodeId the episode to check.
+     * @param chapterId the chapter to check.
      */
-    fun getQueuedDownloadOrNull(episodeId: Long): Download? {
-        return queueState.value.find { it.chapter.id == episodeId }
+    fun getQueuedDownloadOrNull(chapterId: Long): Download? {
+        return queueState.value.find { it.episode.id == chapterId }
     }
 
-    fun startDownloadNow(episodeId: Long) {
-        val existingDownload = getQueuedDownloadOrNull(episodeId)
+    fun startDownloadNow(chapterId: Long) {
+        val existingDownload = getQueuedDownloadOrNull(chapterId)
         // If not in queue try to start a new download
-        val toAdd = existingDownload ?: runBlocking { Download.fromEpisodeId(episodeId) } ?: return
+        val toAdd = existingDownload ?: runBlocking { Download.fromEpisodeId(chapterId) } ?: return
         queueState.value.toMutableList().apply {
             existingDownload?.let { remove(it) }
             add(0, toAdd)
@@ -129,11 +135,11 @@ class DownloadManager(
     }
 
     /**
-     * Tells the downloader to enqueue the given list of episodes.
+     * Tells the downloader to enqueue the given list of chapters.
      *
-     * @param manga the manga of the episodes.
-     * @param chapters the list of episodes to enqueue.
-     * @param autoStart whether to start the downloader after enqueuing the episodes.
+     * @param manga the manga of the chapters.
+     * @param chapters the list of chapters to enqueue.
+     * @param autoStart whether to start the downloader after enqueuing the chapters.
      * @param alt whether to use the alternative downloader
      */
     fun downloadEpisodes(
@@ -144,8 +150,8 @@ class DownloadManager(
         video: Video? = null,
     ) {
         // AM (FILLERMARK) -->
-        val filteredEpisodes = getEpisodesToDownload(chapters)
-        downloader.queueEpisodes(manga, filteredEpisodes, autoStart, alt, video)
+        val filteredChapters = getChaptersToDownload(chapters)
+        downloader.queueEpisodes(manga, filteredChapters, autoStart, alt, video)
         // <-- AM (FILLERMARK)
     }
 
@@ -167,13 +173,13 @@ class DownloadManager(
      * Builds the page list of a downloaded episode.
      *
      * @param source the source of the episode.
-     * @param manga the manga of the episode.
-     * @param chapter the downloaded episode.
+     * @param anime the anime of the episode.
+     * @param episode the downloaded episode.
      * @return an observable containing the list of pages from the episode.
      */
-    fun buildVideo(source: Source, manga: Manga, chapter: Chapter): Video {
+    fun buildVideo(source: Source, anime: Anime, episode: Episode): Video {
         val episodeDir =
-            provider.findEpisodeDir(chapter.name, chapter.scanlator, manga.title, source)
+            provider.findChapterDir(episode.name, episode.scanlator,/* SY --> */ anime.ogTitle /* SY <-- */, source)
         val files = episodeDir?.listFiles().orEmpty()
             .filter { "video" in it.type.orEmpty() }
 
@@ -192,12 +198,12 @@ class DownloadManager(
     }
 
     /**
-     * Returns true if the episode is downloaded.
+     * Returns true if the chapter is downloaded.
      *
-     * @param episodeName the name of the episode to query.
-     * @param episodeScanlator scanlator of the episode to query
+     * @param episodeName the name of the chapter to query.
+     * @param episodeScanlator scanlator of the chapter to query
      * @param animeTitle the title of the manga to query.
-     * @param sourceId the id of the source of the episode.
+     * @param sourceId the id of the source of the chapter.
      * @param skipCache whether to skip the directory cache and check in the filesystem.
      */
     fun isEpisodeDownloaded(
@@ -207,30 +213,24 @@ class DownloadManager(
         sourceId: Long,
         skipCache: Boolean = false,
     ): Boolean {
-        return cache.isEpisodeDownloaded(
-            episodeName,
-            episodeScanlator,
-            animeTitle,
-            sourceId,
-            skipCache,
-        )
+        return cache.isChapterDownloaded(episodeName, episodeScanlator, animeTitle, sourceId, skipCache)
     }
 
     /**
-     * Returns the amount of downloaded episodes.
+     * Returns the amount of downloaded chapters.
      */
     fun getDownloadCount(): Int {
         return cache.getTotalDownloadCount()
     }
 
     /**
-     * Returns the amount of downloaded/local episodes for an manga.
+     * Returns the amount of downloaded/local chapters for a manga.
      *
      * @param manga the manga to check.
      */
     fun getDownloadCount(manga: Manga): Int {
         return if (manga.source == LocalSource.ID) {
-            LocalSourceFileSystem(storageManager).getFilesInAnimeDirectory(manga.url)
+            LocalSourceFileSystem(storageManager).getFilesInMangaDirectory(manga.url)
                 .count { Archive.isSupported(it) }
         } else {
             cache.getDownloadCount(manga)
@@ -251,7 +251,7 @@ class DownloadManager(
      */
     fun getDownloadSize(manga: Manga): Long {
         return if (manga.source == LocalSource.ID) {
-            LocalSourceFileSystem(storageManager).getAnimeDirectory(manga.url)
+            LocalSourceFileSystem(storageManager).getMangaDirectory(manga.url)
                 ?.size() ?: 0L
         } else {
             cache.getDownloadSize(manga)
@@ -259,35 +259,46 @@ class DownloadManager(
     }
 
     fun cancelQueuedDownloads(downloads: List<Download>) {
-        removeFromDownloadQueue(downloads.map { it.chapter })
+        removeFromDownloadQueue(downloads.map { it.episode })
     }
 
     /**
-     * Deletes the directories of a list of downloaded episodes.
+     * Deletes the directories of a list of downloaded chapters.
      *
-     * @param chapters the list of episodes to delete.
-     * @param manga the manga of the episodes.
-     * @param source the source of the episodes.
+     * @param chapters the list of chapters to delete.
+     * @param manga the manga of the chapters.
+     * @param source the source of the chapters.
      */
-    fun deleteEpisodes(chapters: List<Chapter>, manga: Manga, source: Source) {
+    fun deleteChapters(
+        chapters: List<Chapter>,
+        manga: Manga,
+        source: Source,
+        // KMK -->
+        /** Ignore categories exclusion */
+        ignoreCategoryExclusion: Boolean = false,
+        // KMK <--
+    ) {
         launchIO {
-            val filteredEpisodes = getEpisodesToDelete(chapters, manga)
-            if (filteredEpisodes.isEmpty()) {
+            val filteredChapters = getChaptersToDelete(
+                chapters,
+                manga,
+                // KMK -->
+                ignoreCategoryExclusion,
+                // KMK <--
+            )
+            if (filteredChapters.isEmpty()) {
                 return@launchIO
             }
 
-            removeFromDownloadQueue(filteredEpisodes)
-            val (animeDir, episodeDirs) = provider.findEpisodeDirs(
-                filteredEpisodes,
-                manga,
-                source,
-            )
-            episodeDirs.forEach { it.delete() }
-            cache.removeEpisodes(filteredEpisodes, manga)
+            removeFromDownloadQueue(filteredChapters)
+
+            val (mangaDir, chapterDirs) = provider.findChapterDirs(filteredChapters, manga, source)
+            chapterDirs.forEach { it.delete() }
+            cache.removeChapters(filteredChapters, manga)
 
             // Delete manga directory if empty
-            if (animeDir?.listFiles()?.isEmpty() == true) {
-                deleteAnime(manga, source, removeQueued = false)
+            if (mangaDir?.listFiles()?.isEmpty() == true) {
+                deleteManga(manga, source, removeQueued = false)
             }
         }
     }
@@ -299,13 +310,14 @@ class DownloadManager(
      * @param source the source of the manga.
      * @param removeQueued whether to also remove queued downloads.
      */
-    fun deleteAnime(manga: Manga, source: Source, removeQueued: Boolean = true) {
+    fun deleteManga(manga: Manga, source: Source, removeQueued: Boolean = true) {
         launchIO {
             if (removeQueued) {
                 downloader.removeFromQueue(manga)
             }
-            provider.findAnimeDir(manga.title, source)?.delete()
-            cache.removeAnime(manga)
+            provider.findMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source)?.delete()
+            cache.removeManga(manga)
+
             // Delete source directory if empty
             val sourceDir = provider.findSourceDir(source)
             if (sourceDir?.listFiles()?.isEmpty() == true) {
@@ -332,24 +344,82 @@ class DownloadManager(
         }
     }
 
+    // SY -->
     /**
-     * Adds a list of episodes to be deleted later.
-     *
-     * @param chapters the list of episodes to delete.
-     * @param manga the manga of the episodes.
+     * return the list of all manga folders
      */
-    suspend fun enqueueEpisodesToDelete(chapters: List<Chapter>, manga: Manga) {
-        pendingDeleter.addEpisodes(getEpisodesToDelete(chapters, manga), manga)
+    fun getMangaFolders(source: Source): List<UniFile> {
+        return provider.findSourceDir(source)?.listFiles()?.toList().orEmpty()
     }
 
     /**
-     * Triggers the execution of the deletion of pending episodes.
+     * Deletes the directories of chapters that were read or have no match
+     *
+     * @param allChapters the list of chapters to delete.
+     * @param manga the manga of the chapters.
+     * @param source the source of the chapters.
+     */
+    suspend fun cleanupChapters(
+        allChapters: List<Chapter>,
+        manga: Manga,
+        source: Source,
+        removeRead: Boolean,
+        removeNonFavorite: Boolean,
+    ): Int {
+        var cleaned = 0
+
+        if (removeNonFavorite && !manga.favorite) {
+            val mangaFolder = provider.getMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source)
+            cleaned += 1 + mangaFolder.listFiles().orEmpty().size
+            mangaFolder.delete()
+            cache.removeManga(manga)
+            return cleaned
+        }
+
+        val filesWithNoChapter = provider.findUnmatchedChapterDirs(allChapters, manga, source)
+        cleaned += filesWithNoChapter.size
+        cache.removeFolders(filesWithNoChapter.mapNotNull { it.name }, manga)
+        filesWithNoChapter.forEach { it.delete() }
+
+        if (removeRead) {
+            val readChapters = allChapters.filter { it.seen }
+            val readChapterDirs = provider.findChapterDirs(readChapters, manga, source)
+            readChapterDirs.second.forEach { it.delete() }
+            cleaned += readChapterDirs.second.size
+            cache.removeChapters(readChapters, manga)
+        }
+
+        if (cache.getDownloadCount(manga) == 0) {
+            val mangaFolder = provider.getMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source)
+            if (!mangaFolder.listFiles().isNullOrEmpty()) {
+                mangaFolder.delete()
+                cache.removeManga(manga)
+            } else {
+                xLogE("Cache and download folder doesn't match for " + /* SY --> */ manga.ogTitle /* SY <-- */)
+            }
+        }
+        return cleaned
+    }
+    // SY <--
+
+    /**
+     * Adds a list of chapters to be deleted later.
+     *
+     * @param chapters the list of chapters to delete.
+     * @param manga the manga of the chapters.
+     */
+    suspend fun enqueueEpisodesToDelete(chapters: List<Chapter>, manga: Manga) {
+        pendingDeleter.addChapters(getChaptersToDelete(chapters, manga), manga)
+    }
+
+    /**
+     * Triggers the execution of the deletion of pending chapters.
      */
     fun deletePendingEpisodes() {
-        val pendingEpisodes = pendingDeleter.getPendingEpisodes()
-        for ((anime, episodes) in pendingEpisodes) {
-            val source = sourceManager.get(anime.source) ?: continue
-            deleteEpisodes(episodes, anime, source)
+        val pendingChapters = pendingDeleter.getPendingChapters()
+        for ((manga, chapters) in pendingChapters) {
+            val source = sourceManager.get(manga.source) ?: continue
+            deleteChapters(chapters, manga, source)
         }
     }
 
@@ -380,57 +450,74 @@ class DownloadManager(
     }
 
     /**
-     * Renames an already downloaded episode
+     * Renames an already downloaded chapter
      *
      * @param source the source of the manga.
-     * @param manga the manga of the episode.
-     * @param oldChapter the existing episode with the old name.
-     * @param newChapter the target episode with the new name.
+     * @param manga the manga of the chapter.
+     * @param oldChapter the existing chapter with the old name.
+     * @param newChapter the target chapter with the new name.
      */
     suspend fun renameEpisode(source: Source, manga: Manga, oldChapter: Chapter, newChapter: Chapter) {
-        val oldNames = provider.getValidEpisodeDirNames(oldChapter.name, oldChapter.scanlator)
-        val animeDir = provider.getAnimeDir(manga.title, source)
+        val oldNames = provider.getValidChapterDirNames(oldChapter.name, oldChapter.scanlator)
+        val mangaDir = provider.getMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source)
 
-        // Assume there's only 1 version of the episode name formats present
-        val oldFolder = oldNames.asSequence()
-            .mapNotNull { animeDir.findFile(it) }
-            .firstOrNull()
+        // Assume there's only 1 version of the chapter name formats present
+        val oldDownload = oldNames.asSequence()
+            .mapNotNull { mangaDir.findFile(it) }
+            .firstOrNull() ?: return
 
-        val newName = provider.getEpisodeDirName(newChapter.name, newChapter.scanlator)
+        val newName = provider.getChapterDirName(newChapter.name, newChapter.scanlator)
 
-        if (oldFolder?.name == newName) return
+        if (oldDownload.name == newName) return
 
-        if (oldFolder?.renameTo(newName) == true) {
-            cache.removeEpisode(oldChapter, manga)
-            cache.addEpisode(newName, animeDir, manga)
+        if (oldDownload.renameTo(newName)) {
+            cache.removeChapter(oldChapter, manga)
+            cache.addChapter(newName, mangaDir, manga)
         } else {
             logcat(LogPriority.ERROR) { "Could not rename downloaded episode: ${oldNames.joinToString()}" }
         }
     }
 
-    private suspend fun getEpisodesToDelete(chapters: List<Chapter>, manga: Manga): List<Chapter> {
-        // Retrieve the categories that are set to exclude from being deleted on read
-        val categoriesToExclude =
-            downloadPreferences.removeExcludeCategories().get().map(String::toLong)
-
-        val categoriesForAnime = getCategories.await(manga.id)
-            .map { it.id }
-            .ifEmpty { listOf(0) }
-        val filteredCategoryAnime = if (categoriesForAnime.intersect(categoriesToExclude).isNotEmpty()) {
-            chapters.filterNot { it.seen }
-        } else {
+    private suspend fun getChaptersToDelete(
+        chapters: List<Chapter>,
+        manga: Manga,
+        // KMK -->
+        /** Ignore categories exclusion */
+        ignoreCategoryExclusion: Boolean = false,
+        // KMK <--
+    ): List<Chapter> {
+        // KMK -->
+        val filteredCategoryManga = if (ignoreCategoryExclusion) {
             chapters
+        } else {
+            // KMK <--
+            // Retrieve the categories that are set to exclude from being deleted on read
+            val categoriesToExclude = downloadPreferences.removeExcludeCategories().get().map(String::toLong).toSet()
+
+            val categoriesForManga = getCategories.await(manga.id)
+                .map { it.id }
+                .ifEmpty { listOf(0) }
+            if (categoriesForManga.intersect(categoriesToExclude).isNotEmpty()) {
+                chapters.filterNot { it.seen }
+            } else {
+                chapters
+            }
         }
 
-        return if (!downloadPreferences.removeBookmarkedChapters().get()) {
-            filteredCategoryAnime.filterNot { it.bookmark }
+        return if (!downloadPreferences.removeBookmarkedChapters().get() &&
+            // KMK -->
+            // if manually deleting single chapter then will allow deleting bookmark chapter
+            (chapters.size > 1 || !ignoreCategoryExclusion)
+            // KMK <--
+        ) {
+            filteredCategoryManga.filterNot { it.bookmark }
         } else {
-            filteredCategoryAnime
+            filteredCategoryManga
         }
     }
 
     // AM (FILLERMARK) -->
-    private fun getEpisodesToDownload(chapters: List<Chapter>): List<Chapter> {
+    private fun getChaptersToDownload(chapters: List<Chapter>): List<Chapter> {
         return if (!downloadPreferences.notDownloadFillermarkedItems().get()) {
             chapters.filterNot { it.fillermark }
         } else {
@@ -449,8 +536,7 @@ class DownloadManager(
         }
         .onStart {
             emitAll(
-                queueState.value.filter { download -> download.status == Download.State.DOWNLOADING }
-                    .asFlow(),
+                queueState.value.filter { download -> download.status == Download.State.DOWNLOADING }.asFlow(),
             )
         }
 
@@ -468,4 +554,10 @@ class DownloadManager(
                     .asFlow(),
             )
         }
+
+    fun renameAnimeDir(oldTitle: String, newTitle: String, source: Long) {
+        val sourceDir = provider.findSourceDir(sourceManager.getOrStub(source)) ?: return
+        val mangaDir = sourceDir.findFile(DiskUtil.buildValidFilename(oldTitle)) ?: return
+        mangaDir.renameTo(DiskUtil.buildValidFilename(newTitle))
+    }
 }
