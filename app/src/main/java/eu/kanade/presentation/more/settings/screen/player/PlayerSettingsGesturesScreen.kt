@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,11 +28,11 @@ import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.i18n.stringResource
-import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsGesturesScreen : SearchableSettings {
+    private fun readResolve(): Any = PlayerSettingsGesturesScreen
 
     @ReadOnlyComposable
     @Composable
@@ -90,14 +91,6 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
             )
         }
 
-        // Aniskip
-        val enableAniSkip = gesturePreferences.aniSkipEnabled()
-        val enableAutoAniSkip = gesturePreferences.autoSkipAniSkip()
-        val enableNetflixAniSkip = gesturePreferences.enableNetflixStyleAniSkip()
-        val waitingTimeAniSkip = gesturePreferences.waitingTimeAniSkip()
-
-        val isAniSkipEnabled by enableAniSkip.collectAsState()
-
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_player_seeking),
             preferenceItems = persistentListOf(
@@ -130,36 +123,6 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                     pref = playerSmoothSeek,
                     title = stringResource(MR.strings.pref_player_smooth_seek),
                     subtitle = stringResource(MR.strings.pref_player_smooth_seek_summary),
-                ),
-                Preference.PreferenceItem.InfoPreference(
-                    title = stringResource(MR.strings.pref_category_player_aniskip_info),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = enableAniSkip,
-                    title = stringResource(MR.strings.pref_enable_aniskip),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = enableAutoAniSkip,
-                    title = stringResource(MR.strings.pref_enable_auto_skip_ani_skip),
-                    enabled = isAniSkipEnabled,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = enableNetflixAniSkip,
-                    title = stringResource(MR.strings.pref_enable_netflix_style_aniskip),
-                    enabled = isAniSkipEnabled,
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    pref = waitingTimeAniSkip,
-                    title = stringResource(MR.strings.pref_waiting_time_aniskip),
-                    entries = persistentMapOf(
-                        5 to stringResource(MR.strings.pref_waiting_time_aniskip_5),
-                        6 to stringResource(MR.strings.pref_waiting_time_aniskip_6),
-                        7 to stringResource(MR.strings.pref_waiting_time_aniskip_7),
-                        8 to stringResource(MR.strings.pref_waiting_time_aniskip_8),
-                        9 to stringResource(MR.strings.pref_waiting_time_aniskip_9),
-                        10 to stringResource(MR.strings.pref_waiting_time_aniskip_10),
-                    ),
-                    enabled = isAniSkipEnabled,
                 ),
             ),
         )
@@ -265,7 +228,7 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
         onDismissRequest: () -> Unit,
         onValueChanged: (skipIntroLength: Int) -> Unit,
     ) {
-        val skipIntroLengthValue by rememberSaveable { mutableStateOf(initialSkipIntroLength) }
+        val skipIntroLengthValue by rememberSaveable { mutableIntStateOf(initialSkipIntroLength) }
         var newLength = 0
         AlertDialog(
             onDismissRequest = onDismissRequest,

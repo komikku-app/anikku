@@ -41,7 +41,7 @@ class CastMediaBuilder(
             videoUrl.startsWith(
                 "magnet",
             ) ||
-                videoUrl.endsWith(".torrent") -> torrentLinkHandler(videoUrl, video.quality)
+                videoUrl.endsWith(".torrent") -> torrentLinkHandler(videoUrl, video.videoTitle)
             else -> videoUrl
         }
 

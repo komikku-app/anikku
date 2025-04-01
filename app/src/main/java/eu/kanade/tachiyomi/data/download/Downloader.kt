@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.data.download
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.core.net.toUri
 import com.arthenica.ffmpegkit.FFmpegKitConfig
@@ -510,7 +509,7 @@ class Downloader(
     }
 
     private fun isTor(video: Video): Boolean {
-        return (video.videoUrl?.startsWith("magnet") == true || video.videoUrl?.endsWith(".torrent") == true)
+        return (video.videoUrl.startsWith("magnet") || video.videoUrl.endsWith(".torrent"))
     }
 
     private fun torrentDownload(
@@ -521,12 +520,12 @@ class Downloader(
         val video = download.video!!
         TorrentServerService.start()
         TorrentServerService.wait(10)
-        val currentTorrent = TorrentServerApi.addTorrent(video.videoUrl!!, video.quality, "", "", false)
+        val currentTorrent = TorrentServerApi.addTorrent(video.videoUrl, video.videoTitle, "", "", false)
         var index = 0
-        if (video.videoUrl!!.contains("index=")) {
+        if (video.videoUrl.contains("index=")) {
             index = try {
-                video.videoUrl?.substringAfter("index=")
-                    ?.substringBefore("&")?.toInt() ?: 0
+                video.videoUrl.substringAfter("index=")
+                    .substringBefore("&").toInt()
             } catch (_: Exception) {
                 0
             }
@@ -588,7 +587,7 @@ class Downloader(
         }
 
         val session = FFmpegSession.create(ffmpegOptions, {}, logCallback, {})
-        val inputDuration = getDuration(ffprobeCommand(video.videoUrl!!, headerOptions)) ?: 0F
+        val inputDuration = getDuration(ffprobeCommand(video.videoUrl, headerOptions)) ?: 0F
 
         duration = inputDuration.toLong()
 
@@ -725,7 +724,7 @@ class Downloader(
                                 "idm.internet.download.manager.Downloader",
                             )
                             action = Intent.ACTION_VIEW
-                            data = Uri.parse(video.videoUrl)
+                            data = video.videoUrl.toUri()
 
                             putExtra("extra_filename", "$filename.mkv")
                         }
@@ -746,7 +745,7 @@ class Downloader(
                             action = Intent.ACTION_VIEW
                             putExtra(
                                 "com.dv.get.ACTION_LIST_ADD",
-                                "${Uri.parse(video.videoUrl)}<info>$filename.mkv",
+                                "${video.videoUrl.toUri()}<info>$filename.mkv",
                             )
                             putExtra(
                                 "com.dv.get.ACTION_LIST_PATH",

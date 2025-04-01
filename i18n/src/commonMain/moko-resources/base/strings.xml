@@ -355,11 +355,14 @@
 
     <!-- Player -->
 
-    <!-- Player - aniskip -->
-    <string name="player_aniskip_op">Skip Opening</string>
-    <string name="player_aniskip_ed">Skip Ending</string>
-    <string name="player_aniskip_mixedOp">Skip MixedOp</string>
-    <string name="player_aniskip_recap">Skip Recap</string>
+    <!-- Player - skip intro button -->
+    <string name="player_skip_action">Skip %1$s</string>
+    <string name="player_intro_skipped">%1$s skipped</string>
+    <string name="player_chapter_type_opening">Opening</string>
+    <string name="player_chapter_type_ending">Ending</string>
+    <string name="player_chapter_type_recap">Recap</string>
+    <string name="player_chapter_type_mixedop">Mixed opening</string>
+
 
     <!-- Player - Bottom left -->
     <string name="player_speed" translatable="false">%.2fx</string>
