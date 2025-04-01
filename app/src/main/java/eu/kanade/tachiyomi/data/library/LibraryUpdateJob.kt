@@ -95,7 +95,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 
 @OptIn(ExperimentalAtomicApi::class)
-class LibraryUpdateJob(private val context: Context, workerParams: WorkerParameters) :
+class LibraryUpdateJob(private val context: Context, private val workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
     private val sourceManager: SourceManager = Injekt.get()
