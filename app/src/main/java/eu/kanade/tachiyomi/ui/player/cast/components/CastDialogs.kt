@@ -54,7 +54,7 @@ fun CastQualityDialog(
                         val video = videoList[index]
                         val isSelected = index == viewModel.selectedHosterVideoIndex.value.second
                         QualityListItem(
-                            quality = video.quality,
+                            quality = video.videoTitle,
                             isSelected = isSelected,
                             onClick = {
                                 viewModel.onVideoClicked(
