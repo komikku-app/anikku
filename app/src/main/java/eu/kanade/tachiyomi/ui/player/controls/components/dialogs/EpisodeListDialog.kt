@@ -50,7 +50,7 @@ import eu.kanade.presentation.util.formatChapterNumber as formatEpisodeNumber
 
 @Composable
 fun EpisodeListDialog(
-    displayMode: Long,
+    displayMode: Long?,
     currentEpisodeIndex: Int,
     episodeList: List<Episode>,
     dateRelativeTime: Boolean,
