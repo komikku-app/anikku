@@ -86,7 +86,7 @@ fun TrackInfoDialogHome(
                 TrackInfoItem(
                     title = item.track.title,
                     tracker = item.tracker,
-                    status = item.tracker.getStatusForAnime(item.track.status),
+                    status = item.tracker.getStatus(item.track.status),
                     onStatusClick = { onStatusClick(item) },
                     episodes = "${item.track.lastEpisodeSeen.toInt()}".let {
                         val totalEpisodes = item.track.totalEpisodes

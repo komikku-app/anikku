@@ -6,20 +6,20 @@ import tachiyomi.i18n.sy.SYMR
 import tachiyomi.i18n.tail.TLMR
 
 data class SyncTriggerOptions(
-    val syncOnEpisodeSeen: Boolean = false,
-    val syncOnEpisodeOpen: Boolean = false,
+    val syncOnChapterRead: Boolean = false,
+    val syncOnChapterOpen: Boolean = false,
     val syncOnAppStart: Boolean = false,
     val syncOnAppResume: Boolean = false,
 ) {
     fun asBooleanArray() = booleanArrayOf(
-        syncOnEpisodeSeen,
-        syncOnEpisodeOpen,
+        syncOnChapterRead,
+        syncOnChapterOpen,
         syncOnAppStart,
         syncOnAppResume,
     )
 
-    fun anyEnabled() = syncOnEpisodeSeen ||
-        syncOnEpisodeOpen ||
+    fun anyEnabled() = syncOnChapterRead ||
+        syncOnChapterOpen ||
         syncOnAppStart ||
         syncOnAppResume
 
@@ -27,13 +27,13 @@ data class SyncTriggerOptions(
         val mainOptions = persistentListOf(
             Entry(
                 label = TLMR.strings.sync_on_episode_seen,
-                getter = SyncTriggerOptions::syncOnEpisodeSeen,
-                setter = { options, enabled -> options.copy(syncOnEpisodeSeen = enabled) },
+                getter = SyncTriggerOptions::syncOnChapterRead,
+                setter = { options, enabled -> options.copy(syncOnChapterRead = enabled) },
             ),
             Entry(
                 label = TLMR.strings.sync_on_episode_open,
-                getter = SyncTriggerOptions::syncOnEpisodeOpen,
-                setter = { options, enabled -> options.copy(syncOnEpisodeOpen = enabled) },
+                getter = SyncTriggerOptions::syncOnChapterOpen,
+                setter = { options, enabled -> options.copy(syncOnChapterOpen = enabled) },
             ),
             Entry(
                 label = SYMR.strings.sync_on_app_start,
@@ -48,8 +48,8 @@ data class SyncTriggerOptions(
         )
 
         fun fromBooleanArray(array: BooleanArray) = SyncTriggerOptions(
-            syncOnEpisodeSeen = array[0],
-            syncOnEpisodeOpen = array[1],
+            syncOnChapterRead = array[0],
+            syncOnChapterOpen = array[1],
             syncOnAppStart = array[2],
             syncOnAppResume = array[3],
         )

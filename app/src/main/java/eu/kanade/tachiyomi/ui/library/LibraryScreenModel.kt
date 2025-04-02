@@ -410,7 +410,7 @@ class LibraryScreenModel(
             libraryPreferences.downloadBadge().changes(),
             libraryPreferences.localBadge().changes(),
             libraryPreferences.languageBadge().changes(),
-            libraryPreferences.autoUpdateAnimeRestrictions().changes(),
+            libraryPreferences.autoUpdateMangaRestrictions().changes(),
 
             preferences.downloadedOnly().changes(),
             libraryPreferences.filterDownloaded().changes(),
@@ -964,19 +964,19 @@ class LibraryScreenModel(
                 val tracks = runBlocking { getTracks.await() }.groupBy { it.animeId }
                 libraryManga.groupBy { item ->
                     val status = tracks[item.libraryManga.manga.id]?.firstNotNullOfOrNull { track ->
-                        TrackStatus.parseTrackerStatus(track.trackerId, track.status)
+                        TrackStatus.parseTrackerStatus(trackerManager, track.trackerId, track.status)
                     } ?: TrackStatus.OTHER
 
-                    status.int
+                    status.long
                 }.mapKeys { (id) ->
                     Category(
                         id = id,
                         name = TrackStatus.entries
-                            .find { it.int == id }
+                            .find { it.long == id }
                             .let { it ?: TrackStatus.OTHER }
-                            .let { context.getString(it.res) },
+                            .let { context.stringResource(it.res) },
                         order = TrackStatus.entries.toTypedArray().indexOfFirst {
-                            it.int == id
+                            it.long == id
                         }.takeUnless { it == -1 }?.toLong() ?: TrackStatus.OTHER.ordinal.toLong(),
                         flags = 0,
                         hidden = false,

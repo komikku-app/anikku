@@ -105,7 +105,7 @@ class MangaCoverScreenModel(
                 Image.Cover(
                     bitmap = bitmap,
                     name = "cover",
-                    location = if (temp) Location.Cache else Location.Pictures(anime.title),
+                    location = if (temp) Location.Cache else Location.Pictures.create(),
                 ),
             )
         }

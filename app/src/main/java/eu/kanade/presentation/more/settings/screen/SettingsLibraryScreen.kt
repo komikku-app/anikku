@@ -229,7 +229,7 @@ object SettingsLibraryScreen : SearchableSettings {
                     subtitle = stringResource(MR.strings.pref_library_update_refresh_metadata_summary),
                 ),
                 Preference.PreferenceItem.MultiSelectListPreference(
-                    pref = libraryPreferences.autoUpdateAnimeRestrictions(),
+                    pref = libraryPreferences.autoUpdateMangaRestrictions(),
                     title = stringResource(MR.strings.pref_library_update_smart_update),
                     entries = persistentMapOf(
                         ANIME_HAS_UNSEEN to stringResource(MR.strings.pref_update_only_completely_read),

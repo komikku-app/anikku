@@ -4,7 +4,7 @@ import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.track.Tracker
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -38,9 +38,9 @@ data class DummyTracker(
 
     override fun getLogo(): Int = valLogo
 
-    override fun getStatusListAnime(): List<Long> = valStatuses
+    override fun getStatusList(): List<Long> = valStatuses
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         1L -> MR.strings.watching
         2L -> MR.strings.plan_to_watch
         3L -> MR.strings.completed
@@ -96,7 +96,7 @@ data class DummyTracker(
         animeId: Long,
     ) = Unit
 
-    override suspend fun setRemoteAnimeStatus(
+    override suspend fun setRemoteStatus(
         track: eu.kanade.tachiyomi.data.database.models.Track,
         status: Long,
     ) = Unit
@@ -123,7 +123,7 @@ data class DummyTracker(
 
     override suspend fun getAnimeMetadata(
         track: Track,
-    ) = TrackMangaMetadata(
+    ) = TrackAnimeMetadata(
         0, "test", "test", "test", "test", "test",
     )
 

@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.simkl
 import android.net.Uri
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklAnimeResponse
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklOAuth
@@ -142,7 +142,7 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
         }
     }
 
-    suspend fun searchAnime(search: String, type: String): List<TrackSearch> {
+    suspend fun search(search: String, type: String): List<TrackSearch> {
         return withIOContext {
             val searchUrl = "$API_URL/search/$type".toUri().buildUpon()
                 .appendQueryParameter("q", search)
@@ -200,7 +200,7 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
                     } ?: return@withIOContext null
             }
 
-            listAnime.toAnimeTrack(typeName, type, status)
+            listAnime.toTrack(typeName, type, status)
         }
     }
 
@@ -215,7 +215,7 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
         }
     }
 
-    suspend fun getSimklAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    suspend fun getSimklAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         return withIOContext {
             val type = track.remoteUrl
                 .substringAfter("/")
@@ -226,7 +226,7 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
                     .awaitSuccess()
                     .parseAs<SimklAnimeResponse>()
                     .let { anime ->
-                        TrackMangaMetadata(
+                        TrackAnimeMetadata(
                             remoteId = anime.id,
                             title = anime.title,
                             thumbnailUrl = anime.poster?.let { "$POSTERS_URL${it}_m.webp" },

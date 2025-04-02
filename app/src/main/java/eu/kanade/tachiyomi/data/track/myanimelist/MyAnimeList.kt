@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALOAuth
 import kotlinx.collections.immutable.ImmutableList
@@ -46,16 +46,16 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
 
     override fun getLogoColor() = Color.rgb(46, 81, 162)
 
-    override fun getStatusListAnime(): List<Long> {
+    override fun getStatusList(): List<Long> {
         return listOf(WATCHING, COMPLETED, ON_HOLD, DROPPED, PLAN_TO_WATCH, REWATCHING)
     }
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         WATCHING -> MR.strings.watching
+        PLAN_TO_WATCH -> MR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
         ON_HOLD -> MR.strings.on_hold
         DROPPED -> MR.strings.dropped
-        PLAN_TO_WATCH -> MR.strings.plan_to_watch
         REWATCHING -> MR.strings.repeating_anime
         else -> null
     }
@@ -97,7 +97,7 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
     }
 
     override suspend fun delete(track: DomainTrack) {
-        api.deleteAnimeItem(track)
+        api.deleteItem(track)
     }
 
     override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
@@ -129,11 +129,11 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
 
         if (query.startsWith(SEARCH_LIST_PREFIX)) {
             query.substringAfter(SEARCH_LIST_PREFIX).let { title ->
-                return api.findListItemsAnime(title)
+                return api.findListItems(title)
             }
         }
 
-        return api.searchAnime(query)
+        return api.search(query)
     }
 
     override suspend fun refresh(track: Track): Track {
@@ -159,7 +159,7 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
         interceptor.setAuth(null)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         return api.getAnimeMetadata(track)
     }
 

@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuCurrentUserResult
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuListSearchResult
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuSearchResult
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.network.DELETE
 import eu.kanade.tachiyomi.network.GET
@@ -128,20 +128,20 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
         }
     }
 
-    suspend fun searchAnime(query: String): List<TrackSearch> {
+    suspend fun search(query: String): List<TrackSearch> {
         return withIOContext {
             with(json) {
                 authClient.newCall(GET(ALGOLIA_KEY_URL))
                     .awaitSuccess()
                     .parseAs<KitsuSearchResult>()
                     .let {
-                        algoliaSearchAnime(it.media.key, query)
+                        algoliaSearch(it.media.key, query)
                     }
             }
         }
     }
 
-    private suspend fun algoliaSearchAnime(key: String, query: String): List<TrackSearch> {
+    private suspend fun algoliaSearch(key: String, query: String): List<TrackSearch> {
         return withIOContext {
             val jsonObject = buildJsonObject {
                 put("params", "query=${URLEncoder.encode(query, StandardCharsets.UTF_8.name())}$ALGOLIA_FILTER")
@@ -164,7 +164,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     .parseAs<KitsuAlgoliaSearchResult>()
                     .hits
                     .filter { it.subtype != "novel" }
-                    .map { it.toAnimeTrack() }
+                    .map { it.toTrackSearch() }
             }
         }
     }
@@ -181,7 +181,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     .parseAs<KitsuListSearchResult>()
                     .let {
                         if (it.data.isNotEmpty() && it.included.isNotEmpty()) {
-                            it.firstToAnimeTrack()
+                            it.firstToTrackSearch()
                         } else {
                             null
                         }
@@ -202,7 +202,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     .parseAs<KitsuListSearchResult>()
                     .let {
                         if (it.data.isNotEmpty() && it.included.isNotEmpty()) {
-                            it.firstToAnimeTrack()
+                            it.firstToTrackSearch()
                         } else {
                             throw Exception("Could not find manga")
                         }
@@ -243,7 +243,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
         }
     }
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         return withIOContext {
             val query = """
             |query(${'$'}libraryId: ID!, ${'$'}staffCount: Int) {
@@ -290,7 +290,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     .parseAs<KitsuAnimeMetadata>()
                     .let { dto ->
                         val anime = dto.data.findLibraryEntryById.media
-                        TrackMangaMetadata(
+                        TrackAnimeMetadata(
                             remoteId = anime.id.toLong(),
                             title = anime.titles.preferred,
                             thumbnailUrl = anime.posterImage.original.url,

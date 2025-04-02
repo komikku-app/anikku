@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
 import kotlinx.collections.immutable.ImmutableList
@@ -87,7 +87,7 @@ class Shikimori(id: Long) : BaseTracker(id, "Shikimori"), DeletableTracker {
     }
 
     override suspend fun search(query: String): List<TrackSearch> {
-        return api.searchAnime(query)
+        return api.search(query)
     }
 
     override suspend fun refresh(track: Track): Track {
@@ -99,7 +99,7 @@ class Shikimori(id: Long) : BaseTracker(id, "Shikimori"), DeletableTracker {
         return track
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         return api.getAnimeMetadata(track)
     }
 
@@ -107,11 +107,11 @@ class Shikimori(id: Long) : BaseTracker(id, "Shikimori"), DeletableTracker {
 
     override fun getLogoColor() = Color.rgb(40, 40, 40)
 
-    override fun getStatusListAnime(): List<Long> {
+    override fun getStatusList(): List<Long> {
         return listOf(WATCHING, COMPLETED, ON_HOLD, DROPPED, PLAN_TO_WATCH, REWATCHING)
     }
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         WATCHING -> MR.strings.watching
         PLAN_TO_WATCH -> MR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed

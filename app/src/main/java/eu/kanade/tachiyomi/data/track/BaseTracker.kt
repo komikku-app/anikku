@@ -6,7 +6,7 @@ import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.model.toDomainTrack
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.flow.Flow
@@ -82,7 +82,7 @@ abstract class BaseTracker(
         }
     }
 
-    override suspend fun setRemoteAnimeStatus(track: Track, status: Long) {
+    override suspend fun setRemoteStatus(track: Track, status: Long) {
         track.status = status
         if (track.status == getCompletionStatus() && track.total_episodes != 0L) {
             track.last_episode_seen = track.total_episodes.toDouble()
@@ -121,7 +121,7 @@ abstract class BaseTracker(
         updateRemote(track)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         throw NotImplementedError("Not implemented.")
     }
 

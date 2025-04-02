@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMOAuth
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -51,7 +51,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
         val statusTrack = api.statusLibAnime(track)
         val remoteTrack = api.findLibAnime(track)
-        return if (statusTrack != null) {
+        return if (remoteTrack != null && statusTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
 
@@ -74,11 +74,11 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     }
 
     override suspend fun search(query: String): List<TrackSearch> {
-        return api.searchAnime(query)
+        return api.search(query)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
-        throw NotImplementedError("Not implemented.")
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+        return api.getAnimeMetadata(track)
     }
 
     override suspend fun refresh(track: Track): Track {
@@ -94,11 +94,11 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
 
     override fun getLogoColor() = Color.rgb(240, 145, 153)
 
-    override fun getStatusListAnime(): List<Long> {
+    override fun getStatusList(): List<Long> {
         return listOf(WATCHING, COMPLETED, ON_HOLD, DROPPED, PLAN_TO_WATCH)
     }
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         WATCHING -> MR.strings.watching
         PLAN_TO_WATCH -> MR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed

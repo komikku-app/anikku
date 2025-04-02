@@ -37,7 +37,7 @@ class JellyfinApi(
                     client.newCall(GET(url))
                         .awaitSuccess()
                         .parseAs<JFItem>()
-                        .toTrack()
+                        .toTrackSearch()
                 }.apply { tracking_url = url }
 
                 when {
@@ -52,7 +52,7 @@ class JellyfinApi(
             }
         }
 
-    private fun JFItem.toTrack(): TrackSearch = TrackSearch.create(
+    private fun JFItem.toTrackSearch(): TrackSearch = TrackSearch.create(
         trackId,
     ).also {
         it.title = name

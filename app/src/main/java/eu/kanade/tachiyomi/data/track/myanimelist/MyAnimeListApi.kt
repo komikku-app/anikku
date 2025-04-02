@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.myanimelist
 import android.net.Uri
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnime
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnimeMetadata
@@ -74,7 +74,7 @@ class MyAnimeListApi(
         }
     }
 
-    suspend fun searchAnime(query: String): List<TrackSearch> {
+    suspend fun search(query: String): List<TrackSearch> {
         return withIOContext {
             val url = "$BASE_API_URL/anime".toUri().buildUpon()
                 // MAL API throws a 400 when the query is over 64 characters...
@@ -150,7 +150,7 @@ class MyAnimeListApi(
         }
     }
 
-    suspend fun deleteAnimeItem(track: DomainTrack) {
+    suspend fun deleteItem(track: DomainTrack) {
         withIOContext {
             authClient
                 .newCall(DELETE(animeUrl(track.remoteId).toString()))
@@ -176,7 +176,7 @@ class MyAnimeListApi(
         }
     }
 
-    suspend fun findListItemsAnime(query: String, offset: Int = 0): List<TrackSearch> {
+    suspend fun findListItems(query: String, offset: Int = 0): List<TrackSearch> {
         return withIOContext {
             val myListSearchResult = getListPage(offset)
 
@@ -187,14 +187,14 @@ class MyAnimeListApi(
 
             // Check next page if there's more
             if (!myListSearchResult.paging.next.isNullOrBlank()) {
-                matches + findListItemsAnime(query, offset + LIST_PAGINATION_AMOUNT)
+                matches + findListItems(query, offset + LIST_PAGINATION_AMOUNT)
             } else {
                 matches
             }
         }
     }
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         return withIOContext {
             val url = "$BASE_API_URL/anime".toUri().buildUpon()
                 .appendPath(track.remoteId.toString())
@@ -208,7 +208,7 @@ class MyAnimeListApi(
                     .awaitSuccess()
                     .parseAs<MALAnimeMetadata>()
                     .let { anime ->
-                        TrackMangaMetadata(
+                        TrackAnimeMetadata(
                             remoteId = anime.id,
                             title = anime.title,
                             thumbnailUrl = anime.covers.large?.ifEmpty { null } ?: anime.covers.medium,

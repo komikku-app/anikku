@@ -34,7 +34,7 @@ data class SimklSyncItem(
     @SerialName("user_rating")
     val userRating: Int?,
 ) {
-    fun toAnimeTrack(typeName: String, type: String, statusString: String): Track {
+    fun toTrack(typeName: String, type: String, statusString: String): Track {
         val resultData = getFromType(typeName)
 
         return Track.create(TrackerManager.SIMKL).apply {

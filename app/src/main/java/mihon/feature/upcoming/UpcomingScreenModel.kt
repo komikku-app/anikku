@@ -102,7 +102,7 @@ class UpcomingScreenModel(
     }
 
     // KMK -->
-    val restriction by lazy { libraryPreferences.autoUpdateAnimeRestrictions().get() }
+    val restriction by lazy { libraryPreferences.autoUpdateMangaRestrictions().get() }
 
     fun showUpdatingMangas() {
         mutableState.update { state ->

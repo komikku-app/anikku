@@ -459,7 +459,7 @@ class MainActivity : BaseActivity() {
             Constants.SHORTCUT_HISTORY -> HomeScreen.Tab.History
             Constants.SHORTCUT_SOURCES -> HomeScreen.Tab.Browse(false)
             Constants.SHORTCUT_ANIMEEXTENSIONS -> HomeScreen.Tab.Browse(true)
-            Constants.SHORTCUT_ANIME_DOWNLOADS -> {
+            Constants.SHORTCUT_DOWNLOADS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = true)
             }

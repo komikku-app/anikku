@@ -222,7 +222,7 @@ class MangaScreenModel(
     val useExternalDownloader = downloadPreferences.useExternalDownloader().get()
 
     val isUpdateIntervalEnabled =
-        LibraryPreferences.ANIME_OUTSIDE_RELEASE_PERIOD in libraryPreferences.autoUpdateAnimeRestrictions().get()
+        LibraryPreferences.ANIME_OUTSIDE_RELEASE_PERIOD in libraryPreferences.autoUpdateMangaRestrictions().get()
 
     private val selectedPositions: Array<Int> = arrayOf(-1, -1) // first and last selected index in list
     private val selectedEpisodeIds: HashSet<Long> = HashSet()
@@ -1292,7 +1292,7 @@ class MangaScreenModel(
         screenModelScope.launchNonCancellable {
             try {
                 successState?.let { state ->
-                    downloadManager.deleteChapters(
+                    downloadManager.deleteEpisodes(
                         chapters,
                         state.manga,
                         state.source,

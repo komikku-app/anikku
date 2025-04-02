@@ -5,7 +5,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklOAuth
 import kotlinx.collections.immutable.ImmutableList
@@ -80,9 +80,9 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
     }
 
     override suspend fun search(query: String): List<TrackSearch> {
-        return api.searchAnime(query, "anime") +
-            api.searchAnime(query, "tv") +
-            api.searchAnime(query, "movie")
+        return api.search(query, "anime") +
+            api.search(query, "tv") +
+            api.search(query, "movie")
     }
 
     override suspend fun refresh(track: Track): Track {
@@ -97,11 +97,11 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
 
     override fun getLogoColor() = Color.rgb(0, 0, 0)
 
-    override fun getStatusListAnime(): List<Long> {
+    override fun getStatusList(): List<Long> {
         return listOf(WATCHING, COMPLETED, ON_HOLD, NOT_INTERESTING, PLAN_TO_WATCH)
     }
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         WATCHING -> MR.strings.watching
         PLAN_TO_WATCH -> MR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
@@ -133,7 +133,7 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
         trackPreferences.trackToken(this).set(json.encodeToString(oauth))
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         return api.getSimklAnimeMetadata(track)
     }
 

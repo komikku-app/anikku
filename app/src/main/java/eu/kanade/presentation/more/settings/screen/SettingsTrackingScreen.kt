@@ -60,6 +60,8 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -128,7 +130,7 @@ object SettingsTrackingScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
                 pref = trackPreferences.autoUpdateTrack(),
-                title = stringResource(MR.strings.pref_auto_update_manga_sync),
+                title = stringResource(AMR.strings.pref_auto_update_manga_sync),
             ),
             Preference.PreferenceItem.SwitchPreference(
                 pref = trackPreferences.trackOnAddingToLibrary(),
@@ -140,7 +142,7 @@ object SettingsTrackingScreen : SearchableSettings {
             ),
             Preference.PreferenceItem.ListPreference(
                 pref = trackPreferences.autoUpdateTrackOnMarkRead(),
-                title = stringResource(MR.strings.pref_auto_update_manga_on_mark_read),
+                title = stringResource(AMR.strings.pref_auto_update_manga_on_mark_read),
                 entries = AutoTrackState.entries
                     .associateWith { stringResource(it.titleRes) }
                     .toPersistentMap(),

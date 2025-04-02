@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.data.track.model
 
-data class TrackMangaMetadata(
+data class TrackAnimeMetadata(
     val remoteId: Long? = null,
     val title: String? = null,
     val thumbnailUrl: String? = null,

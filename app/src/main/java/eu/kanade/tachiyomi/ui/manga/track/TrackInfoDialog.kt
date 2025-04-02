@@ -297,8 +297,8 @@ private data class TrackStatusSelectorScreen(
     ) : StateScreenModel<Model.State>(State(track.status)) {
 
         fun getSelections(): Map<Long, StringResource?> {
-            return tracker.getStatusListAnime().associateWith {
-                tracker.getStatusForAnime(it)
+            return tracker.getStatusList().associateWith {
+                tracker.getStatus(it)
             }
         }
 
@@ -308,7 +308,7 @@ private data class TrackStatusSelectorScreen(
 
         fun setStatus() {
             screenModelScope.launchNonCancellable {
-                tracker.setRemoteAnimeStatus(track.toDbTrack(), state.value.selection)
+                tracker.setRemoteStatus(track.toDbTrack(), state.value.selection)
             }
         }
 

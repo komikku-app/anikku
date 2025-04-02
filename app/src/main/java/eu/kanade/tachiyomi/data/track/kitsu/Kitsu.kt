@@ -7,7 +7,7 @@ import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -40,11 +40,11 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
 
     override fun getLogoColor() = Color.rgb(51, 37, 50)
 
-    override fun getStatusListAnime(): List<Long> {
-        return listOf(WATCHING, PLAN_TO_WATCH, COMPLETED, ON_HOLD, DROPPED)
+    override fun getStatusList(): List<Long> {
+        return listOf(WATCHING, COMPLETED, ON_HOLD, DROPPED, PLAN_TO_WATCH)
     }
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         WATCHING -> MR.strings.currently_watching
         PLAN_TO_WATCH -> MR.strings.want_to_watch
         COMPLETED -> MR.strings.completed
@@ -118,7 +118,7 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
     }
 
     override suspend fun search(query: String): List<TrackSearch> {
-        return api.searchAnime(query)
+        return api.search(query)
     }
 
     override suspend fun refresh(track: Track): Track {
@@ -140,7 +140,7 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
         interceptor.newAuth(null)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         throw NotImplementedError("Not implemented.")
         // Got CloudFlare blocked, possible reason is using old API
         // return api.getAnimeMetadata(track)

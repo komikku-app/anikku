@@ -1,6 +1,11 @@
 package eu.kanade.domain.chapter.interactor
 
 import eu.kanade.domain.download.interactor.DeleteDownload
+import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
+import eu.kanade.tachiyomi.ui.library.LibraryScreenModel
+import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
+import eu.kanade.tachiyomi.ui.player.PlayerViewModel
+import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel
 import exh.source.MERGED_SOURCE_ID
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -31,7 +36,26 @@ class SetReadStatus(
         )
     }
 
-    suspend fun await(seen: Boolean, vararg chapters: Chapter): Result = withNonCancellableContext {
+    /**
+     * Mark chapters as seen/unseen, also delete downloaded chapters if 'After manually marked as seen' is set.
+     *
+     * Called from:
+     *  - [LibraryScreenModel]: Manually select animes & mark as seen
+     *  - [MangaScreenModel.markEpisodesSeen]: Manually select chapters & mark as seen or swipe chapter as seen
+     *  - [UpdatesScreenModel.markUpdatesSeen]: Manually select chapters & mark as seen
+     *  - [LibraryUpdateJob.updateChapterList]: when a manga is updated and has new chapter but already seen,
+     *  it will mark that new **duplicated** chapter as seen & delete downloading/downloaded -> should be treat as
+     *  automatically ~ no auto delete
+     *  - [PlayerViewModel.updateEpisodeProgress]: mark **duplicated** chapter as seen after finish watching -> should be
+     *  treated as not manually mark as seen so not auto-delete (there are cases where chapter number is mistaken by volume number)
+     */
+    suspend fun await(
+        seen: Boolean,
+        vararg chapters: Chapter,
+        // KMK -->
+        manually: Boolean = true,
+        // KMK <--
+    ): Result = withNonCancellableContext {
         val episodesToUpdate = chapters.filter {
             when (seen) {
                 true -> !it.seen
@@ -51,8 +75,17 @@ class SetReadStatus(
             return@withNonCancellableContext Result.InternalError(e)
         }
 
-        if (seen && downloadPreferences.removeAfterMarkedAsSeen().get()) {
+        if (
+            // KMK -->
+            manually &&
+            // KMK <--
+            seen &&
+            downloadPreferences.removeAfterMarkedAsSeen().get()
+        ) {
             episodesToUpdate
+                // KMK -->
+                .map { it.copy(seen = true) } // mark as seen so it will respect category exclusion
+                // KMK <--
                 .groupBy { it.animeId }
                 .forEach { (animeId, episodes) ->
                     deleteDownload.awaitAll(

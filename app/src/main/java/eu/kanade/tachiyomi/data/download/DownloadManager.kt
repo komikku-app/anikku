@@ -269,7 +269,7 @@ class DownloadManager(
      * @param manga the manga of the chapters.
      * @param source the source of the chapters.
      */
-    fun deleteChapters(
+    fun deleteEpisodes(
         chapters: List<Chapter>,
         manga: Manga,
         source: Source,
@@ -419,7 +419,7 @@ class DownloadManager(
         val pendingChapters = pendingDeleter.getPendingChapters()
         for ((manga, chapters) in pendingChapters) {
             val source = sourceManager.get(manga.source) ?: continue
-            deleteChapters(chapters, manga, source)
+            deleteEpisodes(chapters, manga, source)
         }
     }
 

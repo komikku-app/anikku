@@ -95,7 +95,7 @@ class BackupCreator(
                 throw IllegalStateException(context.stringResource(MR.strings.create_backup_file_error))
             }
 
-            val nonFavoriteManga = if (options.seenEntries) mangaRepository.getReadMangaNotInLibrary() else emptyList()
+            val nonFavoriteManga = if (options.readEntries) mangaRepository.getReadMangaNotInLibrary() else emptyList()
             // SY -->
             val mergedManga = getMergedManga.await()
             // SY <--
@@ -104,7 +104,7 @@ class BackupCreator(
             val backup = Backup(
                 backupManga = backupManga,
                 backupCategories = backupCategories(options),
-                backupSources = backupMangaSources(backupManga),
+                backupSources = backupSources(backupManga),
                 backupPreferences = backupAppPreferences(options),
                 backupExtensionRepo = backupExtensionRepos(options),
                 backupCustomButton = backupCustomButtons(options),
@@ -162,7 +162,7 @@ class BackupCreator(
         return mangaBackupCreator(mangas, options)
     }
 
-    fun backupMangaSources(mangas: List<BackupManga>): List<BackupSource> {
+    fun backupSources(mangas: List<BackupManga>): List<BackupSource> {
         return sourcesBackupCreator(mangas)
     }
 

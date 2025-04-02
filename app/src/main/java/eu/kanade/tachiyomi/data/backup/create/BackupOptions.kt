@@ -10,10 +10,10 @@ import tachiyomi.i18n.sy.SYMR
 data class BackupOptions(
     val libraryEntries: Boolean = true,
     val categories: Boolean = true,
-    val episodes: Boolean = true,
+    val chapters: Boolean = true,
     val tracking: Boolean = true,
     val history: Boolean = true,
-    val seenEntries: Boolean = true,
+    val readEntries: Boolean = true,
     val appSettings: Boolean = true,
     val extensionRepoSettings: Boolean = true,
     val customButton: Boolean = true,
@@ -29,10 +29,10 @@ data class BackupOptions(
     fun asBooleanArray() = booleanArrayOf(
         libraryEntries,
         categories,
-        episodes,
+        chapters,
         tracking,
         history,
-        seenEntries,
+        readEntries,
         appSettings,
         extensionRepoSettings,
         customButton,
@@ -62,8 +62,8 @@ data class BackupOptions(
             ),
             Entry(
                 label = MR.strings.episodes,
-                getter = BackupOptions::episodes,
-                setter = { options, enabled -> options.copy(episodes = enabled) },
+                getter = BackupOptions::chapters,
+                setter = { options, enabled -> options.copy(chapters = enabled) },
                 enabled = { it.libraryEntries },
             ),
             Entry(
@@ -85,8 +85,8 @@ data class BackupOptions(
             ),
             Entry(
                 label = AMR.strings.non_library_settings,
-                getter = BackupOptions::seenEntries,
-                setter = { options, enabled -> options.copy(seenEntries = enabled) },
+                getter = BackupOptions::readEntries,
+                setter = { options, enabled -> options.copy(readEntries = enabled) },
                 enabled = { it.libraryEntries },
             ),
             // SY -->
@@ -146,10 +146,10 @@ data class BackupOptions(
         fun fromBooleanArray(array: BooleanArray) = BackupOptions(
             libraryEntries = array[0],
             categories = array[1],
-            episodes = array[2],
+            chapters = array[2],
             tracking = array[3],
             history = array[4],
-            seenEntries = array[5],
+            readEntries = array[5],
             appSettings = array[6],
             extensionRepoSettings = array[7],
             customButton = array[8],

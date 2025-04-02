@@ -36,22 +36,19 @@ abstract class SyncService(
      * @return The JSON string containing the merged sync data.
      */
     protected fun mergeSyncData(localSyncData: SyncData, remoteSyncData: SyncData): SyncData {
-        val mergedAnimeCategoriesList =
-            mergeCategoriesLists(
-                localSyncData.backup?.backupCategories,
-                remoteSyncData.backup?.backupCategories,
-            )
+        val mergedCategoriesList =
+            mergeCategoriesLists(localSyncData.backup?.backupCategories, remoteSyncData.backup?.backupCategories)
 
-        val mergedAnimeList = mergeMangaLists(
+        val mergedMangaList = mergeMangaLists(
             localSyncData.backup?.backupManga,
             remoteSyncData.backup?.backupManga,
             localSyncData.backup?.backupCategories ?: emptyList(),
             remoteSyncData.backup?.backupCategories ?: emptyList(),
-            mergedAnimeCategoriesList,
+            mergedCategoriesList,
         )
 
-        val mergedAnimeSourcesList =
-            mergeMangaSourcesLists(localSyncData.backup?.backupSources, remoteSyncData.backup?.backupSources)
+        val mergedSourcesList =
+            mergeSourcesLists(localSyncData.backup?.backupSources, remoteSyncData.backup?.backupSources)
         val mergedPreferencesList =
             mergePreferencesLists(localSyncData.backup?.backupPreferences, remoteSyncData.backup?.backupPreferences)
         val mergedSourcePreferencesList = mergeSourcePreferencesLists(
@@ -68,9 +65,9 @@ abstract class SyncService(
 
         // Create the merged Backup object
         val mergedBackup = Backup(
-            backupManga = mergedAnimeList,
-            backupCategories = mergedAnimeCategoriesList,
-            backupSources = mergedAnimeSourcesList,
+            backupManga = mergedMangaList,
+            backupCategories = mergedCategoriesList,
+            backupSources = mergedSourcesList,
             backupPreferences = mergedPreferencesList,
             backupSourcePreferences = mergedSourcePreferencesList,
 
@@ -91,41 +88,41 @@ abstract class SyncService(
      * If lastModifiedAt is null for a manga, it treats that manga as the oldest possible for comparison purposes.
      * This function is designed to reconcile local and remote manga lists, ensuring the most up-to-date manga is retained.
      *
-     * @param localAnimeList The list of local BackupManga objects or null.
-     * @param remoteAnimeList The list of remote BackupManga objects or null.
+     * @param localMangaList The list of local BackupManga objects or null.
+     * @param remoteMangaList The list of remote BackupManga objects or null.
      * @return A list of BackupManga objects, each representing the most recent version of the manga from either local or remote sources.
      */
     private fun mergeMangaLists(
-        localAnimeList: List<BackupManga>?,
-        remoteAnimeList: List<BackupManga>?,
+        localMangaList: List<BackupManga>?,
+        remoteMangaList: List<BackupManga>?,
         localCategories: List<BackupCategory>,
         remoteCategories: List<BackupCategory>,
         mergedCategories: List<BackupCategory>,
     ): List<BackupManga> {
-        val logTag = "MergeAnimeLists"
+        val logTag = "MergeMangaLists"
 
-        val localAnimeListSafe = localAnimeList.orEmpty()
-        val remoteAnimeListSafe = remoteAnimeList.orEmpty()
+        val localMangaListSafe = localMangaList.orEmpty()
+        val remoteMangaListSafe = remoteMangaList.orEmpty()
 
         logcat(LogPriority.DEBUG, logTag) {
-            "Starting merge. Local list size: ${localAnimeListSafe.size}, Remote list size: ${remoteAnimeListSafe.size}"
+            "Starting merge. Local list size: ${localMangaListSafe.size}, Remote list size: ${remoteMangaListSafe.size}"
         }
 
-        fun animeCompositeKey(anime: BackupManga): String {
-            return "${anime.source}|${anime.url}|${anime.title.lowercase().trim()}|${anime.author?.lowercase()?.trim()}"
+        fun mangaCompositeKey(manga: BackupManga): String {
+            return "${manga.source}|${manga.url}|${manga.title.lowercase().trim()}|${manga.author?.lowercase()?.trim()}"
         }
 
         // Create maps using composite keys
-        val localAnimeMap = localAnimeListSafe.associateBy { animeCompositeKey(it) }
-        val remoteAnimeMap = remoteAnimeListSafe.associateBy { animeCompositeKey(it) }
+        val localMangaMap = localMangaListSafe.associateBy { mangaCompositeKey(it) }
+        val remoteMangaMap = remoteMangaListSafe.associateBy { mangaCompositeKey(it) }
 
         val localCategoriesMapByOrder = localCategories.associateBy { it.order }
         val remoteCategoriesMapByOrder = remoteCategories.associateBy { it.order }
         val mergedCategoriesMapByName = mergedCategories.associateBy { it.name }
 
-        fun updateCategories(theAnime: BackupManga, theMap: Map<Long, BackupCategory>): BackupManga {
-            return theAnime.copy(
-                categories = theAnime.categories.mapNotNull {
+        fun updateCategories(theManga: BackupManga, theMap: Map<Long, BackupCategory>): BackupManga {
+            return theManga.copy(
+                categories = theManga.categories.mapNotNull {
                     theMap[it]?.let { category ->
                         mergedCategoriesMapByName[category.name]?.order
                     }
@@ -134,12 +131,12 @@ abstract class SyncService(
         }
 
         logcat(LogPriority.DEBUG, logTag) {
-            "Starting merge. Local list size: ${localAnimeListSafe.size}, Remote list size: ${remoteAnimeListSafe.size}"
+            "Starting merge. Local list size: ${localMangaListSafe.size}, Remote list size: ${remoteMangaListSafe.size}"
         }
 
-        val mergedList = (localAnimeMap.keys + remoteAnimeMap.keys).distinct().mapNotNull { compositeKey ->
-            val local = localAnimeMap[compositeKey]
-            val remote = remoteAnimeMap[compositeKey]
+        val mergedList = (localMangaMap.keys + remoteMangaMap.keys).distinct().mapNotNull { compositeKey ->
+            val local = localMangaMap[compositeKey]
+            val remote = remoteMangaMap[compositeKey]
 
             // New version comparison logic
             when {
@@ -181,74 +178,74 @@ abstract class SyncService(
     }
 
 /**
-     * Merges two lists of BackupChapter objects, selecting the most recent episode based on the lastModifiedAt value.
-     * If lastModifiedAt is null for a episode, it treats that episode as the oldest possible for comparison purposes.
-     * This function is designed to reconcile local and remote episode lists, ensuring the most up-to-date episode is retained.
+     * Merges two lists of BackupChapter objects, selecting the most recent chapter based on the lastModifiedAt value.
+     * If lastModifiedAt is null for a chapter, it treats that chapter as the oldest possible for comparison purposes.
+     * This function is designed to reconcile local and remote chapter lists, ensuring the most up-to-date chapter is retained.
      *
-     * @param localEpisodes The list of local BackupChapter objects.
-     * @param remoteEpisodes The list of remote BackupChapter objects.
-     * @return A list of BackupChapter objects, each representing the most recent version of the episode from either local or remote sources.
+     * @param localChapters The list of local BackupChapter objects.
+     * @param remoteChapters The list of remote BackupChapter objects.
+     * @return A list of BackupChapter objects, each representing the most recent version of the chapter from either local or remote sources.
      *
-     * - This function is used in scenarios where local and remote episode lists need to be synchronized.
-     * - It iterates over the union of the URLs from both local and remote episodes.
-     * - For each URL, it compares the corresponding local and remote episodes based on the lastModifiedAt value.
-     * - If only one source (local or remote) has the episode for a URL, that episode is used.
-     * - If both sources have the episode, the one with the more recent lastModifiedAt value is chosen.
-     * - If lastModifiedAt is null or missing, the episode is considered the oldest for safety, ensuring that any episode with a valid timestamp is preferred.
-     * - The resulting list contains the most recent episodes from the combined set of local and remote episodes.
+     * - This function is used in scenarios where local and remote chapter lists need to be synchronized.
+     * - It iterates over the union of the URLs from both local and remote chapters.
+     * - For each URL, it compares the corresponding local and remote chapters based on the lastModifiedAt value.
+     * - If only one source (local or remote) has the chapter for a URL, that chapter is used.
+     * - If both sources have the chapter, the one with the more recent lastModifiedAt value is chosen.
+     * - If lastModifiedAt is null or missing, the chapter is considered the oldest for safety, ensuring that any chapter with a valid timestamp is preferred.
+     * - The resulting list contains the most recent chapters from the combined set of local and remote chapters.
      */
     private fun mergeChapters(
-        localEpisodes: List<BackupChapter>,
-        remoteEpisodes: List<BackupChapter>,
+        localChapters: List<BackupChapter>,
+        remoteChapters: List<BackupChapter>,
     ): List<BackupChapter> {
-        val logTag = "MergeEpisodes"
+        val logTag = "MergeChapters"
 
-        fun episodeCompositeKey(episode: BackupChapter): String {
-            return "${episode.url}|${episode.name}|${episode.episodeNumber}"
+        fun chapterCompositeKey(chapter: BackupChapter): String {
+            return "${chapter.url}|${chapter.name}|${chapter.episodeNumber}"
         }
 
-        val localEpisodeMap = localEpisodes.associateBy { episodeCompositeKey(it) }
-        val remoteEpisdodeMap = remoteEpisodes.associateBy { episodeCompositeKey(it) }
+        val localChapterMap = localChapters.associateBy { chapterCompositeKey(it) }
+        val remoteChapterMap = remoteChapters.associateBy { chapterCompositeKey(it) }
 
         logcat(LogPriority.DEBUG, logTag) {
-            "Starting episode merge. Local episodes: ${localEpisodes.size}, Remote episodes: ${remoteEpisodes.size}"
+            "Starting episode merge. Local episodes: ${localChapters.size}, Remote episodes: ${remoteChapters.size}"
         }
 
         // Merge both chapter maps based on version numbers
-        val mergedEpisodes = (localEpisodeMap.keys + remoteEpisdodeMap.keys).distinct().mapNotNull { compositeKey ->
-            val localEpisode = localEpisodeMap[compositeKey]
-            val remoteEpisode = remoteEpisdodeMap[compositeKey]
+        val mergedChapters = (localChapterMap.keys + remoteChapterMap.keys).distinct().mapNotNull { compositeKey ->
+            val localChapter = localChapterMap[compositeKey]
+            val remoteChapter = remoteChapterMap[compositeKey]
 
             logcat(LogPriority.DEBUG, logTag) {
-                "Processing episode key: $compositeKey. Local episode: ${localEpisode != null}, " +
-                    "Remote episode: ${remoteEpisode != null}"
+                "Processing episode key: $compositeKey. Local episode: ${localChapter != null}, " +
+                    "Remote episode: ${remoteChapter != null}"
             }
 
             when {
-                localEpisode != null && remoteEpisode == null -> {
-                    logcat(LogPriority.DEBUG, logTag) { "Keeping local episode: ${localEpisode.name}." }
-                    localEpisode
+                localChapter != null && remoteChapter == null -> {
+                    logcat(LogPriority.DEBUG, logTag) { "Keeping local episode: ${localChapter.name}." }
+                    localChapter
                 }
-                localEpisode == null && remoteEpisode != null -> {
-                    logcat(LogPriority.DEBUG, logTag) { "Taking remote episode: ${remoteEpisode.name}." }
-                    remoteEpisode
+                localChapter == null && remoteChapter != null -> {
+                    logcat(LogPriority.DEBUG, logTag) { "Taking remote episode: ${remoteChapter.name}." }
+                    remoteChapter
                 }
-                localEpisode != null && remoteEpisode != null -> {
-                    // Use version number to decide which episode to keep
-                    val chosenChapter = if (localEpisode.version >= remoteEpisode.version) {
-                        // If there mare more episode on remote, local sourceOrder will need to be updated to maintain correct source order.
-                        if (localEpisodes.size < remoteEpisodes.size) {
-                            localEpisode.copy(sourceOrder = remoteEpisode.sourceOrder)
+                localChapter != null && remoteChapter != null -> {
+                    // Use version number to decide which chapter to keep
+                    val chosenChapter = if (localChapter.version >= remoteChapter.version) {
+                        // If there mare more chapter on remote, local sourceOrder will need to be updated to maintain correct source order.
+                        if (localChapters.size < remoteChapters.size) {
+                            localChapter.copy(sourceOrder = remoteChapter.sourceOrder)
                         } else {
-                            localEpisode
+                            localChapter
                         }
                     } else {
-                        remoteEpisode
+                        remoteChapter
                     }
                     logcat(LogPriority.DEBUG, logTag) {
                         "Merging episode: ${chosenChapter.name}. Chosen version from: ${
-                            if (localEpisode.version >= remoteEpisode.version) "Local" else "Remote"
-                        }, Local version: ${localEpisode.version}, Remote version: ${remoteEpisode.version}."
+                            if (localChapter.version >= remoteChapter.version) "Local" else "Remote"
+                        }, Local version: ${localChapter.version}, Remote version: ${remoteChapter.version}."
                     }
                     chosenChapter
                 }
@@ -261,9 +258,9 @@ abstract class SyncService(
             }
         }
 
-        logcat(LogPriority.DEBUG, logTag) { "Episode merge completed. Total merged episodes: ${mergedEpisodes.size}" }
+        logcat(LogPriority.DEBUG, logTag) { "Episode merge completed. Total merged episodes: ${mergedChapters.size}" }
 
-        return mergedEpisodes
+        return mergedChapters
     }
 
     /**
@@ -310,7 +307,7 @@ abstract class SyncService(
         return mergedCategoriesMap.values.toList()
     }
 
-    private fun mergeMangaSourcesLists(
+    private fun mergeSourcesLists(
         localSources: List<BackupSource>?,
         remoteSources: List<BackupSource>?,
     ): List<BackupSource> {

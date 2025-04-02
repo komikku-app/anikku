@@ -17,30 +17,28 @@ fun Track.toApiStatus() = when (status) {
 
 private val preferences: TrackPreferences by injectLazy()
 
-private fun Double.toApiScore(): String = when (preferences.anilistScoreType().get()) {
+fun DomainTrack.toApiScore(): String = when (preferences.anilistScoreType().get()) {
     // 10 point
-    "POINT_10" -> (this.toInt() / 10).toString()
+    "POINT_10" -> (score.toInt() / 10).toString()
     // 100 point
-    "POINT_100" -> this.toInt().toString()
+    "POINT_100" -> score.toInt().toString()
     // 5 stars
     "POINT_5" -> when {
-        this == 0.0 -> "0"
-        this < 30 -> "1"
-        this < 50 -> "2"
-        this < 70 -> "3"
-        this < 90 -> "4"
+        score == 0.0 -> "0"
+        score < 30 -> "1"
+        score < 50 -> "2"
+        score < 70 -> "3"
+        score < 90 -> "4"
         else -> "5"
     }
     // Smiley
     "POINT_3" -> when {
-        this == 0.0 -> "0"
-        this <= 35 -> ":("
-        this <= 60 -> ":|"
+        score == 0.0 -> "0"
+        score <= 35 -> ":("
+        score <= 60 -> ":|"
         else -> ":)"
     }
     // 10 point decimal
-    "POINT_10_DECIMAL" -> (this / 10).toString()
+    "POINT_10_DECIMAL" -> (score / 10).toString()
     else -> throw NotImplementedError("Unknown score type")
 }
-
-fun DomainTrack.toApiScore(): String = this.score.toApiScore()

@@ -12,7 +12,7 @@ data class KitsuListSearchResult(
     val data: List<KitsuListSearchItemData>,
     val included: List<KitsuListSearchItemIncluded> = emptyList(),
 ) {
-    fun firstToAnimeTrack(): TrackSearch {
+    fun firstToTrackSearch(): TrackSearch {
         require(data.isNotEmpty()) { "Missing User data from Kitsu" }
         require(included.isNotEmpty()) { "Missing Anime data from Kitsu" }
 

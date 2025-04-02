@@ -63,7 +63,7 @@ class LibraryPreferences(
             DEVICE_ONLY_ON_WIFI,
         ),
     )
-    fun autoUpdateAnimeRestrictions() = preferenceStore.getStringSet(
+    fun autoUpdateMangaRestrictions() = preferenceStore.getStringSet(
         "library_update_manga_restriction",
         setOf(
             ANIME_HAS_UNSEEN,

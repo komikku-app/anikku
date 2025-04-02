@@ -11,6 +11,8 @@ import eu.kanade.tachiyomi.util.system.buildNotificationChannel
 import eu.kanade.tachiyomi.util.system.buildNotificationChannelGroup
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 
 /**
  * Class to manage the basic information of all the notifications used in the app.
@@ -45,7 +47,7 @@ object Notifications {
     /**
      * Notification channel and ids used by the library updater.
      */
-    const val CHANNEL_NEW_CHAPTERS_EPISODES = "new_chapters_episodes_channel"
+    const val CHANNEL_NEW_EPISODES = "new_episodes_channel"
     const val ID_NEW_CHAPTERS = -301
     const val ID_NEW_EPISODES = -1301
     const val GROUP_NEW_EPISODES = "eu.kanade.tachiyomi.NEW_EPISODES"
@@ -155,8 +157,8 @@ object Notifications {
                     setGroup(GROUP_LIBRARY)
                     setShowBadge(false)
                 },
-                buildNotificationChannel(CHANNEL_NEW_CHAPTERS_EPISODES, IMPORTANCE_DEFAULT) {
-                    setName(context.stringResource(MR.strings.channel_new_chapters_episodes))
+                buildNotificationChannel(CHANNEL_NEW_EPISODES, IMPORTANCE_DEFAULT) {
+                    setName(context.stringResource(AMR.strings.channel_new_episodes))
                 },
                 buildNotificationChannel(CHANNEL_DOWNLOADER_PROGRESS, IMPORTANCE_LOW) {
                     setName(context.stringResource(MR.strings.channel_progress))

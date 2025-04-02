@@ -193,7 +193,7 @@ class LibraryUpdateNotifier(
         // Parent group notification
         context.notify(
             Notifications.ID_NEW_EPISODES,
-            Notifications.CHANNEL_NEW_CHAPTERS_EPISODES,
+            Notifications.CHANNEL_NEW_EPISODES,
         ) {
             setContentTitle(context.stringResource(MR.strings.notification_new_episodes))
             if (updates.size == 1 && !securityPreferences.hideNotificationContent().get()) {
@@ -247,7 +247,7 @@ class LibraryUpdateNotifier(
 
     private suspend fun createNewChaptersNotification(manga: Manga, chapters: Array<Chapter>): Notification {
         val icon = getMangaIcon(manga)
-        return context.notificationBuilder(Notifications.CHANNEL_NEW_CHAPTERS_EPISODES) {
+        return context.notificationBuilder(Notifications.CHANNEL_NEW_EPISODES) {
             setContentTitle(manga.title)
 
             val description = getNewChaptersDescription(chapters)
@@ -265,7 +265,7 @@ class LibraryUpdateNotifier(
             priority = NotificationCompat.PRIORITY_HIGH
 
             // Open first chapter on tap
-            setContentIntent(NotificationReceiver.openChapterPendingActivity(context, manga, chapters.first()))
+            setContentIntent(NotificationReceiver.openEpisodePendingActivity(context, manga, chapters.first()))
             setAutoCancel(true)
 
             // Mark chapters as read action
@@ -283,7 +283,7 @@ class LibraryUpdateNotifier(
             addAction(
                 R.drawable.ic_book_24dp,
                 context.stringResource(MR.strings.action_view_episodes),
-                NotificationReceiver.openChapterPendingActivity(
+                NotificationReceiver.openEpisodePendingActivity(
                     context,
                     manga,
                     Notifications.ID_NEW_EPISODES,
@@ -295,7 +295,7 @@ class LibraryUpdateNotifier(
                 addAction(
                     android.R.drawable.stat_sys_download_done,
                     context.stringResource(MR.strings.action_download),
-                    NotificationReceiver.downloadChaptersPendingBroadcast(
+                    NotificationReceiver.downloadEpisodesPendingBroadcast(
                         context,
                         manga,
                         chapters,

@@ -87,8 +87,8 @@ class SyncPreferences(
             syncOnAppResume = preferenceStore.getBoolean("sync_on_app_resume", false).get(),
 
             // Anime
-            syncOnEpisodeSeen = preferenceStore.getBoolean("sync_on_episode_seen", false).get(),
-            syncOnEpisodeOpen = preferenceStore.getBoolean("sync_on_episode_open", false).get(),
+            syncOnChapterRead = preferenceStore.getBoolean("sync_on_episode_seen", false).get(),
+            syncOnChapterOpen = preferenceStore.getBoolean("sync_on_episode_open", false).get(),
         )
     }
 
@@ -100,8 +100,8 @@ class SyncPreferences(
 
         // Anime
         preferenceStore.getBoolean("sync_on_episode_seen", false)
-            .set(syncTriggerOptions.syncOnEpisodeSeen)
+            .set(syncTriggerOptions.syncOnChapterRead)
         preferenceStore.getBoolean("sync_on_episode_open", false)
-            .set(syncTriggerOptions.syncOnEpisodeOpen)
+            .set(syncTriggerOptions.syncOnChapterOpen)
     }
 }

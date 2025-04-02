@@ -5,7 +5,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -29,9 +29,9 @@ interface Tracker {
     @DrawableRes
     fun getLogo(): Int
 
-    fun getStatusListAnime(): List<Long>
+    fun getStatusList(): List<Long>
 
-    fun getStatusForAnime(status: Long): StringResource?
+    fun getStatus(status: Long): StringResource?
 
     fun getWatchingStatus(): Long
 
@@ -74,7 +74,7 @@ interface Tracker {
     // TODO: move this to an interactor, and update all trackers based on common data
     suspend fun register(item: Track, animeId: Long)
 
-    suspend fun setRemoteAnimeStatus(track: Track, status: Long)
+    suspend fun setRemoteStatus(track: Track, status: Long)
 
     suspend fun setRemoteLastEpisodeSeen(track: Track, episodeNumber: Int)
 
@@ -84,7 +84,7 @@ interface Tracker {
 
     suspend fun setRemoteFinishDate(track: Track, epochMillis: Long)
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata
 
     // KMK -->
     fun hasNotStartedWatching(status: Long): Boolean

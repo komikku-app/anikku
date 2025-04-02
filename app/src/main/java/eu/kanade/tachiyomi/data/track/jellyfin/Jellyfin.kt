@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
-import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.source.Source
 import kotlinx.collections.immutable.ImmutableList
@@ -37,9 +37,9 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
 
     override fun getLogoColor() = Color.rgb(0, 11, 37)
 
-    override fun getStatusListAnime(): List<Long> = listOf(UNSEEN, WATCHING, COMPLETED)
+    override fun getStatusList(): List<Long> = listOf(UNSEEN, WATCHING, COMPLETED)
 
-    override fun getStatusForAnime(status: Long): StringResource? = when (status) {
+    override fun getStatus(status: Long): StringResource? = when (status) {
         UNSEEN -> MR.strings.unseen
         WATCHING -> MR.strings.watching
         COMPLETED -> MR.strings.completed
@@ -64,7 +64,7 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
         return track
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
+    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
         throw NotImplementedError("Not implemented.")
     }
 

@@ -76,12 +76,12 @@ class SyncManager(
         }
 
         val syncOptions = syncPreferences.getSyncSettings()
-        val databaseAnime = getAllMangaThatNeedsSync()
+        val databaseManga = getAllMangaThatNeedsSync()
 
         val backupOptions = BackupOptions(
             libraryEntries = syncOptions.libraryEntries,
             categories = syncOptions.categories,
-            episodes = syncOptions.chapters,
+            chapters = syncOptions.chapters,
             tracking = syncOptions.tracking,
             history = syncOptions.history,
             extensionRepoSettings = syncOptions.extensionRepoSettings,
@@ -91,17 +91,17 @@ class SyncManager(
 
             // SY -->
             customInfo = syncOptions.customInfo,
-            seenEntries = syncOptions.seenEntries,
+            readEntries = syncOptions.seenEntries,
             savedSearchesFeeds = syncOptions.savedSearchesFeeds,
             // SY <--
         )
 
         logcat(LogPriority.DEBUG) { "Begin create backup" }
-        val backupAnime = backupCreator.backupMangas(databaseAnime, backupOptions)
+        val backupManga = backupCreator.backupMangas(databaseManga, backupOptions)
         val backup = Backup(
-            backupManga = backupAnime,
+            backupManga = backupManga,
             backupCategories = backupCreator.backupCategories(backupOptions),
-            backupSources = backupCreator.backupMangaSources(backupAnime),
+            backupSources = backupCreator.backupSources(backupManga),
             backupPreferences = backupCreator.backupAppPreferences(backupOptions),
             backupExtensionRepo = backupCreator.backupExtensionRepos(backupOptions),
             backupSourcePreferences = backupCreator.backupSourcePreferences(backupOptions),
@@ -166,18 +166,18 @@ class SyncManager(
         }
 
         // Check if it's first sync based on lastSyncTimestamp
-        if (syncPreferences.lastSyncTimestamp().get() == 0L && databaseAnime.isNotEmpty()) {
+        if (syncPreferences.lastSyncTimestamp().get() == 0L && databaseManga.isNotEmpty()) {
             // It's first sync no need to restore data. (just update remote data)
             syncPreferences.lastSyncTimestamp().set(Date().time)
             notifier.showSyncSuccess("Updated remote data successfully")
             return
         }
 
-        val (animeFilteredFavorites, animeNonFavorites) = aniFilterFavoritesAndNonFavorites(remoteBackup)
-        mangaUpdateNonFavorites(animeNonFavorites)
+        val (filteredFavorites, nonFavorites) = filterFavoritesAndNonFavorites(remoteBackup)
+        updateNonFavorites(nonFavorites)
 
         val newSyncData = backup.copy(
-            backupManga = animeFilteredFavorites,
+            backupManga = filteredFavorites,
             backupCategories = remoteBackup.backupCategories,
             backupSources = remoteBackup.backupSources,
             backupPreferences = remoteBackup.backupPreferences,
@@ -194,7 +194,7 @@ class SyncManager(
         )
 
         // It's local sync no need to restore data. (just update remote data)
-        if (animeFilteredFavorites.isEmpty()) {
+        if (filteredFavorites.isEmpty()) {
             // update the sync timestamp
             syncPreferences.lastSyncTimestamp().set(Date().time)
             notifier.showSyncSuccess("Sync completed successfully")
@@ -224,7 +224,7 @@ class SyncManager(
     }
 
     private fun writeSyncDataToCache(context: Context, backup: Backup): Uri? {
-        val cacheFile = File(context.cacheDir, "anikku_sync_data.proto.gz")
+        val cacheFile = File(context.cacheDir, "aniyomi_sync_data.proto.gz")
         return try {
             cacheFile.outputStream().use { output ->
                 output.write(ProtoBuf.encodeToByteArray(Backup.serializer(), backup))
@@ -249,38 +249,38 @@ class SyncManager(
         return handler.awaitList { animesQueries.getAnimesWithFavoriteTimestamp(::mapManga) }
     }
 
-    private suspend fun isMangaDifferent(localManga: Manga, remoteAnime: BackupManga): Boolean {
-        val localEpisodes = handler.await { episodesQueries.getEpisodesByAnimeId(localManga.id, 0).executeAsList() }
+    private suspend fun isMangaDifferent(localManga: Manga, remoteManga: BackupManga): Boolean {
+        val localChapters = handler.await { episodesQueries.getEpisodesByAnimeId(localManga.id, 0).executeAsList() }
         val localCategories = getCategories.await(localManga.id).map { it.order }
 
-        if (areChaptersDifferent(localEpisodes, remoteAnime.episodes)) {
+        if (areChaptersDifferent(localChapters, remoteManga.episodes)) {
             return true
         }
 
-        if (localManga.version != remoteAnime.version) {
+        if (localManga.version != remoteManga.version) {
             return true
         }
 
-        if (localCategories.toSet() != remoteAnime.categories.toSet()) {
+        if (localCategories.toSet() != remoteManga.categories.toSet()) {
             return true
         }
 
         return false
     }
 
-    private fun areChaptersDifferent(localEpisodes: List<Episodes>, remoteEpisodes: List<BackupChapter>): Boolean {
-        val localEpisodeMap = localEpisodes.associateBy { it.url }
-        val remoteEpisodeMap = remoteEpisodes.associateBy { it.url }
+    private fun areChaptersDifferent(localChapters: List<Episodes>, remoteChapters: List<BackupChapter>): Boolean {
+        val localChapterMap = localChapters.associateBy { it.url }
+        val remoteChapterMap = remoteChapters.associateBy { it.url }
 
-        if (localEpisodeMap.size != remoteEpisodeMap.size) {
+        if (localChapterMap.size != remoteChapterMap.size) {
             return true
         }
 
-        for ((url, localEpisode) in localEpisodeMap) {
-            val remoteEpisode = remoteEpisodeMap[url]
+        for ((url, localChapter) in localChapterMap) {
+            val remoteChapter = remoteChapterMap[url]
 
-            // If a matching remote episode doesn't exist, or the version numbers are different, consider them different
-            if (remoteEpisode == null || localEpisode.version != remoteEpisode.version) {
+            // If a matching remote chapter doesn't exist, or the version numbers are different, consider them different
+            if (remoteChapter == null || localChapter.version != remoteChapter.version) {
                 return true
             }
         }
@@ -295,36 +295,36 @@ class SyncManager(
      * @return a Pair of lists, where the first list contains different favorite manga
      * and the second list contains non-favorite manga.
      */
-    private suspend fun aniFilterFavoritesAndNonFavorites(backup: Backup): Pair<List<BackupManga>, List<BackupManga>> {
+    private suspend fun filterFavoritesAndNonFavorites(backup: Backup): Pair<List<BackupManga>, List<BackupManga>> {
         val favorites = mutableListOf<BackupManga>()
         val nonFavorites = mutableListOf<BackupManga>()
         val logTag = "filterFavoritesAndNonFavorites"
 
         val elapsedTimeMillis = measureTimeMillis {
-            val databaseAnime = getAllMangaFromDB()
-            val localAnimeMap = databaseAnime.associateBy {
+            val databaseManga = getAllMangaFromDB()
+            val localMangaMap = databaseManga.associateBy {
                 Triple(it.source, it.url, it.title)
             }
 
             logcat(LogPriority.DEBUG, logTag) { "Starting to filter favorites and non-favorites from backup data." }
 
-            backup.backupManga.forEach { remoteAnime ->
-                val compositeKey = Triple(remoteAnime.source, remoteAnime.url, remoteAnime.title)
-                val localAnime = localAnimeMap[compositeKey]
+            backup.backupManga.forEach { remoteManga ->
+                val compositeKey = Triple(remoteManga.source, remoteManga.url, remoteManga.title)
+                val localManga = localMangaMap[compositeKey]
                 when {
                     // Checks if the manga is in favorites and needs updating or adding
-                    remoteAnime.favorite -> {
-                        if (localAnime == null || isMangaDifferent(localAnime, remoteAnime)) {
-                            logcat(LogPriority.DEBUG, logTag) { "Adding to favorites: ${remoteAnime.title}" }
-                            favorites.add(remoteAnime)
+                    remoteManga.favorite -> {
+                        if (localManga == null || isMangaDifferent(localManga, remoteManga)) {
+                            logcat(LogPriority.DEBUG, logTag) { "Adding to favorites: ${remoteManga.title}" }
+                            favorites.add(remoteManga)
                         } else {
-                            logcat(LogPriority.DEBUG, logTag) { "Already up-to-date favorite: ${remoteAnime.title}" }
+                            logcat(LogPriority.DEBUG, logTag) { "Already up-to-date favorite: ${remoteManga.title}" }
                         }
                     }
                     // Handle non-favorites
-                    !remoteAnime.favorite -> {
-                        logcat(LogPriority.DEBUG, logTag) { "Adding to non-favorites: ${remoteAnime.title}" }
-                        nonFavorites.add(remoteAnime)
+                    !remoteManga.favorite -> {
+                        logcat(LogPriority.DEBUG, logTag) { "Adding to non-favorites: ${remoteManga.title}" }
+                        nonFavorites.add(remoteManga)
                     }
                 }
             }
@@ -344,17 +344,17 @@ class SyncManager(
      * Updates the non-favorite manga in the local database with their favorite status from the backup.
      * @param nonFavorites the list of non-favorite BackupManga objects from the backup.
      */
-    private suspend fun mangaUpdateNonFavorites(nonFavorites: List<BackupManga>) {
-        val localAnimeList = getAllMangaFromDB()
+    private suspend fun updateNonFavorites(nonFavorites: List<BackupManga>) {
+        val localMangaList = getAllMangaFromDB()
 
-        val localAnimeMap = localAnimeList.associateBy { Triple(it.source, it.url, it.title) }
+        val localMangaMap = localMangaList.associateBy { Triple(it.source, it.url, it.title) }
 
         nonFavorites.forEach { nonFavorite ->
             val key = Triple(nonFavorite.source, nonFavorite.url, nonFavorite.title)
-            localAnimeMap[key]?.let { localAnime ->
-                if (localAnime.favorite != nonFavorite.favorite) {
-                    val updatedAnime = localAnime.copy(favorite = nonFavorite.favorite)
-                    mangaRestorer.updateManga(updatedAnime)
+            localMangaMap[key]?.let { localManga ->
+                if (localManga.favorite != nonFavorite.favorite) {
+                    val updatedManga = localManga.copy(favorite = nonFavorite.favorite)
+                    mangaRestorer.updateManga(updatedManga)
                 }
             }
         }

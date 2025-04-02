@@ -136,10 +136,7 @@ class ImageSaver(
             if (cursor != null && cursor.count >= 1) {
                 if (cursor.moveToFirst()) {
                     val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
-                    return ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        id,
-                    )
+                    return ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
                 }
             }
         }
@@ -180,7 +177,8 @@ sealed class Image(
 }
 
 sealed interface Location {
-    data class Pictures(val relativePath: String) : Location {
+    @ConsistentCopyVisibility
+    data class Pictures private constructor(val relativePath: String) : Location {
         companion object {
             fun create(relativePath: String = ""): Pictures {
                 return Pictures(relativePath)

@@ -283,7 +283,7 @@ class UpdatesScreenModel(
                     val anime = getManga.await(animeId) ?: return@forEach
                     val source = sourceManager.get(anime.source) ?: return@forEach
                     val episodes = updates.mapNotNull { getChapter.await(it.update.episodeId) }
-                    downloadManager.deleteChapters(
+                    downloadManager.deleteEpisodes(
                         episodes,
                         anime,
                         source,

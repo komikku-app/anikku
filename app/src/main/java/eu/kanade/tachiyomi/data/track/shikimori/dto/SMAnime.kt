@@ -18,7 +18,7 @@ data class SMAnime(
     @SerialName("aired_on")
     val airedOn: String?,
 ) {
-    fun toAnimeTrack(trackId: Long): TrackSearch {
+    fun toTrackSearch(trackId: Long): TrackSearch {
         return TrackSearch.create(trackId).apply {
             remote_id = this@SMAnime.id
             title = name

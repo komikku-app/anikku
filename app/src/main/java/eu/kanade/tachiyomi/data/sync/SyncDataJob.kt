@@ -13,11 +13,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import eu.kanade.domain.sync.SyncPreferences
+import eu.kanade.tachiyomi.data.SyncStatus
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.cancelNotification
+import eu.kanade.tachiyomi.util.system.isOnline
 import eu.kanade.tachiyomi.util.system.isRunning
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
+import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
@@ -29,14 +32,24 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
 
     private val notifier = SyncNotifier(context)
 
-    @Suppress("TooGenericExceptionCaught")
+    // KMK -->
+    private val syncStatus: SyncStatus = Injekt.get()
+    // KMK <--
+
     override suspend fun doWork(): Result {
         if (tags.contains(TAG_AUTO)) {
+            if (!context.isOnline()) {
+                return Result.retry()
+            }
             // Find a running manual worker. If exists, try again later
             if (context.workManager.isRunning(TAG_MANUAL)) {
                 return Result.retry()
             }
         }
+
+        // KMK -->
+        syncStatus.start()
+        // KMK <--
 
         setForegroundSafely()
 
@@ -46,9 +59,12 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             notifier.showSyncError(e.message)
-            Result.failure()
+            Result.success() // try again next time
         } finally {
             context.cancelNotification(Notifications.ID_RESTORE_PROGRESS)
+            // KMK -->
+            syncStatus.stop()
+            // KMK <--
         }
     }
 
@@ -73,7 +89,6 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
             return context.workManager.isRunning(TAG_JOB)
         }
 
-        @Suppress("MagicNumber")
         fun setupTask(context: Context, prefInterval: Int? = null) {
             val syncPreferences = Injekt.get<SyncPreferences>()
             val interval = prefInterval ?: syncPreferences.syncInterval().get()
@@ -95,17 +110,18 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
             }
         }
 
-        fun startNow(context: Context) {
+        fun startNow(context: Context, manual: Boolean = false) {
             val wm = context.workManager
             if (wm.isRunning(TAG_JOB)) {
                 // Already running either as a scheduled or manual job
                 return
             }
+            val tag = if (manual) TAG_MANUAL else TAG_AUTO
             val request = OneTimeWorkRequestBuilder<SyncDataJob>()
                 .addTag(TAG_JOB)
-                .addTag(TAG_MANUAL)
+                .addTag(tag)
                 .build()
-            context.workManager.enqueueUniqueWork(TAG_MANUAL, ExistingWorkPolicy.KEEP, request)
+            context.workManager.enqueueUniqueWork(tag, ExistingWorkPolicy.KEEP, request)
         }
 
         fun stop(context: Context) {
@@ -117,6 +133,10 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
                 // Should only return one work but just in case
                 .forEach {
                     wm.cancelWorkById(it.id)
+                    // KMK -->
+                    val syncStatus: SyncStatus = Injekt.get()
+                    runBlocking { syncStatus.stop() }
+                    // KMK <--
 
                     // Re-enqueue cancelled scheduled work
                     if (it.tags.contains(TAG_AUTO)) {

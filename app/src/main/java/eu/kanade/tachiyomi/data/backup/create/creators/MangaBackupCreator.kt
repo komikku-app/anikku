@@ -56,7 +56,7 @@ class MangaBackupCreator(
             excluded_scanlatorsQueries.getExcludedScanlatorsByAnimeId(manga.id)
         }
 
-        if (options.episodes) {
+        if (options.chapters) {
             // Backup all the chapters
             handler.awaitList {
                 episodesQueries.getEpisodesByAnimeId(
