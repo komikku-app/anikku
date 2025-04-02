@@ -210,6 +210,7 @@ open class SourceFeedScreenModel(
 
                     val titles = withIOContext {
                         page.map { it.toDomainManga(source.id) }
+                            .distinctBy { it.url }
                             .let { networkToLocalManga(it) }
                     }
 
