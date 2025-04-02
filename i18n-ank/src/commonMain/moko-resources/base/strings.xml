@@ -170,6 +170,8 @@
     <string name="action_notes">Notes</string>
     <string name="action_edit_notes">Edit notes</string>
     <string name="notes_placeholder">Enjoyed the part where…</string>
+    <string name="possible_duplicates_title">Possible duplicates</string>
+    <string name="possible_duplicates_summary">You have entries in your library with a similar name.\n\nSelect an entry to migrate or add anyway.</string>
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->
