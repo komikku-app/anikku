@@ -72,7 +72,7 @@ import eu.kanade.tachiyomi.util.AniSkipApi
 import eu.kanade.tachiyomi.util.SkipType
 import eu.kanade.tachiyomi.util.Stamp
 import eu.kanade.tachiyomi.util.TrackSelect
-import eu.kanade.tachiyomi.util.chapter.filterDownloadedEpisodes
+import eu.kanade.tachiyomi.util.chapter.filterDownloaded
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.lang.byteSize
 import eu.kanade.tachiyomi.util.lang.takeBytes
@@ -1082,6 +1082,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private fun filterEpisodeList(episodes: List<Episode>, mangaMap: Map<Long, Anime>?): List<Episode> {
         val anime = currentAnime.value ?: return episodes
 
+        // SY -->
         fun isEpisodeDownloaded(episode: Episode): Boolean {
             val chapterManga = mangaMap?.get(episode.anime_id) ?: anime
             return downloadManager.isEpisodeDownloaded(
@@ -1306,7 +1307,7 @@ class PlayerViewModel @JvmOverloads constructor(
             .sortedWith(getEpisodeSort(anime, sortDescending = false))
             .run {
                 if (basePreferences.downloadedOnly().get()) {
-                    filterDownloadedEpisodes(anime)
+                    filterDownloaded(anime, mangaMap)
                 } else {
                     this
                 }

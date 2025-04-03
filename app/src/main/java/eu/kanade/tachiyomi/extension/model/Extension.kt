@@ -41,9 +41,6 @@ sealed class Extension {
         val isObsolete: Boolean = false,
         val isShared: Boolean,
         val repoUrl: String? = null,
-        // SY -->
-        val isRedundant: Boolean = false,
-        // SY <--
     ) : Extension()
 
     data class Available(

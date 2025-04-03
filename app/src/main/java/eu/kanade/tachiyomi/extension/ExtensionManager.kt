@@ -36,9 +36,9 @@ import uy.kohesive.injekt.api.get
 import java.util.Locale
 
 /**
- * The manager of manga extensions installed as another apk which extend the available sources. It handles
- * the retrieval of remotely available manga extensions as well as installing, updating and removing them.
- * To avoid malicious distribution, every manga extension must be signed and it will only be loaded if its
+ * The manager of extensions installed as another apk which extend the available sources. It handles
+ * the retrieval of remotely available extensions as well as installing, updating and removing them.
+ * To avoid malicious distribution, every extension must be signed and it will only be loaded if its
  * signature is trusted, otherwise the user will be prompted with a warning to trust it before being
  * loaded.
  *
@@ -57,25 +57,25 @@ class ExtensionManager(
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
     /**
-     * API where all the available manga extensions can be found.
+     * API where all the available extensions can be found.
      */
     private val api = ExtensionApi()
 
     /**
-     * The installer which installs, updates and uninstalls the manga extensions.
+     * The installer which installs, updates and uninstalls the extensions.
      */
     private val installer by lazy { ExtensionInstaller(context) }
 
     private val iconMap = mutableMapOf<String, Drawable>()
 
-    private val installedExtensionsMapFlow = MutableStateFlow(emptyMap<String, Extension.Installed>())
-    val installedExtensionsFlow = installedExtensionsMapFlow.mapExtensions(scope)
+    private val installedExtensionMapFlow = MutableStateFlow(emptyMap<String, Extension.Installed>())
+    val installedExtensionsFlow = installedExtensionMapFlow.mapExtensions(scope)
 
-    private val availableExtensionsMapFlow = MutableStateFlow(emptyMap<String, Extension.Available>())
-    val availableExtensionsFlow = availableExtensionsMapFlow.mapExtensions(scope)
+    private val availableExtensionMapFlow = MutableStateFlow(emptyMap<String, Extension.Available>())
+    val availableExtensionsFlow = availableExtensionMapFlow.mapExtensions(scope)
 
-    private val untrustedExtensionsMapFlow = MutableStateFlow(emptyMap<String, Extension.Untrusted>())
-    val untrustedExtensionsFlow = untrustedExtensionsMapFlow.mapExtensions(scope)
+    private val untrustedExtensionMapFlow = MutableStateFlow(emptyMap<String, Extension.Untrusted>())
+    val untrustedExtensionsFlow = untrustedExtensionMapFlow.mapExtensions(scope)
 
     init {
         initExtensions()
@@ -85,7 +85,7 @@ class ExtensionManager(
     private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages().isSet()
 
     fun getAppIconForSource(sourceId: Long): Drawable? {
-        val pkgName = installedExtensionsMapFlow.value.values
+        val pkgName = installedExtensionMapFlow.value.values
             .find { ext ->
                 ext.sources.any { it.id == sourceId }
             }
@@ -107,9 +107,7 @@ class ExtensionManager(
 
     private var availableExtensionsSourcesData: Map<Long, StubSource> = emptyMap()
 
-    private fun setupAvailableExtensionsSourcesDataMap(
-        extensions: List<Extension.Available>,
-    ) {
+    private fun setupAvailableExtensionsSourcesDataMap(extensions: List<Extension.Available>) {
         if (extensions.isEmpty()) return
         availableExtensionsSourcesData = extensions
             .flatMap { ext -> ext.sources.map { it.toStubSource() } }
@@ -124,11 +122,11 @@ class ExtensionManager(
     private fun initExtensions() {
         val extensions = ExtensionLoader.loadExtensions(context)
 
-        installedExtensionsMapFlow.value = extensions
+        installedExtensionMapFlow.value = extensions
             .filterIsInstance<LoadResult.Success>()
             .associate { it.extension.pkgName to it.extension }
 
-        untrustedExtensionsMapFlow.value = extensions
+        untrustedExtensionMapFlow.value = extensions
             .filterIsInstance<LoadResult.Untrusted>()
             .associate { it.extension.pkgName to it.extension }
 
@@ -136,7 +134,7 @@ class ExtensionManager(
     }
 
     /**
-     * Finds the available manga extensions in the [api] and updates [availableExtensionsMapFlow].
+     * Finds the available extensions in the [api] and updates [availableExtensionMapFlow].
      */
     suspend fun findAvailableExtensions() {
         val extensions: List<Extension.Available> = try {
@@ -149,7 +147,12 @@ class ExtensionManager(
 
         enableAdditionalSubLanguages(extensions)
 
-        availableExtensionsMapFlow.value = extensions.associateBy { it.pkgName }
+        availableExtensionMapFlow.value = extensions.associateBy {
+            it.pkgName +
+                // KMK -->
+                ":${it.signatureHash}"
+            // KMK <--
+        }
         updatedInstalledExtensionsStatuses(extensions)
         setupAvailableExtensionsSourcesDataMap(extensions)
     }
@@ -189,73 +192,88 @@ class ExtensionManager(
      *
      * @param availableExtensions The list of extensions given by the [api].
      */
-    private fun updatedInstalledExtensionsStatuses(
-        availableExtensions: List<Extension.Available>,
-    ) {
-        if (availableExtensions.isEmpty()) {
-            preferences.extensionUpdatesCount().set(0)
-            return
-        }
-
-        val installedExtensionsMap = installedExtensionsMapFlow.value.toMutableMap()
+    private fun updatedInstalledExtensionsStatuses(availableExtensions: List<Extension.Available>) {
+        val installedExtensionsMap = installedExtensionMapFlow.value.toMutableMap()
         var changed = false
-
         for ((pkgName, extension) in installedExtensionsMap) {
-            val availableExt = availableExtensions.find { it.pkgName == pkgName }
+            val availableExt = availableExtensions.find {
+                // KMK -->
+                it.signatureHash == extension.signatureHash &&
+                    // KMK <--
+                    it.pkgName == pkgName
+            }
 
-            if (availableExt == null && !extension.isObsolete) {
-                installedExtensionsMap[pkgName] = extension.copy(isObsolete = true)
+            if (availableExt == null &&
+                (!extension.isObsolete || /* KMK --> */ extension.hasUpdate /* KMK <-- */)
+            ) {
+                // Ext not found: Set isObsolete & clear hasUpdate
+                installedExtensionsMap[pkgName] = extension.copy(
+                    isObsolete = true,
+                    // KMK -->
+                    hasUpdate = false,
+                    // KMK <--
+                )
                 changed = true
             } else if (availableExt != null) {
+                // Ext found: Update installed extensions with new information from repo
+                // Also clear isObsolete and set new repo Name if needed
                 val hasUpdate = extension.updateExists(availableExt)
-                if (extension.hasUpdate != hasUpdate) {
-                    installedExtensionsMap[pkgName] = extension.copy(
-                        hasUpdate = hasUpdate,
-                        repoUrl = availableExt.repoUrl,
-                    )
-                } else {
-                    installedExtensionsMap[pkgName] = extension.copy(
-                        repoUrl = availableExt.repoUrl,
-                    )
-                }
+                installedExtensionsMap[pkgName] = extension.copy(
+                    hasUpdate = hasUpdate,
+                    repoUrl = availableExt.repoUrl,
+                    // KMK -->
+                    isObsolete = false,
+                    repoName = extension.repoName ?: availableExt.repoName,
+                    // KMK <--
+                )
                 changed = true
             }
         }
         if (changed) {
-            installedExtensionsMapFlow.value = installedExtensionsMap
+            installedExtensionMapFlow.value = installedExtensionsMap
         }
         updatePendingUpdatesCount()
     }
 
     /**
-     * Returns a flow of the installation process for the given manga extension. It will complete
-     * once the manga extension is installed or throws an error. The process will be canceled if
+     * Returns a flow of the installation process for the given extension. It will complete
+     * once the extension is installed or throws an error. The process will be canceled if
      * unsubscribed before its completion.
      *
-     * @param extension The manga extension to be installed.
+     * @param extension The extension to be installed.
      */
     fun installExtension(extension: Extension.Available): Flow<InstallStep> {
         return installer.downloadAndInstall(api.getApkUrl(extension), extension)
     }
 
     /**
-     * Returns a flow of the installation process for the given manga extension. It will complete
-     * once the manga extension is updated or throws an error. The process will be canceled if
+     * Returns a flow of the installation process for the given extension. It will complete
+     * once the extension is updated or throws an error. The process will be canceled if
      * unsubscribed before its completion.
      *
-     * @param extension The manga extension to be updated.
+     * @param extension The extension to be updated.
      */
     fun updateExtension(extension: Extension.Installed): Flow<InstallStep> {
-        val availableExt = availableExtensionsMapFlow.value[extension.pkgName] ?: return emptyFlow()
+        val availableExt = availableExtensionMapFlow.value[
+            extension.pkgName +
+                // KMK -->
+                ":${extension.signatureHash}",
+            // KMK <--
+        ] ?: return emptyFlow()
         return installExtension(availableExt)
     }
 
     fun cancelInstallUpdateExtension(extension: Extension) {
-        installer.cancelInstall(extension.pkgName)
+        installer.cancelInstall(
+            extension.pkgName +
+                // KMK -->
+                ":${extension.signatureHash}",
+            // KMK <--
+        )
     }
 
     /**
-     * Sets to "installing" status of an manga extension installation.
+     * Sets to "installing" status of an extension installation.
      *
      * @param downloadId The id of the download.
      */
@@ -268,7 +286,7 @@ class ExtensionManager(
     }
 
     /**
-     * Uninstalls the manga extension that matches the given package name.
+     * Uninstalls the extension that matches the given package name.
      *
      * @param extension The extension to uninstall.
      */
@@ -283,11 +301,11 @@ class ExtensionManager(
      * @param extension the extension to trust
      */
     suspend fun trust(extension: Extension.Untrusted) {
-        untrustedExtensionsMapFlow.value[extension.pkgName] ?: return
+        untrustedExtensionMapFlow.value[extension.pkgName] ?: return
 
         trustExtension.trust(extension.pkgName, extension.versionCode, extension.signatureHash)
 
-        untrustedExtensionsMapFlow.value -= extension.pkgName
+        untrustedExtensionMapFlow.value -= extension.pkgName
 
         ExtensionLoader.loadExtensionFromPkgName(context, extension.pkgName)
             .let { it as? LoadResult.Success }
@@ -295,22 +313,22 @@ class ExtensionManager(
     }
 
     /**
-     * Registers the given manga extension in this and the source managers.
+     * Registers the given extension in this and the source managers.
      *
-     * @param extension The manga extension to be registered.
+     * @param extension The extension to be registered.
      */
     private fun registerNewExtension(extension: Extension.Installed) {
-        installedExtensionsMapFlow.value += extension
+        installedExtensionMapFlow.value += extension
     }
 
     /**
-     * Registers the given updated manga extension in this and the source managers previously removing
+     * Registers the given updated extension in this and the source managers previously removing
      * the outdated ones.
      *
-     * @param extension The manga extension to be registered.
+     * @param extension The extension to be registered.
      */
     private fun registerUpdatedExtension(extension: Extension.Installed) {
-        installedExtensionsMapFlow.value += extension
+        installedExtensionMapFlow.value += extension
     }
 
     /**
@@ -320,12 +338,12 @@ class ExtensionManager(
      * @param pkgName The package name of the uninstalled application.
      */
     private fun unregisterExtension(pkgName: String) {
-        installedExtensionsMapFlow.value -= pkgName
-        untrustedExtensionsMapFlow.value -= pkgName
+        installedExtensionMapFlow.value -= pkgName
+        untrustedExtensionMapFlow.value -= pkgName
     }
 
     /**
-     * Listener which receives events of the manga extensions being installed, updated or removed.
+     * Listener which receives events of the extensions being installed, updated or removed.
      */
     private inner class InstallationListener : ExtensionInstallReceiver.Listener {
 
@@ -340,8 +358,8 @@ class ExtensionManager(
         }
 
         override fun onExtensionUntrusted(extension: Extension.Untrusted) {
-            installedExtensionsMapFlow.value -= extension.pkgName
-            untrustedExtensionsMapFlow.value += extension
+            installedExtensionMapFlow.value -= extension.pkgName
+            untrustedExtensionMapFlow.value += extension
             updatePendingUpdatesCount()
         }
 
@@ -353,7 +371,7 @@ class ExtensionManager(
     }
 
     /**
-     * Extension method to set the update field of an installed manga extension.
+     * Extension method to set the update field of an installed extension.
      */
     private fun Extension.Installed.withUpdateCheck(): Extension.Installed {
         return if (updateExists()) {
@@ -363,18 +381,16 @@ class ExtensionManager(
         }
     }
 
-    private fun Extension.Installed.updateExists(
-        availableExtension: Extension.Available? = null,
-    ): Boolean {
+    private fun Extension.Installed.updateExists(availableExtension: Extension.Available? = null): Boolean {
         val availableExt = availableExtension
-            ?: availableExtensionsMapFlow.value[pkgName]
+            ?: availableExtensionMapFlow.value[pkgName]
             ?: return false
 
         return (availableExt.versionCode > versionCode || availableExt.libVersion > libVersion)
     }
 
     private fun updatePendingUpdatesCount() {
-        val pendingUpdateCount = installedExtensionsMapFlow.value.values.count { it.hasUpdate }
+        val pendingUpdateCount = installedExtensionMapFlow.value.values.count { it.hasUpdate }
         preferences.extensionUpdatesCount().set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             ExtensionUpdateNotifier(context).dismiss()
@@ -383,9 +399,7 @@ class ExtensionManager(
 
     private operator fun <T : Extension> Map<String, T>.plus(extension: T) = plus(extension.pkgName to extension)
 
-    private fun <T : Extension> StateFlow<Map<String, T>>.mapExtensions(
-        scope: CoroutineScope,
-    ): StateFlow<List<T>> {
+    private fun <T : Extension> StateFlow<Map<String, T>>.mapExtensions(scope: CoroutineScope): StateFlow<List<T>> {
         return map { it.values.toList() }.stateIn(scope, SharingStarted.Lazily, value.values.toList())
     }
 }

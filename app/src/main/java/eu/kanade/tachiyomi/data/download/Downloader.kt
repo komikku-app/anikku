@@ -52,9 +52,9 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.episode.model.Episode
-import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt

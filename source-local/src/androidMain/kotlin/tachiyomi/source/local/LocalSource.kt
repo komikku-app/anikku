@@ -46,6 +46,9 @@ actual class LocalSource(
     private val context: Context,
     private val fileSystem: LocalSourceFileSystem,
     private val coverManager: LocalCoverManager,
+    // SY -->
+    private val allowHiddenFiles: () -> Boolean,
+    // SY <--
 ) : CatalogueSource, UnmeteredSource {
 
     private val json: Json by injectLazy()
@@ -56,15 +59,15 @@ actual class LocalSource(
     @Suppress("PrivatePropertyName")
     private val LatestFilters = FilterList(OrderBy.Latest(context))
 
-    override val name = context.stringResource(MR.strings.local_anime_source)
+    override val name: String = context.stringResource(MR.strings.local_source)
 
     override val id: Long = ID
 
-    override val lang = "other"
+    override val lang: String = "other"
 
     override fun toString() = name
 
-    override val supportsLatest = true
+    override val supportsLatest: Boolean = true
 
     // Browse related
     override suspend fun getPopularAnime(page: Int) = getSearchAnime(page, "", PopularFilters)
@@ -81,10 +84,19 @@ actual class LocalSource(
         } else {
             0L
         }
+        // SY -->
+        val allowLocalSourceHiddenFolders = allowHiddenFiles()
+        // SY <--
 
         var animeDirs = fileSystem.getFilesInBaseDirectory()
             // Filter out files that are hidden and is not a folder
-            .filter { it.isDirectory && !it.name.orEmpty().startsWith('.') }
+            .filter {
+                it.isDirectory &&
+                    /* SY --> */ (
+                        !it.name.orEmpty().startsWith('.') ||
+                            allowLocalSourceHiddenFolders
+                        ) /* SY <-- */
+            }
             .distinctBy { it.name }
             .filter {
                 if (lastModifiedLimit == 0L && query.isBlank()) {
@@ -139,20 +151,22 @@ actual class LocalSource(
             }
             .awaitAll()
 
-        AnimesPage(animes.toList(), false)
+        AnimesPage(animes, false)
     }
 
     // Old fetch functions
 
     // TODO: Should be replaced when Anime Extensions get to 1.15
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getPopular"))
+    @Suppress("DEPRECATION")
+    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getPopularAnime(page)"))
     override fun fetchPopularAnime(page: Int) = fetchSearchAnime(page, "", PopularFilters)
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getLatestUpdates"))
+    @Suppress("DEPRECATION")
+    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getLatestUpdates(page)"))
     override fun fetchLatestUpdates(page: Int) = fetchSearchAnime(page, "", LatestFilters)
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getSearchAnime"))
+    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getSearchAnime(page, query, filters)"))
     override fun fetchSearchAnime(page: Int, query: String, filters: FilterList): Observable<AnimesPage> {
         return runBlocking {
             Observable.just(getSearchAnime(page, query, filters))

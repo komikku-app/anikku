@@ -264,7 +264,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                         it.manga.status == statusExtra
                     }
                 }
-                
+
                 LibraryGroup.UNGROUPED -> libraryManga
                 else -> libraryManga
             }

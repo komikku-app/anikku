@@ -24,7 +24,7 @@ class CrashLogUtil(
             val file = context.createFileInCacheDir("anikku_crash_logs.txt")
 
             file.appendText(getDebugInfo() + "\n\n")
-            getAnimeExtensionsInfo()?.let { file.appendText("$it\n\n") }
+            getExtensionsInfo()?.let { file.appendText("$it\n\n") }
             exception?.let { file.appendText("$it\n\n") }
 
             Runtime.getRuntime().exec("logcat *:E -d -f ${file.absolutePath}").waitFor()
@@ -39,6 +39,7 @@ class CrashLogUtil(
     fun getDebugInfo(): String {
         return """
             App version: ${BuildConfig.VERSION_NAME} (${BuildConfig.FLAVOR}, ${BuildConfig.COMMIT_SHA}, ${BuildConfig.VERSION_CODE}, ${BuildConfig.BUILD_TIME})
+            Build version: ${BuildConfig.COMMIT_COUNT}
             Android version: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT}; build ${Build.DISPLAY})
             Android build ID: ${Build.DISPLAY}
             Device brand: ${Build.BRAND}
@@ -57,7 +58,7 @@ class CrashLogUtil(
         //    FFmpeg version: ${Utils.VERSIONS.ffmpeg}
     }
 
-    private fun getAnimeExtensionsInfo(): String? {
+    private fun getExtensionsInfo(): String? {
         val availableExtensions = extensionManager.availableExtensionsFlow.value.associateBy { it.pkgName }
 
         val extensionInfoList = extensionManager.installedExtensionsFlow.value

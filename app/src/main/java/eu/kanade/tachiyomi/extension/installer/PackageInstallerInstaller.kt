@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.os.Build
 import androidx.core.content.ContextCompat
+import androidx.core.content.IntentSanitizer
 import eu.kanade.tachiyomi.extension.model.InstallStep
 import eu.kanade.tachiyomi.util.lang.use
 import eu.kanade.tachiyomi.util.system.getParcelableExtraCompat
@@ -25,6 +26,20 @@ class PackageInstallerInstaller(private val service: Service) : Installer(servic
             when (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
                 PackageInstaller.STATUS_PENDING_USER_ACTION -> {
                     val userAction = intent.getParcelableExtraCompat<Intent>(Intent.EXTRA_INTENT)
+                        ?.run {
+                            // Doesn't actually needed as the receiver is actually not exported
+                            // But the warnings can't be suppressed without this
+                            IntentSanitizer.Builder()
+                                .allowAction(this.action!!)
+                                .allowExtra(PackageInstaller.EXTRA_SESSION_ID) { id -> id == activeSession?.second }
+                                .allowAnyComponent()
+                                .allowPackage {
+                                    // There is no way to check the actual installer name so allow all.
+                                    true
+                                }
+                                .build()
+                                .sanitizeByFiltering(this)
+                        }
                     if (userAction == null) {
                         logcat(LogPriority.ERROR) { "Fatal error for $intent" }
                         continueQueue(InstallStep.Error)
@@ -51,13 +66,9 @@ class PackageInstallerInstaller(private val service: Service) : Installer(servic
         super.processEntry(entry)
         activeSession = null
         try {
-            val installParams = PackageInstaller.SessionParams(
-                PackageInstaller.SessionParams.MODE_FULL_INSTALL,
-            )
+            val installParams = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                installParams.setRequireUserAction(
-                    PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED,
-                )
+                installParams.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
             }
             activeSession = entry to packageInstaller.createSession(installParams)
             val fileSize = service.getUriSize(entry.uri) ?: throw IllegalStateException()
@@ -109,7 +120,7 @@ class PackageInstallerInstaller(private val service: Service) : Installer(servic
             service,
             packageActionReceiver,
             IntentFilter(INSTALL_ACTION),
-            ContextCompat.RECEIVER_EXPORTED,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
         )
     }
 }

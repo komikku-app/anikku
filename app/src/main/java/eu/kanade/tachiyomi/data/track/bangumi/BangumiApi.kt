@@ -149,7 +149,7 @@ class BangumiApi(
                             authors = anime.infobox
                                 .filter {
                                     it.key.contains("原作", true) ||
-                                    it.key.contains("分镜", true) ||
+                                        it.key.contains("分镜", true) ||
                                         it.key.contains("脚本", true)
                                 }
                                 .filterIsInstance<Infobox.SingleValue>()
@@ -158,7 +158,7 @@ class BangumiApi(
                             artists = anime.infobox
                                 .filter {
                                     it.key.contains("制片", true) ||
-                                    it.key.contains("制作", true) ||
+                                        it.key.contains("制作", true) ||
                                         it.key.contains("导演", true) ||
                                         it.key.contains("构成", true) ||
                                         it.key.contains("动画", true) ||

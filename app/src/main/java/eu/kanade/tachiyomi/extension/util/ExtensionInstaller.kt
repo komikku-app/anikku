@@ -69,7 +69,10 @@ internal class ExtensionInstaller(private val context: Context) {
      * @param extension The extension to install.
      */
     fun downloadAndInstall(url: String, extension: Extension): Flow<InstallStep> {
-        val pkgName = extension.pkgName
+        val pkgName = extension.pkgName +
+            // KMK -->
+            ":${extension.signatureHash}"
+        // KMK <--
 
         val oldDownload = activeDownloads[pkgName]
         if (oldDownload != null) {
@@ -83,11 +86,7 @@ internal class ExtensionInstaller(private val context: Context) {
         val request = DownloadManager.Request(downloadUri)
             .setTitle(extension.name)
             .setMimeType(APK_MIME)
-            .setDestinationInExternalFilesDir(
-                context,
-                Environment.DIRECTORY_DOWNLOADS,
-                downloadUri.lastPathSegment,
-            )
+            .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, downloadUri.lastPathSegment)
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
 
         val id = downloadManager.enqueue(request)
@@ -127,7 +126,6 @@ internal class ExtensionInstaller(private val context: Context) {
      */
     private fun downloadStatusFlow(id: Long): Flow<Int> = flow {
         val query = DownloadManager.Query().setFilterById(id)
-
         while (true) {
             // Get the current download status
             val downloadStatus = downloadManager.query(query).use { cursor ->
@@ -138,7 +136,8 @@ internal class ExtensionInstaller(private val context: Context) {
             emit(downloadStatus)
 
             // Stop polling when the download fails or finishes
-            if (downloadStatus == DownloadManager.STATUS_SUCCESSFUL ||
+            if (
+                downloadStatus == DownloadManager.STATUS_SUCCESSFUL ||
                 downloadStatus == DownloadManager.STATUS_FAILED
             ) {
                 return@flow
@@ -161,9 +160,7 @@ internal class ExtensionInstaller(private val context: Context) {
                 val intent = Intent(context, ExtensionInstallActivity::class.java)
                     .setDataAndType(uri, APK_MIME)
                     .putExtra(EXTRA_DOWNLOAD_ID, downloadId)
-                    .setFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                    )
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
                 context.startActivity(intent)
             }
@@ -197,8 +194,7 @@ internal class ExtensionInstaller(private val context: Context) {
                 tempFile.delete()
             }
             else -> {
-                val intent =
-                    ExtensionInstallService.getIntent(context, downloadId, uri, installer)
+                val intent = ExtensionInstallService.getIntent(context, downloadId, uri, installer)
                 ContextCompat.startForegroundService(context, intent)
             }
         }
@@ -243,7 +239,7 @@ internal class ExtensionInstaller(private val context: Context) {
     /**
      * Deletes the download for the given package name.
      *
-     * @param pkgName The package name of the download to delete.
+     * @param pkgName The package name of the download to delete together with its signature.
      */
     private fun deleteDownload(pkgName: String) {
         val downloadId = activeDownloads.remove(pkgName)

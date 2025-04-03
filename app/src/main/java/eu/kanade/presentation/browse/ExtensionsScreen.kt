@@ -613,7 +613,6 @@ private fun ExtensionItemContentPreview() {
         hasUpdate = false,
         isObsolete = false,
         isShared = false,
-        isRedundant = false,
     )
     val extUntrusted = Extension.Untrusted(
         name = "Tachiyomi",
@@ -638,12 +637,6 @@ private fun ExtensionItemContentPreview() {
         ExtensionItemContent(
             extension = extInstalled.copy(
                 isObsolete = true,
-            ),
-            installStep = InstallStep.Idle,
-        )
-        ExtensionItemContent(
-            extension = extInstalled.copy(
-                isRedundant = true,
             ),
             installStep = InstallStep.Idle,
         )

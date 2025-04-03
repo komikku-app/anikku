@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.repository.StubSourceRepository
 import tachiyomi.domain.source.service.SourceManager
@@ -48,6 +49,10 @@ class AndroidSourceManager(
         it.values.filterIsInstance<CatalogueSource>()
     }
 
+    // SY -->
+    private val preferences: UnsortedPreferences by injectLazy()
+    // SY <--
+
     init {
         scope.launch {
             extensionManager.installedExtensionsFlow
@@ -58,6 +63,9 @@ class AndroidSourceManager(
                                 context,
                                 Injekt.get(),
                                 Injekt.get(),
+                                // SY -->
+                                preferences.allowLocalSourceHiddenFolders()::get,
+                                // SY <--
                             ),
                         ),
                     ).apply {

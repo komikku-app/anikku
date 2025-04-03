@@ -30,7 +30,7 @@ import javax.crypto.spec.IvParameterSpec
  * them in Shared Preferences
  */
 object CbzCrypto {
-    const val DATABASE_NAME = "tachiyomiEncrypted.db"
+    const val DATABASE_NAME = "tachiyomiEncrypted.animedb"
     private const val DEFAULT_COVER_NAME = "cover.jpg"
     private val securityPreferences: SecurityPreferences by injectLazy()
     private val keyStore = KeyStore.getInstance(Keystore).apply {
