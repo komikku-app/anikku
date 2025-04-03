@@ -7,7 +7,7 @@ import eu.kanade.domain.extension.interactor.GetExtensionLanguages
 import eu.kanade.domain.extension.interactor.GetExtensionSources
 import eu.kanade.domain.extension.interactor.GetExtensionsByType
 import eu.kanade.domain.extension.interactor.TrustExtension
-import eu.kanade.domain.manga.interactor.SetMangaViewerFlags
+import eu.kanade.domain.manga.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.interactor.GetEnabledSources
 import eu.kanade.domain.source.interactor.GetLanguagesWithSources
@@ -135,12 +135,10 @@ class DomainModule : InjektModule {
         addFactory { SetMangaChapterFlags(get()) }
         addFactory { FetchInterval(get()) }
         addFactory { SetMangaDefaultChapterFlags(get(), get(), get()) }
-        addFactory { SetMangaViewerFlags(get()) }
+        addFactory { SetAnimeViewerFlags(get()) }
         addFactory { NetworkToLocalManga(get()) }
         addFactory { UpdateManga(get(), get()) }
         addFactory { SetMangaCategories(get()) }
-        // addFactory { GetExcludedScanlators(get()) }
-        // addFactory { SetExcludedScanlators(get()) }
 
         addSingletonFactory<ReleaseService> { ReleaseServiceImpl(get(), get()) }
         addFactory { GetApplicationRelease(get(), get()) }
@@ -163,7 +161,6 @@ class DomainModule : InjektModule {
         addFactory { SetReadStatus(get(), get(), get(), get(), get()) }
         addFactory { ShouldUpdateDbChapter() }
         addFactory { SyncChaptersWithSource(get(), get(), get(), get(), get(), get(), get()) }
-        // addFactory { GetAvailableScanlators(get()) }
         addFactory { FilterChaptersForDownload(get(), get(), get(), get()) }
 
         addSingletonFactory<HistoryRepository> { HistoryRepositoryImpl(get()) }

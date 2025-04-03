@@ -1,7 +1,9 @@
 package tachiyomi.domain.manga.model
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import tachiyomi.domain.anime.model.Anime
 
+typealias AnimeUpdate = MangaUpdate
 data class MangaUpdate(
     val id: Long,
     val source: Long? = null,
@@ -56,3 +58,4 @@ fun Manga.toMangaUpdate(): MangaUpdate {
         version = version,
     )
 }
+fun Anime.toAnimeUpdate() = toMangaUpdate()

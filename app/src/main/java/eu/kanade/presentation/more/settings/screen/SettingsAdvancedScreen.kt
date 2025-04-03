@@ -25,7 +25,6 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.interactor.TrustExtension
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.advanced.ClearDatabaseScreen
@@ -126,9 +125,6 @@ object SettingsAdvancedScreen : SearchableSettings {
             getNetworkGroup(networkPreferences = networkPreferences),
             getLibraryGroup(),
             getExtensionsGroup(basePreferences = basePreferences),
-            // SY -->
-            getDataSaverGroup(),
-            // SY <--
         )
     }
 
@@ -382,83 +378,4 @@ object SettingsAdvancedScreen : SearchableSettings {
             ),
         )
     }
-
-    // SY -->
-    @Composable
-    private fun getDataSaverGroup(): Preference.PreferenceGroup {
-        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
-        val dataSaver by sourcePreferences.dataSaver().collectAsState()
-        return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.data_saver),
-            preferenceItems = persistentListOf(
-                Preference.PreferenceItem.ListPreference(
-                    pref = sourcePreferences.dataSaver(),
-                    title = stringResource(MR.strings.data_saver),
-                    subtitle = stringResource(MR.strings.data_saver_summary),
-                    entries = persistentMapOf(
-                        DataSaver.NONE to stringResource(MR.strings.disabled),
-                        DataSaver.BANDWIDTH_HERO to stringResource(MR.strings.bandwidth_hero),
-                        DataSaver.WSRV_NL to stringResource(MR.strings.wsrv),
-                        DataSaver.RESMUSH_IT to stringResource(MR.strings.resmush),
-                    ),
-                ),
-                Preference.PreferenceItem.EditTextPreference(
-                    pref = sourcePreferences.dataSaverServer(),
-                    title = stringResource(MR.strings.bandwidth_data_saver_server),
-                    subtitle = stringResource(MR.strings.data_saver_server_summary),
-                    enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = sourcePreferences.dataSaverDownloader(),
-                    title = stringResource(MR.strings.data_saver_downloader),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = sourcePreferences.dataSaverIgnoreJpeg(),
-                    title = stringResource(MR.strings.data_saver_ignore_jpeg),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = sourcePreferences.dataSaverIgnoreGif(),
-                    title = stringResource(MR.strings.data_saver_ignore_gif),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    pref = sourcePreferences.dataSaverImageQuality(),
-                    title = stringResource(MR.strings.data_saver_image_quality),
-                    subtitle = stringResource(MR.strings.data_saver_image_quality_summary),
-                    entries = listOf(
-                        "10%",
-                        "20%",
-                        "40%",
-                        "50%",
-                        "70%",
-                        "80%",
-                        "90%",
-                        "95%",
-                    ).associateBy { it.trimEnd('%').toInt() }.toPersistentMap(),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                kotlin.run {
-                    val dataSaverImageFormatJpeg by sourcePreferences.dataSaverImageFormatJpeg().collectAsState()
-                    Preference.PreferenceItem.SwitchPreference(
-                        pref = sourcePreferences.dataSaverImageFormatJpeg(),
-                        title = stringResource(MR.strings.data_saver_image_format),
-                        subtitle = if (dataSaverImageFormatJpeg) {
-                            stringResource(MR.strings.data_saver_image_format_summary_on)
-                        } else {
-                            stringResource(MR.strings.data_saver_image_format_summary_off)
-                        },
-                        enabled = dataSaver != DataSaver.NONE && dataSaver != DataSaver.RESMUSH_IT,
-                    )
-                },
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = sourcePreferences.dataSaverColorBW(),
-                    title = stringResource(MR.strings.data_saver_color_bw),
-                    enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
-                ),
-            ),
-        )
-    }
-    // SY <--
 }

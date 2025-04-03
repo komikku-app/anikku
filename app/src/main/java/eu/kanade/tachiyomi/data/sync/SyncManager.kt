@@ -91,7 +91,7 @@ class SyncManager(
 
             // SY -->
             customInfo = syncOptions.customInfo,
-            readEntries = syncOptions.seenEntries,
+            readEntries = syncOptions.readEntries,
             savedSearchesFeeds = syncOptions.savedSearchesFeeds,
             // SY <--
         )

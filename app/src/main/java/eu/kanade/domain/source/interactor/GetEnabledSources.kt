@@ -19,22 +19,60 @@ class GetEnabledSources(
     fun subscribe(): Flow<List<Source>> {
         return combine(
             preferences.pinnedSources().changes(),
+            combine(
             preferences.enabledLanguages().changes(),
             preferences.disabledSources().changes(),
             preferences.lastUsedSource().changes(),
+            ) { a, b, c -> Triple(a, b, c) },
+            // SY -->
+            combine(
+                preferences.sourcesTabSourcesInCategories().changes(),
+                preferences.sourcesTabCategoriesFilter().changes(),
+            ) { a, b -> Pair(a, b) },
+            // SY <--
             repository.getSources(),
-        ) { pinnedSourceIds, enabledLanguages, disabledSources, lastUsedSource, sources ->
+        ) {
+                pinnedSourceIds,
+                (enabledLanguages, disabledSources, lastUsedSource),
+                (sourcesInCategories, sourceCategoriesFilter),
+                sources,
+            ->
+
+            val sourcesAndCategories = sourcesInCategories.map {
+                it.split('|').let { (source, test) -> source.toLong() to test }
+            }
+            val sourcesInSourceCategories = sourcesAndCategories.map { it.first }
             sources
                 .filter { it.lang in enabledLanguages || it.isLocal() }
                 .filterNot { it.id.toString() in disabledSources || it.id in BlacklistedSources.HIDDEN_SOURCES }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
                 .flatMap {
                     val flag = if ("${it.id}" in pinnedSourceIds) Pins.pinned else Pins.unpinned
-                    val source = it.copy(pin = flag)
+                    // SY -->
+                    val categories = sourcesAndCategories.filter { (id) -> id == it.id }
+                        .map(Pair<*, String>::second)
+                        .toSet()
+                    // SY <--
+                    val source = it.copy(
+                        pin = flag,
+                        categories = categories,
+                    )
                     val toFlatten = mutableListOf(source)
                     if (source.id == lastUsedSource) {
                         toFlatten.add(source.copy(isUsedLast = true, pin = source.pin - Pin.Actual))
                     }
+                    // SY -->
+                    categories.forEach { category ->
+                        toFlatten.add(source.copy(category = category, pin = source.pin - Pin.Actual))
+                    }
+                    if (
+                        sourceCategoriesFilter &&
+                        Pin.Actual !in toFlatten[0].pin &&
+                        source.id in sourcesInSourceCategories
+                    ) {
+                        toFlatten.removeAt(0)
+                    }
+                    // SY <--
                     toFlatten
                 }
         }

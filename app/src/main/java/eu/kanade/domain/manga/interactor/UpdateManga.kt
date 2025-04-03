@@ -2,6 +2,7 @@ package eu.kanade.domain.manga.interactor
 
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.source.model.SManga
 import tachiyomi.domain.manga.interactor.FetchInterval
 import tachiyomi.domain.manga.model.Manga
@@ -31,6 +32,9 @@ class UpdateManga(
         remoteAnime: SManga,
         manualFetch: Boolean,
         coverCache: CoverCache = Injekt.get(),
+        // SY -->
+        downloadManager: DownloadManager = Injekt.get(),
+        // SY <--
     ): Boolean {
         val remoteTitle = try {
             remoteAnime.title
@@ -41,6 +45,7 @@ class UpdateManga(
         // if the manga isn't a favorite, set its title from source and update in db
         // SY -->
         val title = if (remoteTitle.isNotBlank() && localManga.ogTitle != remoteTitle) {
+            downloadManager.renameAnimeDir(localManga.ogTitle, remoteTitle, localManga.source)
             remoteTitle
         } else {
             null

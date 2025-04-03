@@ -194,7 +194,7 @@ class DownloadProvider(
         )
     }
 
-    fun isEpisodeDirNameChanged(oldChapter: Chapter, newChapter: Chapter): Boolean {
+    fun isChapterDirNameChanged(oldChapter: Chapter, newChapter: Chapter): Boolean {
         return oldChapter.name != newChapter.name ||
             oldChapter.scanlator?.takeIf { it.isNotBlank() } != newChapter.scanlator?.takeIf { it.isNotBlank() }
     }

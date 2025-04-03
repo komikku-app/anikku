@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.online.prepareNewChapter
 import tachiyomi.data.chapter.ChapterSanitizer
 import tachiyomi.data.source.NoResultsException
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
@@ -35,113 +36,111 @@ class SyncChaptersWithSource(
 ) {
 
     /**
-     * Method to synchronize db episodes with source ones
+     * Method to synchronize db chapters with source ones
      *
-     * @param rawSourceEpisodes the episodes from the source.
-     * @param manga the manga the episodes belong to.
+     * @param rawSourceChapters the chapters from the source.
+     * @param manga the manga the chapters belong to.
      * @param source the source the manga belongs to.
-     * @return Newly added episodes
+     * @return Newly added chapters
      */
     suspend fun await(
-        rawSourceEpisodes: List<SChapter>,
+        rawSourceChapters: List<SChapter>,
         manga: Manga,
         source: Source,
         manualFetch: Boolean = false,
         fetchWindow: Pair<Long, Long> = Pair(0, 0),
     ): List<Chapter> {
-        if (rawSourceEpisodes.isEmpty() && !source.isLocal()) {
+        if (rawSourceChapters.isEmpty() && !source.isLocal()) {
             throw NoResultsException()
         }
 
         val now = ZonedDateTime.now()
         val nowMillis = now.toInstant().toEpochMilli()
 
-        val sourceChapters = rawSourceEpisodes
+        val sourceChapters = rawSourceChapters
             .distinctBy { it.url }
-            .mapIndexed { i, sEpisode ->
+            .mapIndexed { i, sChapter ->
                 Chapter.create()
-                    .copyFromSChapter(sEpisode)
-                    .copy(name = with(ChapterSanitizer) { sEpisode.name.sanitize(manga.title) })
+                    .copyFromSChapter(sChapter)
+                    .copy(name = with(ChapterSanitizer) { sChapter.name.sanitize(manga.title) })
                     .copy(animeId = manga.id, sourceOrder = i.toLong())
             }
 
-        val dbEpisodes = getChaptersByMangaId.await(manga.id)
+        val dbChapters = getChaptersByMangaId.await(manga.id)
 
         val newChapters = mutableListOf<Chapter>()
         val updatedChapters = mutableListOf<Chapter>()
-        val removedEpisodes = dbEpisodes.filterNot { dbEpisode ->
-            sourceChapters.any { sourceEpisode ->
-                dbEpisode.url == sourceEpisode.url
+        val removedChapters = dbChapters.filterNot { dbChapter ->
+            sourceChapters.any { sourceChapter ->
+                dbChapter.url == sourceChapter.url
             }
         }
 
-        // Used to not set upload date of older episodes
-        // to a higher value than newer episodes
+        // Used to not set upload date of older chapters
+        // to a higher value than newer chapters
         var maxSeenUploadDate = 0L
 
-        for (sourceEpisode in sourceChapters) {
-            var episode = sourceEpisode
+        for (sourceChapter in sourceChapters) {
+            var chapter = sourceChapter
 
             // Update metadata from source if necessary.
             if (source is HttpSource) {
-                val sEpisode = episode.toSChapter()
-                source.prepareNewEpisode(sEpisode, manga.toSManga())
-                episode = episode.copyFromSChapter(sEpisode)
+                val sChapter = chapter.toSChapter()
+                source.prepareNewChapter(sChapter, manga.toSManga())
+                chapter = chapter.copyFromSChapter(sChapter)
             }
 
-            // Recognize episode number for the episode.
-            val episodeNumber = ChapterRecognition.parseChapterNumber(
+            // Recognize chapter number for the chapter.
+            val chapterNumber = ChapterRecognition.parseChapterNumber(
                 manga.title,
-                episode.name,
-                episode.episodeNumber,
+                chapter.name,
+                chapter.episodeNumber,
             )
-            episode = episode.copy(episodeNumber = episodeNumber)
+            chapter = chapter.copy(episodeNumber = chapterNumber)
 
-            val dbEpisode = dbEpisodes.find { it.url == episode.url }
+            val dbChapter = dbChapters.find { it.url == chapter.url }
 
-            if (dbEpisode == null) {
-                val toAddEpisode = if (episode.dateUpload == 0L) {
+            if (dbChapter == null) {
+                val toAddChapter = if (chapter.dateUpload == 0L) {
                     val altDateUpload = if (maxSeenUploadDate == 0L) nowMillis else maxSeenUploadDate
-                    episode.copy(dateUpload = altDateUpload)
+                    chapter.copy(dateUpload = altDateUpload)
                 } else {
-                    maxSeenUploadDate = max(maxSeenUploadDate, sourceEpisode.dateUpload)
-                    episode
+                    maxSeenUploadDate = max(maxSeenUploadDate, sourceChapter.dateUpload)
+                    chapter
                 }
-                newChapters.add(toAddEpisode)
+                newChapters.add(toAddChapter)
             } else {
-                if (shouldUpdateDbChapter.await(dbEpisode, episode)) {
-                    val shouldRenameEpisode = downloadProvider.isEpisodeDirNameChanged(
-                        dbEpisode,
-                        episode,
-                    ) &&
-                        downloadManager.isEpisodeDownloaded(
-                            dbEpisode.name,
-                            dbEpisode.scanlator,
+                if (shouldUpdateDbChapter.await(dbChapter, chapter)) {
+                    val shouldRenameChapter = downloadProvider.isChapterDirNameChanged(dbChapter, chapter) &&
+                        downloadManager.isChapterDownloaded(
+                            dbChapter.name,
+                            dbChapter.scanlator,
                             // SY -->
+                            // manga.title,
                             manga.ogTitle,
                             // SY <--
                             manga.source,
                         )
 
-                    if (shouldRenameEpisode) {
-                        downloadManager.renameEpisode(source, manga, dbEpisode, episode)
+                    if (shouldRenameChapter) {
+                        downloadManager.renameChapter(source, manga, dbChapter, chapter)
                     }
-                    var toChangeEpisode = dbEpisode.copy(
-                        name = episode.name,
-                        episodeNumber = episode.episodeNumber,
-                        scanlator = episode.scanlator,
-                        sourceOrder = episode.sourceOrder,
+                    var toChangeChapter = dbChapter.copy(
+                        name = chapter.name,
+                        episodeNumber = chapter.episodeNumber,
+                        scanlator = chapter.scanlator,
+                        sourceOrder = chapter.sourceOrder,
                     )
-                    if (episode.dateUpload != 0L) {
-                        toChangeEpisode = toChangeEpisode.copy(dateUpload = episode.dateUpload)
+                    if (chapter.dateUpload != 0L) {
+                        toChangeChapter = toChangeChapter.copy(dateUpload = chapter.dateUpload)
                     }
-                    updatedChapters.add(toChangeEpisode)
+                    updatedChapters.add(toChangeChapter)
                 }
             }
         }
 
         // Return if there's nothing to add, delete, or update to avoid unnecessary db transactions.
-        if (newChapters.isEmpty() && removedEpisodes.isEmpty() && updatedChapters.isEmpty()) {
+        if (newChapters.isEmpty() && removedChapters.isEmpty() && updatedChapters.isEmpty()) {
             if (manualFetch || manga.fetchInterval == 0 || manga.nextUpdate < fetchWindow.first) {
                 updateManga.awaitUpdateFetchInterval(
                     manga,
@@ -154,44 +153,44 @@ class SyncChaptersWithSource(
 
         val reAdded = mutableListOf<Chapter>()
 
-        val deletedEpisodeNumbers = TreeSet<Double>()
-        val deletedSeenEpisodeNumbers = TreeSet<Double>()
-        val deletedBookmarkedEpisodeNumbers = TreeSet<Double>()
+        val deletedChapterNumbers = TreeSet<Double>()
+        val deletedReadChapterNumbers = TreeSet<Double>()
+        val deletedBookmarkedChapterNumbers = TreeSet<Double>()
 
-        removedEpisodes.forEach { episode ->
-            if (episode.seen) deletedSeenEpisodeNumbers.add(episode.episodeNumber)
-            if (episode.bookmark) deletedBookmarkedEpisodeNumbers.add(episode.episodeNumber)
-            deletedEpisodeNumbers.add(episode.episodeNumber)
+        removedChapters.forEach { chapter ->
+            if (chapter.seen) deletedReadChapterNumbers.add(chapter.episodeNumber)
+            if (chapter.bookmark) deletedBookmarkedChapterNumbers.add(chapter.episodeNumber)
+            deletedChapterNumbers.add(chapter.episodeNumber)
         }
 
-        val deletedEpisodeNumberDateFetchMap = removedEpisodes.sortedByDescending { it.dateFetch }
+        val deletedChapterNumberDateFetchMap = removedChapters.sortedByDescending { it.dateFetch }
             .associate { it.episodeNumber to it.dateFetch }
 
         // Date fetch is set in such a way that the upper ones will have bigger value than the lower ones
-        // Sources MUST return the episodes from most to less recent, which is common.
+        // Sources MUST return the chapters from most to less recent, which is common.
         var itemCount = newChapters.size
         var updatedToAdd = newChapters.map { toAddItem ->
-            var episode = toAddItem.copy(dateFetch = nowMillis + itemCount--)
+            var chapter = toAddItem.copy(dateFetch = nowMillis + itemCount--)
 
-            if (!episode.isRecognizedNumber || episode.episodeNumber !in deletedEpisodeNumbers) return@map episode
+            if (!chapter.isRecognizedNumber || chapter.episodeNumber !in deletedChapterNumbers) return@map chapter
 
-            episode = episode.copy(
-                seen = episode.episodeNumber in deletedSeenEpisodeNumbers,
-                bookmark = episode.episodeNumber in deletedBookmarkedEpisodeNumbers,
+            chapter = chapter.copy(
+                seen = chapter.episodeNumber in deletedReadChapterNumbers,
+                bookmark = chapter.episodeNumber in deletedBookmarkedChapterNumbers,
             )
 
             // Try to to use the fetch date of the original entry to not pollute 'Updates' tab
-            deletedEpisodeNumberDateFetchMap[episode.episodeNumber]?.let {
-                episode = episode.copy(dateFetch = it)
+            deletedChapterNumberDateFetchMap[chapter.episodeNumber]?.let {
+                chapter = chapter.copy(dateFetch = it)
             }
 
-            reAdded.add(episode)
+            reAdded.add(chapter)
 
-            episode
+            chapter
         }
 
-        if (removedEpisodes.isNotEmpty()) {
-            val toDeleteIds = removedEpisodes.map { it.id }
+        if (removedChapters.isNotEmpty()) {
+            val toDeleteIds = removedChapters.map { it.id }
             chapterRepository.removeChaptersWithIds(toDeleteIds)
         }
 
@@ -200,13 +199,13 @@ class SyncChaptersWithSource(
         }
 
         if (updatedChapters.isNotEmpty()) {
-            val episodeUpdates = updatedChapters.map { it.toChapterUpdate() }
-            updateChapter.awaitAll(episodeUpdates)
+            val chapterUpdates = updatedChapters.map { it.toChapterUpdate() }
+            updateChapter.awaitAll(chapterUpdates)
         }
         updateManga.awaitUpdateFetchInterval(manga, now, fetchWindow)
 
-        // Set this manga as updated since episodes were changed
-        // Note that last_update actually represents last time the episode list changed at all
+        // Set this manga as updated since chapters were changed
+        // Note that last_update actually represents last time the chapter list changed at all
         updateManga.awaitUpdateLastUpdate(manga.id)
 
         val reAddedUrls = reAdded.map { it.url }.toHashSet()

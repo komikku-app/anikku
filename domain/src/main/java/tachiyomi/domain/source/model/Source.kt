@@ -10,7 +10,6 @@ data class Source(
     val isUsedLast: Boolean = false,
     // SY -->
     val category: String? = null,
-    val isExcludedFromDataSaver: Boolean = false,
     val categories: Set<String> = emptySet(),
     // SY <--
 ) {

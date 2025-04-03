@@ -109,7 +109,7 @@ class UpdatesScreenModel(
         return this
             .map { update ->
                 val activeDownload = downloadManager.getQueuedDownloadOrNull(update.episodeId)
-                val downloaded = downloadManager.isEpisodeDownloaded(
+                val downloaded = downloadManager.isChapterDownloaded(
                     update.episodeName,
                     update.scanlator,
                     // SY -->

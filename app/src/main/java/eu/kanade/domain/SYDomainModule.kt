@@ -13,7 +13,6 @@ import eu.kanade.domain.source.interactor.GetShowLatest
 import eu.kanade.domain.source.interactor.GetSourceCategories
 import eu.kanade.domain.source.interactor.RenameSourceCategory
 import eu.kanade.domain.source.interactor.SetSourceCategories
-import eu.kanade.domain.source.interactor.ToggleExcludeFromDataSaver
 import tachiyomi.data.manga.CustomMangaRepositoryImpl
 import tachiyomi.data.manga.MangaMergeRepositoryImpl
 import tachiyomi.data.source.FeedSavedSearchRepositoryImpl
@@ -64,7 +63,6 @@ class SYDomainModule : InjektModule {
 
     override fun InjektRegistrar.registerInjectables() {
         addFactory { GetShowLatest(get()) }
-        addFactory { ToggleExcludeFromDataSaver(get()) }
         addFactory { SetSourceCategories(get()) }
         addFactory { GetAllManga(get()) }
         addFactory { GetMangaBySource(get()) }

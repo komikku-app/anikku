@@ -10,12 +10,10 @@ import eu.kanade.domain.source.interactor.GetEnabledSources
 import eu.kanade.domain.source.interactor.GetShowLatest
 import eu.kanade.domain.source.interactor.GetSourceCategories
 import eu.kanade.domain.source.interactor.SetSourceCategories
-import eu.kanade.domain.source.interactor.ToggleExcludeFromDataSaver
 import eu.kanade.domain.source.interactor.ToggleSource
 import eu.kanade.domain.source.interactor.ToggleSourcePin
 import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.SourceUiModel
 import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
@@ -32,7 +30,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
@@ -52,7 +49,6 @@ class SourcesScreenModel(
     private val uiPreferences: UiPreferences = Injekt.get(),
     private val getSourceCategories: GetSourceCategories = Injekt.get(),
     private val getShowLatest: GetShowLatest = Injekt.get(),
-    private val toggleExcludeFromDataSaver: ToggleExcludeFromDataSaver = Injekt.get(),
     private val setSourceCategories: SetSourceCategories = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
     val smartSearchConfig: SourcesScreen.SmartSearchConfig?,
@@ -82,16 +78,6 @@ class SourcesScreenModel(
                 _events.send(Event.FailedFetchingSources)
             }
             .flowOn(Dispatchers.IO)
-            .launchIn(screenModelScope)
-
-        sourcePreferences.dataSaver().changes()
-            .onEach {
-                mutableState.update {
-                    it.copy(
-                        dataSaverEnabled = sourcePreferences.dataSaver().get() != DataSaver.NONE,
-                    )
-                }
-            }
             .launchIn(screenModelScope)
         // SY <--
     }
@@ -188,10 +174,6 @@ class SourcesScreenModel(
     }
 
     // SY -->
-    fun toggleExcludeFromDataSaver(source: Source) {
-        toggleExcludeFromDataSaver.await(source)
-    }
-
     fun setSourceCategories(source: Source, categories: List<String>) {
         setSourceCategories.await(source, categories)
     }
@@ -241,7 +223,6 @@ class SourcesScreenModel(
         val categories: ImmutableList<String> = persistentListOf(),
         val showPin: Boolean = true,
         val showLatest: Boolean = false,
-        val dataSaverEnabled: Boolean = false,
         // SY <--
         // KMK -->
         val searchQuery: String? = null,

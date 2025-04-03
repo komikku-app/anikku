@@ -10,50 +10,49 @@ import tachiyomi.domain.manga.model.applyFilter
 import tachiyomi.source.local.isLocal
 
 /**
- * Applies the view filters to the list of episodes obtained from the database.
- * @return an observable of the list of episodes filtered and sorted.
+ * Applies the view filters to the list of chapters obtained from the database.
+ * @return an observable of the list of chapters filtered and sorted.
  */
 fun List<Chapter>.applyFilters(
     manga: Manga,
     downloadManager: DownloadManager, /* SY --> */
     mergedManga: Map<Long, Manga>, /* SY <-- */
 ): List<Chapter> {
-    val isLocalAnime = manga.isLocal()
-    val unseenFilter = manga.unseenFilter
+    val isLocalManga = manga.isLocal()
+    val unreadFilter = manga.unseenFilter
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
     // AM (FILLERMARK) -->
     val fillermarkedFilter = manga.fillermarkedFilter
     // <-- AM (FILLERMARK)
 
-    return asSequence().filter { episode -> applyFilter(unseenFilter) { !episode.seen } }
-        .filter { episode -> applyFilter(bookmarkedFilter) { episode.bookmark } }
+    return asSequence().filter { chapter -> applyFilter(unreadFilter) { !chapter.seen } }
+        .filter { chapter -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
         // AM (FILLERMARK) -->
-        .filter { episode -> applyFilter(fillermarkedFilter) { episode.fillermark } }
+        .filter { chapter -> applyFilter(fillermarkedFilter) { chapter.fillermark } }
         // <-- AM (FILLERMARK)
-        .filter { episode ->
+        .filter { chapter ->
             // SY -->
-            @Suppress("NAME_SHADOWING")
-            val anime = mergedManga.getOrElse(episode.animeId) { manga }
+            val anime = mergedManga.getOrElse(chapter.animeId) { manga }
             // SY <--
             applyFilter(downloadedFilter) {
-                val downloaded = downloadManager.isEpisodeDownloaded(
-                    episode.name,
-                    episode.scanlator,
+                val downloaded = downloadManager.isChapterDownloaded(
+                    chapter.name,
+                    chapter.scanlator,
                     // SY -->
                     anime.ogTitle,
                     // SY <--
                     anime.source,
                 )
-                downloaded || isLocalAnime
+                downloaded || isLocalManga
             }
         }
         .sortedWith(getChapterSort(manga)).toList()
 }
 
 /**
- * Applies the view filters to the list of episodes obtained from the database.
- * @return an observable of the list of episodes filtered and sorted.
+ * Applies the view filters to the list of chapters obtained from the database.
+ * @return an observable of the list of chapters filtered and sorted.
  */
 fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item> {
     val isLocalAnime = manga.isLocal()

@@ -23,7 +23,7 @@ import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.chapter.interactor.SetReadStatus
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
-import eu.kanade.domain.manga.interactor.SetMangaViewerFlags
+import eu.kanade.domain.manga.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.manga.interactor.SmartSearchMerge
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.chaptersFiltered
@@ -187,7 +187,7 @@ class MangaScreenModel(
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
-    internal val setMangaViewerFlags: SetMangaViewerFlags = Injekt.get(),
+    internal val setAnimeViewerFlags: SetAnimeViewerFlags = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     // AM (FILE_SIZE) -->
     storagePreferences: StoragePreferences = Injekt.get(),
@@ -238,10 +238,6 @@ class MangaScreenModel(
     }
 
     // SY <--
-    internal var isFromChangeCategory: Boolean = false
-
-    internal val autoOpenTrack: Boolean
-        get() = successState?.trackingAvailable == true && trackPreferences.trackOnAddingToLibrary().get()
 
     // AM (FILE_SIZE) -->
     val showFileSize = storagePreferences.showEpisodeFileSize().get()
@@ -679,16 +675,12 @@ class MangaScreenModel(
 
                     // Choose a category
                     else -> {
-                        isFromChangeCategory = true
                         showChangeCategoryDialog()
                     }
                 }
 
                 // Finally match with enhanced tracking when available
                 addTracks.bindEnhancedTrackers(anime, state.source)
-                if (autoOpenTrack) {
-                    showTrackDialog()
-                }
             }
         }
     }
@@ -891,7 +883,7 @@ class MangaScreenModel(
             val downloaded = if (isLocal) {
                 true
             } else {
-                downloadManager.isEpisodeDownloaded(
+                downloadManager.isChapterDownloaded(
                     episode.name,
                     episode.scanlator,
                     anime.title,
@@ -1573,7 +1565,7 @@ class MangaScreenModel(
         manualFetch: Boolean,
     ) {
         val airingEpisodeData = AniChartApi().loadAiringTime(manga, trackItems, manualFetch)
-        setMangaViewerFlags.awaitSetNextEpisodeAiring(manga.id, airingEpisodeData)
+        setAnimeViewerFlags.awaitSetNextEpisodeAiring(manga.id, airingEpisodeData)
         updateSuccessState { it.copy(nextAiringEpisode = airingEpisodeData) }
     }
 

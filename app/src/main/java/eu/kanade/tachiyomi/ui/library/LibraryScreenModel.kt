@@ -645,7 +645,7 @@ class LibraryScreenModel(
                             val mergedManga = mergedMangas[mangaId] ?: return@ab
                             val downloadChapters = chapters.fastFilterNot { chapter ->
                                 downloadManager.queueState.value.fastAny { chapter.id == it.episode.id } ||
-                                    downloadManager.isEpisodeDownloaded(
+                                    downloadManager.isChapterDownloaded(
                                         chapter.name,
                                         chapter.scanlator,
                                         mergedManga.ogTitle,
@@ -663,7 +663,7 @@ class LibraryScreenModel(
                 val episodes = getNextChapters.await(anime.id)
                     .fastFilterNot { episode ->
                         downloadManager.getQueuedDownloadOrNull(episode.id) != null ||
-                            downloadManager.isEpisodeDownloaded(
+                            downloadManager.isChapterDownloaded(
                                 episode.name,
                                 episode.scanlator,
                                 anime.title,

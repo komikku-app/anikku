@@ -200,21 +200,28 @@ class DownloadManager(
     /**
      * Returns true if the chapter is downloaded.
      *
-     * @param episodeName the name of the chapter to query.
-     * @param episodeScanlator scanlator of the chapter to query
-     * @param animeTitle the title of the manga to query.
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
+     * @param mangaTitle the title of the manga to query.
      * @param sourceId the id of the source of the chapter.
      * @param skipCache whether to skip the directory cache and check in the filesystem.
      */
+    fun isChapterDownloaded(
+        chapterName: String,
+        chapterScanlator: String?,
+        mangaTitle: String,
+        sourceId: Long,
+        skipCache: Boolean = false,
+    ): Boolean {
+        return cache.isChapterDownloaded(chapterName, chapterScanlator, mangaTitle, sourceId, skipCache)
+    }
     fun isEpisodeDownloaded(
         episodeName: String,
         episodeScanlator: String?,
         animeTitle: String,
         sourceId: Long,
         skipCache: Boolean = false,
-    ): Boolean {
-        return cache.isChapterDownloaded(episodeName, episodeScanlator, animeTitle, sourceId, skipCache)
-    }
+    ) = isChapterDownloaded(episodeName, episodeScanlator, animeTitle, sourceId, skipCache)
 
     /**
      * Returns the amount of downloaded chapters.
@@ -403,13 +410,13 @@ class DownloadManager(
     // SY <--
 
     /**
-     * Adds a list of chapters to be deleted later.
+     * Adds a list of episodes to be deleted later.
      *
-     * @param chapters the list of chapters to delete.
-     * @param manga the manga of the chapters.
+     * @param episodes the list of episodes to delete.
+     * @param anime the anime of the episodes.
      */
-    suspend fun enqueueEpisodesToDelete(chapters: List<Chapter>, manga: Manga) {
-        pendingDeleter.addChapters(getChaptersToDelete(chapters, manga), manga)
+    suspend fun enqueueEpisodesToDelete(episodes: List<Episode>, anime: Anime) {
+        pendingDeleter.addChapters(getChaptersToDelete(episodes, anime), anime)
     }
 
     /**
@@ -457,7 +464,7 @@ class DownloadManager(
      * @param oldChapter the existing chapter with the old name.
      * @param newChapter the target chapter with the new name.
      */
-    suspend fun renameEpisode(source: Source, manga: Manga, oldChapter: Chapter, newChapter: Chapter) {
+    suspend fun renameChapter(source: Source, manga: Manga, oldChapter: Chapter, newChapter: Chapter) {
         val oldNames = provider.getValidChapterDirNames(oldChapter.name, oldChapter.scanlator)
         val mangaDir = provider.getMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source)
 

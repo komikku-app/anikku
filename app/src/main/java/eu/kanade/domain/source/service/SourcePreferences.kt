@@ -21,38 +21,7 @@ class SourcePreferences(
         LibraryDisplayMode.Serializer::deserialize,
     )
 
-    fun enabledLanguages() = preferenceStore.getStringSet(
-        "source_languages",
-        LocaleHelper.getDefaultEnabledLanguages(),
-    )
-
-    fun showNsfwSource() = preferenceStore.getBoolean("show_nsfw_source", true)
-
-    fun migrationSortingMode() = preferenceStore.getEnum(
-        "pref_migration_sorting",
-        SetMigrateSorting.Mode.ALPHABETICAL,
-    )
-
-    fun migrationSortingDirection() = preferenceStore.getEnum(
-        "pref_migration_direction",
-        SetMigrateSorting.Direction.ASCENDING,
-    )
-
-    // KMK -->
-    fun hideInLibraryFeedItems() = preferenceStore.getBoolean("feed_hide_in_library_items", false)
-    // KMK <--
-
-    fun trustedExtensions() = preferenceStore.getStringSet(
-        Preference.appStateKey("trusted_extensions"),
-        emptySet(),
-    )
-
-    fun globalSearchFilterState() = preferenceStore.getBoolean(
-        Preference.appStateKey("has_filters_toggle_state"),
-        false,
-    )
-
-    // Mixture Sources
+    fun enabledLanguages() = preferenceStore.getStringSet("source_languages", LocaleHelper.getDefaultEnabledLanguages())
 
     fun disabledSources() = preferenceStore.getStringSet("hidden_anime_catalogues", emptySet())
 
@@ -63,10 +32,30 @@ class SourcePreferences(
         -1,
     )
 
-    fun extensionUpdatesCount() = preferenceStore.getInt("animeext_updates_count", 0)
+    fun showNsfwSource() = preferenceStore.getBoolean("show_nsfw_source", true)
 
-    fun hideInLibraryItems() = preferenceStore.getBoolean(
-        "browse_hide_in_anime_library_items",
+    fun migrationSortingMode() = preferenceStore.getEnum("pref_migration_sorting", SetMigrateSorting.Mode.ALPHABETICAL)
+
+    fun migrationSortingDirection() = preferenceStore.getEnum(
+        "pref_migration_direction",
+        SetMigrateSorting.Direction.ASCENDING,
+    )
+
+    fun hideInLibraryItems() = preferenceStore.getBoolean("browse_hide_in_anime_library_items", false)
+
+    // KMK -->
+    fun hideInLibraryFeedItems() = preferenceStore.getBoolean("feed_hide_in_library_items", false)
+    // KMK <--
+
+    fun extensionUpdatesCount() = preferenceStore.getInt("ext_updates_count", 0)
+
+    fun trustedExtensions() = preferenceStore.getStringSet(
+        Preference.appStateKey("trusted_extensions"),
+        emptySet(),
+    )
+
+    fun globalSearchFilterState() = preferenceStore.getBoolean(
+        Preference.appStateKey("has_filters_toggle_state"),
         false,
     )
 
@@ -85,34 +74,6 @@ class SourcePreferences(
     fun sourcesTabCategoriesFilter() = preferenceStore.getBoolean("sources_tab_categories_filter", false)
 
     fun sourcesTabSourcesInCategories() = preferenceStore.getStringSet("sources_tab_source_categories", mutableSetOf())
-
-    fun dataSaver() = preferenceStore.getEnum("data_saver", DataSaver.NONE)
-
-    fun dataSaverIgnoreJpeg() = preferenceStore.getBoolean("ignore_jpeg", false)
-
-    fun dataSaverIgnoreGif() = preferenceStore.getBoolean("ignore_gif", true)
-
-    fun dataSaverImageQuality() = preferenceStore.getInt("data_saver_image_quality", 80)
-
-    fun dataSaverImageFormatJpeg() = preferenceStore.getBoolean(
-        "data_saver_image_format_jpeg",
-        false,
-    )
-
-    fun dataSaverServer() = preferenceStore.getString("data_saver_server", "")
-
-    fun dataSaverColorBW() = preferenceStore.getBoolean("data_saver_color_bw", false)
-
-    fun dataSaverExcludedSources() = preferenceStore.getStringSet("data_saver_excluded", emptySet())
-
-    fun dataSaverDownloader() = preferenceStore.getBoolean("data_saver_downloader", true)
-
-    enum class DataSaver {
-        NONE,
-        BANDWIDTH_HERO,
-        WSRV_NL,
-        RESMUSH_IT,
-    }
     // SY <--
 
     // KMK -->
