@@ -12,7 +12,7 @@ import eu.kanade.presentation.browse.MigrateSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangasCategoryDialog
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigrationListScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import tachiyomi.core.common.util.lang.launchIO
@@ -66,7 +66,7 @@ class MigrateSearchScreen(private val mangaId: Long, private val validSources: L
                             navigator.items
                                 .filterIsInstance<MigrationListScreen>()
                                 .last()
-                                .newSelectedItem = mangaId to it.id
+                                .newSelectedItem = mangaId to manga.id
                             navigator.popUntil { it is MigrationListScreen }
                             // SY <--
                         }
@@ -89,7 +89,7 @@ class MigrateSearchScreen(private val mangaId: Long, private val validSources: L
         // KMK -->
         when (bulkFavoriteState.dialog) {
             is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
-                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangasCategoryDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
                 AllowDuplicateDialog(bulkFavoriteScreenModel)
             else -> {}

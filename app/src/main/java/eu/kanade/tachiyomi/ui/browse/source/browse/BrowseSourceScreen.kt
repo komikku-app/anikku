@@ -55,7 +55,7 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangasCategoryDialog
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
@@ -173,7 +173,7 @@ data class BrowseSourceScreen(
         }
 
         // KMK -->
-        val mangaList = screenModel.animePagerFlowFlow.collectAsLazyPagingItems()
+        val mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems()
         // KMK <--
 
         var topBarHeight by remember { mutableIntStateOf(0) }
@@ -336,7 +336,7 @@ data class BrowseSourceScreen(
                 onWebViewClick = onWebViewClick,
                 onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
                 onLocalSourceHelpClick = onHelpClick,
-                onAnimeClick = {
+                onMangaClick = {
                     // KMK -->
                     scope.launchIO {
                         val manga = screenModel.networkToLocalManga.getLocal(it)
@@ -358,7 +358,7 @@ data class BrowseSourceScreen(
                         }
                     }
                 },
-                onAnimeLongClick = {
+                onMangaLongClick = {
                     // KMK -->
                     scope.launchIO {
                         val manga = screenModel.networkToLocalManga.getLocal(it)
@@ -366,13 +366,13 @@ data class BrowseSourceScreen(
                             navigator.push(MangaScreen(manga.id, true))
                         } else {
                             // KMK <--
-                            val duplicateManga = screenModel.getDuplicateLibraryAnime(manga)
+                            val duplicateManga = screenModel.getDuplicateLibraryManga(manga)
                             when {
                                 manga.favorite -> screenModel.setDialog(
-                                    BrowseSourceScreenModel.Dialog.RemoveAnime(manga),
+                                    BrowseSourceScreenModel.Dialog.RemoveManga(manga),
                                 )
                                 duplicateManga != null -> screenModel.setDialog(
-                                    BrowseSourceScreenModel.Dialog.AddDuplicateAnime(
+                                    BrowseSourceScreenModel.Dialog.AddDuplicateManga(
                                         manga,
                                         duplicateManga,
                                     ),
@@ -414,11 +414,11 @@ data class BrowseSourceScreen(
                     // SY <--
                 )
             }
-            is BrowseSourceScreenModel.Dialog.AddDuplicateAnime -> {
+            is BrowseSourceScreenModel.Dialog.AddDuplicateManga -> {
                 DuplicateMangaDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = { screenModel.addFavorite(dialog.manga) },
-                    onOpenAnime = { navigator.push(MangaScreen(dialog.duplicate.id)) },
+                    onOpenManga = { navigator.push(MangaScreen(dialog.duplicate.id)) },
                     onMigrate = {
                         // SY -->
                         PreMigrationScreen.navigateToMigration(
@@ -434,7 +434,7 @@ data class BrowseSourceScreen(
                     // KMK <--
                 )
             }
-            is BrowseSourceScreenModel.Dialog.RemoveAnime -> {
+            is BrowseSourceScreenModel.Dialog.RemoveManga -> {
                 RemoveMangaDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = {
@@ -443,7 +443,7 @@ data class BrowseSourceScreen(
                     mangaToRemove = dialog.manga,
                 )
             }
-            is BrowseSourceScreenModel.Dialog.ChangeAnimeCategory -> {
+            is BrowseSourceScreenModel.Dialog.ChangeMangaCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
                     onDismissRequest = onDismissRequest,
@@ -472,7 +472,7 @@ data class BrowseSourceScreen(
         // KMK -->
         when (bulkFavoriteState.dialog) {
             is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
-                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangasCategoryDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
                 AllowDuplicateDialog(bulkFavoriteScreenModel)
             else -> {}

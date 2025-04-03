@@ -439,7 +439,7 @@ class BulkFavoriteScreenModel(
 }
 
 @Composable
-fun AddDuplicateAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
+fun AddDuplicateMangaDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     val navigator = LocalNavigator.currentOrThrow
     val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val dialog = bulkFavoriteState.dialog as BulkFavoriteScreenModel.Dialog.AddDuplicateManga
@@ -447,7 +447,7 @@ fun AddDuplicateAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     DuplicateMangaDialog(
         onDismissRequest = bulkFavoriteScreenModel::dismissDialog,
         onConfirm = { bulkFavoriteScreenModel.addFavorite(dialog.manga) },
-        onOpenAnime = { navigator.push(MangaScreen(dialog.duplicate.id)) },
+        onOpenManga = { navigator.push(MangaScreen(dialog.duplicate.id)) },
         onMigrate = {
             PreMigrationScreen.navigateToMigration(
                 Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
@@ -461,7 +461,7 @@ fun AddDuplicateAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
 }
 
 @Composable
-fun RemoveAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
+fun RemoveMangaDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val dialog = bulkFavoriteState.dialog as BulkFavoriteScreenModel.Dialog.RemoveManga
 
@@ -475,7 +475,7 @@ fun RemoveAnimeDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
 }
 
 @Composable
-fun ChangeAnimeCategoryDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
+fun ChangeMangaCategoryDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     val navigator = LocalNavigator.currentOrThrow
     val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val dialog = bulkFavoriteState.dialog as BulkFavoriteScreenModel.Dialog.ChangeMangaCategory
@@ -492,7 +492,7 @@ fun ChangeAnimeCategoryDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) 
 }
 
 @Composable
-fun ChangeAnimesCategoryDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
+fun ChangeMangasCategoryDialog(bulkFavoriteScreenModel: BulkFavoriteScreenModel) {
     val navigator = LocalNavigator.currentOrThrow
     val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
     val dialog = bulkFavoriteState.dialog as BulkFavoriteScreenModel.Dialog.ChangeMangasCategory

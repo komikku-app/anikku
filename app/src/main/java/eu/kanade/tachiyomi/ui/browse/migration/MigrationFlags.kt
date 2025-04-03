@@ -1,29 +1,5 @@
 package eu.kanade.tachiyomi.ui.browse.migration
 
-import dev.icerock.moko.resources.StringResource
-import eu.kanade.domain.manga.model.hasCustomCover
-import eu.kanade.tachiyomi.data.cache.CoverCache
-import eu.kanade.tachiyomi.data.download.DownloadCache
-import tachiyomi.domain.manga.model.Manga
-import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
-
-data class MigrationFlag(
-    val flag: Int,
-    val isDefaultSelected: Boolean,
-    val titleId: StringResource,
-) {
-    companion object {
-        fun create(flag: Int, defaultSelectionMap: Int, titleId: StringResource): MigrationFlag {
-            return MigrationFlag(
-                flag = flag,
-                isDefaultSelected = defaultSelectionMap and flag != 0,
-                titleId = titleId,
-            )
-        }
-    }
-}
-
 object MigrationFlags {
 
     const val CHAPTERS = 0b000001
@@ -32,9 +8,6 @@ object MigrationFlags {
     const val CUSTOM_COVER = 0b001000
     const val EXTRA = 0b010000
     const val DELETE_CHAPTERS = 0b100000
-
-    private val coverCache: CoverCache by injectLazy()
-    private val downloadCache: DownloadCache by injectLazy()
 
     fun hasChapters(value: Int): Boolean {
         return value and CHAPTERS != 0
@@ -58,42 +31,5 @@ object MigrationFlags {
 
     fun hasDeleteChapters(value: Int): Boolean {
         return value and DELETE_CHAPTERS != 0
-    }
-
-    /** Returns information about applicable flags with default selections. */
-    fun getFlags(manga: Manga?, defaultSelectedBitMap: Int): List<MigrationFlag> {
-        val flags = mutableListOf<MigrationFlag>()
-        flags += MigrationFlag.create(CHAPTERS, defaultSelectedBitMap, MR.strings.episodes)
-        flags += MigrationFlag.create(CATEGORIES, defaultSelectedBitMap, MR.strings.categories)
-
-        if (manga != null) {
-            if (manga.hasCustomCover(coverCache)) {
-                flags += MigrationFlag.create(
-                    CUSTOM_COVER,
-                    defaultSelectedBitMap,
-                    MR.strings.custom_cover,
-                )
-            }
-            if (downloadCache.getDownloadCount(manga) > 0) {
-                flags += MigrationFlag.create(
-                    DELETE_CHAPTERS,
-                    defaultSelectedBitMap,
-                    MR.strings.delete_downloaded,
-                )
-            }
-        }
-        return flags
-    }
-
-    /** Returns a bit map of selected flags. */
-    fun getSelectedFlagsBitMap(
-        selectedFlags: List<Boolean>,
-        flags: List<MigrationFlag>,
-    ): Int {
-        return selectedFlags
-            .zip(flags)
-            .filter { (isSelected, _) -> isSelected }
-            .map { (_, flag) -> flag.flag }
-            .reduceOrNull { acc, mask -> acc or mask } ?: 0
     }
 }

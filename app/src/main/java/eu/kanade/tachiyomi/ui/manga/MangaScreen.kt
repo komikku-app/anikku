@@ -62,12 +62,12 @@ import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
-import eu.kanade.tachiyomi.ui.browse.AddDuplicateAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.AddDuplicateMangaDialog
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimeCategoryDialog
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
-import eu.kanade.tachiyomi.ui.browse.RemoveAnimeDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangaCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangasCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.RemoveMangaDialog
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
@@ -190,16 +190,16 @@ class MangaScreen(
 
         when (bulkFavoriteState.dialog) {
             is BulkFavoriteScreenModel.Dialog.AddDuplicateManga ->
-                AddDuplicateAnimeDialog(bulkFavoriteScreenModel)
+                AddDuplicateMangaDialog(bulkFavoriteScreenModel)
 
             is BulkFavoriteScreenModel.Dialog.RemoveManga ->
-                RemoveAnimeDialog(bulkFavoriteScreenModel)
+                RemoveMangaDialog(bulkFavoriteScreenModel)
 
             is BulkFavoriteScreenModel.Dialog.ChangeMangaCategory ->
-                ChangeAnimeCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangaCategoryDialog(bulkFavoriteScreenModel)
 
             is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
-                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangasCategoryDialog(bulkFavoriteScreenModel)
 
             is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
                 AllowDuplicateDialog(bulkFavoriteScreenModel)
@@ -404,7 +404,7 @@ class MangaScreen(
                 DuplicateMangaDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = { screenModel.toggleFavorite(onRemoved = {}, checkDuplicate = false) },
-                    onOpenAnime = { navigator.push(MangaScreen(dialog.duplicate.id)) },
+                    onOpenManga = { navigator.push(MangaScreen(dialog.duplicate.id)) },
                     onMigrate = {
                         // SY -->
                         migrateManga(navigator, dialog.duplicate, screenModel.manga!!.id)

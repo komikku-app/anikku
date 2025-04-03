@@ -51,6 +51,7 @@ import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withUIContext
+import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
@@ -66,13 +67,14 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.interactor.InsertSavedSearch
 import tachiyomi.domain.source.model.EXHSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
+import tachiyomi.domain.source.repository.SourcePagingSourceType
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.time.Instant
-import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
+import eu.kanade.tachiyomi.animesource.model.AnimeFilter as MangaSourceModelFilter
 
 open class BrowseSourceScreenModel(
     private val sourceId: Long,
@@ -87,7 +89,7 @@ open class BrowseSourceScreenModel(
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val coverCache: CoverCache = Injekt.get(),
     private val getRemoteManga: GetRemoteManga = Injekt.get(),
-    private val getDuplicateAnimelibAnime: GetDuplicateLibraryManga = Injekt.get(),
+    private val getDuplicateLibraryManga: GetDuplicateLibraryManga = Injekt.get(),
     private val getCategories: GetCategories = Injekt.get(),
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val setMangaDefaultChapterFlags: SetMangaDefaultChapterFlags = Injekt.get(),
@@ -97,6 +99,7 @@ open class BrowseSourceScreenModel(
     private val addTracks: AddTracks = Injekt.get(),
 
     // SY -->
+    unsortedPreferences: UnsortedPreferences = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
     private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),
     private val insertSavedSearch: InsertSavedSearch = Injekt.get(),
@@ -186,7 +189,7 @@ open class BrowseSourceScreenModel(
      * Flow of Pager flow tied to [State.listing]
      */
     private val hideInLibraryItems = sourcePreferences.hideInLibraryItems().get()
-    val animePagerFlowFlow = state.map { it.listing }
+    val mangaPagerFlowFlow = state.map { it.listing }
         .distinctUntilChanged()
         .map { listing ->
             Pager(PagingConfig(pageSize = 25)) {
@@ -194,7 +197,7 @@ open class BrowseSourceScreenModel(
             }.flow.map { pagingData ->
                 pagingData.map {
                     networkToLocalManga.await(it.toDomainManga(sourceId))
-                        .let { localAnime -> getManga.subscribe(localAnime.url, localAnime.source) }
+                        .let { localManga -> getManga.subscribe(localManga.url, localManga.source) }
                         .filterNotNull()
                         .stateIn(ioCoroutineScope)
                 }
@@ -298,19 +301,19 @@ open class BrowseSourceScreenModel(
         var genreExists = false
 
         filter@ for (sourceFilter in defaultFilters) {
-            if (sourceFilter is AnimeSourceModelFilter.Group<*>) {
+            if (sourceFilter is MangaSourceModelFilter.Group<*>) {
                 for (filter in sourceFilter.state) {
-                    if (filter is AnimeSourceModelFilter<*> && filter.name.equals(genreName, true)) {
+                    if (filter is MangaSourceModelFilter<*> && filter.name.equals(genreName, true)) {
                         when (filter) {
-                            is AnimeSourceModelFilter.TriState -> filter.state = 1
-                            is AnimeSourceModelFilter.CheckBox -> filter.state = true
+                            is MangaSourceModelFilter.TriState -> filter.state = 1
+                            is MangaSourceModelFilter.CheckBox -> filter.state = true
                             else -> {}
                         }
                         genreExists = true
                         break@filter
                     }
                 }
-            } else if (sourceFilter is AnimeSourceModelFilter.Select<*>) {
+            } else if (sourceFilter is MangaSourceModelFilter.Select<*>) {
                 val index = sourceFilter.values.filterIsInstance<String>()
                     .indexOfFirst { it.equals(genreName, true) }
 
@@ -386,7 +389,7 @@ open class BrowseSourceScreenModel(
                 else -> {
                     val preselectedIds = getCategories.await(manga.id).map { it.id }
                     setDialog(
-                        Dialog.ChangeAnimeCategory(
+                        Dialog.ChangeMangaCategory(
                             manga,
                             categories.mapAsCheckboxState { it.id in preselectedIds }.toImmutableList(),
                         ),
@@ -408,8 +411,8 @@ open class BrowseSourceScreenModel(
             .orEmpty()
     }
 
-    suspend fun getDuplicateLibraryAnime(manga: Manga): Manga? {
-        return getDuplicateAnimelibAnime.await(manga).getOrNull(0)
+    suspend fun getDuplicateLibraryManga(manga: Manga): Manga? {
+        return getDuplicateLibraryManga.await(manga).getOrNull(0)
     }
 
     private fun moveMangaToCategories(manga: Manga, vararg categories: Category) {
@@ -461,9 +464,9 @@ open class BrowseSourceScreenModel(
 
     sealed interface Dialog {
         data object Filter : Dialog
-        data class RemoveAnime(val manga: Manga) : Dialog
-        data class AddDuplicateAnime(val manga: Manga, val duplicate: Manga) : Dialog
-        data class ChangeAnimeCategory(
+        data class RemoveManga(val manga: Manga) : Dialog
+        data class AddDuplicateManga(val manga: Manga, val duplicate: Manga) : Dialog
+        data class ChangeMangaCategory(
             val manga: Manga,
             val initialSelection: ImmutableList<CheckboxState.State<Category>>,
         ) : Dialog

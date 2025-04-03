@@ -121,7 +121,7 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
                                 ) {
                                     val source = sourceManager.get(anime.source) ?: return@withUpdateNotification
                                     try {
-                                        val networkAnime = source.getAnimeDetails(anime.toSManga())
+                                        val networkAnime = source.getMangaDetails(anime.toSManga())
                                         val updatedAnime = anime.prepUpdateCover(coverCache, networkAnime, true)
                                             .copyFrom(networkAnime)
                                         try {

@@ -481,7 +481,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
         // Update manga metadata if needed
         if (libraryPreferences.autoUpdateMetadata().get()) {
-            val networkManga = source.getAnimeDetails(manga.toSManga())
+            val networkManga = source.getMangaDetails(manga.toSManga())
             updateManga.awaitUpdateFromSource(manga, networkManga, manualFetch = false, coverCache)
         }
 
@@ -489,7 +489,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             return source.fetchEpisodesAndSync(manga, false)
         }
 
-        val chapters = source.getEpisodeList(manga.toSManga())
+        val chapters = source.getChapterList(manga.toSManga())
 
         // Get manga from database to account for if it was removed during the update and
         // to get latest data so it doesn't get overwritten later on

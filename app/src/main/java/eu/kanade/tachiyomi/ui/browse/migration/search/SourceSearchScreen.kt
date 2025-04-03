@@ -24,7 +24,7 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.AllowDuplicateDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
-import eu.kanade.tachiyomi.ui.browse.ChangeAnimesCategoryDialog
+import eu.kanade.tachiyomi.ui.browse.ChangeMangasCategoryDialog
 import eu.kanade.tachiyomi.ui.browse.bulkSelectionButton
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigrationListScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel
@@ -78,7 +78,7 @@ data class SourceSearchScreen(
             bulkFavoriteScreenModel.toggleSelectionMode()
         }
 
-        val mangaList = screenModel.animePagerFlowFlow.collectAsLazyPagingItems()
+        val mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems()
         // KMK <--
 
         Scaffold(
@@ -165,7 +165,7 @@ data class SourceSearchScreen(
                 },
                 onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
                 onLocalSourceHelpClick = { uriHandler.openUri(LocalSource.HELP_URL) },
-                onAnimeClick = {
+                onMangaClick = {
                     // KMK -->
                     scope.launchIO {
                         val manga = screenModel.networkToLocalManga.getLocal(it)
@@ -177,7 +177,7 @@ data class SourceSearchScreen(
                         }
                     }
                 },
-                onAnimeLongClick = {
+                onMangaLongClick = {
                     // KMK -->
                     scope.launchIO {
                         val manga = screenModel.networkToLocalManga.getLocal(it)
@@ -203,6 +203,8 @@ data class SourceSearchScreen(
                     // SY -->
                     startExpanded = screenModel.startExpanded,
                     onSave = {},
+                    onSavedSearchPress = {},
+                    // SY <--
                     // KMK -->
                     savedSearches = state.savedSearches,
                     onSavedSearch = { search ->
@@ -213,8 +215,6 @@ data class SourceSearchScreen(
                     onSavedSearchPressDesc = stringResource(SYMR.strings.saved_searches),
                     shouldShowSavingButton = false,
                     // KMK <--
-                    onSavedSearchPress = {},
-                    // SY <--
                 )
             }
             else -> {}
@@ -223,7 +223,7 @@ data class SourceSearchScreen(
         // KMK -->
         when (bulkFavoriteState.dialog) {
             is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
-                ChangeAnimesCategoryDialog(bulkFavoriteScreenModel)
+                ChangeMangasCategoryDialog(bulkFavoriteScreenModel)
             is BulkFavoriteScreenModel.Dialog.AllowDuplicate ->
                 AllowDuplicateDialog(bulkFavoriteScreenModel)
             else -> {}

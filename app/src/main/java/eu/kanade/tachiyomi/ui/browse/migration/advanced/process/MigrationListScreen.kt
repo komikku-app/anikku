@@ -132,7 +132,7 @@ class MigrationListScreen(private val config: MigrationProcedureConfig) : Screen
             @Suppress("NAME_SHADOWING")
             val dialog = dialog
         ) {
-            is MigrationListScreenModel.Dialog.MigrateAnimeDialog -> {
+            is MigrationListScreenModel.Dialog.MigrateMangaDialog -> {
                 MigrationMangaDialog(
                     onDismissRequest = onDismissRequest,
                     copy = dialog.copy,

@@ -32,11 +32,11 @@ class CoverCache(private val context: Context) {
     /**
      * Returns the cover from cache.
      *
-     * @param animeThumbnailUrl thumbnail url for the manga.
+     * @param mangaThumbnailUrl thumbnail url for the manga.
      * @return cover image.
      */
-    fun getCoverFile(animeThumbnailUrl: String?): File? {
-        return animeThumbnailUrl?.let {
+    fun getCoverFile(mangaThumbnailUrl: String?): File? {
+        return mangaThumbnailUrl?.let {
             File(cacheDir, DiskUtil.hashKeyForDisk(it))
         }
     }
@@ -44,11 +44,11 @@ class CoverCache(private val context: Context) {
     /**
      * Returns the custom cover from cache.
      *
-     * @param animeId the manga id.
+     * @param mangaId the manga id.
      * @return cover image.
      */
-    fun getCustomCoverFile(animeId: Long?): File {
-        return File(customCoverCacheDir, DiskUtil.hashKeyForDisk(animeId.toString()))
+    fun getCustomCoverFile(mangaId: Long?): File {
+        return File(customCoverCacheDir, DiskUtil.hashKeyForDisk(mangaId.toString()))
     }
 
     /**
@@ -89,11 +89,11 @@ class CoverCache(private val context: Context) {
     /**
      * Delete custom cover of the manga from the cache
      *
-     * @param animeId the manga id.
+     * @param mangaId the manga id.
      * @return whether the cover was deleted.
      */
-    fun deleteCustomCover(animeId: Long?): Boolean {
-        return getCustomCoverFile(animeId).let {
+    fun deleteCustomCover(mangaId: Long?): Boolean {
+        return getCustomCoverFile(mangaId).let {
             it.exists() && it.delete()
         }
     }

@@ -21,7 +21,7 @@ class SmartSearchEngine(
 
         val queries = getSmartSearchQueries(cleanedTitle)
 
-        val eligibleAnime = supervisorScope {
+        val eligibleManga = supervisorScope {
             queries.map { query ->
                 async(Dispatchers.Default) {
                     val builtQuery = if (extraSearchParams != null) {
@@ -30,9 +30,9 @@ class SmartSearchEngine(
                         query
                     }
 
-                    val searchResults = source.getSearchAnime(1, builtQuery, FilterList())
+                    val searchResults = source.getSearchManga(1, builtQuery, FilterList())
 
-                    searchResults.animes.map {
+                    searchResults.mangas.map {
                         val cleanedMangaTitle = cleanSmartSearchTitle(it.originalTitle)
                         val normalizedDistance = normalizedLevenshtein.similarity(cleanedTitle, cleanedMangaTitle)
                         SearchEntry(it, normalizedDistance)
@@ -43,7 +43,7 @@ class SmartSearchEngine(
             }.flatMap { it.await() }
         }
 
-        return eligibleAnime.maxByOrNull { it.dist }?.manga?.toDomainManga(source.id)
+        return eligibleManga.maxByOrNull { it.dist }?.manga?.toDomainManga(source.id)
     }
 
     suspend fun normalSearch(source: CatalogueSource, title: String): Manga? {
@@ -106,7 +106,7 @@ class SmartSearchEngine(
             cleanedTitle = removeTextInBrackets(preTitle, false)
         }
 
-        // Strip episode reference RU
+        // Strip chapter reference RU
         cleanedTitle = cleanedTitle.replace(chapterRefCyrillicRegexp, " ").trim()
 
         // Strip non-special characters

@@ -49,6 +49,8 @@ import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.getChapterList
+import eu.kanade.tachiyomi.source.getMangaDetails
 import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.model.SManga
@@ -472,7 +474,7 @@ class MangaScreenModel(
         val state = successState ?: return
         try {
             withIOContext {
-                val networkAnime = state.source.getAnimeDetails(state.manga.toSManga())
+                val networkAnime = state.source.getMangaDetails(state.manga.toSManga())
                 updateManga.awaitUpdateFromSource(state.manga, networkAnime, manualFetch)
             }
         } catch (e: Throwable) {
@@ -918,7 +920,7 @@ class MangaScreenModel(
                 // SY -->
                 if (state.source !is MergedSource) {
                     // SY <--
-                    val episodes = state.source.getEpisodeList(state.manga.toSManga())
+                    val episodes = state.source.getChapterList(state.manga.toSManga())
 
                     val newEpisodes = syncChaptersWithSource.await(
                         episodes,
