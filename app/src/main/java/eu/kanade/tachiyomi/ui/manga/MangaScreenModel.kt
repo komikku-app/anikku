@@ -1032,9 +1032,8 @@ class MangaScreenModel(
                 state.source.getRelatedMangaList(state.manga.toSManga(), { e -> exceptionHandler(e) }) { pair, _ ->
                     /* Push found related mangas into collection */
                     val relatedManga = RelatedManga.Success.fromPair(pair) { mangaList ->
-                        mangaList.map {
-                            networkToLocalManga(it.toDomainManga(state.source.id))
-                        }
+                        mangaList.map { it.toDomainManga(state.source.id) }
+                            .let { networkToLocalManga(it) }
                     }
 
                     updateSuccessState { successState ->
