@@ -93,7 +93,7 @@ fun RelatedMangasList(
                     )
                 }
                 items(
-                    key = { "related-list-${relatedManga.mangaList[it].url.hashCode()}" },
+                    key = { "related-list-${relatedManga.mangaList[it].id}" },
                     count = relatedManga.mangaList.size,
                 ) { index ->
                     val manga by getManga(relatedManga.mangaList[index])
