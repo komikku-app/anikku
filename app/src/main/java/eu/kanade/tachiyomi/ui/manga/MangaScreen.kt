@@ -67,12 +67,8 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.source.online.getMangaUrl
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
-import eu.kanade.tachiyomi.ui.browse.AddDuplicateMangaDialog
-import eu.kanade.tachiyomi.ui.browse.BulkAllowDuplicateDialog
+import eu.kanade.tachiyomi.ui.browse.BulkFavoriteDialogs
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
-import eu.kanade.tachiyomi.ui.browse.ChangeMangaCategoryDialog
-import eu.kanade.tachiyomi.ui.browse.ChangeMangasCategoryDialog
-import eu.kanade.tachiyomi.ui.browse.RemoveMangaDialog
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionsScreen
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.design.PreMigrationScreen
@@ -211,24 +207,10 @@ class MangaScreen(
             content()
         }
 
-        when (bulkFavoriteState.dialog) {
-            is BulkFavoriteScreenModel.Dialog.AddDuplicateManga ->
-                AddDuplicateMangaDialog(bulkFavoriteScreenModel)
-
-            is BulkFavoriteScreenModel.Dialog.RemoveManga ->
-                RemoveMangaDialog(bulkFavoriteScreenModel)
-
-            is BulkFavoriteScreenModel.Dialog.ChangeMangaCategory ->
-                ChangeMangaCategoryDialog(bulkFavoriteScreenModel)
-
-            is BulkFavoriteScreenModel.Dialog.ChangeMangasCategory ->
-                ChangeMangasCategoryDialog(bulkFavoriteScreenModel)
-
-            is BulkFavoriteScreenModel.Dialog.BulkAllowDuplicate ->
-                BulkAllowDuplicateDialog(bulkFavoriteScreenModel)
-
-            else -> {}
-        }
+        BulkFavoriteDialogs(
+            bulkFavoriteScreenModel = bulkFavoriteScreenModel,
+            dialog = bulkFavoriteState.dialog,
+        )
     }
 
     @Composable
