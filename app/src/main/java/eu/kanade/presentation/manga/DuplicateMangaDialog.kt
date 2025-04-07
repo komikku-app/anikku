@@ -68,12 +68,16 @@ import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SManga
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaWithChapterCount
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
+import tachiyomi.presentation.core.components.Badge
+import tachiyomi.presentation.core.components.BadgeGroup
 import tachiyomi.presentation.core.components.material.padding
+import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.secondaryItemAlpha
@@ -82,7 +86,7 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun DuplicateMangaDialog(
-    duplicates: List<Manga>,
+    duplicates: List<MangaWithChapterCount>,
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
     onOpenManga: (manga: Manga) -> Unit,
@@ -143,13 +147,13 @@ fun DuplicateMangaDialog(
                 itemsIndexed(
                     // KMK <--
                     items = duplicates,
-                    key = { _, it -> it.id },
+                    key = { _, it -> it.manga.id },
                 ) { index, it ->
                     DuplicateMangaListItem(
-                        manga = it,
-                        getSource = { sourceManager.getOrStub(it.source) },
-                        onMigrate = { onMigrate(it) },
-                        onOpenManga = { onOpenManga(it) },
+                        duplicate = it,
+                        getSource = { sourceManager.getOrStub(it.manga.source) },
+                        onMigrate = { onMigrate(it.manga) },
+                        onOpenManga = { onOpenManga(it.manga) },
                     )
 
                     // KMK -->
@@ -276,7 +280,7 @@ fun DuplicateMangaDialog(
 
 @Composable
 private fun DuplicateMangaListItem(
-    manga: Manga,
+    duplicate: MangaWithChapterCount,
     getSource: () -> Source,
     onOpenManga: () -> Unit,
     onMigrate: () -> Unit,
@@ -288,6 +292,7 @@ private fun DuplicateMangaListItem(
     // KMK <--
 
     val source = getSource()
+    val manga = duplicate.manga
     Column(
         modifier = Modifier
             // KMK -->
@@ -331,6 +336,21 @@ private fun DuplicateMangaListItem(
                         val image = result.result.image
                         coverRatio.floatValue = image.height.toFloat() / image.width
                     },
+                )
+            }
+            BadgeGroup(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.TopStart),
+            ) {
+                Badge(
+                    color = MaterialTheme.colorScheme.secondary,
+                    textColor = MaterialTheme.colorScheme.onSecondary,
+                    text = pluralStringResource(
+                        MR.plurals.manga_num_chapters,
+                        duplicate.chapterCount.toInt(),
+                        duplicate.chapterCount,
+                    ),
                 )
             }
         }
@@ -434,7 +454,7 @@ private fun MangaDetailRow(
 }
 
 @Composable
-private fun getMaximumMangaCardHeight(duplicates: List<Manga>): Dp {
+private fun getMaximumMangaCardHeight(duplicates: List<MangaWithChapterCount>): Dp {
     val density = LocalDensity.current
     val typography = MaterialTheme.typography
     val textMeasurer = rememberTextMeasurer()
@@ -462,7 +482,7 @@ private fun getMaximumMangaCardHeight(duplicates: List<Manga>): Dp {
     ) {
         duplicates.fastMaxOfOrNull {
             calculateMangaCardHeight(
-                manga = it,
+                manga = it.manga,
                 density = density,
                 typography = typography,
                 textMeasurer = textMeasurer,
