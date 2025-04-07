@@ -1646,10 +1646,7 @@ class MangaScreenModel(
         ) : Dialog
         data class DeleteChapters(val chapters: List<Chapter>) : Dialog
         data class DuplicateManga(val manga: Manga, val duplicates: List<Manga>) : Dialog
-
-        /* SY -->
         data class Migrate(val newManga: Manga, val oldManga: Manga) : Dialog
-        SY <-- */
         data class SetFetchInterval(val manga: Manga) : Dialog
         data class ShowQualities(val chapter: Chapter, val manga: Manga, val source: Source) : Dialog
 
@@ -1684,11 +1681,10 @@ class MangaScreenModel(
         updateSuccessState { it.copy(dialog = Dialog.FullCover) }
     }
 
-    /* SY -->
     fun showMigrateDialog(duplicate: Manga) {
         val manga = successState?.manga ?: return
         updateSuccessState { it.copy(dialog = Dialog.Migrate(newManga = manga, oldManga = duplicate)) }
-    } SY <-- */
+    }
 
     // SY -->
     fun showEditMangaInfoDialog() {
