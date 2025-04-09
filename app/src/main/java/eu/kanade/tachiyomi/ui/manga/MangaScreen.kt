@@ -42,6 +42,7 @@ import dev.chrisbanes.haze.hazeEffect
 import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.manga.model.toSManga
+import eu.kanade.presentation.browse.components.BulkFavoriteDialogs
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.manga.ChapterSettingsDialog
@@ -67,7 +68,6 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.source.online.getMangaUrl
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
-import eu.kanade.tachiyomi.ui.browse.BulkFavoriteDialogs
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionsScreen
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
@@ -458,7 +458,7 @@ class MangaScreen(
                     screenModel = MigrateDialogScreenModel(),
                     onDismissRequest = onDismissRequest,
                     onClickTitle = { navigator.push(MangaScreen(dialog.oldManga.id)) },
-                    onPopScreen = { navigator.replace(MangaScreen(dialog.newManga.id)) },
+                    onPopScreen = { onDismissRequest() },
                 )
             }
             MangaScreenModel.Dialog.SettingsSheet -> ChapterSettingsDialog(
