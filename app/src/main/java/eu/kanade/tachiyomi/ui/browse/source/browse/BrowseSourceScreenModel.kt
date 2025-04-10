@@ -67,7 +67,6 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.interactor.InsertSavedSearch
 import tachiyomi.domain.source.model.EXHSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
-import tachiyomi.domain.source.repository.SourcePagingSourceType
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.Injekt

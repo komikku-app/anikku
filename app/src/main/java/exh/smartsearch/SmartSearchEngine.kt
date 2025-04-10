@@ -2,6 +2,7 @@ package exh.smartsearch
 
 import eu.kanade.domain.manga.model.toDomainManga
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.getSearchManga
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein

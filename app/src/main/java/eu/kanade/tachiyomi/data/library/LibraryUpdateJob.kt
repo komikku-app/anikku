@@ -30,6 +30,8 @@ import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.source.getChapterList
+import eu.kanade.tachiyomi.source.getMangaDetails
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.all.MergedSource

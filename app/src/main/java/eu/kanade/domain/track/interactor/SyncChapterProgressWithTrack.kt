@@ -71,9 +71,9 @@ class SyncChapterProgressWithTrack(
         try {
             // Update Tracker to localLastRead if needed
             if (lastRead > remoteTrack.lastEpisodeSeen) {
-            tracker.update(updatedTrack.toDbTrack())
+                tracker.update(updatedTrack.toDbTrack())
                 // update Track in database
-            insertTrack.await(updatedTrack)
+                insertTrack.await(updatedTrack)
             }
             // KMK -->
             // Always update local chapters following Tracker even past chapters

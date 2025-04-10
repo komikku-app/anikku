@@ -24,7 +24,6 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.interactor.TrustExtension
-import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.advanced.ClearDatabaseScreen
@@ -56,7 +55,6 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import okhttp3.Headers

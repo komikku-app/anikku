@@ -8,6 +8,7 @@ import eu.kanade.domain.manga.model.toDomainManga
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.tachiyomi.animesource.online.UriType
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.getChapterList
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ResolvableSource
