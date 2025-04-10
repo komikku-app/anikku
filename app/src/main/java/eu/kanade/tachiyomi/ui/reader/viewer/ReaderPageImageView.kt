@@ -18,15 +18,12 @@ import androidx.annotation.StyleRes
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.os.postDelayed
 import androidx.core.view.isVisible
-import coil3.BitmapImage
 import coil3.asDrawable
 import coil3.dispose
 import coil3.imageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import coil3.size.Precision
-import coil3.size.ViewSizeResolver
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.EASE_IN_OUT_QUAD
@@ -34,7 +31,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.EASE_OUT_QU
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE
 import com.github.chrisbanes.photoview.PhotoView
 import eu.kanade.tachiyomi.data.coil.cropBorders
-import eu.kanade.tachiyomi.data.coil.customDecoder
 import eu.kanade.tachiyomi.util.system.animatorDurationScale
 import eu.kanade.tachiyomi.util.view.isVisibleOnScreen
 import okio.BufferedSource
@@ -115,21 +111,22 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     private fun SubsamplingScaleImageView.landscapeZoom(forward: Boolean) {
+        val config = config
         if (config != null &&
-            config!!.landscapeZoom &&
-            config!!.minimumScaleType == SCALE_TYPE_CENTER_INSIDE &&
+            config.landscapeZoom &&
+            config.minimumScaleType == SCALE_TYPE_CENTER_INSIDE &&
             sWidth > sHeight &&
             scale == minScale
         ) {
             handler?.postDelayed(500) {
-                val point = when (config!!.zoomStartPosition) {
+                val point = when (config.zoomStartPosition) {
                     ZoomStartPosition.LEFT -> if (forward) PointF(0F, 0F) else PointF(sWidth.toFloat(), 0F)
                     ZoomStartPosition.RIGHT -> if (forward) PointF(sWidth.toFloat(), 0F) else PointF(0F, 0F)
                     ZoomStartPosition.CENTER -> center
                 }
 
                 val targetScale = height.toFloat() / sHeight.toFloat()
-                animateScaleAndCenter(targetScale, point)!!
+                (animateScaleAndCenter(targetScale, point) ?: return@postDelayed)
                     .withDuration(500)
                     .withEasing(EASE_IN_OUT_QUAD)
                     .withInterruptible(true)
@@ -283,35 +280,20 @@ open class ReaderPageImageView @JvmOverloads constructor(
             },
         )
 
-        if (isWebtoon) {
-            val request = ImageRequest.Builder(context)
-                .data(data)
-                .memoryCachePolicy(CachePolicy.DISABLED)
-                .diskCachePolicy(CachePolicy.DISABLED)
-                .target(
-                    onSuccess = { result ->
-                        val image = result as BitmapImage
-                        setImage(ImageSource.bitmap(image.bitmap))
-                        isVisible = true
-                    },
-                    onError = {
-                        this@ReaderPageImageView.onImageLoadError()
-                    },
-                )
-                .size(ViewSizeResolver(this@ReaderPageImageView))
-                .precision(Precision.INEXACT)
-                .cropBorders(config.cropBorders)
-                .customDecoder(true)
-                .crossfade(false)
-                .build()
-            context.imageLoader.enqueue(request)
-        } else {
-            when (data) {
-                is BitmapDrawable -> setImage(ImageSource.bitmap(data.bitmap))
-                is BufferedSource -> setImage(ImageSource.inputStream(data.inputStream()))
-                else -> throw IllegalArgumentException("Not implemented for class ${data::class.simpleName}")
+        when (data) {
+            is BitmapDrawable -> {
+                setImage(ImageSource.bitmap(data.bitmap))
+                isVisible = true
             }
-            isVisible = true
+            is BufferedSource -> {
+                setHardwareConfig(ImageUtil.canUseHardwareBitmap(data))
+                setImage(ImageSource.inputStream(data.inputStream()))
+                isVisible = true
+                return@apply
+            }
+            else -> {
+                throw IllegalArgumentException("Not implemented for class ${data::class.simpleName}")
+            }
         }
     }
 

@@ -115,11 +115,11 @@ private fun ColumnScope.FilterPage(
         enabled = !downloadedOnly,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterDownloaded) },
     )
-    val filterUnseen by screenModel.libraryPreferences.filterUnseen().collectAsState()
+    val filterUnseen by screenModel.libraryPreferences.filterUnread().collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.action_filter_unseen),
         state = filterUnseen,
-        onClick = { screenModel.toggleFilter(LibraryPreferences::filterUnseen) },
+        onClick = { screenModel.toggleFilter(LibraryPreferences::filterUnread) },
     )
     val filterStarted by screenModel.libraryPreferences.filterStarted().collectAsState()
     TriStateItem(
@@ -209,12 +209,12 @@ private fun ColumnScope.SortPage(
         }
         listOfNotNull(
             MR.strings.action_sort_alpha to LibrarySort.Type.Alphabetical,
-            MR.strings.action_sort_total_episodes to LibrarySort.Type.TotalEpisodes,
-            MR.strings.action_sort_last_seen to LibrarySort.Type.LastSeen,
+            MR.strings.action_sort_total_episodes to LibrarySort.Type.TotalChapters,
+            MR.strings.action_sort_last_seen to LibrarySort.Type.LastRead,
             MR.strings.action_sort_last_anime_update to LibrarySort.Type.LastUpdate,
-            MR.strings.action_sort_unseen_count to LibrarySort.Type.UnseenCount,
-            MR.strings.action_sort_latest_episode to LibrarySort.Type.LatestEpisode,
-            MR.strings.action_sort_episode_fetch_date to LibrarySort.Type.EpisodeFetchDate,
+            MR.strings.action_sort_unseen_count to LibrarySort.Type.UnreadCount,
+            MR.strings.action_sort_latest_episode to LibrarySort.Type.LatestChapter,
+            MR.strings.action_sort_episode_fetch_date to LibrarySort.Type.ChapterFetchDate,
             MR.strings.action_sort_date_added to LibrarySort.Type.DateAdded,
             trackerMeanPair,
             MR.strings.action_sort_airing_time to LibrarySort.Type.AiringTime,
@@ -347,7 +347,7 @@ private fun ColumnScope.DisplayPage(
     // KMK <--
     CheckboxItem(
         label = stringResource(MR.strings.action_display_show_continue_watching_button),
-        pref = screenModel.libraryPreferences.showContinueWatchingButton(),
+        pref = screenModel.libraryPreferences.showContinueReadingButton(),
     )
 
     HeadingItem(MR.strings.tabs_header)

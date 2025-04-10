@@ -13,7 +13,7 @@ class DeleteDownload(
 
     suspend fun awaitAll(manga: Manga, vararg chapters: Chapter) = withNonCancellableContext {
         sourceManager.get(manga.source)?.let { source ->
-            downloadManager.deleteEpisodes(chapters.toList(), manga, source)
+            downloadManager.deleteChapters(chapters.toList(), manga, source)
         }
     }
 }

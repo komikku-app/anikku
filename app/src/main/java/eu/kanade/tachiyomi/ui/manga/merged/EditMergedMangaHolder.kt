@@ -46,10 +46,10 @@ class EditMergedMangaHolder(view: View, val adapter: EditMergedMangaAdapter) : F
             }
         }
 
-        binding.title.text = Injekt.get<SourceManager>().getOrStub(item.mergedMangaReference.animeSourceId).toString()
+        binding.title.text = Injekt.get<SourceManager>().getOrStub(item.mergedMangaReference.mangaSourceId).toString()
         binding.subtitle.text = item.mergedManga?.title
-        updateDownloadChaptersIcon(item.mergedMangaReference.downloadEpisodes)
-        updateChapterUpdatesIcon(item.mergedMangaReference.getEpisodeUpdates)
+        updateDownloadChaptersIcon(item.mergedMangaReference.downloadChapters)
+        updateChapterUpdatesIcon(item.mergedMangaReference.getChapterUpdates)
     }
 
     fun setHandleAlpha(isPriorityOrder: Boolean) {

@@ -106,12 +106,12 @@ fun HistoryItem(
                 overflow = TextOverflow.Ellipsis,
                 style = textStyle,
             )
-            val seenAt = remember { history.seenAt?.toTimestampString() ?: "" }
+            val seenAt = remember { history.readAt?.toTimestampString() ?: "" }
             Text(
-                text = if (history.episodeNumber > -1) {
+                text = if (history.chapterNumber > -1) {
                     stringResource(
                         MR.strings.recent_anime_time,
-                        formatChapterNumber(history.episodeNumber),
+                        formatChapterNumber(history.chapterNumber),
                         seenAt,
                     )
                 } else {

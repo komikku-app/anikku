@@ -142,7 +142,7 @@ class DownloadManager(
      * @param autoStart whether to start the downloader after enqueuing the chapters.
      * @param alt whether to use the alternative downloader
      */
-    fun downloadEpisodes(
+    fun downloadChapters(
         manga: Manga,
         chapters: List<Chapter>,
         autoStart: Boolean = true,
@@ -154,6 +154,13 @@ class DownloadManager(
         downloader.queueEpisodes(manga, filteredChapters, autoStart, alt, video)
         // <-- AM (FILLERMARK)
     }
+    fun downloadEpisodes(
+        anime: Anime,
+        episodes: List<Episode>,
+        autoStart: Boolean = true,
+        alt: Boolean = false,
+        video: Video? = null,
+    ) = downloadChapters(anime, episodes, autoStart, alt, video)
 
     /**
      * Tells the downloader to enqueue the given list of downloads at the start of the queue.
@@ -276,7 +283,7 @@ class DownloadManager(
      * @param manga the manga of the chapters.
      * @param source the source of the chapters.
      */
-    fun deleteEpisodes(
+    fun deleteChapters(
         chapters: List<Chapter>,
         manga: Manga,
         source: Source,
@@ -426,7 +433,7 @@ class DownloadManager(
         val pendingChapters = pendingDeleter.getPendingChapters()
         for ((manga, chapters) in pendingChapters) {
             val source = sourceManager.get(manga.source) ?: continue
-            deleteEpisodes(chapters, manga, source)
+            deleteChapters(chapters, manga, source)
         }
     }
 

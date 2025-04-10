@@ -19,7 +19,7 @@ val Manga.downloadedFilter: TriState
         }
     }
 fun Manga.chaptersFiltered(): Boolean {
-    return unseenFilter != TriState.DISABLED ||
+    return unreadFilter != TriState.DISABLED ||
         downloadedFilter != TriState.DISABLED ||
         bookmarkedFilter != TriState.DISABLED ||
         // AM (FILLERMARK) -->

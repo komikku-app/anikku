@@ -55,4 +55,9 @@ data class Chapter(
             version = 1,
         )
     }
+
+    val mangaId = animeId
+    val chapterNumber = episodeNumber
+    val read = seen
+    val lastPageRead = lastSecondSeen
 }

@@ -88,8 +88,8 @@ class MangaBackupCreator(
             val historyByMangaId = getHistory.await(manga.id)
             if (historyByMangaId.isNotEmpty()) {
                 val history = historyByMangaId.map { history ->
-                    val chapter = handler.awaitOne { episodesQueries.getEpisodeById(history.episodeId) }
-                    BackupHistory(chapter.url, history.seenAt?.time ?: 0L, history.watchDuration)
+                    val chapter = handler.awaitOne { episodesQueries.getEpisodeById(history.chapterId) }
+                    BackupHistory(chapter.url, history.readAt?.time ?: 0L, history.readDuration)
                 }
                 if (history.isNotEmpty()) {
                     mangaObject.history = history

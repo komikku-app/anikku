@@ -133,14 +133,14 @@ object MangaMapper {
             isSyncing,
         ),
         category = category,
-        totalEpisodes = totalCount,
-        seenCount = seenCount.toLong(),
+        totalChapters = totalCount,
+        readCount = seenCount.toLong(),
         bookmarkCount = bookmarkCount.toLong(),
         // AM (FILLERMARK) -->
         fillermarkCount = fillermarkCount.toLong(),
         // <-- AM (FILLERMARK)
         latestUpload = latestUpload,
-        episodeFetchedAt = episodeFetchedAt,
-        lastSeen = lastSeen,
+        chapterFetchedAt = episodeFetchedAt,
+        lastRead = lastSeen,
     )
 }

@@ -65,9 +65,9 @@ class GetUpcomingManga(
 
                     ANIME_NON_COMPLETED in restrictions && it.manga.status.toInt() == SManga.COMPLETED -> false
 
-                    ANIME_HAS_UNSEEN in restrictions && it.unseenCount != 0L -> false
+                    ANIME_HAS_UNSEEN in restrictions && it.unreadCount != 0L -> false
 
-                    ANIME_NON_SEEN in restrictions && it.totalEpisodes > 0L && !it.hasStarted -> false
+                    ANIME_NON_SEEN in restrictions && it.totalChapters > 0L && !it.hasStarted -> false
 
                     ANIME_OUTSIDE_RELEASE_PERIOD in restrictions && it.manga.nextUpdate < today -> false
 

@@ -75,7 +75,7 @@ class LibraryPreferences(
 
     fun autoUpdateMetadata() = preferenceStore.getBoolean("auto_update_metadata", false)
 
-    fun showContinueWatchingButton() = preferenceStore.getBoolean(
+    fun showContinueReadingButton() = preferenceStore.getBoolean(
         "display_continue_reading_button",
         false,
     )
@@ -87,7 +87,7 @@ class LibraryPreferences(
         TriState.DISABLED,
     )
 
-    fun filterUnseen() = preferenceStore.getEnum("pref_filter_animelib_unread_v2", TriState.DISABLED)
+    fun filterUnread() = preferenceStore.getEnum("pref_filter_animelib_unread_v2", TriState.DISABLED)
 
     fun filterStarted() = preferenceStore.getEnum(
         "pref_filter_animelib_started_v2",
@@ -100,7 +100,7 @@ class LibraryPreferences(
     )
 
     // AM (FILLERMARK) -->
-    fun filterFillermarkedAnime() =
+    fun filterFillermarked() =
         preferenceStore.getEnum("pref_filter_animelib_fillermarked_v2", TriState.DISABLED)
     // <-- AM (FILLERMARK)
 
@@ -212,8 +212,8 @@ class LibraryPreferences(
         Manga.EPISODE_SORT_DESC,
     )
 
-    fun setEpisodeSettingsDefault(manga: Manga) {
-        filterEpisodeBySeen().set(manga.unseenFilterRaw)
+    fun setChapterSettingsDefault(manga: Manga) {
+        filterEpisodeBySeen().set(manga.unreadFilterRaw)
         filterEpisodeByDownloaded().set(manga.downloadedFilterRaw)
         filterEpisodeByBookmarked().set(manga.bookmarkedFilterRaw)
         // AM (FILLERMARK) -->
@@ -230,20 +230,20 @@ class LibraryPreferences(
 
     // region Swipe Actions
 
-    fun swipeEpisodeStartAction() = preferenceStore.getEnum(
+    fun swipeToStartAction() = preferenceStore.getEnum(
         "pref_episode_swipe_end_action",
-        EpisodeSwipeAction.ToggleBookmark,
+        ChapterSwipeAction.ToggleBookmark,
     )
 
-    fun swipeEpisodeEndAction() = preferenceStore.getEnum(
+    fun swipeToEndAction() = preferenceStore.getEnum(
         "pref_episode_swipe_start_action",
-        EpisodeSwipeAction.ToggleSeen,
+        ChapterSwipeAction.ToggleRead,
     )
 
     // endregion
 
-    enum class EpisodeSwipeAction {
-        ToggleSeen,
+    enum class ChapterSwipeAction {
+        ToggleRead,
         ToggleBookmark,
 
         // AM (FILLERMARK) -->

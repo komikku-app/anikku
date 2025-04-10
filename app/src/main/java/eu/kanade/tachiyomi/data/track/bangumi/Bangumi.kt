@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMOAuth
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -34,9 +34,9 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
         return api.addLibAnime(track)
     }
 
-    override suspend fun update(track: Track, didWatchEpisode: Boolean): Track {
+    override suspend fun update(track: Track, didReadChapter: Boolean): Track {
         if (track.status != COMPLETED) {
-            if (didWatchEpisode) {
+            if (didReadChapter) {
                 if (track.last_episode_seen.toLong() == track.total_episodes && track.total_episodes > 0) {
                     track.status = COMPLETED
                 } else {
@@ -48,7 +48,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
         return api.updateLibAnime(track)
     }
 
-    override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
+    override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
         val statusTrack = api.statusLibAnime(track)
         val remoteTrack = api.findLibAnime(track)
         return if (remoteTrack != null && statusTrack != null) {
@@ -56,7 +56,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
             track.library_id = remoteTrack.library_id
 
             if (track.status != COMPLETED) {
-                track.status = if (hasSeenEpisodes) WATCHING else statusTrack.status
+                track.status = if (hasReadChapters) WATCHING else statusTrack.status
             }
 
             // track.status = statusTrack.status
@@ -66,7 +66,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
             refresh(track)
         } else {
             // Set default fields if it's not found in the list
-            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
             update(track)
@@ -77,7 +77,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
         return api.search(query)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata {
         return api.getAnimeMetadata(track)
     }
 
@@ -107,9 +107,9 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
         else -> null
     }
 
-    override fun getWatchingStatus(): Long = WATCHING
+    override fun getReadingStatus(): Long = WATCHING
 
-    override fun getRewatchingStatus(): Long = -1
+    override fun getRereadingStatus(): Long = -1
 
     override fun getCompletionStatus(): Long = COMPLETED
 
@@ -156,6 +156,6 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     }
 
     // KMK -->
-    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    override fun hasNotStartedReading(status: Long): Boolean = status == PLAN_TO_WATCH
     // KMK <--
 }

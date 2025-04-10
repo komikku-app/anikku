@@ -306,8 +306,8 @@ internal fun RowScope.Button(
 fun LibraryBottomActionMenu(
     visible: Boolean,
     onChangeCategoryClicked: () -> Unit,
-    onMarkAsSeenClicked: () -> Unit,
-    onMarkAsUnseenClicked: () -> Unit,
+    onMarkAsReadClicked: () -> Unit,
+    onMarkAsUnreadClicked: () -> Unit,
     onDownloadClicked: ((DownloadAction) -> Unit)?,
     onDeleteClicked: () -> Unit,
     // SY -->
@@ -375,14 +375,14 @@ fun LibraryBottomActionMenu(
                     icon = Icons.Outlined.DoneAll,
                     toConfirm = confirm[1],
                     onLongClick = { onLongClickItem(1) },
-                    onClick = onMarkAsSeenClicked,
+                    onClick = onMarkAsReadClicked,
                 )
                 Button(
                     title = stringResource(MR.strings.action_mark_as_unseen),
                     icon = Icons.Outlined.RemoveDone,
                     toConfirm = confirm[2],
                     onLongClick = { onLongClickItem(2) },
-                    onClick = onMarkAsUnseenClicked,
+                    onClick = onMarkAsUnreadClicked,
                 )
                 if (onDownloadClicked != null) {
                     var downloadExpanded by remember { mutableStateOf(false) }

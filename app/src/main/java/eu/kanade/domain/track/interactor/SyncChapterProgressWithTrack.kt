@@ -79,7 +79,7 @@ class SyncChapterProgressWithTrack(
             // Always update local chapters following Tracker even past chapters
             if (chapterUpdates.isNotEmpty() &&
                 trackPreferences.autoSyncProgressFromTrackers().get() &&
-                !tracker.hasNotStartedWatching(remoteTrack.status)
+                !tracker.hasNotStartedReading(remoteTrack.status)
             ) {
                 updateChapter.awaitAll(chapterUpdates)
                 return lastRead.toInt()

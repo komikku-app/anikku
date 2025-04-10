@@ -35,6 +35,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -127,6 +128,18 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     pref = rememberPlayerVolume,
                     title = stringResource(MR.strings.pref_remember_volume),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = playerPreferences.skipRead(),
+                    title = stringResource(AMR.strings.pref_skip_seen_episodes),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = playerPreferences.skipFiltered(),
+                    title = stringResource(AMR.strings.pref_skip_filtered_episodes),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = playerPreferences.skipDupe(),
+                    title = stringResource(AMR.strings.pref_skip_dupe_episodes),
                 ),
             ),
         )

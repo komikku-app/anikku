@@ -118,7 +118,7 @@ object SettingsDownloadScreen : SearchableSettings {
             title = stringResource(AMR.strings.pref_category_delete_chapters),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = downloadPreferences.removeAfterMarkedAsSeen(),
+                    pref = downloadPreferences.removeAfterMarkedAsRead(),
                     title = stringResource(AMR.strings.pref_remove_after_marked_as_read),
                 ),
                 Preference.PreferenceItem.ListPreference(

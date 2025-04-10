@@ -16,4 +16,8 @@ data class Track(
     val remoteUrl: String,
     val startDate: Long,
     val finishDate: Long,
-) : Serializable
+) : Serializable {
+    val mangaId = animeId
+    val lastChapterRead = lastEpisodeSeen
+    val totalChapters = totalEpisodes
+}

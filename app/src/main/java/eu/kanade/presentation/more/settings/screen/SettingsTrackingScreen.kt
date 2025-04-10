@@ -132,7 +132,7 @@ object SettingsTrackingScreen : SearchableSettings {
                 title = stringResource(AMR.strings.pref_auto_update_manga_sync),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                pref = trackPreferences.showNextEpisodeAiringTime(),
+                pref = trackPreferences.showNextChapterAiringTime(),
                 title = stringResource(MR.strings.pref_show_next_episode_airing_time),
             ),
             Preference.PreferenceItem.ListPreference(

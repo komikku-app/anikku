@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.compose.ui.util.fastAny
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAddAnimeResponse
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAnime
@@ -135,7 +135,7 @@ class ShikimoriApi(
         }
     }
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         return withIOContext {
             val query = """
                 |query(${'$'}ids: String!) {
@@ -175,7 +175,7 @@ class ShikimoriApi(
                     .parseAs<SMMetadata>()
                     .let { dto ->
                         val anime = dto.data.animes.firstOrNull() ?: throw Exception("Could not get metadata from Shikimori")
-                        TrackAnimeMetadata(
+                        TrackMangaMetadata(
                             remoteId = anime.id.toLong(),
                             title = anime.name,
                             thumbnailUrl = anime.poster.originalUrl,

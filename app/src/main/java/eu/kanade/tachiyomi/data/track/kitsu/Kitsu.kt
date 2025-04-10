@@ -7,7 +7,7 @@ import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -28,7 +28,7 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
         const val PLAN_TO_WATCH = 15L
     }
 
-    override val supportsWatchingDates: Boolean = true
+    override val supportsReadingDates: Boolean = true
 
     private val json: Json by injectLazy()
 
@@ -53,9 +53,9 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
         else -> null
     }
 
-    override fun getWatchingStatus(): Long = WATCHING
+    override fun getReadingStatus(): Long = WATCHING
 
-    override fun getRewatchingStatus(): Long = -1
+    override fun getRereadingStatus(): Long = -1
 
     override fun getCompletionStatus(): Long = COMPLETED
 
@@ -77,9 +77,9 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
         return api.addLibAnime(track, getUserId())
     }
 
-    override suspend fun update(track: Track, didWatchEpisode: Boolean): Track {
+    override suspend fun update(track: Track, didReadChapter: Boolean): Track {
         if (track.status != COMPLETED) {
-            if (didWatchEpisode) {
+            if (didReadChapter) {
                 if (track.last_episode_seen.toLong() == track.total_episodes && track.total_episodes > 0) {
                     track.status = COMPLETED
                     track.finished_watching_date = System.currentTimeMillis()
@@ -99,19 +99,19 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
         api.removeLibAnime(track)
     }
 
-    override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
+    override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
         val remoteTrack = api.findLibAnime(track, getUserId())
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.remote_id = remoteTrack.remote_id
 
             if (track.status != COMPLETED) {
-                track.status = if (hasSeenEpisodes) WATCHING else track.status
+                track.status = if (hasReadChapters) WATCHING else track.status
             }
 
             update(track)
         } else {
-            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
         }
@@ -140,10 +140,10 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
         interceptor.newAuth(null)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata {
         throw NotImplementedError("Not implemented.")
         // Got CloudFlare blocked, possible reason is using old API
-        // return api.getAnimeMetadata(track)
+        // return api.getMangaMetadata(track)
     }
 
     private fun getUserId(): String {
@@ -163,6 +163,6 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
     }
 
     // KMK -->
-    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    override fun hasNotStartedReading(status: Long): Boolean = status == PLAN_TO_WATCH
     // KMK <--
 }

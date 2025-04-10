@@ -30,10 +30,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,10 +57,15 @@ import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
+import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.presentation.components.AppStateBanners
 import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
 import eu.kanade.presentation.components.IndexingBannerBackgroundColor
+import eu.kanade.presentation.components.RestoringBannerBackgroundColor
+import eu.kanade.presentation.components.SyncingBannerBackgroundColor
+import eu.kanade.presentation.components.UpdatingBannerBackgroundColor
+import eu.kanade.presentation.more.settings.screen.about.WhatsNewDialog
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionReposScreen
 import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
 import eu.kanade.presentation.util.AssistContentScreen
@@ -71,13 +73,16 @@ import eu.kanade.presentation.util.DefaultNavigatorScreenTransition
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.data.BackupRestoreStatus
+import eu.kanade.tachiyomi.data.LibraryUpdateStatus
+import eu.kanade.tachiyomi.data.SyncStatus
+import eu.kanade.tachiyomi.data.coil.MangaCoverMetadata
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.AppUpdateJob
-import eu.kanade.tachiyomi.data.updater.RELEASE_URL
 import eu.kanade.tachiyomi.extension.api.ExtensionApi
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
@@ -91,7 +96,8 @@ import eu.kanade.tachiyomi.ui.player.ExternalIntents
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.isNavigationBarNeedsScrim
-import eu.kanade.tachiyomi.util.system.openInBrowser
+import eu.kanade.tachiyomi.util.system.isPreviewBuildType
+import eu.kanade.tachiyomi.util.system.isReleaseBuildType
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import kotlinx.coroutines.channels.awaitClose
@@ -106,11 +112,13 @@ import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import mihon.core.migration.Migrator
 import tachiyomi.core.common.Constants
-import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.preference.Preference
+import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.backup.service.BackupPreferences
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.release.interactor.GetApplicationRelease
-import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -119,7 +127,16 @@ import uy.kohesive.injekt.injectLazy
 
 class MainActivity : BaseActivity() {
 
+    private val libraryPreferences: LibraryPreferences by injectLazy()
     private val preferences: BasePreferences by injectLazy()
+
+    // KMK -->
+    private val backupPreferences: BackupPreferences by injectLazy()
+    private val syncPreferences: SyncPreferences by injectLazy()
+    private val backupRestoreStatus: BackupRestoreStatus by injectLazy()
+    private val syncStatus: SyncStatus by injectLazy()
+    private val libraryUpdateStatus: LibraryUpdateStatus by injectLazy()
+    // KMK <--
 
     private val downloadCache: DownloadCache by injectLazy()
 
@@ -144,7 +161,11 @@ class MainActivity : BaseActivity() {
 
         super.onCreate(savedInstanceState)
 
-        val didMigration = Migrator.awaitAndRelease()
+        val didMigration = if (isLaunch) {
+            Migrator.awaitAndRelease()
+        } else {
+            false
+        }
 
         // Do not let the launcher create a new activity http://stackoverflow.com/questions/16283079
         if (!isTaskRoot) {
@@ -157,11 +178,30 @@ class MainActivity : BaseActivity() {
 
             val incognito by preferences.incognitoMode().collectAsState()
             val downloadOnly by preferences.downloadedOnly().collectAsState()
-            val indexingAnime by downloadCache.isInitializing.collectAsState()
+            val indexing by downloadCache.isInitializing.collectAsState()
+            // KMK -->
+            val restoringState by backupRestoreStatus.isRunning.collectAsState()
+            val syncingState by syncStatus.isRunning.collectAsState()
+            val updatingState by libraryUpdateStatus.isRunning.collectAsState()
+            val restoringProgressBanner by backupPreferences.showRestoringProgressBanner().collectAsState()
+            val syncingProgressBanner by syncPreferences.showSyncingProgressBanner().collectAsState()
+            val updatingProgressBanner by libraryPreferences.showUpdatingProgressBanner().collectAsState()
+            val restoring = restoringState && restoringProgressBanner
+            val syncing = syncingState && syncingProgressBanner
+            val updating = updatingState && updatingProgressBanner
+            val restoringProgress by backupRestoreStatus.progress.collectAsState()
+            val syncingProgress by syncStatus.progress.collectAsState()
+            val updatingProgress by libraryUpdateStatus.progress.collectAsState()
+            // KMK <--
 
             val isSystemInDarkTheme = isSystemInDarkTheme()
             val statusBarBackgroundColor = when {
-                indexingAnime -> IndexingBannerBackgroundColor
+                // KMK -->
+                updating -> UpdatingBannerBackgroundColor
+                syncing -> SyncingBannerBackgroundColor
+                restoring -> RestoringBannerBackgroundColor
+                // KMK <--
+                indexing -> IndexingBannerBackgroundColor
                 downloadOnly -> DownloadedOnlyBannerBackgroundColor
                 incognito -> IncognitoModeBannerBackgroundColor
                 else -> MaterialTheme.colorScheme.surface
@@ -178,12 +218,8 @@ class MainActivity : BaseActivity() {
 
             Navigator(
                 screen = HomeScreen,
-                disposeBehavior = NavigatorDisposeBehavior(
-                    disposeNestedNavigators = false,
-                    disposeSteps = true,
-                ),
+                disposeBehavior = NavigatorDisposeBehavior(disposeNestedNavigators = false, disposeSteps = true),
             ) { navigator ->
-
                 LaunchedEffect(navigator) {
                     this@MainActivity.navigator = navigator
 
@@ -202,7 +238,15 @@ class MainActivity : BaseActivity() {
                         AppStateBanners(
                             downloadedOnlyMode = downloadOnly,
                             incognitoMode = incognito,
-                            indexing = indexingAnime,
+                            indexing = indexing,
+                            // KMK -->
+                            restoring = restoring,
+                            syncing = syncing,
+                            updating = updating,
+                            progress = updatingProgress.takeIf { updating }
+                                ?: syncingProgress.takeIf { syncing }
+                                ?: restoringProgress.takeIf { restoring },
+                            // KMK <--
                             modifier = Modifier.windowInsetsPadding(scaffoldInsets),
                         )
                     },
@@ -217,6 +261,7 @@ class MainActivity : BaseActivity() {
                                 .padding(contentPadding)
                                 .consumeWindowInsets(contentPadding),
                         )
+
                         // Draw navigation bar scrim when needed
                         if (remember { isNavigationBarNeedsScrim() }) {
                             Spacer(
@@ -238,8 +283,7 @@ class MainActivity : BaseActivity() {
                         .filter { !it }
                         .onEach {
                             val currentScreen = navigator.lastItem
-                            if (
-                                currentScreen is BrowseSourceScreen ||
+                            if (currentScreen is BrowseSourceScreen ||
                                 (currentScreen is MangaScreen && currentScreen.fromSource)
                             ) {
                                 navigator.popUntilRoot()
@@ -275,27 +319,33 @@ class MainActivity : BaseActivity() {
                 ShowOnboarding()
             }
 
-            var showChangelog by remember { mutableStateOf(didMigration && !BuildConfig.DEBUG) }
-            if (showChangelog) {
-                AlertDialog(
-                    onDismissRequest = { showChangelog = false },
-                    title = {
-                        Text(
-                            text = stringResource(MR.strings.updated_version, BuildConfig.VERSION_NAME),
-                        )
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { openInBrowser(RELEASE_URL) }) {
-                            Text(text = stringResource(MR.strings.whats_new))
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { showChangelog = false }) {
-                            Text(text = stringResource(MR.strings.action_ok))
-                        }
-                    },
+            // KMK -->
+            val previewLastVersion = Injekt.get<PreferenceStore>().getInt(
+                Preference.appStateKey("preview_last_version_code"),
+                0,
+            )
+            val previewCurrentVersion = BuildConfig.COMMIT_COUNT.toInt()
+            // KMK <--
+
+            var showChangelog by remember {
+                mutableStateOf(
+                    // KMK -->
+                    // BuildConfig.DEBUG ||
+                    isReleaseBuildType &&
+                        didMigration ||
+                        isPreviewBuildType &&
+                        previewCurrentVersion > previewLastVersion.get(),
+                    // KMK <--
                 )
             }
+            if (showChangelog) {
+                // SY -->
+                WhatsNewDialog(onDismissRequest = { showChangelog = false })
+                // SY <--
+            }
+            // KMK -->
+            previewLastVersion.set(previewCurrentVersion)
+            // KMK <--
         }
 
         val startTime = System.currentTimeMillis()
@@ -322,6 +372,13 @@ class MainActivity : BaseActivity() {
             }
         }
     }
+
+    // KMK -->
+    override fun onPause() {
+        super.onPause()
+        MangaCoverMetadata.savePrefs()
+    }
+    // KMK <--
 
     override fun onProvideAssistContent(outContent: AssistContent) {
         super.onProvideAssistContent(outContent)
@@ -474,13 +531,9 @@ class MainActivity : BaseActivity() {
                 // or the Google-specific search intent (triggered by saying or typing "search *query* on *Tachiyomi*" in Google Search/Google Assistant)
 
                 // Get the search query provided in extras, and if not null, perform a global search with it.
-                val query = intent.getStringExtra(SearchManager.QUERY)
-                    ?: intent.getStringExtra(Intent.EXTRA_TEXT)
-
+                val query = intent.getStringExtra(SearchManager.QUERY) ?: intent.getStringExtra(Intent.EXTRA_TEXT)
                 if (!query.isNullOrEmpty()) {
                     navigator.popUntilRoot()
-
-                    navigator.push(GlobalSearchScreen(query))
                     navigator.push(DeepLinkScreen(query))
                 }
                 null
@@ -500,7 +553,7 @@ class MainActivity : BaseActivity() {
                     navigator.popUntilRoot()
                     navigator.push(RestoreBackupScreen(intent.data.toString()))
                 }
-                // Deep link to add manga extension repo
+                // Deep link to add extension repo
                 else if (intent.scheme == "anikku" && intent.data?.host == "add-repo") {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()

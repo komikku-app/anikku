@@ -73,7 +73,7 @@ data class Manga(
             Always predict release date even for Completed entries
             .takeIf { status != SManga.COMPLETED.toLong() }
              KMK <-- */
-            ?.let { Instant.ofEpochMilli(it) }
+            .let { Instant.ofEpochMilli(it) }
 
     val sorting: Long
         get() = episodeFlags and EPISODE_SORTING_MASK
@@ -81,8 +81,9 @@ data class Manga(
     val displayMode: Long
         get() = episodeFlags and EPISODE_DISPLAY_MASK
 
-    val unseenFilterRaw: Long
+    val unreadFilterRaw: Long
         get() = episodeFlags and EPISODE_UNSEEN_MASK
+    val unseenFilterRaw = unreadFilterRaw
 
     val downloadedFilterRaw: Long
         get() = episodeFlags and EPISODE_DOWNLOADED_MASK
@@ -107,8 +108,8 @@ data class Manga(
     val nextEpisodeAiringAt: Long
         get() = (viewerFlags and ANIME_AIRING_TIME_MASK).removeHexZeros(zeros = 6)
 
-    val unseenFilter: TriState
-        get() = when (unseenFilterRaw) {
+    val unreadFilter: TriState
+        get() = when (unreadFilterRaw) {
             EPISODE_SHOW_UNSEEN -> TriState.ENABLED_IS
             EPISODE_SHOW_SEEN -> TriState.ENABLED_NOT
             else -> TriState.DISABLED

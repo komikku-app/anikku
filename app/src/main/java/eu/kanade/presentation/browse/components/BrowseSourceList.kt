@@ -27,8 +27,8 @@ fun BrowseSourceList(
     entries: Int,
     topBarHeight: Int,
     contentPadding: PaddingValues,
-    onAnimeClick: (Manga) -> Unit,
-    onAnimeLongClick: (Manga) -> Unit,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
     // KMK -->
     selection: List<Manga>,
     // KMK <--
@@ -51,8 +51,8 @@ fun BrowseSourceList(
             val anime by mangaList[index]?.collectAsState() ?: return@items
             BrowseSourceListItem(
                 manga = anime,
-                onClick = { onAnimeClick(anime) },
-                onLongClick = { onAnimeLongClick(anime) },
+                onClick = { onMangaClick(anime) },
+                onLongClick = { onMangaLongClick(anime) },
                 entries = entries,
                 containerHeight = containerHeight,
                 // KMK -->

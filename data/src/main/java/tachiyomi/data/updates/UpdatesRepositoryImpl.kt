@@ -66,20 +66,20 @@ class UpdatesRepositoryImpl(
         @Suppress("UNUSED_PARAMETER") dateUpload: Long,
         dateFetch: Long,
     ): UpdatesWithRelations = UpdatesWithRelations(
-        animeId = animeId,
+        mangaId = animeId,
         // SY -->
-        ogAnimeTitle = animeTitle,
+        ogMangaTitle = animeTitle,
         // SY <--
-        episodeId = episodeId,
-        episodeName = episodeName,
+        chapterId = episodeId,
+        chapterName = episodeName,
         scanlator = scanlator,
-        seen = seen,
+        read = seen,
         bookmark = bookmark,
         // AM (FILLERMARK) -->
         fillermark = fillermark,
         // <-- AM (FILLERMARK)
-        lastSecondSeen = lastSecondSeen,
-        totalSeconds = totalSeconds,
+        lastPagesRead = lastSecondSeen,
+        totalPages = totalSeconds,
         sourceId = sourceId,
         dateFetch = dateFetch,
         coverData = MangaCover(

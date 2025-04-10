@@ -119,13 +119,13 @@ abstract class BaseUpdatesGridGlanceWidget(
         val roundPx = context.resources.getDimension(R.dimen.appwidget_inner_radius)
         return withIOContext {
             this@prepareData
-                .distinctBy { it.animeId }
+                .distinctBy { it.mangaId }
                 .take(rowCount * columnCount)
                 .map { updatesView ->
                     val request = ImageRequest.Builder(context)
                         .data(
                             MangaCover(
-                                mangaId = updatesView.animeId,
+                                mangaId = updatesView.mangaId,
                                 sourceId = updatesView.sourceId,
                                 isMangaFavorite = true,
                                 ogUrl = updatesView.coverData.url,
@@ -148,7 +148,7 @@ abstract class BaseUpdatesGridGlanceWidget(
                         .image
                         ?.asDrawable(context.resources)
                         ?.toBitmap()
-                    Pair(updatesView.animeId, bitmap)
+                    Pair(updatesView.mangaId, bitmap)
                 }
                 .toImmutableList()
         }

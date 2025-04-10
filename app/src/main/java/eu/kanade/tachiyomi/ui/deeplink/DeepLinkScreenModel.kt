@@ -12,6 +12,8 @@ import eu.kanade.tachiyomi.source.getChapterList
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ResolvableSource
+import eu.kanade.tachiyomi.source.online.getChapter
+import eu.kanade.tachiyomi.source.online.getManga
 import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.chapter.interactor.GetChapterByUrlAndMangaId
@@ -38,24 +40,24 @@ class DeepLinkScreenModel(
                 .filterIsInstance<ResolvableSource>()
                 .firstOrNull { it.getUriType(query) != UriType.Unknown }
 
-            val anime = source?.getAnime(query)?.let {
+            val manga = source?.getManga(query)?.let {
                 getMangaFromSManga(it, source.id)
             }
 
-            val episode = if (source?.getUriType(query) == UriType.Episode && anime != null) {
-                source.getEpisode(query)?.let { getChapterFromSChapter(it, anime, source) }
+            val chapter = if (source?.getUriType(query) == UriType.Episode && manga != null) {
+                source.getChapter(query)?.let { getChapterFromSChapter(it, manga, source) }
             } else {
                 null
             }
 
             mutableState.update {
-                if (anime == null) {
+                if (manga == null) {
                     State.NoResults
                 } else {
-                    if (episode == null) {
-                        State.Result(anime)
+                    if (chapter == null) {
+                        State.Result(manga)
                     } else {
-                        State.Result(anime, episode.id)
+                        State.Result(manga, chapter.id)
                     }
                 }
             }
@@ -63,14 +65,14 @@ class DeepLinkScreenModel(
     }
 
     private suspend fun getChapterFromSChapter(sChapter: SChapter, manga: Manga, source: Source): Chapter? {
-        val localEpisode = getChapterByUrlAndMangaId.await(sChapter.url, manga.id)
+        val localChapter = getChapterByUrlAndMangaId.await(sChapter.url, manga.id)
 
-        return if (localEpisode == null) {
-            val sourceEpisodes = source.getChapterList(manga.toSManga())
-            val newEpisodes = syncChaptersWithSource.await(sourceEpisodes, manga, source, false)
-            newEpisodes.find { it.url == sChapter.url }
+        return if (localChapter == null) {
+            val sourceChapters = source.getChapterList(manga.toSManga())
+            val newChapters = syncChaptersWithSource.await(sourceChapters, manga, source, false)
+            newChapters.find { it.url == sChapter.url }
         } else {
-            localEpisode
+            localChapter
         }
     }
 
@@ -87,6 +89,6 @@ class DeepLinkScreenModel(
         data object NoResults : State
 
         @Immutable
-        data class Result(val manga: Manga, val episodeId: Long? = null) : State
+        data class Result(val manga: Manga, val chapterId: Long? = null) : State
     }
 }

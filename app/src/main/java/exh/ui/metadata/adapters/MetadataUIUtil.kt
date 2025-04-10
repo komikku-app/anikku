@@ -11,7 +11,6 @@ import androidx.core.graphics.red
 import kotlin.math.roundToInt
 
 object MetadataUIUtil {
-
     /**
      * Returns the color for the given attribute.
      *

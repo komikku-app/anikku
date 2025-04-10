@@ -86,19 +86,19 @@ data object UpdatesTab : Tab {
             state = state,
             snackbarHostState = screenModel.snackbarHostState,
             lastUpdated = screenModel.lastUpdated,
-            onClickCover = { item -> navigator.push(MangaScreen(item.update.animeId)) },
+            onClickCover = { item -> navigator.push(MangaScreen(item.update.mangaId)) },
             onSelectAll = screenModel::toggleAllSelection,
             onInvertSelection = screenModel::invertSelection,
             onUpdateLibrary = screenModel::updateLibrary,
-            onDownloadEpisode = screenModel::downloadEpisodes,
+            onDownloadChapter = screenModel::downloadChapters,
             onMultiBookmarkClicked = screenModel::bookmarkUpdates,
             // AM (FILLERMARK) -->
             onMultiFillermarkClicked = screenModel::fillermarkUpdates,
             // <-- AM (FILLERMARK)
-            onMultiMarkAsSeenClicked = screenModel::markUpdatesSeen,
-            onMultiDeleteClicked = screenModel::showConfirmDeleteEpisodes,
+            onMultiMarkAsReadClicked = screenModel::markUpdatesRead,
+            onMultiDeleteClicked = screenModel::showConfirmDeleteChapters,
             onUpdateSelected = screenModel::toggleSelection,
-            onOpenEpisode = { updateItem: UpdatesItem, altPlayer: Boolean ->
+            onOpenChapter = { updateItem: UpdatesItem, altPlayer: Boolean ->
                 scope.launchIO {
                     openEpisode(context, updateItem.update, altPlayer)
                 }
@@ -114,7 +114,7 @@ data object UpdatesTab : Tab {
             is UpdatesScreenModel.Dialog.DeleteConfirmation -> {
                 UpdatesDeleteConfirmationDialog(
                     onDismissRequest = onDismissDialog,
-                    onConfirm = { screenModel.deleteEpisodes(dialog.toDelete) },
+                    onConfirm = { screenModel.deleteChapters(dialog.toDelete) },
                 )
             }
 
@@ -183,8 +183,8 @@ data object UpdatesTab : Tab {
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get() != altPlayer
         MainActivity.startPlayerActivity(
             context,
-            update.animeId,
-            update.episodeId,
+            update.mangaId,
+            update.chapterId,
             extPlayer,
         )
     }

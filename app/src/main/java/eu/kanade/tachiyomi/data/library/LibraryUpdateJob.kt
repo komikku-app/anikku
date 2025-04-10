@@ -293,12 +293,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                         false
                     }
 
-                    ANIME_HAS_UNSEEN in restrictions && it.unseenCount != 0L -> {
+                    ANIME_HAS_UNSEEN in restrictions && it.unreadCount != 0L -> {
                         skippedUpdates.add(it.manga to context.stringResource(MR.strings.skipped_reason_not_caught_up))
                         false
                     }
 
-                    ANIME_NON_SEEN in restrictions && it.totalEpisodes > 0L && !it.hasStarted -> {
+                    ANIME_NON_SEEN in restrictions && it.totalChapters > 0L && !it.hasStarted -> {
                         skippedUpdates.add(it.manga to context.stringResource(MR.strings.skipped_reason_not_started))
                         false
                     }
@@ -459,7 +459,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 .associateBy { it.id }
             chapters.groupBy { it.animeId }
                 .forEach {
-                    downloadManager.downloadEpisodes(
+                    downloadManager.downloadChapters(
                         downloadingManga[it.key] ?: return@forEach,
                         it.value,
                         false,
@@ -469,7 +469,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             return
         }
         // SY <--
-        downloadManager.downloadEpisodes(manga, chapters, false)
+        downloadManager.downloadChapters(manga, chapters, false)
     }
 
     /**

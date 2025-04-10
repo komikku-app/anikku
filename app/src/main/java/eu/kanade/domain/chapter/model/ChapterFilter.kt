@@ -19,7 +19,7 @@ fun List<Chapter>.applyFilters(
     mergedManga: Map<Long, Manga>, /* SY <-- */
 ): List<Chapter> {
     val isLocalManga = manga.isLocal()
-    val unreadFilter = manga.unseenFilter
+    val unreadFilter = manga.unreadFilter
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
     // AM (FILLERMARK) -->
@@ -56,7 +56,7 @@ fun List<Chapter>.applyFilters(
  */
 fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item> {
     val isLocalAnime = manga.isLocal()
-    val unseenFilter = manga.unseenFilter
+    val unseenFilter = manga.unreadFilter
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
     // AM (FILLERMARK) -->

@@ -13,6 +13,7 @@ import eu.kanade.domain.source.interactor.GetShowLatest
 import eu.kanade.domain.source.interactor.GetSourceCategories
 import eu.kanade.domain.source.interactor.RenameSourceCategory
 import eu.kanade.domain.source.interactor.SetSourceCategories
+import exh.search.SearchEngine
 import tachiyomi.data.manga.CustomMangaRepositoryImpl
 import tachiyomi.data.manga.MangaMergeRepositoryImpl
 import tachiyomi.data.source.FeedSavedSearchRepositoryImpl
@@ -79,6 +80,7 @@ class SYDomainModule : InjektModule {
         addFactory { CreateSortTag(get(), get()) }
         addFactory { DeleteSortTag(get(), get()) }
         addFactory { ReorderSortTag(get(), get()) }
+        addFactory { SearchEngine() }
         addFactory { GetReadMangaNotInLibraryView(get()) }
 
         addSingletonFactory<MangaMergeRepository> { MangaMergeRepositoryImpl(get()) }

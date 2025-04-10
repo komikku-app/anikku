@@ -68,15 +68,15 @@ class GetMergedChaptersByMangaId(
         mangaReferences: List<MergedMangaReference>,
         chapterList: List<Chapter>,
     ): List<Chapter> {
-        return when (mangaReferences.firstOrNull { it.animeSourceId == MERGED_SOURCE_ID }?.episodeSortMode) {
-            MergedMangaReference.EPISODE_SORT_NO_DEDUPE, MergedMangaReference.EPISODE_SORT_NONE -> chapterList
-            MergedMangaReference.EPISODE_SORT_PRIORITY -> dedupeByPriority(mangaReferences, chapterList)
-            MergedMangaReference.EPISODE_SORT_MOST_EPISODES -> {
+        return when (mangaReferences.firstOrNull { it.mangaSourceId == MERGED_SOURCE_ID }?.chapterSortMode) {
+            MergedMangaReference.CHAPTER_SORT_NO_DEDUPE, MergedMangaReference.CHAPTER_SORT_NONE -> chapterList
+            MergedMangaReference.CHAPTER_SORT_PRIORITY -> dedupeByPriority(mangaReferences, chapterList)
+            MergedMangaReference.CHAPTER_SORT_MOST_CHAPTERS -> {
                 findSourceWithMostChapters(chapterList)?.let { mangaId ->
                     chapterList.filter { it.animeId == mangaId }
                 } ?: chapterList
             }
-            MergedMangaReference.EPISODE_SORT_HIGHEST_EPISODE_NUMBER -> {
+            MergedMangaReference.CHAPTER_SORT_HIGHEST_CHAPTER_NUMBER -> {
                 findSourceWithHighestChapterNumber(chapterList)?.let { mangaId ->
                     chapterList.filter { it.animeId == mangaId }
                 } ?: chapterList
@@ -103,7 +103,7 @@ class GetMergedChaptersByMangaId(
         chapterList.groupBy { it.animeId }
             .entries
             .sortedBy { (mangaId) ->
-                mangaReferences.find { it.animeId == mangaId }?.episodePriority ?: Int.MAX_VALUE
+                mangaReferences.find { it.mangaId == mangaId }?.chapterPriority ?: Int.MAX_VALUE
             }
             .forEach { (_, chapters) ->
                 existingChapterIndex = -1

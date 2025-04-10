@@ -10,6 +10,8 @@ import eu.kanade.domain.manga.model.toDomainManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.browse.FeedItemUI
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.getPopularManga
+import eu.kanade.tachiyomi.source.getSearchManga
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import kotlinx.collections.immutable.ImmutableList
@@ -57,7 +59,7 @@ import tachiyomi.domain.manga.model.Manga as DomainManga
 open class FeedScreenModel(
     val sourceManager: SourceManager = Injekt.get(),
     val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val getAnime: GetManga = Injekt.get(),
+    private val getManga: GetManga = Injekt.get(),
     val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     getFeedSavedSearchGlobal: GetFeedSavedSearchGlobal = Injekt.get(),
     private val getSavedSearchGlobalFeed: GetSavedSearchGlobalFeed = Injekt.get(),
@@ -297,17 +299,17 @@ open class FeedScreenModel(
                                         itemUI.source.getLatestUpdates(1)
                                         // KMK -->
                                     } else {
-                                        itemUI.source.getPopularAnime(1)
+                                        itemUI.source.getPopularManga(1)
                                     }
                                     // KMK <--
                                 } else {
-                                    itemUI.source.getSearchAnime(
+                                    itemUI.source.getSearchManga(
                                         1,
                                         itemUI.savedSearch.query.orEmpty(),
                                         getFilterList(itemUI.savedSearch, itemUI.source),
                                     )
                                 }
-                            }.animes
+                            }.mangas
                         } else {
                             emptyList()
                         }
@@ -353,7 +355,7 @@ open class FeedScreenModel(
     @Composable
     fun getManga(initialManga: DomainManga): State<DomainManga> {
         return produceState(initialValue = initialManga) {
-            getAnime.subscribe(initialManga.url, initialManga.source)
+            getManga.subscribe(initialManga.url, initialManga.source)
                 .collectLatest { manga ->
                     value = manga
                         // KMK -->

@@ -7,8 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import tachiyomi.domain.anime.interactor.GetAnime
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.episode.interactor.GetEpisode
 import tachiyomi.domain.episode.model.Episode
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -20,6 +22,10 @@ data class Download(
     val changeDownloader: Boolean = false,
     var video: Video? = null,
 ) : ProgressListener {
+    val manga: Manga
+        get() = anime
+    val chapter: Chapter
+        get() = episode
 
     @Transient
     private val _statusFlow = MutableStateFlow(State.NOT_DOWNLOADED)

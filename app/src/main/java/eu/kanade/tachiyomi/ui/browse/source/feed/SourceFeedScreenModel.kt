@@ -14,6 +14,8 @@ import eu.kanade.domain.source.interactor.GetExhSavedSearch
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.SourceFeedUI
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.getPopularManga
+import eu.kanade.tachiyomi.source.getSearchManga
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.ui.browse.feed.MaxFeedItems
 import exh.util.nullIfBlank
@@ -61,7 +63,7 @@ open class SourceFeedScreenModel(
     val sourceId: Long,
     uiPreferences: UiPreferences = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
-    private val getAnime: GetManga = Injekt.get(),
+    private val getManga: GetManga = Injekt.get(),
     val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     private val getFeedSavedSearchBySourceId: GetFeedSavedSearchBySourceId = Injekt.get(),
     private val getSavedSearchBySourceIdFeed: GetSavedSearchBySourceIdFeed = Injekt.get(),
@@ -216,15 +218,15 @@ open class SourceFeedScreenModel(
                     val page = try {
                         withContext(coroutineDispatcher) {
                             when (sourceFeed) {
-                                is SourceFeedUI.Browse -> source.getPopularAnime(1)
+                                is SourceFeedUI.Browse -> source.getPopularManga(1)
                                 is SourceFeedUI.Latest -> source.getLatestUpdates(1)
-                                is SourceFeedUI.SourceSavedSearch -> source.getSearchAnime(
+                                is SourceFeedUI.SourceSavedSearch -> source.getSearchManga(
                                     page = 1,
                                     query = sourceFeed.savedSearch.query.orEmpty(),
                                     filters = getFilterList(sourceFeed.savedSearch, source),
                                 )
                             }
-                        }.animes
+                        }.mangas
                     } catch (e: Exception) {
                         emptyList()
                     }
@@ -266,7 +268,7 @@ open class SourceFeedScreenModel(
     @Composable
     fun getManga(initialManga: DomainManga): State<DomainManga> {
         return produceState(initialValue = initialManga) {
-            getAnime.subscribe(initialManga.url, initialManga.source)
+            getManga.subscribe(initialManga.url, initialManga.source)
                 .collectLatest { manga ->
                     value = manga
                         // KMK -->

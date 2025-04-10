@@ -50,7 +50,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
-import eu.kanade.tachiyomi.databinding.EditAnimeDialogBinding
+import eu.kanade.tachiyomi.databinding.EditMangaDialogBinding
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.lang.chop
 import eu.kanade.tachiyomi.util.system.dpToPx
@@ -99,7 +99,7 @@ fun EditMangaDialog(
 ) {
     val scope = rememberCoroutineScope()
     var binding by remember {
-        mutableStateOf<EditAnimeDialogBinding?>(null)
+        mutableStateOf<EditMangaDialogBinding?>(null)
     }
     val showTrackerSelectionDialogue = remember { mutableStateOf(false) }
     val getTracks = remember { Injekt.get<GetTracks>() }
@@ -164,7 +164,7 @@ fun EditMangaDialog(
             ) {
                 AndroidView(
                     factory = { factoryContext ->
-                        EditAnimeDialogBinding.inflate(LayoutInflater.from(factoryContext))
+                        EditMangaDialogBinding.inflate(LayoutInflater.from(factoryContext))
                             .also { binding = it }
                             .apply {
                                 onViewCreated(
@@ -260,7 +260,7 @@ data class EditMangaDialogColors(
 private fun onViewCreated(
     manga: Manga,
     context: Context,
-    binding: EditAnimeDialogBinding,
+    binding: EditMangaDialogBinding,
     scope: CoroutineScope,
     getTracks: GetTracks,
     trackerManager: TrackerManager,
@@ -433,7 +433,7 @@ private fun onViewCreated(
     }
 }
 
-private suspend fun getTrackers(manga: Manga, binding: EditAnimeDialogBinding, context: Context, getTracks: GetTracks, trackerManager: TrackerManager, tracks: MutableState<List<Pair<Track, Tracker>>>, showTrackerSelectionDialogue: MutableState<Boolean>) {
+private suspend fun getTrackers(manga: Manga, binding: EditMangaDialogBinding, context: Context, getTracks: GetTracks, trackerManager: TrackerManager, tracks: MutableState<List<Pair<Track, Tracker>>>, showTrackerSelectionDialogue: MutableState<Boolean>) {
     tracks.value = getTracks.await(manga.id).map { track ->
         track to trackerManager.get(track.trackerId)!!
     }
@@ -456,9 +456,9 @@ private fun setTextIfNotBlank(field: (String) -> Unit, value: String?) {
     value?.takeIf { it.isNotBlank() }?.let { field(it) }
 }
 
-private suspend fun autofillFromTracker(binding: EditAnimeDialogBinding, track: Track, tracker: Tracker) {
+private suspend fun autofillFromTracker(binding: EditMangaDialogBinding, track: Track, tracker: Tracker) {
     try {
-        val trackerMangaMetadata = tracker.getAnimeMetadata(track)
+        val trackerMangaMetadata = tracker.getMangaMetadata(track)
 
         setTextIfNotBlank(binding.title::setText, trackerMangaMetadata.title)
         setTextIfNotBlank(binding.mangaAuthor::setText, trackerMangaMetadata.authors)
@@ -480,7 +480,7 @@ private suspend fun autofillFromTracker(binding: EditAnimeDialogBinding, track: 
 
 private fun resetTags(
     manga: Manga,
-    binding: EditAnimeDialogBinding,
+    binding: EditMangaDialogBinding,
     scope: CoroutineScope,
     // KMK -->
     colors: EditMangaDialogColors,
@@ -495,7 +495,7 @@ private fun resetTags(
 
 private fun loadCover(
     manga: Manga,
-    binding: EditAnimeDialogBinding,
+    binding: EditMangaDialogBinding,
     // KMK -->
     coverRatio: MutableFloatState,
     // KMK <--
@@ -517,7 +517,7 @@ private fun loadCover(
 
 private fun resetInfo(
     manga: Manga,
-    binding: EditAnimeDialogBinding,
+    binding: EditMangaDialogBinding,
     scope: CoroutineScope,
     // KMK -->
     colors: EditMangaDialogColors,

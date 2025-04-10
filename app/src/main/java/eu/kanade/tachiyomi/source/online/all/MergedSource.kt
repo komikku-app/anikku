@@ -22,6 +22,7 @@ import kotlinx.coroutines.sync.withPermit
 import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import okhttp3.Response
 import tachiyomi.core.common.util.lang.withIOContext
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.interactor.GetMergedReferencesById
@@ -93,15 +94,15 @@ class MergedSource : HttpSource() {
             val animeReferences = getMergedReferencesById.await(mergedAnime.id)
                 .apply {
                     require(isNotEmpty()) { "Anime references are empty, info unavailable, merge is likely corrupted" }
-                    require(!(size == 1 && first().animeSourceId == MERGED_SOURCE_ID)) {
+                    require(!(size == 1 && first().mangaSourceId == MERGED_SOURCE_ID)) {
                         "Anime references contain only the merged reference, merge is likely corrupted"
                     }
                 }
 
-            val animeInfoReference = animeReferences.firstOrNull { it.isInfoAnime }
-                ?: animeReferences.firstOrNull { it.animeId != it.mergeId }
+            val animeInfoReference = animeReferences.firstOrNull { it.isInfoManga }
+                ?: animeReferences.firstOrNull { it.mangaId != it.mergeId }
             val dbAnime = animeInfoReference?.run {
-                getManga.await(animeUrl, animeSourceId)?.toSManga()
+                getManga.await(mangaUrl, mangaSourceId)?.toSManga()
             }
             (dbAnime ?: mergedAnime.toSManga()).copy(
                 url = anime.url,
@@ -110,10 +111,16 @@ class MergedSource : HttpSource() {
     }
 
     suspend fun fetchEpisodesForMergedAnime(
+        anime: Anime,
+        downloadEpisodes: Boolean = true,
+    ) {
+        fetchEpisodesAndSync(anime, downloadEpisodes)
+    }
+    suspend fun fetchChaptersForMergedManga(
         manga: Manga,
         downloadEpisodes: Boolean = true,
     ) {
-        fetchEpisodesAndSync(manga, downloadEpisodes)
+        fetchEpisodesForMergedAnime(manga, downloadEpisodes)
     }
 
     internal suspend fun fetchEpisodesAndSync(manga: Manga, downloadEpisodes: Boolean = true): List<Chapter> {
@@ -126,7 +133,7 @@ class MergedSource : HttpSource() {
         var exception: Exception? = null
         return supervisorScope {
             animeReferences
-                .groupBy(MergedMangaReference::animeSourceId)
+                .groupBy(MergedMangaReference::mangaSourceId)
                 .minus(MERGED_SOURCE_ID)
                 .map { (_, values) ->
                     async {
@@ -134,15 +141,15 @@ class MergedSource : HttpSource() {
                             values.flatMap {
                                 try {
                                     val (source, loadedAnime, reference) = it.load()
-                                    if (loadedAnime != null && reference.getEpisodeUpdates) {
+                                    if (loadedAnime != null && reference.getChapterUpdates) {
                                         val episodeList = source.getEpisodeList(loadedAnime.toSManga())
                                         val results =
                                             syncChaptersWithSource.await(episodeList, loadedAnime, source)
 
-                                        if (downloadEpisodes && reference.downloadEpisodes) {
+                                        if (downloadEpisodes && reference.downloadChapters) {
                                             val episodesToDownload = filterChaptersForDownload.await(manga, results)
                                             if (episodesToDownload.isNotEmpty()) {
-                                                downloadManager.downloadEpisodes(
+                                                downloadManager.downloadChapters(
                                                     loadedAnime,
                                                     episodesToDownload,
                                                 )
@@ -169,13 +176,13 @@ class MergedSource : HttpSource() {
     }
 
     suspend fun MergedMangaReference.load(): LoadedAnimeSource {
-        var anime = getManga.await(animeUrl, animeSourceId)
-        val source = sourceManager.getOrStub(anime?.source ?: animeSourceId)
+        var anime = getManga.await(mangaUrl, mangaSourceId)
+        val source = sourceManager.getOrStub(anime?.source ?: mangaSourceId)
         if (anime == null) {
             val newManga = networkToLocalManga.await(
                 Manga.create().copy(
-                    source = animeSourceId,
-                    url = animeUrl,
+                    source = mangaSourceId,
+                    url = mangaUrl,
                 ),
             )
             updateManga.awaitUpdateFromSource(newManga, source.getAnimeDetails(newManga.toSManga()), false)
@@ -192,13 +199,13 @@ class MergedSource : HttpSource() {
         }
 
         return animeReferences
-            .groupBy(MergedMangaReference::animeSourceId)
+            .groupBy(MergedMangaReference::mangaSourceId)
             .minus(MERGED_SOURCE_ID)
             .values
             .flatten()
             .map {
-                val referenceAnime = getManga.await(it.animeUrl, it.animeSourceId)
-                sourceManager.getOrStub(referenceAnime?.source ?: it.animeSourceId)
+                val referenceAnime = getManga.await(it.mangaUrl, it.mangaSourceId)
+                sourceManager.getOrStub(referenceAnime?.source ?: it.mangaSourceId)
             }
     }
 

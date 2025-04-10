@@ -1,5 +1,5 @@
 package eu.kanade.domain.anime.interactor
 
-import eu.kanade.domain.manga.interactor.SetAnimeViewerFlags
+import eu.kanade.domain.manga.interactor.SetMangaViewerFlags
 
-typealias SetAnimeViewerFlags = SetAnimeViewerFlags
+typealias SetAnimeViewerFlags = SetMangaViewerFlags

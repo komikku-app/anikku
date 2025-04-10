@@ -33,6 +33,8 @@ import androidx.compose.ui.util.fastMaxBy
 import dev.icerock.moko.resources.StringResource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
+import java.math.RoundingMode
+import java.text.NumberFormat
 
 val DownloadedOnlyBannerBackgroundColor
     @Composable get() = MaterialTheme.colorScheme.tertiary
@@ -40,6 +42,15 @@ val IncognitoModeBannerBackgroundColor
     @Composable get() = MaterialTheme.colorScheme.primary
 val IndexingBannerBackgroundColor
     @Composable get() = MaterialTheme.colorScheme.secondary
+
+// KMK -->
+val RestoringBannerBackgroundColor
+    @Composable get() = MaterialTheme.colorScheme.error
+val SyncingBannerBackgroundColor
+    @Composable get() = MaterialTheme.colorScheme.secondary
+val UpdatingBannerBackgroundColor
+    @Composable get() = MaterialTheme.colorScheme.tertiary
+// KMK <--
 
 @Composable
 fun WarningBanner(
@@ -58,12 +69,27 @@ fun WarningBanner(
     )
 }
 
+// KMK -->
+private val percentFormatter = NumberFormat.getPercentInstance().apply {
+    roundingMode = RoundingMode.DOWN
+    maximumFractionDigits = 0
+}
+// KMK <--
+
 @Composable
 fun AppStateBanners(
     downloadedOnlyMode: Boolean,
     incognitoMode: Boolean,
     indexing: Boolean,
+    // KMK -->
+    restoring: Boolean,
+    syncing: Boolean,
+    updating: Boolean,
+    // KMK <--
     modifier: Modifier = Modifier,
+    // KMK -->
+    progress: Float? = null,
+    // KMK <--
 ) {
     val density = LocalDensity.current
     val mainInsets = WindowInsets.statusBars
@@ -71,12 +97,31 @@ fun AppStateBanners(
     SubcomposeLayout(modifier = modifier) { constraints ->
         val indexingPlaceable = subcompose(0) {
             AnimatedVisibility(
-                visible = indexing,
+                // KMK -->
+                visible = indexing || restoring || syncing || updating,
+                // KMK <--
                 enter = expandVertically(),
                 exit = shrinkVertically(),
             ) {
                 IndexingDownloadBanner(
                     modifier = Modifier.windowInsetsPadding(mainInsets),
+                    // KMK -->
+                    text = when {
+                        updating -> progress?.let {
+                            stringResource(
+                                MR.strings.notification_updating_progress,
+                                percentFormatter.format(it),
+                            )
+                        } ?: stringResource(MR.strings.updating_library)
+                        syncing -> progress?.let {
+                            stringResource(MR.strings.syncing_library) + " (${percentFormatter.format(it)})"
+                        } ?: stringResource(MR.strings.syncing_library)
+                        restoring -> progress?.let {
+                            stringResource(MR.strings.restoring_backup) + " (${percentFormatter.format(it)})"
+                        } ?: stringResource(MR.strings.restoring_backup)
+                        else -> stringResource(MR.strings.download_notifier_cache_renewal)
+                    },
+                    // KMK <--
                 )
             }
         }.fastMap { it.measure(constraints) }
@@ -155,7 +200,12 @@ private fun IncognitoModeBanner(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun IndexingDownloadBanner(modifier: Modifier = Modifier) {
+private fun IndexingDownloadBanner(
+    modifier: Modifier = Modifier,
+    // KMK -->
+    text: String = stringResource(MR.strings.download_notifier_cache_renewal),
+    // KMK <--
+) {
     val density = LocalDensity.current
     Row(
         modifier = Modifier
@@ -173,7 +223,9 @@ private fun IndexingDownloadBanner(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = stringResource(MR.strings.download_notifier_cache_renewal),
+            // KMK -->
+            text = text,
+            // KMK <--
             color = MaterialTheme.colorScheme.onSecondary,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.labelMedium,

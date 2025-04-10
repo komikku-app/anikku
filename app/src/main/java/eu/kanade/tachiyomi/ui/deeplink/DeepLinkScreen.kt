@@ -50,7 +50,7 @@ class DeepLinkScreen(
                 }
                 is DeepLinkScreenModel.State.Result -> {
                     val resultState = state as DeepLinkScreenModel.State.Result
-                    if (resultState.episodeId == null) {
+                    if (resultState.chapterId == null) {
                         navigator.replace(
                             MangaScreen(
                                 resultState.manga.id,
@@ -62,7 +62,7 @@ class DeepLinkScreen(
                         PlayerActivity.newIntent(
                             context,
                             resultState.manga.id,
-                            resultState.episodeId,
+                            resultState.chapterId,
                         ).also(context::startActivity)
                     }
                 }

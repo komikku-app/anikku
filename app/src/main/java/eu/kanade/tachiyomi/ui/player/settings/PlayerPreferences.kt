@@ -18,6 +18,12 @@ class PlayerPreferences(
         PlayerOrientation.SensorLandscape,
     )
 
+    fun skipRead() = preferenceStore.getBoolean("skip_read", false)
+
+    fun skipFiltered() = preferenceStore.getBoolean("skip_filtered", true)
+
+    fun skipDupe() = preferenceStore.getBoolean("skip_dupe", false)
+
     // Controls
 
     fun allowGestures() = preferenceStore.getBoolean("pref_allow_gestures_in_panels", false)

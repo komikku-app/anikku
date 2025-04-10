@@ -125,7 +125,7 @@ class MigrationListScreenModel(
                                 sourcesString = sourceManager.getOrStub(manga.source).getNameForMangaInfo(
                                     if (manga.source == MERGED_SOURCE_ID) {
                                         getMergedReferencesById.await(manga.id)
-                                            .map { sourceManager.getOrStub(it.animeSourceId) }
+                                            .map { sourceManager.getOrStub(it.mangaSourceId) }
                                     } else {
                                         null
                                     },
@@ -148,7 +148,7 @@ class MigrationListScreenModel(
     suspend fun getChapterInfo(result: SearchResult.Result) = getChapterInfo(result.id)
     private suspend fun getChapterInfo(id: Long) = getChaptersByMangaId.await(id).let { chapters ->
         MigratingManga.ChapterInfo(
-            latestChapter = chapters.maxOfOrNull { it.episodeNumber },
+            latestChapter = chapters.maxOfOrNull { it.chapterNumber },
             chapterCount = chapters.size,
         )
     }
@@ -349,8 +349,8 @@ class MigrationListScreenModel(
         // Update chapters read
         if (MigrationFlags.hasChapters(flags)) {
             val prevMangaChapters = getChaptersByMangaId.await(prevManga.id)
-            val maxChapterRead = prevMangaChapters.filter(Chapter::seen)
-                .maxOfOrNull(Chapter::episodeNumber)
+            val maxChapterRead = prevMangaChapters.filter(Chapter::read)
+                .maxOfOrNull(Chapter::chapterNumber)
             val dbChapters = getChaptersByMangaId.await(manga.id)
             val prevHistoryList = getHistoryByMangaId.await(prevManga.id)
 
@@ -361,7 +361,7 @@ class MigrationListScreenModel(
                 if (chapter.isRecognizedNumber) {
                     val prevChapter = prevMangaChapters.find {
                         it.isRecognizedNumber &&
-                            it.episodeNumber == chapter.episodeNumber
+                            it.chapterNumber == chapter.chapterNumber
                     }
                     if (prevChapter != null) {
                         chapterUpdates += ChapterUpdate(
@@ -370,14 +370,14 @@ class MigrationListScreenModel(
                             seen = prevChapter.seen,
                             dateFetch = prevChapter.dateFetch,
                         )
-                        prevHistoryList.find { it.episodeId == prevChapter.id }?.let { prevHistory ->
+                        prevHistoryList.find { it.chapterId == prevChapter.id }?.let { prevHistory ->
                             historyUpdates += HistoryUpdate(
                                 chapter.id,
-                                prevHistory.seenAt ?: return@let,
-                                prevHistory.watchDuration,
+                                prevHistory.readAt ?: return@let,
+                                prevHistory.readDuration,
                             )
                         }
-                    } else if (maxChapterRead != null && chapter.episodeNumber <= maxChapterRead) {
+                    } else if (maxChapterRead != null && chapter.chapterNumber <= maxChapterRead) {
                         chapterUpdates += ChapterUpdate(
                             id = chapter.id,
                             seen = true,

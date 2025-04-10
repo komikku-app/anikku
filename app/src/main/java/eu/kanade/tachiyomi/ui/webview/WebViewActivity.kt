@@ -61,10 +61,11 @@ class WebViewActivity : BaseActivity() {
 
         val url = intent.extras?.getString(URL_KEY) ?: return
         assistUrl = url
+
         var headers = emptyMap<String, String>()
-        (sourceManager.get(intent.extras!!.getLong(SOURCE_KEY)) as? HttpSource)?.let { animeSource ->
+        (sourceManager.get(intent.extras!!.getLong(SOURCE_KEY)) as? HttpSource)?.let { source ->
             try {
-                headers = animeSource.headers.toMultimap().mapValues { it.value.getOrNull(0) ?: "" }
+                headers = source.headers.toMultimap().mapValues { it.value.getOrNull(0) ?: "" }
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e) { "Failed to build headers" }
             }

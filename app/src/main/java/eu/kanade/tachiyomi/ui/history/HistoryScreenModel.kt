@@ -61,8 +61,8 @@ class HistoryScreenModel(
     private fun List<HistoryWithRelations>.toHistoryUiModels(): List<HistoryUiModel> {
         return map { HistoryUiModel.Item(it) }
             .insertSeparators { before, after ->
-                val beforeDate = before?.item?.seenAt?.time?.toLocalDate()
-                val afterDate = after?.item?.seenAt?.time?.toLocalDate()
+                val beforeDate = before?.item?.readAt?.time?.toLocalDate()
+                val afterDate = after?.item?.readAt?.time?.toLocalDate()
                 when {
                     beforeDate != afterDate && afterDate != null -> HistoryUiModel.Header(afterDate)
                     // Return null to avoid adding a separator between two items.
@@ -75,15 +75,15 @@ class HistoryScreenModel(
         return withIOContext { getNextChapters.await(onlyUnread = false).firstOrNull() }
     }
 
-    fun getNextChapterForManga(animeId: Long, episodeId: Long) {
+    fun getNextChapterForManga(mangaId: Long, chapterId: Long) {
         screenModelScope.launchIO {
-            sendNextChapterEvent(getNextChapters.await(animeId, episodeId, onlyUnread = false))
+            sendNextChapterEvent(getNextChapters.await(mangaId, chapterId, onlyUnread = false))
         }
     }
 
     private suspend fun sendNextChapterEvent(chapters: List<Chapter>) {
-        val episode = chapters.firstOrNull()
-        _events.send(Event.OpenEpisode(episode))
+        val chapter = chapters.firstOrNull()
+        _events.send(Event.OpenChapter(chapter))
     }
 
     fun removeFromHistory(history: HistoryWithRelations) {
@@ -92,9 +92,9 @@ class HistoryScreenModel(
         }
     }
 
-    fun removeAllFromHistory(animeId: Long) {
+    fun removeAllFromHistory(mangaId: Long) {
         screenModelScope.launchIO {
-            removeHistory.await(animeId)
+            removeHistory.await(mangaId)
         }
     }
 
@@ -127,7 +127,7 @@ class HistoryScreenModel(
     }
 
     sealed interface Event {
-        data class OpenEpisode(val chapter: Chapter?) : Event
+        data class OpenChapter(val chapter: Chapter?) : Event
         data object InternalError : Event
         data object HistoryCleared : Event
     }

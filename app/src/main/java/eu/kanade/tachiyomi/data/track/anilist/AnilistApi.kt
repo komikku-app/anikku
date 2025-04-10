@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListAnimeQueryResult
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
@@ -291,7 +291,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         return withIOContext {
             val query = """
             |query (${'$'}animeid: Int!) {
@@ -340,7 +340,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .parseAs<ALAnimeMetadata>()
                     .let { dto ->
                         val anime = dto.data.media
-                        TrackAnimeMetadata(
+                        TrackMangaMetadata(
                             remoteId = anime.id,
                             title = anime.title.userPreferred,
                             thumbnailUrl = anime.coverImage.large,

@@ -61,7 +61,7 @@ fun TrackInfoDialogHome(
     trackItems: List<TrackItem>,
     dateFormat: DateTimeFormatter,
     onStatusClick: (TrackItem) -> Unit,
-    onEpisodeClick: (TrackItem) -> Unit,
+    onChapterClick: (TrackItem) -> Unit,
     onScoreClick: (TrackItem) -> Unit,
     onStartDateEdit: (TrackItem) -> Unit,
     onEndDateEdit: (TrackItem) -> Unit,
@@ -82,7 +82,7 @@ fun TrackInfoDialogHome(
         trackItems.forEach { item ->
             if (item.track != null) {
                 val supportsScoring = item.tracker.getScoreList().isNotEmpty()
-                val supportsReadingDates = item.tracker.supportsWatchingDates
+                val supportsReadingDates = item.tracker.supportsReadingDates
                 TrackInfoItem(
                     title = item.track.title,
                     tracker = item.tracker,
@@ -97,7 +97,7 @@ fun TrackInfoDialogHome(
                             it
                         }
                     },
-                    onEpisodesClick = { onEpisodeClick(item) },
+                    onEpisodesClick = { onChapterClick(item) },
                     score = item.tracker.displayScore(item.track)
                         .takeIf { supportsScoring && item.track.score != 0.0 },
                     onScoreClick = { onScoreClick(item) }

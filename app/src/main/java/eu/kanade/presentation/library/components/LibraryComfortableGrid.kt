@@ -49,7 +49,7 @@ internal fun LibraryComfortableGrid(
                 ),
                 coverBadgeStart = {
                     DownloadsBadge(count = libraryItem.downloadCount)
-                    UnviewedBadge(count = libraryItem.unseenCount)
+                    UnviewedBadge(count = libraryItem.unreadCount)
                 },
                 coverBadgeEnd = {
                     LanguageBadge(
@@ -65,7 +65,7 @@ internal fun LibraryComfortableGrid(
                 },
                 onLongClick = { onLongClick(libraryItem.libraryManga) },
                 onClick = { onClick(libraryItem.libraryManga) },
-                onClickContinueWatching = if (onClickContinueWatching != null && libraryItem.unseenCount > 0) {
+                onClickContinueWatching = if (onClickContinueWatching != null && libraryItem.unreadCount > 0) {
                     { onClickContinueWatching(libraryItem.libraryManga) }
                 } else {
                     null

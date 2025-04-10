@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -42,7 +42,7 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
 
     private val api by lazy { AnilistApi(client, interceptor) }
 
-    override val supportsWatchingDates: Boolean = true
+    override val supportsReadingDates: Boolean = true
 
     private val scorePreference = trackPreferences.anilistScoreType()
 
@@ -74,9 +74,9 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
         else -> null
     }
 
-    override fun getWatchingStatus(): Long = WATCHING
+    override fun getReadingStatus(): Long = WATCHING
 
-    override fun getRewatchingStatus(): Long = REWATCHING
+    override fun getRereadingStatus(): Long = REWATCHING
 
     override fun getCompletionStatus(): Long = COMPLETED
 
@@ -147,7 +147,7 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
         return api.addLibAnime(track)
     }
 
-    override suspend fun update(track: Track, didWatchEpisode: Boolean): Track {
+    override suspend fun update(track: Track, didReadChapter: Boolean): Track {
         // If user was using API v1 fetch library_id
         if (track.library_id == null || track.library_id!! == 0L) {
             val libManga = api.findLibAnime(track, getUsername().toInt())
@@ -156,7 +156,7 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
         }
 
         if (track.status != COMPLETED) {
-            if (didWatchEpisode) {
+            if (didReadChapter) {
                 if (track.last_episode_seen.toLong() == track.total_episodes && track.total_episodes > 0) {
                     track.status = COMPLETED
                     track.finished_watching_date = System.currentTimeMillis()
@@ -181,7 +181,7 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
         api.deleteLibAnime(track)
     }
 
-    override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
+    override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
         val remoteTrack = api.findLibAnime(track, getUsername().toInt())
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
@@ -189,13 +189,13 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
 
             if (track.status != COMPLETED) {
                 val isRewatching = track.status == REWATCHING
-                track.status = if (!isRewatching && hasSeenEpisodes) WATCHING else track.status
+                track.status = if (!isRewatching && hasReadChapters) WATCHING else track.status
             }
 
             update(track)
         } else {
             // Set default fields if it's not found in the list
-            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
         }
@@ -233,7 +233,7 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
         interceptor.setAuth(null)
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata {
         return api.getAnimeMetadata(track)
     }
 
@@ -250,6 +250,6 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
     }
 
     // KMK -->
-    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    override fun hasNotStartedReading(status: Long): Boolean = status == PLAN_TO_WATCH
     // KMK <--
 }

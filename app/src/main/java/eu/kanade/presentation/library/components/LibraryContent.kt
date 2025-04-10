@@ -35,13 +35,13 @@ fun LibraryContent(
     hasActiveFilters: Boolean,
     showPageTabs: Boolean,
     onChangeCurrentPage: (Int) -> Unit,
-    onAnimeClicked: (Long) -> Unit,
-    onContinueWatchingClicked: ((LibraryManga) -> Unit)?,
+    onMangaClicked: (Long) -> Unit,
+    onContinueReadingClicked: ((LibraryManga) -> Unit)?,
     onToggleSelection: (LibraryManga) -> Unit,
     onToggleRangeSelection: (LibraryManga) -> Unit,
     onRefresh: (Category?) -> Boolean,
     onGlobalSearchClicked: () -> Unit,
-    getNumberOfAnimeForCategory: (Category) -> Int?,
+    getNumberOfMangaForCategory: (Category) -> Int?,
     getDisplayMode: (Int) -> PreferenceMutableState<LibraryDisplayMode>,
     getColumnsForOrientation: (Boolean) -> PreferenceMutableState<Int>,
     getAnimeLibraryForPage: (Int) -> List<LibraryItem>,
@@ -68,14 +68,14 @@ fun LibraryContent(
             LibraryTabs(
                 categories = categories,
                 pagerState = pagerState,
-                getNumberOfItemsForCategory = getNumberOfAnimeForCategory,
+                getNumberOfItemsForCategory = getNumberOfMangaForCategory,
             ) { scope.launch { pagerState.animateScrollToPage(it) } }
         }
 
         val notSelectionMode = selection.isEmpty()
         val onClickAnime = { anime: LibraryManga ->
             if (notSelectionMode) {
-                onAnimeClicked(anime.manga.id)
+                onMangaClicked(anime.manga.id)
             } else {
                 onToggleSelection(anime)
             }
@@ -107,7 +107,7 @@ fun LibraryContent(
                 getLibraryForPage = getAnimeLibraryForPage,
                 onClickAnime = onClickAnime,
                 onLongClickAnime = onToggleRangeSelection,
-                onClickContinueWatching = onContinueWatchingClicked,
+                onClickContinueWatching = onContinueReadingClicked,
             )
         }
 

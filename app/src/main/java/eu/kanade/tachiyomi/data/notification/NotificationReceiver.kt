@@ -216,12 +216,12 @@ class NotificationReceiver : BroadcastReceiver() {
             val toUpdate = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
                 .map {
                     val episode = it.copy(seen = true)
-                    if (downloadPreferences.removeAfterMarkedAsSeen().get()) {
+                    if (downloadPreferences.removeAfterMarkedAsRead().get()) {
                         val anime = getAnime.await(animeId)
                         if (anime != null) {
                             val source = sourceManager.get(anime.source)
                             if (source != null) {
-                                downloadManager.deleteEpisodes(listOf(it), anime, source)
+                                downloadManager.deleteChapters(listOf(it), anime, source)
                             }
                         }
                     }
@@ -241,7 +241,7 @@ class NotificationReceiver : BroadcastReceiver() {
         launchIO {
             val anime = getAnime.await(animeId) ?: return@launchIO
             val episodes = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
-            downloadManager.downloadEpisodes(anime, episodes)
+            downloadManager.downloadChapters(anime, episodes)
         }
     }
 

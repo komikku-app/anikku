@@ -18,16 +18,16 @@ object MergedMangaMapper {
     ): MergedMangaReference {
         return MergedMangaReference(
             id = id,
-            isInfoAnime = isInfoAnime,
-            getEpisodeUpdates = getEpisodeUpdates,
-            episodeSortMode = episodeSortMode.toInt(),
-            episodePriority = episodePriority.toInt(),
-            downloadEpisodes = downloadEpisodes,
+            isInfoManga = isInfoAnime,
+            getChapterUpdates = getEpisodeUpdates,
+            chapterSortMode = episodeSortMode.toInt(),
+            chapterPriority = episodePriority.toInt(),
+            downloadChapters = downloadEpisodes,
             mergeId = mergeId,
             mergeUrl = mergeUrl,
-            animeId = animeId,
-            animeUrl = animeUrl,
-            animeSourceId = animeSourceId,
+            mangaId = animeId,
+            mangaUrl = animeUrl,
+            mangaSourceId = animeSourceId,
         )
     }
 }

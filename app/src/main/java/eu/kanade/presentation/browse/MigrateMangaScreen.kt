@@ -66,7 +66,7 @@ fun MigrateMangaScreen(
     onMultiMigrateClicked: (() -> Unit),
     onSelectAll: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
-    onAnimeSelected: (MigrateMangaItem, Boolean, Boolean, Boolean) -> Unit,
+    onMangaSelected: (MigrateMangaItem, Boolean, Boolean, Boolean) -> Unit,
 ) {
     BackHandler(enabled = state.selectionMode, onBack = { onSelectAll(false) })
 
@@ -134,7 +134,7 @@ fun MigrateMangaScreen(
             onClickItem = onClickItem,
             onClickCover = onClickCover,
             // KMK -->
-            onAnimeSelected = onAnimeSelected,
+            onAnimeSelected = onMangaSelected,
             listState = listState,
             // KMK <--
         )

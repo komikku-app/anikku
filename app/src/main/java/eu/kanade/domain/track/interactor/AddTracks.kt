@@ -55,14 +55,14 @@ class AddTracks(
                     track = track.copy(
                         lastEpisodeSeen = latestLocalReadChapterNumber,
                     )
-                    tracker.setRemoteLastEpisodeSeen(track.toDbTrack(), latestLocalReadChapterNumber.toInt())
+                    tracker.setRemoteLastChapterRead(track.toDbTrack(), latestLocalReadChapterNumber.toInt())
                 }
 
                 if (track.startDate <= 0) {
                     val firstReadChapterDate = Injekt.get<GetHistory>().await(mangaId)
-                        .sortedBy { it.seenAt }
+                        .sortedBy { it.readAt }
                         .firstOrNull()
-                        ?.seenAt
+                        ?.readAt
 
                     firstReadChapterDate?.let {
                         val startDate = firstReadChapterDate.time.convertEpochMillisZone(

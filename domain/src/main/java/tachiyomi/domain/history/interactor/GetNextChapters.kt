@@ -20,7 +20,7 @@ class GetNextChapters(
 
     suspend fun await(onlyUnread: Boolean = true): List<Chapter> {
         val history = historyRepository.getLastHistory() ?: return emptyList()
-        return await(history.animeId, history.episodeId, onlyUnread)
+        return await(history.mangaId, history.chapterId, onlyUnread)
     }
 
     suspend fun await(mangaId: Long, onlyUnread: Boolean = true): List<Chapter> {

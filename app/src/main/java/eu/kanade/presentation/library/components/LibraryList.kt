@@ -58,7 +58,7 @@ internal fun LibraryList(
                 ),
                 badge = {
                     DownloadsBadge(count = libraryItem.downloadCount)
-                    UnviewedBadge(count = libraryItem.unseenCount)
+                    UnviewedBadge(count = libraryItem.unreadCount)
                     LanguageBadge(
                         isLocal = libraryItem.isLocal,
                         sourceLanguage = libraryItem.sourceLanguage,
@@ -72,7 +72,7 @@ internal fun LibraryList(
                 },
                 onLongClick = { onLongClick(libraryItem.libraryManga) },
                 onClick = { onClick(libraryItem.libraryManga) },
-                onClickContinueWatching = if (onClickContinueWatching != null && libraryItem.unseenCount > 0) {
+                onClickContinueWatching = if (onClickContinueWatching != null && libraryItem.unreadCount > 0) {
                     { onClickContinueWatching(libraryItem.libraryManga) }
                 } else {
                     null

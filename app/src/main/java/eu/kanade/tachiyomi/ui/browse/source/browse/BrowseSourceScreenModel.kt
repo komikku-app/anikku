@@ -34,7 +34,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -67,13 +66,14 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.interactor.InsertSavedSearch
 import tachiyomi.domain.source.model.EXHSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
+import tachiyomi.domain.source.repository.SourcePagingSourceType
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.time.Instant
-import eu.kanade.tachiyomi.animesource.model.AnimeFilter as MangaSourceModelFilter
+import eu.kanade.tachiyomi.animesource.model.AnimeFilter as SourceModelFilter
 
 open class BrowseSourceScreenModel(
     private val sourceId: Long,
@@ -192,12 +192,18 @@ open class BrowseSourceScreenModel(
         .distinctUntilChanged()
         .map { listing ->
             Pager(PagingConfig(pageSize = 25)) {
-                getRemoteManga.subscribe(sourceId, listing.query ?: "", listing.filters)
+                // SY -->
+                createSourcePagingSource(listing.query ?: "", listing.filters)
+                // SY <--
             }.flow.map { pagingData ->
                 pagingData.map {
-                    networkToLocalManga.await(it.toDomainManga(sourceId))
-                        .let { localManga -> getManga.subscribe(localManga.url, localManga.source) }
-                        .filterNotNull()
+                    // KMK -->
+                    it.toDomainManga(sourceId)
+                        .let { manga ->
+                            getManga.subscribe(manga.url, manga.source)
+                                .map { it ?: manga }
+                        }
+                        // KMK <--
                         .stateIn(ioCoroutineScope)
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
@@ -300,19 +306,19 @@ open class BrowseSourceScreenModel(
         var genreExists = false
 
         filter@ for (sourceFilter in defaultFilters) {
-            if (sourceFilter is MangaSourceModelFilter.Group<*>) {
+            if (sourceFilter is SourceModelFilter.Group<*>) {
                 for (filter in sourceFilter.state) {
-                    if (filter is MangaSourceModelFilter<*> && filter.name.equals(genreName, true)) {
+                    if (filter is SourceModelFilter<*> && filter.name.equals(genreName, true)) {
                         when (filter) {
-                            is MangaSourceModelFilter.TriState -> filter.state = 1
-                            is MangaSourceModelFilter.CheckBox -> filter.state = true
+                            is SourceModelFilter.TriState -> filter.state = 1
+                            is SourceModelFilter.CheckBox -> filter.state = true
                             else -> {}
                         }
                         genreExists = true
                         break@filter
                     }
                 }
-            } else if (sourceFilter is MangaSourceModelFilter.Select<*>) {
+            } else if (sourceFilter is SourceModelFilter.Select<*>) {
                 val index = sourceFilter.values.filterIsInstance<String>()
                     .indexOfFirst { it.equals(genreName, true) }
 
@@ -339,7 +345,7 @@ open class BrowseSourceScreenModel(
     }
 
     /**
-     * Adds or removes an manga from the library.
+     * Adds or removes a manga from the library.
      *
      * @param manga the manga to update.
      */
@@ -377,6 +383,7 @@ open class BrowseSourceScreenModel(
 
                     changeMangaFavorite(manga)
                 }
+
                 // Automatic 'Default' or no categories
                 defaultCategoryId == 0 || categories.isEmpty() -> {
                     moveMangaToCategories(manga)
@@ -397,6 +404,12 @@ open class BrowseSourceScreenModel(
             }
         }
     }
+
+    // SY -->
+    open fun createSourcePagingSource(query: String, filters: FilterList): SourcePagingSourceType {
+        return getRemoteManga.subscribe(sourceId, query, filters)
+    }
+    // SY <--
 
     /**
      * Get user categories.
@@ -469,6 +482,7 @@ open class BrowseSourceScreenModel(
             val manga: Manga,
             val initialSelection: ImmutableList<CheckboxState.State<Category>>,
         ) : Dialog
+        data class Migrate(val newManga: Manga, val oldManga: Manga) : Dialog
 
         // SY -->
         data class DeleteSavedSearch(val idToDelete: Long, val name: String) : Dialog

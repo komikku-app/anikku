@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMSearchItem
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMSearchResult
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMSubject
 import eu.kanade.tachiyomi.data.track.bangumi.dto.Infobox
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -132,14 +132,14 @@ class BangumiApi(
         }
     }
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         return withIOContext {
             with(json) {
                 authClient.newCall(GET("${API_URL}/v0/subjects/${track.remoteId}"))
                     .awaitSuccess()
                     .parseAs<BGMSubject>()
                     .let { anime ->
-                        TrackAnimeMetadata(
+                        TrackMangaMetadata(
                             remoteId = anime.id,
                             title = anime.nameCn.ifEmpty { anime.name },
                             thumbnailUrl = anime.images?.large?.nullIfBlank()

@@ -5,7 +5,6 @@ import androidx.compose.runtime.getValue
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.preference.asState
-import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.interactor.GetEnabledSources
 import eu.kanade.domain.source.interactor.GetShowLatest
 import eu.kanade.domain.source.interactor.GetSourceCategories
@@ -13,7 +12,6 @@ import eu.kanade.domain.source.interactor.SetSourceCategories
 import eu.kanade.domain.source.interactor.ToggleSource
 import eu.kanade.domain.source.interactor.ToggleSourcePin
 import eu.kanade.domain.source.model.installedExtension
-import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.SourceUiModel
 import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
@@ -41,16 +39,14 @@ import uy.kohesive.injekt.api.get
 import java.util.TreeMap
 
 class SourcesScreenModel(
-    private val preferences: BasePreferences = Injekt.get(),
-    private val getEnabledSources: GetEnabledSources = Injekt.get(),
+    getEnabledSources: GetEnabledSources = Injekt.get(),
     private val toggleSource: ToggleSource = Injekt.get(),
     private val toggleSourcePin: ToggleSourcePin = Injekt.get(),
     // SY -->
-    private val uiPreferences: UiPreferences = Injekt.get(),
-    private val getSourceCategories: GetSourceCategories = Injekt.get(),
-    private val getShowLatest: GetShowLatest = Injekt.get(),
+    uiPreferences: UiPreferences = Injekt.get(),
+    getSourceCategories: GetSourceCategories = Injekt.get(),
+    getShowLatest: GetShowLatest = Injekt.get(),
     private val setSourceCategories: SetSourceCategories = Injekt.get(),
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
     val smartSearchConfig: SourcesScreen.SmartSearchConfig?,
     // SY <--
 ) : StateScreenModel<SourcesScreenModel.State>(State()) {

@@ -38,7 +38,7 @@ class SmartSearchMerge(
             ?: throw IllegalArgumentException(context.stringResource(SYMR.strings.merge_unknown_entry, originalAnimeId))
         if (originalAnime.source == MERGED_SOURCE_ID) {
             val children = getMergedReferencesById.await(originalAnimeId)
-            if (children.any { it.animeSourceId == manga.source && it.animeUrl == manga.url }) {
+            if (children.any { it.mangaSourceId == manga.source && it.mangaUrl == manga.url }) {
                 // Merged already
                 return originalAnime
             }
@@ -46,32 +46,32 @@ class SmartSearchMerge(
             val animeReferences = mutableListOf(
                 MergedMangaReference(
                     id = -1,
-                    isInfoAnime = false,
-                    getEpisodeUpdates = true,
-                    episodeSortMode = 0,
-                    episodePriority = 0,
-                    downloadEpisodes = true,
+                    isInfoManga = false,
+                    getChapterUpdates = true,
+                    chapterSortMode = 0,
+                    chapterPriority = 0,
+                    downloadChapters = true,
                     mergeId = originalAnime.id,
                     mergeUrl = originalAnime.url,
-                    animeId = manga.id,
-                    animeUrl = manga.url,
-                    animeSourceId = manga.source,
+                    mangaId = manga.id,
+                    mangaUrl = manga.url,
+                    mangaSourceId = manga.source,
                 ),
             )
 
-            if (children.isEmpty() || children.all { it.animeSourceId != MERGED_SOURCE_ID }) {
+            if (children.isEmpty() || children.all { it.mangaSourceId != MERGED_SOURCE_ID }) {
                 animeReferences += MergedMangaReference(
                     id = -1,
-                    isInfoAnime = false,
-                    getEpisodeUpdates = false,
-                    episodeSortMode = 0,
-                    episodePriority = -1,
-                    downloadEpisodes = false,
+                    isInfoManga = false,
+                    getChapterUpdates = false,
+                    chapterSortMode = 0,
+                    chapterPriority = -1,
+                    downloadChapters = false,
                     mergeId = originalAnime.id,
                     mergeUrl = originalAnime.url,
-                    animeId = originalAnime.id,
-                    animeUrl = originalAnime.url,
-                    animeSourceId = MERGED_SOURCE_ID,
+                    mangaId = originalAnime.id,
+                    mangaUrl = originalAnime.url,
+                    mangaSourceId = MERGED_SOURCE_ID,
                 )
             }
 
@@ -126,44 +126,44 @@ class SmartSearchMerge(
 
             val originalAnimeReference = MergedMangaReference(
                 id = -1,
-                isInfoAnime = true,
-                getEpisodeUpdates = true,
-                episodeSortMode = 0,
-                episodePriority = 0,
-                downloadEpisodes = true,
+                isInfoManga = true,
+                getChapterUpdates = true,
+                chapterSortMode = 0,
+                chapterPriority = 0,
+                downloadChapters = true,
                 mergeId = mergedManga.id,
                 mergeUrl = mergedManga.url,
-                animeId = originalAnime.id,
-                animeUrl = originalAnime.url,
-                animeSourceId = originalAnime.source,
+                mangaId = originalAnime.id,
+                mangaUrl = originalAnime.url,
+                mangaSourceId = originalAnime.source,
             )
 
             val newAnimeReference = MergedMangaReference(
                 id = -1,
-                isInfoAnime = false,
-                getEpisodeUpdates = true,
-                episodeSortMode = 0,
-                episodePriority = 0,
-                downloadEpisodes = true,
+                isInfoManga = false,
+                getChapterUpdates = true,
+                chapterSortMode = 0,
+                chapterPriority = 0,
+                downloadChapters = true,
                 mergeId = mergedManga.id,
                 mergeUrl = mergedManga.url,
-                animeId = manga.id,
-                animeUrl = manga.url,
-                animeSourceId = manga.source,
+                mangaId = manga.id,
+                mangaUrl = manga.url,
+                mangaSourceId = manga.source,
             )
 
             val mergedMangaReference = MergedMangaReference(
                 id = -1,
-                isInfoAnime = false,
-                getEpisodeUpdates = false,
-                episodeSortMode = 0,
-                episodePriority = -1,
-                downloadEpisodes = false,
+                isInfoManga = false,
+                getChapterUpdates = false,
+                chapterSortMode = 0,
+                chapterPriority = -1,
+                downloadChapters = false,
                 mergeId = mergedManga.id,
                 mergeUrl = mergedManga.url,
-                animeId = mergedManga.id,
-                animeUrl = mergedManga.url,
-                animeSourceId = MERGED_SOURCE_ID,
+                mangaId = mergedManga.id,
+                mangaUrl = mergedManga.url,
+                mangaSourceId = MERGED_SOURCE_ID,
             )
 
             insertMergedReference.awaitAll(listOf(originalAnimeReference, newAnimeReference, mergedMangaReference))

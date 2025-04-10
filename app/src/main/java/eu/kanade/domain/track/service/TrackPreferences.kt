@@ -38,7 +38,7 @@ class TrackPreferences(
 
     fun autoUpdateTrack() = preferenceStore.getBoolean("pref_auto_update_manga_sync_key", true)
 
-    fun showNextEpisodeAiringTime() = preferenceStore.getBoolean(
+    fun showNextChapterAiringTime() = preferenceStore.getBoolean(
         "show_next_episode_airing_time",
         true,
     )

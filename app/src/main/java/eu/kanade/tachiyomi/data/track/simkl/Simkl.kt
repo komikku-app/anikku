@@ -5,7 +5,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
 import eu.kanade.tachiyomi.data.track.BaseTracker
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.data.track.simkl.dto.SimklOAuth
 import kotlinx.collections.immutable.ImmutableList
@@ -46,9 +46,9 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
         return api.addLibAnime(track)
     }
 
-    override suspend fun update(track: Track, didWatchEpisode: Boolean): Track {
+    override suspend fun update(track: Track, didReadChapter: Boolean): Track {
         if (track.status != COMPLETED) {
-            if (didWatchEpisode) {
+            if (didReadChapter) {
                 if (track.last_episode_seen.toLong() == track.total_episodes && track.total_episodes > 0) {
                     track.status = COMPLETED
                 } else {
@@ -60,20 +60,20 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
         return api.updateLibAnime(track)
     }
 
-    override suspend fun bind(track: Track, hasSeenEpisodes: Boolean): Track {
+    override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
         val remoteTrack = api.findLibAnime(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
 
             if (track.status != COMPLETED) {
-                track.status = if (hasSeenEpisodes) WATCHING else track.status
+                track.status = if (hasReadChapters) WATCHING else track.status
             }
 
             update(track)
         } else {
             // Set default fields if it's not found in the list
-            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
         }
@@ -110,9 +110,9 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
         else -> null
     }
 
-    override fun getWatchingStatus(): Long = WATCHING
+    override fun getReadingStatus(): Long = WATCHING
 
-    override fun getRewatchingStatus(): Long = 0
+    override fun getRereadingStatus(): Long = 0
 
     override fun getCompletionStatus(): Long = COMPLETED
 
@@ -133,7 +133,7 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
         trackPreferences.trackToken(this).set(json.encodeToString(oauth))
     }
 
-    override suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata {
+    override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata {
         return api.getSimklAnimeMetadata(track)
     }
 
@@ -152,6 +152,6 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl") {
     }
 
     // KMK -->
-    override fun hasNotStartedWatching(status: Long): Boolean = status == PLAN_TO_WATCH
+    override fun hasNotStartedReading(status: Long): Boolean = status == PLAN_TO_WATCH
     // KMK <--
 }

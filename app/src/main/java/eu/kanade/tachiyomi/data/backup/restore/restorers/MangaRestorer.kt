@@ -396,18 +396,18 @@ class MangaRestorer(
                     null
                 } else {
                     // New history entry
-                    item.copy(episodeId = chapter._id)
+                    item.copy(chapterId = chapter._id)
                 }
             }
 
             // Update history entry
             item.copy(
                 id = dbHistory._id,
-                episodeId = dbHistory.episode_id,
-                seenAt = max(item.seenAt?.time ?: 0L, dbHistory.last_seen?.time ?: 0L)
+                chapterId = dbHistory.episode_id,
+                readAt = max(item.readAt?.time ?: 0L, dbHistory.last_seen?.time ?: 0L)
                     .takeIf { it > 0L }
                     ?.let { Date(it) },
-                watchDuration = max(item.watchDuration, dbHistory.time_watch) - dbHistory.time_watch,
+                readDuration = max(item.readDuration, dbHistory.time_watch) - dbHistory.time_watch,
             )
         }
 
@@ -415,9 +415,9 @@ class MangaRestorer(
             handler.await(true) {
                 toUpdate.forEach {
                     historyQueries.upsert(
-                        it.episodeId,
-                        it.seenAt,
-                        it.watchDuration,
+                        it.chapterId,
+                        it.readAt,
+                        it.readDuration,
                     )
                 }
             }
@@ -500,7 +500,7 @@ class MangaRestorer(
             // Store the inserted id in the backupMergedMangaReference
             if (dbMergedMangaReferences.none {
                     backupMergedMangaReference.mergeUrl == it.mergeUrl &&
-                        backupMergedMangaReference.mangaUrl == it.animeUrl
+                        backupMergedMangaReference.mangaUrl == it.mangaUrl
                 }
             ) {
                 // Let the db assign the id
@@ -514,16 +514,16 @@ class MangaRestorer(
                 backupMergedMangaReference.getMergedMangaReference().run {
                     handler.await {
                         mergedQueries.insert(
-                            infoAnime = isInfoAnime,
-                            getEpisodeUpdates = getEpisodeUpdates,
-                            episodeSortMode = episodeSortMode.toLong(),
-                            episodePriority = episodePriority.toLong(),
-                            downloadEpisodes = downloadEpisodes,
+                            infoAnime = isInfoManga,
+                            getEpisodeUpdates = getChapterUpdates,
+                            episodeSortMode = chapterSortMode.toLong(),
+                            episodePriority = chapterPriority.toLong(),
+                            downloadEpisodes = downloadChapters,
                             mergeId = mergeMangaId,
                             mergeUrl = mergeUrl,
                             animeId = mergedManga.id,
-                            animeUrl = animeUrl,
-                            animeSource = animeSourceId,
+                            animeUrl = mangaUrl,
+                            animeSource = mangaSourceId,
                         )
                     }
                 }

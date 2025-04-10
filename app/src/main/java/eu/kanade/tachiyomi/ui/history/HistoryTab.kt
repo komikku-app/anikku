@@ -46,7 +46,7 @@ data object HistoryTab : Tab {
 
     private val snackbarHostState = SnackbarHostState()
 
-    private val resumeLastEpisodeSeenEvent = Channel<Unit>()
+    private val resumeLastChapterReadEvent = Channel<Unit>()
 
     override val options: TabOptions
         @Composable
@@ -55,13 +55,13 @@ data object HistoryTab : Tab {
             val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_history_enter)
             return TabOptions(
                 index = 2u,
-                title = stringResource(MR.strings.history),
+                title = stringResource(MR.strings.label_recent_manga),
                 icon = rememberAnimatedVectorPainter(image, isSelected),
             )
         }
 
     override suspend fun onReselect(navigator: Navigator) {
-        resumeLastEpisodeSeenEvent.send(Unit)
+        resumeLastChapterReadEvent.send(Unit)
     }
 
     // SY -->
@@ -97,7 +97,7 @@ data object HistoryTab : Tab {
                     onDismissRequest = onDismissRequest,
                     onDelete = { all ->
                         if (all) {
-                            screenModel.removeAllFromHistory(dialog.history.animeId)
+                            screenModel.removeAllFromHistory(dialog.history.mangaId)
                         } else {
                             screenModel.removeFromHistory(dialog.history)
                         }
@@ -129,13 +129,13 @@ data object HistoryTab : Tab {
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
                     HistoryScreenModel.Event.HistoryCleared ->
                         snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
-                    is HistoryScreenModel.Event.OpenEpisode -> openChapter(context, e.chapter)
+                    is HistoryScreenModel.Event.OpenChapter -> openChapter(context, e.chapter)
                 }
             }
         }
 
         LaunchedEffect(Unit) {
-            resumeLastEpisodeSeenEvent.receiveAsFlow().collectLatest {
+            resumeLastChapterReadEvent.receiveAsFlow().collectLatest {
                 openChapter(context, screenModel.getNextChapter())
             }
         }
@@ -151,7 +151,7 @@ data object HistoryTab : Tab {
         if (chapter != null) {
             MainActivity.startPlayerActivity(
                 context,
-                chapter.animeId,
+                chapter.mangaId,
                 chapter.id,
                 extPlayer,
             )

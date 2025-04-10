@@ -24,8 +24,8 @@ fun BrowseSourceComfortableGrid(
     mangaList: LazyPagingItems<StateFlow<Manga>>,
     columns: GridCells,
     contentPadding: PaddingValues,
-    onAnimeClick: (Manga) -> Unit,
-    onAnimeLongClick: (Manga) -> Unit,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
     // KMK -->
     selection: List<Manga>,
     usePanoramaCover: Boolean = false,
@@ -47,8 +47,8 @@ fun BrowseSourceComfortableGrid(
             val anime by mangaList[index]?.collectAsState() ?: return@items
             BrowseSourceComfortableGridItem(
                 manga = anime,
-                onClick = { onAnimeClick(anime) },
-                onLongClick = { onAnimeLongClick(anime) },
+                onClick = { onMangaClick(anime) },
+                onLongClick = { onMangaLongClick(anime) },
                 // KMK -->
                 isSelected = selection.fastAny { selected -> selected.id == anime.id },
                 usePanoramaCover = usePanoramaCover,

@@ -57,15 +57,15 @@ fun UpdateScreen(
     onInvertSelection: () -> Unit,
     onCalendarClicked: () -> Unit,
     onUpdateLibrary: () -> Boolean,
-    onDownloadEpisode: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
+    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
     // AM (FILLERMARK) -->
     onMultiFillermarkClicked: (List<UpdatesItem>, fillermark: Boolean) -> Unit,
     // <-- AM (FILLERMARK)
-    onMultiMarkAsSeenClicked: (List<UpdatesItem>, seen: Boolean) -> Unit,
+    onMultiMarkAsReadClicked: (List<UpdatesItem>, seen: Boolean) -> Unit,
     onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
-    onOpenEpisode: (UpdatesItem, altPlayer: Boolean) -> Unit,
+    onOpenChapter: (UpdatesItem, altPlayer: Boolean) -> Unit,
     // KMK -->
     collapseToggle: (key: String) -> Unit,
     // KMK <--
@@ -94,14 +94,14 @@ fun UpdateScreen(
         bottomBar = {
             UpdatesBottomBar(
                 selected = state.selected,
-                onDownloadEpisode = onDownloadEpisode,
+                onDownloadEpisode = onDownloadChapter,
                 onMultiBookmarkClicked = onMultiBookmarkClicked,
                 // AM (FILLERMARK) -->
                 onMultiFillermarkClicked = onMultiFillermarkClicked,
                 // <-- AM (FILLERMARK)
-                onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
+                onMultiMarkAsSeenClicked = onMultiMarkAsReadClicked,
                 onMultiDeleteClicked = onMultiDeleteClicked,
-                onOpenEpisode = onOpenEpisode,
+                onOpenEpisode = onOpenChapter,
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -153,8 +153,8 @@ fun UpdateScreen(
                             selectionMode = state.selectionMode,
                             onUpdateSelected = onUpdateSelected,
                             onClickCover = onClickCover,
-                            onClickUpdate = onOpenEpisode,
-                            onDownloadEpisode = onDownloadEpisode,
+                            onClickUpdate = onOpenChapter,
+                            onDownloadEpisode = onDownloadChapter,
                         )
                     }
                 }
@@ -260,10 +260,10 @@ private fun UpdatesBottomBar(
         // <-- AM (FILLERMARK)
         onMarkAsSeenClicked = {
             onMultiMarkAsSeenClicked(selected, true)
-        }.takeIf { selected.fastAny { !it.update.seen } },
+        }.takeIf { selected.fastAny { !it.update.read } },
         onMarkAsUnseenClicked = {
             onMultiMarkAsSeenClicked(selected, false)
-        }.takeIf { selected.fastAny { it.update.seen || it.update.lastSecondSeen > 0L } },
+        }.takeIf { selected.fastAny { it.update.read || it.update.lastPagesRead > 0L } },
         onDownloadClicked = {
             onDownloadEpisode(selected, ChapterDownloadAction.START)
         }.takeIf {

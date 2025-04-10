@@ -408,10 +408,10 @@ data class BrowseSourceScreen(
                         }
                     },
                     onSavedSearchPress = screenModel::onSavedSearchPress,
+                    // SY <--
                     // KMK -->
                     onSavedSearchPressDesc = stringResource(KMR.strings.saved_searches_delete),
                     // KMK <--
-                    // SY <--
                 )
             }
             is BrowseSourceScreenModel.Dialog.AddDuplicateManga -> {

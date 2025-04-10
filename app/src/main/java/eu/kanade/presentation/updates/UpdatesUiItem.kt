@@ -106,7 +106,7 @@ internal fun LazyListScope.updatesUiItems(
         key = {
             when (it) {
                 is UpdatesUiModel.Header -> "updatesHeader-${it.hashCode()}"
-                is UpdatesUiModel.Item -> "updates-${it.item.update.animeId}-${it.item.update.episodeId}"
+                is UpdatesUiModel.Item -> "updates-${it.item.update.mangaId}-${it.item.update.chapterId}"
             }
         },
     ) { item ->
@@ -126,13 +126,13 @@ internal fun LazyListScope.updatesUiItems(
                     modifier = Modifier.animateItemFastScroll(),
                     update = updatesItem.update,
                     selected = updatesItem.selected,
-                    watchProgress = updatesItem.update.lastSecondSeen
-                        .takeIf { !updatesItem.update.seen && it > 0L }
+                    watchProgress = updatesItem.update.lastPagesRead
+                        .takeIf { !updatesItem.update.read && it > 0L }
                         ?.let {
                             stringResource(
                                 MR.strings.episode_progress,
                                 formatProgress(it),
-                                formatProgress(updatesItem.update.totalSeconds),
+                                formatProgress(updatesItem.update.totalPages),
                             )
                         },
                     onLongClick = {
@@ -192,7 +192,7 @@ private fun UpdatesUiItem(
     // KMK <--
 ) {
     val haptic = LocalHapticFeedback.current
-    val textAlpha = if (update.seen) DISABLED_ALPHA else 1f
+    val textAlpha = if (update.read) DISABLED_ALPHA else 1f
 
     Row(
         modifier = modifier
@@ -269,7 +269,7 @@ private fun UpdatesUiItem(
                 .weight(1f),
         ) {
             Text(
-                text = update.animeTitle,
+                text = update.mangaTitle,
                 maxLines = 1,
                 style = MaterialTheme.typography.bodyMedium,
                 color = LocalContentColor.current.copy(alpha = textAlpha),
@@ -278,7 +278,7 @@ private fun UpdatesUiItem(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 var textHeight by remember { mutableIntStateOf(0) }
-                if (!update.seen) {
+                if (!update.read) {
                     Icon(
                         imageVector = Icons.Filled.Circle,
                         contentDescription = stringResource(MR.strings.unread),
@@ -299,7 +299,7 @@ private fun UpdatesUiItem(
                     Spacer(modifier = Modifier.width(2.dp))
                 }
                 Text(
-                    text = update.episodeName,
+                    text = update.chapterName,
                     maxLines = 1,
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalContentColor.current.copy(alpha = textAlpha),
@@ -332,17 +332,17 @@ private fun UpdatesUiItem(
         // AM (FILE_SIZE) -->
         var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
         if (downloadStateProvider() == Download.State.DOWNLOADED &&
-            storagePreferences.showEpisodeFileSize().get() &&
+            storagePreferences.showChapterFileSize().get() &&
             fileSizeAsync == null
         ) {
             LaunchedEffect(update, Unit) {
                 fileSizeAsync = withIOContext {
                     downloadProvider.getChapterFileSize(
-                        update.episodeName,
+                        update.chapterName,
                         null,
                         update.scanlator,
                         // AM (CUSTOM_INFORMATION) -->
-                        update.ogAnimeTitle,
+                        update.ogMangaTitle,
                         // <-- AM (CUSTOM_INFORMATION)
                         sourceManager.getOrStub(update.sourceId),
                     )

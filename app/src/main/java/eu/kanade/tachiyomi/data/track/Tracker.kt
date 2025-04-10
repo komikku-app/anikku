@@ -5,7 +5,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -20,8 +20,8 @@ interface Tracker {
 
     val client: OkHttpClient
 
-    // Application and remote support for watching dates
-    val supportsWatchingDates: Boolean
+    // Application and remote support for reading dates
+    val supportsReadingDates: Boolean
 
     @ColorInt
     fun getLogoColor(): Int
@@ -33,9 +33,9 @@ interface Tracker {
 
     fun getStatus(status: Long): StringResource?
 
-    fun getWatchingStatus(): Long
+    fun getReadingStatus(): Long
 
-    fun getRewatchingStatus(): Long
+    fun getRereadingStatus(): Long
 
     fun getCompletionStatus(): Long
 
@@ -48,9 +48,9 @@ interface Tracker {
 
     fun displayScore(track: DomainTrack): String
 
-    suspend fun update(track: Track, didWatchEpisode: Boolean = false): Track
+    suspend fun update(track: Track, didReadChapter: Boolean = false): Track
 
-    suspend fun bind(track: Track, hasSeenEpisodes: Boolean = false): Track
+    suspend fun bind(track: Track, hasReadChapters: Boolean = false): Track
 
     suspend fun search(query: String): List<TrackSearch>
 
@@ -72,11 +72,11 @@ interface Tracker {
     fun saveCredentials(username: String, password: String)
 
     // TODO: move this to an interactor, and update all trackers based on common data
-    suspend fun register(item: Track, animeId: Long)
+    suspend fun register(item: Track, mangaId: Long)
 
     suspend fun setRemoteStatus(track: Track, status: Long)
 
-    suspend fun setRemoteLastEpisodeSeen(track: Track, episodeNumber: Int)
+    suspend fun setRemoteLastChapterRead(track: Track, chapterNumber: Int)
 
     suspend fun setRemoteScore(track: Track, scoreString: String)
 
@@ -84,9 +84,9 @@ interface Tracker {
 
     suspend fun setRemoteFinishDate(track: Track, epochMillis: Long)
 
-    suspend fun getAnimeMetadata(track: DomainTrack): TrackAnimeMetadata
+    suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata
 
     // KMK -->
-    fun hasNotStartedWatching(status: Long): Boolean
+    fun hasNotStartedReading(status: Long): Boolean
     // KMK <--
 }

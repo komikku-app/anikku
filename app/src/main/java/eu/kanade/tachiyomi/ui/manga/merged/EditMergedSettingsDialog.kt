@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eu.kanade.tachiyomi.databinding.EditMergedSettingsDialogBinding
-import eu.kanade.tachiyomi.ui.manga.MergedAnimeData
+import eu.kanade.tachiyomi.ui.manga.MergedMangaData
 import eu.kanade.tachiyomi.util.system.toast
 import exh.source.MERGED_SOURCE_ID
 import tachiyomi.domain.manga.model.Manga
@@ -55,12 +55,12 @@ class EditMergedSettingsState(
             onDismissRequest()
         }
         mergedMangas += mergedReferences.filter {
-            it.animeSourceId != MERGED_SOURCE_ID
-        }.map { reference -> mergedManga.firstOrNull { it.id == reference.animeId } to reference }
-        mergeReference = mergedReferences.firstOrNull { it.animeSourceId == MERGED_SOURCE_ID }
+            it.mangaSourceId != MERGED_SOURCE_ID
+        }.map { reference -> mergedManga.firstOrNull { it.id == reference.mangaId } to reference }
+        mergeReference = mergedReferences.firstOrNull { it.mangaSourceId == MERGED_SOURCE_ID }
 
         val isPriorityOrder =
-            mergeReference?.let { it.episodeSortMode == MergedMangaReference.EPISODE_SORT_PRIORITY } ?: false
+            mergeReference?.let { it.chapterSortMode == MergedMangaReference.CHAPTER_SORT_PRIORITY } ?: false
 
         mergedMangaAdapter = EditMergedMangaAdapter(this, isPriorityOrder)
         mergedMangaHeaderAdapter = EditMergedSettingsHeaderAdapter(this, mergedMangaAdapter!!)
@@ -73,7 +73,7 @@ class EditMergedSettingsState(
         mergedMangaAdapter?.updateDataSet(
             mergedMangas.map {
                 it.toModel()
-            }.sortedBy { it.mergedMangaReference.episodePriority },
+            }.sortedBy { it.mergedMangaReference.chapterPriority },
         )
     }
 
@@ -81,7 +81,7 @@ class EditMergedSettingsState(
         val mergedMangaAdapter = mergedMangaAdapter ?: return
         mergedMangas = mergedMangas.map { (manga, reference) ->
             manga to reference.copy(
-                episodePriority = mergedMangaAdapter.currentItems.indexOfFirst {
+                chapterPriority = mergedMangaAdapter.currentItems.indexOfFirst {
                     reference.id == it.mergedMangaReference.id
                 },
             )
@@ -125,11 +125,11 @@ class EditMergedSettingsState(
                 it is EditMergedMangaHolder && it.reference.id == reference.id
             }?.let {
                 if (it is EditMergedMangaHolder) {
-                    it.updateChapterUpdatesIcon(!reference.getEpisodeUpdates)
+                    it.updateChapterUpdatesIcon(!reference.getChapterUpdates)
                 }
             } ?: context.toast(SYMR.strings.merged_chapter_updates_error)
 
-            manga to reference.copy(getEpisodeUpdates = !reference.getEpisodeUpdates)
+            manga to reference.copy(getChapterUpdates = !reference.getChapterUpdates)
         }
     }
 
@@ -155,11 +155,11 @@ class EditMergedSettingsState(
                 it is EditMergedMangaHolder && it.reference.id == reference.id
             }?.let {
                 if (it is EditMergedMangaHolder) {
-                    it.updateDownloadChaptersIcon(!reference.downloadEpisodes)
+                    it.updateDownloadChaptersIcon(!reference.downloadChapters)
                 }
             } ?: context.toast(SYMR.strings.merged_toggle_download_chapters_error)
 
-            manga to reference.copy(downloadEpisodes = !reference.downloadEpisodes)
+            manga to reference.copy(downloadChapters = !reference.downloadChapters)
         }
     }
 
@@ -172,7 +172,7 @@ class EditMergedSettingsState(
 @Composable
 fun EditMergedSettingsDialog(
     onDismissRequest: () -> Unit,
-    mergedData: MergedAnimeData,
+    mergedData: MergedMangaData,
     onDeleteClick: (MergedMangaReference) -> Unit,
     onPositiveClick: (List<MergedMangaReference>) -> Unit,
 ) {

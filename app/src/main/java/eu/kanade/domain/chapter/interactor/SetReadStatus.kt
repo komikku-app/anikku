@@ -28,47 +28,47 @@ class SetReadStatus(
     // SY <--
 ) {
 
-    private val mapper = { chapter: Chapter, seen: Boolean ->
+    private val mapper = { chapter: Chapter, read: Boolean ->
         ChapterUpdate(
-            seen = seen,
-            lastSecondSeen = if (!seen) 0 else null,
+            seen = read,
+            lastSecondSeen = if (!read) 0 else null,
             id = chapter.id,
         )
     }
 
     /**
-     * Mark chapters as seen/unseen, also delete downloaded chapters if 'After manually marked as seen' is set.
+     * Mark chapters as read/unread, also delete downloaded chapters if 'After manually marked as read' is set.
      *
      * Called from:
-     *  - [LibraryScreenModel]: Manually select animes & mark as seen
-     *  - [MangaScreenModel.markEpisodesSeen]: Manually select chapters & mark as seen or swipe chapter as seen
-     *  - [UpdatesScreenModel.markUpdatesSeen]: Manually select chapters & mark as seen
-     *  - [LibraryUpdateJob.updateChapterList]: when a manga is updated and has new chapter but already seen,
-     *  it will mark that new **duplicated** chapter as seen & delete downloading/downloaded -> should be treat as
+     *  - [LibraryScreenModel]: Manually select mangas & mark as read
+     *  - [MangaScreenModel.markChaptersRead]: Manually select chapters & mark as read or swipe chapter as read
+     *  - [UpdatesScreenModel.markUpdatesRead]: Manually select chapters & mark as read
+     *  - [LibraryUpdateJob.updateChapterList]: when a manga is updated and has new chapter but already read,
+     *  it will mark that new **duplicated** chapter as read & delete downloading/downloaded -> should be treat as
      *  automatically ~ no auto delete
-     *  - [PlayerViewModel.updateEpisodeProgress]: mark **duplicated** chapter as seen after finish watching -> should be
-     *  treated as not manually mark as seen so not auto-delete (there are cases where chapter number is mistaken by volume number)
+     *  - [PlayerViewModel.updateEpisodeProgress]: mark **duplicated** chapter as read after finish reading -> should be
+     *  treated as not manually mark as read so not auto-delete (there are cases where chapter number is mistaken by volume number)
      */
     suspend fun await(
-        seen: Boolean,
+        read: Boolean,
         vararg chapters: Chapter,
         // KMK -->
         manually: Boolean = true,
         // KMK <--
     ): Result = withNonCancellableContext {
-        val episodesToUpdate = chapters.filter {
-            when (seen) {
-                true -> !it.seen
-                false -> it.seen || it.lastSecondSeen > 0
+        val chaptersToUpdate = chapters.filter {
+            when (read) {
+                true -> !it.read
+                false -> it.read || it.lastPageRead > 0
             }
         }
-        if (episodesToUpdate.isEmpty()) {
-            return@withNonCancellableContext Result.NoEpisodes
+        if (chaptersToUpdate.isEmpty()) {
+            return@withNonCancellableContext Result.NoChapters
         }
 
         try {
             chapterRepository.updateAll(
-                episodesToUpdate.map { mapper(it, seen) },
+                chaptersToUpdate.map { mapper(it, read) },
             )
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
@@ -79,18 +79,18 @@ class SetReadStatus(
             // KMK -->
             manually &&
             // KMK <--
-            seen &&
-            downloadPreferences.removeAfterMarkedAsSeen().get()
+            read &&
+            downloadPreferences.removeAfterMarkedAsRead().get()
         ) {
-            episodesToUpdate
+            chaptersToUpdate
                 // KMK -->
                 .map { it.copy(seen = true) } // mark as seen so it will respect category exclusion
                 // KMK <--
-                .groupBy { it.animeId }
-                .forEach { (animeId, episodes) ->
+                .groupBy { it.mangaId }
+                .forEach { (mangaId, chapters) ->
                     deleteDownload.awaitAll(
-                        manga = mangaRepository.getMangaById(animeId),
-                        chapters = episodes.toTypedArray(),
+                        manga = mangaRepository.getMangaById(mangaId),
+                        chapters = chapters.toTypedArray(),
                     )
                 }
         }
@@ -98,35 +98,35 @@ class SetReadStatus(
         Result.Success
     }
 
-    suspend fun await(animeId: Long, seen: Boolean): Result = withNonCancellableContext {
+    suspend fun await(mangaId: Long, read: Boolean): Result = withNonCancellableContext {
         await(
-            seen = seen,
+            read = read,
             chapters = chapterRepository
-                .getChapterByMangaId(animeId)
+                .getChapterByMangaId(mangaId)
                 .toTypedArray(),
         )
     }
 
     // SY -->
-    private suspend fun awaitMerged(animeId: Long, seen: Boolean) = withNonCancellableContext f@{
+    private suspend fun awaitMerged(mangaId: Long, read: Boolean) = withNonCancellableContext f@{
         return@f await(
-            seen = seen,
+            read = read,
             chapters = getMergedChaptersByMangaId
-                .await(animeId, dedupe = false)
+                .await(mangaId, dedupe = false)
                 .toTypedArray(),
         )
     }
 
-    suspend fun await(manga: Manga, seen: Boolean) = if (manga.source == MERGED_SOURCE_ID) {
-        awaitMerged(manga.id, seen)
+    suspend fun await(manga: Manga, read: Boolean) = if (manga.source == MERGED_SOURCE_ID) {
+        awaitMerged(manga.id, read)
     } else {
-        await(manga.id, seen)
+        await(manga.id, read)
     }
     // SY <--
 
     sealed interface Result {
         data object Success : Result
-        data object NoEpisodes : Result
+        data object NoChapters : Result
         data class InternalError(val error: Throwable) : Result
     }
 }

@@ -3,22 +3,24 @@ package eu.kanade.domain.manga.interactor
 import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.manga.model.AnimeUpdate
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaUpdate
+import tachiyomi.domain.manga.repository.MangaRepository
 import kotlin.math.pow
-import tachiyomi.domain.manga.repository.MangaRepository as AnimeRepository
 
-class SetAnimeViewerFlags(
-    private val animeRepository: AnimeRepository,
+class SetMangaViewerFlags(
+    private val mangaRepository: MangaRepository,
 ) {
 
     suspend fun awaitSetSkipIntroLength(id: Long, flag: Long) {
-        val anime = animeRepository.getMangaById(id)
-        animeRepository.update(
-            AnimeUpdate(
+        val manga = mangaRepository.getMangaById(id)
+        mangaRepository.update(
+            MangaUpdate(
                 id = id,
-                viewerFlags = anime.viewerFlags
-                    .setFlag(flag, Anime.ANIME_INTRO_MASK)
+                viewerFlags = manga.viewerFlags
+                    .setFlag(flag, Manga.ANIME_INTRO_MASK)
                     // Disable skip intro button if length is set to 0
-                    .setFlag((flag == 0L).toLong().addHexZeros(14), Anime.ANIME_INTRO_DISABLE_MASK),
+                    .setFlag((flag == 0L).toLong().addHexZeros(14), Manga.ANIME_INTRO_DISABLE_MASK),
             ),
         )
     }
@@ -29,8 +31,8 @@ class SetAnimeViewerFlags(
     }
 
     private suspend fun awaitSetNextEpisodeToAir(id: Long, flag: Long) {
-        val anime = animeRepository.getMangaById(id)
-        animeRepository.update(
+        val anime = mangaRepository.getMangaById(id)
+        mangaRepository.update(
             AnimeUpdate(
                 id = id,
                 viewerFlags = anime.viewerFlags.setFlag(flag, Anime.ANIME_AIRING_EPISODE_MASK),
@@ -39,8 +41,8 @@ class SetAnimeViewerFlags(
     }
 
     private suspend fun awaitSetNextEpisodeAiringAt(id: Long, flag: Long) {
-        val anime = animeRepository.getMangaById(id)
-        animeRepository.update(
+        val anime = mangaRepository.getMangaById(id)
+        mangaRepository.update(
             AnimeUpdate(
                 id = id,
                 viewerFlags = anime.viewerFlags.setFlag(flag, Anime.ANIME_AIRING_TIME_MASK),

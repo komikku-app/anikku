@@ -36,7 +36,7 @@ fun ChapterSettingsDialog(
     onDismissRequest: () -> Unit,
     manga: Manga? = null,
     onDownloadFilterChanged: (TriState) -> Unit,
-    onUnseenFilterChanged: (TriState) -> Unit,
+    onUnreadFilterChanged: (TriState) -> Unit,
     onBookmarkedFilterChanged: (TriState) -> Unit,
     // AM (FILLERMARK) -->
     onFillermarkedFilterChanged: (TriState) -> Unit,
@@ -44,6 +44,7 @@ fun ChapterSettingsDialog(
     onSortModeChanged: (Long) -> Unit,
     onDisplayModeChanged: (Long) -> Unit,
     onSetAsDefault: (applyToExistingAnime: Boolean) -> Unit,
+    onResetToDefault: () -> Unit,
 ) {
     var showSetAsDefaultDialog by rememberSaveable { mutableStateOf(false) }
     if (showSetAsDefaultDialog) {
@@ -81,8 +82,8 @@ fun ChapterSettingsDialog(
                         downloadFilter = manga?.downloadedFilter ?: TriState.DISABLED,
                         onDownloadFilterChanged = onDownloadFilterChanged
                             .takeUnless { manga?.forceDownloaded() == true },
-                        unseenFilter = manga?.unseenFilter ?: TriState.DISABLED,
-                        onUnseenFilterChanged = onUnseenFilterChanged,
+                        unseenFilter = manga?.unreadFilter ?: TriState.DISABLED,
+                        onUnseenFilterChanged = onUnreadFilterChanged,
                         bookmarkedFilter = manga?.bookmarkedFilter ?: TriState.DISABLED,
                         onBookmarkedFilterChanged = onBookmarkedFilterChanged,
                         // AM (FILLERMARK) -->

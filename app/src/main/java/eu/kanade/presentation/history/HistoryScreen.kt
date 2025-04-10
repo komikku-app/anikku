@@ -110,8 +110,8 @@ fun HistoryScreen(
                 HistoryScreenContent(
                     history = it,
                     contentPadding = contentPadding,
-                    onClickCover = { history -> onClickCover(history.animeId) },
-                    onClickResume = { history -> onClickResume(history.animeId, history.episodeId) },
+                    onClickCover = { history -> onClickCover(history.mangaId) },
+                    onClickResume = { history -> onClickResume(history.mangaId, history.chapterId) },
                     onClickDelete = { item -> onDialogChange(HistoryScreenModel.Dialog.Delete(item)) },
                     // KMK -->
                     usePanoramaCover = usePanoramaCover.value,

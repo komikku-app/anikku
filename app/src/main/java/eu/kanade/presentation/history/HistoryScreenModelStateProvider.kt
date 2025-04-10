@@ -92,14 +92,14 @@ class HistoryScreenModelStateProvider : PreviewParameterProvider<HistoryScreenMo
                 historyBuilder(
                     HistoryWithRelations(
                         id = Random.nextLong(),
-                        episodeId = Random.nextLong(),
-                        animeId = Random.nextLong(),
+                        chapterId = Random.nextLong(),
+                        mangaId = Random.nextLong(),
                         // SY -->
                         ogTitle = "Test Title",
                         // SY <--
-                        episodeNumber = Random.nextDouble(),
-                        seenAt = Date.from(Instant.now()),
-                        watchDuration = Random.nextLong(),
+                        chapterNumber = Random.nextDouble(),
+                        readAt = Date.from(Instant.now()),
+                        readDuration = Random.nextLong(),
                         coverData = MangaCover(
                             mangaId = Random.nextLong(),
                             sourceId = Random.nextLong(),

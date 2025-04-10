@@ -10,6 +10,7 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.getSearchManga
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentMapOf
@@ -20,7 +21,6 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -83,9 +83,11 @@ abstract class SearchScreenModel(
     fun getManga(initialManga: Manga): androidx.compose.runtime.State<Manga> {
         return produceState(initialValue = initialManga) {
             getManga.subscribe(initialManga.url, initialManga.source)
-                .filterNotNull()
-                .collectLatest { anime ->
-                    value = anime
+                .collectLatest { manga ->
+                    value = manga
+                        // KMK -->
+                        ?: initialManga
+                    // KMK <--
                 }
         }
     }
@@ -183,10 +185,10 @@ abstract class SearchScreenModel(
 
                     try {
                         val page = withContext(coroutineDispatcher) {
-                            source.getSearchAnime(1, query, source.getFilterList())
+                            source.getSearchManga(1, query, source.getFilterList())
                         }
 
-                        val titles = page.animes.map {
+                        val titles = page.mangas.map {
                             // KMK -->
                             it.toDomainManga(source.id)
                             // KMK <--

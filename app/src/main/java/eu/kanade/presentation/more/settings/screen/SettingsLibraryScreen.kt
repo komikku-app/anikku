@@ -254,40 +254,40 @@ object SettingsLibraryScreen : SearchableSettings {
             title = stringResource(MR.strings.pref_episode_swipe),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    pref = libraryPreferences.swipeEpisodeStartAction(),
+                    pref = libraryPreferences.swipeToStartAction(),
                     title = stringResource(MR.strings.pref_episode_swipe_start),
                     entries = persistentMapOf(
-                        LibraryPreferences.EpisodeSwipeAction.Disabled to
+                        LibraryPreferences.ChapterSwipeAction.Disabled to
                             stringResource(MR.strings.disabled),
-                        LibraryPreferences.EpisodeSwipeAction.ToggleBookmark to
+                        LibraryPreferences.ChapterSwipeAction.ToggleBookmark to
                             stringResource(MR.strings.action_bookmark_episode),
                         // AM (FILLERMARK) -->
-                        LibraryPreferences.EpisodeSwipeAction.ToggleFillermark to stringResource(
+                        LibraryPreferences.ChapterSwipeAction.ToggleFillermark to stringResource(
                             MR.strings.action_fillermark_episode,
                         ),
                         // <-- AM (FILLERMARK)
-                        LibraryPreferences.EpisodeSwipeAction.ToggleSeen to
+                        LibraryPreferences.ChapterSwipeAction.ToggleRead to
                             stringResource(MR.strings.action_mark_as_seen),
-                        LibraryPreferences.EpisodeSwipeAction.Download to
+                        LibraryPreferences.ChapterSwipeAction.Download to
                             stringResource(MR.strings.action_download),
                     ),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    pref = libraryPreferences.swipeEpisodeEndAction(),
+                    pref = libraryPreferences.swipeToEndAction(),
                     title = stringResource(MR.strings.pref_episode_swipe_end),
                     entries = persistentMapOf(
-                        LibraryPreferences.EpisodeSwipeAction.Disabled to
+                        LibraryPreferences.ChapterSwipeAction.Disabled to
                             stringResource(MR.strings.disabled),
-                        LibraryPreferences.EpisodeSwipeAction.ToggleBookmark to
+                        LibraryPreferences.ChapterSwipeAction.ToggleBookmark to
                             stringResource(MR.strings.action_bookmark_episode),
                         // AM (FILLERMARK) -->
-                        LibraryPreferences.EpisodeSwipeAction.ToggleFillermark to stringResource(
+                        LibraryPreferences.ChapterSwipeAction.ToggleFillermark to stringResource(
                             MR.strings.action_fillermark_episode,
                         ),
                         // <-- AM (FILLERMARK)
-                        LibraryPreferences.EpisodeSwipeAction.ToggleSeen to
+                        LibraryPreferences.ChapterSwipeAction.ToggleRead to
                             stringResource(MR.strings.action_mark_as_seen),
-                        LibraryPreferences.EpisodeSwipeAction.Download to
+                        LibraryPreferences.ChapterSwipeAction.Download to
                             stringResource(MR.strings.action_download),
                     ),
                 ),

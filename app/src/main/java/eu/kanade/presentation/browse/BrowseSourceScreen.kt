@@ -23,6 +23,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.source.Source
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.StateFlow
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.library.model.LibraryDisplayMode
@@ -46,9 +47,11 @@ fun BrowseSourceContent(
     displayMode: LibraryDisplayMode,
     snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues,
-    onWebViewClick: () -> Unit,
-    onHelpClick: () -> Unit,
-    onLocalSourceHelpClick: () -> Unit,
+    // SY -->
+    onWebViewClick: (() -> Unit)?,
+    onHelpClick: (() -> Unit)?,
+    onLocalSourceHelpClick: (() -> Unit)?,
+    // SY <--
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
     // KMK -->
@@ -82,7 +85,7 @@ fun BrowseSourceContent(
         EmptyScreen(
             modifier = Modifier.padding(contentPadding),
             message = getErrorMessage(errorState),
-            actions = if (source is LocalSource) {
+            actions = if (source is LocalSource /* SY --> */ && onLocalSourceHelpClick != null /* SY <-- */) {
                 persistentListOf(
                     EmptyScreenAction(
                         stringRes = MR.strings.local_source_help_guide,
@@ -91,23 +94,33 @@ fun BrowseSourceContent(
                     ),
                 )
             } else {
-                persistentListOf(
+                listOfNotNull(
                     EmptyScreenAction(
                         stringRes = MR.strings.action_retry,
                         icon = Icons.Outlined.Refresh,
                         onClick = mangaList::refresh,
                     ),
-                    EmptyScreenAction(
-                        stringRes = MR.strings.action_open_in_web_view,
-                        icon = Icons.Outlined.Public,
-                        onClick = onWebViewClick,
-                    ),
-                    EmptyScreenAction(
-                        stringRes = MR.strings.label_help,
-                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                        onClick = onHelpClick,
-                    ),
-                )
+                    // SY -->
+                    if (onWebViewClick != null) {
+                        EmptyScreenAction(
+                            MR.strings.action_open_in_web_view,
+                            icon = Icons.Outlined.Public,
+                            onClick = onWebViewClick,
+                        )
+                    } else {
+                        null
+                    },
+                    if (onHelpClick != null) {
+                        EmptyScreenAction(
+                            MR.strings.label_help,
+                            icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                            onClick = onHelpClick,
+                        )
+                    } else {
+                        null
+                    },
+                    // SY <--
+                ).toImmutableList()
             },
         )
 
@@ -127,8 +140,8 @@ fun BrowseSourceContent(
                 mangaList = mangaList,
                 columns = columns,
                 contentPadding = contentPadding,
-                onAnimeClick = onMangaClick,
-                onAnimeLongClick = onMangaLongClick,
+                onMangaClick = onMangaClick,
+                onMangaLongClick = onMangaLongClick,
                 // KMK -->
                 selection = selection,
                 // KMK <--
@@ -140,8 +153,8 @@ fun BrowseSourceContent(
                 mangaList = mangaList,
                 columns = columns,
                 contentPadding = contentPadding,
-                onAnimeClick = onMangaClick,
-                onAnimeLongClick = onMangaLongClick,
+                onMangaClick = onMangaClick,
+                onMangaLongClick = onMangaLongClick,
                 // KMK -->
                 selection = selection,
                 usePanoramaCover = true,
@@ -155,8 +168,8 @@ fun BrowseSourceContent(
                 entries = entries,
                 topBarHeight = topBarHeight,
                 contentPadding = contentPadding,
-                onAnimeClick = onMangaClick,
-                onAnimeLongClick = onMangaLongClick,
+                onMangaClick = onMangaClick,
+                onMangaLongClick = onMangaLongClick,
                 // KMK -->
                 selection = selection,
                 // KMK <--
@@ -167,8 +180,8 @@ fun BrowseSourceContent(
                 mangaList = mangaList,
                 columns = columns,
                 contentPadding = contentPadding,
-                onAnimeClick = onMangaClick,
-                onAnimeLongClick = onMangaLongClick,
+                onMangaClick = onMangaClick,
+                onMangaLongClick = onMangaLongClick,
                 // KMK -->
                 selection = selection,
                 // KMK <--

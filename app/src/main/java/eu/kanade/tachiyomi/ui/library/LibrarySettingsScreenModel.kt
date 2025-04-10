@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.seconds
 class LibrarySettingsScreenModel(
     val preferences: BasePreferences = Injekt.get(),
     val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val setAnimeDisplayMode: SetDisplayMode = Injekt.get(),
+    private val setDisplayMode: SetDisplayMode = Injekt.get(),
     private val setSortModeForCategory: SetSortModeForCategory = Injekt.get(),
     trackerManager: TrackerManager = Injekt.get(),
 ) : ScreenModel {
@@ -39,7 +39,6 @@ class LibrarySettingsScreenModel(
 
     // SY -->
     val grouping by libraryPreferences.groupLibraryBy().asState(screenModelScope)
-
     // SY <--
 
     fun toggleFilter(preference: (LibraryPreferences) -> Preference<TriState>) {
@@ -53,14 +52,10 @@ class LibrarySettingsScreenModel(
     }
 
     fun setDisplayMode(mode: LibraryDisplayMode) {
-        setAnimeDisplayMode.await(mode)
+        setDisplayMode.await(mode)
     }
 
-    fun setSort(
-        category: Category?,
-        mode: LibrarySort.Type,
-        direction: LibrarySort.Direction,
-    ) {
+    fun setSort(category: Category?, mode: LibrarySort.Type, direction: LibrarySort.Direction) {
         screenModelScope.launchIO {
             setSortModeForCategory.await(category, mode, direction)
         }

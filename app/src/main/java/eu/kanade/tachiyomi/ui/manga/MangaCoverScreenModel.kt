@@ -32,7 +32,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class MangaCoverScreenModel(
-    private val animeId: Long,
+    private val mangaId: Long,
     private val getManga: GetManga = Injekt.get(),
     private val imageSaver: ImageSaver = Injekt.get(),
     private val coverCache: CoverCache = Injekt.get(),
@@ -43,8 +43,8 @@ class MangaCoverScreenModel(
 
     init {
         screenModelScope.launchIO {
-            getManga.subscribe(animeId)
-                .collect { newAnime -> mutableState.update { newAnime } }
+            getManga.subscribe(mangaId)
+                .collect { newManga -> mutableState.update { newManga } }
         }
     }
 
@@ -90,9 +90,9 @@ class MangaCoverScreenModel(
      * @return the uri to saved file
      */
     private suspend fun saveCoverInternal(context: Context, temp: Boolean): Uri? {
-        val anime = state.value ?: return null
+        val manga = state.value ?: return null
         val req = ImageRequest.Builder(context)
-            .data(anime)
+            .data(manga)
             .size(Size.ORIGINAL)
             .build()
 
@@ -104,7 +104,7 @@ class MangaCoverScreenModel(
             imageSaver.save(
                 Image.Cover(
                     bitmap = bitmap,
-                    name = "cover",
+                    name = manga.title,
                     location = if (temp) Location.Cache else Location.Pictures.create(),
                 ),
             )
@@ -118,11 +118,11 @@ class MangaCoverScreenModel(
      * @param data uri of the cover resource.
      */
     fun editCover(context: Context, data: Uri) {
-        val anime = state.value ?: return
+        val manga = state.value ?: return
         screenModelScope.launchIO {
             context.contentResolver.openInputStream(data)?.use {
                 try {
-                    anime.editCover(Injekt.get(), it, updateManga, coverCache)
+                    manga.editCover(Injekt.get(), it, updateManga, coverCache)
                     notifyCoverUpdated(context)
                 } catch (e: Exception) {
                     notifyFailedCoverUpdate(context, e)
@@ -132,11 +132,11 @@ class MangaCoverScreenModel(
     }
 
     fun deleteCustomCover(context: Context) {
-        val animeId = state.value?.id ?: return
+        val mangaId = state.value?.id ?: return
         screenModelScope.launchIO {
             try {
-                coverCache.deleteCustomCover(animeId)
-                updateManga.awaitUpdateCoverLastModified(animeId)
+                coverCache.deleteCustomCover(mangaId)
+                updateManga.awaitUpdateCoverLastModified(mangaId)
                 notifyCoverUpdated(context)
             } catch (e: Exception) {
                 notifyFailedCoverUpdate(context, e)

@@ -37,8 +37,11 @@ fun LibraryToolbar(
     onClickFilter: () -> Unit,
     onClickRefresh: () -> Unit,
     onClickGlobalUpdate: () -> Unit,
-    onClickOpenRandomAnime: () -> Unit,
+    onClickOpenRandomManga: () -> Unit,
     onClickSyncNow: () -> Unit,
+    // SY -->
+    isSyncEnabled: Boolean,
+    // SY <--
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
@@ -58,7 +61,7 @@ fun LibraryToolbar(
         onClickFilter = onClickFilter,
         onClickRefresh = onClickRefresh,
         onClickGlobalUpdate = onClickGlobalUpdate,
-        onClickOpenRandomEntry = onClickOpenRandomAnime,
+        onClickOpenRandomEntry = onClickOpenRandomManga,
         onClickSyncNow = onClickSyncNow,
         scrollBehavior = scrollBehavior,
         navigateUp = navigateUp,

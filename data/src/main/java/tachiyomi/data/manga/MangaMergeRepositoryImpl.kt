@@ -75,16 +75,16 @@ class MangaMergeRepositoryImpl(
     override suspend fun insert(reference: MergedMangaReference): Long? {
         return handler.awaitOneOrNullExecutable {
             mergedQueries.insert(
-                infoAnime = reference.isInfoAnime,
-                getEpisodeUpdates = reference.getEpisodeUpdates,
-                episodeSortMode = reference.episodeSortMode.toLong(),
-                episodePriority = reference.episodePriority.toLong(),
-                downloadEpisodes = reference.downloadEpisodes,
+                infoAnime = reference.isInfoManga,
+                getEpisodeUpdates = reference.getChapterUpdates,
+                episodeSortMode = reference.chapterSortMode.toLong(),
+                episodePriority = reference.chapterPriority.toLong(),
+                downloadEpisodes = reference.downloadChapters,
                 mergeId = reference.mergeId!!,
                 mergeUrl = reference.mergeUrl,
-                animeId = reference.animeId,
-                animeUrl = reference.animeUrl,
-                animeSource = reference.animeSourceId,
+                animeId = reference.mangaId,
+                animeUrl = reference.mangaUrl,
+                animeSource = reference.mangaSourceId,
             )
             mergedQueries.selectLastInsertedRowId()
         }
@@ -94,16 +94,16 @@ class MangaMergeRepositoryImpl(
         handler.await(true) {
             references.forEach { reference ->
                 mergedQueries.insert(
-                    infoAnime = reference.isInfoAnime,
-                    getEpisodeUpdates = reference.getEpisodeUpdates,
-                    episodeSortMode = reference.episodeSortMode.toLong(),
-                    episodePriority = reference.episodePriority.toLong(),
-                    downloadEpisodes = reference.downloadEpisodes,
+                    infoAnime = reference.isInfoManga,
+                    getEpisodeUpdates = reference.getChapterUpdates,
+                    episodeSortMode = reference.chapterSortMode.toLong(),
+                    episodePriority = reference.chapterPriority.toLong(),
+                    downloadEpisodes = reference.downloadChapters,
                     mergeId = reference.mergeId!!,
                     mergeUrl = reference.mergeUrl,
-                    animeId = reference.animeId,
-                    animeUrl = reference.animeUrl,
-                    animeSource = reference.animeSourceId,
+                    animeId = reference.mangaId,
+                    animeUrl = reference.mangaUrl,
+                    animeSource = reference.mangaSourceId,
                 )
             }
         }

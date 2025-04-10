@@ -518,7 +518,7 @@ private fun VideoList(
                 )
 
                 val downloadEpisode: (Boolean) -> Unit = {
-                    downloadManager.downloadEpisodes(
+                    downloadManager.downloadChapters(
                         anime,
                         listOf(episode),
                         true,

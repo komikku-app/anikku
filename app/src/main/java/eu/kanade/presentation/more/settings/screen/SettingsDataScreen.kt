@@ -289,7 +289,7 @@ object SettingsDataScreen : SearchableSettings {
 
         // AM (FILE_SIZE) -->
         LaunchedEffect(Unit) {
-            storagePreferences.showEpisodeFileSize().changes()
+            storagePreferences.showChapterFileSize().changes()
                 .drop(1)
                 .collectLatest { value ->
                     if (value) {
@@ -317,7 +317,7 @@ object SettingsDataScreen : SearchableSettings {
 
                 // AM (FILE_SIZE) -->
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = storagePreferences.showEpisodeFileSize(),
+                    pref = storagePreferences.showChapterFileSize(),
                     title = stringResource(TLMR.strings.pref_show_downloaded_episode_file_size),
                 ),
                 // <-- AM (FILE_SIZE)
