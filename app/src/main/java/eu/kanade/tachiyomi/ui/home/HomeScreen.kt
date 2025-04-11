@@ -234,8 +234,8 @@ object HomeScreen : Screen() {
                             is Tab.More -> MoreTab
                         }
 
-                        if (it is Tab.Library && it.animeIdToOpen != null) {
-                            navigator.push(MangaScreen(it.animeIdToOpen))
+                        if (it is Tab.Library && it.mangaIdToOpen != null) {
+                            navigator.push(MangaScreen(it.mangaIdToOpen))
                         }
                         if (it is Tab.More) {
                             if (it.toDownloads) {
@@ -390,7 +390,7 @@ object HomeScreen : Screen() {
     }
 
     sealed interface Tab {
-        data class Library(val animeIdToOpen: Long? = null) : Tab
+        data class Library(val mangaIdToOpen: Long? = null) : Tab
         data object Updates : Tab
         data object History : Tab
         data class Browse(val toExtensions: Boolean = false) : Tab

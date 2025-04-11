@@ -165,7 +165,7 @@ class MangaScreenModel(
     private val trackChapter: TrackChapter = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
     private val downloadCache: DownloadCache = Injekt.get(),
-    private val getMangaWithChapters: GetMangaWithChapters = Injekt.get(),
+    private val getMangaAndChapters: GetMangaWithChapters = Injekt.get(),
     // SY -->
     private val sourceManager: SourceManager = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
@@ -268,7 +268,7 @@ class MangaScreenModel(
 
     init {
         screenModelScope.launchIO {
-            getMangaWithChapters.subscribe(mangaId).distinctUntilChanged()
+            getMangaAndChapters.subscribe(mangaId).distinctUntilChanged()
                 // SY -->
                 .combine(
                     getMergedChaptersByMangaId.subscribe(mangaId, true)
@@ -323,7 +323,7 @@ class MangaScreenModel(
         observeDownloads()
 
         screenModelScope.launchIO {
-            val manga = getMangaWithChapters.awaitManga(mangaId)
+            val manga = getMangaAndChapters.awaitManga(mangaId)
 
             // SY -->
             val mergedData = getMergedReferencesById.await(mangaId).takeIf { it.isNotEmpty() }?.let { references ->
@@ -340,7 +340,7 @@ class MangaScreenModel(
                 ) {
                     getMergedChaptersByMangaId.await(mangaId)
                 } else {
-                    getMangaWithChapters.awaitChapters(mangaId)
+                    getMangaAndChapters.awaitChapters(mangaId)
                 }
                 )
                 .toChapterListItems(manga, mergedData)
@@ -557,7 +557,7 @@ class MangaScreenModel(
                 ogStatus = status ?: 0,
                 lastUpdate = manga.lastUpdate + 1,
             )
-            (sourceManager.get(LocalSource.ID) as LocalSource).updateAnimeInfo(manga.toSManga())
+            (sourceManager.get(LocalSource.ID) as LocalSource).updateMangaInfo(manga.toSManga())
             screenModelScope.launchNonCancellable {
                 updateManga.await(
                     MangaUpdate(

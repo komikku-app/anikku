@@ -331,16 +331,16 @@ data object LibraryTab : Tab {
                     },
                     onConfirm = { include, exclude ->
                         screenModel.clearSelection()
-                        screenModel.setMangaCategories(dialog.mangas, include, exclude)
+                        screenModel.setMangaCategories(dialog.manga, include, exclude)
                     },
                 )
             }
             is LibraryScreenModel.Dialog.DeleteManga -> {
                 DeleteLibraryMangaDialog(
-                    containsLocalManga = dialog.mangas.any(Manga::isLocal),
+                    containsLocalManga = dialog.manga.any(Manga::isLocal),
                     onDismissRequest = onDismissRequest,
                     onConfirm = { deleteManga, deleteChapter ->
-                        screenModel.removeMangas(dialog.mangas, deleteManga, deleteChapter)
+                        screenModel.removeMangas(dialog.manga, deleteManga, deleteChapter)
                         screenModel.clearSelection()
                     },
                 )

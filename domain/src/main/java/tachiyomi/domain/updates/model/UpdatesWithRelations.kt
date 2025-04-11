@@ -30,4 +30,7 @@ data class UpdatesWithRelations(
         private val getCustomMangaInfo: GetCustomMangaInfo by injectLazy()
     }
     // SY <--
+
+    val animeId = mangaId
+    val episodeId = chapterId
 }

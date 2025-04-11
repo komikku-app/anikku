@@ -522,9 +522,9 @@ class LibraryScreenModel(
                 filterBookmarked = it[8] as TriState,
                 // AM (FILLERMARK) -->
                 filterFillermarked = it[9] as TriState,
+                // <-- AM (FILLERMARK)
                 filterCompleted = it[10] as TriState,
                 filterIntervalCustom = it[11] as TriState,
-                // <-- AM (FILLERMARK)
                 // SY -->
                 filterLewd = it[12] as TriState,
                 // SY <--
@@ -684,9 +684,9 @@ class LibraryScreenModel(
         // SY -->
         val mergedManga = getMergedMangaById.await(manga.id).associateBy { it.id }
         return if (manga.id == MERGED_SOURCE_ID) {
-            getMergedChaptersByMangaId.await(manga.id, applyScanlatorFilter = true)
+            getMergedChaptersByMangaId.await(manga.id)
         } else {
-            getChaptersByMangaId.await(manga.id, applyScanlatorFilter = true)
+            getChaptersByMangaId.await(manga.id)
         }.getNextUnread(manga, downloadManager, mergedManga)
         // SY <--
     }
@@ -1162,11 +1162,11 @@ class LibraryScreenModel(
     sealed interface Dialog {
         data object SettingsSheet : Dialog
         data class ChangeCategory(
-            val mangas: List<Manga>,
+            val manga: List<Manga>,
             val initialSelection: ImmutableList<CheckboxState<Category>>,
         ) : Dialog
-        data class DeleteManga(val mangas: List<Manga>) : Dialog
-        data class ResetInfoManga(val mangas: List<Manga>) : Dialog
+        data class DeleteManga(val manga: List<Manga>) : Dialog
+        data class ResetInfoManga(val manga: List<Manga>) : Dialog
     }
 
     // SY -->

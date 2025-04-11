@@ -104,7 +104,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.UnsortedPreferences
-import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.model.StubSource
@@ -618,18 +618,18 @@ class MangaScreen(
 
     private suspend fun continueWatching(
         context: Context,
-        unreadChapter: Chapter?,
+        unreadEpisode: Episode?,
         useExternalPlayer: Boolean,
     ) {
-        if (unreadChapter != null) openEpisode(context, unreadChapter, useExternalPlayer)
+        if (unreadEpisode != null) openEpisode(context, unreadEpisode, useExternalPlayer)
     }
 
-    private suspend fun openEpisode(context: Context, chapter: Chapter, useExternalPlayer: Boolean) {
+    private suspend fun openEpisode(context: Context, episode: Episode, useExternalPlayer: Boolean) {
         withIOContext {
             MainActivity.startPlayerActivity(
                 context,
-                chapter.mangaId,
-                chapter.id,
+                episode.animeId,
+                episode.id,
                 useExternalPlayer,
             )
         }

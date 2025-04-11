@@ -19,11 +19,10 @@ class GetMergedChaptersByMangaId(
     suspend fun await(
         mangaId: Long,
         dedupe: Boolean = true,
-        applyScanlatorFilter: Boolean = false,
     ): List<Chapter> {
         return transformMergedChapters(
             getMergedReferencesById.await(mangaId),
-            getFromDatabase(mangaId, applyScanlatorFilter),
+            getFromDatabase(mangaId),
             dedupe,
         )
     }
@@ -31,10 +30,9 @@ class GetMergedChaptersByMangaId(
     suspend fun subscribe(
         mangaId: Long,
         dedupe: Boolean = true,
-        applyScanlatorFilter: Boolean = false,
     ): Flow<List<Chapter>> {
         return try {
-            chapterRepository.getMergedChapterByMangaIdAsFlow(mangaId, applyScanlatorFilter)
+            chapterRepository.getMergedChapterByMangaIdAsFlow(mangaId)
                 .combine(getMergedReferencesById.subscribe(mangaId)) { chapters, references ->
                     transformMergedChapters(references, chapters, dedupe)
                 }
@@ -46,10 +44,9 @@ class GetMergedChaptersByMangaId(
 
     private suspend fun getFromDatabase(
         mangaId: Long,
-        applyScanlatorFilter: Boolean = false,
     ): List<Chapter> {
         return try {
-            chapterRepository.getMergedChapterByMangaId(mangaId, applyScanlatorFilter)
+            chapterRepository.getMergedChapterByMangaId(mangaId)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             emptyList()

@@ -1297,11 +1297,11 @@ class PlayerViewModel @JvmOverloads constructor(
         // SY -->
         val (episodes, mangaMap) = runBlocking {
             if (anime.source == MERGED_SOURCE_ID) {
-                getMergedChaptersByMangaId.await(anime.id, applyScanlatorFilter = true) to
+                getMergedChaptersByMangaId.await(anime.id) to
                     getMergedMangaById.await(anime.id)
                         .associateBy { it.id }
             } else {
-                getEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to null
+                getEpisodesByAnimeId.await(anime.id) to null
             }
         }
 

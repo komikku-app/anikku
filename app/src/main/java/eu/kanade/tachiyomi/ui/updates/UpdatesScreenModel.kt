@@ -259,7 +259,7 @@ class UpdatesScreenModel(
         screenModelScope.launchNonCancellable {
             val groupedUpdates = updatesItem.groupBy { it.update.mangaId }.values
             for (updates in groupedUpdates) {
-                val mangaId = updates.first().update.chapterId
+                val mangaId = updates.first().update.mangaId
                 val manga = getManga.await(mangaId) ?: continue
                 // Don't download if source isn't available
                 sourceManager.get(manga.source) ?: continue
@@ -500,5 +500,5 @@ data class UpdatesItem(
 )
 
 // KMK -->
-fun UpdatesWithRelations.groupByDateAndManga() = "${dateFetch.toLocalDate().toEpochDay()}-${mangaId}Id"
+fun UpdatesWithRelations.groupByDateAndManga() = "${dateFetch.toLocalDate().toEpochDay()}-$mangaId"
 // KMK <--

@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.lang.compareToCaseInsensitiveNaturalOrder
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import kotlinx.coroutines.async
@@ -184,6 +185,7 @@ actual class LocalSource(
             json.encodeToStream(anime.toJson(), it)
         }
     }
+    fun updateMangaInfo(manga: SManga) = updateAnimeInfo(manga)
 
     private fun SAnime.toJson(): MangaDetails {
         return MangaDetails(title, author, artist, description, genre?.split(", "), status)

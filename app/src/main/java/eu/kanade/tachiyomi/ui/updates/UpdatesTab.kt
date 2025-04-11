@@ -183,8 +183,8 @@ data object UpdatesTab : Tab {
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get() != altPlayer
         MainActivity.startPlayerActivity(
             context,
-            update.mangaId,
-            update.chapterId,
+            update.animeId,
+            update.episodeId,
             extPlayer,
         )
     }
