@@ -6,7 +6,7 @@ class ChapterImpl : Chapter {
 
     override var id: Long? = null
 
-    override var anime_id: Long? = null
+    override var manga_id: Long? = null
 
     override lateinit var url: String
 
@@ -14,7 +14,7 @@ class ChapterImpl : Chapter {
 
     override var scanlator: String? = null
 
-    override var seen: Boolean = false
+    override var read: Boolean = false
 
     override var bookmark: Boolean = false
 
@@ -22,9 +22,9 @@ class ChapterImpl : Chapter {
     override var fillermark: Boolean = false
     // <-- AM (FILLERMARK)
 
-    override var last_second_seen: Long = 0
+    override var last_page_read: Long = 0
 
-    override var total_seconds: Long = 0
+    override var total_pages: Long = 0
 
     override var date_fetch: Long = 0
 

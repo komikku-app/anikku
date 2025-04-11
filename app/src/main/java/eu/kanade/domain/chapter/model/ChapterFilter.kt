@@ -15,8 +15,10 @@ import tachiyomi.source.local.isLocal
  */
 fun List<Chapter>.applyFilters(
     manga: Manga,
-    downloadManager: DownloadManager, /* SY --> */
-    mergedManga: Map<Long, Manga>, /* SY <-- */
+    downloadManager: DownloadManager,
+    // SY -->
+    mergedManga: Map<Long, Manga>,
+    // SY <--
 ): List<Chapter> {
     val isLocalManga = manga.isLocal()
     val unreadFilter = manga.unreadFilter
@@ -33,16 +35,16 @@ fun List<Chapter>.applyFilters(
         // <-- AM (FILLERMARK)
         .filter { chapter ->
             // SY -->
-            val anime = mergedManga.getOrElse(chapter.mangaId) { manga }
+            val manga = mergedManga.getOrElse(chapter.mangaId) { manga }
             // SY <--
             applyFilter(downloadedFilter) {
                 val downloaded = downloadManager.isChapterDownloaded(
                     chapter.name,
                     chapter.scanlator,
                     // SY -->
-                    anime.ogTitle,
+                    manga.ogTitle,
                     // SY <--
-                    anime.source,
+                    manga.source,
                 )
                 downloaded || isLocalManga
             }
@@ -55,19 +57,19 @@ fun List<Chapter>.applyFilters(
  * @return an observable of the list of chapters filtered and sorted.
  */
 fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item> {
-    val isLocalAnime = manga.isLocal()
-    val unseenFilter = manga.unreadFilter
+    val isLocalManga = manga.isLocal()
+    val unreadFilter = manga.unreadFilter
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
     // AM (FILLERMARK) -->
     val fillermarkedFilter = manga.fillermarkedFilter
     // <-- AM (FILLERMARK)
     return asSequence()
-        .filter { (episode) -> applyFilter(unseenFilter) { !episode.read } }
-        .filter { (episode) -> applyFilter(bookmarkedFilter) { episode.bookmark } }
+        .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }
+        .filter { (chapter) -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
         // AM (FILLERMARK) -->
-        .filter { (episode) -> applyFilter(fillermarkedFilter) { episode.fillermark } }
+        .filter { (chapter) -> applyFilter(fillermarkedFilter) { chapter.fillermark } }
         // <-- AM (FILLERMARK)
-        .filter { applyFilter(downloadedFilter) { it.isDownloaded || isLocalAnime } }
-        .sortedWith { (episode1), (episode2) -> getChapterSort(manga).invoke(episode1, episode2) }
+        .filter { applyFilter(downloadedFilter) { it.isDownloaded || isLocalManga } }
+        .sortedWith { (chapter1), (chapter2) -> getChapterSort(manga).invoke(chapter1, chapter2) }
 }

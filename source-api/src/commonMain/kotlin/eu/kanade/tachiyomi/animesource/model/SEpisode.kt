@@ -29,4 +29,10 @@ interface SEpisode : Serializable {
             return SEpisodeImpl()
         }
     }
+
+    var chapter_number: Float
+        get() = episode_number
+        set(value) {
+            episode_number = value
+        }
 }
