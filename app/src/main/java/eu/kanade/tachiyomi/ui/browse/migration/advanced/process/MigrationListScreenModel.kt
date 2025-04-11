@@ -401,7 +401,7 @@ class MigrationListScreenModel(
                 getTracks.await(manga.id).forEach {
                     deleteTrack.await(manga.id, it.trackerId)
                 }
-                insertTrack.awaitAll(tracks.map { it.copy(animeId = manga.id) })
+                insertTrack.awaitAll(tracks.map { it.copy(mangaId = manga.id) })
             }
         }
         // Update custom cover
@@ -414,7 +414,7 @@ class MigrationListScreenModel(
         // Update extras
         if (MigrationFlags.hasExtra(flags)) {
             mangaUpdate = mangaUpdate.copy(
-                episodeFlags = prevManga.episodeFlags,
+                chapterFlags = prevManga.chapterFlags,
                 viewerFlags = prevManga.viewerFlags,
             )
         }

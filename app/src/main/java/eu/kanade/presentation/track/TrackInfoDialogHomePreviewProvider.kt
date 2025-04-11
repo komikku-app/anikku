@@ -13,13 +13,13 @@ internal class TrackInfoDialogHomePreviewProvider :
 
     private val aTrack = Track(
         id = 1L,
-        animeId = 2L,
+        mangaId = 2L,
         trackerId = 3L,
         remoteId = 4L,
         libraryId = null,
         title = "Manage Name On Tracker Site",
-        lastEpisodeSeen = 2.0,
-        totalEpisodes = 12L,
+        lastChapterRead = 2.0,
+        totalChapters = 12L,
         status = 1L,
         score = 2.0,
         remoteUrl = "https://example.com",

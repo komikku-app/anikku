@@ -64,20 +64,20 @@ class TrackRepositoryImpl(
 
     private suspend fun insertValues(vararg tracks: Track) {
         handler.await(inTransaction = true) {
-            tracks.forEach { animeTrack ->
+            tracks.forEach { mangaTrack ->
                 anime_syncQueries.insert(
-                    animeId = animeTrack.animeId,
-                    syncId = animeTrack.trackerId,
-                    remoteId = animeTrack.remoteId,
-                    libraryId = animeTrack.libraryId,
-                    title = animeTrack.title,
-                    lastEpisodeSeen = animeTrack.lastEpisodeSeen,
-                    totalEpisodes = animeTrack.totalEpisodes,
-                    status = animeTrack.status,
-                    score = animeTrack.score,
-                    remoteUrl = animeTrack.remoteUrl,
-                    startDate = animeTrack.startDate,
-                    finishDate = animeTrack.finishDate,
+                    animeId = mangaTrack.mangaId,
+                    syncId = mangaTrack.trackerId,
+                    remoteId = mangaTrack.remoteId,
+                    libraryId = mangaTrack.libraryId,
+                    title = mangaTrack.title,
+                    lastEpisodeSeen = mangaTrack.lastChapterRead,
+                    totalEpisodes = mangaTrack.totalChapters,
+                    status = mangaTrack.status,
+                    score = mangaTrack.score,
+                    remoteUrl = mangaTrack.remoteUrl,
+                    startDate = mangaTrack.startDate,
+                    finishDate = mangaTrack.finishDate,
                 )
             }
         }

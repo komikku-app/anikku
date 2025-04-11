@@ -263,7 +263,7 @@ private fun UpdatesBottomBar(
         }.takeIf { selected.fastAny { !it.update.read } },
         onMarkAsUnseenClicked = {
             onMultiMarkAsSeenClicked(selected, false)
-        }.takeIf { selected.fastAny { it.update.read || it.update.lastPagesRead > 0L } },
+        }.takeIf { selected.fastAny { it.update.read || it.update.lastPageRead > 0L } },
         onDownloadClicked = {
             onDownloadEpisode(selected, ChapterDownloadAction.START)
         }.takeIf {

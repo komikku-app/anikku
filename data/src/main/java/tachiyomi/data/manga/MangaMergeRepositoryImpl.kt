@@ -62,11 +62,11 @@ class MangaMergeRepositoryImpl(
             values.forEach { value ->
                 mergedQueries.updateSettingsById(
                     id = value.id,
-                    getEpisodeUpdates = value.getEpisodeUpdates,
-                    downloadEpisodes = value.downloadEpisodes,
-                    infoAnime = value.isInfoAnime,
-                    episodePriority = value.episodePriority?.toLong(),
-                    episodeSortMode = value.episodeSortMode?.toLong(),
+                    getEpisodeUpdates = value.getChapterUpdates,
+                    downloadEpisodes = value.downloadChapters,
+                    infoAnime = value.isInfoManga,
+                    episodePriority = value.chapterPriority?.toLong(),
+                    episodeSortMode = value.chapterSortMode?.toLong(),
                 )
             }
         }

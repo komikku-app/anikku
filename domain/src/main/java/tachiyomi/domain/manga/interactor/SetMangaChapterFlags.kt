@@ -12,7 +12,7 @@ class SetMangaChapterFlags(
         return mangaRepository.update(
             MangaUpdate(
                 id = manga.id,
-                episodeFlags = manga.episodeFlags.setFlag(flag, Manga.EPISODE_DOWNLOADED_MASK),
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.EPISODE_DOWNLOADED_MASK),
             ),
         )
     }
@@ -21,7 +21,7 @@ class SetMangaChapterFlags(
         return mangaRepository.update(
             MangaUpdate(
                 id = manga.id,
-                episodeFlags = manga.episodeFlags.setFlag(flag, Manga.EPISODE_UNSEEN_MASK),
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.EPISODE_UNSEEN_MASK),
             ),
         )
     }
@@ -30,7 +30,7 @@ class SetMangaChapterFlags(
         return mangaRepository.update(
             MangaUpdate(
                 id = manga.id,
-                episodeFlags = manga.episodeFlags.setFlag(flag, Manga.EPISODE_BOOKMARKED_MASK),
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.EPISODE_BOOKMARKED_MASK),
             ),
         )
     }
@@ -40,7 +40,7 @@ class SetMangaChapterFlags(
         return mangaRepository.update(
             MangaUpdate(
                 id = manga.id,
-                episodeFlags = manga.episodeFlags.setFlag(flag, Manga.EPISODE_FILLERMARKED_MASK),
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.EPISODE_FILLERMARKED_MASK),
             ),
         )
     }
@@ -50,13 +50,13 @@ class SetMangaChapterFlags(
         return mangaRepository.update(
             MangaUpdate(
                 id = manga.id,
-                episodeFlags = manga.episodeFlags.setFlag(flag, Manga.EPISODE_DISPLAY_MASK),
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.EPISODE_DISPLAY_MASK),
             ),
         )
     }
 
     suspend fun awaitSetSortingModeOrFlipOrder(manga: Manga, flag: Long): Boolean {
-        val newFlags = manga.episodeFlags.let {
+        val newFlags = manga.chapterFlags.let {
             if (manga.sorting == flag) {
                 // Just flip the order
                 val orderFlag = if (manga.sortDescending()) {
@@ -75,14 +75,14 @@ class SetMangaChapterFlags(
         return mangaRepository.update(
             MangaUpdate(
                 id = manga.id,
-                episodeFlags = newFlags,
+                chapterFlags = newFlags,
             ),
         )
     }
 
     suspend fun awaitSetAllFlags(
-        animeId: Long,
-        unseenFilter: Long,
+        mangaId: Long,
+        unreadFilter: Long,
         downloadedFilter: Long,
         bookmarkedFilter: Long,
         // AM (FILLERMARK) -->
@@ -94,8 +94,8 @@ class SetMangaChapterFlags(
     ): Boolean {
         return mangaRepository.update(
             MangaUpdate(
-                id = animeId,
-                episodeFlags = 0L.setFlag(unseenFilter, Manga.EPISODE_UNSEEN_MASK)
+                id = mangaId,
+                chapterFlags = 0L.setFlag(unreadFilter, Manga.EPISODE_UNSEEN_MASK)
                     .setFlag(downloadedFilter, Manga.EPISODE_DOWNLOADED_MASK)
                     .setFlag(bookmarkedFilter, Manga.EPISODE_BOOKMARKED_MASK)
                     // AM (FILLERMARK) -->

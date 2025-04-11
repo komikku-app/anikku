@@ -548,7 +548,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             )
 
         insertLibraryUpdateErrors.upsert(
-            LibraryUpdateError(id = -1L, animeId = error.first.id, messageId = errorMessageId),
+            LibraryUpdateError(id = -1L, mangaId = error.first.id, messageId = errorMessageId),
         )
     }
 
@@ -562,7 +562,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         val errorList = mutableListOf<LibraryUpdateError>()
         errorMessages.forEach {
             libraryErrors[it.second]?.forEach { manga ->
-                errorList.add(LibraryUpdateError(id = -1L, animeId = manga.id, messageId = it.first))
+                errorList.add(LibraryUpdateError(id = -1L, mangaId = manga.id, messageId = it.first))
             }
         }
         insertLibraryUpdateErrors.insertAll(errorList)

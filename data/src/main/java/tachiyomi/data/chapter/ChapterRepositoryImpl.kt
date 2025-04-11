@@ -16,27 +16,27 @@ class ChapterRepositoryImpl(
     override suspend fun addAll(chapters: List<Chapter>): List<Chapter> {
         return try {
             handler.await(inTransaction = true) {
-                chapters.map { episode ->
+                chapters.map { chapter ->
                     episodesQueries.insert(
-                        episode.mangaId,
-                        episode.url,
-                        episode.name,
-                        episode.scanlator,
-                        episode.read,
-                        episode.bookmark,
+                        chapter.mangaId,
+                        chapter.url,
+                        chapter.name,
+                        chapter.scanlator,
+                        chapter.read,
+                        chapter.bookmark,
                         // AM (FILLERMARK) -->
-                        episode.fillermark,
+                        chapter.fillermark,
                         // <-- AM (FILLERMARK)
-                        episode.lastPageRead,
-                        episode.totalPages,
-                        episode.chapterNumber,
-                        episode.sourceOrder,
-                        episode.dateFetch,
-                        episode.dateUpload,
-                        episode.version,
+                        chapter.lastPageRead,
+                        chapter.totalPages,
+                        chapter.chapterNumber,
+                        chapter.sourceOrder,
+                        chapter.dateFetch,
+                        chapter.dateUpload,
+                        chapter.version,
                     )
                     val lastInsertId = episodesQueries.selectLastInsertedRowId().executeAsOne()
-                    episode.copy(id = lastInsertId)
+                    chapter.copy(id = lastInsertId)
                 }
             }
         } catch (e: Exception) {
@@ -55,25 +55,25 @@ class ChapterRepositoryImpl(
 
     private suspend fun partialUpdate(vararg chapterUpdates: ChapterUpdate) {
         handler.await(inTransaction = true) {
-            chapterUpdates.forEach { episodeUpdate ->
+            chapterUpdates.forEach { chapterUpdate ->
                 episodesQueries.update(
-                    animeId = episodeUpdate.mangaId,
-                    url = episodeUpdate.url,
-                    name = episodeUpdate.name,
-                    scanlator = episodeUpdate.scanlator,
-                    seen = episodeUpdate.read,
-                    bookmark = episodeUpdate.bookmark,
+                    animeId = chapterUpdate.mangaId,
+                    url = chapterUpdate.url,
+                    name = chapterUpdate.name,
+                    scanlator = chapterUpdate.scanlator,
+                    seen = chapterUpdate.read,
+                    bookmark = chapterUpdate.bookmark,
                     // AM (FILLERMARK) -->
-                    fillermark = episodeUpdate.fillermark,
+                    fillermark = chapterUpdate.fillermark,
                     // <-- AM (FILLERMARK)
-                    lastSecondSeen = episodeUpdate.lastPageRead,
-                    totalSeconds = episodeUpdate.totalPages,
-                    episodeNumber = episodeUpdate.chapterNumber,
-                    sourceOrder = episodeUpdate.sourceOrder,
-                    dateFetch = episodeUpdate.dateFetch,
-                    dateUpload = episodeUpdate.dateUpload,
-                    episodeId = episodeUpdate.id,
-                    version = episodeUpdate.version,
+                    lastSecondSeen = chapterUpdate.lastPageRead,
+                    totalSeconds = chapterUpdate.totalPages,
+                    episodeNumber = chapterUpdate.chapterNumber,
+                    sourceOrder = chapterUpdate.sourceOrder,
+                    dateFetch = chapterUpdate.dateFetch,
+                    dateUpload = chapterUpdate.dateUpload,
+                    episodeId = chapterUpdate.id,
+                    version = chapterUpdate.version,
                     isSyncing = 0,
                 )
             }

@@ -32,7 +32,7 @@ class TrackChapter(
                 if (
                     service == null ||
                     !service.isLoggedIn ||
-                    chapterNumber <= track.lastEpisodeSeen
+                    chapterNumber <= track.lastChapterRead
                 ) {
                     return@mapNotNull null
                 }
@@ -42,7 +42,7 @@ class TrackChapter(
                         if (context.isOnline()) {
                             val updatedTrack = service.refresh(track.toDbTrack())
                                 .toDomainTrack(idRequired = true)!!
-                                .copy(lastEpisodeSeen = chapterNumber)
+                                .copy(lastChapterRead = chapterNumber)
                             service.update(updatedTrack.toDbTrack(), true)
                             insertTrack.await(updatedTrack)
                             delayedTrackingStore.remove(track.id)

@@ -19,7 +19,7 @@ data class Manga(
     val fetchInterval: Int,
     val dateAdded: Long,
     val viewerFlags: Long,
-    val episodeFlags: Long,
+    val chapterFlags: Long,
     val coverLastModified: Long,
     val url: String,
     // SY -->
@@ -76,24 +76,24 @@ data class Manga(
             .let { Instant.ofEpochMilli(it) }
 
     val sorting: Long
-        get() = episodeFlags and EPISODE_SORTING_MASK
+        get() = chapterFlags and EPISODE_SORTING_MASK
 
     val displayMode: Long
-        get() = episodeFlags and EPISODE_DISPLAY_MASK
+        get() = chapterFlags and EPISODE_DISPLAY_MASK
 
     val unreadFilterRaw: Long
-        get() = episodeFlags and EPISODE_UNSEEN_MASK
+        get() = chapterFlags and EPISODE_UNSEEN_MASK
     val unseenFilterRaw = unreadFilterRaw
 
     val downloadedFilterRaw: Long
-        get() = episodeFlags and EPISODE_DOWNLOADED_MASK
+        get() = chapterFlags and EPISODE_DOWNLOADED_MASK
 
     val bookmarkedFilterRaw: Long
-        get() = episodeFlags and EPISODE_BOOKMARKED_MASK
+        get() = chapterFlags and EPISODE_BOOKMARKED_MASK
 
     // AM (FILLERMARK) -->
     val fillermarkedFilterRaw: Long
-        get() = episodeFlags and EPISODE_FILLERMARKED_MASK
+        get() = chapterFlags and EPISODE_FILLERMARKED_MASK
     // <-- AM (FILLERMARK)
 
     val skipIntroLength: Int
@@ -132,7 +132,7 @@ data class Manga(
     // <-- AM (FILLERMARK)
 
     fun sortDescending(): Boolean {
-        return episodeFlags and EPISODE_SORT_DIR_MASK == EPISODE_SORT_DESC
+        return chapterFlags and EPISODE_SORT_DIR_MASK == EPISODE_SORT_DESC
     }
 
     private fun Long.removeHexZeros(zeros: Int): Long {
@@ -194,7 +194,7 @@ data class Manga(
             fetchInterval = 0,
             dateAdded = 0L,
             viewerFlags = 0L,
-            episodeFlags = 0L,
+            chapterFlags = 0L,
             coverLastModified = 0L,
             // SY -->
             ogArtist = null,

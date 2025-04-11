@@ -574,7 +574,7 @@ class ExternalIntents {
                         tracker.isLoggedIn &&
                         episodeNumber > track.lastEpisodeSeen
                     ) {
-                        val updatedTrack = track.copy(lastEpisodeSeen = episodeNumber)
+                        val updatedTrack = track.copy(lastChapterRead = episodeNumber)
 
                         // We want these to execute even if the presenter is destroyed and leaks
                         // for a while. The view can still be garbage collected.

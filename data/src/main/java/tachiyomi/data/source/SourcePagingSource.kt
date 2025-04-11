@@ -38,10 +38,10 @@ abstract class SourcePagingSource(
     ): LoadResult<Long, SManga> {
         val page = params.key ?: 1
 
-        val animesPage = try {
+        val mangasPage = try {
             withIOContext {
                 requestNextPage(page.toInt())
-                    .takeIf { it.animes.isNotEmpty() }
+                    .takeIf { it.mangas.isNotEmpty() }
                     ?: throw NoResultsException()
             }
         } catch (e: Exception) {
@@ -49,7 +49,7 @@ abstract class SourcePagingSource(
         }
 
         // SY -->
-        return getPageLoadResult(params, animesPage)
+        return getPageLoadResult(params, mangasPage)
         // SY <--
     }
 
@@ -61,7 +61,7 @@ abstract class SourcePagingSource(
         val page = params.key ?: 1
 
         return LoadResult.Page(
-            data = mangasPage.animes,
+            data = mangasPage.mangas,
             prevKey = null,
             nextKey = if (mangasPage.hasNextPage) page + 1 else null,
         )

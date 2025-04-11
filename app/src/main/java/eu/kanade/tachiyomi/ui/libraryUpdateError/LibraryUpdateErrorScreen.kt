@@ -28,15 +28,15 @@ class LibraryUpdateErrorScreen : Screen() {
                 PreMigrationScreen.navigateToMigration(
                     Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
                     navigator,
-                    listOf(item.error.animeId),
+                    listOf(item.error.mangaId),
                 )
             },
-            onClickCover = { item -> navigator.push(MangaScreen(item.error.animeId)) },
+            onClickCover = { item -> navigator.push(MangaScreen(item.error.mangaId)) },
             onMultiMigrateClicked = {
                 PreMigrationScreen.navigateToMigration(
                     Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
                     navigator,
-                    state.selected.map { it.error.animeId },
+                    state.selected.map { it.error.mangaId },
                 )
             },
             onSelectAll = screenModel::toggleAllSelection,

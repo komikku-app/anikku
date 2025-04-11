@@ -4,6 +4,6 @@ import java.io.Serializable
 
 data class LibraryUpdateError(
     val id: Long,
-    val animeId: Long,
+    val mangaId: Long,
     val messageId: Long,
 ) : Serializable

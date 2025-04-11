@@ -68,7 +68,7 @@ data class BackupManga(
             source = this@BackupManga.source,
             dateAdded = this@BackupManga.dateAdded,
             viewerFlags = this@BackupManga.viewer_flags.toLong(),
-            episodeFlags = this@BackupManga.episodeFlags.toLong(),
+            chapterFlags = this@BackupManga.episodeFlags.toLong(),
             updateStrategy = this@BackupManga.updateStrategy,
             lastModifiedAt = this@BackupManga.lastModifiedAt,
             favoriteModifiedAt = this@BackupManga.favoriteModifiedAt,

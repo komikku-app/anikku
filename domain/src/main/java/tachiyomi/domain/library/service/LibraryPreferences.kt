@@ -176,52 +176,52 @@ class LibraryPreferences(
 
     // Mixture Item
 
-    fun filterEpisodeBySeen() = preferenceStore.getLong(
+    fun filterChapterByRead() = preferenceStore.getLong(
         "default_episode_filter_by_seen",
         Manga.SHOW_ALL,
     )
 
-    fun filterEpisodeByDownloaded() = preferenceStore.getLong(
+    fun filterChapterByDownloaded() = preferenceStore.getLong(
         "default_episode_filter_by_downloaded",
         Manga.SHOW_ALL,
     )
 
-    fun filterEpisodeByBookmarked() = preferenceStore.getLong(
+    fun filterChapterByBookmarked() = preferenceStore.getLong(
         "default_episode_filter_by_bookmarked",
         Manga.SHOW_ALL,
     )
 
     // AM (FILLERMARK) -->
-    fun filterEpisodeByFillermarked() =
+    fun filterChapterByFillermarked() =
         preferenceStore.getLong("default_episode_filter_by_fillermarked", Manga.SHOW_ALL)
     // <-- AM (FILLERMARK)
 
     // and upload date
-    fun sortEpisodeBySourceOrNumber() = preferenceStore.getLong(
+    fun sortChapterBySourceOrNumber() = preferenceStore.getLong(
         "default_episode_sort_by_source_or_number",
         Manga.EPISODE_SORTING_SOURCE,
     )
 
-    fun displayEpisodeByNameOrNumber() = preferenceStore.getLong(
+    fun displayChapterByNameOrNumber() = preferenceStore.getLong(
         "default_chapter_display_by_name_or_number",
         Manga.EPISODE_DISPLAY_NAME,
     )
 
-    fun sortEpisodeByAscendingOrDescending() = preferenceStore.getLong(
+    fun sortChapterByAscendingOrDescending() = preferenceStore.getLong(
         "default_chapter_sort_by_ascending_or_descending",
         Manga.EPISODE_SORT_DESC,
     )
 
     fun setChapterSettingsDefault(manga: Manga) {
-        filterEpisodeBySeen().set(manga.unreadFilterRaw)
-        filterEpisodeByDownloaded().set(manga.downloadedFilterRaw)
-        filterEpisodeByBookmarked().set(manga.bookmarkedFilterRaw)
+        filterChapterByRead().set(manga.unreadFilterRaw)
+        filterChapterByDownloaded().set(manga.downloadedFilterRaw)
+        filterChapterByBookmarked().set(manga.bookmarkedFilterRaw)
         // AM (FILLERMARK) -->
-        filterEpisodeByFillermarked().set(manga.fillermarkedFilterRaw)
+        filterChapterByFillermarked().set(manga.fillermarkedFilterRaw)
         // <-- AM (FILLERMARK)
-        sortEpisodeBySourceOrNumber().set(manga.sorting)
-        displayEpisodeByNameOrNumber().set(manga.displayMode)
-        sortEpisodeByAscendingOrDescending().set(
+        sortChapterBySourceOrNumber().set(manga.sorting)
+        displayChapterByNameOrNumber().set(manga.displayMode)
+        sortChapterByAscendingOrDescending().set(
             if (manga.sortDescending()) Manga.EPISODE_SORT_DESC else Manga.EPISODE_SORT_ASC,
         )
     }

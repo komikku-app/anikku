@@ -17,7 +17,7 @@ data class UpdatesWithRelations(
     // AM (FILLERMARK) -->
     val fillermark: Boolean,
     // <-- AM (FILLERMARK)
-    val lastPagesRead: Long,
+    val lastPageRead: Long,
     val totalPages: Long,
     val sourceId: Long,
     val dateFetch: Long,

@@ -126,7 +126,7 @@ internal fun LazyListScope.updatesUiItems(
                     modifier = Modifier.animateItemFastScroll(),
                     update = updatesItem.update,
                     selected = updatesItem.selected,
-                    watchProgress = updatesItem.update.lastPagesRead
+                    watchProgress = updatesItem.update.lastPageRead
                         .takeIf { !updatesItem.update.read && it > 0L }
                         ?.let {
                             stringResource(

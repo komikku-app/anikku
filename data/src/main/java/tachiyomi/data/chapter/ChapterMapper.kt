@@ -5,18 +5,18 @@ import tachiyomi.domain.chapter.model.Chapter
 object ChapterMapper {
     fun mapChapter(
         id: Long,
-        animeId: Long,
+        mangaId: Long,
         url: String,
         name: String,
         scanlator: String?,
-        seen: Boolean,
+        read: Boolean,
         bookmark: Boolean,
         // AM (FILLERMARK) -->
         fillermark: Boolean,
         // <-- AM (FILLERMARK)
-        lastSecondSeen: Long,
+        lastPageRead: Long,
         totalSeconds: Long,
-        episodeNumber: Double,
+        chapterNumber: Double,
         sourceOrder: Long,
         dateFetch: Long,
         dateUpload: Long,
@@ -26,20 +26,20 @@ object ChapterMapper {
         isSyncing: Long,
     ): Chapter = Chapter(
         id = id,
-        mangaId = animeId,
-        read = seen,
+        mangaId = mangaId,
+        read = read,
         bookmark = bookmark,
         // AM (FILLERMARK) -->
         fillermark = fillermark,
         // <-- AM (FILLERMARK)
-        lastPageRead = lastSecondSeen,
+        lastPageRead = lastPageRead,
         totalPages = totalSeconds,
         dateFetch = dateFetch,
         sourceOrder = sourceOrder,
         url = url,
         name = name,
         dateUpload = dateUpload,
-        chapterNumber = episodeNumber,
+        chapterNumber = chapterNumber,
         scanlator = scanlator,
         lastModifiedAt = lastModifiedAt,
         version = version,

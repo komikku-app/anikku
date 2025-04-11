@@ -25,7 +25,7 @@ class HistoryRepositoryImpl(
         }
     }
 
-    override suspend fun getTotalWatchDuration(): Long {
+    override suspend fun getTotalReadDuration(): Long {
         return handler.awaitOne { historyQueries.getWatchDuration() }
     }
 
@@ -63,9 +63,9 @@ class HistoryRepositoryImpl(
         try {
             handler.await {
                 historyQueries.upsert(
-                    historyUpdate.episodeId,
-                    historyUpdate.seenAt,
-                    historyUpdate.sessionWatchDuration,
+                    historyUpdate.chapterId,
+                    historyUpdate.readAt,
+                    historyUpdate.sessionReadDuration,
                 )
             }
         } catch (e: Exception) {
@@ -79,9 +79,9 @@ class HistoryRepositoryImpl(
             handler.await(true) {
                 historyUpdates.forEach { historyUpdate ->
                     historyQueries.upsert(
-                        historyUpdate.episodeId,
-                        historyUpdate.seenAt,
-                        historyUpdate.sessionWatchDuration,
+                        historyUpdate.chapterId,
+                        historyUpdate.readAt,
+                        historyUpdate.sessionReadDuration,
                     )
                 }
             }

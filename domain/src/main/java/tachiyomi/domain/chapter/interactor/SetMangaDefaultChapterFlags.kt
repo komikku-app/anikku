@@ -16,16 +16,16 @@ class SetMangaDefaultChapterFlags(
         withNonCancellableContext {
             with(libraryPreferences) {
                 setMangaChapterFlags.awaitSetAllFlags(
-                    animeId = manga.id,
-                    unseenFilter = filterEpisodeBySeen().get(),
-                    downloadedFilter = filterEpisodeByDownloaded().get(),
-                    bookmarkedFilter = filterEpisodeByBookmarked().get(),
+                    mangaId = manga.id,
+                    unreadFilter = filterChapterByRead().get(),
+                    downloadedFilter = filterChapterByDownloaded().get(),
+                    bookmarkedFilter = filterChapterByBookmarked().get(),
                     // AM (FILLERMARK) -->
-                    fillermarkedFilter = filterEpisodeByFillermarked().get(),
+                    fillermarkedFilter = filterChapterByFillermarked().get(),
                     // <-- AM (FILLERMARK)
-                    sortingMode = sortEpisodeBySourceOrNumber().get(),
-                    sortingDirection = sortEpisodeByAscendingOrDescending().get(),
-                    displayMode = displayEpisodeByNameOrNumber().get(),
+                    sortingMode = sortChapterBySourceOrNumber().get(),
+                    sortingDirection = sortChapterByAscendingOrDescending().get(),
+                    displayMode = displayChapterByNameOrNumber().get(),
                 )
             }
         }

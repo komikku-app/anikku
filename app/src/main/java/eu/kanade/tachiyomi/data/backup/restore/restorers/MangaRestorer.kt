@@ -145,7 +145,7 @@ class MangaRestorer(
                 calculateInterval = null,
                 initialized = manga.initialized,
                 viewer = manga.viewerFlags,
-                episodeFlags = manga.episodeFlags,
+                episodeFlags = manga.chapterFlags,
                 coverLastModified = manga.coverLastModified,
                 dateAdded = manga.dateAdded,
                 animeId = manga.id,
@@ -312,7 +312,7 @@ class MangaRestorer(
                 calculateInterval = 0L,
                 initialized = manga.initialized,
                 viewerFlags = manga.viewerFlags,
-                episodeFlags = manga.episodeFlags,
+                episodeFlags = manga.chapterFlags,
                 coverLastModified = manga.coverLastModified,
                 dateAdded = manga.dateAdded,
                 updateStrategy = manga.updateStrategy,
@@ -434,7 +434,7 @@ class MangaRestorer(
                     ?: // New track
                     return@mapNotNull track.copy(
                         id = 0, // Let DB assign new ID
-                        animeId = manga.id,
+                        mangaId = manga.id,
                     )
 
                 if (track.forComparison() == dbTrack.forComparison()) {
@@ -446,7 +446,7 @@ class MangaRestorer(
                 dbTrack.copy(
                     remoteId = track.remoteId,
                     libraryId = track.libraryId,
-                    lastEpisodeSeen = max(dbTrack.lastEpisodeSeen, track.lastEpisodeSeen),
+                    lastChapterRead = max(dbTrack.lastChapterRead, track.lastChapterRead),
                 )
             }
             .partition { it.id > 0 }
@@ -458,13 +458,13 @@ class MangaRestorer(
             handler.await(true) {
                 existingTracks.forEach { track ->
                     anime_syncQueries.update(
-                        track.animeId,
+                        track.mangaId,
                         track.trackerId,
                         track.remoteId,
                         track.libraryId,
                         track.title,
-                        track.lastEpisodeSeen,
-                        track.totalEpisodes,
+                        track.lastChapterRead,
+                        track.totalChapters,
                         track.status,
                         track.score,
                         track.remoteUrl,
@@ -560,7 +560,7 @@ class MangaRestorer(
     }
     // SY <--
 
-    private fun Track.forComparison() = this.copy(id = 0L, animeId = 0L)
+    private fun Track.forComparison() = this.copy(id = 0L, mangaId = 0L)
 
     /**
      * Restores the excluded scanlators for the manga.

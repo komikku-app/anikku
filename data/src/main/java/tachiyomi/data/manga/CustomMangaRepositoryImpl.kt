@@ -11,9 +11,9 @@ import java.io.File
 class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
     private val editJson = File(context.getExternalFilesDir(null), "edits.json")
 
-    private val customAnimeMap = fetchCustomData()
+    private val customMangaMap = fetchCustomData()
 
-    override fun get(mangaId: Long) = customAnimeMap[mangaId]
+    override fun get(mangaId: Long) = customMangaMap[mangaId]
 
     private fun fetchCustomData(): MutableMap<Long, CustomMangaInfo> {
         if (!editJson.exists() || !editJson.isFile) return mutableMapOf()
@@ -26,11 +26,11 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
             null
         } ?: return mutableMapOf()
 
-        val animesJson = json.animes ?: return mutableMapOf()
-        return animesJson
-            .mapNotNull { animeJson ->
-                val id = animeJson.id ?: return@mapNotNull null
-                id to animeJson.toManga()
+        val mangasJson = json.animes ?: return mutableMapOf()
+        return mangasJson
+            .mapNotNull { mangaJson ->
+                val id = mangaJson.id ?: return@mapNotNull null
+                id to mangaJson.toManga()
             }
             .toMap()
             .toMutableMap()
@@ -46,15 +46,15 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
             mangaInfo.genre == null &&
             mangaInfo.status == null
         ) {
-            customAnimeMap.remove(mangaInfo.id)
+            customMangaMap.remove(mangaInfo.id)
         } else {
-            customAnimeMap[mangaInfo.id] = mangaInfo
+            customMangaMap[mangaInfo.id] = mangaInfo
         }
         saveCustomInfo()
     }
 
     private fun saveCustomInfo() {
-        val jsonElements = customAnimeMap.values.map { it.toJson() }
+        val jsonElements = customMangaMap.values.map { it.toJson() }
         if (jsonElements.isNotEmpty()) {
             editJson.delete()
             editJson.writeText(Json.encodeToString(MangaList(jsonElements)))

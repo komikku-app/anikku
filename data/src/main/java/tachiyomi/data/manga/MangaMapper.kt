@@ -21,7 +21,7 @@ object MangaMapper {
         nextUpdate: Long?,
         initialized: Boolean,
         viewerFlags: Long,
-        episodeFlags: Long,
+        chapterFlags: Long,
         coverLastModified: Long,
         dateAdded: Long,
         // SY -->
@@ -44,7 +44,7 @@ object MangaMapper {
         fetchInterval = calculateInterval.toInt(),
         dateAdded = dateAdded,
         viewerFlags = viewerFlags,
-        episodeFlags = episodeFlags,
+        chapterFlags = chapterFlags,
         coverLastModified = coverLastModified,
         url = url,
         // SY -->
@@ -79,7 +79,7 @@ object MangaMapper {
         nextUpdate: Long?,
         initialized: Boolean,
         viewerFlags: Long,
-        episodeFlags: Long,
+        chapterFlags: Long,
         coverLastModified: Long,
         dateAdded: Long,
         // SY -->
@@ -93,10 +93,10 @@ object MangaMapper {
         version: Long,
         isSyncing: Long,
         totalCount: Long,
-        seenCount: Double,
+        readCount: Double,
         latestUpload: Long,
-        episodeFetchedAt: Long,
-        lastSeen: Long,
+        chapterFetchedAt: Long,
+        lastRead: Long,
         bookmarkCount: Double,
         // AM (FILLERMARK) -->
         fillermarkCount: Double,
@@ -119,7 +119,7 @@ object MangaMapper {
             nextUpdate,
             initialized,
             viewerFlags,
-            episodeFlags,
+            chapterFlags,
             coverLastModified,
             dateAdded,
             // SY -->
@@ -134,13 +134,13 @@ object MangaMapper {
         ),
         category = category,
         totalChapters = totalCount,
-        readCount = seenCount.toLong(),
+        readCount = readCount.toLong(),
         bookmarkCount = bookmarkCount.toLong(),
         // AM (FILLERMARK) -->
         fillermarkCount = fillermarkCount.toLong(),
         // <-- AM (FILLERMARK)
         latestUpload = latestUpload,
-        chapterFetchedAt = episodeFetchedAt,
-        lastRead = lastSeen,
+        chapterFetchedAt = chapterFetchedAt,
+        lastRead = lastRead,
     )
 }

@@ -1,7 +1,6 @@
 package tachiyomi.domain.manga.model
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
-import tachiyomi.domain.anime.model.Anime
 
 typealias AnimeUpdate = MangaUpdate
 data class MangaUpdate(
@@ -13,7 +12,7 @@ data class MangaUpdate(
     val fetchInterval: Int? = null,
     val dateAdded: Long? = null,
     val viewerFlags: Long? = null,
-    val episodeFlags: Long? = null,
+    val chapterFlags: Long? = null,
     val coverLastModified: Long? = null,
     val url: String? = null,
     val title: String? = null,
@@ -41,7 +40,7 @@ fun Manga.toMangaUpdate(): MangaUpdate {
         fetchInterval = fetchInterval,
         dateAdded = dateAdded,
         viewerFlags = viewerFlags,
-        episodeFlags = episodeFlags,
+        chapterFlags = chapterFlags,
         coverLastModified = coverLastModified,
         url = url,
         // SY -->
@@ -58,4 +57,3 @@ fun Manga.toMangaUpdate(): MangaUpdate {
         version = version,
     )
 }
-fun Anime.toAnimeUpdate() = toMangaUpdate()

@@ -51,9 +51,9 @@ class AddTracks(
                     .lastOrNull()
                     ?.chapterNumber ?: -1.0
 
-                if (latestLocalReadChapterNumber > track.lastEpisodeSeen) {
+                if (latestLocalReadChapterNumber > track.lastChapterRead) {
                     track = track.copy(
-                        lastEpisodeSeen = latestLocalReadChapterNumber,
+                        lastChapterRead = latestLocalReadChapterNumber,
                     )
                     tracker.setRemoteLastChapterRead(track.toDbTrack(), latestLocalReadChapterNumber.toInt())
                 }

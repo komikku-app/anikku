@@ -8,40 +8,40 @@ import java.util.Date
 object HistoryMapper {
     fun mapHistory(
         id: Long,
-        episodeId: Long,
-        seenAt: Date?,
-        watchDuration: Long,
+        chapterId: Long,
+        readAt: Date?,
+        readDuration: Long,
     ): History = History(
         id = id,
-        chapterId = episodeId,
-        readAt = seenAt,
-        readDuration = watchDuration,
+        chapterId = chapterId,
+        readAt = readAt,
+        readDuration = readDuration,
     )
 
     fun mapHistoryWithRelations(
         historyId: Long,
-        animeId: Long,
-        episodeId: Long,
+        mangaId: Long,
+        chapterId: Long,
         title: String,
         thumbnailUrl: String?,
         sourceId: Long,
         isFavorite: Boolean,
         coverLastModified: Long,
-        episodeNumber: Double,
-        seenAt: Date?,
-        watchDuration: Long,
+        chapterNumber: Double,
+        readAt: Date?,
+        readDuration: Long,
     ): HistoryWithRelations = HistoryWithRelations(
         id = historyId,
-        chapterId = episodeId,
-        mangaId = animeId,
+        chapterId = chapterId,
+        mangaId = mangaId,
         // SY -->
         ogTitle = title,
         // SY <--
-        chapterNumber = episodeNumber,
-        readAt = seenAt,
-        readDuration = watchDuration,
+        chapterNumber = chapterNumber,
+        readAt = readAt,
+        readDuration = readDuration,
         coverData = MangaCover(
-            mangaId = animeId,
+            mangaId = mangaId,
             sourceId = sourceId,
             isMangaFavorite = isFavorite,
             ogUrl = thumbnailUrl,

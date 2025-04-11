@@ -70,7 +70,7 @@ import tachiyomi.domain.custombuttons.interactor.UpdateCustomButton
 import tachiyomi.domain.custombuttons.repository.CustomButtonRepository
 import tachiyomi.domain.history.interactor.GetHistory
 import tachiyomi.domain.history.interactor.GetNextChapters
-import tachiyomi.domain.history.interactor.GetTotalWatchDuration
+import tachiyomi.domain.history.interactor.GetTotalReadDuration
 import tachiyomi.domain.history.interactor.RemoveHistory
 import tachiyomi.domain.history.interactor.UpsertHistory
 import tachiyomi.domain.history.repository.HistoryRepository
@@ -167,7 +167,7 @@ class DomainModule : InjektModule {
         addFactory { GetHistory(get()) }
         addFactory { UpsertHistory(get()) }
         addFactory { RemoveHistory(get()) }
-        addFactory { GetTotalWatchDuration(get()) }
+        addFactory { GetTotalReadDuration(get()) }
 
         addFactory { DeleteDownload(get(), get()) }
 

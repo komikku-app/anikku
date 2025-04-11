@@ -14,10 +14,10 @@ class GetUpdates(
     private val repository: UpdatesRepository,
 ) {
 
-    suspend fun await(seen: Boolean, after: Long): List<UpdatesWithRelations> {
+    suspend fun await(read: Boolean, after: Long): List<UpdatesWithRelations> {
         // SY -->
         return flow {
-            emit(repository.awaitWithSeen(seen, after, limit = 500))
+            emit(repository.awaitWithRead(read, after, limit = 500))
         }
             .catchNPE()
             .first()
@@ -32,7 +32,7 @@ class GetUpdates(
     }
 
     fun subscribe(read: Boolean, after: Long): Flow<List<UpdatesWithRelations>> {
-        return repository.subscribeWithSeen(read, after, limit = 500)
+        return repository.subscribeWithRead(read, after, limit = 500)
             // SY -->
             .catchNPE()
         // SY <--

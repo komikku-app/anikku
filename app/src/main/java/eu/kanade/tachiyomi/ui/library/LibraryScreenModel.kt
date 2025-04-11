@@ -932,7 +932,7 @@ class LibraryScreenModel(
             // Prepare filter object
             val parsedQuery = searchEngine.parseQuery(query)
             val tracks = if (loggedInTrackServices.isNotEmpty()) {
-                getTracks.await().groupBy { it.animeId }
+                getTracks.await().groupBy { it.mangaId }
             } else {
                 emptyMap()
             }

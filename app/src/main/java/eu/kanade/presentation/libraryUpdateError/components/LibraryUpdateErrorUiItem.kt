@@ -50,7 +50,7 @@ internal fun LazyListScope.libraryUpdateErrorUiItems(
             }
             is LibraryUpdateErrorUiModel.Item -> {
                 item(
-                    key = "error-${it.item.error.errorId}-${it.item.error.animeId}",
+                    key = "error-${it.item.error.errorId}-${it.item.error.mangaId}",
                     contentType = "item",
                 ) {
                     val libraryUpdateErrorItem = it.item
@@ -124,14 +124,14 @@ private fun LibraryUpdateErrorUiItem(
                 .weight(1f),
         ) {
             Text(
-                text = error.animeTitle,
+                text = error.mangaTitle,
                 style = MaterialTheme.typography.bodyMedium,
                 overflow = TextOverflow.Visible,
             )
 
             Row(modifier = Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = Injekt.get<SourceManager>().getOrStub(error.animeSource).name,
+                    text = Injekt.get<SourceManager>().getOrStub(error.mangaSource).name,
                     style = MaterialTheme.typography.bodySmall,
                     overflow = TextOverflow.Visible,
                     maxLines = 1,

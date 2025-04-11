@@ -56,7 +56,7 @@ class SyncChapterProgressWithTrack(
             .takeWhile { chapter ->
                 lastCheckChapter = checkingChapter
                 checkingChapter = chapter.chapterNumber
-                chapter.chapterNumber >= lastCheckChapter && chapter.chapterNumber <= remoteTrack.lastEpisodeSeen
+                chapter.chapterNumber >= lastCheckChapter && chapter.chapterNumber <= remoteTrack.lastChapterRead
             }
             .filter { chapter -> !chapter.read }
             // KMK <--
@@ -65,12 +65,12 @@ class SyncChapterProgressWithTrack(
         // only take into account continuous reading
         val localLastRead = sortedChapters.takeWhile { it.read }.lastOrNull()?.chapterNumber ?: 0F
         // Tracker will update to latest read chapter
-        val lastRead = max(remoteTrack.lastEpisodeSeen, localLastRead.toDouble())
-        val updatedTrack = remoteTrack.copy(lastEpisodeSeen = lastRead)
+        val lastRead = max(remoteTrack.lastChapterRead, localLastRead.toDouble())
+        val updatedTrack = remoteTrack.copy(lastChapterRead = lastRead)
 
         try {
             // Update Tracker to localLastRead if needed
-            if (lastRead > remoteTrack.lastEpisodeSeen) {
+            if (lastRead > remoteTrack.lastChapterRead) {
                 tracker.update(updatedTrack.toDbTrack())
                 // update Track in database
                 insertTrack.await(updatedTrack)
