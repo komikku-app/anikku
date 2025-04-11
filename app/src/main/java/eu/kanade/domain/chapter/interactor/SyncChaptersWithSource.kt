@@ -11,11 +11,11 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.prepareNewChapter
 import tachiyomi.data.chapter.ChapterSanitizer
-import tachiyomi.data.source.NoResultsException
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.ShouldUpdateDbChapter
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.chapter.model.toChapterUpdate
 import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.chapter.service.ChapterRecognition
@@ -51,7 +51,7 @@ class SyncChaptersWithSource(
         fetchWindow: Pair<Long, Long> = Pair(0, 0),
     ): List<Chapter> {
         if (rawSourceChapters.isEmpty() && !source.isLocal()) {
-            throw NoResultsException()
+            throw NoChaptersException()
         }
 
         val now = ZonedDateTime.now()

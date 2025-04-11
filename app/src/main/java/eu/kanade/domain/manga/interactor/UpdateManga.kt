@@ -29,7 +29,7 @@ class UpdateManga(
 
     suspend fun awaitUpdateFromSource(
         localManga: Manga,
-        remoteAnime: SManga,
+        remoteManga: SManga,
         manualFetch: Boolean,
         coverCache: CoverCache = Injekt.get(),
         // SY -->
@@ -37,7 +37,7 @@ class UpdateManga(
         // SY <--
     ): Boolean {
         val remoteTitle = try {
-            remoteAnime.title
+            remoteManga.title
         } catch (_: UninitializedPropertyAccessException) {
             ""
         }
@@ -55,8 +55,8 @@ class UpdateManga(
         val coverLastModified =
             when {
                 // Never refresh covers if the url is empty to avoid "losing" existing covers
-                remoteAnime.thumbnail_url.isNullOrEmpty() -> null
-                !manualFetch && localManga.thumbnailUrl == remoteAnime.thumbnail_url -> null
+                remoteManga.thumbnail_url.isNullOrEmpty() -> null
+                !manualFetch && localManga.thumbnailUrl == remoteManga.thumbnail_url -> null
                 localManga.isLocal() -> Instant.now().toEpochMilli()
                 localManga.hasCustomCover(coverCache) -> {
                     coverCache.deleteFromCache(localManga, false)
@@ -68,20 +68,20 @@ class UpdateManga(
                 }
             }
 
-        val thumbnailUrl = remoteAnime.thumbnail_url?.takeIf { it.isNotEmpty() }
+        val thumbnailUrl = remoteManga.thumbnail_url?.takeIf { it.isNotEmpty() }
 
         return mangaRepository.update(
             MangaUpdate(
                 id = localManga.id,
                 title = title,
                 coverLastModified = coverLastModified,
-                author = remoteAnime.author,
-                artist = remoteAnime.artist,
-                description = remoteAnime.description,
-                genre = remoteAnime.getGenres(),
+                author = remoteManga.author,
+                artist = remoteManga.artist,
+                description = remoteManga.description,
+                genre = remoteManga.getGenres(),
                 thumbnailUrl = thumbnailUrl,
-                status = remoteAnime.status.toLong(),
-                updateStrategy = remoteAnime.update_strategy,
+                status = remoteManga.status.toLong(),
+                updateStrategy = remoteManga.update_strategy,
                 initialized = true,
             ),
         )
@@ -97,21 +97,21 @@ class UpdateManga(
         )
     }
 
-    suspend fun awaitUpdateLastUpdate(animeId: Long): Boolean {
-        return mangaRepository.update(MangaUpdate(id = animeId, lastUpdate = Instant.now().toEpochMilli()))
+    suspend fun awaitUpdateLastUpdate(mangaId: Long): Boolean {
+        return mangaRepository.update(MangaUpdate(id = mangaId, lastUpdate = Instant.now().toEpochMilli()))
     }
 
-    suspend fun awaitUpdateCoverLastModified(animeId: Long): Boolean {
-        return mangaRepository.update(MangaUpdate(id = animeId, coverLastModified = Instant.now().toEpochMilli()))
+    suspend fun awaitUpdateCoverLastModified(mangaId: Long): Boolean {
+        return mangaRepository.update(MangaUpdate(id = mangaId, coverLastModified = Instant.now().toEpochMilli()))
     }
 
-    suspend fun awaitUpdateFavorite(animeId: Long, favorite: Boolean): Boolean {
+    suspend fun awaitUpdateFavorite(mangaId: Long, favorite: Boolean): Boolean {
         val dateAdded = when (favorite) {
             true -> Instant.now().toEpochMilli()
             false -> 0
         }
         return mangaRepository.update(
-            MangaUpdate(id = animeId, favorite = favorite, dateAdded = dateAdded),
+            MangaUpdate(id = mangaId, favorite = favorite, dateAdded = dateAdded),
         )
     }
 }

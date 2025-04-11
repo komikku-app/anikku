@@ -67,4 +67,11 @@ class TrackSearch : Track {
             tracker_id = serviceId
         }
     }
+
+    var manga_id: Long = 0
+        get() = anime_id
+        set(value) {
+            field = value
+            anime_id = value
+        }
 }

@@ -107,7 +107,7 @@ class AddTracks(
                 .forEach { service ->
                     try {
                         service.match(manga)?.let { track ->
-                            track.anime_id = manga.id
+                            track.manga_id = manga.id
                             (service as Tracker).bind(track)
                             insertTrack.await(track.toDomainTrack(idRequired = false)!!)
                         }

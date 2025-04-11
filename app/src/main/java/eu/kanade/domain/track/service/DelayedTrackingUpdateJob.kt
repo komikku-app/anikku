@@ -39,7 +39,7 @@ class DelayedTrackingUpdateJob(private val context: Context, workerParams: Worke
                     if (track == null) {
                         delayedTrackingStore.remove(it.trackId)
                     }
-                    track?.copy(lastChapterRead = it.lastEpisodeSeen.toDouble())
+                    track?.copy(lastChapterRead = it.lastChapterRead.toDouble())
                 }
                 .forEach { track ->
                     logcat(LogPriority.DEBUG) {
