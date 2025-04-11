@@ -93,7 +93,7 @@ data class DummyTracker(
 
     override suspend fun register(
         item: eu.kanade.tachiyomi.data.database.models.Track,
-        mangaId: Long,
+        animeId: Long,
     ) = Unit
 
     override suspend fun setRemoteStatus(

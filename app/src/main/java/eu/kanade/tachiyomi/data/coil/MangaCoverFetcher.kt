@@ -341,7 +341,7 @@ class MangaCoverFetcher(
      * @param bufferedSource if not null then it will load bitmap from [BufferedSource], regardless of [ogFile]
      * @param ogFile if not null then it will load bitmap from [File]. If it's null then it will try to load bitmap
      *  from [CoverCache] using either [CoverCache.customCoverCacheDir] or [CoverCache.cacheDir]
-     * @param force if true then it will always re-calculate ratio & color for favorite animes.
+     * @param force if true then it will always re-calculate ratio & color for favorite mangas.
      */
     private fun setRatioAndColorsInScope(
         mangaCover: MangaCover,

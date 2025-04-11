@@ -231,7 +231,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             when (group) {
                 LibraryGroup.BY_TRACK_STATUS -> {
                     val trackingExtra = groupExtra?.toLongOrNull() ?: -1L
-                    val tracks = getTracks.await().groupBy { it.animeId }
+                    val tracks = getTracks.await().groupBy { it.mangaId }
 
                     libraryManga.filter { (manga) ->
                         val status = tracks[manga.id]?.firstNotNullOfOrNull { track ->
@@ -284,7 +284,10 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             .filter {
                 when {
                     it.manga.updateStrategy != UpdateStrategy.ALWAYS_UPDATE -> {
-                        skippedUpdates.add(it.manga to context.stringResource(MR.strings.skipped_reason_not_always_update))
+                        skippedUpdates.add(
+                            it.manga to
+                                context.stringResource(MR.strings.skipped_reason_not_always_update),
+                        )
                         false
                     }
 
@@ -304,7 +307,10 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                     }
 
                     ANIME_OUTSIDE_RELEASE_PERIOD in restrictions && it.manga.nextUpdate > fetchWindowUpperBound -> {
-                        skippedUpdates.add(it.manga to context.stringResource(MR.strings.skipped_reason_not_in_release_period))
+                        skippedUpdates.add(
+                            it.manga to
+                                context.stringResource(MR.strings.skipped_reason_not_in_release_period),
+                        )
                         false
                     }
 
@@ -343,6 +349,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         val newUpdates = CopyOnWriteArrayList<Pair<Manga, Array<Chapter>>>()
         val failedUpdates = CopyOnWriteArrayList<Pair<Manga, String?>>()
         val hasDownloads = AtomicBoolean(false)
+
         val fetchWindow = fetchInterval.getWindow(ZonedDateTime.now())
 
         coroutineScope {
@@ -572,7 +579,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         /**
          * Key for category to update.
          */
-        private const val KEY_CATEGORY = "ategory"
+        private const val KEY_CATEGORY = "category"
 
         // SY -->
         /**

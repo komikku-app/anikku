@@ -110,13 +110,13 @@ class DownloadManager(
      * @param chapterId the chapter to check.
      */
     fun getQueuedDownloadOrNull(chapterId: Long): Download? {
-        return queueState.value.find { it.episode.id == chapterId }
+        return queueState.value.find { it.chapter.id == chapterId }
     }
 
     fun startDownloadNow(chapterId: Long) {
         val existingDownload = getQueuedDownloadOrNull(chapterId)
         // If not in queue try to start a new download
-        val toAdd = existingDownload ?: runBlocking { Download.fromEpisodeId(chapterId) } ?: return
+        val toAdd = existingDownload ?: runBlocking { Download.fromChapterId(chapterId) } ?: return
         queueState.value.toMutableList().apply {
             existingDownload?.let { remove(it) }
             add(0, toAdd)
@@ -273,7 +273,7 @@ class DownloadManager(
     }
 
     fun cancelQueuedDownloads(downloads: List<Download>) {
-        removeFromDownloadQueue(downloads.map { it.episode })
+        removeFromDownloadQueue(downloads.map { it.chapter })
     }
 
     /**
@@ -417,13 +417,13 @@ class DownloadManager(
     // SY <--
 
     /**
-     * Adds a list of episodes to be deleted later.
+     * Adds a list of chapters to be deleted later.
      *
-     * @param episodes the list of episodes to delete.
-     * @param anime the anime of the episodes.
+     * @param chapters the list of chapters to delete.
+     * @param manga the manga of the chapters.
      */
-    suspend fun enqueueEpisodesToDelete(episodes: List<Episode>, anime: Anime) {
-        pendingDeleter.addChapters(getChaptersToDelete(episodes, anime), anime)
+    suspend fun enqueueEpisodesToDelete(chapters: List<Chapter>, manga: Manga) {
+        pendingDeleter.addChapters(getChaptersToDelete(chapters, manga), manga)
     }
 
     /**
@@ -569,7 +569,7 @@ class DownloadManager(
             )
         }
 
-    fun renameAnimeDir(oldTitle: String, newTitle: String, source: Long) {
+    fun renameMangaDir(oldTitle: String, newTitle: String, source: Long) {
         val sourceDir = provider.findSourceDir(sourceManager.getOrStub(source)) ?: return
         val mangaDir = sourceDir.findFile(DiskUtil.buildValidFilename(oldTitle)) ?: return
         mangaDir.renameTo(DiskUtil.buildValidFilename(newTitle))

@@ -86,7 +86,7 @@ internal class DownloadNotifier(private val context: Context) {
                 addAction(
                     R.drawable.ic_book_24dp,
                     context.stringResource(MR.strings.action_show_anime),
-                    NotificationReceiver.openEntryPendingActivity(context, download.anime.id),
+                    NotificationReceiver.openEntryPendingActivity(context, download.manga.id),
                 )
             }
 
@@ -100,9 +100,9 @@ internal class DownloadNotifier(private val context: Context) {
                 setContentTitle(downloadingProgressText)
                 setContentText(null)
             } else {
-                val title = download.anime.title.chop(15)
+                val title = download.manga.title.chop(15)
                 val quotedTitle = Pattern.quote(title)
-                val chapter = download.episode.name.replaceFirst(
+                val chapter = download.chapter.name.replaceFirst(
                     "$quotedTitle[\\s]*[-]*[\\s]*".toRegex(RegexOption.IGNORE_CASE),
                     "",
                 )

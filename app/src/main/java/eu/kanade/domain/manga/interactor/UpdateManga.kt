@@ -45,7 +45,7 @@ class UpdateManga(
         // if the manga isn't a favorite, set its title from source and update in db
         // SY -->
         val title = if (remoteTitle.isNotBlank() && localManga.ogTitle != remoteTitle) {
-            downloadManager.renameAnimeDir(localManga.ogTitle, remoteTitle, localManga.source)
+            downloadManager.renameMangaDir(localManga.ogTitle, remoteTitle, localManga.source)
             remoteTitle
         } else {
             null

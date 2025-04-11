@@ -73,10 +73,10 @@ abstract class BaseTracker(
         trackPreferences.setCredentials(this, username, password)
     }
 
-    override suspend fun register(item: Track, mangaId: Long) {
-        item.anime_id = mangaId
+    override suspend fun register(item: Track, animeId: Long) {
+        item.anime_id = animeId
         try {
-            addTracks.bind(this, item, mangaId)
+            addTracks.bind(this, item, animeId)
         } catch (e: Throwable) {
             withUIContext { Injekt.get<Application>().toast(e.message) }
         }

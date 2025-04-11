@@ -99,7 +99,8 @@ class BackupCreator(
             // SY -->
             val mergedManga = getMergedManga.await()
             // SY <--
-            val backupManga = backupMangas(getFavorites.await() + nonFavoriteManga /* SY --> */ + mergedManga /* SY <-- */, options)
+            val backupManga =
+                backupMangas(getFavorites.await() + nonFavoriteManga /* SY --> */ + mergedManga /* SY <-- */, options)
 
             val backup = Backup(
                 backupManga = backupManga,
@@ -184,7 +185,7 @@ class BackupCreator(
         return customButtonBackupCreator()
     }
 
-    internal fun backupSourcePreferences(options: BackupOptions): List<BackupSourcePreferences> {
+    fun backupSourcePreferences(options: BackupOptions): List<BackupSourcePreferences> {
         if (!options.sourceSettings) return emptyList()
 
         return preferenceBackupCreator.createSource(includePrivatePreferences = options.privateSettings)

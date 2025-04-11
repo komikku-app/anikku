@@ -86,13 +86,13 @@ class LibraryUpdateNotifier(
     }
 
     /**
-     * Shows the notification containing the currently updating mangas and the progress.
+     * Shows the notification containing the currently updating manga and the progress.
      *
-     * @param mangas the mangas that are being updated.
+     * @param manga the manga that are being updated.
      * @param current the current progress.
      * @param total the total progress.
      */
-    suspend fun showProgressNotification(mangas: List<Manga>, current: Int, total: Int) {
+    suspend fun showProgressNotification(manga: List<Manga>, current: Int, total: Int) {
         progressNotificationBuilder
             .setContentTitle(
                 context.stringResource(
@@ -106,7 +106,7 @@ class LibraryUpdateNotifier(
         // KMK <--
 
         if (!securityPreferences.hideNotificationContent().get()) {
-            val updatingText = mangas.joinToString("\n") { it.title.chop(40) }
+            val updatingText = manga.joinToString("\n") { it.title.chop(40) }
             progressNotificationBuilder.setStyle(NotificationCompat.BigTextStyle().bigText(updatingText))
         }
 
@@ -265,14 +265,14 @@ class LibraryUpdateNotifier(
             priority = NotificationCompat.PRIORITY_HIGH
 
             // Open first chapter on tap
-            setContentIntent(NotificationReceiver.openEpisodePendingActivity(context, manga, chapters.first()))
+            setContentIntent(NotificationReceiver.openChapterPendingActivity(context, manga, chapters.first()))
             setAutoCancel(true)
 
             // Mark chapters as read action
             addAction(
                 R.drawable.ic_done_24dp,
                 context.stringResource(MR.strings.action_mark_as_seen),
-                NotificationReceiver.markAsViewedPendingBroadcast(
+                NotificationReceiver.markAsReadPendingBroadcast(
                     context,
                     manga,
                     chapters,
@@ -283,7 +283,7 @@ class LibraryUpdateNotifier(
             addAction(
                 R.drawable.ic_book_24dp,
                 context.stringResource(MR.strings.action_view_episodes),
-                NotificationReceiver.openEpisodePendingActivity(
+                NotificationReceiver.openChapterPendingActivity(
                     context,
                     manga,
                     Notifications.ID_NEW_EPISODES,
@@ -295,7 +295,7 @@ class LibraryUpdateNotifier(
                 addAction(
                     android.R.drawable.stat_sys_download_done,
                     context.stringResource(MR.strings.action_download),
-                    NotificationReceiver.downloadEpisodesPendingBroadcast(
+                    NotificationReceiver.downloadChaptersPendingBroadcast(
                         context,
                         manga,
                         chapters,

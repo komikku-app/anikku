@@ -72,7 +72,7 @@ interface Tracker {
     fun saveCredentials(username: String, password: String)
 
     // TODO: move this to an interactor, and update all trackers based on common data
-    suspend fun register(item: Track, mangaId: Long)
+    suspend fun register(item: Track, animeId: Long)
 
     suspend fun setRemoteStatus(track: Track, status: Long)
 
