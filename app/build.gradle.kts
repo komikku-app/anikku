@@ -1,7 +1,8 @@
 import mihon.buildlogic.getBuildTime
 import mihon.buildlogic.getCommitCount
 import mihon.buildlogic.getGitSha
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     id("mihon.android.application")
@@ -22,14 +23,12 @@ if (gradle.startParameter.taskRequests.toString().contains("Standard")) {
 
 shortcutHelper.setFilePath("./shortcuts.xml")
 
-@Suppress("PropertyName")
-val SUPPORTED_ABIS = setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+val supportedAbis = setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
     namespace = "eu.kanade.tachiyomi"
 
     defaultConfig {
-
         applicationId = "app.anikku"
 
         versionCode = 1
@@ -42,9 +41,8 @@ android {
         buildConfigField("boolean", "PREVIEW", "false")
 
         ndk {
-            abiFilters += SUPPORTED_ABIS
+            abiFilters += supportedAbis
         }
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -52,8 +50,17 @@ android {
         abi {
             isEnable = true
             reset()
-            include(*SUPPORTED_ABIS.toTypedArray())
+            include(*supportedAbis.toTypedArray())
             isUniversalApk = true
+        }
+    }
+
+    signingConfigs {
+        create("preview") {
+            storeFile = rootProject.file(readPropertyFromLocalProperties("keystore") ?: "keystore.jks")
+            storePassword = readPropertyFromLocalProperties("storePassword")
+            keyAlias = readPropertyFromLocalProperties("keyAlias")
+            keyPassword = readPropertyFromLocalProperties("keyPassword")
         }
     }
 
@@ -62,22 +69,29 @@ android {
             versionNameSuffix = "-${getCommitCount()}"
             applicationIdSuffix = ".debug"
             isPseudoLocalesEnabled = true
+            buildConfigField("boolean", "INCLUDE_UPDATER", "true")
+        }
+        create("releaseTest") {
+            applicationIdSuffix = ".rt"
+            // isMinifyEnabled = true
+            // isShrinkResources = true
+            setProguardFiles(listOf(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"))
+            matchingFallbacks.add("release")
         }
         named("release") {
             isShrinkResources = true
             isMinifyEnabled = true
-            proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
+            setProguardFiles(listOf(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"))
         }
         create("preview") {
             initWith(getByName("release"))
             buildConfigField("boolean", "PREVIEW", "true")
 
-            signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks.add("release")
-            val debugType = getByName("debug")
-            versionNameSuffix = debugType.versionNameSuffix
+            versionNameSuffix = "-${getCommitCount()}"
             applicationIdSuffix = ".beta"
         }
+        // Profilers build, overwrite dev's signing configuration by 'debug' key then re-sign with GitHub's workflow
         create("benchmark") {
             initWith(getByName("release"))
 
@@ -85,27 +99,34 @@ android {
             matchingFallbacks.add("release")
             isDebuggable = false
             isProfileable = true
-            versionNameSuffix = "-benchmark"
+            versionNameSuffix = "-${getCommitCount()}-benchmark"
             applicationIdSuffix = ".benchmark"
         }
     }
 
     sourceSets {
-        getByName("preview").res.srcDirs("src/debug/res")
+        getByName("preview").res.srcDirs("src/beta/res")
         getByName("benchmark").res.srcDirs("src/debug/res")
     }
 
     flavorDimensions.add("default")
 
     productFlavors {
+        // Include Google service & build unsigned, for GitHub workflow build
         create("standard") {
             buildConfigField("boolean", "INCLUDE_UPDATER", "true")
             dimension = "default"
         }
+        create("fdroid") {
+            dimension = "default"
+        }
+        // Signed, dev build with Android Studio if it's not a debug build
         create("dev") {
             // Include pseudolocales: https://developer.android.com/guide/topics/resources/pseudolocales
             resourceConfigurations.addAll(listOf("en", "en_XA", "ar_XB", "xxhdpi"))
             dimension = "default"
+            // Default signing for dev flavor, would be overridden by buildTypes config
+            signingConfig = signingConfigs.getByName("preview")
         }
     }
 
@@ -144,6 +165,24 @@ android {
     lint {
         abortOnError = false
         checkReleaseBuilds = false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.animation.ExperimentalAnimationApi",
+            "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+            "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
+            "-opt-in=coil3.annotation.ExperimentalCoilApi",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "-opt-in=kotlinx.coroutines.FlowPreview",
+            "-opt-in=kotlinx.coroutines.InternalCoroutinesApi",
+            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
+        )
     }
 }
 
@@ -347,32 +386,21 @@ androidComponents {
     }
 }
 
-tasks {
-    // See https://kotlinlang.org/docs/reference/experimental.html#experimental-status-of-experimental-api(-markers)
-    withType<KotlinCompile> {
-        compilerOptions.freeCompilerArgs.addAll(
-            listOf(
-                "-Xcontext-receivers",
-                "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
-                "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
-                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-                "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
-                "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
-                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-                "-opt-in=androidx.compose.animation.ExperimentalAnimationApi",
-                "-opt-in=androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
-                "-opt-in=coil3.annotation.ExperimentalCoilApi",
-                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-                "-opt-in=kotlinx.coroutines.FlowPreview",
-                "-opt-in=kotlinx.coroutines.InternalCoroutinesApi",
-                "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-            ),
-        )
-    }
-}
-
 buildscript {
     dependencies {
         classpath(kotlinx.gradle)
     }
+}
+
+// Config local store's signing key
+fun readPropertyFromLocalProperties(propertyName: String): String? {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        val properties = Properties()
+        FileInputStream(localPropertiesFile).use { inputStream ->
+            properties.load(inputStream)
+        }
+        return properties.getProperty(propertyName)
+    }
+    return null // Property not found
 }

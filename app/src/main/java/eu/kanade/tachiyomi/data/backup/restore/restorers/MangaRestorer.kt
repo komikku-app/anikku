@@ -173,7 +173,7 @@ class MangaRestorer(
 
         val (existingChapters, newChapters) = backupChapters
             .mapNotNull { backupChapter ->
-                val chapter = backupChapter.toChapterImpl().copy(animeId = manga.id)
+                val chapter = backupChapter.toChapterImpl().copy(mangaId = manga.id)
                 val dbChapter = dbChaptersByUrl[chapter.url]
 
                 when {
@@ -196,16 +196,16 @@ class MangaRestorer(
                 // AM (FILLERMARK) -->
                 fillermark = chapter.fillermark || dbChapter.fillermark,
                 // <-- AM (FILLERMARK)
-                seen = chapter.seen,
-                lastSecondSeen = chapter.lastSecondSeen,
+                read = chapter.read,
+                lastPageRead = chapter.lastPageRead,
                 sourceOrder = chapter.sourceOrder,
             )
         } else {
             chapter.copyFrom(dbChapter).let {
                 when {
-                    dbChapter.seen && !it.seen -> it.copy(seen = true, lastSecondSeen = dbChapter.lastSecondSeen)
-                    it.lastSecondSeen == 0L && dbChapter.lastSecondSeen != 0L -> it.copy(
-                        lastSecondSeen = dbChapter.lastSecondSeen,
+                    dbChapter.read && !it.read -> it.copy(read = true, lastPageRead = dbChapter.lastPageRead)
+                    it.lastPageRead == 0L && dbChapter.lastPageRead != 0L -> it.copy(
+                        lastPageRead = dbChapter.lastPageRead,
                     )
                     else -> it
                 }
@@ -225,7 +225,7 @@ class MangaRestorer(
     private fun Chapter.forComparison() =
         this.copy(
             id = 0L,
-            animeId = 0L,
+            mangaId = 0L,
             dateFetch = 0L,
             // KMK -->
             // dateUpload = 0L, some time source loses dateUpload so we overwrite with backup
@@ -239,18 +239,18 @@ class MangaRestorer(
         handler.await(true) {
             chapters.forEach { chapter ->
                 episodesQueries.insert(
-                    chapter.animeId,
+                    chapter.mangaId,
                     chapter.url,
                     chapter.name,
                     chapter.scanlator,
-                    chapter.seen,
+                    chapter.read,
                     chapter.bookmark,
                     // AM (FILLERMARK) -->
                     chapter.fillermark,
                     // <-- AM (FILLERMARK)
-                    chapter.lastSecondSeen,
-                    chapter.totalSeconds,
-                    chapter.episodeNumber,
+                    chapter.lastPageRead,
+                    chapter.totalPages,
+                    chapter.chapterNumber,
                     chapter.sourceOrder,
                     chapter.dateFetch,
                     chapter.dateUpload,
@@ -268,13 +268,13 @@ class MangaRestorer(
                     url = null,
                     name = null,
                     scanlator = null,
-                    seen = chapter.seen,
+                    seen = chapter.read,
                     bookmark = chapter.bookmark,
                     // AM (FILLERMARK) -->
                     fillermark = chapter.fillermark,
                     // <-- AM (FILLERMARK)
-                    lastSecondSeen = chapter.lastSecondSeen,
-                    totalSeconds = chapter.totalSeconds,
+                    lastSecondSeen = chapter.lastPageRead,
+                    totalSeconds = chapter.totalPages,
                     episodeNumber = null,
                     sourceOrder = if (isSync) chapter.sourceOrder else null,
                     dateFetch = null,

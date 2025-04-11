@@ -31,15 +31,15 @@ data class BackupChapter(
         return Chapter.create().copy(
             url = this@BackupChapter.url,
             name = this@BackupChapter.name,
-            episodeNumber = this@BackupChapter.episodeNumber.toDouble(),
+            chapterNumber = this@BackupChapter.episodeNumber.toDouble(),
             scanlator = this@BackupChapter.scanlator,
-            seen = this@BackupChapter.seen,
+            read = this@BackupChapter.seen,
             bookmark = this@BackupChapter.bookmark,
             // AM (FILLERMARK) -->
             fillermark = this@BackupChapter.fillermark,
             // <-- AM (FILLERMARK)
-            lastSecondSeen = this@BackupChapter.lastSecondSeen,
-            totalSeconds = this@BackupChapter.totalSeconds,
+            lastPageRead = this@BackupChapter.lastSecondSeen,
+            totalPages = this@BackupChapter.totalSeconds,
             dateFetch = this@BackupChapter.dateFetch,
             dateUpload = this@BackupChapter.dateUpload,
             sourceOrder = this@BackupChapter.sourceOrder,

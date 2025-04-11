@@ -18,9 +18,9 @@ fun List<Chapter>.getNextUnread(
 ): Chapter? {
     return applyFilters(manga, downloadManager/* SY --> */, mergedManga/* SY <-- */).let { chapters ->
         if (manga.sortDescending()) {
-            chapters.findLast { !it.seen }
+            chapters.findLast { !it.read }
         } else {
-            chapters.find { !it.seen }
+            chapters.find { !it.read }
         }
     }
 }
@@ -31,9 +31,9 @@ fun List<Chapter>.getNextUnread(
 fun List<ChapterList.Item>.getNextUnread(manga: Manga): Chapter? {
     return applyFilters(manga).let { chapters ->
         if (manga.sortDescending()) {
-            chapters.findLast { !it.chapter.seen }
+            chapters.findLast { !it.chapter.read }
         } else {
-            chapters.find { !it.chapter.seen }
+            chapters.find { !it.chapter.read }
         }
     }?.chapter
 }

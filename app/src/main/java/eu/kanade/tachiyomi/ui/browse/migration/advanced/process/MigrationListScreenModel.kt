@@ -367,7 +367,7 @@ class MigrationListScreenModel(
                         chapterUpdates += ChapterUpdate(
                             id = chapter.id,
                             bookmark = prevChapter.bookmark,
-                            seen = prevChapter.seen,
+                            read = prevChapter.read,
                             dateFetch = prevChapter.dateFetch,
                         )
                         prevHistoryList.find { it.chapterId == prevChapter.id }?.let { prevHistory ->
@@ -380,7 +380,7 @@ class MigrationListScreenModel(
                     } else if (maxChapterRead != null && chapter.chapterNumber <= maxChapterRead) {
                         chapterUpdates += ChapterUpdate(
                             id = chapter.id,
-                            seen = true,
+                            read = true,
                         )
                     }
                 }

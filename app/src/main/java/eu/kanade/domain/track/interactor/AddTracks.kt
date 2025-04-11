@@ -35,7 +35,7 @@ class AddTracks(
     suspend fun bind(tracker: Tracker, item: Track, mangaId: Long) = withNonCancellableContext {
         withIOContext {
             val allChapters = getChaptersByMangaId.await(mangaId)
-            val hasReadChapters = allChapters.any { it.seen }
+            val hasReadChapters = allChapters.any { it.read }
             tracker.bind(item, hasReadChapters)
 
             var track = item.toDomainTrack(idRequired = false) ?: return@withIOContext
@@ -46,10 +46,10 @@ class AddTracks(
             // Update chapter progress if newer chapters marked read locally
             if (hasReadChapters) {
                 val latestLocalReadChapterNumber = allChapters
-                    .sortedBy { it.episodeNumber }
-                    .takeWhile { it.seen }
+                    .sortedBy { it.chapterNumber }
+                    .takeWhile { it.read }
                     .lastOrNull()
-                    ?.episodeNumber ?: -1.0
+                    ?.chapterNumber ?: -1.0
 
                 if (latestLocalReadChapterNumber > track.lastEpisodeSeen) {
                     track = track.copy(

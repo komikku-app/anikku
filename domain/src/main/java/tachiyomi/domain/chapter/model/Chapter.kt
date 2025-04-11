@@ -2,33 +2,33 @@ package tachiyomi.domain.chapter.model
 
 data class Chapter(
     val id: Long,
-    val animeId: Long,
-    val seen: Boolean,
+    val mangaId: Long,
+    val read: Boolean,
     val bookmark: Boolean,
     // AM (FILLERMARK) -->
     val fillermark: Boolean,
     // <-- AM (FILLERMARK)
-    val lastSecondSeen: Long,
-    val totalSeconds: Long,
+    val lastPageRead: Long,
+    val totalPages: Long,
     val dateFetch: Long,
     val sourceOrder: Long,
     val url: String,
     val name: String,
     val dateUpload: Long,
-    val episodeNumber: Double,
+    val chapterNumber: Double,
     val scanlator: String?,
     val lastModifiedAt: Long,
     val version: Long,
 ) {
     val isRecognizedNumber: Boolean
-        get() = episodeNumber >= 0f
+        get() = chapterNumber >= 0f
 
     fun copyFrom(other: Chapter): Chapter {
         return copy(
             name = other.name,
             url = other.url,
             dateUpload = other.dateUpload,
-            episodeNumber = other.episodeNumber,
+            chapterNumber = other.chapterNumber,
             scanlator = other.scanlator?.ifBlank { null },
         )
     }
@@ -36,28 +36,29 @@ data class Chapter(
     companion object {
         fun create() = Chapter(
             id = -1,
-            animeId = -1,
-            seen = false,
+            mangaId = -1,
+            read = false,
             bookmark = false,
             // AM (FILLERMARK) -->
             fillermark = false,
             // <-- AM (FILLERMARK)
-            lastSecondSeen = 0,
-            totalSeconds = 0,
+            lastPageRead = 0,
+            totalPages = 0,
             dateFetch = 0,
             sourceOrder = 0,
             url = "",
             name = "",
             dateUpload = -1,
-            episodeNumber = -1.0,
+            chapterNumber = -1.0,
             scanlator = null,
             lastModifiedAt = 0,
             version = 1,
         )
     }
 
-    val mangaId = animeId
-    val chapterNumber = episodeNumber
-    val read = seen
-    val lastPageRead = lastSecondSeen
+    val animeId = mangaId
+    val episodeNumber = chapterNumber
+    val seen = read
+    val lastSecondSeen = lastPageRead
+    val totalSeconds = totalPages
 }

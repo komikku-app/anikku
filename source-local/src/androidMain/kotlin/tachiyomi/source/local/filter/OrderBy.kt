@@ -1,11 +1,11 @@
 package tachiyomi.source.local.filter
 
 import android.content.Context
-import eu.kanade.tachiyomi.animesource.model.AnimeFilter
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import eu.kanade.tachiyomi.animesource.model.AnimeFilter as Filter
 
-sealed class OrderBy(context: Context, selection: Selection) : AnimeFilter.Sort(
+sealed class OrderBy(context: Context, selection: Selection) : Filter.Sort(
     context.stringResource(MR.strings.local_filter_order_by),
     arrayOf(context.stringResource(MR.strings.title), context.stringResource(MR.strings.date)),
     selection,

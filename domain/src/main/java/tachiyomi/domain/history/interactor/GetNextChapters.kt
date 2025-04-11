@@ -32,7 +32,7 @@ class GetNextChapters(
                 .sortedWith(getChapterSort(manga, sortDescending = false))
 
             return if (onlyUnread) {
-                chapters.filterNot { it.seen }
+                chapters.filterNot { it.read }
             } else {
                 chapters
             }
@@ -43,7 +43,7 @@ class GetNextChapters(
             .sortedWith(getChapterSort(manga, sortDescending = false))
 
         return if (onlyUnread) {
-            chapters.filterNot { it.seen }
+            chapters.filterNot { it.read }
         } else {
             chapters
         }
@@ -66,7 +66,7 @@ class GetNextChapters(
         // - The current chapter if it isn't completely read
         // - The chapters after the current chapter if the current one is completely read
         val fromChapter = chapters.getOrNull(currChapterIndex)
-        return if (fromChapter != null && !fromChapter.seen) {
+        return if (fromChapter != null && !fromChapter.read) {
             nextChapters
         } else {
             nextChapters.drop(1)

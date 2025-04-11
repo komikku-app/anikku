@@ -516,7 +516,7 @@ private fun MangaScreenSmallImpl(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             val isFABVisible = remember(episodes) {
-                episodes.fastAny { !it.chapter.seen } && !isAnySelected
+                episodes.fastAny { !it.chapter.read } && !isAnySelected
             }
             AnimatedVisibility(
                 visible = isFABVisible,
@@ -549,7 +549,7 @@ private fun MangaScreenSmallImpl(
                 ExtendedFloatingActionButton(
                     text = {
                         val isWatching = remember(state.chapters) {
-                            state.chapters.fastAny { it.chapter.seen }
+                            state.chapters.fastAny { it.chapter.read }
                         }
                         Text(
                             text = stringResource(if (isWatching) MR.strings.action_resume else MR.strings.action_start),
@@ -722,7 +722,7 @@ private fun MangaScreenSmallImpl(
                         contentType = MangaScreenItem.EPISODE_HEADER,
                     ) {
                         val missingEpisodeCount = remember(episodes) {
-                            episodes.map { it.chapter.episodeNumber }.missingChaptersCount()
+                            episodes.map { it.chapter.chapterNumber }.missingChaptersCount()
                         }
                         ChapterHeader(
                             enabled = !isAnySelected,
@@ -961,7 +961,7 @@ private fun MangaScreenLargeImpl(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             val isFABVisible = remember(episodes) {
-                episodes.fastAny { !it.chapter.seen } && !isAnySelected
+                episodes.fastAny { !it.chapter.read } && !isAnySelected
             }
             AnimatedVisibility(
                 visible = isFABVisible,
@@ -994,7 +994,7 @@ private fun MangaScreenLargeImpl(
                 ExtendedFloatingActionButton(
                     text = {
                         val isWatching = remember(state.chapters) {
-                            state.chapters.fastAny { it.chapter.seen }
+                            state.chapters.fastAny { it.chapter.read }
                         }
                         Text(
                             text = stringResource(
@@ -1157,7 +1157,7 @@ private fun MangaScreenLargeImpl(
                                 contentType = MangaScreenItem.EPISODE_HEADER,
                             ) {
                                 val missingEpisodeCount = remember(episodes) {
-                                    episodes.map { it.chapter.episodeNumber }.missingChaptersCount()
+                                    episodes.map { it.chapter.chapterNumber }.missingChaptersCount()
                                 }
                                 ChapterHeader(
                                     enabled = !isAnySelected,
@@ -1254,10 +1254,10 @@ private fun SharedMangaBottomActionMenu(
         // <-- AM (FILLERMARK)
         onMarkAsSeenClicked = {
             onMultiMarkAsSeenClicked(selected.fastMap { it.chapter }, true)
-        }.takeIf { selected.fastAny { !it.chapter.seen } },
+        }.takeIf { selected.fastAny { !it.chapter.read } },
         onMarkAsUnseenClicked = {
             onMultiMarkAsSeenClicked(selected.fastMap { it.chapter }, false)
-        }.takeIf { selected.fastAny { it.chapter.seen || it.chapter.lastSecondSeen > 0L } },
+        }.takeIf { selected.fastAny { it.chapter.read || it.chapter.lastPageRead > 0L } },
         onMarkPreviousAsSeenClicked = {
             onMarkPreviousAsSeenClicked(selected[0].chapter)
         }.takeIf { selected.size == 1 },
@@ -1339,30 +1339,30 @@ private fun LazyListScope.sharedChapterItems(
                     title = if (manga.displayMode == Manga.EPISODE_DISPLAY_NUMBER) {
                         stringResource(
                             MR.strings.display_mode_episode,
-                            formatChapterNumber(item.chapter.episodeNumber),
+                            formatChapterNumber(item.chapter.chapterNumber),
                         )
                     } else {
                         item.chapter.name
                     },
                     date = relativeDateTimeText(item.chapter.dateUpload),
-                    watchProgress = item.chapter.lastSecondSeen
-                        .takeIf { !item.chapter.seen && it > 0L }
+                    watchProgress = item.chapter.lastPageRead
+                        .takeIf { !item.chapter.read && it > 0L }
                         ?.let {
                             stringResource(
                                 MR.strings.episode_progress,
                                 formatTime(it),
-                                formatTime(item.chapter.totalSeconds),
+                                formatTime(item.chapter.totalPages),
                             )
                         },
                     scanlator = item.chapter.scanlator.takeIf { !it.isNullOrBlank() },
-                    seen = item.chapter.seen,
+                    seen = item.chapter.read,
                     bookmark = item.chapter.bookmark,
                     // AM (FILLERMARK) -->
                     fillermark = item.chapter.fillermark,
                     // <-- AM (FILLERMARK)
                     selected = item.selected,
                     downloadIndicatorEnabled =
-                    !isAnyEpisodeSelected && !(mergedData?.manga?.get(item.chapter.animeId) ?: manga).isLocal(),
+                    !isAnyEpisodeSelected && !(mergedData?.manga?.get(item.chapter.mangaId) ?: manga).isLocal(),
                     downloadStateProvider = { item.downloadState },
                     downloadProgressProvider = { item.downloadProgress },
                     episodeSwipeStartAction = episodeSwipeStartAction,

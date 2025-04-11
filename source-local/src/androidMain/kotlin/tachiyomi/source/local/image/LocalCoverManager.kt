@@ -2,7 +2,7 @@ package tachiyomi.source.local.image
 
 import android.content.Context
 import com.hippo.unifile.UniFile
-import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.system.ImageUtil
@@ -16,22 +16,27 @@ actual class LocalCoverManager(
     private val fileSystem: LocalSourceFileSystem,
 ) {
 
-    actual fun find(animeUrl: String): UniFile? {
-        return fileSystem.getFilesInMangaDirectory(animeUrl)
+    actual fun find(mangaUrl: String): UniFile? {
+        return fileSystem.getFilesInMangaDirectory(mangaUrl)
             // Get all file whose names start with "cover"
             .filter { it.isFile && it.nameWithoutExtension.equals("cover", ignoreCase = true) }
             // Get the first actual image
-            .firstOrNull { ImageUtil.isImage(it.name) { it.openInputStream() } }
+            .firstOrNull {
+                ImageUtil.isImage(it.name) { it.openInputStream() }
+            }
     }
 
-    actual fun update(anime: SAnime, inputStream: InputStream): UniFile? {
-        val directory = fileSystem.getMangaDirectory(anime.url)
+    actual fun update(
+        manga: SManga,
+        inputStream: InputStream,
+    ): UniFile? {
+        val directory = fileSystem.getMangaDirectory(manga.url)
         if (directory == null) {
             inputStream.close()
             return null
         }
 
-        val targetFile = find(anime.url) ?: directory.createFile(DEFAULT_COVER_NAME)!!
+        val targetFile = find(manga.url) ?: directory.createFile(DEFAULT_COVER_NAME)!!
 
         inputStream.use { input ->
             targetFile.openOutputStream().use { output ->
@@ -41,7 +46,7 @@ actual class LocalCoverManager(
 
         DiskUtil.createNoMediaFile(directory, context)
 
-        anime.thumbnail_url = targetFile.uri.toString()
+        manga.thumbnail_url = targetFile.uri.toString()
         return targetFile
     }
 }

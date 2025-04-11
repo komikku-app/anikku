@@ -26,14 +26,14 @@ fun List<Chapter>.applyFilters(
     val fillermarkedFilter = manga.fillermarkedFilter
     // <-- AM (FILLERMARK)
 
-    return asSequence().filter { chapter -> applyFilter(unreadFilter) { !chapter.seen } }
+    return asSequence().filter { chapter -> applyFilter(unreadFilter) { !chapter.read } }
         .filter { chapter -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
         // AM (FILLERMARK) -->
         .filter { chapter -> applyFilter(fillermarkedFilter) { chapter.fillermark } }
         // <-- AM (FILLERMARK)
         .filter { chapter ->
             // SY -->
-            val anime = mergedManga.getOrElse(chapter.animeId) { manga }
+            val anime = mergedManga.getOrElse(chapter.mangaId) { manga }
             // SY <--
             applyFilter(downloadedFilter) {
                 val downloaded = downloadManager.isChapterDownloaded(
@@ -63,7 +63,7 @@ fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item
     val fillermarkedFilter = manga.fillermarkedFilter
     // <-- AM (FILLERMARK)
     return asSequence()
-        .filter { (episode) -> applyFilter(unseenFilter) { !episode.seen } }
+        .filter { (episode) -> applyFilter(unseenFilter) { !episode.read } }
         .filter { (episode) -> applyFilter(bookmarkedFilter) { episode.bookmark } }
         // AM (FILLERMARK) -->
         .filter { (episode) -> applyFilter(fillermarkedFilter) { episode.fillermark } }

@@ -17,8 +17,8 @@ fun getChapterSort(
             false -> { c1, c2 -> c2.sourceOrder.compareTo(c1.sourceOrder) }
         }
         Manga.EPISODE_SORTING_NUMBER -> when (sortDescending) {
-            true -> { c1, c2 -> c2.episodeNumber.compareTo(c1.episodeNumber) }
-            false -> { c1, c2 -> c1.episodeNumber.compareTo(c2.episodeNumber) }
+            true -> { c1, c2 -> c2.chapterNumber.compareTo(c1.chapterNumber) }
+            false -> { c1, c2 -> c1.chapterNumber.compareTo(c2.chapterNumber) }
         }
         Manga.EPISODE_SORTING_UPLOAD_DATE -> when (sortDescending) {
             true -> { c1, c2 -> c2.dateUpload.compareTo(c1.dateUpload) }

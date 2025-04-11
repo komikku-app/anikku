@@ -31,8 +31,8 @@ class GetUpdates(
         // SY <--
     }
 
-    fun subscribe(seen: Boolean, after: Long): Flow<List<UpdatesWithRelations>> {
-        return repository.subscribeWithSeen(seen, after, limit = 500)
+    fun subscribe(read: Boolean, after: Long): Flow<List<UpdatesWithRelations>> {
+        return repository.subscribeWithSeen(read, after, limit = 500)
             // SY -->
             .catchNPE()
         // SY <--

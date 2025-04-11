@@ -476,11 +476,7 @@ fun OutlinedNumericChooser(
 }
 
 @Composable
-fun TextItem(
-    label: String,
-    value: String,
-    onChange: (String) -> Unit,
-) {
+fun TextItem(label: String, value: String, onChange: (String) -> Unit) {
     OutlinedTextField(
         modifier = Modifier
             .fillMaxWidth()

@@ -51,11 +51,11 @@ class FilterChaptersForDownload(
         val readChapterNumbers = existingChapters
             // SY <--
             .asSequence()
-            .filter { it.seen && it.isRecognizedNumber }
-            .map { it.episodeNumber }
+            .filter { it.read && it.isRecognizedNumber }
+            .map { it.chapterNumber }
             .toSet()
 
-        return newChapters.filterNot { it.episodeNumber in readChapterNumbers }
+        return newChapters.filterNot { it.chapterNumber in readChapterNumbers }
     }
 
     /**

@@ -1675,10 +1675,10 @@ class PlayerViewModel @JvmOverloads constructor(
             updateEpisode.await(
                 EpisodeUpdate(
                     id = episode.id!!,
-                    seen = episode.seen,
+                    read = episode.seen,
                     bookmark = episode.bookmark,
-                    lastSecondSeen = episode.last_second_seen,
-                    totalSeconds = episode.total_seconds,
+                    lastPageRead = episode.last_second_seen,
+                    totalPages = episode.total_seconds,
                 ),
             )
         }

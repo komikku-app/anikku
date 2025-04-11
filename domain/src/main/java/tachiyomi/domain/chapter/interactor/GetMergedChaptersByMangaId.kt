@@ -73,12 +73,12 @@ class GetMergedChaptersByMangaId(
             MergedMangaReference.CHAPTER_SORT_PRIORITY -> dedupeByPriority(mangaReferences, chapterList)
             MergedMangaReference.CHAPTER_SORT_MOST_CHAPTERS -> {
                 findSourceWithMostChapters(chapterList)?.let { mangaId ->
-                    chapterList.filter { it.animeId == mangaId }
+                    chapterList.filter { it.mangaId == mangaId }
                 } ?: chapterList
             }
             MergedMangaReference.CHAPTER_SORT_HIGHEST_CHAPTER_NUMBER -> {
                 findSourceWithHighestChapterNumber(chapterList)?.let { mangaId ->
-                    chapterList.filter { it.animeId == mangaId }
+                    chapterList.filter { it.mangaId == mangaId }
                 } ?: chapterList
             }
             else -> chapterList
@@ -86,11 +86,11 @@ class GetMergedChaptersByMangaId(
     }
 
     private fun findSourceWithMostChapters(chapterList: List<Chapter>): Long? {
-        return chapterList.groupBy { it.animeId }.maxByOrNull { it.value.size }?.key
+        return chapterList.groupBy { it.mangaId }.maxByOrNull { it.value.size }?.key
     }
 
     private fun findSourceWithHighestChapterNumber(chapterList: List<Chapter>): Long? {
-        return chapterList.maxByOrNull { it.episodeNumber }?.animeId
+        return chapterList.maxByOrNull { it.chapterNumber }?.mangaId
     }
 
     private fun dedupeByPriority(
@@ -100,7 +100,7 @@ class GetMergedChaptersByMangaId(
         val sortedChapterList = mutableListOf<Chapter>()
 
         var existingChapterIndex: Int
-        chapterList.groupBy { it.animeId }
+        chapterList.groupBy { it.mangaId }
             .entries
             .sortedBy { (mangaId) ->
                 mangaReferences.find { it.mangaId == mangaId }?.chapterPriority ?: Int.MAX_VALUE
@@ -113,9 +113,9 @@ class GetMergedChaptersByMangaId(
                         existingChapterIndex = sortedChapterList.indexOfFirst {
                             // check if the chapter is not already there
                             it.isRecognizedNumber &&
-                                it.episodeNumber == chapter.episodeNumber &&
+                                it.chapterNumber == chapter.chapterNumber &&
                                 // allow multiple chapters of the same number from the same source
-                                it.animeId != chapter.animeId
+                                it.mangaId != chapter.mangaId
                         }
                         if (existingChapterIndex == -1) {
                             sortedChapterList.add(oldChapterIndex + 1, chapter)

@@ -40,7 +40,7 @@ class SyncChapterProgressWithTrack(
             .filter { it.isRecognizedNumber }
 
         val sortedChapters = dbChapters
-            .sortedBy { it.episodeNumber }
+            .sortedBy { it.chapterNumber }
 
         // KMK -->
         var lastCheckChapter: Double
@@ -55,15 +55,15 @@ class SyncChapterProgressWithTrack(
         val chapterUpdates = dbChapters
             .takeWhile { chapter ->
                 lastCheckChapter = checkingChapter
-                checkingChapter = chapter.episodeNumber
-                chapter.episodeNumber >= lastCheckChapter && chapter.episodeNumber <= remoteTrack.lastEpisodeSeen
+                checkingChapter = chapter.chapterNumber
+                chapter.chapterNumber >= lastCheckChapter && chapter.chapterNumber <= remoteTrack.lastEpisodeSeen
             }
-            .filter { chapter -> !chapter.seen }
+            .filter { chapter -> !chapter.read }
             // KMK <--
-            .map { it.copy(seen = true).toChapterUpdate() }
+            .map { it.copy(read = true).toChapterUpdate() }
 
         // only take into account continuous reading
-        val localLastRead = sortedChapters.takeWhile { it.seen }.lastOrNull()?.episodeNumber ?: 0F
+        val localLastRead = sortedChapters.takeWhile { it.read }.lastOrNull()?.chapterNumber ?: 0F
         // Tracker will update to latest read chapter
         val lastRead = max(remoteTrack.lastEpisodeSeen, localLastRead.toDouble())
         val updatedTrack = remoteTrack.copy(lastEpisodeSeen = lastRead)

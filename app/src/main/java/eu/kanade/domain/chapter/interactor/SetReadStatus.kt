@@ -4,7 +4,6 @@ import eu.kanade.domain.download.interactor.DeleteDownload
 import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
 import eu.kanade.tachiyomi.ui.library.LibraryScreenModel
 import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
-import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel
 import exh.source.MERGED_SOURCE_ID
 import logcat.LogPriority
@@ -30,8 +29,8 @@ class SetReadStatus(
 
     private val mapper = { chapter: Chapter, read: Boolean ->
         ChapterUpdate(
-            seen = read,
-            lastSecondSeen = if (!read) 0 else null,
+            read = read,
+            lastPageRead = if (!read) 0 else null,
             id = chapter.id,
         )
     }
@@ -46,7 +45,7 @@ class SetReadStatus(
      *  - [LibraryUpdateJob.updateChapterList]: when a manga is updated and has new chapter but already read,
      *  it will mark that new **duplicated** chapter as read & delete downloading/downloaded -> should be treat as
      *  automatically ~ no auto delete
-     *  - [PlayerViewModel.updateEpisodeProgress]: mark **duplicated** chapter as read after finish reading -> should be
+     *  - [ReaderViewModel.updateChapterProgress]: mark **duplicated** chapter as read after finish reading -> should be
      *  treated as not manually mark as read so not auto-delete (there are cases where chapter number is mistaken by volume number)
      */
     suspend fun await(
@@ -84,7 +83,7 @@ class SetReadStatus(
         ) {
             chaptersToUpdate
                 // KMK -->
-                .map { it.copy(seen = true) } // mark as seen so it will respect category exclusion
+                .map { it.copy(read = true) } // mark as read so it will respect category exclusion
                 // KMK <--
                 .groupBy { it.mangaId }
                 .forEach { (mangaId, chapters) ->

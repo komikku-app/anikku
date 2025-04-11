@@ -51,7 +51,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
         val statusTrack = api.statusLibAnime(track)
         val remoteTrack = api.findLibAnime(track)
-        return if (remoteTrack != null && statusTrack != null) {
+        return if (statusTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
 

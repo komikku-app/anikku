@@ -63,7 +63,7 @@ class SyncChaptersWithSource(
                 Chapter.create()
                     .copyFromSChapter(sChapter)
                     .copy(name = with(ChapterSanitizer) { sChapter.name.sanitize(manga.title) })
-                    .copy(animeId = manga.id, sourceOrder = i.toLong())
+                    .copy(mangaId = manga.id, sourceOrder = i.toLong())
             }
 
         val dbChapters = getChaptersByMangaId.await(manga.id)
@@ -94,9 +94,9 @@ class SyncChaptersWithSource(
             val chapterNumber = ChapterRecognition.parseChapterNumber(
                 manga.title,
                 chapter.name,
-                chapter.episodeNumber,
+                chapter.chapterNumber,
             )
-            chapter = chapter.copy(episodeNumber = chapterNumber)
+            chapter = chapter.copy(chapterNumber = chapterNumber)
 
             val dbChapter = dbChapters.find { it.url == chapter.url }
 
@@ -127,7 +127,7 @@ class SyncChaptersWithSource(
                     }
                     var toChangeChapter = dbChapter.copy(
                         name = chapter.name,
-                        episodeNumber = chapter.episodeNumber,
+                        chapterNumber = chapter.chapterNumber,
                         scanlator = chapter.scanlator,
                         sourceOrder = chapter.sourceOrder,
                     )
@@ -158,13 +158,13 @@ class SyncChaptersWithSource(
         val deletedBookmarkedChapterNumbers = TreeSet<Double>()
 
         removedChapters.forEach { chapter ->
-            if (chapter.seen) deletedReadChapterNumbers.add(chapter.episodeNumber)
-            if (chapter.bookmark) deletedBookmarkedChapterNumbers.add(chapter.episodeNumber)
-            deletedChapterNumbers.add(chapter.episodeNumber)
+            if (chapter.read) deletedReadChapterNumbers.add(chapter.chapterNumber)
+            if (chapter.bookmark) deletedBookmarkedChapterNumbers.add(chapter.chapterNumber)
+            deletedChapterNumbers.add(chapter.chapterNumber)
         }
 
         val deletedChapterNumberDateFetchMap = removedChapters.sortedByDescending { it.dateFetch }
-            .associate { it.episodeNumber to it.dateFetch }
+            .associate { it.chapterNumber to it.dateFetch }
 
         // Date fetch is set in such a way that the upper ones will have bigger value than the lower ones
         // Sources MUST return the chapters from most to less recent, which is common.
@@ -172,15 +172,15 @@ class SyncChaptersWithSource(
         var updatedToAdd = newChapters.map { toAddItem ->
             var chapter = toAddItem.copy(dateFetch = nowMillis + itemCount--)
 
-            if (!chapter.isRecognizedNumber || chapter.episodeNumber !in deletedChapterNumbers) return@map chapter
+            if (!chapter.isRecognizedNumber || chapter.chapterNumber !in deletedChapterNumbers) return@map chapter
 
             chapter = chapter.copy(
-                seen = chapter.episodeNumber in deletedReadChapterNumbers,
-                bookmark = chapter.episodeNumber in deletedBookmarkedChapterNumbers,
+                read = chapter.chapterNumber in deletedReadChapterNumbers,
+                bookmark = chapter.chapterNumber in deletedBookmarkedChapterNumbers,
             )
 
             // Try to to use the fetch date of the original entry to not pollute 'Updates' tab
-            deletedChapterNumberDateFetchMap[chapter.episodeNumber]?.let {
+            deletedChapterNumberDateFetchMap[chapter.chapterNumber]?.let {
                 chapter = chapter.copy(dateFetch = it)
             }
 
@@ -210,6 +210,8 @@ class SyncChaptersWithSource(
 
         val reAddedUrls = reAdded.map { it.url }.toHashSet()
 
-        return updatedToAdd.filterNot { it.url in reAddedUrls }
+        return updatedToAdd.filterNot {
+            it.url in reAddedUrls
+        }
     }
 }

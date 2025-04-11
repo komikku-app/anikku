@@ -326,8 +326,8 @@ class LibraryUpdateNotifier(
     private fun getNewChaptersDescription(chapters: Array<Chapter>): String {
         val displayableChapterNumbers = chapters
             .filter { it.isRecognizedNumber }
-            .sortedBy { it.episodeNumber }
-            .map { formatChapterNumber(it.episodeNumber) }
+            .sortedBy { it.chapterNumber }
+            .map { formatChapterNumber(it.chapterNumber) }
             .toSet()
 
         return when (displayableChapterNumbers.size) {

@@ -182,7 +182,7 @@ class ExternalIntents {
         val preserveWatchPos = playerPreferences.preserveWatchingPosition().get()
         val isEpisodeWatched = episode.lastSecondSeen == episode.totalSeconds
 
-        return if (episode.seen && (!preserveWatchPos || (preserveWatchPos && isEpisodeWatched))) {
+        return if (episode.seen && (!preserveWatchPos || isEpisodeWatched)) {
             1L
         } else {
             episode.lastSecondSeen
@@ -506,17 +506,17 @@ class ExternalIntents {
             updateEpisode.await(
                 EpisodeUpdate(
                     id = currEp.id,
-                    seen = seen,
+                    read = seen,
                     bookmark = currEp.bookmark,
                     // AM (FILLERMARK) -->
                     fillermark = currEp.fillermark,
                     // <-- AM (FILLERMARK)
-                    lastSecondSeen = lastSecondSeen,
-                    totalSeconds = totalSeconds,
+                    lastPageRead = lastSecondSeen,
+                    totalPages = totalSeconds,
                 ),
             )
             if (trackPreferences.autoUpdateTrack().get() && currEp.seen) {
-                updateTrackEpisodeSeen(currEp.episodeNumber.toDouble(), anime)
+                updateTrackEpisodeSeen(currEp.episodeNumber, anime)
             }
             if (seen) {
                 deleteEpisodeIfNeeded(currentEpisode, anime)

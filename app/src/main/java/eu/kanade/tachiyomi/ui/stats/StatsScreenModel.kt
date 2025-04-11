@@ -149,10 +149,10 @@ class StatsScreenModel(
         var watchTime = 0L
         libraryMangaList.forEach { libraryManga ->
             getChaptersByMangaId.await(libraryManga.manga.id).forEach { episode ->
-                watchTime += if (episode.seen) {
-                    episode.totalSeconds
+                watchTime += if (episode.read) {
+                    episode.totalPages
                 } else {
-                    episode.lastSecondSeen
+                    episode.lastPageRead
                 }
             }
         }

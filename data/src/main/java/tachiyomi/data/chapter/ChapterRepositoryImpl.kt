@@ -18,18 +18,18 @@ class ChapterRepositoryImpl(
             handler.await(inTransaction = true) {
                 chapters.map { episode ->
                     episodesQueries.insert(
-                        episode.animeId,
+                        episode.mangaId,
                         episode.url,
                         episode.name,
                         episode.scanlator,
-                        episode.seen,
+                        episode.read,
                         episode.bookmark,
                         // AM (FILLERMARK) -->
                         episode.fillermark,
                         // <-- AM (FILLERMARK)
-                        episode.lastSecondSeen,
-                        episode.totalSeconds,
-                        episode.episodeNumber,
+                        episode.lastPageRead,
+                        episode.totalPages,
+                        episode.chapterNumber,
                         episode.sourceOrder,
                         episode.dateFetch,
                         episode.dateUpload,
@@ -57,18 +57,18 @@ class ChapterRepositoryImpl(
         handler.await(inTransaction = true) {
             chapterUpdates.forEach { episodeUpdate ->
                 episodesQueries.update(
-                    animeId = episodeUpdate.animeId,
+                    animeId = episodeUpdate.mangaId,
                     url = episodeUpdate.url,
                     name = episodeUpdate.name,
                     scanlator = episodeUpdate.scanlator,
-                    seen = episodeUpdate.seen,
+                    seen = episodeUpdate.read,
                     bookmark = episodeUpdate.bookmark,
                     // AM (FILLERMARK) -->
                     fillermark = episodeUpdate.fillermark,
                     // <-- AM (FILLERMARK)
-                    lastSecondSeen = episodeUpdate.lastSecondSeen,
-                    totalSeconds = episodeUpdate.totalSeconds,
-                    episodeNumber = episodeUpdate.episodeNumber,
+                    lastSecondSeen = episodeUpdate.lastPageRead,
+                    totalSeconds = episodeUpdate.totalPages,
+                    episodeNumber = episodeUpdate.chapterNumber,
                     sourceOrder = episodeUpdate.sourceOrder,
                     dateFetch = episodeUpdate.dateFetch,
                     dateUpload = episodeUpdate.dateUpload,

@@ -40,7 +40,7 @@ fun List<Double>.missingChaptersCount(): Int {
 fun calculateChapterGap(higherChapter: Chapter?, lowerChapter: Chapter?): Int {
     if (higherChapter == null || lowerChapter == null) return 0
     if (!higherChapter.isRecognizedNumber || !lowerChapter.isRecognizedNumber) return 0
-    return calculateChapterGap(higherChapter.episodeNumber, lowerChapter.episodeNumber)
+    return calculateChapterGap(higherChapter.chapterNumber, lowerChapter.chapterNumber)
 }
 
 fun calculateChapterGap(higherChapterNumber: Double, lowerChapterNumber: Double): Int {

@@ -72,6 +72,7 @@ class ExtensionManager(
     val installedExtensionsFlow = installedExtensionMapFlow.mapExtensions(scope)
 
     private val availableExtensionMapFlow = MutableStateFlow(emptyMap<String, Extension.Available>())
+
     val availableExtensionsFlow = availableExtensionMapFlow.mapExtensions(scope)
 
     private val untrustedExtensionMapFlow = MutableStateFlow(emptyMap<String, Extension.Untrusted>())

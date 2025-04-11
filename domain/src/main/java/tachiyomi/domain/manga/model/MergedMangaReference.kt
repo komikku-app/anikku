@@ -44,4 +44,6 @@ data class MergedMangaReference(
 
     val animeId = mangaId
     val animeSourceId = mangaSourceId
+    val animeUrl = mangaUrl
+    val downloadEpisodes = downloadChapters
 }

@@ -371,12 +371,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             .sortedByDescending { it.sourceOrder }.run {
                                                 if (libraryPreferences.libraryReadDuplicateChapters().get()) {
                                                     val readChapters = getChaptersByMangaId.await(manga.id).filter {
-                                                        it.seen
+                                                        it.read
                                                     }
                                                     val newReadChapters = this.filter { chapter ->
-                                                        chapter.episodeNumber >= 0 &&
+                                                        chapter.chapterNumber >= 0 &&
                                                             readChapters.any {
-                                                                it.episodeNumber == chapter.episodeNumber
+                                                                it.chapterNumber == chapter.chapterNumber
                                                             }
                                                     }
 
@@ -457,7 +457,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         if (manga.source == MERGED_SOURCE_ID) {
             val downloadingManga = runBlocking { getMergedMangaForDownloading.await(manga.id) }
                 .associateBy { it.id }
-            chapters.groupBy { it.animeId }
+            chapters.groupBy { it.mangaId }
                 .forEach {
                     downloadManager.downloadChapters(
                         downloadingManga[it.key] ?: return@forEach,
@@ -488,7 +488,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         }
 
         if (source is MergedSource) {
-            return source.fetchEpisodesAndSync(manga, false)
+            return source.fetchChaptersAndSync(manga, false)
         }
 
         val chapters = source.getChapterList(manga.toSManga())

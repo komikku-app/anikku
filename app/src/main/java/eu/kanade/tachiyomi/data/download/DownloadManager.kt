@@ -396,7 +396,7 @@ class DownloadManager(
         filesWithNoChapter.forEach { it.delete() }
 
         if (removeRead) {
-            val readChapters = allChapters.filter { it.seen }
+            val readChapters = allChapters.filter { it.read }
             val readChapterDirs = provider.findChapterDirs(readChapters, manga, source)
             readChapterDirs.second.forEach { it.delete() }
             cleaned += readChapterDirs.second.size
@@ -512,7 +512,7 @@ class DownloadManager(
                 .map { it.id }
                 .ifEmpty { listOf(0) }
             if (categoriesForManga.intersect(categoriesToExclude).isNotEmpty()) {
-                chapters.filterNot { it.seen }
+                chapters.filterNot { it.read }
             } else {
                 chapters
             }

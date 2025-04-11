@@ -11,7 +11,7 @@ fun Chapter.toSChapter(): SChapter {
         it.url = url
         it.name = name
         it.date_upload = dateUpload
-        it.episode_number = episodeNumber.toFloat()
+        it.episode_number = chapterNumber.toFloat()
         it.scanlator = scanlator
     }
 }
@@ -21,27 +21,27 @@ fun Chapter.copyFromSChapter(sChapter: SChapter): Chapter {
         name = sChapter.name,
         url = sChapter.url,
         dateUpload = sChapter.date_upload,
-        episodeNumber = sChapter.episode_number.toDouble(),
+        chapterNumber = sChapter.episode_number.toDouble(),
         scanlator = sChapter.scanlator?.ifBlank { null }?.trim(),
     )
 }
 
 fun Chapter.toDbChapter(): DbChapter = ChapterImpl().also {
     it.id = id
-    it.anime_id = animeId
+    it.anime_id = mangaId
     it.url = url
     it.name = name
     it.scanlator = scanlator
-    it.seen = seen
+    it.seen = read
     it.bookmark = bookmark
     // AM (FILLERMARK) -->
     it.fillermark = fillermark
     // <-- AM (FILLERMARK)
-    it.last_second_seen = lastSecondSeen
-    it.total_seconds = totalSeconds
+    it.last_second_seen = lastPageRead
+    it.total_seconds = totalPages
     it.date_fetch = dateFetch
     it.date_upload = dateUpload
-    it.episode_number = episodeNumber.toFloat()
+    it.episode_number = chapterNumber.toFloat()
     it.source_order = sourceOrder.toInt()
     it.last_modified = lastModifiedAt
 }
