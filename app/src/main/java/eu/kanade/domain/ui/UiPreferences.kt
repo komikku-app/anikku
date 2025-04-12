@@ -64,7 +64,7 @@ class UiPreferences(
 
     fun showHomeOnRelatedMangas() = preferenceStore.getBoolean("show_home_on_related_animes", true)
 
-    fun watchButtonPosition() = preferenceStore.getString("reading_button_position", FabPosition.End.toString())
+    fun readButtonPosition() = preferenceStore.getString("reading_button_position", FabPosition.End.toString())
 
     fun usePanoramaCoverFlow() = preferenceStore.getBoolean("use_panorama_cover_flow", false)
 

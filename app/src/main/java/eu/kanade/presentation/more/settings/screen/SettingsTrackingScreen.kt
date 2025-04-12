@@ -61,12 +61,14 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object SettingsTrackingScreen : SearchableSettings {
+    private fun readResolve(): Any = SettingsTrackingScreen
 
     @ReadOnlyComposable
     @Composable
@@ -75,7 +77,7 @@ object SettingsTrackingScreen : SearchableSettings {
     @Composable
     override fun RowScope.AppBarAction() {
         val uriHandler = LocalUriHandler.current
-        IconButton(onClick = { uriHandler.openUri("https://aniyomi.org/help/guides/tracking/") }) {
+        IconButton(onClick = { uriHandler.openUri("https://anikku-app.github.io/help/guides/tracking/") }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                 contentDescription = stringResource(MR.strings.tracking_guide),
@@ -89,7 +91,6 @@ object SettingsTrackingScreen : SearchableSettings {
         val trackPreferences = remember { Injekt.get<TrackPreferences>() }
         val trackerManager = remember { Injekt.get<TrackerManager>() }
         val sourceManager = remember { Injekt.get<SourceManager>() }
-        val autoTrackStatePref = trackPreferences.autoUpdateTrackOnMarkRead()
 
         var dialog by remember { mutableStateOf<Any?>(null) }
         dialog?.run {
@@ -113,8 +114,8 @@ object SettingsTrackingScreen : SearchableSettings {
         val enhancedTrackers = trackerManager.trackers
             .filter { it is EnhancedTracker }
             .partition { service ->
-                val acceptedAnimeSources = (service as EnhancedTracker).getAcceptedSources()
-                sourceManager.getCatalogueSources().any { it::class.qualifiedName in acceptedAnimeSources }
+                val acceptedSources = (service as EnhancedTracker).getAcceptedSources()
+                sourceManager.getCatalogueSources().any { it::class.qualifiedName in acceptedSources }
             }
 
         var enhancedTrackerInfo = stringResource(MR.strings.enhanced_tracking_info)
@@ -142,29 +143,25 @@ object SettingsTrackingScreen : SearchableSettings {
                     .associateWith { stringResource(it.titleRes) }
                     .toPersistentMap(),
             ),
+            // KMK -->
+            Preference.PreferenceItem.SwitchPreference(
+                pref = trackPreferences.autoSyncProgressFromTrackers(),
+                title = stringResource(KMR.strings.pref_auto_sync_progress_from_trackers),
+            ),
+            // KMK <--
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.services),
                 preferenceItems = persistentListOf(
                     Preference.PreferenceItem.TrackerPreference(
                         title = trackerManager.myAnimeList.name,
                         tracker = trackerManager.myAnimeList,
-                        login = {
-                            context.openInBrowser(
-                                MyAnimeListApi.authUrl(),
-                                forceDefaultBrowser = true,
-                            )
-                        },
+                        login = { context.openInBrowser(MyAnimeListApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.myAnimeList) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
                         title = trackerManager.aniList.name,
                         tracker = trackerManager.aniList,
-                        login = {
-                            context.openInBrowser(
-                                AnilistApi.authUrl(),
-                                forceDefaultBrowser = true,
-                            )
-                        },
+                        login = { context.openInBrowser(AnilistApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.aniList) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
@@ -176,12 +173,7 @@ object SettingsTrackingScreen : SearchableSettings {
                     Preference.PreferenceItem.TrackerPreference(
                         title = trackerManager.shikimori.name,
                         tracker = trackerManager.shikimori,
-                        login = {
-                            context.openInBrowser(
-                                ShikimoriApi.authUrl(),
-                                forceDefaultBrowser = true,
-                            )
-                        },
+                        login = { context.openInBrowser(ShikimoriApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.shikimori) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
@@ -198,12 +190,7 @@ object SettingsTrackingScreen : SearchableSettings {
                     Preference.PreferenceItem.TrackerPreference(
                         title = trackerManager.bangumi.name,
                         tracker = trackerManager.bangumi,
-                        login = {
-                            context.openInBrowser(
-                                BangumiApi.authUrl(),
-                                forceDefaultBrowser = true,
-                            )
-                        },
+                        login = { context.openInBrowser(BangumiApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.bangumi) },
                     ),
                     Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.tracking_info)),
@@ -211,8 +198,7 @@ object SettingsTrackingScreen : SearchableSettings {
             ),
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.enhanced_services),
-                preferenceItems =
-                (
+                preferenceItems = (
                     enhancedTrackers.first
                         .map { service ->
                             Preference.PreferenceItem.TrackerPreference(

@@ -48,15 +48,16 @@ fun BrowseSourceList(
         }
 
         items(count = mangaList.itemCount) { index ->
-            val anime by mangaList[index]?.collectAsState() ?: return@items
+            val manga by mangaList[index]?.collectAsState() ?: return@items
+
             BrowseSourceListItem(
-                manga = anime,
-                onClick = { onMangaClick(anime) },
-                onLongClick = { onMangaLongClick(anime) },
+                manga = manga,
+                onClick = { onMangaClick(manga) },
+                onLongClick = { onMangaLongClick(manga) },
                 entries = entries,
                 containerHeight = containerHeight,
                 // KMK -->
-                isSelected = selection.fastAny { selected -> selected.id == anime.id },
+                isSelected = selection.fastAny { selected -> selected.id == manga.id },
                 // KMK <--
             )
         }

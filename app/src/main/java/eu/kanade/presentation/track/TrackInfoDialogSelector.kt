@@ -234,8 +234,6 @@ private fun TrackStatusSelectorPreviews() {
                 onSelectionChange = {},
                 selections = persistentMapOf(
                     // Anilist values
-                    1L to MR.strings.reading,
-                    2L to MR.strings.plan_to_read,
                     3L to MR.strings.completed,
                     4L to MR.strings.on_hold,
                     5L to MR.strings.dropped,

@@ -46,7 +46,12 @@ data class BackupOptions(
     )
 
     fun canCreate() =
-        libraryEntries || categories || appSettings || extensionRepoSettings || sourceSettings || savedSearchesFeeds ||
+        libraryEntries ||
+            categories ||
+            appSettings ||
+            extensionRepoSettings ||
+            sourceSettings ||
+            savedSearchesFeeds ||
             customButton
 
     companion object {

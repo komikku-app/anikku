@@ -287,7 +287,7 @@ private fun ErrorIndicator(
     }
 }
 
-internal fun Modifier.commonClickable(
+private fun Modifier.commonClickable(
     enabled: Boolean,
     hapticFeedback: HapticFeedback,
     onLongClick: () -> Unit,
@@ -307,13 +307,14 @@ internal fun Modifier.commonClickable(
     ),
 )
 
-internal val IndicatorSize = 26.dp
-internal val IndicatorPadding = 2.dp
+private val IndicatorSize = 26.dp
+private val IndicatorPadding = 2.dp
 
 // To match composable parameter name when used later
-internal val IndicatorStrokeWidth = IndicatorPadding
-internal val IndicatorModifier = Modifier
+private val IndicatorStrokeWidth = IndicatorPadding
+
+private val IndicatorModifier = Modifier
     .size(IndicatorSize)
     .padding(IndicatorPadding)
-internal val ArrowModifier = Modifier
+private val ArrowModifier = Modifier
     .size(IndicatorSize - 7.dp)

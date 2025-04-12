@@ -42,8 +42,8 @@ fun HistoryScreen(
     state: HistoryScreenModel.State,
     snackbarHostState: SnackbarHostState,
     onSearchQueryChange: (String?) -> Unit,
-    onClickCover: (animeId: Long) -> Unit,
-    onClickResume: (animeId: Long, episodeId: Long) -> Unit,
+    onClickCover: (mangaId: Long) -> Unit,
+    onClickResume: (mangaId: Long, chapterId: Long) -> Unit,
     onDialogChange: (HistoryScreenModel.Dialog?) -> Unit,
 ) {
     // KMK -->

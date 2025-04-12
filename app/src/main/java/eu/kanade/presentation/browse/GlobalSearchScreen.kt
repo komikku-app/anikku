@@ -59,8 +59,8 @@ fun GlobalSearchScreen(
                         state.filteredItems.forEach { (_, result) ->
                             when (result) {
                                 is SearchItemResult.Success -> {
-                                    result.result.forEach { anime ->
-                                        bulkFavoriteScreenModel.select(anime)
+                                    result.result.forEach { manga ->
+                                        bulkFavoriteScreenModel.select(manga)
                                     }
                                 }
                                 else -> {}

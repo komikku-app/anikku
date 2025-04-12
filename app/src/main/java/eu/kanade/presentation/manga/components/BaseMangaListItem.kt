@@ -61,11 +61,11 @@ fun BaseMangaListItem(
     }
 }
 
-private val defaultCover: @Composable RowScope.(Manga, () -> Unit) -> Unit = { anime, onClick ->
+private val defaultCover: @Composable RowScope.(Manga, () -> Unit) -> Unit = { manga, onClick ->
     MangaCover.Book(
         modifier = Modifier
             .fillMaxHeight(),
-        data = anime,
+        data = manga,
         onClick = onClick,
         // KMK -->
         size = MangaCover.Size.Big,

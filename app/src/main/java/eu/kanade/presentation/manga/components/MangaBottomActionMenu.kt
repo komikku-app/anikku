@@ -69,6 +69,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -85,9 +86,9 @@ fun MangaBottomActionMenu(
     onFillermarkClicked: (() -> Unit)? = null,
     onRemoveFillermarkClicked: (() -> Unit)? = null,
     // <-- AM (FILLERMARK)
-    onMarkAsSeenClicked: (() -> Unit)? = null,
-    onMarkAsUnseenClicked: (() -> Unit)? = null,
-    onMarkPreviousAsSeenClicked: (() -> Unit)? = null,
+    onMarkAsReadClicked: (() -> Unit)? = null,
+    onMarkAsUnreadClicked: (() -> Unit)? = null,
+    onMarkPreviousAsReadClicked: (() -> Unit)? = null,
     onDownloadClicked: (() -> Unit)? = null,
     onDeleteClicked: (() -> Unit)? = null,
     onExternalClicked: (() -> Unit)? = null,
@@ -150,7 +151,7 @@ fun MangaBottomActionMenu(
                 // AM (FILLERMARK) -->
                 if (onFillermarkClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_fillermark_episode),
+                        title = stringResource(AMR.strings.action_fillermark_episode),
                         icon = ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp),
                         toConfirm = confirm[2],
                         onLongClick = { onLongClickItem(2) },
@@ -159,7 +160,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onRemoveFillermarkClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_remove_fillermark_episode),
+                        title = stringResource(AMR.strings.action_remove_fillermark_episode),
                         icon = ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp),
                         toConfirm = confirm[3],
                         onLongClick = { onLongClickItem(3) },
@@ -167,31 +168,31 @@ fun MangaBottomActionMenu(
                     )
                 }
                 // <-- AM (FILLERMARK)
-                if (onMarkAsSeenClicked != null) {
+                if (onMarkAsReadClicked != null) {
                     Button(
                         title = stringResource(MR.strings.action_mark_as_seen),
                         icon = Icons.Outlined.DoneAll,
                         toConfirm = confirm[4],
                         onLongClick = { onLongClickItem(4) },
-                        onClick = onMarkAsSeenClicked,
+                        onClick = onMarkAsReadClicked,
                     )
                 }
-                if (onMarkAsUnseenClicked != null) {
+                if (onMarkAsUnreadClicked != null) {
                     Button(
                         title = stringResource(MR.strings.action_mark_as_unseen),
                         icon = Icons.Outlined.RemoveDone,
                         toConfirm = confirm[5],
                         onLongClick = { onLongClickItem(5) },
-                        onClick = onMarkAsUnseenClicked,
+                        onClick = onMarkAsUnreadClicked,
                     )
                 }
-                if (onMarkPreviousAsSeenClicked != null) {
+                if (onMarkPreviousAsReadClicked != null) {
                     Button(
                         title = stringResource(MR.strings.action_mark_previous_as_seen),
                         icon = ImageVector.vectorResource(R.drawable.ic_done_prev_24dp),
                         toConfirm = confirm[6],
                         onLongClick = { onLongClickItem(6) },
-                        onClick = onMarkPreviousAsSeenClicked,
+                        onClick = onMarkPreviousAsReadClicked,
                     )
                 }
                 if (onDownloadClicked != null) {

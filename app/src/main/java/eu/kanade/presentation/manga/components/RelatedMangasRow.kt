@@ -29,8 +29,8 @@ import tachiyomi.presentation.core.components.material.padding
 fun RelatedMangasRow(
     relatedMangas: List<RelatedManga>?,
     getMangaState: @Composable (Manga) -> State<Manga>,
-    onAnimeClick: (Manga) -> Unit,
-    onAnimeLongClick: (Manga) -> Unit,
+    onMangaClick: (Manga) -> Unit,
+    onMangaLongClick: (Manga) -> Unit,
 ) {
     when {
         relatedMangas == null -> {
@@ -41,8 +41,8 @@ fun RelatedMangasRow(
             RelatedMangaCardRow(
                 relatedMangas = relatedMangas,
                 getManga = { getMangaState(it) },
-                onMangaClick = onAnimeClick,
-                onMangaLongClick = onAnimeLongClick,
+                onMangaClick = onMangaClick,
+                onMangaLongClick = onMangaLongClick,
             )
         }
 

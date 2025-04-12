@@ -43,12 +43,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.manga.components.MangaCover
+import eu.kanade.presentation.manga.components.MangaCoverHide
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
+import exh.debug.DebugToggles
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.BadgeGroup
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
-import tachiyomi.domain.manga.model.MangaCover as EntryCoverModel
+import tachiyomi.domain.manga.model.MangaCover as MangaCoverModel
 
 object CommonMangaItemDefaults {
     val GridHorizontalSpacer = 4.dp
@@ -58,14 +60,14 @@ object CommonMangaItemDefaults {
     const val BrowseFavoriteCoverAlpha = 0.34f
 }
 
-private val ContinueWatchingButtonSizeSmall = 28.dp
-private val ContinueWatchingButtonSizeLarge = 32.dp
+private val ContinueReadingButtonSizeSmall = 28.dp
+private val ContinueReadingButtonSizeLarge = 32.dp
 
-private val ContinueWatchingButtonIconSizeSmall = 16.dp
-private val ContinueWatchingButtonIconSizeLarge = 20.dp
+private val ContinueReadingButtonIconSizeSmall = 16.dp
+private val ContinueReadingButtonIconSizeLarge = 20.dp
 
-private val ContinueWatchingButtonGridPadding = 6.dp
-private val ContinueWatchingButtonListSpacing = 8.dp
+private val ContinueReadingButtonGridPadding = 6.dp
+private val ContinueReadingButtonListSpacing = 8.dp
 
 private const val GRID_SELECTED_COVER_ALPHA = 0.76f
 
@@ -75,12 +77,12 @@ private const val GRID_SELECTED_COVER_ALPHA = 0.76f
  */
 @Composable
 fun MangaCompactGridItem(
-    coverData: EntryCoverModel,
+    coverData: MangaCoverModel,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     isSelected: Boolean = false,
     title: String? = null,
-    onClickContinueWatching: (() -> Unit)? = null,
+    onClickContinueReading: (() -> Unit)? = null,
     coverAlpha: Float = 1f,
     coverBadgeStart: @Composable (RowScope.() -> Unit)? = null,
     coverBadgeEnd: @Composable (RowScope.() -> Unit)? = null,
@@ -99,19 +101,30 @@ fun MangaCompactGridItem(
     ) {
         MangaGridCover(
             cover = {
-                MangaCover.Book(
-                    modifier = Modifier
-                        // KMK -->
-                        // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
-                        // KMK <--
-                        .fillMaxWidth(),
-                    data = coverData,
-                    // KMK -->
-                    alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
-                    bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
-                    tint = onBgColor,
+                // KMK -->
+                if (DebugToggles.HIDE_COVER_IMAGE_ONLY_SHOW_COLOR.enabled) {
+                    MangaCoverHide.Book(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                        tint = onBgColor,
+                    )
+                } else {
                     // KMK <--
-                )
+                    MangaCover.Book(
+                        modifier = Modifier
+                            // KMK -->
+                            // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
+                            // KMK <--
+                            .fillMaxWidth(),
+                        data = coverData,
+                        // KMK -->
+                        alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
+                        bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                        tint = onBgColor,
+                        // KMK <--
+                    )
+                }
             },
             badgesStart = coverBadgeStart,
             badgesEnd = coverBadgeEnd,
@@ -119,15 +132,15 @@ fun MangaCompactGridItem(
                 if (title != null) {
                     CoverTextOverlay(
                         title = title,
-                        onClickContinueWatching = onClickContinueWatching,
+                        onClickContinueReading = onClickContinueReading,
                     )
-                } else if (onClickContinueWatching != null) {
-                    ContinueWatchingButton(
-                        size = ContinueWatchingButtonSizeLarge,
-                        iconSize = ContinueWatchingButtonIconSizeLarge,
-                        onClick = onClickContinueWatching,
+                } else if (onClickContinueReading != null) {
+                    ContinueReadingButton(
+                        size = ContinueReadingButtonSizeLarge,
+                        iconSize = ContinueReadingButtonIconSizeLarge,
+                        onClick = onClickContinueReading,
                         modifier = Modifier
-                            .padding(ContinueWatchingButtonGridPadding)
+                            .padding(ContinueReadingButtonGridPadding)
                             .align(Alignment.BottomEnd),
                     )
                 }
@@ -142,7 +155,7 @@ fun MangaCompactGridItem(
 @Composable
 private fun BoxScope.CoverTextOverlay(
     title: String,
-    onClickContinueWatching: (() -> Unit)? = null,
+    onClickContinueReading: (() -> Unit)? = null,
 ) {
     Box(
         modifier = Modifier
@@ -175,14 +188,14 @@ private fun BoxScope.CoverTextOverlay(
             ),
             minLines = 1,
         )
-        if (onClickContinueWatching != null) {
-            ContinueWatchingButton(
-                size = ContinueWatchingButtonSizeSmall,
-                iconSize = ContinueWatchingButtonIconSizeSmall,
-                onClick = onClickContinueWatching,
+        if (onClickContinueReading != null) {
+            ContinueReadingButton(
+                size = ContinueReadingButtonSizeSmall,
+                iconSize = ContinueReadingButtonIconSizeSmall,
+                onClick = onClickContinueReading,
                 modifier = Modifier.padding(
-                    end = ContinueWatchingButtonGridPadding,
-                    bottom = ContinueWatchingButtonGridPadding,
+                    end = ContinueReadingButtonGridPadding,
+                    bottom = ContinueReadingButtonGridPadding,
                 ),
             )
         }
@@ -194,7 +207,7 @@ private fun BoxScope.CoverTextOverlay(
  */
 @Composable
 fun MangaComfortableGridItem(
-    coverData: EntryCoverModel,
+    coverData: MangaCoverModel,
     title: String,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -203,7 +216,7 @@ fun MangaComfortableGridItem(
     coverAlpha: Float = 1f,
     coverBadgeStart: @Composable (RowScope.() -> Unit)? = null,
     coverBadgeEnd: @Composable (RowScope.() -> Unit)? = null,
-    onClickContinueWatching: (() -> Unit)? = null,
+    onClickContinueReading: (() -> Unit)? = null,
     // KMK -->
     libraryColored: Boolean = true,
     coverRatio: MutableFloatState = remember { mutableFloatStateOf(1f) },
@@ -224,48 +237,58 @@ fun MangaComfortableGridItem(
         Column {
             MangaGridCover(
                 cover = {
-                    if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
-                        MangaCover.Panorama(
+                    // KMK -->
+                    if (DebugToggles.HIDE_COVER_IMAGE_ONLY_SHOW_COLOR.enabled) {
+                        MangaCoverHide.Book(
                             modifier = Modifier
-                                // KMK -->
-                                // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
-                                // KMK <--
                                 .fillMaxWidth(),
-                            data = coverData,
-                            // KMK -->
-                            alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
                             bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
                             tint = onBgColor,
-                            onCoverLoaded = { _, result ->
-                                val image = result.result.image
-                                coverRatio.floatValue = image.height.toFloat() / image.width
-                            },
-                            // KMK <--
                         )
                     } else {
-                        // KMK <--
-                        MangaCover.Book(
-                            modifier = Modifier
+                        if (fitToPanoramaCover && usePanoramaCover && coverIsWide) {
+                            MangaCover.Panorama(
+                                modifier = Modifier
+                                    // KMK -->
+                                    // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
+                                    // KMK <--
+                                    .fillMaxWidth(),
+                                data = coverData,
                                 // KMK -->
-                                // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
+                                alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
+                                bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                                tint = onBgColor,
+                                onCoverLoaded = { _, result ->
+                                    val image = result.result.image
+                                    coverRatio.floatValue = image.height.toFloat() / image.width
+                                },
                                 // KMK <--
-                                .fillMaxWidth(),
-                            data = coverData,
-                            // KMK -->
-                            alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
-                            bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
-                            tint = onBgColor,
-                            onCoverLoaded = { _, result ->
-                                val image = result.result.image
-                                coverRatio.floatValue = image.height.toFloat() / image.width
-                            },
-                            scale = if (usePanoramaCover && coverIsWide) {
-                                ContentScale.Fit
-                            } else {
-                                ContentScale.Crop
-                            },
+                            )
+                        } else {
                             // KMK <--
-                        )
+                            MangaCover.Book(
+                                modifier = Modifier
+                                    // KMK -->
+                                    // .alpha(if (isSelected) GridSelectedCoverAlpha else coverAlpha)
+                                    // KMK <--
+                                    .fillMaxWidth(),
+                                data = coverData,
+                                // KMK -->
+                                alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
+                                bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                                tint = onBgColor,
+                                onCoverLoaded = { _, result ->
+                                    val image = result.result.image
+                                    coverRatio.floatValue = image.height.toFloat() / image.width
+                                },
+                                scale = if (usePanoramaCover && coverIsWide) {
+                                    ContentScale.Fit
+                                } else {
+                                    ContentScale.Crop
+                                },
+                                // KMK <--
+                            )
+                        }
                     }
                 },
                 // KMK -->
@@ -278,13 +301,13 @@ fun MangaComfortableGridItem(
                 badgesStart = coverBadgeStart,
                 badgesEnd = coverBadgeEnd,
                 content = {
-                    if (onClickContinueWatching != null) {
-                        ContinueWatchingButton(
-                            size = ContinueWatchingButtonSizeLarge,
-                            iconSize = ContinueWatchingButtonIconSizeLarge,
-                            onClick = onClickContinueWatching,
+                    if (onClickContinueReading != null) {
+                        ContinueReadingButton(
+                            size = ContinueReadingButtonSizeLarge,
+                            iconSize = ContinueReadingButtonIconSizeLarge,
+                            onClick = onClickContinueReading,
                             modifier = Modifier
-                                .padding(ContinueWatchingButtonGridPadding)
+                                .padding(ContinueReadingButtonGridPadding)
                                 .align(Alignment.BottomEnd),
                         )
                     }
@@ -407,12 +430,12 @@ private fun Modifier.selectedOutline(
  */
 @Composable
 fun MangaListItem(
-    coverData: EntryCoverModel,
+    coverData: MangaCoverModel,
     title: String,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     badge: @Composable (RowScope.() -> Unit),
-    onClickContinueWatching: (() -> Unit)? = null,
+    onClickContinueReading: (() -> Unit)? = null,
     entries: Int = 0,
     containerHeight: Int = 0,
     // KMK -->
@@ -444,20 +467,31 @@ fun MangaListItem(
             .padding(horizontal = 16.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MangaCover.Book(
-            modifier = Modifier
-                // KMK -->
-                // .alpha(coverAlpha)
-                // KMK <--
-                .fillMaxHeight(),
-            data = coverData,
-            // KMK -->
-            alpha = coverAlpha,
-            bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
-            tint = onBgColor,
-            size = MangaCover.Size.Big,
+        // KMK -->
+        if (DebugToggles.HIDE_COVER_IMAGE_ONLY_SHOW_COLOR.enabled) {
+            MangaCoverHide.Book(
+                modifier = Modifier
+                    .fillMaxHeight(),
+                bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                tint = onBgColor,
+            )
+        } else {
             // KMK <--
-        )
+            MangaCover.Book(
+                modifier = Modifier
+                    // KMK -->
+                    // .alpha(coverAlpha)
+                    // KMK <--
+                    .fillMaxHeight(),
+                data = coverData,
+                // KMK -->
+                alpha = coverAlpha,
+                bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { isSelected }),
+                tint = onBgColor,
+                size = MangaCover.Size.Big,
+                // KMK <--
+            )
+        }
         Text(
             text = title,
             modifier = Modifier
@@ -467,19 +501,19 @@ fun MangaListItem(
             style = MaterialTheme.typography.bodyMedium,
         )
         BadgeGroup(content = badge)
-        if (onClickContinueWatching != null) {
-            ContinueWatchingButton(
-                size = ContinueWatchingButtonSizeSmall,
-                iconSize = ContinueWatchingButtonIconSizeSmall,
-                onClick = onClickContinueWatching,
-                modifier = Modifier.padding(start = ContinueWatchingButtonListSpacing),
+        if (onClickContinueReading != null) {
+            ContinueReadingButton(
+                size = ContinueReadingButtonSizeSmall,
+                iconSize = ContinueReadingButtonIconSizeSmall,
+                onClick = onClickContinueReading,
+                modifier = Modifier.padding(start = ContinueReadingButtonListSpacing),
             )
         }
     }
 }
 
 @Composable
-private fun ContinueWatchingButton(
+private fun ContinueReadingButton(
     size: Dp,
     iconSize: Dp,
     onClick: () -> Unit,

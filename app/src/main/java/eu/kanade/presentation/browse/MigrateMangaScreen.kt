@@ -134,7 +134,7 @@ fun MigrateMangaScreen(
             onClickItem = onClickItem,
             onClickCover = onClickCover,
             // KMK -->
-            onAnimeSelected = onMangaSelected,
+            onMangaSelected = onMangaSelected,
             listState = listState,
             // KMK <--
         )
@@ -148,7 +148,7 @@ private fun MigrateMangaContent(
     onClickItem: (MigrateMangaItem) -> Unit,
     onClickCover: (Manga) -> Unit,
     // KMK -->
-    onAnimeSelected: (MigrateMangaItem, Boolean, Boolean, Boolean) -> Unit,
+    onMangaSelected: (MigrateMangaItem, Boolean, Boolean, Boolean) -> Unit,
     listState: LazyListState,
 ) {
     FastScrollLazyColumn(
@@ -162,7 +162,7 @@ private fun MigrateMangaContent(
                 onClickItem = {
                     // KMK -->
                     when {
-                        state.selectionMode -> onAnimeSelected(it, !it.selected, true, false)
+                        state.selectionMode -> onMangaSelected(it, !it.selected, true, false)
                         // KMK <--
                         else -> onClickItem(it)
                     }
@@ -171,7 +171,7 @@ private fun MigrateMangaContent(
                     onClickCover(it.manga)
                     // KMK -->
                 }.takeIf { !state.selectionMode },
-                onLongClick = { onAnimeSelected(it, !it.selected, true, true) },
+                onLongClick = { onMangaSelected(it, !it.selected, true, true) },
                 selected = it.selected,
                 modifier = Modifier.animateItemFastScroll(),
                 // KMK <--
@@ -338,3 +338,4 @@ private fun MigrateMangaBottomBar(
         }
     }
 }
+// KMK <--

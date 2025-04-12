@@ -255,7 +255,7 @@ class UpdatesScreenModel(
      * Downloads the given list of chapters with the manager.
      * @param updatesItem the list of chapters to download.
      */
-    private fun downloadChapters(updatesItem: List<UpdatesItem>, alt: Boolean = false) {
+    private fun downloadChapters(updatesItem: List<UpdatesItem>, altDownloader: Boolean = false) {
         screenModelScope.launchNonCancellable {
             val groupedUpdates = updatesItem.groupBy { it.update.mangaId }.values
             for (updates in groupedUpdates) {
@@ -264,7 +264,7 @@ class UpdatesScreenModel(
                 // Don't download if source isn't available
                 sourceManager.get(manga.source) ?: continue
                 val chapters = updates.mapNotNull { getChapter.await(it.update.chapterId) }
-                downloadManager.downloadChapters(manga, chapters, true, alt)
+                downloadManager.downloadChapters(manga, chapters, true, altDownloader)
             }
         }
     }

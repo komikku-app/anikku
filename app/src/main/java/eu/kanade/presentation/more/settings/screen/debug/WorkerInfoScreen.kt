@@ -74,10 +74,7 @@ class WorkerInfoScreen : Screen() {
                                     title = stringResource(MR.strings.action_copy_to_clipboard),
                                     icon = Icons.Default.ContentCopy,
                                     onClick = {
-                                        context.copyToClipboard(
-                                            TITLE,
-                                            enqueued + finished + running,
-                                        )
+                                        context.copyToClipboard(TITLE, enqueued + finished + running)
                                     },
                                 ),
                             ),

@@ -25,6 +25,7 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.RadioItem
 import tachiyomi.presentation.core.components.SortItem
@@ -43,7 +44,7 @@ fun ChapterSettingsDialog(
     // <-- AM (FILLERMARK)
     onSortModeChanged: (Long) -> Unit,
     onDisplayModeChanged: (Long) -> Unit,
-    onSetAsDefault: (applyToExistingAnime: Boolean) -> Unit,
+    onSetAsDefault: (applyToExistingManga: Boolean) -> Unit,
     onResetToDefault: () -> Unit,
 ) {
     var showSetAsDefaultDialog by rememberSaveable { mutableStateOf(false) }
@@ -69,6 +70,13 @@ fun ChapterSettingsDialog(
                     closeMenu()
                 },
             )
+            DropdownMenuItem(
+                text = { Text(stringResource(MR.strings.action_reset)) },
+                onClick = {
+                    onResetToDefault()
+                    closeMenu()
+                },
+            )
         },
     ) { page ->
         Column(
@@ -82,8 +90,8 @@ fun ChapterSettingsDialog(
                         downloadFilter = manga?.downloadedFilter ?: TriState.DISABLED,
                         onDownloadFilterChanged = onDownloadFilterChanged
                             .takeUnless { manga?.forceDownloaded() == true },
-                        unseenFilter = manga?.unreadFilter ?: TriState.DISABLED,
-                        onUnseenFilterChanged = onUnreadFilterChanged,
+                        unreadFilter = manga?.unreadFilter ?: TriState.DISABLED,
+                        onUnreadFilterChanged = onUnreadFilterChanged,
                         bookmarkedFilter = manga?.bookmarkedFilter ?: TriState.DISABLED,
                         onBookmarkedFilterChanged = onBookmarkedFilterChanged,
                         // AM (FILLERMARK) -->
@@ -114,8 +122,8 @@ fun ChapterSettingsDialog(
 private fun ColumnScope.FilterPage(
     downloadFilter: TriState,
     onDownloadFilterChanged: ((TriState) -> Unit)?,
-    unseenFilter: TriState,
-    onUnseenFilterChanged: (TriState) -> Unit,
+    unreadFilter: TriState,
+    onUnreadFilterChanged: (TriState) -> Unit,
     bookmarkedFilter: TriState,
     onBookmarkedFilterChanged: (TriState) -> Unit,
     // AM (FILLERMARK) -->
@@ -130,8 +138,8 @@ private fun ColumnScope.FilterPage(
     )
     TriStateItem(
         label = stringResource(MR.strings.action_filter_unseen),
-        state = unseenFilter,
-        onClick = onUnseenFilterChanged,
+        state = unreadFilter,
+        onClick = onUnreadFilterChanged,
     )
     TriStateItem(
         label = stringResource(MR.strings.action_filter_bookmarked),
@@ -140,7 +148,7 @@ private fun ColumnScope.FilterPage(
     )
     // AM (FILLERMARK) -->
     TriStateItem(
-        label = stringResource(MR.strings.action_filter_fillermarked),
+        label = stringResource(AMR.strings.action_filter_fillermarked),
         state = fillermarkedFilter,
         onClick = onFillermarkedFilterChanged,
     )

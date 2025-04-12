@@ -62,7 +62,7 @@ fun UpdateScreen(
     // AM (FILLERMARK) -->
     onMultiFillermarkClicked: (List<UpdatesItem>, fillermark: Boolean) -> Unit,
     // <-- AM (FILLERMARK)
-    onMultiMarkAsReadClicked: (List<UpdatesItem>, seen: Boolean) -> Unit,
+    onMultiMarkAsReadClicked: (List<UpdatesItem>, read: Boolean) -> Unit,
     onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
     onOpenChapter: (UpdatesItem, altPlayer: Boolean) -> Unit,
@@ -94,12 +94,12 @@ fun UpdateScreen(
         bottomBar = {
             UpdatesBottomBar(
                 selected = state.selected,
-                onDownloadEpisode = onDownloadChapter,
+                onDownloadChapter = onDownloadChapter,
                 onMultiBookmarkClicked = onMultiBookmarkClicked,
                 // AM (FILLERMARK) -->
                 onMultiFillermarkClicked = onMultiFillermarkClicked,
                 // <-- AM (FILLERMARK)
-                onMultiMarkAsSeenClicked = onMultiMarkAsReadClicked,
+                onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
                 onMultiDeleteClicked = onMultiDeleteClicked,
                 onOpenEpisode = onOpenChapter,
             )
@@ -154,7 +154,7 @@ fun UpdateScreen(
                             onUpdateSelected = onUpdateSelected,
                             onClickCover = onClickCover,
                             onClickUpdate = onOpenChapter,
-                            onDownloadEpisode = onDownloadChapter,
+                            onDownloadChapter = onDownloadChapter,
                         )
                     }
                 }
@@ -231,12 +231,12 @@ private fun UpdatesAppBar(
 @Composable
 private fun UpdatesBottomBar(
     selected: List<UpdatesItem>,
-    onDownloadEpisode: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
+    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
     // AM (FILLERMARK) -->
     onMultiFillermarkClicked: (List<UpdatesItem>, fillermark: Boolean) -> Unit,
     // <-- AM (FILLERMARK)
-    onMultiMarkAsSeenClicked: (List<UpdatesItem>, seen: Boolean) -> Unit,
+    onMultiMarkAsReadClicked: (List<UpdatesItem>, read: Boolean) -> Unit,
     onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
     onOpenEpisode: (UpdatesItem, altPlayer: Boolean) -> Unit,
 ) {
@@ -258,14 +258,14 @@ private fun UpdatesBottomBar(
             onMultiFillermarkClicked.invoke(selected, false)
         }.takeIf { selected.fastAll { it.update.fillermark } },
         // <-- AM (FILLERMARK)
-        onMarkAsSeenClicked = {
-            onMultiMarkAsSeenClicked(selected, true)
+        onMarkAsReadClicked = {
+            onMultiMarkAsReadClicked(selected, true)
         }.takeIf { selected.fastAny { !it.update.read } },
-        onMarkAsUnseenClicked = {
-            onMultiMarkAsSeenClicked(selected, false)
+        onMarkAsUnreadClicked = {
+            onMultiMarkAsReadClicked(selected, false)
         }.takeIf { selected.fastAny { it.update.read || it.update.lastPageRead > 0L } },
         onDownloadClicked = {
-            onDownloadEpisode(selected, ChapterDownloadAction.START)
+            onDownloadChapter(selected, ChapterDownloadAction.START)
         }.takeIf {
             selected.fastAny { it.downloadStateProvider() != Download.State.DOWNLOADED }
         },
@@ -285,7 +285,7 @@ sealed interface UpdatesUiModel {
     data class Header(val date: LocalDate) : UpdatesUiModel
     open class Item(open val item: UpdatesItem, open val isExpandable: Boolean = false) : UpdatesUiModel
     // KMK -->
-    /** The first [Item] in a group of episodes from same manga */
+    /** The first [Item] in a group of chapters from same manga */
     data class Leader(override val item: UpdatesItem, override val isExpandable: Boolean) : Item(item)
     // KMK <--
 }

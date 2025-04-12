@@ -402,7 +402,7 @@ class LibraryUpdateNotifier(
 
     companion object {
         const val HELP_WARNING_URL =
-            "https://aniyomi.org/docs/faq/library#why-am-i-warned-about-large-bulk-updates-and-downloads"
+            "https://anikku-app.github.io/docs/faq/library#why-am-i-warned-about-large-bulk-updates-and-downloads"
     }
 }
 

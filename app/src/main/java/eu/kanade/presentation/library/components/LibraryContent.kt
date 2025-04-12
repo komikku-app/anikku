@@ -44,7 +44,7 @@ fun LibraryContent(
     getNumberOfMangaForCategory: (Category) -> Int?,
     getDisplayMode: (Int) -> PreferenceMutableState<LibraryDisplayMode>,
     getColumnsForOrientation: (Boolean) -> PreferenceMutableState<Int>,
-    getAnimeLibraryForPage: (Int) -> List<LibraryItem>,
+    getLibraryForPage: (Int) -> List<LibraryItem>,
 ) {
     Column(
         modifier = Modifier.padding(
@@ -53,8 +53,10 @@ fun LibraryContent(
             end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
         ),
     ) {
-        val coercedCurrentPage = remember { currentPage().coerceAtMost(categories.lastIndex) }
+        // SY -->
+        val coercedCurrentPage = remember(categories) { currentPage().coerceIn(0, categories.lastIndex) }
         val pagerState = rememberPagerState(coercedCurrentPage) { categories.size }
+        // SY <--
 
         val scope = rememberCoroutineScope()
         var isRefreshing by remember(pagerState.currentPage) { mutableStateOf(false) }
@@ -68,23 +70,23 @@ fun LibraryContent(
             LibraryTabs(
                 categories = categories,
                 pagerState = pagerState,
-                getNumberOfItemsForCategory = getNumberOfMangaForCategory,
+                getNumberOfMangaForCategory = getNumberOfMangaForCategory,
             ) { scope.launch { pagerState.animateScrollToPage(it) } }
         }
 
         val notSelectionMode = selection.isEmpty()
-        val onClickAnime = { anime: LibraryManga ->
+        val onClickManga = { manga: LibraryManga ->
             if (notSelectionMode) {
-                onMangaClicked(anime.manga.id)
+                onMangaClicked(manga.manga.id)
             } else {
-                onToggleSelection(anime)
+                onToggleSelection(manga)
             }
         }
 
         PullRefresh(
             refreshing = isRefreshing,
             onRefresh = {
-                val started = onRefresh(categories[currentPage()])
+                val started = onRefresh(categories.getOrNull(currentPage()) ?: return@PullRefresh)
                 if (!started) return@PullRefresh
                 scope.launch {
                     // Fake refresh status but hide it after a second as it's a long running task
@@ -99,15 +101,15 @@ fun LibraryContent(
                 state = pagerState,
                 contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding()),
                 hasActiveFilters = hasActiveFilters,
-                selectedAnime = selection,
+                selectedManga = selection,
                 searchQuery = searchQuery,
                 onGlobalSearchClicked = onGlobalSearchClicked,
                 getDisplayMode = getDisplayMode,
                 getColumnsForOrientation = getColumnsForOrientation,
-                getLibraryForPage = getAnimeLibraryForPage,
-                onClickAnime = onClickAnime,
-                onLongClickAnime = onToggleRangeSelection,
-                onClickContinueWatching = onContinueReadingClicked,
+                getLibraryForPage = getLibraryForPage,
+                onClickManga = onClickManga,
+                onLongClickManga = onToggleRangeSelection,
+                onClickContinueReading = onContinueReadingClicked,
             )
         }
 

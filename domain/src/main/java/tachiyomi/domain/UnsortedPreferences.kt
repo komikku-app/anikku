@@ -18,6 +18,8 @@ class UnsortedPreferences(
 
     // SY -->
 
+    fun logLevel() = preferenceStore.getInt("eh_log_level", 0)
+
     fun migrateFlags() = preferenceStore.getInt("migrate_flags", Int.MAX_VALUE)
 
     fun defaultMangaOrder() = preferenceStore.getString("default_manga_order", "")

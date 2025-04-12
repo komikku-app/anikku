@@ -26,6 +26,12 @@
     <string name="pref_skip_seen_episodes">Skip episodes marked seen</string>
     <string name="pref_skip_filtered_episodes">Skip filtered episodes</string>
     <string name="pref_skip_dupe_episodes">Skip duplicate episodes</string>
+    <string name="onboarding_permission_crashlytics">Send crash logs</string>
+    <string name="onboarding_permission_crashlytics_description">Send anonymized crash logs to the developers.</string>
+    <string name="pref_security">Security</string>
+    <string name="pref_firebase">Analytics and Crash logs</string>
+
+    <string name="firebase_summary">Sending crash logs and analytics will allow us to identify and fix issues, improve performance, and make future updates more relevant to your needs</string>
 
     <!-- Entry Info Edit -->
     <string name="reset_tags">Reset Tags</string>

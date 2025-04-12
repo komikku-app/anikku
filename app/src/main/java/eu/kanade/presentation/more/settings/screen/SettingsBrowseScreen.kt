@@ -85,6 +85,11 @@ object SettingsBrowseScreen : SearchableSettings {
                         title = stringResource(SYMR.strings.pref_source_navigation),
                         subtitle = stringResource(SYMR.strings.pref_source_navigation_summery),
                     ),
+                    Preference.PreferenceItem.SwitchPreference(
+                        pref = unsortedPreferences.allowLocalSourceHiddenFolders(),
+                        title = stringResource(SYMR.strings.pref_local_source_hidden_folders),
+                        subtitle = stringResource(SYMR.strings.pref_local_source_hidden_folders_summery),
+                    ),
                 ),
             ),
             Preference.PreferenceGroup(

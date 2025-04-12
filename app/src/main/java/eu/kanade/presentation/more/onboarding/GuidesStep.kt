@@ -56,7 +56,7 @@ internal class GuidesStep(
     }
 }
 
-const val GETTING_STARTED_URL = "https://aniyomi.org/docs/guides/getting-started"
+const val GETTING_STARTED_URL = "https://anikku-app.github.io/docs/guides/getting-started"
 
 @PreviewLightDark
 @Composable

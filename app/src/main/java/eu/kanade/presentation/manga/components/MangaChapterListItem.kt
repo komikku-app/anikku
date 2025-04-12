@@ -46,6 +46,7 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import me.saket.swipe.SwipeableActionsBox
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
 import tachiyomi.presentation.core.i18n.stringResource
@@ -55,9 +56,12 @@ import tachiyomi.presentation.core.util.selectedBackground
 fun MangaChapterListItem(
     title: String,
     date: String?,
-    watchProgress: String?,
+    readProgress: String?,
     scanlator: String?,
-    seen: Boolean,
+    // SY -->
+    sourceName: String?,
+    // SY <--
+    read: Boolean,
     bookmark: Boolean,
     // AM (FILLERMARK) -->
     fillermark: Boolean,
@@ -66,38 +70,38 @@ fun MangaChapterListItem(
     downloadIndicatorEnabled: Boolean,
     downloadStateProvider: () -> Download.State,
     downloadProgressProvider: () -> Int,
-    episodeSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
-    episodeSwipeEndAction: LibraryPreferences.ChapterSwipeAction,
+    chapterSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
+    chapterSwipeEndAction: LibraryPreferences.ChapterSwipeAction,
     onLongClick: () -> Unit,
     onClick: () -> Unit,
     onDownloadClick: ((ChapterDownloadAction) -> Unit)?,
-    onEpisodeSwipe: (LibraryPreferences.ChapterSwipeAction) -> Unit,
+    onChapterSwipe: (LibraryPreferences.ChapterSwipeAction) -> Unit,
     // AM (FILE_SIZE) -->
     fileSize: Long?,
     // <-- AM (FILE_SIZE)
     modifier: Modifier = Modifier,
 ) {
     val start = getSwipeAction(
-        action = episodeSwipeStartAction,
-        seen = seen,
+        action = chapterSwipeStartAction,
+        read = read,
         bookmark = bookmark,
         // AM (FILLERMARK) -->
         fillermark = fillermark,
         // <-- AM (FILLERMARK)
         downloadState = downloadStateProvider(),
         background = MaterialTheme.colorScheme.primaryContainer,
-        onSwipe = { onEpisodeSwipe(episodeSwipeStartAction) },
+        onSwipe = { onChapterSwipe(chapterSwipeStartAction) },
     )
     val end = getSwipeAction(
-        action = episodeSwipeEndAction,
-        seen = seen,
+        action = chapterSwipeEndAction,
+        read = read,
         bookmark = bookmark,
         // AM (FILLERMARK) -->
         fillermark = fillermark,
         // <-- AM (FILLERMARK)
         downloadState = downloadStateProvider(),
         background = MaterialTheme.colorScheme.primaryContainer,
-        onSwipe = { onEpisodeSwipe(episodeSwipeEndAction) },
+        onSwipe = { onChapterSwipe(chapterSwipeEndAction) },
     )
 
     SwipeableActionsBox(
@@ -125,7 +129,7 @@ fun MangaChapterListItem(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     var textHeight by remember { mutableIntStateOf(0) }
-                    if (!seen) {
+                    if (!read) {
                         Icon(
                             imageVector = Icons.Filled.Circle,
                             contentDescription = stringResource(MR.strings.unseen),
@@ -148,7 +152,7 @@ fun MangaChapterListItem(
                     if (fillermark) {
                         Icon(
                             imageVector = ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp),
-                            contentDescription = stringResource(MR.strings.action_filter_fillermarked),
+                            contentDescription = stringResource(AMR.strings.action_filter_fillermarked),
                             modifier = Modifier
                                 .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
                             tint = MaterialTheme.colorScheme.tertiary,
@@ -162,7 +166,7 @@ fun MangaChapterListItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         onTextLayout = { textHeight = it.size.height },
-                        color = LocalContentColor.current.copy(alpha = if (seen) DISABLED_ALPHA else 1f),
+                        color = LocalContentColor.current.copy(alpha = if (read) DISABLED_ALPHA else 1f),
                     )
                 }
 
@@ -170,7 +174,7 @@ fun MangaChapterListItem(
                     val subtitleStyle = MaterialTheme.typography.bodySmall
                         .merge(
                             color = LocalContentColor.current
-                                .copy(alpha = if (seen) DISABLED_ALPHA else SECONDARY_ALPHA),
+                                .copy(alpha = if (read) DISABLED_ALPHA else SECONDARY_ALPHA),
                         )
                     ProvideTextStyle(value = subtitleStyle) {
                         if (date != null) {
@@ -179,17 +183,32 @@ fun MangaChapterListItem(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            if (watchProgress != null || scanlator != null) DotSeparatorText()
+                            if (readProgress != null ||
+                                scanlator != null/* SY --> */ ||
+                                sourceName != null/* SY <-- */
+                            ) {
+                                DotSeparatorText()
+                            }
                         }
-                        if (watchProgress != null) {
+                        if (readProgress != null) {
                             Text(
-                                text = watchProgress,
+                                text = readProgress,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
                             )
+                            if (scanlator != null/* SY --> */ || sourceName != null/* SY <-- */) DotSeparatorText()
+                        }
+                        // SY -->
+                        if (sourceName != null) {
+                            Text(
+                                text = sourceName,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                             if (scanlator != null) DotSeparatorText()
                         }
+                        // SY <--
                         if (scanlator != null) {
                             Text(
                                 text = scanlator,
@@ -215,12 +234,10 @@ fun MangaChapterListItem(
     }
 }
 
-// AM (FILLERMARK) -->
 @Composable
-// <-- AM (FILLERMARK)
 private fun getSwipeAction(
     action: LibraryPreferences.ChapterSwipeAction,
-    seen: Boolean,
+    read: Boolean,
     bookmark: Boolean,
     // AM (FILLERMARK) -->
     fillermark: Boolean,
@@ -231,9 +248,9 @@ private fun getSwipeAction(
 ): me.saket.swipe.SwipeAction? {
     return when (action) {
         LibraryPreferences.ChapterSwipeAction.ToggleRead -> swipeAction(
-            icon = if (!seen) Icons.Outlined.Done else Icons.Outlined.RemoveDone,
+            icon = if (!read) Icons.Outlined.Done else Icons.Outlined.RemoveDone,
             background = background,
-            isUndo = seen,
+            isUndo = read,
             onSwipe = onSwipe,
         )
         LibraryPreferences.ChapterSwipeAction.ToggleBookmark -> swipeAction(

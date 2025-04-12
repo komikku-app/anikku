@@ -72,6 +72,8 @@ import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -79,12 +81,11 @@ import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-@Suppress("TooManyFunctions")
 object SettingsDataScreen : SearchableSettings {
     private fun readResolve(): Any = SettingsDataScreen
 
     val restorePreferenceKeyString = MR.strings.label_backup
-    const val HELP_URL = "https://aniyomi.org/docs/faq/storage"
+    const val HELP_URL = "https://anikku-app.github.io/docs/faq/storage"
 
     @ReadOnlyComposable
     @Composable
@@ -158,7 +159,7 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val storageDir by storageDirPref.collectAsState()
 
-        if (!storageDirPref.isSet()) {
+        if (storageDir == storageDirPref.defaultValue()) {
             return stringResource(MR.strings.no_location_set)
         }
 
@@ -192,6 +193,7 @@ object SettingsDataScreen : SearchableSettings {
     private fun getBackupAndRestoreGroup(backupPreferences: BackupPreferences): Preference.PreferenceGroup {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
+
         val lastAutoBackup by backupPreferences.lastAutoBackupTimestamp().collectAsState()
 
         val chooseBackup = rememberLauncherForActivityResult(
@@ -263,6 +265,8 @@ object SettingsDataScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_backup_interval),
                     entries = persistentMapOf(
                         0 to stringResource(MR.strings.off),
+                        1 to stringResource(AMR.strings.update_1hour),
+                        3 to stringResource(AMR.strings.update_3hour),
                         6 to stringResource(MR.strings.update_6hour),
                         12 to stringResource(MR.strings.update_12hour),
                         24 to stringResource(MR.strings.update_24hour),
@@ -278,6 +282,12 @@ object SettingsDataScreen : SearchableSettings {
                     stringResource(MR.strings.backup_info) + "\n\n" +
                         stringResource(MR.strings.last_auto_backup_info, relativeTimeSpanString(lastAutoBackup)),
                 ),
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = backupPreferences.showRestoringProgressBanner(),
+                    title = stringResource(KMR.strings.pref_show_restoring_progress_banner),
+                ),
+                // KMK <--
             ),
         )
     }
@@ -302,7 +312,6 @@ object SettingsDataScreen : SearchableSettings {
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_storage_usage),
             preferenceItems = persistentListOf(
-
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(MR.strings.pref_storage_usage),
                 ) {
@@ -377,16 +386,37 @@ object SettingsDataScreen : SearchableSettings {
         syncServiceType: SyncManager.SyncService,
         syncPreferences: SyncPreferences,
     ): List<Preference> {
-        return when (syncServiceType) {
+        val navigator = LocalNavigator.currentOrThrow
+        val preferences = when (syncServiceType) {
             SyncManager.SyncService.NONE -> emptyList()
             SyncManager.SyncService.SYNCYOMI -> getSelfHostPreferences(syncPreferences)
             SyncManager.SyncService.GOOGLE_DRIVE -> getGoogleDrivePreferences()
+        }
+
+        return if (syncServiceType != SyncManager.SyncService.NONE) {
+            preferences + Preference.PreferenceItem.TextPreference(
+                title = stringResource(SYMR.strings.pref_choose_what_to_sync),
+                onClick = {
+                    navigator.push(SyncSettingsSelector())
+                },
+            )
+        } else {
+            preferences
         }
     }
 
     @Composable
     private fun getAdditionalPreferences(syncPreferences: SyncPreferences): List<Preference> {
-        return listOf(getSyncNowPref(), getAutomaticSyncGroup(syncPreferences))
+        return listOf(
+            getSyncNowPref(),
+            getAutomaticSyncGroup(syncPreferences),
+            // KMK -->
+            Preference.PreferenceItem.SwitchPreference(
+                pref = syncPreferences.showSyncingProgressBanner(),
+                title = stringResource(KMR.strings.pref_show_syncing_progress_banner),
+            ),
+            // KMK <--
+        )
     }
 
     @Composable
@@ -498,7 +528,7 @@ object SettingsDataScreen : SearchableSettings {
 
     @Composable
     private fun getSyncNowPref(): Preference.PreferenceGroup {
-        val navigator = LocalNavigator.currentOrThrow
+        val context = LocalContext.current
         return Preference.PreferenceGroup(
             title = stringResource(SYMR.strings.pref_sync_now_group_title),
             preferenceItems = persistentListOf(
@@ -507,7 +537,11 @@ object SettingsDataScreen : SearchableSettings {
                     title = stringResource(SYMR.strings.pref_sync_now),
                     subtitle = stringResource(SYMR.strings.pref_sync_now_subtitle),
                     onClick = {
-                        navigator.push(SyncSettingsSelector())
+                        if (!SyncDataJob.isRunning(context)) {
+                            SyncDataJob.startNow(context, manual = true)
+                        } else {
+                            context.toast(SYMR.strings.sync_in_progress)
+                        }
                     },
                 ),
             ),
@@ -525,7 +559,6 @@ object SettingsDataScreen : SearchableSettings {
     }
 
     @Composable
-    @Suppress("MagicNumber")
     private fun getAutomaticSyncGroup(syncPreferences: SyncPreferences): Preference.PreferenceGroup {
         val context = LocalContext.current
         val syncIntervalPref = syncPreferences.syncInterval()

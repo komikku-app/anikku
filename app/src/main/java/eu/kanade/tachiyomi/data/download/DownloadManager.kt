@@ -140,27 +140,27 @@ class DownloadManager(
      * @param manga the manga of the chapters.
      * @param chapters the list of chapters to enqueue.
      * @param autoStart whether to start the downloader after enqueuing the chapters.
-     * @param alt whether to use the alternative downloader
+     * @param altDownloader whether to use the alternative downloader
      */
     fun downloadChapters(
         manga: Manga,
         chapters: List<Chapter>,
         autoStart: Boolean = true,
-        alt: Boolean = false,
+        altDownloader: Boolean = false,
         video: Video? = null,
     ) {
         // AM (FILLERMARK) -->
         val filteredChapters = getChaptersToDownload(chapters)
-        downloader.queueEpisodes(manga, filteredChapters, autoStart, alt, video)
+        downloader.queueEpisodes(manga, filteredChapters, autoStart, altDownloader, video)
         // <-- AM (FILLERMARK)
     }
     fun downloadEpisodes(
         anime: Anime,
         episodes: List<Episode>,
         autoStart: Boolean = true,
-        alt: Boolean = false,
+        altDownloader: Boolean = false,
         video: Video? = null,
-    ) = downloadChapters(anime, episodes, autoStart, alt, video)
+    ) = downloadChapters(anime, episodes, autoStart, altDownloader, video)
 
     /**
      * Tells the downloader to enqueue the given list of downloads at the start of the queue.

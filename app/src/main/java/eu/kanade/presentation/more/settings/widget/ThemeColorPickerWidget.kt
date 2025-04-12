@@ -1,5 +1,6 @@
 package eu.kanade.presentation.more.settings.widget
 
+import android.graphics.Bitmap
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -38,7 +39,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.createBitmap
 import com.github.skydoves.colorpicker.compose.AlphaTile
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.ColorEnvelope
@@ -69,7 +69,7 @@ internal fun ThemeColorPickerWidget(
 
     // Remember a wheel bitmap
     val wheelBitmap = remember(wheelSize, wheelStrokeWidth) {
-        val bitmap = createBitmap(wheelSize, wheelSize)
+        val bitmap = Bitmap.createBitmap(wheelSize, wheelSize, Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bitmap)
         val paint = android.graphics.Paint().apply {
             color = android.graphics.Color.WHITE

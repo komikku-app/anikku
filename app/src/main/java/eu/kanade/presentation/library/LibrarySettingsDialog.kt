@@ -27,6 +27,7 @@ import eu.kanade.tachiyomi.util.system.isDevFlavor
 import eu.kanade.tachiyomi.util.system.isPreviewBuildType
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.map
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.model.LibraryDisplayMode
@@ -35,6 +36,7 @@ import tachiyomi.domain.library.model.LibrarySort
 import tachiyomi.domain.library.model.sort
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.BaseSortItem
@@ -103,7 +105,7 @@ private fun ColumnScope.FilterPage(
 ) {
     val filterDownloaded by screenModel.libraryPreferences.filterDownloaded().collectAsState()
     val downloadedOnly by screenModel.preferences.downloadedOnly().collectAsState()
-    val autoUpdateAnimeRestrictions by screenModel.libraryPreferences.autoUpdateMangaRestrictions().collectAsState()
+    val autoUpdateMangaRestrictions by screenModel.libraryPreferences.autoUpdateMangaRestrictions().collectAsState()
 
     TriStateItem(
         label = stringResource(MR.strings.label_downloaded),
@@ -115,10 +117,10 @@ private fun ColumnScope.FilterPage(
         enabled = !downloadedOnly,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterDownloaded) },
     )
-    val filterUnseen by screenModel.libraryPreferences.filterUnread().collectAsState()
+    val filterUnread by screenModel.libraryPreferences.filterUnread().collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.action_filter_unseen),
-        state = filterUnseen,
+        state = filterUnread,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterUnread) },
     )
     val filterStarted by screenModel.libraryPreferences.filterStarted().collectAsState()
@@ -142,7 +144,7 @@ private fun ColumnScope.FilterPage(
     // TODO: re-enable when custom intervals are ready for stable
     if (
         (isDevFlavor || isPreviewBuildType) &&
-        LibraryPreferences.ANIME_OUTSIDE_RELEASE_PERIOD in autoUpdateAnimeRestrictions
+        LibraryPreferences.ANIME_OUTSIDE_RELEASE_PERIOD in autoUpdateMangaRestrictions
     ) {
         val filterIntervalCustom by screenModel.libraryPreferences.filterIntervalCustom().collectAsState()
         TriStateItem(
@@ -151,6 +153,14 @@ private fun ColumnScope.FilterPage(
             onClick = { screenModel.toggleFilter(LibraryPreferences::filterIntervalCustom) },
         )
     }
+    // SY -->
+    val filterLewd by screenModel.libraryPreferences.filterLewd().collectAsState()
+    TriStateItem(
+        label = stringResource(SYMR.strings.lewd),
+        state = filterLewd,
+        onClick = { screenModel.toggleFilter(LibraryPreferences::filterLewd) },
+    )
+    // SY <--
 
     val trackers by screenModel.trackersFlow.collectAsState()
     when (trackers.size) {
@@ -199,14 +209,25 @@ private fun ColumnScope.SortPage(
     } else {
         !globalSortMode.isAscending
     }
+    val hasSortTags by remember {
+        screenModel.libraryPreferences.sortTagsForLibrary().changes()
+            .map { it.isNotEmpty() }
+    }.collectAsState(initial = screenModel.libraryPreferences.sortTagsForLibrary().get().isNotEmpty())
     // SY <--
 
-    val options = remember(trackers.isEmpty()) {
+    val options = remember(trackers.isEmpty()/* SY --> */, hasSortTags/* SY <-- */) {
         val trackerMeanPair = if (trackers.isNotEmpty()) {
             MR.strings.action_sort_tracker_score to LibrarySort.Type.TrackerMean
         } else {
             null
         }
+        // SY -->
+        val tagSortPair = if (hasSortTags) {
+            SYMR.strings.tag_sorting to LibrarySort.Type.TagList
+        } else {
+            null
+        }
+        // SY <--
         listOfNotNull(
             MR.strings.action_sort_alpha to LibrarySort.Type.Alphabetical,
             MR.strings.action_sort_total_episodes to LibrarySort.Type.TotalChapters,
@@ -218,6 +239,9 @@ private fun ColumnScope.SortPage(
             MR.strings.action_sort_date_added to LibrarySort.Type.DateAdded,
             trackerMeanPair,
             MR.strings.action_sort_airing_time to LibrarySort.Type.AiringTime,
+            // SY -->
+            tagSortPair,
+            // SY <--
             MR.strings.action_sort_random to LibrarySort.Type.Random,
         )
     }
@@ -346,7 +370,7 @@ private fun ColumnScope.DisplayPage(
     )
     // KMK <--
     CheckboxItem(
-        label = stringResource(MR.strings.action_display_show_continue_watching_button),
+        label = stringResource(AMR.strings.action_display_show_continue_watching_button),
         pref = screenModel.libraryPreferences.showContinueReadingButton(),
     )
 

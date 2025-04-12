@@ -1265,7 +1265,7 @@ class MangaScreenModel(
      */
     private fun downloadChapters(
         chapters: List<Chapter>,
-        alt: Boolean = false,
+        altDownloader: Boolean = false,
         video: Video? = null,
     ) {
         // SY -->
@@ -1278,7 +1278,7 @@ class MangaScreenModel(
         } else {
             // SY <--
             val manga = state.manga
-            downloadManager.downloadChapters(manga, chapters, true, alt, video)
+            downloadManager.downloadChapters(manga, chapters, true, altDownloader, video)
         }
         toggleAllSelection(false)
     }

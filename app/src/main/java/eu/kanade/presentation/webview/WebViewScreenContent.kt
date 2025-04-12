@@ -180,7 +180,7 @@ fun WebViewScreenContent(
                                     .clip(MaterialTheme.shapes.small)
                                     .clickable {
                                         uriHandler.openUri(
-                                            "https://aniyomi.org/docs/guides/troubleshooting/#cloudflare",
+                                            "https://anikku-app.github.io/docs/guides/troubleshooting/#cloudflare",
                                         )
                                     },
                             )

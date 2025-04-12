@@ -30,13 +30,8 @@ fun getCategoriesLabel(
 
     val includedItemsText = when {
         // Some selected, but not all
-        includedCategories.isNotEmpty() &&
-            includedCategories.size != allCategories.size ->
-            includedCategories.joinToString {
-                it.visualName(
-                    context,
-                )
-            }
+        includedCategories.isNotEmpty() && includedCategories.size != allCategories.size ->
+            includedCategories.joinToString { it.visualName(context) }
         // All explicitly selected
         includedCategories.size == allCategories.size -> stringResource(MR.strings.all)
         allExcluded -> stringResource(MR.strings.none)
@@ -67,11 +62,7 @@ fun getCategoriesLabel(
     val includedItemsText = when {
         // Some selected, but not all
         includedCategories.isNotEmpty() && includedCategories.size != allCategories.size ->
-            includedCategories.joinToString {
-                it.visualName(
-                    context,
-                )
-            }
+            includedCategories.joinToString { it.visualName(context) }
         // All explicitly selected
         includedCategories.size == allCategories.size -> stringResource(MR.strings.all)
         includedCategories.isEmpty() -> stringResource(MR.strings.none)

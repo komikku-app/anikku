@@ -93,7 +93,7 @@ internal fun LazyListScope.updatesUiItems(
     onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
     onClickCover: (UpdatesItem) -> Unit,
     onClickUpdate: (UpdatesItem, altPlayer: Boolean) -> Unit,
-    onDownloadEpisode: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
+    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
 ) {
     items(
         items = uiModels,
@@ -126,7 +126,7 @@ internal fun LazyListScope.updatesUiItems(
                     modifier = Modifier.animateItemFastScroll(),
                     update = updatesItem.update,
                     selected = updatesItem.selected,
-                    watchProgress = updatesItem.update.lastPageRead
+                    readProgress = updatesItem.update.lastPageRead
                         .takeIf { !updatesItem.update.read && it > 0L }
                         ?.let {
                             stringResource(
@@ -145,8 +145,8 @@ internal fun LazyListScope.updatesUiItems(
                         }
                     },
                     onClickCover = { onClickCover(updatesItem) }.takeIf { !selectionMode },
-                    onDownloadEpisode = { action: ChapterDownloadAction ->
-                        onDownloadEpisode(listOf(updatesItem), action)
+                    onDownloadChapter = { action: ChapterDownloadAction ->
+                        onDownloadChapter(listOf(updatesItem), action)
                     }.takeIf { !selectionMode },
                     downloadStateProvider = updatesItem.downloadStateProvider,
                     downloadProgressProvider = updatesItem.downloadProgressProvider,
@@ -170,11 +170,11 @@ internal fun LazyListScope.updatesUiItems(
 private fun UpdatesUiItem(
     update: UpdatesWithRelations,
     selected: Boolean,
-    watchProgress: String?,
+    readProgress: String?,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onClickCover: (() -> Unit)?,
-    onDownloadEpisode: ((ChapterDownloadAction) -> Unit)?,
+    onDownloadChapter: ((ChapterDownloadAction) -> Unit)?,
     // Download Indicator
     downloadStateProvider: () -> Download.State,
     downloadProgressProvider: () -> Int,
@@ -308,10 +308,10 @@ private fun UpdatesUiItem(
                     modifier = Modifier
                         .weight(weight = 1f, fill = false),
                 )
-                if (watchProgress != null) {
+                if (readProgress != null) {
                     DotSeparatorText()
                     Text(
-                        text = watchProgress,
+                        text = readProgress,
                         maxLines = 1,
                         color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
                         overflow = TextOverflow.Ellipsis,
@@ -353,11 +353,11 @@ private fun UpdatesUiItem(
         // <-- AM (FILE_SIZE)
 
         ChapterDownloadIndicator(
-            enabled = onDownloadEpisode != null,
+            enabled = onDownloadChapter != null,
             modifier = Modifier.padding(start = 4.dp),
             downloadStateProvider = downloadStateProvider,
             downloadProgressProvider = downloadProgressProvider,
-            onClick = { onDownloadEpisode?.invoke(it) },
+            onClick = { onDownloadChapter?.invoke(it) },
             // AM (FILE_SIZE) -->
             fileSize = fileSizeAsync,
             // <-- AM (FILE_SIZE)

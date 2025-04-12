@@ -3,19 +3,14 @@ package eu.kanade.presentation.more.settings.screen.advanced
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FlipToBack
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,7 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +48,9 @@ import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryManga
 import tachiyomi.domain.source.model.Source
 import tachiyomi.domain.source.model.SourceWithCount
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
+import tachiyomi.presentation.core.components.LabeledCheckbox
+import tachiyomi.presentation.core.components.LazyColumnWithAction
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
@@ -72,13 +73,18 @@ class ClearDatabaseScreen : Screen() {
             is ClearDatabaseScreenModel.State.Loading -> LoadingScreen()
             is ClearDatabaseScreenModel.State.Ready -> {
                 if (s.showConfirmation) {
+                    // SY -->
+                    var keepReadManga by remember { mutableStateOf(true) }
+                    // SY <--
                     AlertDialog(
                         onDismissRequest = model::hideConfirmation,
                         confirmButton = {
                             TextButton(
                                 onClick = {
                                     scope.launchUI {
-                                        model.removeMangaBySourceId()
+                                        // SY -->
+                                        model.removeMangaBySourceId(keepReadManga)
+                                        // SY <--
                                         model.clearSelection()
                                         model.hideConfirmation()
                                         context.toast(MR.strings.clear_database_completed)
@@ -94,7 +100,18 @@ class ClearDatabaseScreen : Screen() {
                             }
                         },
                         text = {
-                            Text(text = stringResource(MR.strings.clear_database_confirmation))
+                            // SY -->
+                            Column {
+                                // SY <--
+                                Text(text = stringResource(MR.strings.clear_database_confirmation))
+                                // SY -->
+                                LabeledCheckbox(
+                                    label = stringResource(SYMR.strings.clear_db_exclude_read),
+                                    checked = keepReadManga,
+                                    onCheckedChange = { keepReadManga = it },
+                                )
+                            }
+                            // SY <--
                         },
                     )
                 }
@@ -114,7 +131,7 @@ class ClearDatabaseScreen : Screen() {
                                                 onClick = model::selectAll,
                                             ),
                                             AppBar.Action(
-                                                title = stringResource(MR.strings.action_select_all),
+                                                title = stringResource(MR.strings.action_select_inverse),
                                                 icon = Icons.Outlined.FlipToBack,
                                                 onClick = model::invertSelection,
                                             ),
@@ -132,40 +149,18 @@ class ClearDatabaseScreen : Screen() {
                             modifier = Modifier.padding(contentPadding),
                         )
                     } else {
-                        Column(
-                            modifier = Modifier
-                                .padding(contentPadding)
-                                .fillMaxSize(),
+                        LazyColumnWithAction(
+                            contentPadding = contentPadding,
+                            actionLabel = stringResource(MR.strings.action_delete),
+                            actionEnabled = s.selection.isNotEmpty(),
+                            onClickAction = model::showConfirmation,
                         ) {
-                            LazyColumn(
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                items(s.items) { sourceWithCount ->
-                                    ClearDatabaseItem(
-                                        source = sourceWithCount.source,
-                                        count = sourceWithCount.count,
-                                        isSelected = s.selection.contains(sourceWithCount.id),
-                                        onClickSelect = {
-                                            model.toggleSelection(
-                                                sourceWithCount.source,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-
-                            HorizontalDivider()
-
-                            Button(
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .fillMaxWidth(),
-                                onClick = model::showConfirmation,
-                                enabled = s.selection.isNotEmpty(),
-                            ) {
-                                Text(
-                                    text = stringResource(MR.strings.action_delete),
-                                    color = MaterialTheme.colorScheme.onPrimary,
+                            items(s.items) { sourceWithCount ->
+                                ClearDatabaseItem(
+                                    source = sourceWithCount.source,
+                                    count = sourceWithCount.count,
+                                    isSelected = s.selection.contains(sourceWithCount.id),
+                                    onClickSelect = { model.toggleSelection(sourceWithCount.source) },
                                 )
                             }
                         }
@@ -210,9 +205,7 @@ class ClearDatabaseScreen : Screen() {
     }
 }
 
-private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenModel.State>(
-    State.Loading,
-) {
+private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenModel.State>(State.Loading) {
     private val getSourcesWithNonLibraryManga: GetSourcesWithNonLibraryManga = Injekt.get()
     private val database: Database = Injekt.get()
 
@@ -231,9 +224,15 @@ private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenMod
         }
     }
 
-    suspend fun removeMangaBySourceId() = withNonCancellableContext {
+    suspend fun removeMangaBySourceId(/* SY --> */keepReadManga: Boolean /* SY <-- */) = withNonCancellableContext {
         val state = state.value as? State.Ready ?: return@withNonCancellableContext
-        database.animesQueries.deleteAnimesNotInLibraryBySourceIds(state.selection)
+        // SY -->
+        if (keepReadManga) {
+            database.animesQueries.deleteAnimesNotInLibraryAndNotSeenBySourceIds(state.selection)
+        } else {
+            database.animesQueries.deleteAnimesNotInLibraryBySourceIds(state.selection)
+        }
+        // SY <--
         database.historyQueries.removeResettedHistory()
     }
 

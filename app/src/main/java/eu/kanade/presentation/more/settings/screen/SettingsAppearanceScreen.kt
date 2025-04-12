@@ -282,11 +282,11 @@ object SettingsAppearanceScreen : SearchableSettings {
                     subtitle = stringResource(KMR.strings.pref_panorama_cover_flow_summary),
                 ),
                 // KMK <--
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.expandFilters(),
-//                    title = stringResource(SYMR.strings.toggle_expand_search_filters),
-//                ),
-//                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.expandFilters(),
+                    title = stringResource(SYMR.strings.toggle_expand_search_filters),
+                ),
+                // KMK -->
                 Preference.PreferenceItem.SwitchPreference(
                     pref = uiPreferences.expandRelatedMangas(),
                     title = stringResource(KMR.strings.pref_expand_related_mangas),
@@ -306,11 +306,11 @@ object SettingsAppearanceScreen : SearchableSettings {
                     enabled = sourcePreferences.relatedMangas().get(),
                 ),
                 // KMK <--
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.recommendsInOverflow(),
-//                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
-//                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
-//                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = uiPreferences.recommendsInOverflow(),
+                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
+                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
+                ),
                 Preference.PreferenceItem.SwitchPreference(
                     pref = uiPreferences.mergeInOverflow(),
                     title = stringResource(SYMR.strings.put_merge_in_overflow),

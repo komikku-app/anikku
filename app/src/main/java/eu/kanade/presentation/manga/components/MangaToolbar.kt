@@ -59,8 +59,9 @@ fun MangaToolbar(
     // SY -->
     onClickEditInfo: (() -> Unit)?,
     // KMK -->
-    onClickRelatedAnimes: (() -> Unit)?,
+    onClickRelatedMangas: (() -> Unit)?,
     // KMK <--
+    onClickRecommend: (() -> Unit)?,
     onClickMerge: (() -> Unit)?,
     onClickMergedSettings: (() -> Unit)?,
     // SY <--
@@ -70,6 +71,7 @@ fun MangaToolbar(
     actionModeCounter: Int,
     onSelectAll: () -> Unit,
     onInvertSelection: () -> Unit,
+
     modifier: Modifier = Modifier,
     backgroundAlphaProvider: () -> Float = titleAlphaProvider,
 ) {
@@ -216,15 +218,23 @@ fun MangaToolbar(
                                     )
                                 }
                                 // KMK -->
-                                if (onClickRelatedAnimes != null) {
+                                if (onClickRelatedMangas != null) {
                                     add(
                                         AppBar.OverflowAction(
                                             title = stringResource(KMR.strings.pref_source_related_mangas),
-                                            onClick = onClickRelatedAnimes,
+                                            onClick = onClickRelatedMangas,
                                         ),
                                     )
                                 }
                                 // KMK <--
+                                if (onClickRecommend != null) {
+                                    add(
+                                        AppBar.OverflowAction(
+                                            title = stringResource(SYMR.strings.az_recommends),
+                                            onClick = onClickRecommend,
+                                        ),
+                                    )
+                                }
                                 if (onClickMergedSettings != null) {
                                     add(
                                         AppBar.OverflowAction(
