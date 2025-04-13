@@ -408,6 +408,7 @@ class LibraryScreenModel(
 
         fun LibrarySort.comparator(): Comparator<LibraryItem> = Comparator { i1, i2 ->
             // SY -->
+            // Use groupSort when provided, otherwise use the sort from the category
             val sort = groupSort ?: this
             // SY <--
             when (sort.type) {
@@ -445,8 +446,8 @@ class LibraryScreenModel(
                     item1Score.compareTo(item2Score)
                 }
                 LibrarySort.Type.AiringTime -> when {
-                    i1.libraryManga.manga.nextEpisodeAiringAt == 0L -> if (this.isAscending) 1 else -1
-                    i2.libraryManga.manga.nextEpisodeAiringAt == 0L -> if (this.isAscending) -1 else 1
+                    i1.libraryManga.manga.nextEpisodeAiringAt == 0L -> if (sort.isAscending) 1 else -1
+                    i2.libraryManga.manga.nextEpisodeAiringAt == 0L -> if (sort.isAscending) -1 else 1
                     i1.libraryManga.unreadCount == i2.libraryManga.unreadCount ->
                         i1.libraryManga.manga.nextEpisodeAiringAt.compareTo(
                             i2.libraryManga.manga.nextEpisodeAiringAt,
@@ -472,6 +473,7 @@ class LibraryScreenModel(
 
         return mapValues { (key, value) ->
             // SY -->
+            // Use groupSort when provided, otherwise use the sort from the category
             val sort = groupSort ?: key.sort
             if (sort.type == LibrarySort.Type.Random) {
                 return@mapValues value.shuffled(Random(libraryPreferences.randomSortSeed().get()))
