@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="non_library_settings">Todas las entradas vistas</string>
+  <string name="action_filter_fillermarked">Relleno marcado</string>
+  <string name="action_fillermark_episode">Episodio de relleno</string>
+  <string name="action_remove_fillermark_episode">Descolgar episodio</string>
+  <string name="pref_not_download_fillermarked_items">Denegar la descarga de episodios marcados</string>
+  <string name="pref_show_downloaded_episode_file_size">Mostrar tamaño del archivo de episodio descargado</string>
+  <string name="special_services" comment="special_services Connections section">Servicios Especiales</string>
+  <string name="pref_discord_rpc">Presencia de Discord Rich</string>
+  <string name="pref_enable_discord_rpc">Habilitar la presencia de Discord Rich</string>
+  <string name="pref_discord_status">Estado de Discord</string>
+  <string name="pref_discord_dnd">⛔ No molestar</string>
+  <string name="pref_discord_idle">🌙 Inactivo</string>
+  <string name="pref_discord_online">🟢 Online</string>
+  <string name="pref_category_discord_incognito">RPC Incognito</string>
+  <string name="pref_discord_incognito">Modo Incognito de Discord</string>
+  <string name="pref_discord_incognito_summary">Reemplazado cuando el modo Incognito está activado</string>
+  <string name="pref_discord_incognito_categories_details">Las entradas en las categorías incluidas no se mostrarán en Discord</string>
+  <string name="browsing" comment="browsing Discord section">Navegando</string>
+  <string name="scrolling">Desplazándose a través</string>
+  <string name="messing">Mensajes alrededor con</string>
+  <string name="video">Vídeo</string>
+  <string name="delete_unused_episodes">Eliminar carpetas de episodios inexistentes, parcialmente descargadas y vistas</string>
+  <string name="clean_seen_downloads">Limpiar visto</string>
+  <string name="channel_new_episodes">Actualizaciones del episodio</string>
+  <string name="pref_category_connections">Conexiones</string>
+  <string name="pref_connections_summary">Discord, más por venir..</string>
+  <string name="connections_info">Servicios especiales que son únicos en Anikku y mejoran la forma en que utiliza la aplicación</string>
+  <string name="connections_discord">Discordia</string>
+  <string name="connections_discord_info">Este Servicio de Discord funciona a través del registro de token. Úsalo bajo tu propio riesgo. Tu token se almacena localmente y Anikku no lo comparte en ningún otro lugar</string>
+  <string name="show_chapters_titles_title">Mostrar títulos de episodios</string>
+  <string name="show_chapters_titles_subtitle">Muestra el título del episodio que estás viendo</string>
+  <string name="discord_accounts">Cuentas de Discord</string>
+  <string name="active_account">Cuenta activa</string>
+  <string name="no_accounts_found">No hay cuentas encontradas</string>
+  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Personalización de Discord</string>
+  <string name="pref_discord_custom_message">Mensaje personalizado</string>
+  <string name="pref_discord_custom_message_summary">Mensaje personalizado que se mostrará en Discord</string>
+  <string name="pref_discord_show_progress">Mostrar progreso</string>
+  <string name="pref_discord_show_progress_summary">Mostrar el progreso actual del episodio</string>
+  <string name="pref_discord_show_timestamp">Mostrar hora</string>
+  <string name="pref_discord_show_timestamp_summary">Mostrar tiempo transcurrido/restante</string>
+  <string name="pref_discord_show_buttons">Mostrar botones</string>
+  <string name="pref_discord_show_buttons_summary">Mostrar botones para descargar la aplicación o unirse al servidor de Discord</string>
+  <string name="pref_discord_show_download_button">Mostrar botón de descarga</string>
+  <string name="pref_discord_show_download_button_summary">Muestra un botón para descargar la aplicación</string>
+  <string name="pref_discord_show_discord_button">Mostrar botón de Discord</string>
+  <string name="pref_discord_show_discord_button_summary">Muestra un botón para unirse al servidor de Discord</string>
+  <string name="install_amnis" comment="install_amnis Torrent">El reproductor necesita estar instalado</string>
+  <string name="pref_category_torrentserver">Preferencias del servidor Torrent</string>
+  <string name="pref_torrentserver_port">Puerto de Servidor Torrent</string>
+  <string name="torrentserver_is_running">El servidor Torrent se está ejecutando</string>
+  <string name="pref_torrent_trackers">Rastreadores torrent</string>
+  <string name="pref_reset_torrent_trackers_string">Restablecer cadena predeterminada de rastreadores de torrent</string>
+  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr está funcionando. Agente de usuario actualizado. Reinicie la aplicación</string>
+  <string name="flare_solver_update_user_agent_failed">FlareSolverr no funciona. Agente de usuario no actualizado. Por favor, compruebe su configuración</string>
+  <string name="flare_solver_error">Error al contactar con FlareSolverr</string>
+  <string name="flare_solver_error_webview">Error resolviendo con WebView</string>
+  <string name="pref_enable_flare_solverr">Activar FlareSolverr</string>
+  <string name="pref_enable_flare_solverr_summary">Usa FlareSolverr para eludir la protección antibots de Cloudflare</string>
+  <string name="pref_flare_solverr_url">URL de FlareSolverr</string>
+  <string name="pref_flare_solverr_url_summary">URL de la instancia de FlareSolverr a utilizar, por ejemplo, http://192.168.1.202:8191/v1</string>
+  <string name="pref_test_flare_solverr_and_update_user_agent">Probar FlareSolverr y actualizar el agente de usuario</string>
+  <string name="pref_test_flare_solverr_and_update_user_agent_summary">Prueba FlareSolverr para actualizar el agente de usuario. Sólo se requiere una vez; luego cambia según sea necesario.</string>
+  <string name="media_route_menu_title" comment="media_route_menu_title Cast">EXTENDO</string>
+  <string name="pref_category_cast">Ajustes del reparto</string>
+  <string name="pref_enable_cast">Activar o desactivar el reparto</string>
+  <string name="action_cast">Enviar a Cast</string>
+  <string-array name="title_cast_quality">
+    <item>Elegir calidad/proveedor de reparto</item>
+    <item>Seleccionar calidad</item>
+  </string-array>
+  <string name="cast_not_connected">Emisión no conectada</string>
+  <string-array name="cast_video_added_to_queue">
+    <item>Video añadido a la cola</item>
+    <item>Video añadido a la cola</item>
+  </string-array>
+  <string-array name="cast_error_loading">
+    <item>Error al cargar el video desde el reparto</item>
+    <item>Error al cargar el vídeo</item>
+  </string-array>
+  <string name="server_local_notification_casting">El servidor local se está ejecutando. Toque para detenerlo.</string>
+  <string name="server_local_notification_channel_description">Canal de notificación del servidor local</string>
+  <string name="pref_category_castserver">Servidor de envío</string>
+  <string name="pref_cast_server_port">Puerto de servidor de Cast</string>
+  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Cola de reproducción</string>
+  <string name="action_clear_queue">Limpiar cola</string>
+  <string name="queue">Cola</string>
+  <string name="cast_remove_from_queue">Eliminar de la cola</string>
+  <string name="empty_queue">La cola está vacía</string>
+  <string name="move_to_top">Mover arriba</string>
+  <string name="move_to_bottom">Mover al principio</string>
+  <string name="move_to_position">Mover a la posición</string>
+  <string name="position">Posición</string>
+  <string name="select_position">Seleccionar posición</string>
+  <string name="remove_from_queue_confirmation">¿Eliminar de la cola?</string>
+  <string name="clear_queue_confirmation">Limpiar cola</string>
+  <string name="clear_queue_confirmation_message">¿Estás seguro de que quieres borrar toda la cola?</string>
+  <string name="action_end_session">Finalizar sesión de envío</string>
+  <string name="cast_end_session_message">¿Estás seguro de que quieres terminar la sesión de retransmisión actual?</string>
+  <string name="cast_end_session_confirm">Finalizar sesión</string>
+  <string name="cast_end_session_cancel">Cancelar</string>
+  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Dispositivos disponibles</string>
+  <string name="cast_media_info">Información multimedia</string>
+  <string name="cast_previous_video">Vídeo anterior</string>
+  <string name="cast_next_video">Siguiente vídeo</string>
+  <string name="cast_play">Jugar</string>
+  <string name="cast_pause">Pausa</string>
+  <string name="cast_rewind_30s">Rebobinar 30 s</string>
+  <string name="cast_forward_30s">Adelante 30</string>
+  <string name="playback_speed">Velocidad de reproducción</string>
+  <string name="cast_volume">Volumen</string>
+  <string name="cast_end_session">Finalizar sesión de envío</string>
+  <string-array name="cast_subtitle_settings">
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Ajustes de subtítulos</item>
+    <item>Ajustes de subtítulos</item>
+  </string-array>
+  <string name="cast_subtitle_font_size">Font Size</string>
+  <string name="cast_subtitle_text_color">Color del texto</string>
+  <string name="cast_subtitle_background">Fondo</string>
+  <string name="cast_subtitle_shadow">Sombra</string>
+  <string name="cast_subtitle_apply">Aplicar</string>
+  <string name="cast_subtitle_reset">Restablecer por defecto</string>
+  <string name="cast_subtitle_shadow_None">Ninguna</string>
+  <string name="cast_subtitle_shadow_Light">Claro</string>
+  <string name="cast_subtitle_shadow_Medium">Medio</string>
+  <string name="cast_subtitle_shadow_Strong">Fuerte</string>
+  <string name="cast_subtitle_preview">Previsualizar texto</string>
+  <string name="cast_tracks">Seleccionar subtítulo/pista de audio</string>
+  <string name="cast_volume_down">Volumen abajo</string>
+  <string name="cast_volume_up">Subir volumen</string>
+  <string name="cast_subtitles">Subtítulos</string>
+  <string name="cast_audio_tracks">Pistas de audio</string>
+  <string name="cast_no_subtitles">Sin subtítulos</string>
+  <string name="cast_close">Cerrar</string>
+  <string name="cast_subtitle_font_family">Familia de fuente</string>
+  <string name="cast_subtitle_border_style">Estilo del borde</string>
+  <string name="cast_subtitle_border_none">Ninguna</string>
+  <string name="cast_subtitle_border_outline">Fuera</string>
+  <string name="cast_subtitle_border_drop_shadow">Soltar Sombra</string>
+  <string name="cast_subtitle_border_drop_shadow_soft">Sombra de soltar suave</string>
+  <string name="cast_subtitle_border_raised">Criado</string>
+  <string name="cast_subtitle_border_depressed">Depresionado</string>
+  <string name="cast_connection_error">Error de conexión</string>
+  <string name="login_failed">Error al iniciar sesión</string>
+  <string name="tag" comment="tag Animiru">Etiquetas</string>
+  <string name="pref_security" comment="pref_security Mihon">Seguridad</string>
+  <string name="onboarding_permission_crashlytics">Enviar registros de fallos</string>
+  <string name="onboarding_permission_crashlytics_description">Enviar registros de fallos anónimos a los desarrolladores.</string>
+  <string name="pref_firebase">Analítica y registros de fallos</string>
+  <string name="firebase_summary">Enviar registros de fallos y análisis nos permitirá identificar y corregir problemas, mejorar el rendimiento y hacer que las actualizaciones futuras sean más relevantes para sus necesidades</string>
+  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Continúe viendo el botón</string>
+  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Sincronizar en Episodio</string>
+  <string name="sync_on_chapter_open">Sincronizar al abrir episodio</string>
+  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Categorías, actualización global, deslizado de episodios</string>
+  <string name="pref_category_delete_chapters">Eliminar episodios</string>
+  <string name="pref_remove_bookmarked_chapters">Permitir eliminar episodios marcados</string>
+  <string name="pref_remove_after_marked_as_read">Después de marcar manualmente como visto</string>
+  <string name="pref_remove_after_read">Después de ver automáticamente eliminar</string>
+  <string name="pref_auto_update_manga_sync">Actualizar progreso después de ver</string>
+  <string name="pref_auto_update_manga_on_mark_read">Actualizar progreso al marcar como visto</string>
+  <string name="pref_skip_seen_episodes">Saltar episodios marcados como vistos</string>
+  <string name="pref_skip_filtered_episodes">Omitir episodios filtrados</string>
+  <string name="pref_skip_dupe_episodes">Omitir episodios duplicados</string>
+  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Limpiar episodios descargados</string>
+  <string name="pref_invalidate_download_cache_summary">Forzar a la aplicación a revisar los episodios descargados</string>
+  <string name="pref_update_only_completely_read">Con episodio(s) invisible(s)</string>
+  <string name="pref_library_update_show_tab_badge">Mostrar contador no visto en el icono Actualizaciones</string>
+  <string name="last_read_chapter">Último episodio visto</string>
+  <string name="second_to_last">Segundo episodio visto</string>
+  <string name="third_to_last">Episodio del tercer hasta el último visto</string>
+  <string name="fourth_to_last">Cuartel hasta el último episodio visto</string>
+  <string name="fifth_to_last">Cuarto episodio hasta el último visto</string>
+  <string name="skipped_reason_not_caught_up">Omitido porque hay episodios no vistos</string>
+  <string name="skipped_reason_not_started">Omitido porque no se ven episodios</string>
+</resources>
