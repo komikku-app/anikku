@@ -1,8 +1,4 @@
 name: CI
-
-permissions:
-  contents: write
-
 on:
   push:
     branches:
@@ -10,14 +6,14 @@ on:
     paths:
       - '**'
       - '!**.md'
-      - '!i18n/src/commonMain/moko-resources/base/strings.xml'
-      - '!i18n/src/commonMain/moko-resources/base/plurals.xml'
-      - '!i18n-sy/src/commonMain/moko-resources/base/strings.xml'
-      - '!i18n-sy/src/commonMain/moko-resources/base/plurals.xml'
-      - '!i18n-kmk/src/commonMain/moko-resources/base/strings.xml'
-      - '!i18n-kmk/src/commonMain/moko-resources/base/plurals.xml'
-      - '!i18n-ank/src/commonMain/moko-resources/base/strings.xml'
-      - '!i18n-ank/src/commonMain/moko-resources/base/plurals.xml'
+      - 'i18n/src/commonMain/moko-resources/**/strings.xml'
+      - 'i18n/src/commonMain/moko-resources/**/plurals.xml'
+      - 'i18n-sy/src/commonMain/moko-resources/**/strings.xml'
+      - 'i18n-sy/src/commonMain/moko-resources/**/plurals.xml'
+      - 'i18n-kmk/src/commonMain/moko-resources/**/strings.xml'
+      - 'i18n-kmk/src/commonMain/moko-resources/**/plurals.xml'
+      - '!i18n-ank/src/commonMain/moko-resources/**/strings.xml'
+      - '!i18n-ank/src/commonMain/moko-resources/**/plurals.xml'
   # pull_request:
   #   paths-ignore:
   #     - '**.md'
@@ -27,6 +23,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -52,7 +51,7 @@ jobs:
         with:
           go-version: '1.21' 
   
-      - name: Install Android SDK
+      - name: Setup Android SDK
         if: steps.filter.outputs.gofiles == 'true'
         uses: android-actions/setup-android@v3
         with:

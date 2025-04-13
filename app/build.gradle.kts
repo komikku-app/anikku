@@ -1,3 +1,5 @@
+@file:Suppress("ChromeOsAbiSupport")
+
 import mihon.buildlogic.getBuildTime
 import mihon.buildlogic.getCommitCount
 import mihon.buildlogic.getGitSha
@@ -216,7 +218,6 @@ dependencies {
     implementation(compose.ui.tooling.preview)
     implementation(compose.ui.util)
 
-    implementation(compose.colorpicker)
     implementation(androidx.interpolator)
 
     implementation(androidx.paging.runtime)
@@ -268,19 +269,12 @@ dependencies {
     // Disk
     implementation(libs.disklrucache)
     implementation(libs.unifile)
-    implementation(libs.junrar)
-    // SY -->
-    implementation(libs.zip4j)
-    // SY <--
 
     // Preferences
     implementation(libs.preferencektx)
 
     // Dependency injection
     implementation(libs.injekt)
-    // SY -->
-    implementation(libs.zip4j)
-    // SY <--
 
     // Image loading
     implementation(platform(libs.coil.bom))

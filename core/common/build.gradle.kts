@@ -60,7 +60,6 @@ dependencies {
     testImplementation(libs.bundles.test)
 
     // SY -->
-    implementation(libs.zip4j)
     implementation(sylibs.xlog)
     implementation(sylibs.exifinterface)
     // SY <--
