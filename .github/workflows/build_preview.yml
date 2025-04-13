@@ -114,7 +114,7 @@ jobs:
   build-app:
     runs-on: ubuntu-latest
     needs: prepare-build
-    if: github.ref == 'refs/heads/master' && github.repository == 'komikku-app/anikku'
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Clone Repository (${{ needs.prepare-build.outputs.VERSION_TAG }} - ${{ needs.prepare-build.outputs.TAG_NAME }})
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -227,7 +227,7 @@ jobs:
 
             ${{ needs.prepare-build.outputs.COMMIT_LOGS }}
 
-            **Full Changelog**: [komikku-app/komikku@${{ needs.prepare-build.outputs.PREV_TAG_NAME }}...${{ needs.prepare-build.outputs.TAG_NAME }}](https://github.com/komikku-app/komikku/compare/${{ needs.prepare-build.outputs.PREV_TAG_NAME }}...${{ needs.prepare-build.outputs.TAG_NAME }})
+            **Full Changelog**: [komikku-app/anikku@${{ needs.prepare-build.outputs.PREV_TAG_NAME }}...${{ needs.prepare-build.outputs.TAG_NAME }}](https://github.com/komikku-app/anikku/compare/${{ needs.prepare-build.outputs.PREV_TAG_NAME }}...${{ needs.prepare-build.outputs.TAG_NAME }})
 
             ---
 
@@ -241,13 +241,13 @@ jobs:
             | x86 | ${{ steps.get_sha.outputs.APK_X86_SHA }} |
             | x86_64 | ${{ steps.get_sha.outputs.APK_X86_64_SHA }} |
 
-            ### If you are unsure which apk to download then go with `Komikku-${{ needs.prepare-build.outputs.TAG_NAME }}.apk`
+            ### If you are unsure which apk to download then go with `Anikku-${{ needs.prepare-build.outputs.TAG_NAME }}.apk`
           files: |
-            Komikku-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
-            Komikku-arm64-v8a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
-            Komikku-armeabi-v7a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
-            Komikku-x86-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
-            Komikku-x86_64-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+            Anikku-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+            Anikku-arm64-v8a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+            Anikku-armeabi-v7a-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+            Anikku-x86-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
+            Anikku-x86_64-${{ needs.prepare-build.outputs.TAG_NAME }}.apk
           draft: true
           prerelease: true
         env:
