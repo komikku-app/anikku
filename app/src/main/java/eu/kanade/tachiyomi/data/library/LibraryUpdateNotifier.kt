@@ -299,7 +299,7 @@ class LibraryUpdateNotifier(
                         context,
                         manga,
                         chapters,
-                        Notifications.ID_NEW_CHAPTERS,
+                        Notifications.ID_NEW_EPISODES,
                     ),
                 )
             }

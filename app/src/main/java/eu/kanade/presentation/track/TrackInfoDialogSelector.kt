@@ -234,12 +234,12 @@ private fun TrackStatusSelectorPreviews() {
                 onSelectionChange = {},
                 selections = persistentMapOf(
                     // Anilist values
+                    1L to MR.strings.watching,
+                    2L to MR.strings.plan_to_watch,
                     3L to MR.strings.completed,
                     4L to MR.strings.on_hold,
                     5L to MR.strings.dropped,
                     6L to MR.strings.repeating,
-                    7L to MR.strings.watching,
-                    8L to MR.strings.plan_to_watch,
                 ),
                 onConfirm = {},
                 onDismissRequest = {},

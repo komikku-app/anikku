@@ -122,18 +122,18 @@ object SettingsDownloadScreen : SearchableSettings {
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     pref = downloadPreferences.removeAfterMarkedAsRead(),
-                    title = stringResource(AMR.strings.pref_remove_after_marked_as_seen),
+                    title = stringResource(AMR.strings.pref_remove_after_marked_as_read),
                 ),
                 Preference.PreferenceItem.ListPreference(
                     pref = downloadPreferences.removeAfterReadSlots(),
-                    title = stringResource(AMR.strings.pref_remove_after_seen),
+                    title = stringResource(AMR.strings.pref_remove_after_read),
                     entries = persistentMapOf(
                         -1 to stringResource(MR.strings.disabled),
-                        0 to stringResource(MR.strings.last_read_chapter),
-                        1 to stringResource(MR.strings.second_to_last),
-                        2 to stringResource(MR.strings.third_to_last),
-                        3 to stringResource(MR.strings.fourth_to_last),
-                        4 to stringResource(MR.strings.fifth_to_last),
+                        0 to stringResource(AMR.strings.last_read_chapter),
+                        1 to stringResource(AMR.strings.second_to_last),
+                        2 to stringResource(AMR.strings.third_to_last),
+                        3 to stringResource(AMR.strings.fourth_to_last),
+                        4 to stringResource(AMR.strings.fifth_to_last),
                     ),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
@@ -215,7 +215,7 @@ object SettingsDownloadScreen : SearchableSettings {
                     enabled = downloadNewChapters,
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.anime_categories),
+                    title = stringResource(MR.strings.categories),
                     subtitle = getCategoriesLabel(
                         allCategories = allCategories,
                         included = included,
@@ -248,7 +248,7 @@ object SettingsDownloadScreen : SearchableSettings {
                         }
                         .toImmutableMap(),
                 ),
-                Preference.PreferenceItem.InfoPreference(stringResource(AMR.strings.download_ahead_info)),
+                Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.download_ahead_info_anime)),
             ),
         )
     }

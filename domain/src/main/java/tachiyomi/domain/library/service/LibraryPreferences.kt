@@ -226,8 +226,6 @@ class LibraryPreferences(
         )
     }
 
-    fun autoClearChapterCache() = preferenceStore.getBoolean("auto_clear_chapter_cache", false)
-
     // region Swipe Actions
 
     fun swipeToStartAction() = preferenceStore.getEnum(

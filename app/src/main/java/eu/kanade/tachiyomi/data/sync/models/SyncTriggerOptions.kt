@@ -2,8 +2,8 @@ package eu.kanade.tachiyomi.data.sync.models
 
 import dev.icerock.moko.resources.StringResource
 import kotlinx.collections.immutable.persistentListOf
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.sy.SYMR
-import tachiyomi.i18n.tail.TLMR
 
 data class SyncTriggerOptions(
     val syncOnChapterRead: Boolean = false,
@@ -26,12 +26,12 @@ data class SyncTriggerOptions(
     companion object {
         val mainOptions = persistentListOf(
             Entry(
-                label = TLMR.strings.sync_on_episode_seen,
+                label = AMR.strings.sync_on_chapter_read,
                 getter = SyncTriggerOptions::syncOnChapterRead,
                 setter = { options, enabled -> options.copy(syncOnChapterRead = enabled) },
             ),
             Entry(
-                label = TLMR.strings.sync_on_episode_open,
+                label = AMR.strings.sync_on_chapter_open,
                 getter = SyncTriggerOptions::syncOnChapterOpen,
                 setter = { options, enabled -> options.copy(syncOnChapterOpen = enabled) },
             ),

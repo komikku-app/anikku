@@ -24,9 +24,9 @@ dependencies {
     // SY -->
     implementation(projects.i18nSy)
     // SY <--
-    // TAIL -->
-    implementation(projects.i18nTail)
-    // TAIL <--
+    // ANK -->
+    implementation(projects.i18nAnk)
+    // ANK <--
 
     implementation(projects.sourceApi)
     implementation(projects.core.common)

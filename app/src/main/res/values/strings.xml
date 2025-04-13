@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- unpublished -> 4C1B4D71 / published -> F033F567 -->
+    <string name="app_cast_id" translatable="false">F033F567</string>
+</resources>

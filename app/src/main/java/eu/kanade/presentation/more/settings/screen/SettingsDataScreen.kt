@@ -69,13 +69,11 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.backup.service.BackupPreferences
-import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
-import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -265,8 +263,8 @@ object SettingsDataScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_backup_interval),
                     entries = persistentMapOf(
                         0 to stringResource(MR.strings.off),
-                        1 to stringResource(AMR.strings.update_1hour),
-                        3 to stringResource(AMR.strings.update_3hour),
+                        1 to stringResource(SYMR.strings.update_1hour),
+                        3 to stringResource(SYMR.strings.update_3hour),
                         6 to stringResource(MR.strings.update_6hour),
                         12 to stringResource(MR.strings.update_12hour),
                         24 to stringResource(MR.strings.update_24hour),
@@ -295,7 +293,6 @@ object SettingsDataScreen : SearchableSettings {
     @Composable
     private fun getDataGroup(storagePreferences: StoragePreferences): Preference.PreferenceGroup {
         val navigator = LocalNavigator.currentOrThrow
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
 
         // AM (FILE_SIZE) -->
         LaunchedEffect(Unit) {
@@ -327,7 +324,7 @@ object SettingsDataScreen : SearchableSettings {
                 // AM (FILE_SIZE) -->
                 Preference.PreferenceItem.SwitchPreference(
                     pref = storagePreferences.showChapterFileSize(),
-                    title = stringResource(TLMR.strings.pref_show_downloaded_episode_file_size),
+                    title = stringResource(AMR.strings.pref_show_downloaded_episode_file_size),
                 ),
                 // <-- AM (FILE_SIZE)
 
@@ -337,11 +334,6 @@ object SettingsDataScreen : SearchableSettings {
                     onClick = {
                         navigator.push(StorageScreen)
                     },
-                ),
-
-                Preference.PreferenceItem.SwitchPreference(
-                    pref = libraryPreferences.autoClearChapterCache(),
-                    title = stringResource(MR.strings.pref_auto_clear_chapter_cache),
                 ),
             ),
         )

@@ -34,7 +34,7 @@ import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.ui.player.CastManager
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import kotlinx.coroutines.delay
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -73,7 +73,7 @@ fun CastSheet(
                     .padding(16.dp),
             ) {
                 Text(
-                    text = stringResource(TLMR.strings.cast_available_devices),
+                    text = stringResource(AMR.strings.cast_available_devices),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
@@ -131,14 +131,14 @@ fun CastSheet(
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
-                            Text(stringResource(TLMR.strings.title_cast_quality))
+                            Text(stringResource(AMR.strings.title_cast_quality))
                         }
                         FilledTonalButton(
                             onClick = { showPlayerDialog = true },
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
-                            Text(stringResource(TLMR.strings.cast_media_info))
+                            Text(stringResource(AMR.strings.cast_media_info))
                         }
                     }
 
@@ -146,7 +146,7 @@ fun CastSheet(
                     if (queueItems.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = stringResource(TLMR.strings.queue),
+                            text = stringResource(AMR.strings.queue),
                             style = MaterialTheme.typography.titleSmall,
                         )
                         LazyColumn(

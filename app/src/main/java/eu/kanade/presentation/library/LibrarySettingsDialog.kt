@@ -370,7 +370,7 @@ private fun ColumnScope.DisplayPage(
     )
     // KMK <--
     CheckboxItem(
-        label = stringResource(AMR.strings.action_display_show_continue_watching_button),
+        label = stringResource(AMR.strings.action_display_show_continue_reading_button),
         pref = screenModel.libraryPreferences.showContinueReadingButton(),
     )
 

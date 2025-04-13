@@ -195,9 +195,6 @@ dependencies {
     // SY -->
     implementation(projects.i18nSy)
     // SY <--
-    // TAIL
-    implementation(projects.i18nTail)
-    // TAIL
     implementation(projects.core.archive)
     implementation(projects.core.common)
     implementation(projects.coreMetadata)

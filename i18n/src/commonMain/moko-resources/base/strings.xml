@@ -7,11 +7,7 @@
     <string name="not_selected">Not selected</string>
     <string name="action_menu_overflow_description">More options</string>
     <string name="action_bar_up_description">Navigate up</string>
-
     <string name="app_name" translatable="false">Anikku</string>
-    <!-- unpublished -> 4C1B4D71 / published -> F033F567 -->
-    <string name="app_cast_id" translatable="false">F033F567</string>
-    <string name="media_route_menu_title">EXTEND</string>
     <string name="name">Name</string>
     <string name="categories">Categories</string>
     <string name="manga">Manga</string>
@@ -226,6 +222,21 @@
     <string name="pref_player_time_to_disappear_summary">%1$s ms</string>
     <string name="pref_panel_opacity">Panel opacity</string>
 
+    <string name="pref_category_intro_skip">Intro skip</string>
+    <string name="pref_enable_intro_skip">Enable intro skip</string>
+    <string name="pref_enable_auto_skip_ani_skip">Enable auto skip</string>
+    <string name="pref_enable_netflix_style_aniskip">Enable Netflix style</string>
+    <string name="pref_waiting_time_aniskip">Button timeout</string>
+    <string name="pref_waiting_time_aniskip_5">5 seconds</string>
+    <string name="pref_waiting_time_aniskip_6">6 seconds</string>
+    <string name="pref_waiting_time_aniskip_7">7 seconds</string>
+    <string name="pref_waiting_time_aniskip_8">8 seconds</string>
+    <string name="pref_waiting_time_aniskip_9">9 seconds</string>
+    <string name="pref_waiting_time_aniskip_10">10 seconds</string>
+    <string name="pref_category_player_aniskip_info">AniSkip requires the anime to be tracked with MAL or Anilist to work</string>
+    <string name="pref_enable_aniskip">Enable AniSkip</string>
+    <string name="pref_disable_aniskip_chapter">Disable AniSkip if video already contains chapters</string>
+
     <string name="pref_category_pip">Picture-in-Picture (PiP)</string>
     <string name="pref_enable_pip">Enable the use of PiP mode</string>
     <string name="pref_pip_episode_toasts">Show episode toasts when switching episodes in PiP mode</string>
@@ -258,17 +269,6 @@
     <string name="pref_skip_disable">Disable</string>
     <string name="pref_player_smooth_seek">Enable precise seeking</string>
     <string name="pref_player_smooth_seek_summary">When enabled, seeking will not focus on keyframes, leading to slower but precise seeking</string>
-    <string name="pref_category_player_aniskip_info">AniSkip requires the anime to be tracked with MAL or Anilist to work</string>
-    <string name="pref_enable_aniskip">Enable AniSkip</string>
-    <string name="pref_enable_auto_skip_ani_skip">Enable auto skip</string>
-    <string name="pref_enable_netflix_style_aniskip">Enable Netflix style</string>
-    <string name="pref_waiting_time_aniskip">Button timeout</string>
-    <string name="pref_waiting_time_aniskip_5">5 seconds</string>
-    <string name="pref_waiting_time_aniskip_6">6 seconds</string>
-    <string name="pref_waiting_time_aniskip_7">7 seconds</string>
-    <string name="pref_waiting_time_aniskip_8">8 seconds</string>
-    <string name="pref_waiting_time_aniskip_9">9 seconds</string>
-    <string name="pref_waiting_time_aniskip_10">10 seconds</string>
 
     <string name="pref_category_double_tap">Double tap</string>
     <string name="pref_left_double_tap">Double tap (left)</string>
@@ -509,6 +509,7 @@
     <string name="pref_category_about">About</string>
     <string name="pref_general_summary">App language, notifications</string>
     <string name="pref_appearance_summary">Theme, date &amp; time format</string>
+    <string name="pref_library_summary">Categories, global update, chapter/episode swipe</string>
     <string name="pref_reader_summary">Reading mode, display, navigation</string>
     <string name="pref_downloads_summary">Automatic download, download ahead</string>
     <string name="pref_tracking_summary">One-way progress sync, enhanced sync</string>
@@ -771,6 +772,7 @@
     <string name="pref_download_new_categories_details">Entries in excluded categories will not be downloaded even if they are also in included categories.</string>
     <string name="download_ahead">Download ahead</string>
     <string name="auto_download_while_reading">Auto download while reading</string>
+    <string name="download_ahead_info">Only works if the current chapter/episode + the next one are already downloaded.</string>
     <string name="save_chapter_as_cbz">Save as CBZ archive</string>
     <string name="split_tall_images">Split tall images</string>
     <string name="split_tall_images_summary">Improves reader performance</string>
@@ -810,6 +812,7 @@
     <string name="extensionRepo_settings">Extension repos</string>
     <string name="custom_button_settings">Custom buttons</string>
     <string name="private_settings">Include sensitive settings (e.g., tracker login tokens)</string>
+    <string name="non_library_settings">All read/watched entries</string>
     <string name="creating_backup">Creating backup</string>
     <string name="creating_backup_error">Backup failed</string>
     <string name="missing_storage_permission">Storage permissions not granted</string>
@@ -1219,6 +1222,10 @@
     <string name="unofficial_extension_message_aniyomi">This extension is not from the official list.</string>
     <string name="unofficial_anime_extension_message">This extension is not from the official list.</string>
     <string name="episode_download_progress">%1$d%%</string>
+    <string name="pref_category_delete_chapters">Delete chapters/episodes</string>
+    <string name="pref_remove_after_marked_as_read">After manually marked as read/watched</string>
+    <string name="pref_remove_after_read">After reading/watching automatically delete</string>
+    <string name="pref_remove_bookmarked_chapters">Allow deleting bookmarked chapters/episodes</string>
     <string name="pref_remove_exclude_categories_manga">Excluded manga categories</string>
     <string name="pref_remove_exclude_categories_anime">Excluded anime categories</string>
     <string name="pref_category_external_downloader">External downloader</string>
@@ -1228,6 +1235,8 @@
     <string name="pref_download_new_unseen_episodes_only">Skip downloading duplicate seen episodes</string>
     <string name="auto_download_while_watching">Auto download while watching</string>
     <string name="download_ahead_info_anime">Only works on entries in library and if the current episode plus the next one are already downloaded</string>
+    <string name="pref_auto_update_manga_sync">Update progress after reading/watching</string>
+    <string name="pref_auto_update_manga_on_mark_read">Update progress when marked as read/watched</string>
     <string name="pref_track_on_add_library">Open track menu on adding to library</string>
     <string name="pref_show_next_episode_airing_time">Show next episode\'s airing time </string>
     <string name="pref_backup_flags_summary">What information to include in the backup file</string>
@@ -1289,6 +1298,7 @@
     <string name="episode_settings_updated">Updated default episode settings</string>
     <string name="download_notifier_download_paused_chapters">Chapter download paused</string>
     <string name="download_notifier_download_paused_episodes">Episode download paused</string>
+    <string name="channel_new_chapters_episodes">Chapter/Episode updates</string>
     <string name="pref_invalidate_download_cache_summary">Force app to recheck downloaded chapters and episodes</string>
     <string name="label_storage">Storage</string>
     <string name="label_history">Manga</string>
