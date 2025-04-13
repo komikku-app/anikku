@@ -229,7 +229,7 @@ object SettingsAdvancedScreen : SearchableSettings {
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_invalidate_download_cache),
-                    subtitle = stringResource(AMR.strings.pref_invalidate_download_cache_summary),
+                    subtitle = stringResource(AMR.strings.pref_invalidate_episode_download_cache_summary),
                     onClick = {
                         Injekt.get<DownloadCache>().invalidateCache()
                         context.toast(MR.strings.download_cache_invalidated)
@@ -470,7 +470,7 @@ object SettingsAdvancedScreen : SearchableSettings {
         }
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(text = stringResource(SYMR.strings.clean_up_downloaded_chapters)) },
+            title = { Text(text = stringResource(AMR.strings.clean_up_downloaded_episodes)) },
             text = {
                 LazyColumn {
                     options.forEachIndexed { index, option ->
@@ -580,8 +580,8 @@ object SettingsAdvancedScreen : SearchableSettings {
             title = stringResource(MR.strings.download_notifier_downloader_title),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(SYMR.strings.clean_up_downloaded_chapters),
-                    subtitle = stringResource(SYMR.strings.delete_unused_chapters),
+                    title = stringResource(AMR.strings.clean_up_downloaded_episodes),
+                    subtitle = stringResource(AMR.strings.delete_unused_episodes),
                     onClick = { dialogOpen = true },
                 ),
             ),

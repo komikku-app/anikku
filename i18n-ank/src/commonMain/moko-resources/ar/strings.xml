@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">جميع المواد المشاهدة</string>
+  <string name="non_library_watched_settings">جميع المواد المشاهدة</string>
   <string name="action_filter_fillermarked">معبأة</string>
   <string name="action_fillermark_episode">حلقة Fillermark</string>
   <string name="action_remove_fillermark_episode">حلقة غير ملئت</string>
   <string name="pref_not_download_fillermarked_items">رفض تنزيل الحلقات المعلمة بالملء</string>
   <string name="pref_show_downloaded_episode_file_size">إظهار حجم ملف الحلقة التي تم تنزيلها</string>
-  <string name="special_services" comment="special_services Connections section">الخدمات الخاصة</string>
+  <string name="special_services">الخدمات الخاصة</string>
   <string name="pref_discord_rpc">وجود ديسكورد الغني</string>
   <string name="pref_enable_discord_rpc">تمكين وجود ديسكورد الغني</string>
   <string name="pref_discord_status">حالة ديسكورد</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">وضع التخفي ديسكورد</string>
   <string name="pref_discord_incognito_summary">تم تجاوزها عند تمكين وضع التخفي</string>
   <string name="pref_discord_incognito_categories_details">المدخلات في الفئات المدرجة لن يتم عرضها في ديسكورد</string>
-  <string name="browsing" comment="browsing Discord section">تصفح</string>
+  <string name="browsing">تصفح</string>
   <string name="scrolling">التمرير عبر</string>
   <string name="messing">المراسلة مع</string>
   <string name="video">فيديو</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">حسابات ديسكورد</string>
   <string name="active_account">الحساب النشط</string>
   <string name="no_accounts_found">لم يتم العثور على حسابات</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">تخصيص ديسكورد</string>
+  <string name="pref_category_discord_customization">تخصيص ديسكورد</string>
   <string name="pref_discord_custom_message">رسالة مخصصة</string>
   <string name="pref_discord_custom_message_summary">رسالة مخصصة سيتم عرضها على ديسكورد</string>
   <string name="pref_discord_show_progress">إظهار التقدم</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">يعرض زر لتنزيل التطبيق</string>
   <string name="pref_discord_show_discord_button">إظهار زر ديسكورد</string>
   <string name="pref_discord_show_discord_button_summary">يعرض زرًا للانضمام إلى خادم ديسكورد</string>
-  <string name="install_amnis" comment="install_amnis Torrent">يجب تثبيت لاعب Amnis</string>
+  <string name="install_amnis">يجب تثبيت لاعب Amnis</string>
   <string name="pref_category_torrentserver">تفضيلات تورنتسيرفر</string>
   <string name="pref_torrentserver_port">منفذ تورنتسيرفر</string>
   <string name="torrentserver_is_running">خادم تورنت قيد التشغيل</string>
   <string name="pref_torrent_trackers">تعقب تورينت</string>
   <string name="pref_reset_torrent_trackers_string">إعادة تعيين سلسلة تعقب التورنت الافتراضية</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr يعمل. تم تحديث وكيل المستخدم. يرجى إعادة تشغيل التطبيق</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr يعمل. تم تحديث وكيل المستخدم. يرجى إعادة تشغيل التطبيق</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr لا يعمل. لم يتم تحديث عميل المستخدم. الرجاء التحقق من الإعدادات الخاصة بك</string>
   <string name="flare_solver_error">خطأ في الاتصال بـ FlareSolverr</string>
   <string name="flare_solver_error_webview">خطأ في حل مع WebView</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">عنوان URL لمثيل FlareSolverr للاستخدام على سبيل المثال http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">اختبار FlareSolverr وتحديث وكيل المستخدم</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">اختبار FlareSolverr لتحديث وكيل المستخدم. مطلوب مرة واحدة فقط؛ ثم قم بتبديل حسب الحاجة.</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">مجد</string>
+  <string name="media_route_menu_title">مجد</string>
   <string name="pref_category_cast">إعدادات القصة</string>
   <string name="pref_enable_cast">تمكين أو تعطيل المشاهدة</string>
   <string name="action_cast">إرسال إلى الكشوف</string>
-  <string-array name="title_cast_quality">
-    <item>اختيار جودة المسطح/المزود</item>
-    <item>حدد الجودة</item>
-  </string-array>
+  <string name="title_cast_quality">اختيار جودة المسطح/المزود</string>
   <string name="cast_not_connected">البث غير متصل</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>تم إضافة الفيديو إلى قائمة الانتظار</item>
-    <item>تم إضافة الفيديو إلى قائمة الانتظار</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>خطأ في تحميل الفيديو من القصة</item>
-    <item>خطأ في تحميل الفيديو</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">تم إضافة الفيديو إلى قائمة الانتظار</string>
+  <string name="cast_error_loading">خطأ في تحميل الفيديو من القصة</string>
   <string name="server_local_notification_casting">الخادم المحلي قيد التشغيل. انقر لإيقافه.</string>
   <string name="server_local_notification_channel_description">قناة إشعارات الخادم المحلية</string>
   <string name="pref_category_castserver">خادم القصة</string>
   <string name="pref_cast_server_port">منفذ الخادم المسقط</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">قائمة انتظار التشغيل</string>
+  <string name="cast_queue_title">قائمة انتظار التشغيل</string>
   <string name="action_clear_queue">مسح قائمة الانتظار</string>
   <string name="queue">قائمة الانتظار</string>
   <string name="cast_remove_from_queue">إزالة من قائمة الانتظار</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">هل أنت متأكد من أنك تريد إنهاء جلسة البث الحالية؟</string>
   <string name="cast_end_session_confirm">إنهاء الجلسة</string>
   <string name="cast_end_session_cancel">إلغاء</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">الأجهزة المتاحة</string>
+  <string name="cast_available_devices">الأجهزة المتاحة</string>
   <string name="cast_media_info">معلومات الوسائط</string>
   <string name="cast_previous_video">الفيديو السابق</string>
   <string name="cast_next_video">الفيديو التالي</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">سرعة التشغيل</string>
   <string name="cast_volume">حجم</string>
   <string name="cast_end_session">إنهاء الجلسة المسماة</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">إعدادات الترجمة</item>
-    <item>إعدادات الترجمة</item>
-  </string-array>
+  <string name="cast_subtitle_settings">إعدادات الترجمة</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">لون النص</string>
   <string name="cast_subtitle_background">الخلفية</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">الكساد</string>
   <string name="cast_connection_error">خطأ في الاتصال</string>
   <string name="login_failed">فشل في تسجيل الدخول</string>
-  <string name="tag" comment="tag Animiru">الوسوم</string>
-  <string name="pref_security" comment="pref_security Mihon">أمان</string>
+  <string name="tag">الوسوم</string>
+  <string name="pref_security">أمان</string>
   <string name="onboarding_permission_crashlytics">إرسال سجلات الأعطال</string>
   <string name="onboarding_permission_crashlytics_description">إرسال سجلات تحطم مجهولة الهوية إلى المطورين.</string>
   <string name="pref_firebase">التحليلات وسجلات الأعطال</string>
   <string name="firebase_summary">إرسال سجلات تحطم و تحليلات سيمكننا من تحديد و إصلاح المشكلات، و تحسين الأداء، و جعل التحديثات المستقبلية أكثر صلة باحتياجاتك</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">متابعة زر المشاهدة</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">المزامنة في الحلقة المشاهدة</string>
-  <string name="sync_on_chapter_open">المزامنة عند فتح الحلقة</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">التصنيفات، التحديث العام، تمرير الحلقة</string>
-  <string name="pref_category_delete_chapters">حذف الحلقات</string>
-  <string name="pref_remove_bookmarked_chapters">السماح بحذف الحلقات المحفوظة</string>
-  <string name="pref_remove_after_marked_as_read">بعد وضع علامة يدويًا كمشاهدة</string>
-  <string name="pref_remove_after_read">بعد مشاهدة الحذف تلقائياً</string>
-  <string name="pref_auto_update_manga_sync">تحديث التقدم بعد مشاهدة</string>
-  <string name="pref_auto_update_manga_on_mark_read">تحديث التقدم عند وضع علامة كمشاهدة</string>
+  <string name="action_sort_last_update_check">التحقق من التحديث الأخير</string>
+  <string name="action_display_show_continue_watching_button">متابعة زر المشاهدة</string>
+  <string name="sync_on_episode_seen">المزامنة في الحلقة المشاهدة</string>
+  <string name="sync_on_episode_open">المزامنة عند فتح الحلقة</string>
+  <string name="pref_library_summary_episode">التصنيفات، التحديث العام، تمرير الحلقة</string>
+  <string name="pref_category_delete_episodes">حذف الحلقات</string>
+  <string name="pref_remove_bookmarked_episodes">السماح بحذف الحلقات المحفوظة</string>
+  <string name="pref_remove_after_marked_as_seen">بعد وضع علامة يدويًا كمشاهدة</string>
+  <string name="pref_remove_after_watching">بعد مشاهدة الحذف تلقائياً</string>
+  <string name="pref_auto_update_anime_sync">تحديث التقدم بعد مشاهدة</string>
+  <string name="pref_auto_update_anime_on_mark_seen">تحديث التقدم عند وضع علامة كمشاهدة</string>
   <string name="pref_skip_seen_episodes">تخطي الحلقات المعلّمة المشاهدة</string>
   <string name="pref_skip_filtered_episodes">تخطي الحلقات المصفاة</string>
   <string name="pref_skip_dupe_episodes">تخطي الحلقات المكررة</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">تنظيف الحلقات المحملة</string>
-  <string name="pref_invalidate_download_cache_summary">إجبار التطبيق على إعادة تحميل الحلقات</string>
-  <string name="pref_update_only_completely_read">مع حلقة غير مرئية</string>
-  <string name="pref_library_update_show_tab_badge">إظهار العد غير المرئي على أيقونة التحديثات</string>
-  <string name="last_read_chapter">آخر حلقة شوهدت</string>
-  <string name="second_to_last">الحلقة الثانية إلى الأخيرة التي شوهدت</string>
-  <string name="third_to_last">الحلقة الثالثة إلى الأخيرة التي شوهدت</string>
-  <string name="fourth_to_last">رابعا إلى آخر حلقة شوهدت</string>
-  <string name="fifth_to_last">الحلقة الخامسة إلى الأخيرة التي شوهدت</string>
-  <string name="skipped_reason_not_caught_up">تخطي بسبب وجود حلقات غير مرئية</string>
-  <string name="skipped_reason_not_started">تم تخطي لأنه لا توجد حلقات مشاهدة</string>
+  <string name="clean_up_downloaded_episodes">تنظيف الحلقات المحملة</string>
+  <string name="pref_invalidate_episode_download_cache_summary">إجبار التطبيق على إعادة تحميل الحلقات</string>
+  <string name="pref_update_only_completely_seen">مع حلقة غير مرئية</string>
+  <string name="pref_library_update_show_tab_badge_episode">إظهار العد غير المرئي على أيقونة التحديثات</string>
+  <string name="last_seen_episode">آخر حلقة شوهدت</string>
+  <string name="second_to_last_episode">الحلقة الثانية إلى الأخيرة التي شوهدت</string>
+  <string name="third_to_last_episode">الحلقة الثالثة إلى الأخيرة التي شوهدت</string>
+  <string name="fourth_to_last_episode">رابعا إلى آخر حلقة شوهدت</string>
+  <string name="fifth_to_last_episode">الحلقة الخامسة إلى الأخيرة التي شوهدت</string>
+  <string name="skipped_reason_not_caught_up_episode">تخطي بسبب وجود حلقات غير مرئية</string>
+  <string name="skipped_reason_not_started_episode">تم تخطي لأنه لا توجد حلقات مشاهدة</string>
 </resources>

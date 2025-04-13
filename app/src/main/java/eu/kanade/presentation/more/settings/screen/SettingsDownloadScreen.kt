@@ -118,27 +118,27 @@ object SettingsDownloadScreen : SearchableSettings {
         categories: List<Category>,
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
-            title = stringResource(AMR.strings.pref_category_delete_chapters),
+            title = stringResource(AMR.strings.pref_category_delete_episodes),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     pref = downloadPreferences.removeAfterMarkedAsRead(),
-                    title = stringResource(AMR.strings.pref_remove_after_marked_as_read),
+                    title = stringResource(AMR.strings.pref_remove_after_marked_as_seen),
                 ),
                 Preference.PreferenceItem.ListPreference(
                     pref = downloadPreferences.removeAfterReadSlots(),
-                    title = stringResource(AMR.strings.pref_remove_after_read),
+                    title = stringResource(AMR.strings.pref_remove_after_watching),
                     entries = persistentMapOf(
                         -1 to stringResource(MR.strings.disabled),
-                        0 to stringResource(AMR.strings.last_read_chapter),
-                        1 to stringResource(AMR.strings.second_to_last),
-                        2 to stringResource(AMR.strings.third_to_last),
-                        3 to stringResource(AMR.strings.fourth_to_last),
-                        4 to stringResource(AMR.strings.fifth_to_last),
+                        0 to stringResource(AMR.strings.last_seen_episode),
+                        1 to stringResource(AMR.strings.second_to_last_episode),
+                        2 to stringResource(AMR.strings.third_to_last_episode),
+                        3 to stringResource(AMR.strings.fourth_to_last_episode),
+                        4 to stringResource(AMR.strings.fifth_to_last_episode),
                     ),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     pref = downloadPreferences.removeBookmarkedChapters(),
-                    title = stringResource(AMR.strings.pref_remove_bookmarked_chapters),
+                    title = stringResource(AMR.strings.pref_remove_bookmarked_episodes),
                 ),
                 getExcludedCategoriesPreference(
                     downloadPreferences = downloadPreferences,

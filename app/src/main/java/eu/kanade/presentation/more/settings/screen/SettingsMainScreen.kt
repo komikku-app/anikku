@@ -185,7 +185,7 @@ object SettingsMainScreen : Screen() {
         ),
         Item(
             titleRes = MR.strings.pref_category_library,
-            subtitleRes = AMR.strings.pref_library_summary,
+            subtitleRes = AMR.strings.pref_library_summary_episode,
             icon = Icons.Outlined.CollectionsBookmark,
             screen = SettingsLibraryScreen,
         ),

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">Wszystkie obejrzane wpisy</string>
+  <string name="non_library_watched_settings">Wszystkie obejrzane wpisy</string>
   <string name="action_filter_fillermarked">Oznaczono jako wyróżnione</string>
   <string name="action_fillermark_episode">Odcinek Fillermark</string>
   <string name="action_remove_fillermark_episode">Niewypełniony odcinek</string>
   <string name="pref_not_download_fillermarked_items">Odmowa pobierania wypełnionych odcinków</string>
   <string name="pref_show_downloaded_episode_file_size">Pokaż rozmiar pliku pobranego odcinka</string>
-  <string name="special_services" comment="special_services Connections section">Usługi specjalne</string>
+  <string name="special_services">Usługi specjalne</string>
   <string name="pref_discord_rpc">Wzbogacona obecność Discorda</string>
   <string name="pref_enable_discord_rpc">Włącz Discord Rich Presence</string>
   <string name="pref_discord_status">Status Discorda</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">Tryb Discord Incognito</string>
   <string name="pref_discord_incognito_summary">Zastąpione, gdy włączony jest tryb incognito</string>
   <string name="pref_discord_incognito_categories_details">Wpisy w dołączonych kategoriach nie będą wyświetlane w Discordzie</string>
-  <string name="browsing" comment="browsing Discord section">Przeglądanie</string>
+  <string name="browsing">Przeglądanie</string>
   <string name="scrolling">Przewijanie przez</string>
   <string name="messing">Komunikacja z</string>
   <string name="video">Wideo</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">Konta Discorda</string>
   <string name="active_account">Aktywne konto</string>
   <string name="no_accounts_found">Nie znaleziono kont</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Dostosowanie Discorda</string>
+  <string name="pref_category_discord_customization">Dostosowanie Discorda</string>
   <string name="pref_discord_custom_message">Wiadomość niestandardowa</string>
   <string name="pref_discord_custom_message_summary">Niestandardowa wiadomość, która będzie wyświetlana na Discordzie</string>
   <string name="pref_discord_show_progress">Pokaż postęp</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">Wyświetla przycisk do pobrania aplikacji</string>
   <string name="pref_discord_show_discord_button">Pokaż przycisk Discorda</string>
   <string name="pref_discord_show_discord_button_summary">Wyświetla przycisk dołączenia do serwera Discorda</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Player musi być zainstalowany</string>
+  <string name="install_amnis">Amnis Player musi być zainstalowany</string>
   <string name="pref_category_torrentserver">Ustawienia serwera TorrentServer</string>
   <string name="pref_torrentserver_port">Port TorrentServer</string>
   <string name="torrentserver_is_running">Serwer torrent jest uruchomiony</string>
   <string name="pref_torrent_trackers">Torrent Trackers</string>
   <string name="pref_reset_torrent_trackers_string">Resetuj domyślny ciąg tropicieli torrent</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr działa. Agent użytkownika zaktualizowany. Uruchom ponownie aplikację</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr działa. Agent użytkownika zaktualizowany. Uruchom ponownie aplikację</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr nie działa. Agent użytkownika nie zaktualizowany. Sprawdź swoje ustawienia</string>
   <string name="flare_solver_error">Błąd podczas kontaktu z FlareSolverr</string>
   <string name="flare_solver_error_webview">Błąd rozwiązywania z WebView</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">Adres URL instancji FlareSolverr do użycia na przykład http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Testuj FlareSolverr i zaktualizuj agenta użytkownika</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Przetestuj FlareSolverr aby zaktualizować agenta użytkownika. Wymagane tylko raz; następnie przełącz w razie potrzeby.</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">EXTEND</string>
+  <string name="media_route_menu_title">EXTEND</string>
   <string name="pref_category_cast">Ustawienia wyglądu</string>
   <string name="pref_enable_cast">Włącz lub wyłącz Cast</string>
   <string name="action_cast">Wyślij do Cast</string>
-  <string-array name="title_cast_quality">
-    <item>Wybierz Jakość/Dostawcę</item>
-    <item>Wybierz jakość</item>
-  </string-array>
+  <string name="title_cast_quality">Wybierz Jakość/Dostawcę</string>
   <string name="cast_not_connected">Nie połączono</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Film dodany do kolejki</item>
-    <item>Film dodany do kolejki</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Błąd ładowania wideo z Cast</item>
-    <item>Błąd ładowania wideo</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Film dodany do kolejki</string>
+  <string name="cast_error_loading">Błąd ładowania wideo z Cast</string>
   <string name="server_local_notification_casting">Serwer lokalny jest uruchomiony. Dotknij, aby go zatrzymać.</string>
   <string name="server_local_notification_channel_description">Lokalny kanał powiadomień serwera</string>
   <string name="pref_category_castserver">Serwer Cast</string>
   <string name="pref_cast_server_port">Port serwera</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Kolejka odtwarzania</string>
+  <string name="cast_queue_title">Kolejka odtwarzania</string>
   <string name="action_clear_queue">Wyczyść kolejkę</string>
   <string name="queue">Kolejka</string>
   <string name="cast_remove_from_queue">Usuń z kolejki</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">Czy na pewno chcesz zakończyć bieżącą sesję transmisji?</string>
   <string name="cast_end_session_confirm">Zakończ sesję</string>
   <string name="cast_end_session_cancel">Anuluj</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Dostępne urządzenia</string>
+  <string name="cast_available_devices">Dostępne urządzenia</string>
   <string name="cast_media_info">Informacje o mediach</string>
   <string name="cast_previous_video">Poprzedni film</string>
   <string name="cast_next_video">Następne wideo</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">Prędkość odtwarzania</string>
   <string name="cast_volume">Objętość</string>
   <string name="cast_end_session">Zakończ sesję Obsady</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Ustawienia napisów</item>
-    <item>Ustawienia napisów</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Ustawienia napisów</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Kolor tekstu</string>
   <string name="cast_subtitle_background">Kontekst</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">Depresowany</string>
   <string name="cast_connection_error">Błąd połączenia</string>
   <string name="login_failed">Logowanie nie powiodło się</string>
-  <string name="tag" comment="tag Animiru">Tagi</string>
-  <string name="pref_security" comment="pref_security Mihon">Bezpieczeństwo</string>
+  <string name="tag">Tagi</string>
+  <string name="pref_security">Bezpieczeństwo</string>
   <string name="onboarding_permission_crashlytics">Wyślij dzienniki awarii</string>
   <string name="onboarding_permission_crashlytics_description">Wyślij anonimowe dzienniki awarii do programistów.</string>
   <string name="pref_firebase">Analityka i dzienniki awarii</string>
   <string name="firebase_summary">Wysyłanie dzienników awarii i analiz pozwoli nam zidentyfikować i naprawić problemy, poprawić wydajność i sprawić, by przyszłe aktualizacje były bardziej odpowiednie do Twoich potrzeb</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Kontynuuj obserwowanie przycisku</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Synchronizuj na widoku odcinka</string>
-  <string name="sync_on_chapter_open">Synchronizuj na otwartym odcinku</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Kategorie, globalna aktualizacja, przeciągnięcie odcinkiem</string>
-  <string name="pref_category_delete_chapters">Usuń odcinki</string>
-  <string name="pref_remove_bookmarked_chapters">Zezwalaj na usuwanie zakładek odcinków</string>
-  <string name="pref_remove_after_marked_as_read">Po ręcznym oznaczeniu jako widoczne</string>
-  <string name="pref_remove_after_read">Po automatycznym usunięciu</string>
-  <string name="pref_auto_update_manga_sync">Aktualizuj postęp po obejrzeniu</string>
-  <string name="pref_auto_update_manga_on_mark_read">Aktualizuj postęp, gdy oznaczono jako obejrzane</string>
+  <string name="action_sort_last_update_check">Sprawdzanie ostatniej aktualizacji</string>
+  <string name="action_display_show_continue_watching_button">Kontynuuj obserwowanie przycisku</string>
+  <string name="sync_on_episode_seen">Synchronizuj na widoku odcinka</string>
+  <string name="sync_on_episode_open">Synchronizuj na otwartym odcinku</string>
+  <string name="pref_library_summary_episode">Kategorie, globalna aktualizacja, przeciągnięcie odcinkiem</string>
+  <string name="pref_category_delete_episodes">Usuń odcinki</string>
+  <string name="pref_remove_bookmarked_episodes">Zezwalaj na usuwanie zakładek odcinków</string>
+  <string name="pref_remove_after_marked_as_seen">Po ręcznym oznaczeniu jako widoczne</string>
+  <string name="pref_remove_after_watching">Po automatycznym usunięciu</string>
+  <string name="pref_auto_update_anime_sync">Aktualizuj postęp po obejrzeniu</string>
+  <string name="pref_auto_update_anime_on_mark_seen">Aktualizuj postęp, gdy oznaczono jako obejrzane</string>
   <string name="pref_skip_seen_episodes">Pomiń zaznaczone odcinki</string>
   <string name="pref_skip_filtered_episodes">Pomiń filtrowane odcinki</string>
   <string name="pref_skip_dupe_episodes">Pomiń zduplikowane odcinki</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Wyczyść pobrane odcinki</string>
-  <string name="pref_invalidate_download_cache_summary">Wymuś ponowne sprawdzenie pobranych odcinków przez aplikację</string>
-  <string name="pref_update_only_completely_read">Z nieobserwowanymi odcinkami</string>
-  <string name="pref_library_update_show_tab_badge">Pokaż niewidoczny licznik na ikonie aktualizacji</string>
-  <string name="last_read_chapter">Ostatnio widziany odcinek</string>
-  <string name="second_to_last">Odcinek od drugiego do ostatniego</string>
-  <string name="third_to_last">Trzeci do ostatniego epizod</string>
-  <string name="fourth_to_last">Od czwartego do ostatniego epizodu</string>
-  <string name="fifth_to_last">Piąty do ostatniego epizodu</string>
-  <string name="skipped_reason_not_caught_up">Pominięto, ponieważ są niezauważone odcinki</string>
-  <string name="skipped_reason_not_started">Pominięto, ponieważ żadne odcinki nie są widoczne</string>
+  <string name="clean_up_downloaded_episodes">Wyczyść pobrane odcinki</string>
+  <string name="pref_invalidate_episode_download_cache_summary">Wymuś ponowne sprawdzenie pobranych odcinków przez aplikację</string>
+  <string name="pref_update_only_completely_seen">Z nieobserwowanymi odcinkami</string>
+  <string name="pref_library_update_show_tab_badge_episode">Pokaż niewidoczny licznik na ikonie aktualizacji</string>
+  <string name="last_seen_episode">Ostatnio widziany odcinek</string>
+  <string name="second_to_last_episode">Odcinek od drugiego do ostatniego</string>
+  <string name="third_to_last_episode">Trzeci do ostatniego epizod</string>
+  <string name="fourth_to_last_episode">Od czwartego do ostatniego epizodu</string>
+  <string name="fifth_to_last_episode">Piąty do ostatniego epizodu</string>
+  <string name="skipped_reason_not_caught_up_episode">Pominięto, ponieważ są niezauważone odcinki</string>
+  <string name="skipped_reason_not_started_episode">Pominięto, ponieważ żadne odcinki nie są widoczne</string>
 </resources>

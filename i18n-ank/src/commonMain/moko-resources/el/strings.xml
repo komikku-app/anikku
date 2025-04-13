@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">Όλες οι καταχωρήσεις που παρακολουθήθηκαν</string>
+  <string name="non_library_watched_settings">Όλες οι καταχωρήσεις που παρακολουθήθηκαν</string>
   <string name="action_filter_fillermarked">Συμπληρώματα</string>
   <string name="action_fillermark_episode">επεισόδιο Fillermark</string>
   <string name="action_remove_fillermark_episode">Ξαναγέμισμα επεισοδίου</string>
   <string name="pref_not_download_fillermarked_items">Άρνηση λήψης των σημειωμένων με πλήρωση επεισοδίων</string>
   <string name="pref_show_downloaded_episode_file_size">Εμφάνιση του ληφθέντος μεγέθους αρχείου επεισοδίου</string>
-  <string name="special_services" comment="special_services Connections section">Ειδικές Υπηρεσίες</string>
+  <string name="special_services">Ειδικές Υπηρεσίες</string>
   <string name="pref_discord_rpc">Discord Πλούσια Παρουσία</string>
   <string name="pref_enable_discord_rpc">Ενεργοποίηση Discord Rich Presence</string>
   <string name="pref_discord_status">Κατάσταση Discord</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">Ανώνυμη περιήγηση σε Discord</string>
   <string name="pref_discord_incognito_summary">Αντικαταστάθηκε όταν είναι ενεργοποιημένη η λειτουργία ανώνυμης περιήγησης</string>
   <string name="pref_discord_incognito_categories_details">Οι καταχωρήσεις στις κατηγορίες που περιλαμβάνονται δεν θα εμφανίζονται στο Discord</string>
-  <string name="browsing" comment="browsing Discord section">Περιήγηση</string>
+  <string name="browsing">Περιήγηση</string>
   <string name="scrolling">Κύλιση μέσα</string>
   <string name="messing">Ανταλλαγή μηνυμάτων με</string>
   <string name="video">Βίντεο</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">Λογαριασμοί Discord</string>
   <string name="active_account">Ενεργός Λογαριασμός</string>
   <string name="no_accounts_found">Δεν βρέθηκαν λογαριασμοί</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Προσαρμογή Discord</string>
+  <string name="pref_category_discord_customization">Προσαρμογή Discord</string>
   <string name="pref_discord_custom_message">Προσαρμοσμένο Μήνυμα</string>
   <string name="pref_discord_custom_message_summary">Προσαρμοσμένο μήνυμα που θα εμφανίζεται στο Discord</string>
   <string name="pref_discord_show_progress">Εμφάνιση Προόδου</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">Εμφανίζει ένα κουμπί για λήψη της εφαρμογής</string>
   <string name="pref_discord_show_discord_button">Εμφάνιση Κουμπιού Discord</string>
   <string name="pref_discord_show_discord_button_summary">Εμφανίζει ένα κουμπί για να συνδεθεί με τον διακομιστή του Discord</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Ο παίκτης Amnis πρέπει να εγκατασταθεί</string>
+  <string name="install_amnis">Ο παίκτης Amnis πρέπει να εγκατασταθεί</string>
   <string name="pref_category_torrentserver">Προτιμήσεις TorrentServer</string>
   <string name="pref_torrentserver_port">Θύρα TorrentServer</string>
   <string name="torrentserver_is_running">Ο διακομιστής Torrent εκτελείται</string>
   <string name="pref_torrent_trackers">Ανιχνευτές Torrent</string>
   <string name="pref_reset_torrent_trackers_string">Επαναφορά προεπιλεγμένης συμβολοσειράς torrent trackers</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">Το FlareSolverr λειτουργεί. Ο χρήστης πράκτορας ενημερώθηκε. Παρακαλώ επανεκκινήστε την εφαρμογή</string>
+  <string name="flare_solver_user_agent_update_success">Το FlareSolverr λειτουργεί. Ο χρήστης πράκτορας ενημερώθηκε. Παρακαλώ επανεκκινήστε την εφαρμογή</string>
   <string name="flare_solver_update_user_agent_failed">Το FlareSolverr δεν λειτουργεί. Ο πράκτορας χρήστη δεν ενημερώθηκε. Παρακαλώ ελέγξτε τις ρυθμίσεις σας</string>
   <string name="flare_solver_error">Σφάλμα επικοινωνίας με το FlareSolverr</string>
   <string name="flare_solver_error_webview">Σφάλμα στην επίλυση με WebView</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">URL για την παρουσία FlareSolverr για χρήση π.χ. http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Δοκιμή FlareSolverr και ενημέρωση πράκτορα χρήστη</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Δοκιμάστε το FlareSolverr για να ενημερώσετε τον πράκτορα του χρήστη. Απαιτείται μόνο μία φορά, στη συνέχεια, εναλλάσσετε όπως απαιτείται.</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">ΕΠΕΚΤΑΣΗ</string>
+  <string name="media_route_menu_title">ΕΠΕΚΤΑΣΗ</string>
   <string name="pref_category_cast">Ρυθμίσεις Cast</string>
   <string name="pref_enable_cast">Ενεργοποίηση ή απενεργοποίηση Cast</string>
   <string name="action_cast">Αποστολή στο Cast</string>
-  <string-array name="title_cast_quality">
-    <item>Επιλογή Ποιότητας/Παροχής Cast</item>
-    <item>Επιλογή Ποιότητας</item>
-  </string-array>
+  <string name="title_cast_quality">Επιλογή Ποιότητας/Παροχής Cast</string>
   <string name="cast_not_connected">Η μετάδοση δεν συνδέθηκε</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Το βίντεο προστέθηκε στην ουρά</item>
-    <item>Το βίντεο προστέθηκε στην ουρά</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Σφάλμα κατά τη φόρτωση βίντεο από το Cast</item>
-    <item>Σφάλμα φόρτωσης βίντεο</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Το βίντεο προστέθηκε στην ουρά</string>
+  <string name="cast_error_loading">Σφάλμα κατά τη φόρτωση βίντεο από το Cast</string>
   <string name="server_local_notification_casting">Ο τοπικός διακομιστής εκτελείται. Πατήστε για να τον σταματήσετε.</string>
   <string name="server_local_notification_channel_description">Κανάλι ειδοποίησης τοπικού διακομιστή</string>
   <string name="pref_category_castserver">Μετάδοση Διακομιστή</string>
   <string name="pref_cast_server_port">Θύρα Διακομιστή Cast</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Ουρά Αναπαραγωγής</string>
+  <string name="cast_queue_title">Ουρά Αναπαραγωγής</string>
   <string name="action_clear_queue">Εκκαθάριση Ουράς</string>
   <string name="queue">Ουρά</string>
   <string name="cast_remove_from_queue">Αφαίρεση από την ουρά</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">Είστε βέβαιοι ότι θέλετε να τερματίσετε την τρέχουσα συνεδρία cast?</string>
   <string name="cast_end_session_confirm">Τέλος Συνεδρίας</string>
   <string name="cast_end_session_cancel">Ακύρωση</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Διαθέσιμες Συσκευές</string>
+  <string name="cast_available_devices">Διαθέσιμες Συσκευές</string>
   <string name="cast_media_info">Πληροφορίες Πολυμέσων</string>
   <string name="cast_previous_video">Προηγούμενο Βίντεο</string>
   <string name="cast_next_video">Επόμενο Βίντεο</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">Ταχύτητα Αναπαραγωγής</string>
   <string name="cast_volume">Όγκος</string>
   <string name="cast_end_session">Τέλος Συνεδρίας Cast</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Ρυθμίσεις Υποτίτλων</item>
-    <item>Ρυθμίσεις Υποτίτλων</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Ρυθμίσεις Υποτίτλων</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Χρώμα Κειμένου</string>
   <string name="cast_subtitle_background">Φόντο</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">Καταπιεσμένο</string>
   <string name="cast_connection_error">Σφάλμα Σύνδεσης</string>
   <string name="login_failed">Αποτυχία σύνδεσης</string>
-  <string name="tag" comment="tag Animiru">Ετικέτες</string>
-  <string name="pref_security" comment="pref_security Mihon">Ασφάλεια</string>
+  <string name="tag">Ετικέτες</string>
+  <string name="pref_security">Ασφάλεια</string>
   <string name="onboarding_permission_crashlytics">Αποστολή αρχείων καταγραφής σφαλμάτων</string>
   <string name="onboarding_permission_crashlytics_description">Αποστολή ανώνυμων αρχείων καταγραφής σφαλμάτων στους προγραμματιστές.</string>
   <string name="pref_firebase">Αναλύσεις και αρχεία καταγραφής κατάρρευσης</string>
   <string name="firebase_summary">Η αποστολή αρχείων καταγραφής σφαλμάτων και αναλύσεων θα μας επιτρέψει να εντοπίσουμε και να διορθώσουμε προβλήματα, να βελτιώσουμε την απόδοση και να κάνουμε μελλοντικές ενημερώσεις πιο σχετικές με τις ανάγκες σας</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Συνέχιση παρακολούθησης κουμπιού</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Συγχρονισμός στο επεισόδιο</string>
-  <string name="sync_on_chapter_open">Συγχρονισμός στο Ανοικτό Επεισόδιο</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Κατηγορίες, γενική ενημέρωση, episode swipe</string>
-  <string name="pref_category_delete_chapters">Διαγραφή επεισοδίων</string>
-  <string name="pref_remove_bookmarked_chapters">Επιτρέψτε τη διαγραφή επεισοδίων σελιδοδεικτών</string>
-  <string name="pref_remove_after_marked_as_read">Μετά από χειροκίνητη σήμανση όπως φαίνεται</string>
-  <string name="pref_remove_after_read">Μετά την παρακολούθηση διαγράφεται αυτόματα</string>
-  <string name="pref_auto_update_manga_sync">Πρόοδος ενημέρωσης μετά την παρακολούθηση</string>
-  <string name="pref_auto_update_manga_on_mark_read">Ενημέρωση προόδου όταν επισημαίνεται ως παρακολουθούμενη</string>
+  <string name="action_sort_last_update_check">Τελευταίος έλεγχος ενημερώσεων</string>
+  <string name="action_display_show_continue_watching_button">Συνέχιση παρακολούθησης κουμπιού</string>
+  <string name="sync_on_episode_seen">Συγχρονισμός στο επεισόδιο</string>
+  <string name="sync_on_episode_open">Συγχρονισμός στο Ανοικτό Επεισόδιο</string>
+  <string name="pref_library_summary_episode">Κατηγορίες, γενική ενημέρωση, episode swipe</string>
+  <string name="pref_category_delete_episodes">Διαγραφή επεισοδίων</string>
+  <string name="pref_remove_bookmarked_episodes">Επιτρέψτε τη διαγραφή επεισοδίων σελιδοδεικτών</string>
+  <string name="pref_remove_after_marked_as_seen">Μετά από χειροκίνητη σήμανση όπως φαίνεται</string>
+  <string name="pref_remove_after_watching">Μετά την παρακολούθηση διαγράφεται αυτόματα</string>
+  <string name="pref_auto_update_anime_sync">Πρόοδος ενημέρωσης μετά την παρακολούθηση</string>
+  <string name="pref_auto_update_anime_on_mark_seen">Ενημέρωση προόδου όταν επισημαίνεται ως παρακολουθούμενη</string>
   <string name="pref_skip_seen_episodes">Παράλειψη επεισοδίων που σημειώθηκαν</string>
   <string name="pref_skip_filtered_episodes">Παράλειψη φιλτραρισμένων επεισοδίων</string>
   <string name="pref_skip_dupe_episodes">Παράλειψη διπλότυπων επεισοδίων</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Εκκαθάριση κατεβασμένων επεισοδίων</string>
-  <string name="pref_invalidate_download_cache_summary">Αναγκαστική εφαρμογή για επανέλεγχο κατεβασμένων επεισοδίων</string>
-  <string name="pref_update_only_completely_read">Με αθέατο(α) επεισόδιο(α)</string>
-  <string name="pref_library_update_show_tab_badge">Εμφάνιση μη ορατού πλήθους στο εικονίδιο Ενημερώσεων</string>
-  <string name="last_read_chapter">Τελευταίο επεισόδιο</string>
-  <string name="second_to_last">Δεύτερο έως τελευταίο επεισόδιο</string>
-  <string name="third_to_last">Τρίτο έως τελευταίο επεισόδιο</string>
-  <string name="fourth_to_last">Τέταρτο έως τελευταίο επεισόδιο</string>
-  <string name="fifth_to_last">Πέμπτο έως τελευταίο επεισόδιο</string>
-  <string name="skipped_reason_not_caught_up">Παραλείφθηκε επειδή υπάρχουν αθέατα επεισόδια</string>
-  <string name="skipped_reason_not_started">Παραλείπεται επειδή δεν εμφανίζονται επεισόδια</string>
+  <string name="clean_up_downloaded_episodes">Εκκαθάριση κατεβασμένων επεισοδίων</string>
+  <string name="pref_invalidate_episode_download_cache_summary">Αναγκαστική εφαρμογή για επανέλεγχο κατεβασμένων επεισοδίων</string>
+  <string name="pref_update_only_completely_seen">Με αθέατο(α) επεισόδιο(α)</string>
+  <string name="pref_library_update_show_tab_badge_episode">Εμφάνιση μη ορατού πλήθους στο εικονίδιο Ενημερώσεων</string>
+  <string name="last_seen_episode">Τελευταίο επεισόδιο</string>
+  <string name="second_to_last_episode">Δεύτερο έως τελευταίο επεισόδιο</string>
+  <string name="third_to_last_episode">Τρίτο έως τελευταίο επεισόδιο</string>
+  <string name="fourth_to_last_episode">Τέταρτο έως τελευταίο επεισόδιο</string>
+  <string name="fifth_to_last_episode">Πέμπτο έως τελευταίο επεισόδιο</string>
+  <string name="skipped_reason_not_caught_up_episode">Παραλείφθηκε επειδή υπάρχουν αθέατα επεισόδια</string>
+  <string name="skipped_reason_not_started_episode">Παραλείπεται επειδή δεν εμφανίζονται επεισόδια</string>
 </resources>

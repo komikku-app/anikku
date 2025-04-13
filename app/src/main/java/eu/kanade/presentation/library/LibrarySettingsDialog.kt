@@ -232,7 +232,7 @@ private fun ColumnScope.SortPage(
             MR.strings.action_sort_alpha to LibrarySort.Type.Alphabetical,
             MR.strings.action_sort_total_episodes to LibrarySort.Type.TotalChapters,
             MR.strings.action_sort_last_seen to LibrarySort.Type.LastRead,
-            MR.strings.action_sort_last_anime_update to LibrarySort.Type.LastUpdate,
+            AMR.strings.action_sort_last_update_check to LibrarySort.Type.LastUpdate,
             MR.strings.action_sort_unseen_count to LibrarySort.Type.UnreadCount,
             MR.strings.action_sort_latest_episode to LibrarySort.Type.LatestChapter,
             MR.strings.action_sort_episode_fetch_date to LibrarySort.Type.ChapterFetchDate,
@@ -370,7 +370,7 @@ private fun ColumnScope.DisplayPage(
     )
     // KMK <--
     CheckboxItem(
-        label = stringResource(AMR.strings.action_display_show_continue_reading_button),
+        label = stringResource(AMR.strings.action_display_show_continue_watching_button),
         pref = screenModel.libraryPreferences.showContinueReadingButton(),
     )
 

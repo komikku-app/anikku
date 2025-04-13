@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">Alle bekeken invoergegevens</string>
+  <string name="non_library_watched_settings">Alle bekeken invoergegevens</string>
   <string name="action_filter_fillermarked">Fillermarkering</string>
   <string name="action_fillermark_episode">Fillermark aflevering</string>
   <string name="action_remove_fillermark_episode">Aflevering ongedaan maken</string>
   <string name="pref_not_download_fillermarked_items">Downloaden van gefillermarkeerde afleveringen weigeren</string>
   <string name="pref_show_downloaded_episode_file_size">Toon gedownloade aflevering bestand grootte</string>
-  <string name="special_services" comment="special_services Connections section">Speciale diensten</string>
+  <string name="special_services">Speciale diensten</string>
   <string name="pref_discord_rpc">Discord Rich Presence</string>
   <string name="pref_enable_discord_rpc">Discord Rich Presence inschakelen</string>
   <string name="pref_discord_status">Discord status</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">Discord Incognito modus</string>
   <string name="pref_discord_incognito_summary">Overschreven wanneer Incognito modus is ingeschakeld</string>
   <string name="pref_discord_incognito_categories_details">Invoer in opgenomen categorieën zal niet worden weergegeven in Discord</string>
-  <string name="browsing" comment="browsing Discord section">Browsen</string>
+  <string name="browsing">Browsen</string>
   <string name="scrolling">Scrollen door</string>
   <string name="messing">Messing rond met</string>
   <string name="video">Video</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">Discord accounts</string>
   <string name="active_account">Actieve account</string>
   <string name="no_accounts_found">Geen accounts gevonden</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Discord aanpassingen</string>
+  <string name="pref_category_discord_customization">Discord aanpassingen</string>
   <string name="pref_discord_custom_message">Aangepast bericht</string>
   <string name="pref_discord_custom_message_summary">Aangepast bericht dat zal worden getoond op Discord</string>
   <string name="pref_discord_show_progress">Toon voortgang</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">Toont een knop om de app te downloaden</string>
   <string name="pref_discord_show_discord_button">Toon Discord knop</string>
   <string name="pref_discord_show_discord_button_summary">Toont een knop om toe te treden tot de Discord server</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Player moet geïnstalleerd worden</string>
+  <string name="install_amnis">Amnis Player moet geïnstalleerd worden</string>
   <string name="pref_category_torrentserver">TorrentServer Voorkeuren</string>
   <string name="pref_torrentserver_port">TorrentServer Poort</string>
   <string name="torrentserver_is_running">Torrent Server is actief</string>
   <string name="pref_torrent_trackers">Torrent Trackers</string>
   <string name="pref_reset_torrent_trackers_string">Reset standaard torrent trackers string</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr werkt. Gebruikersagent bijgewerkt. Start de app opnieuw op</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr werkt. Gebruikersagent bijgewerkt. Start de app opnieuw op</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr werkt niet. Gebruikersagent is niet bijgewerkt. Controleer uw instellingen</string>
   <string name="flare_solver_error">Fout bij contact opnemen FlareSolverr</string>
   <string name="flare_solver_error_webview">Fout bij het oplossen met WebView</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">URL van de FlareSolverr versie die bijvoorbeeld http://192.168.1.202:8191/v1 gebruikt kan worden</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Test FlareSolverr en update gebruikersagent</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Test FlareSolverr om de user agent bij te werken. Slechts één keer nodig; schakel daarna de schakelaar indien nodig.</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">UITVOEREN</string>
+  <string name="media_route_menu_title">UITVOEREN</string>
   <string name="pref_category_cast">Cast Instellingen</string>
   <string name="pref_enable_cast">Casten in- of uitschakelen</string>
   <string name="action_cast">Stuur naar Cast</string>
-  <string-array name="title_cast_quality">
-    <item>Kies Cast-kwaliteit/provider</item>
-    <item>Selecteer kwaliteit</item>
-  </string-array>
+  <string name="title_cast_quality">Kies Cast-kwaliteit/provider</string>
   <string name="cast_not_connected">Cast niet verbonden</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Video toegevoegd aan de wachtrij</item>
-    <item>Video toegevoegd aan de wachtrij</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Fout bij het laden van video van Cast</item>
-    <item>Fout bij laden video</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Video toegevoegd aan de wachtrij</string>
+  <string name="cast_error_loading">Fout bij het laden van video van Cast</string>
   <string name="server_local_notification_casting">De lokale server is actief. Tik om deze te stoppen.</string>
   <string name="server_local_notification_channel_description">Lokaal server meldingskanaal</string>
   <string name="pref_category_castserver">Server casten</string>
   <string name="pref_cast_server_port">Castserver poort</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Wachtrij afspelen</string>
+  <string name="cast_queue_title">Wachtrij afspelen</string>
   <string name="action_clear_queue">Wachtrij wissen</string>
   <string name="queue">Wachtrij</string>
   <string name="cast_remove_from_queue">Verwijderen uit wachtrij</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">Weet u zeker dat u de huidige cast sessie wilt beëindigen?</string>
   <string name="cast_end_session_confirm">Sessie beëindigen</string>
   <string name="cast_end_session_cancel">annuleren</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Beschikbare apparaten</string>
+  <string name="cast_available_devices">Beschikbare apparaten</string>
   <string name="cast_media_info">Media informatie</string>
   <string name="cast_previous_video">Vorige video</string>
   <string name="cast_next_video">Volgende video</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">Afspeel snelheid</string>
   <string name="cast_volume">Volume</string>
   <string name="cast_end_session">Beëindig sessie</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Ondertiteling instellingen</item>
-    <item>Ondertiteling instellingen</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Ondertiteling instellingen</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Tekst kleur</string>
   <string name="cast_subtitle_background">Achtergrond</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">Verdrietig</string>
   <string name="cast_connection_error">Verbindingsfout</string>
   <string name="login_failed">Inloggen mislukt</string>
-  <string name="tag" comment="tag Animiru">Labels</string>
-  <string name="pref_security" comment="pref_security Mihon">Beveiliging</string>
+  <string name="tag">Labels</string>
+  <string name="pref_security">Beveiliging</string>
   <string name="onboarding_permission_crashlytics">Crashlogs verzenden</string>
   <string name="onboarding_permission_crashlytics_description">Verzend geanonimiseerde crashlogs naar de ontwikkelaars.</string>
   <string name="pref_firebase">Analytics en Crash logs</string>
   <string name="firebase_summary">Het verzenden van crash logs en analytics stelt ons in staat om problemen te identificeren en op te lossen, prestaties te verbeteren en toekomstige updates relevanter te maken voor uw behoeften</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Doorgaan met kijken knop</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Synchroniseren bij aflevering gezien</string>
-  <string name="sync_on_chapter_open">Synchroniseren bij open aflevering</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Categorieën, globale update, veeg aflevering</string>
-  <string name="pref_category_delete_chapters">Verwijder afleveringen</string>
-  <string name="pref_remove_bookmarked_chapters">Verwijderen van bladwijzerafleveringen toestaan</string>
-  <string name="pref_remove_after_marked_as_read">Na handmatig gemarkeerd als gezien</string>
-  <string name="pref_remove_after_read">Na het kijken automatisch verwijderen</string>
-  <string name="pref_auto_update_manga_sync">Update de voortgang na het kijken</string>
-  <string name="pref_auto_update_manga_on_mark_read">Update voortgang wanneer gemarkeerd als bekeken</string>
+  <string name="action_sort_last_update_check">Laatste update controle</string>
+  <string name="action_display_show_continue_watching_button">Doorgaan met kijken knop</string>
+  <string name="sync_on_episode_seen">Synchroniseren bij aflevering gezien</string>
+  <string name="sync_on_episode_open">Synchroniseren bij open aflevering</string>
+  <string name="pref_library_summary_episode">Categorieën, globale update, veeg aflevering</string>
+  <string name="pref_category_delete_episodes">Verwijder afleveringen</string>
+  <string name="pref_remove_bookmarked_episodes">Verwijderen van bladwijzerafleveringen toestaan</string>
+  <string name="pref_remove_after_marked_as_seen">Na handmatig gemarkeerd als gezien</string>
+  <string name="pref_remove_after_watching">Na het kijken automatisch verwijderen</string>
+  <string name="pref_auto_update_anime_sync">Update de voortgang na het kijken</string>
+  <string name="pref_auto_update_anime_on_mark_seen">Update voortgang wanneer gemarkeerd als bekeken</string>
   <string name="pref_skip_seen_episodes">Sla gemarkeerde afleveringen over</string>
   <string name="pref_skip_filtered_episodes">Gefilterde afleveringen overslaan</string>
   <string name="pref_skip_dupe_episodes">Dubbele afleveringen overslaan</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Opschonen gedownloade afleveringen</string>
-  <string name="pref_invalidate_download_cache_summary">Forceer de app om gedownloade afleveringen opnieuw te controleren</string>
-  <string name="pref_update_only_completely_read">Met onbekeken aflevering(en)</string>
-  <string name="pref_library_update_show_tab_badge">Toon ongezien aantal op Updates pictogram</string>
-  <string name="last_read_chapter">Laatst gezien aflevering</string>
-  <string name="second_to_last">Tweede naar laatste bekeken aflevering</string>
-  <string name="third_to_last">Derde naar laatst bekeken aflevering</string>
-  <string name="fourth_to_last">Vierde naar laatst bekeken aflevering</string>
-  <string name="fifth_to_last">Vijfde naar laatst bekeken aflevering</string>
-  <string name="skipped_reason_not_caught_up">Overgeslagen omdat er onbekeken afleveringen zijn</string>
-  <string name="skipped_reason_not_started">Overgeslagen omdat er geen afleveringen worden gezien</string>
+  <string name="clean_up_downloaded_episodes">Opschonen gedownloade afleveringen</string>
+  <string name="pref_invalidate_episode_download_cache_summary">Forceer de app om gedownloade afleveringen opnieuw te controleren</string>
+  <string name="pref_update_only_completely_seen">Met onbekeken aflevering(en)</string>
+  <string name="pref_library_update_show_tab_badge_episode">Toon ongezien aantal op Updates pictogram</string>
+  <string name="last_seen_episode">Laatst gezien aflevering</string>
+  <string name="second_to_last_episode">Tweede naar laatste bekeken aflevering</string>
+  <string name="third_to_last_episode">Derde naar laatst bekeken aflevering</string>
+  <string name="fourth_to_last_episode">Vierde naar laatst bekeken aflevering</string>
+  <string name="fifth_to_last_episode">Vijfde naar laatst bekeken aflevering</string>
+  <string name="skipped_reason_not_caught_up_episode">Overgeslagen omdat er onbekeken afleveringen zijn</string>
+  <string name="skipped_reason_not_started_episode">Overgeslagen omdat er geen afleveringen worden gezien</string>
 </resources>

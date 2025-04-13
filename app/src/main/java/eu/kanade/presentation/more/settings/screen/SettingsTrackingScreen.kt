@@ -130,7 +130,7 @@ object SettingsTrackingScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
                 pref = trackPreferences.autoUpdateTrack(),
-                title = stringResource(AMR.strings.pref_auto_update_manga_sync),
+                title = stringResource(AMR.strings.pref_auto_update_anime_sync),
             ),
             Preference.PreferenceItem.SwitchPreference(
                 pref = trackPreferences.showNextChapterAiringTime(),
@@ -138,7 +138,7 @@ object SettingsTrackingScreen : SearchableSettings {
             ),
             Preference.PreferenceItem.ListPreference(
                 pref = trackPreferences.autoUpdateTrackOnMarkRead(),
-                title = stringResource(AMR.strings.pref_auto_update_manga_on_mark_read),
+                title = stringResource(AMR.strings.pref_auto_update_anime_on_mark_seen),
                 entries = AutoTrackState.entries
                     .associateWith { stringResource(it.titleRes) }
                     .toPersistentMap(),
