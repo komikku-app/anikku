@@ -162,41 +162,42 @@
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->
-    <string name="action_display_show_continue_reading_button">Continue watching button</string>
-    <string name="non_library_settings">All watched entries</string>
+    <string name="action_sort_last_update_check">Last update check</string>
+    <string name="action_display_show_continue_watching_button">Continue watching button</string>
+    <string name="non_library_watched_settings">All watched entries</string>
     <string name="channel_new_episodes">Episode updates</string>
 
         <!-- SY -->
-    <string name="sync_on_chapter_read">Sync on Episode Seen</string>
-    <string name="sync_on_chapter_open">Sync on Episode Open</string>
+    <string name="sync_on_episode_seen">Sync on Episode Seen</string>
+    <string name="sync_on_episode_open">Sync on Episode Open</string>
 
         <!-- Aniyomi -->
-    <string name="pref_library_summary">Categories, global update, episode swipe</string>
-    <string name="pref_category_delete_chapters">Delete episodes</string>
-    <string name="pref_remove_bookmarked_chapters">Allow deleting bookmarked episodes</string>
-    <string name="pref_remove_after_marked_as_read">After manually marked as seen</string>
-    <string name="pref_remove_after_read">After watching automatically delete</string>
-    <string name="pref_auto_update_manga_sync">Update progress after watching</string>
-    <string name="pref_auto_update_manga_on_mark_read">Update progress when marked as watched</string>
+    <string name="pref_library_summary_episode">Categories, global update, episode swipe</string>
+    <string name="pref_category_delete_episodes">Delete episodes</string>
+    <string name="pref_remove_bookmarked_episodes">Allow deleting bookmarked episodes</string>
+    <string name="pref_remove_after_marked_as_seen">After manually marked as seen</string>
+    <string name="pref_remove_after_watching">After watching automatically delete</string>
+    <string name="pref_auto_update_anime_sync">Update progress after watching</string>
+    <string name="pref_auto_update_anime_on_mark_seen">Update progress when marked as watched</string>
     <string name="pref_skip_seen_episodes">Skip episodes marked seen</string>
     <string name="pref_skip_filtered_episodes">Skip filtered episodes</string>
     <string name="pref_skip_dupe_episodes">Skip duplicate episodes</string>
 
     <!-- Advanced Settings -->
-    <string name="clean_up_downloaded_chapters">Clean up downloaded episodes</string>
+    <string name="clean_up_downloaded_episodes">Clean up downloaded episodes</string>
     <string name="delete_unused_episodes">Delete non-existent, partially downloaded, and seen episodes folders</string>
     <string name="clean_seen_downloads">Clean seen</string>
 
-    <string name="pref_invalidate_download_cache_summary">Force app to recheck downloaded episodes</string>
-    <string name="pref_update_only_completely_read">With unseen episode(s)</string>
-    <string name="pref_library_update_show_tab_badge">Show unseen count on Updates icon</string>
+    <string name="pref_invalidate_episode_download_cache_summary">Force app to recheck downloaded episodes</string>
+    <string name="pref_update_only_completely_seen">With unseen episode(s)</string>
+    <string name="pref_library_update_show_tab_badge_episode">Show unseen count on Updates icon</string>
 
-    <string name="last_read_chapter">Last seen episode</string>
-    <string name="second_to_last">Second to last seen episode</string>
-    <string name="third_to_last">Third to last seen episode</string>
-    <string name="fourth_to_last">Fourth to last seen episode</string>
-    <string name="fifth_to_last">Fifth to last seen episode</string>
+    <string name="last_seen_episode">Last seen episode</string>
+    <string name="second_to_last_episode">Second to last seen episode</string>
+    <string name="third_to_last_episode">Third to last seen episode</string>
+    <string name="fourth_to_last_episode">Fourth to last seen episode</string>
+    <string name="fifth_to_last_episode">Fifth to last seen episode</string>
 
-    <string name="skipped_reason_not_caught_up">Skipped because there are unseen episodes</string>
-    <string name="skipped_reason_not_started">Skipped because no episodes are seen</string>
+    <string name="skipped_reason_not_caught_up_episode">Skipped because there are unseen episodes</string>
+    <string name="skipped_reason_not_started_episode">Skipped because no episodes are seen</string>
 </resources>

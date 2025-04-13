@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">Все просмотренные записи</string>
+  <string name="non_library_watched_settings">Все просмотренные записи</string>
   <string name="action_filter_fillermarked">Заполнитель помечен</string>
   <string name="action_fillermark_episode">Заполнение эпизода</string>
   <string name="action_remove_fillermark_episode">Незаполненный эпизод</string>
   <string name="pref_not_download_fillermarked_items">Запретить загрузку отмеченных эпизодов</string>
   <string name="pref_show_downloaded_episode_file_size">Показать размер загруженного файла эпизода</string>
-  <string name="special_services" comment="special_services Connections section">Специальные услуги</string>
+  <string name="special_services">Специальные услуги</string>
   <string name="pref_discord_rpc">Discord Rich Presence</string>
   <string name="pref_enable_discord_rpc">Включить Discord Rich Presence</string>
   <string name="pref_discord_status">Статус Discord</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">Режим инкогнито Discord</string>
   <string name="pref_discord_incognito_summary">Переопределено, когда включен режим инкогнито</string>
   <string name="pref_discord_incognito_categories_details">Записи в включённых категориях не будут отображаться в Discord</string>
-  <string name="browsing" comment="browsing Discord section">Просмотр</string>
+  <string name="browsing">Просмотр</string>
   <string name="scrolling">Прокрутка</string>
   <string name="messing">Общение с</string>
   <string name="video">Видео</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">Аккаунты Discord</string>
   <string name="active_account">Активный аккаунт</string>
   <string name="no_accounts_found">Аккаунтов не найдено</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Настройка Discord</string>
+  <string name="pref_category_discord_customization">Настройка Discord</string>
   <string name="pref_discord_custom_message">Пользовательское сообщение</string>
   <string name="pref_discord_custom_message_summary">Пользовательское сообщение, которое будет отображаться в Discord</string>
   <string name="pref_discord_show_progress">Показать прогресс</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">Отображает кнопку загрузки приложения</string>
   <string name="pref_discord_show_discord_button">Показать кнопку Discord</string>
   <string name="pref_discord_show_discord_button_summary">Отображает кнопку для присоединения к серверу Discord</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Необходимо установить Amnis Player</string>
+  <string name="install_amnis">Необходимо установить Amnis Player</string>
   <string name="pref_category_torrentserver">Настройки TorrentServer</string>
   <string name="pref_torrentserver_port">Порт TorrentServer</string>
   <string name="torrentserver_is_running">Torrent Server запущен</string>
   <string name="pref_torrent_trackers">Трекеры торрентов</string>
   <string name="pref_reset_torrent_trackers_string">Восстановить стандартную строку трекеров торрентов</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr работает. User agent обновлен. Пожалуйста, перезапустите приложение</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr работает. User agent обновлен. Пожалуйста, перезапустите приложение</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr не работает. User agent не обновлен. Пожалуйста, проверьте настройки</string>
   <string name="flare_solver_error">Ошибка соединения с FlareSolverr</string>
   <string name="flare_solver_error_webview">Ошибка при разрешении WebView</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">URL экземпляра FlareSolverr, например http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Тест FlareSolverr и обновление агента пользователя</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Протестируйте FlareSolverr, чтобы обновить агента пользователя. Требуется только один раз; затем переключитесь по мере необходимости.</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">РАСХОД</string>
+  <string name="media_route_menu_title">РАСХОД</string>
   <string name="pref_category_cast">Настройки отдачи</string>
   <string name="pref_enable_cast">Включить или отключить Cast</string>
   <string name="action_cast">Отправить в Заявку</string>
-  <string-array name="title_cast_quality">
-    <item>Выберите Качество/Провайдер</item>
-    <item>Выберите Качество</item>
-  </string-array>
+  <string name="title_cast_quality">Выберите Качество/Провайдер</string>
   <string name="cast_not_connected">Передача не подключена</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Видео добавлено в очередь</item>
-    <item>Видео добавлено в очередь</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Ошибка загрузки видео из Cast</item>
-    <item>Ошибка загрузки видео</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Видео добавлено в очередь</string>
+  <string name="cast_error_loading">Ошибка загрузки видео из Cast</string>
   <string name="server_local_notification_casting">Локальный сервер запущен. Нажмите, чтобы остановить его.</string>
   <string name="server_local_notification_channel_description">Локальный канал уведомлений сервера</string>
   <string name="pref_category_castserver">Сервер</string>
   <string name="pref_cast_server_port">Порт Cast Сервера</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Очередь воспроизведения</string>
+  <string name="cast_queue_title">Очередь воспроизведения</string>
   <string name="action_clear_queue">Очистить очередь</string>
   <string name="queue">Очередь</string>
   <string name="cast_remove_from_queue">Удалить из очереди</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">Вы уверены, что хотите завершить текущий сеанс?</string>
   <string name="cast_end_session_confirm">Завершить сеанс</string>
   <string name="cast_end_session_cancel">Отмена</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Доступные устройства</string>
+  <string name="cast_available_devices">Доступные устройства</string>
   <string name="cast_media_info">Информация о медиа</string>
   <string name="cast_previous_video">Предыдущее видео</string>
   <string name="cast_next_video">Следующее видео</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">Скорость воспроизведения</string>
   <string name="cast_volume">Объем</string>
   <string name="cast_end_session">Завершение сеанса</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Настройки субтитров</item>
-    <item>Настройки субтитров</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Настройки субтитров</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Цвет текста</string>
   <string name="cast_subtitle_background">Справочная информация</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">Депрессия</string>
   <string name="cast_connection_error">Ошибка соединения</string>
   <string name="login_failed">Не удалось войти</string>
-  <string name="tag" comment="tag Animiru">Теги</string>
-  <string name="pref_security" comment="pref_security Mihon">Безопасность</string>
+  <string name="tag">Теги</string>
+  <string name="pref_security">Безопасность</string>
   <string name="onboarding_permission_crashlytics">Отправить журналы сбоев</string>
   <string name="onboarding_permission_crashlytics_description">Отправлять разработчикам анонимные журналы сбоев.</string>
   <string name="pref_firebase">Журналы аналитики и сбоев</string>
   <string name="firebase_summary">Отправка журналов сбоев и аналитики позволит нам выявлять и исправлять проблемы, улучшить производительность и сделать будущие обновления более актуальными для ваших потребностей.</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Кнопка \"Продолжать\"</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Синхронизация при просмотре эпизода</string>
-  <string name="sync_on_chapter_open">Синхронизация при открытии серии</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Категории, глобальное обновление, свайп эпизода</string>
-  <string name="pref_category_delete_chapters">Удалить выпуски</string>
-  <string name="pref_remove_bookmarked_chapters">Разрешить удаление закладок эпизодов</string>
-  <string name="pref_remove_after_marked_as_read">После вручную помечены как просмотренные</string>
-  <string name="pref_remove_after_read">После просмотра автоматически удалять</string>
-  <string name="pref_auto_update_manga_sync">После просмотра процесса обновления</string>
-  <string name="pref_auto_update_manga_on_mark_read">Обновить прогресс при отмеченном как просмотренный</string>
+  <string name="action_sort_last_update_check">Последняя проверка обновления</string>
+  <string name="action_display_show_continue_watching_button">Кнопка \"Продолжать\"</string>
+  <string name="sync_on_episode_seen">Синхронизация при просмотре эпизода</string>
+  <string name="sync_on_episode_open">Синхронизация при открытии серии</string>
+  <string name="pref_library_summary_episode">Категории, глобальное обновление, свайп эпизода</string>
+  <string name="pref_category_delete_episodes">Удалить выпуски</string>
+  <string name="pref_remove_bookmarked_episodes">Разрешить удаление закладок эпизодов</string>
+  <string name="pref_remove_after_marked_as_seen">После вручную помечены как просмотренные</string>
+  <string name="pref_remove_after_watching">После просмотра автоматически удалять</string>
+  <string name="pref_auto_update_anime_sync">После просмотра процесса обновления</string>
+  <string name="pref_auto_update_anime_on_mark_seen">Обновить прогресс при отмеченном как просмотренный</string>
   <string name="pref_skip_seen_episodes">Пропустить отмеченные эпизоды</string>
   <string name="pref_skip_filtered_episodes">Пропустить отфильтрованные выпуски</string>
   <string name="pref_skip_dupe_episodes">Пропустить повторяющиеся эпизоды</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Очистка загруженных эпизодов</string>
-  <string name="pref_invalidate_download_cache_summary">Принудительное приложение для перепроверки загруженных эпизодов</string>
-  <string name="pref_update_only_completely_read">С незримыми эпизодами</string>
-  <string name="pref_library_update_show_tab_badge">Показывать невидимое количество на значке обновлений</string>
-  <string name="last_read_chapter">Последний выпуск</string>
-  <string name="second_to_last">От начала до последнего просмотра эпизода</string>
-  <string name="third_to_last">От третьего до последнего просмотра эпизода</string>
-  <string name="fourth_to_last">С четвертого по последний выпуск</string>
-  <string name="fifth_to_last">5-й по последнему выпуску</string>
-  <string name="skipped_reason_not_caught_up">Пропущено, потому что есть невидимые эпизоды</string>
-  <string name="skipped_reason_not_started">Пропущено, потому что нет эпизодов</string>
+  <string name="clean_up_downloaded_episodes">Очистка загруженных эпизодов</string>
+  <string name="pref_invalidate_episode_download_cache_summary">Принудительное приложение для перепроверки загруженных эпизодов</string>
+  <string name="pref_update_only_completely_seen">С незримыми эпизодами</string>
+  <string name="pref_library_update_show_tab_badge_episode">Показывать невидимое количество на значке обновлений</string>
+  <string name="last_seen_episode">Последний выпуск</string>
+  <string name="second_to_last_episode">От начала до последнего просмотра эпизода</string>
+  <string name="third_to_last_episode">От третьего до последнего просмотра эпизода</string>
+  <string name="fourth_to_last_episode">С четвертого по последний выпуск</string>
+  <string name="fifth_to_last_episode">5-й по последнему выпуску</string>
+  <string name="skipped_reason_not_caught_up_episode">Пропущено, потому что есть невидимые эпизоды</string>
+  <string name="skipped_reason_not_started_episode">Пропущено, потому что нет эпизодов</string>
 </resources>

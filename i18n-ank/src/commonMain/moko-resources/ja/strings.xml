@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">すべての視聴項目</string>
+  <string name="non_library_watched_settings">すべての視聴項目</string>
   <string name="action_filter_fillermarked">塗りつぶし</string>
   <string name="action_fillermark_episode">Fillermarkエピソード</string>
   <string name="action_remove_fillermark_episode">フィラーマークのエピソード</string>
   <string name="pref_not_download_fillermarked_items">フィラーマークされたエピソードのダウンロードを拒否します</string>
   <string name="pref_show_downloaded_episode_file_size">ダウンロードしたエピソードのファイルサイズを表示</string>
-  <string name="special_services" comment="special_services Connections section">特別サービス</string>
+  <string name="special_services">特別サービス</string>
   <string name="pref_discord_rpc">Discord Rich Presence</string>
   <string name="pref_enable_discord_rpc">Discord Rich Presenceを有効にする</string>
   <string name="pref_discord_status">Discord ステータス</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">Discordシークレットモード</string>
   <string name="pref_discord_incognito_summary">シークレットモードが有効になっているときにオーバーライドする</string>
   <string name="pref_discord_incognito_categories_details">含まれるカテゴリのエントリはDiscordに表示されません</string>
-  <string name="browsing" comment="browsing Discord section">閲覧</string>
+  <string name="browsing">閲覧</string>
   <string name="scrolling">スクロール中</string>
   <string name="messing">ふざけてる人</string>
   <string name="video">ビデオ</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">Discordアカウント</string>
   <string name="active_account">アクティブなアカウント</string>
   <string name="no_accounts_found">アカウントが見つかりません</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Discordのカスタマイズ</string>
+  <string name="pref_category_discord_customization">Discordのカスタマイズ</string>
   <string name="pref_discord_custom_message">カスタムメッセージ</string>
   <string name="pref_discord_custom_message_summary">Discordに表示されるカスタムメッセージ</string>
   <string name="pref_discord_show_progress">進行状況を表示</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">アプリをダウンロードするボタンを表示します</string>
   <string name="pref_discord_show_discord_button">Discordボタンを表示</string>
   <string name="pref_discord_show_discord_button_summary">Discordサーバーに参加するボタンを表示します</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Playerをインストールする必要があります</string>
+  <string name="install_amnis">Amnis Playerをインストールする必要があります</string>
   <string name="pref_category_torrentserver">Torrentサーバーの設定</string>
   <string name="pref_torrentserver_port">TorrentServer ポート</string>
   <string name="torrentserver_is_running">Torrent サーバーを実行しています</string>
   <string name="pref_torrent_trackers">Torrent トラッカー</string>
   <string name="pref_reset_torrent_trackers_string">デフォルトの Torrent トラッカーの文字列をリセット</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverrが動作しています。ユーザーエージェントを更新しました。アプリを再起動してください。</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverrが動作しています。ユーザーエージェントを更新しました。アプリを再起動してください。</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverrが動作していません。ユーザーエージェントが更新されていません。設定を確認してください。</string>
   <string name="flare_solver_error">FlareSolverrへの接続エラー</string>
   <string name="flare_solver_error_webview">WebView での解決に失敗しました</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">例えば使用する FlareSolverr インスタンスの URL http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">FlareSolverrをテストし、ユーザーエージェントを更新</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">ユーザーエージェントを更新するためにFlareSolverをテストします。必要に応じて一度だけ必要です。その後、必要に応じて切り替えます。</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">拡張</string>
+  <string name="media_route_menu_title">拡張</string>
   <string name="pref_category_cast">キャスト設定</string>
   <string name="pref_enable_cast">キャストの有効化または無効化</string>
   <string name="action_cast">キャストに送る</string>
-  <string-array name="title_cast_quality">
-    <item>キャスト品質/プロバイダーを選択</item>
-    <item>画質を選択</item>
-  </string-array>
+  <string name="title_cast_quality">キャスト品質/プロバイダーを選択</string>
   <string name="cast_not_connected">キャストが接続されていません</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>キューにビデオを追加しました</item>
-    <item>キューにビデオを追加しました</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>キャストからのビデオ読み込みエラー</item>
-    <item>ビデオの読み込みエラー</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">キューにビデオを追加しました</string>
+  <string name="cast_error_loading">キャストからのビデオ読み込みエラー</string>
   <string name="server_local_notification_casting">ローカルサーバーが実行されています。タップして停止します。</string>
   <string name="server_local_notification_channel_description">ローカルサーバー通知チャンネル</string>
   <string name="pref_category_castserver">キャストサーバー</string>
   <string name="pref_cast_server_port">サーバーポートのキャスト</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">再生キュー</string>
+  <string name="cast_queue_title">再生キュー</string>
   <string name="action_clear_queue">キューをクリア</string>
   <string name="queue">キュー</string>
   <string name="cast_remove_from_queue">キューから削除</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">現在のキャストセッションを終了してもよろしいですか？</string>
   <string name="cast_end_session_confirm">セッションを終了</string>
   <string name="cast_end_session_cancel">キャンセル</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">利用可能なデバイス</string>
+  <string name="cast_available_devices">利用可能なデバイス</string>
   <string name="cast_media_info">メディア情報</string>
   <string name="cast_previous_video">前のビデオ</string>
   <string name="cast_next_video">次のビデオ</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">再生速度</string>
   <string name="cast_volume">音量</string>
   <string name="cast_end_session">キャストセッションを終了</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">字幕の設定</item>
-    <item>字幕の設定</item>
-  </string-array>
+  <string name="cast_subtitle_settings">字幕の設定</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">テキストの色</string>
   <string name="cast_subtitle_background">背景</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">Depressed</string>
   <string name="cast_connection_error">接続エラー</string>
   <string name="login_failed">ログインに失敗しました</string>
-  <string name="tag" comment="tag Animiru">タグ</string>
-  <string name="pref_security" comment="pref_security Mihon">セキュリティ</string>
+  <string name="tag">タグ</string>
+  <string name="pref_security">セキュリティ</string>
   <string name="onboarding_permission_crashlytics">クラッシュログを送信</string>
   <string name="onboarding_permission_crashlytics_description">匿名化されたクラッシュログを開発者に送信します。</string>
   <string name="pref_firebase">分析とクラッシュログ</string>
   <string name="firebase_summary">クラッシュログと分析を送信することで、問題の特定と修正、パフォーマンスの向上、今後のアップデートがお客様のニーズにより適切になるようになります。</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">視聴ボタンを続ける</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">見られたエピソードで同期</string>
-  <string name="sync_on_chapter_open">エピソードオープン時に同期</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">カテゴリ、グローバルアップデート、エピソードのスワイプ</string>
-  <string name="pref_category_delete_chapters">エピソードを削除</string>
-  <string name="pref_remove_bookmarked_chapters">ブックマークされたエピソードの削除を許可</string>
-  <string name="pref_remove_after_marked_as_read">手動で表示された後</string>
-  <string name="pref_remove_after_read">視聴後自動的に削除</string>
-  <string name="pref_auto_update_manga_sync">視聴後に進捗状況を更新</string>
-  <string name="pref_auto_update_manga_on_mark_read">視聴済みとしてマークされたときに進捗状況を更新する</string>
+  <string name="action_sort_last_update_check">最終更新確認</string>
+  <string name="action_display_show_continue_watching_button">視聴ボタンを続ける</string>
+  <string name="sync_on_episode_seen">見られたエピソードで同期</string>
+  <string name="sync_on_episode_open">エピソードオープン時に同期</string>
+  <string name="pref_library_summary_episode">カテゴリ、グローバルアップデート、エピソードのスワイプ</string>
+  <string name="pref_category_delete_episodes">エピソードを削除</string>
+  <string name="pref_remove_bookmarked_episodes">ブックマークされたエピソードの削除を許可</string>
+  <string name="pref_remove_after_marked_as_seen">手動で表示された後</string>
+  <string name="pref_remove_after_watching">視聴後自動的に削除</string>
+  <string name="pref_auto_update_anime_sync">視聴後に進捗状況を更新</string>
+  <string name="pref_auto_update_anime_on_mark_seen">視聴済みとしてマークされたときに進捗状況を更新する</string>
   <string name="pref_skip_seen_episodes">マークされたエピソードをスキップ</string>
   <string name="pref_skip_filtered_episodes">フィルターされたエピソードをスキップ</string>
   <string name="pref_skip_dupe_episodes">重複したエピソードをスキップ</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">ダウンロードしたエピソードをクリーンアップする</string>
-  <string name="pref_invalidate_download_cache_summary">アプリにダウンロードしたエピソードを強制的に再チェックする</string>
-  <string name="pref_update_only_completely_read">目に見えないエピソードで</string>
-  <string name="pref_library_update_show_tab_badge">更新アイコンに見えない数を表示する</string>
-  <string name="last_read_chapter">最後に見たエピソード</string>
-  <string name="second_to_last">2番目から最後までのエピソード</string>
-  <string name="third_to_last">3番目から最後までのエピソード</string>
-  <string name="fourth_to_last">4話目から最後まで見た</string>
-  <string name="fifth_to_last">最後から最後までのエピソード</string>
-  <string name="skipped_reason_not_caught_up">見られないエピソードがあるのでスキップされました</string>
-  <string name="skipped_reason_not_started">エピソードが見られないためスキップされました</string>
+  <string name="clean_up_downloaded_episodes">ダウンロードしたエピソードをクリーンアップする</string>
+  <string name="pref_invalidate_episode_download_cache_summary">アプリにダウンロードしたエピソードを強制的に再チェックする</string>
+  <string name="pref_update_only_completely_seen">目に見えないエピソードで</string>
+  <string name="pref_library_update_show_tab_badge_episode">更新アイコンに見えない数を表示する</string>
+  <string name="last_seen_episode">最後に見たエピソード</string>
+  <string name="second_to_last_episode">2番目から最後までのエピソード</string>
+  <string name="third_to_last_episode">3番目から最後までのエピソード</string>
+  <string name="fourth_to_last_episode">4話目から最後まで見た</string>
+  <string name="fifth_to_last_episode">最後から最後までのエピソード</string>
+  <string name="skipped_reason_not_caught_up_episode">見られないエピソードがあるのでスキップされました</string>
+  <string name="skipped_reason_not_started_episode">エピソードが見られないためスキップされました</string>
 </resources>

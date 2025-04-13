@@ -220,7 +220,7 @@ object SettingsLibraryScreen : SearchableSettings {
                     pref = libraryPreferences.autoUpdateMangaRestrictions(),
                     title = stringResource(MR.strings.pref_library_update_smart_update),
                     entries = persistentMapOf(
-                        ANIME_HAS_UNSEEN to stringResource(AMR.strings.pref_update_only_completely_read),
+                        ANIME_HAS_UNSEEN to stringResource(AMR.strings.pref_update_only_completely_seen),
                         ANIME_NON_SEEN to stringResource(MR.strings.pref_update_only_started),
                         ANIME_NON_COMPLETED to stringResource(MR.strings.pref_update_only_non_completed),
                         ANIME_OUTSIDE_RELEASE_PERIOD to stringResource(MR.strings.pref_update_only_in_release_period),
@@ -228,7 +228,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     pref = libraryPreferences.newShowUpdatesCount(),
-                    title = stringResource(AMR.strings.pref_library_update_show_tab_badge),
+                    title = stringResource(AMR.strings.pref_library_update_show_tab_badge_episode),
                 ),
                 // KMK -->
                 Preference.PreferenceItem.SwitchPreference(

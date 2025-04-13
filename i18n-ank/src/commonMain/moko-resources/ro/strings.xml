@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">Toate intrările urmărite</string>
+  <string name="non_library_watched_settings">Toate intrările urmărite</string>
   <string name="action_filter_fillermarked">Fillermark</string>
   <string name="action_fillermark_episode">Episod Fillermark</string>
   <string name="action_remove_fillermark_episode">Dezcompletare episod</string>
   <string name="pref_not_download_fillermarked_items">Refuză descărcarea episoadelor marcate cu umplutură</string>
   <string name="pref_show_downloaded_episode_file_size">Arată dimensiunea episodului descărcat</string>
-  <string name="special_services" comment="special_services Connections section">Servicii speciale</string>
+  <string name="special_services">Servicii speciale</string>
   <string name="pref_discord_rpc">Prezență Discord Rich</string>
   <string name="pref_enable_discord_rpc">Activează Discord Rich Presence</string>
   <string name="pref_discord_status">Stare Discord</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">Modul Incognito Discord</string>
   <string name="pref_discord_incognito_summary">Suprascrie când modul Incognito este activat</string>
   <string name="pref_discord_incognito_categories_details">Intrările în categoriile incluse nu vor fi afișate în Discord</string>
-  <string name="browsing" comment="browsing Discord section">Navigare</string>
+  <string name="browsing">Navigare</string>
   <string name="scrolling">Defilare prin</string>
   <string name="messing">Mesaje în jur cu</string>
   <string name="video">Video</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">Conturi Discord</string>
   <string name="active_account">Cont activ</string>
   <string name="no_accounts_found">Nici un cont găsit</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Personalizare Discord</string>
+  <string name="pref_category_discord_customization">Personalizare Discord</string>
   <string name="pref_discord_custom_message">Mesaj personalizat</string>
   <string name="pref_discord_custom_message_summary">Mesaj personalizat care va fi afișat pe Discord</string>
   <string name="pref_discord_show_progress">Arată progresul</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">Afișează un buton pentru descărcarea aplicației</string>
   <string name="pref_discord_show_discord_button">Arată butonul Discord</string>
   <string name="pref_discord_show_discord_button_summary">Afișează un buton pentru a se alătura serverului Discord</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Player trebuie să fie instalat</string>
+  <string name="install_amnis">Amnis Player trebuie să fie instalat</string>
   <string name="pref_category_torrentserver">Preferințe TorrentServer</string>
   <string name="pref_torrentserver_port">Port TorrentServer</string>
   <string name="torrentserver_is_running">Serverul Torent rulează</string>
   <string name="pref_torrent_trackers">Trackeri Torent</string>
   <string name="pref_reset_torrent_trackers_string">Resetează șirul implicit al torentelor</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr funcționează. Agentul utilizatorului a fost actualizat. Vă rugăm să reporniți aplicația</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr funcționează. Agentul utilizatorului a fost actualizat. Vă rugăm să reporniți aplicația</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr nu funcţionează. Agentul utilizatorului nu este actualizat. Vă rugăm să verificaţi setările</string>
   <string name="flare_solver_error">Eroare la contactarea FlareSolverr</string>
   <string name="flare_solver_error_webview">Eroare la rezolvarea cu WebView</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">URL-ul instanţei FlareSolverr de utilizat, de exemplu, http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Testaţi FlareSolverr şi actualizaţi agentul utilizatorului</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Testează FlareSolverr pentru a actualiza agentul utilizator. Doar o singură dată; apoi comută după cum este necesar.</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">ÎNCHIDE</string>
+  <string name="media_route_menu_title">ÎNCHIDE</string>
   <string name="pref_category_cast">Setări de distribuție</string>
   <string name="pref_enable_cast">Activează sau dezactivează Cast</string>
   <string name="action_cast">Trimite în Cast</string>
-  <string-array name="title_cast_quality">
-    <item>Alegeți calitatea/furnizorul în distribuție</item>
-    <item>Selectaţi calitatea</item>
-  </string-array>
+  <string name="title_cast_quality">Alegeți calitatea/furnizorul în distribuție</string>
   <string name="cast_not_connected">Transmite neconectate</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Video adăugat la coadă</item>
-    <item>Video adăugat la coadă</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Eroare la încărcarea videoclipului din Cast</item>
-    <item>Eroare la încărcarea videoclipului</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Video adăugat la coadă</string>
+  <string name="cast_error_loading">Eroare la încărcarea videoclipului din Cast</string>
   <string name="server_local_notification_casting">Serverul local rulează. Atingeți pentru a-l opri.</string>
   <string name="server_local_notification_channel_description">Canal de notificare local server</string>
   <string name="pref_category_castserver">Distribuie server</string>
   <string name="pref_cast_server_port">Port server trecut</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Lista de redare</string>
+  <string name="cast_queue_title">Lista de redare</string>
   <string name="action_clear_queue">Șterge coada</string>
   <string name="queue">Coadă</string>
   <string name="cast_remove_from_queue">Elimină din coadă</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">Ești sigur că vrei să închizi sesiunea de redare curentă?</string>
   <string name="cast_end_session_confirm">Sfârșit sesiune</string>
   <string name="cast_end_session_cancel">Anulează</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Dispozitive disponibile</string>
+  <string name="cast_available_devices">Dispozitive disponibile</string>
   <string name="cast_media_info">Informații media</string>
   <string name="cast_previous_video">Videoclip anterior</string>
   <string name="cast_next_video">Următorul videoclip</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">Viteza de redare</string>
   <string name="cast_volume">Volum</string>
   <string name="cast_end_session">Sfârșit sesiunea în distribuție</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Setări subtitrare</item>
-    <item>Setări subtitrare</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Setări subtitrare</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Culoare text</string>
   <string name="cast_subtitle_background">Context</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">Deprimat</string>
   <string name="cast_connection_error">Eroare de conexiune</string>
   <string name="login_failed">Autentificare eșuată</string>
-  <string name="tag" comment="tag Animiru">Etichete</string>
-  <string name="pref_security" comment="pref_security Mihon">Securitate</string>
+  <string name="tag">Etichete</string>
+  <string name="pref_security">Securitate</string>
   <string name="onboarding_permission_crashlytics">Trimite jurnale de erori</string>
   <string name="onboarding_permission_crashlytics_description">Trimite jurnale anonimizate pentru erori dezvoltatorilor.</string>
   <string name="pref_firebase">Analize și jurnale de defecțiuni</string>
   <string name="firebase_summary">Trimiterea de jurnale de erori și analize ne va permite să identificăm și să rezolvăm probleme, să îmbunătățim performanța și să facem actualizările viitoare mai relevante pentru nevoile dumneavoastră</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Continuă urmărirea butonului</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Sincronizare pe Episod văzut</string>
-  <string name="sync_on_chapter_open">Sincronizare la deschiderea episodului</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Categorii, actualizare globală, episod glisare</string>
-  <string name="pref_category_delete_chapters">Ștergere episoade</string>
-  <string name="pref_remove_bookmarked_chapters">Permite ștergerea episoadelor marcate</string>
-  <string name="pref_remove_after_marked_as_read">După marcarea manuală ca fiind văzută</string>
-  <string name="pref_remove_after_read">După vizionarea automată ștergere</string>
-  <string name="pref_auto_update_manga_sync">Progresul actualizării după vizionare</string>
-  <string name="pref_auto_update_manga_on_mark_read">Actualizeaza progresul cand este marcat ca vizionat</string>
+  <string name="action_sort_last_update_check">Ultima actualizare de verificare</string>
+  <string name="action_display_show_continue_watching_button">Continuă urmărirea butonului</string>
+  <string name="sync_on_episode_seen">Sincronizare pe Episod văzut</string>
+  <string name="sync_on_episode_open">Sincronizare la deschiderea episodului</string>
+  <string name="pref_library_summary_episode">Categorii, actualizare globală, episod glisare</string>
+  <string name="pref_category_delete_episodes">Ștergere episoade</string>
+  <string name="pref_remove_bookmarked_episodes">Permite ștergerea episoadelor marcate</string>
+  <string name="pref_remove_after_marked_as_seen">După marcarea manuală ca fiind văzută</string>
+  <string name="pref_remove_after_watching">După vizionarea automată ștergere</string>
+  <string name="pref_auto_update_anime_sync">Progresul actualizării după vizionare</string>
+  <string name="pref_auto_update_anime_on_mark_seen">Actualizeaza progresul cand este marcat ca vizionat</string>
   <string name="pref_skip_seen_episodes">Sari peste episoadele marcate</string>
   <string name="pref_skip_filtered_episodes">Omite episoadele filtrate</string>
   <string name="pref_skip_dupe_episodes">Sari peste episoadele duplicate</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Curăță episoadele descărcate</string>
-  <string name="pref_invalidate_download_cache_summary">Forțează aplicația să reverifice episoadele descărcate</string>
-  <string name="pref_update_only_completely_read">Cu episoade nevăzute</string>
-  <string name="pref_library_update_show_tab_badge">Arată numărătoarea neobservată pe icoana Actualizări</string>
-  <string name="last_read_chapter">Ultimul episod văzut</string>
-  <string name="second_to_last">Episodul de la 2 la ultima oară</string>
-  <string name="third_to_last">Al treilea până la ultimul episod</string>
-  <string name="fourth_to_last">Al patrulea până la ultimul episod</string>
-  <string name="fifth_to_last">Al cincilea și ultimul episod văzut</string>
-  <string name="skipped_reason_not_caught_up">Sărit pentru că există episoade nevăzute</string>
-  <string name="skipped_reason_not_started">Sărit pentru că nu sunt văzute episoade</string>
+  <string name="clean_up_downloaded_episodes">Curăță episoadele descărcate</string>
+  <string name="pref_invalidate_episode_download_cache_summary">Forțează aplicația să reverifice episoadele descărcate</string>
+  <string name="pref_update_only_completely_seen">Cu episoade nevăzute</string>
+  <string name="pref_library_update_show_tab_badge_episode">Arată numărătoarea neobservată pe icoana Actualizări</string>
+  <string name="last_seen_episode">Ultimul episod văzut</string>
+  <string name="second_to_last_episode">Episodul de la 2 la ultima oară</string>
+  <string name="third_to_last_episode">Al treilea până la ultimul episod</string>
+  <string name="fourth_to_last_episode">Al patrulea până la ultimul episod</string>
+  <string name="fifth_to_last_episode">Al cincilea și ultimul episod văzut</string>
+  <string name="skipped_reason_not_caught_up_episode">Sărit pentru că există episoade nevăzute</string>
+  <string name="skipped_reason_not_started_episode">Sărit pentru că nu sunt văzute episoade</string>
 </resources>

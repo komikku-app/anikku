@@ -298,12 +298,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                     }
 
                     ANIME_HAS_UNSEEN in restrictions && it.unreadCount != 0L -> {
-                        skippedUpdates.add(it.manga to context.stringResource(AMR.strings.skipped_reason_not_caught_up))
+                        skippedUpdates.add(it.manga to context.stringResource(AMR.strings.skipped_reason_not_caught_up_episode))
                         false
                     }
 
                     ANIME_NON_SEEN in restrictions && it.totalChapters > 0L && !it.hasStarted -> {
-                        skippedUpdates.add(it.manga to context.stringResource(AMR.strings.skipped_reason_not_started))
+                        skippedUpdates.add(it.manga to context.stringResource(AMR.strings.skipped_reason_not_started_episode))
                         false
                     }
 

@@ -26,12 +26,12 @@ data class SyncTriggerOptions(
     companion object {
         val mainOptions = persistentListOf(
             Entry(
-                label = AMR.strings.sync_on_chapter_read,
+                label = AMR.strings.sync_on_episode_seen,
                 getter = SyncTriggerOptions::syncOnChapterRead,
                 setter = { options, enabled -> options.copy(syncOnChapterRead = enabled) },
             ),
             Entry(
-                label = AMR.strings.sync_on_chapter_open,
+                label = AMR.strings.sync_on_episode_open,
                 getter = SyncTriggerOptions::syncOnChapterOpen,
                 setter = { options, enabled -> options.copy(syncOnChapterOpen = enabled) },
             ),

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_settings">Alle sete poster</string>
+  <string name="non_library_watched_settings">Alle sete poster</string>
   <string name="action_filter_fillermarked">Fyldemærket</string>
   <string name="action_fillermark_episode">Fillermark episode</string>
   <string name="action_remove_fillermark_episode">Unfillermark episode</string>
   <string name="pref_not_download_fillermarked_items">Afvis download af fyldmærkede episoder</string>
   <string name="pref_show_downloaded_episode_file_size">Vis downloadet episode filstørrelse</string>
-  <string name="special_services" comment="special_services Connections section">Særlige Tjenester</string>
+  <string name="special_services">Særlige Tjenester</string>
   <string name="pref_discord_rpc">Discord Rig Tilstedeværelse</string>
   <string name="pref_enable_discord_rpc">Aktiver Discord Rig Tilstedeværelse</string>
   <string name="pref_discord_status">Discord Status</string>
@@ -17,7 +17,7 @@
   <string name="pref_discord_incognito">Discord Inkognito tilstand</string>
   <string name="pref_discord_incognito_summary">Tilsidesæt når Inkognitotilstand er aktiveret</string>
   <string name="pref_discord_incognito_categories_details">Indgange i inkluderede kategorier vil ikke blive vist i Discord</string>
-  <string name="browsing" comment="browsing Discord section">Gennemser</string>
+  <string name="browsing">Gennemser</string>
   <string name="scrolling">Rul gennem</string>
   <string name="messing">Beskeder rundt med</string>
   <string name="video">Video</string>
@@ -34,7 +34,7 @@
   <string name="discord_accounts">Discord Konti</string>
   <string name="active_account">Aktiv Konto</string>
   <string name="no_accounts_found">Ingen konti fundet</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Discord Tilpasning</string>
+  <string name="pref_category_discord_customization">Discord Tilpasning</string>
   <string name="pref_discord_custom_message">Brugerdefineret Besked</string>
   <string name="pref_discord_custom_message_summary">Brugerdefineret besked, der vil blive vist på Discord</string>
   <string name="pref_discord_show_progress">Vis Fremskridt</string>
@@ -47,13 +47,13 @@
   <string name="pref_discord_show_download_button_summary">Viser en knap til download af appen</string>
   <string name="pref_discord_show_discord_button">Vis Discord Knap</string>
   <string name="pref_discord_show_discord_button_summary">Viser en knap til at deltage i Discord serveren</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Player skal installeres</string>
+  <string name="install_amnis">Amnis Player skal installeres</string>
   <string name="pref_category_torrentserver">TorrentServer Præferencer</string>
   <string name="pref_torrentserver_port">TorrentServer Port</string>
   <string name="torrentserver_is_running">Torrent Server kører</string>
   <string name="pref_torrent_trackers">Torrent Trackers</string>
   <string name="pref_reset_torrent_trackers_string">Nulstil standard torrent trackers streng</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr virker. Bruger agent opdateret. Genstart venligst appen</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr virker. Bruger agent opdateret. Genstart venligst appen</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr virker ikke. Brugeragent er ikke opdateret. Tjek dine indstillinger</string>
   <string name="flare_solver_error">Fejl ved kontakt med FlareSolverr</string>
   <string name="flare_solver_error_webview">Fejl ved løsning med WebView</string>
@@ -63,28 +63,19 @@
   <string name="pref_flare_solverr_url_summary">URL for FlareSolverr instans der skal bruges for eksempel http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Test FlareSolverr og opdater brugeragent</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Test FlareSolverr for at opdatere brugeragent. Kun påkrævet én gang, og skift derefter efter behov.</string>
-  <string name="media_route_menu_title" comment="media_route_menu_title Cast">UDVIDELSE</string>
+  <string name="media_route_menu_title">UDVIDELSE</string>
   <string name="pref_category_cast">Cast Indstillinger</string>
   <string name="pref_enable_cast">Aktiver eller deaktiver Cast</string>
   <string name="action_cast">Send til Cast</string>
-  <string-array name="title_cast_quality">
-    <item>Vælg Medvirkende Kvalitet/Udbyder</item>
-    <item>Vælg Kvalitet</item>
-  </string-array>
+  <string name="title_cast_quality">Vælg Medvirkende Kvalitet/Udbyder</string>
   <string name="cast_not_connected">Cast ikke forbundet</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Video tilføjet til kø</item>
-    <item>Video tilføjet til kø</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Fejl ved indlæsning af video fra Cast</item>
-    <item>Fejl under indlæsning af video</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Video tilføjet til kø</string>
+  <string name="cast_error_loading">Fejl ved indlæsning af video fra Cast</string>
   <string name="server_local_notification_casting">Den lokale server kører. Tryk for at stoppe den.</string>
   <string name="server_local_notification_channel_description">Lokal server notifikationskanal</string>
   <string name="pref_category_castserver">Cast Server</string>
   <string name="pref_cast_server_port">Cast Server Port</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Afspilnings Kø</string>
+  <string name="cast_queue_title">Afspilnings Kø</string>
   <string name="action_clear_queue">Ryd Kø</string>
   <string name="queue">Kø</string>
   <string name="cast_remove_from_queue">Fjern fra kø</string>
@@ -101,7 +92,7 @@
   <string name="cast_end_session_message">Er du sikker på, at du vil afslutte den nuværende cast- session?</string>
   <string name="cast_end_session_confirm">Afslut Session</string>
   <string name="cast_end_session_cancel">Annuller</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Tilgængelige Enheder</string>
+  <string name="cast_available_devices">Tilgængelige Enheder</string>
   <string name="cast_media_info">Medie Info</string>
   <string name="cast_previous_video">Forrige Video</string>
   <string name="cast_next_video">Næste Video</string>
@@ -112,10 +103,7 @@
   <string name="playback_speed">Afspilningshastighed</string>
   <string name="cast_volume">Lydstyrke</string>
   <string name="cast_end_session">Afslut Cast Session</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Indstillinger For Undertekster</item>
-    <item>Indstillinger For Undertekster</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Indstillinger For Undertekster</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Tekst Farve</string>
   <string name="cast_subtitle_background">Baggrund</string>
@@ -144,34 +132,35 @@
   <string name="cast_subtitle_border_depressed">Depresseret</string>
   <string name="cast_connection_error">Forbindelsesfejl</string>
   <string name="login_failed">Kunne ikke logge ind</string>
-  <string name="tag" comment="tag Animiru">Mærker</string>
-  <string name="pref_security" comment="pref_security Mihon">Sikkerhed</string>
+  <string name="tag">Mærker</string>
+  <string name="pref_security">Sikkerhed</string>
   <string name="onboarding_permission_crashlytics">Send crash logs</string>
   <string name="onboarding_permission_crashlytics_description">Send anonymiserede nedbrudslogs til udviklerne.</string>
   <string name="pref_firebase">Analyser og Crash logs</string>
   <string name="firebase_summary">Afsendelse af crash logs og analytics vil give os mulighed for at identificere og løse problemer, forbedre ydeevnen og gøre fremtidige opdateringer mere relevante for dine behov</string>
-  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Fortsæt med at se knappen</string>
-  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Synkronisér på Episode set</string>
-  <string name="sync_on_chapter_open">Synkronisér når Episode åbnes</string>
-  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Kategorier, global opdatering, episode swipe</string>
-  <string name="pref_category_delete_chapters">Slet episoder</string>
-  <string name="pref_remove_bookmarked_chapters">Tillad sletning af bogmærkede episoder</string>
-  <string name="pref_remove_after_marked_as_read">Efter manuelt markeret som set</string>
-  <string name="pref_remove_after_read">Efter automatisk overvågning slettes</string>
-  <string name="pref_auto_update_manga_sync">Opdaterings fremskridt efter overvågning</string>
-  <string name="pref_auto_update_manga_on_mark_read">Opdater fremskridt når markeret som overvåget</string>
+  <string name="action_sort_last_update_check">Seneste opdateringstjek</string>
+  <string name="action_display_show_continue_watching_button">Fortsæt med at se knappen</string>
+  <string name="sync_on_episode_seen">Synkronisér på Episode set</string>
+  <string name="sync_on_episode_open">Synkronisér når Episode åbnes</string>
+  <string name="pref_library_summary_episode">Kategorier, global opdatering, episode swipe</string>
+  <string name="pref_category_delete_episodes">Slet episoder</string>
+  <string name="pref_remove_bookmarked_episodes">Tillad sletning af bogmærkede episoder</string>
+  <string name="pref_remove_after_marked_as_seen">Efter manuelt markeret som set</string>
+  <string name="pref_remove_after_watching">Efter automatisk overvågning slettes</string>
+  <string name="pref_auto_update_anime_sync">Opdaterings fremskridt efter overvågning</string>
+  <string name="pref_auto_update_anime_on_mark_seen">Opdater fremskridt når markeret som overvåget</string>
   <string name="pref_skip_seen_episodes">Overspring markerede episoder</string>
   <string name="pref_skip_filtered_episodes">Spring filtrerede episoder over</string>
   <string name="pref_skip_dupe_episodes">Spring duplikerede episoder over</string>
-  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Ryd downloadede episoder</string>
-  <string name="pref_invalidate_download_cache_summary">Tving app til at kontrollere downloadede episoder igen</string>
-  <string name="pref_update_only_completely_read">Med usete episode(r)</string>
-  <string name="pref_library_update_show_tab_badge">Vis usynlige antal på ikonet Opdateringer</string>
-  <string name="last_read_chapter">Sidst set episode</string>
-  <string name="second_to_last">Sekund til sidste set episode</string>
-  <string name="third_to_last">Tredje til sidste set episode</string>
-  <string name="fourth_to_last">Fjerde til sidste set episode</string>
-  <string name="fifth_to_last">Femte til sidst set episode</string>
-  <string name="skipped_reason_not_caught_up">Sprunget over, fordi der er usete episoder</string>
-  <string name="skipped_reason_not_started">Sprunget over, fordi ingen episoder er set</string>
+  <string name="clean_up_downloaded_episodes">Ryd downloadede episoder</string>
+  <string name="pref_invalidate_episode_download_cache_summary">Tving app til at kontrollere downloadede episoder igen</string>
+  <string name="pref_update_only_completely_seen">Med usete episode(r)</string>
+  <string name="pref_library_update_show_tab_badge_episode">Vis usynlige antal på ikonet Opdateringer</string>
+  <string name="last_seen_episode">Sidst set episode</string>
+  <string name="second_to_last_episode">Sekund til sidste set episode</string>
+  <string name="third_to_last_episode">Tredje til sidste set episode</string>
+  <string name="fourth_to_last_episode">Fjerde til sidste set episode</string>
+  <string name="fifth_to_last_episode">Femte til sidst set episode</string>
+  <string name="skipped_reason_not_caught_up_episode">Sprunget over, fordi der er usete episoder</string>
+  <string name="skipped_reason_not_started_episode">Sprunget over, fordi ingen episoder er set</string>
 </resources>
