@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="non_library_settings">Всі переглянуті матеріали</string>
+  <string name="action_filter_fillermarked">Філлертабл</string>
+  <string name="action_fillermark_episode">Філлермарк серія</string>
+  <string name="action_remove_fillermark_episode">Розгорнути серію</string>
+  <string name="pref_not_download_fillermarked_items">Заборонити завантаження наповнених епізоди</string>
+  <string name="pref_show_downloaded_episode_file_size">Показати завантажену серію розмір файлу</string>
+  <string name="special_services" comment="special_services Connections section">Спеціальні послуги</string>
+  <string name="pref_discord_rpc">Rich Presence Discord</string>
+  <string name="pref_enable_discord_rpc">Увімкнути Rich Presence в Discord</string>
+  <string name="pref_discord_status">Статус Discord</string>
+  <string name="pref_discord_dnd">⛔ Не турбувати</string>
+  <string name="pref_discord_idle">🌙 Очікування</string>
+  <string name="pref_discord_online">🟢 Online</string>
+  <string name="pref_category_discord_incognito">RPC Incognito</string>
+  <string name="pref_discord_incognito">Режим інкогніто Discord</string>
+  <string name="pref_discord_incognito_summary">Перезаписувати, коли ввімкнено режим інкогніто</string>
+  <string name="pref_discord_incognito_categories_details">Категорії у базі даних не будуть відображатися в Discord</string>
+  <string name="browsing" comment="browsing Discord section">Перегляд</string>
+  <string name="scrolling">Прокрутка</string>
+  <string name="messing">Обмін інформацією з</string>
+  <string name="video">Відео</string>
+  <string name="delete_unused_episodes">Видалити неіснуючі, частково звантажені та переглянуті теки серій</string>
+  <string name="clean_seen_downloads">Очистити</string>
+  <string name="channel_new_episodes">Оновлення епізод</string>
+  <string name="pref_category_connections">З\'єднання</string>
+  <string name="pref_connections_summary">Discord, ще більше...</string>
+  <string name="connections_info">Спеціальні послуги, які унікальні для Anikku та покращення способів використання додатку</string>
+  <string name="connections_discord">Discord</string>
+  <string name="connections_discord_info">Цей сервіс Discord працює через систему з використанням жетонів. Використовуйте на ваш власний ризик. Ваш токен зберігається на локальному і Anikku не поширює його ніде інше</string>
+  <string name="show_chapters_titles_title">Показати заголовки епізодів</string>
+  <string name="show_chapters_titles_subtitle">Показати назву епізоду, що ви дивитеся</string>
+  <string name="discord_accounts">Облікові записи Discord</string>
+  <string name="active_account">Активний обліковий запис</string>
+  <string name="no_accounts_found">Рахунків не знайдено</string>
+  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Налаштування Discord</string>
+  <string name="pref_discord_custom_message">Повідомлення при вимкненому сайті</string>
+  <string name="pref_discord_custom_message_summary">Користувацькі повідомлення, які будуть відображатися в Discord</string>
+  <string name="pref_discord_show_progress">Показувати поступ</string>
+  <string name="pref_discord_show_progress_summary">Відображати поточний стан епізоду</string>
+  <string name="pref_discord_show_timestamp">Відображати час</string>
+  <string name="pref_discord_show_timestamp_summary">Відображення elapsed/Залишилося часу</string>
+  <string name="pref_discord_show_buttons">Показати кнопки</string>
+  <string name="pref_discord_show_buttons_summary">Показувати кнопки для завантаження програми або приєднання до сервера Discord</string>
+  <string name="pref_discord_show_download_button">Показувати кнопку завантаження</string>
+  <string name="pref_discord_show_download_button_summary">Відображає кнопку для завантаження програми</string>
+  <string name="pref_discord_show_discord_button">Показувати кнопку Discord</string>
+  <string name="pref_discord_show_discord_button_summary">Відображає кнопку для приєднання до серверу Discord</string>
+  <string name="install_amnis" comment="install_amnis Torrent">Для роботи Amnis Player потрібно встановити</string>
+  <string name="pref_category_torrentserver">Налаштування сервера TorrentServer</string>
+  <string name="pref_torrentserver_port">Порт TorrentServer</string>
+  <string name="torrentserver_is_running">Torrent Server працює</string>
+  <string name="pref_torrent_trackers">Відслідковування торенту</string>
+  <string name="pref_reset_torrent_trackers_string">Скинути рядок торрент трекерів за замовчуванням</string>
+  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr працює. User Agent оновлено. Будь ласка, перезапустіть програму</string>
+  <string name="flare_solver_update_user_agent_failed">FlareSolverr не працює. Користувацький агент не оновився. Будь ласка, перевірте ваші налаштування</string>
+  <string name="flare_solver_error">Помилка під час звернення FlareSolverr</string>
+  <string name="flare_solver_error_webview">Помилка вирішення проблеми з WebView</string>
+  <string name="pref_enable_flare_solverr">Увімкнути FlareSolverr</string>
+  <string name="pref_enable_flare_solverr_summary">Використовуйте FlareSolverr для обходу захисту Cloudflare-бота</string>
+  <string name="pref_flare_solverr_url">URL-адреса FlareSolverr</string>
+  <string name="pref_flare_solverr_url_summary">URL-адреса екземпляра FlareSolverr, наприклад, http://192.168.1.202:8191/v1</string>
+  <string name="pref_test_flare_solverr_and_update_user_agent">Тест FlareSolverr та оновлення користувацького агента</string>
+  <string name="pref_test_flare_solverr_and_update_user_agent_summary">Тест FlareSolverr для оновлення користувацького агента. Потрібно лише один раз; потім ввімкнути як необхідно.</string>
+  <string name="media_route_menu_title" comment="media_route_menu_title Cast">РОЗШИРИТИ</string>
+  <string name="pref_category_cast">Налаштування трансляції</string>
+  <string name="pref_enable_cast">Увімкнути або вимкнути Cast</string>
+  <string name="action_cast">Відправити в Cast</string>
+  <string-array name="title_cast_quality">
+    <item>Вибрати кількість запису і провайдера</item>
+    <item>Вибрати якість</item>
+  </string-array>
+  <string name="cast_not_connected">Трансляція не підключена</string>
+  <string-array name="cast_video_added_to_queue">
+    <item>Відео додано в чергу</item>
+    <item>Відео додано в чергу</item>
+  </string-array>
+  <string-array name="cast_error_loading">
+    <item>Помилка при завантаженні відео з Cast</item>
+    <item>Помилка при завантаженні відео</item>
+  </string-array>
+  <string name="server_local_notification_casting">Локальний сервер працює. Торкніться, щоб зупинити його.</string>
+  <string name="server_local_notification_channel_description">Канал сповіщень локального сервера</string>
+  <string name="pref_category_castserver">Сервер Трансляції</string>
+  <string name="pref_cast_server_port">Порт сервера Cast</string>
+  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Черга відтворення</string>
+  <string name="action_clear_queue">Очистити чергу</string>
+  <string name="queue">Черга</string>
+  <string name="cast_remove_from_queue">Видалити з черги</string>
+  <string name="empty_queue">Черга порожня</string>
+  <string name="move_to_top">Нагору</string>
+  <string name="move_to_bottom">Донизу</string>
+  <string name="move_to_position">Перемістити на позицію</string>
+  <string name="position">Позиція</string>
+  <string name="select_position">Виберіть позицію</string>
+  <string name="remove_from_queue_confirmation">Видалити з черги?</string>
+  <string name="clear_queue_confirmation">Очистити чергу</string>
+  <string name="clear_queue_confirmation_message">Ви впевнені, що хочете очистити всю чергу?</string>
+  <string name="action_end_session">Кінцева сесія</string>
+  <string name="cast_end_session_message">Ви дійсно бажаєте завершити поточний сеанс?</string>
+  <string name="cast_end_session_confirm">Завершити сеанс</string>
+  <string name="cast_end_session_cancel">Скасувати</string>
+  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Доступні пристрої</string>
+  <string name="cast_media_info">Інформація про медіа</string>
+  <string name="cast_previous_video">Попереднє відео</string>
+  <string name="cast_next_video">Наступне відео</string>
+  <string name="cast_play">Відтворити</string>
+  <string name="cast_pause">Пауза</string>
+  <string name="cast_rewind_30s">Перемотати 30-ті роки</string>
+  <string name="cast_forward_30s">Переслати 30-ті</string>
+  <string name="playback_speed">Швидкість відтворення</string>
+  <string name="cast_volume">Об\'єм</string>
+  <string name="cast_end_session">Кінцева сесія</string>
+  <string-array name="cast_subtitle_settings">
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Параметри субтитрів</item>
+    <item>Параметри субтитрів</item>
+  </string-array>
+  <string name="cast_subtitle_font_size">Font Size</string>
+  <string name="cast_subtitle_text_color">Колір тексту</string>
+  <string name="cast_subtitle_background">Фон</string>
+  <string name="cast_subtitle_shadow">Тінь</string>
+  <string name="cast_subtitle_apply">Прийняти</string>
+  <string name="cast_subtitle_reset">Відновити за замовчуванням</string>
+  <string name="cast_subtitle_shadow_None">Без ефекту</string>
+  <string name="cast_subtitle_shadow_Light">Світла</string>
+  <string name="cast_subtitle_shadow_Medium">Медіум</string>
+  <string name="cast_subtitle_shadow_Strong">Сильний</string>
+  <string name="cast_subtitle_preview">Попередній перегляд тексту</string>
+  <string name="cast_tracks">Виберіть Subtitle/звукову доріжку</string>
+  <string name="cast_volume_down">Зменшити гучність</string>
+  <string name="cast_volume_up">Збільшити гучність</string>
+  <string name="cast_subtitles">Субтитри</string>
+  <string name="cast_audio_tracks">Аудіотреки</string>
+  <string name="cast_no_subtitles">Без субтитрів</string>
+  <string name="cast_close">Закрити</string>
+  <string name="cast_subtitle_font_family">Шрифт</string>
+  <string name="cast_subtitle_border_style">Стиль рамки</string>
+  <string name="cast_subtitle_border_none">Без ефекту</string>
+  <string name="cast_subtitle_border_outline">Контур</string>
+  <string name="cast_subtitle_border_drop_shadow">Тінь</string>
+  <string name="cast_subtitle_border_drop_shadow_soft">М\'які рідини</string>
+  <string name="cast_subtitle_border_raised">Піднятий</string>
+  <string name="cast_subtitle_border_depressed">Скорочений</string>
+  <string name="cast_connection_error">Помилка підключення</string>
+  <string name="login_failed">Не вдалося увійти</string>
+  <string name="tag" comment="tag Animiru">Мітки</string>
+  <string name="pref_security" comment="pref_security Mihon">Безпека</string>
+  <string name="onboarding_permission_crashlytics">Надіслати журнали збоїв</string>
+  <string name="onboarding_permission_crashlytics_description">Надсилати анонімізовані журнали помилок розробникам.</string>
+  <string name="pref_firebase">Аналітика та журнали збоїв</string>
+  <string name="firebase_summary">Надсилання журналів аварій та аналітики дозволить нам визначати та виправляти проблеми, покращити роботу та зробити майбутні оновлення більш актуальними для ваших потреб</string>
+  <string name="action_display_show_continue_reading_button" comment="action_display_show_continue_reading_button Mihon, Aniyomi, Komikku &amp; SY which need to replace manga =&gt; anime Mihon">Продовжити перегляд</string>
+  <string name="sync_on_chapter_read" comment="sync_on_chapter_read SY">Синхронізація через пробутий епізод</string>
+  <string name="sync_on_chapter_open">Синхронізація при відкритті Епізод</string>
+  <string name="pref_library_summary" comment="pref_library_summary Aniyomi">Категорії, глобальне оновлення, свайп до епізоду</string>
+  <string name="pref_category_delete_chapters">Видалити епізоди</string>
+  <string name="pref_remove_bookmarked_chapters">Дозволити видалення закладених серій</string>
+  <string name="pref_remove_after_marked_as_read">Після додання товару як помічено вручну</string>
+  <string name="pref_remove_after_read">Після перегляду автоматично видаляти</string>
+  <string name="pref_auto_update_manga_sync">Оновлення прогресу після перегляду</string>
+  <string name="pref_auto_update_manga_on_mark_read">Оновити прогрес якщо позначено як переглянутий</string>
+  <string name="pref_skip_seen_episodes">Пропустити серії позначені як помічено</string>
+  <string name="pref_skip_filtered_episodes">Пропустити відфільтровані серії</string>
+  <string name="pref_skip_dupe_episodes">Пропустити дублікат серій</string>
+  <string name="clean_up_downloaded_chapters" comment="clean_up_downloaded_chapters Advanced Settings">Очистити завантажені серії</string>
+  <string name="pref_invalidate_download_cache_summary">Примусово перевірити завантажені епізоди</string>
+  <string name="pref_update_only_completely_read">З невидимою серією (і)</string>
+  <string name="pref_library_update_show_tab_badge">Показувати непоказану кількість на іконці Оновлень</string>
+  <string name="last_read_chapter">Остання серія</string>
+  <string name="second_to_last">Друга до останньої серії</string>
+  <string name="third_to_last">Третє до останньої серії</string>
+  <string name="fourth_to_last">Четвертий до останньої серії</string>
+  <string name="fifth_to_last">П\'ятий до останнього серії</string>
+  <string name="skipped_reason_not_caught_up">Пропущено, тому що є невидимі епізоди</string>
+  <string name="skipped_reason_not_started">Пропущено, тому що не видно серій</string>
+</resources>
