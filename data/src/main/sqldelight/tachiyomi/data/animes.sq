@@ -168,20 +168,20 @@ FROM animes
 WHERE favorite = 0
 GROUP BY source;
 
-deleteAnimesNotInLibraryBySourceIds:
+deleteNonLibraryAnime:
 DELETE FROM animes
 WHERE favorite = 0
 AND source IN :sourceIds
-AND _id NOT IN (
-    SELECT anime_id FROM merged WHERE anime_id != merge_id
-);
-
-deleteAnimesNotInLibraryAndNotSeenBySourceIds:
-DELETE FROM animes
-WHERE favorite = 0 AND source IN :sourceIdsAND AND _id NOT IN (
-    SELECT anime_id FROM merged WHERE anime_id != merge_id
+AND (
+    :keepReadManga = 0
+    OR _id NOT IN (
+        SELECT DISTINCT anime_id
+        FROM episodes
+        WHERE seen = 1
+        OR last_second_seen != 0
+    )
 ) AND _id NOT IN (
-    SELECT anime_id FROM episodes WHERE seen = 1 OR last_second_seen != 0
+     SELECT DISTINCT anime_id FROM merged WHERE anime_id != merge_id
 );
 
 insert:

@@ -172,6 +172,9 @@
     <string name="notes_placeholder">Enjoyed the part where…</string>
     <string name="possible_duplicates_title">Possible duplicates</string>
     <string name="possible_duplicates_summary">You have entries in your library with a similar name.\n\nSelect an entry to migrate or add anyway.</string>
+    <string name="clear_database_text">You’re about to remove entries from the database</string>
+    <string name="clear_database_history_warning">Seen episodes and progress of non-library entries will be lost</string>
+    <string name="clear_db_exclude_read">Keep entries with seen episodes</string>
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->
