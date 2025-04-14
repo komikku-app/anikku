@@ -68,7 +68,7 @@ compose-webview = "io.github.kevinnzou:compose-webview:0.33.6"
 compose-grid = "io.woong.compose.grid:grid:1.2.2"
 compose-stablemarker = "com.github.skydoves:compose-stable-marker:1.0.6"
 palette-ktx = "androidx.palette:palette-ktx:1.0.0"
-materialKolor = "com.materialkolor:material-kolor:2.0.0"
+materialKolor = "com.materialkolor:material-kolor:2.1.1"
 haze = "dev.chrisbanes.haze:haze:1.1.1"
 reorderable = { module = "sh.calvin.reorderable:reorderable", version = "2.4.3" }
 
