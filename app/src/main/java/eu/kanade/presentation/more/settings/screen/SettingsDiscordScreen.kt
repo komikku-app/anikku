@@ -38,7 +38,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.runBlocking
 import tachiyomi.domain.category.interactor.GetCategories
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -48,7 +48,7 @@ object SettingsDiscordScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
-    override fun getTitleRes() = TLMR.strings.pref_category_connections
+    override fun getTitleRes() = AMR.strings.pref_category_connections
 
     @Composable
     override fun RowScope.AppBarAction() {

@@ -84,7 +84,7 @@ data class BackupOptions(
                 setter = { options, enabled -> options.copy(categories = enabled) },
             ),
             Entry(
-                label = AMR.strings.non_library_settings,
+                label = AMR.strings.non_library_watched_settings,
                 getter = BackupOptions::seenEntries,
                 setter = { options, enabled -> options.copy(seenEntries = enabled) },
                 enabled = { it.libraryEntries },

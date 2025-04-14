@@ -49,7 +49,7 @@ import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.InsertTrack
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.source.local.LocalSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -293,7 +293,7 @@ class ExternalIntents {
                 }
             } else {
                 withUIContext {
-                    context.toast(TLMR.strings.install_amnis, 8)
+                    context.toast(AMR.strings.install_amnis, 8)
                 }
             }
             data = uri

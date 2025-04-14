@@ -47,7 +47,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -67,7 +67,7 @@ fun SubtitleSettingsDialog(
         onDismissRequest = onDismissRequest,
         title = {
             Text(
-                text = stringResource(TLMR.strings.cast_subtitle_settings),
+                text = stringResource(AMR.strings.cast_subtitle_settings),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
@@ -81,7 +81,7 @@ fun SubtitleSettingsDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 SettingSection(
-                    title = stringResource(TLMR.strings.cast_subtitle_font_size),
+                    title = stringResource(AMR.strings.cast_subtitle_font_size),
                     icon = Icons.Default.FormatSize,
                 ) {
                     Column {
@@ -104,7 +104,7 @@ fun SubtitleSettingsDialog(
                     }
                 }
                 SettingSection(
-                    title = stringResource(TLMR.strings.cast_subtitle_text_color),
+                    title = stringResource(AMR.strings.cast_subtitle_text_color),
                     icon = Icons.Default.Palette,
                 ) {
                     FlowRow(
@@ -124,7 +124,7 @@ fun SubtitleSettingsDialog(
 
                 // Background Color Section
                 SettingSection(
-                    title = stringResource(TLMR.strings.cast_subtitle_background),
+                    title = stringResource(AMR.strings.cast_subtitle_background),
                     icon = Icons.Default.FormatColorFill,
                 ) {
                     FlowRow(
@@ -144,7 +144,7 @@ fun SubtitleSettingsDialog(
 
                 // Shadow Section
                 SettingSection(
-                    title = stringResource(TLMR.strings.cast_subtitle_shadow),
+                    title = stringResource(AMR.strings.cast_subtitle_shadow),
                     icon = Icons.Default.Opacity,
                 ) {
                     Column {
@@ -155,10 +155,10 @@ fun SubtitleSettingsDialog(
                         ) {
                             Text(
                                 text = when {
-                                    shadowRadius <= 0 -> stringResource(TLMR.strings.cast_subtitle_shadow_None)
-                                    shadowRadius <= 3 -> stringResource(TLMR.strings.cast_subtitle_shadow_Light)
-                                    shadowRadius <= 6 -> stringResource(TLMR.strings.cast_subtitle_shadow_Medium)
-                                    else -> stringResource(TLMR.strings.cast_subtitle_shadow_Strong)
+                                    shadowRadius <= 0 -> stringResource(AMR.strings.cast_subtitle_shadow_None)
+                                    shadowRadius <= 3 -> stringResource(AMR.strings.cast_subtitle_shadow_Light)
+                                    shadowRadius <= 6 -> stringResource(AMR.strings.cast_subtitle_shadow_Medium)
+                                    else -> stringResource(AMR.strings.cast_subtitle_shadow_Strong)
                                 },
                                 style = MaterialTheme.typography.labelMedium,
                             )
@@ -183,7 +183,7 @@ fun SubtitleSettingsDialog(
 
                 // Font Family Section
                 SettingSection(
-                    title = stringResource(TLMR.strings.cast_subtitle_font_family),
+                    title = stringResource(AMR.strings.cast_subtitle_font_family),
                     icon = Icons.Default.TextFormat,
                 ) {
                     FontFamilySelector(
@@ -196,7 +196,7 @@ fun SubtitleSettingsDialog(
 
                 // Border Style Section
                 SettingSection(
-                    title = stringResource(TLMR.strings.cast_subtitle_border_style),
+                    title = stringResource(AMR.strings.cast_subtitle_border_style),
                     icon = Icons.Default.LineStyle,
                 ) {
                     BorderStyleSelector(
@@ -222,7 +222,7 @@ fun SubtitleSettingsDialog(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(TLMR.strings.cast_subtitle_preview),
+                        text = stringResource(AMR.strings.cast_subtitle_preview),
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = fontSize.sp,
                             color = textColor,
@@ -279,7 +279,7 @@ fun SubtitleSettingsDialog(
                         onDismissRequest()
                     },
                 ) {
-                    Text(stringResource(TLMR.strings.cast_subtitle_reset))
+                    Text(stringResource(AMR.strings.cast_subtitle_reset))
                 }
                 FilledTonalButton(
                     onClick = {
@@ -295,7 +295,7 @@ fun SubtitleSettingsDialog(
                         onDismissRequest()
                     },
                 ) {
-                    Text(stringResource(TLMR.strings.cast_subtitle_apply))
+                    Text(stringResource(AMR.strings.cast_subtitle_apply))
                 }
             }
         },
@@ -478,11 +478,11 @@ private fun BorderStyleSelector(
             ) {
                 Text(
                     text = when (style) {
-                        BorderStyle.NONE -> stringResource(TLMR.strings.cast_subtitle_border_none)
-                        BorderStyle.OUTLINE -> stringResource(TLMR.strings.cast_subtitle_border_outline)
-                        BorderStyle.DROP_SHADOW -> stringResource(TLMR.strings.cast_subtitle_border_drop_shadow)
-                        BorderStyle.RAISED -> stringResource(TLMR.strings.cast_subtitle_border_raised)
-                        BorderStyle.DEPRESSED -> stringResource(TLMR.strings.cast_subtitle_border_depressed)
+                        BorderStyle.NONE -> stringResource(AMR.strings.cast_subtitle_border_none)
+                        BorderStyle.OUTLINE -> stringResource(AMR.strings.cast_subtitle_border_outline)
+                        BorderStyle.DROP_SHADOW -> stringResource(AMR.strings.cast_subtitle_border_drop_shadow)
+                        BorderStyle.RAISED -> stringResource(AMR.strings.cast_subtitle_border_raised)
+                        BorderStyle.DEPRESSED -> stringResource(AMR.strings.cast_subtitle_border_depressed)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier

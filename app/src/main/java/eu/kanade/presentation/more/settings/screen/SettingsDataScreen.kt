@@ -76,8 +76,8 @@ import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.sy.SYMR
-import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -327,7 +327,7 @@ object SettingsDataScreen : SearchableSettings {
                 // AM (FILE_SIZE) -->
                 Preference.PreferenceItem.SwitchPreference(
                     pref = storagePreferences.showEpisodeFileSize(),
-                    title = stringResource(TLMR.strings.pref_show_downloaded_episode_file_size),
+                    title = stringResource(AMR.strings.pref_show_downloaded_episode_file_size),
                 ),
                 // <-- AM (FILE_SIZE)
 

@@ -51,7 +51,7 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -59,7 +59,7 @@ object SettingsConnectionScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
-    override fun getTitleRes() = TLMR.strings.pref_category_connections
+    override fun getTitleRes() = AMR.strings.pref_category_connections
 
     @Composable
     override fun getPreferences(): List<Preference> {

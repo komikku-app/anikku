@@ -43,7 +43,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.TextButton
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -103,10 +103,10 @@ fun CastPlayerDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
                         IconButton(onClick = { castManager.previousVideo() }) {
-                            Icon(Icons.Default.SkipPrevious, stringResource(TLMR.strings.cast_previous_video))
+                            Icon(Icons.Default.SkipPrevious, stringResource(AMR.strings.cast_previous_video))
                         }
                         IconButton(onClick = { castManager.seekRelative(-30) }) {
-                            Icon(Icons.Default.FastRewind, stringResource(TLMR.strings.cast_rewind_30s))
+                            Icon(Icons.Default.FastRewind, stringResource(AMR.strings.cast_rewind_30s))
                         }
                         IconButton(
                             onClick = {
@@ -117,20 +117,20 @@ fun CastPlayerDialog(
                         ) {
                             Icon(
                                 if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                stringResource(if (isPlaying) TLMR.strings.cast_pause else TLMR.strings.cast_play),
+                                stringResource(if (isPlaying) AMR.strings.cast_pause else AMR.strings.cast_play),
                             )
                         }
                         IconButton(onClick = { castManager.seekRelative(30) }) {
-                            Icon(Icons.Default.FastForward, stringResource(TLMR.strings.cast_forward_30s))
+                            Icon(Icons.Default.FastForward, stringResource(AMR.strings.cast_forward_30s))
                         }
                         IconButton(onClick = { castManager.nextVideo() }) {
-                            Icon(Icons.Default.SkipNext, stringResource(TLMR.strings.cast_next_video))
+                            Icon(Icons.Default.SkipNext, stringResource(AMR.strings.cast_next_video))
                         }
                     }
 
                     Column {
                         Text(
-                            text = "${stringResource(TLMR.strings.cast_volume)}: ${(volume.value * 100).toInt()}%",
+                            text = "${stringResource(AMR.strings.cast_volume)}: ${(volume.value * 100).toInt()}%",
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
@@ -163,10 +163,10 @@ fun CastPlayerDialog(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = stringResource(TLMR.strings.cast_end_session),
+                            contentDescription = stringResource(AMR.strings.cast_end_session),
                             modifier = Modifier.padding(end = 8.dp),
                         )
-                        Text(text = stringResource(TLMR.strings.cast_end_session))
+                        Text(text = stringResource(AMR.strings.cast_end_session))
                     }
                 }
             },

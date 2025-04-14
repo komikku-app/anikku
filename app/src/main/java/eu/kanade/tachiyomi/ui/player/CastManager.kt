@@ -41,7 +41,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.i18n.tail.TLMR
+import tachiyomi.i18n.ank.AMR
 import java.util.LinkedList
 import kotlin.coroutines.resume
 
@@ -295,7 +295,7 @@ class CastManager(
         activity.runOnUiThread {
             Toast.makeText(
                 context,
-                context.stringResource(TLMR.strings.cast_video_added_to_queue),
+                context.stringResource(AMR.strings.cast_video_added_to_queue),
                 Toast.LENGTH_SHORT,
             ).show()
         }
@@ -305,7 +305,7 @@ class CastManager(
         activity.runOnUiThread {
             Toast.makeText(
                 context,
-                context.stringResource(TLMR.strings.cast_error_loading),
+                context.stringResource(AMR.strings.cast_error_loading),
                 Toast.LENGTH_SHORT,
             ).show()
         }
@@ -533,7 +533,7 @@ class CastManager(
         activity.runOnUiThread {
             Toast.makeText(
                 context,
-                context.stringResource(TLMR.strings.cast_connection_error),
+                context.stringResource(AMR.strings.cast_connection_error),
                 Toast.LENGTH_SHORT,
             ).show()
         }
