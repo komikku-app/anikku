@@ -458,6 +458,12 @@ class UpdatesScreenModel(
                         }
                     listOf(header) + mangaItems
                 }
+                .distinctBy {
+                    when (it) {
+                        is UpdatesUiModel.Header -> it.hashCode()
+                        is UpdatesUiModel.Item -> "${it.item.update.mangaId}-${it.item.update.chapterId}"
+                    }
+                }
             // KMK <--
         }
     }
