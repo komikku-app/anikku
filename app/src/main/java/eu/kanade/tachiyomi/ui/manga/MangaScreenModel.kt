@@ -24,9 +24,9 @@ import coil3.request.allowHardware
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
+import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.chapter.interactor.SetReadStatus
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
-import eu.kanade.domain.manga.interactor.SetMangaViewerFlags
 import eu.kanade.domain.manga.interactor.SmartSearchMerge
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.chaptersFiltered
@@ -193,7 +193,7 @@ class MangaScreenModel(
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
-    internal val setMangaViewerFlags: SetMangaViewerFlags = Injekt.get(),
+    internal val setAnimeViewerFlags: SetAnimeViewerFlags = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     // AM (FILE_SIZE) -->
     storagePreferences: StoragePreferences = Injekt.get(),
@@ -1610,7 +1610,7 @@ class MangaScreenModel(
         manualFetch: Boolean,
     ) {
         val airingEpisodeData = AniChartApi().loadAiringTime(manga, trackItems, manualFetch)
-        setMangaViewerFlags.awaitSetNextEpisodeAiring(manga.id, airingEpisodeData)
+        setAnimeViewerFlags.awaitSetNextEpisodeAiring(manga.id, airingEpisodeData)
         updateSuccessState { it.copy(nextAiringEpisode = airingEpisodeData) }
     }
 
