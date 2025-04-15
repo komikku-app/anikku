@@ -16,6 +16,7 @@ import eu.kanade.presentation.more.stats.StatsScreenState
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -48,7 +49,7 @@ object StatsScreen : Screen {
                                     title = if (allRead) {
                                         stringResource(SYMR.strings.ignore_non_library_entries)
                                     } else {
-                                        stringResource(SYMR.strings.include_all_read_entries)
+                                        stringResource(AMR.strings.include_all_seen_entries)
                                     },
                                     onClick = screenModel::toggleReadManga,
                                 ),

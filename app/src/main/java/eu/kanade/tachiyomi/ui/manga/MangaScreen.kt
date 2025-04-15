@@ -574,7 +574,7 @@ class MangaScreen(
             MangaScreenModel.Dialog.ChangeAnimeSkipIntro -> {
                 fun updateSkipIntroLength(newLength: Long) {
                     scope.launchIO {
-                        screenModel.setMangaViewerFlags.awaitSetSkipIntroLength(mangaId, newLength)
+                        screenModel.setAnimeViewerFlags.awaitSetSkipIntroLength(mangaId, newLength)
                     }
                 }
                 SkipIntroLengthDialog(

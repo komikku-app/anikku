@@ -193,7 +193,7 @@ object SettingsTrackingScreen : SearchableSettings {
                         login = { context.openInBrowser(BangumiApi.authUrl(), forceDefaultBrowser = true) },
                         logout = { dialog = LogoutDialog(trackerManager.bangumi) },
                     ),
-                    Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.tracking_info)),
+                    Preference.PreferenceItem.InfoPreference(stringResource(AMR.strings.tracking_info_anime)),
                 ),
             ),
             Preference.PreferenceGroup(

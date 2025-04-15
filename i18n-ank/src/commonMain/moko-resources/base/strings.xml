@@ -167,6 +167,7 @@
         <!-- SY -->
     <string name="sync_on_episode_seen">Sync on Episode Seen</string>
     <string name="sync_on_episode_open">Sync on Episode Open</string>
+    <string name="include_all_seen_entries">Include all seen entries</string>
 
         <!-- Aniyomi -->
     <string name="pref_library_summary_episode">Categories, global update, episode swipe</string>
@@ -179,6 +180,12 @@
     <string name="pref_skip_seen_episodes">Skip episodes marked seen</string>
     <string name="pref_skip_filtered_episodes">Skip filtered episodes</string>
     <string name="pref_skip_dupe_episodes">Skip duplicate episodes</string>
+    <string name="pref_reset_player_flags">Reset per-series player settings</string>
+    <string name="pref_reset_player_flags_summary">Resets skip intro length &amp; next episode airing of all series</string>
+    <string name="pref_reset_player_flags_success">All player settings reset</string>
+    <string name="pref_reset_player_flags_error">Couldn\'t reset player settings</string>
+    <string name="pref_storage_location_info_anime">Used for automatic backups, episode downloads, and local source.</string>
+    <string name="tracking_info_anime">One-way sync to update the episode progress in external tracker services. Set up tracking for individual entries from their tracking button.</string>
 
     <!-- Advanced Settings -->
     <string name="clean_up_downloaded_episodes">Clean up downloaded episodes</string>

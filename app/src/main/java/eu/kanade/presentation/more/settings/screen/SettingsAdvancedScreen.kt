@@ -362,16 +362,16 @@ object SettingsAdvancedScreen : SearchableSettings {
                 ),
                 // KMK <--
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_reset_viewer_flags),
-                    subtitle = stringResource(MR.strings.pref_reset_viewer_flags_summary),
+                    title = stringResource(AMR.strings.pref_reset_player_flags),
+                    subtitle = stringResource(AMR.strings.pref_reset_player_flags_summary),
                     onClick = {
                         scope.launchNonCancellable {
                             val success = Injekt.get<ResetViewerFlags>().await()
                             withUIContext {
                                 val message = if (success) {
-                                    MR.strings.pref_reset_viewer_flags_success
+                                    AMR.strings.pref_reset_player_flags_success
                                 } else {
-                                    MR.strings.pref_reset_viewer_flags_error
+                                    AMR.strings.pref_reset_player_flags_error
                                 }
                                 context.toast(message)
                             }
