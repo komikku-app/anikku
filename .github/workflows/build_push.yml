@@ -6,14 +6,6 @@ on:
     paths:
       - '**'
       - '!**.md'
-      - 'i18n/src/commonMain/moko-resources/**/strings.xml'
-      - 'i18n/src/commonMain/moko-resources/**/plurals.xml'
-      - 'i18n-sy/src/commonMain/moko-resources/**/strings.xml'
-      - 'i18n-sy/src/commonMain/moko-resources/**/plurals.xml'
-      - 'i18n-kmk/src/commonMain/moko-resources/**/strings.xml'
-      - 'i18n-kmk/src/commonMain/moko-resources/**/plurals.xml'
-      - '!i18n-ank/src/commonMain/moko-resources/**/strings.xml'
-      - '!i18n-ank/src/commonMain/moko-resources/**/plurals.xml'
   # pull_request:
   #   paths-ignore:
   #     - '**.md'
@@ -49,20 +41,20 @@ jobs:
         if: steps.filter.outputs.gofiles == 'true'
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21' 
-  
+          go-version: '1.21'
+
       - name: Setup Android SDK
         if: steps.filter.outputs.gofiles == 'true'
         uses: android-actions/setup-android@v3
         with:
           sdk-version: '30'
-  
+
       - name: Install Android NDK
         if: steps.filter.outputs.gofiles == 'true'
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25b
-  
+
       - name: Commit build library
         if: steps.filter.outputs.gofiles == 'true'
         run: |
@@ -71,7 +63,7 @@ jobs:
           git add app/libs/server.aar
           git add app/libs/server-sources.jar
           git commit -m "Add compiled torrserver library"
-        
+
       - name: Push changes
         if: steps.filter.outputs.gofiles == 'true'
         uses: ad-m/github-push-action@master
@@ -128,8 +120,8 @@ jobs:
       - name: Rename apk
         id: current_commit
         run: |
-          set -ex
-          version_tag=$(echo ${GITHUB_REF/refs\/heads\//} | sed -r 's/[\/]+/_/g')
+          set -e
+          version_tag=$(echo ${GITHUB_REF/refs\/heads\//} | sed -r 's/^refs\/(heads|tags)\///' | sed -r 's/[-\/]+/_/g')
           commit_count=$(git rev-list --count HEAD)
           echo "VERSION_TAG=$version_tag"
           echo "VERSION_TAG=$version_tag" >> $GITHUB_OUTPUT
