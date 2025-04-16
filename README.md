@@ -16,7 +16,7 @@ Discover and watch anime, cartoons, series, and more – easier than ever on you
 [![Discord](https://img.shields.io/discord/1242381704459452488.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/85jB7V5AJR)
 [![CI](https://img.shields.io/github/actions/workflow/status/komikku-app/anikku/build_check.yml?labelColor=27303D&label=CI)](https://github.com/komikku-app/anikku/actions/workflows/build_check.yml)
 [![License: Apache-2.0](https://img.shields.io/github/license/komikku-app/anikku?labelColor=27303D&color=0877d2)](/LICENSE)
-[![Translation status](https://hosted.weblate.org/widget/komikku-app/anikku/svg-badge.svg)](https://hosted.weblate.org/engage/komikku-app/)
+[![Translation status](https://hosted.weblate.org/widget/komikku-app/anikku/svg-badge.svg)](https://hosted.weblate.org/projects/komikku-app/anikku/)
 
 ## Download
 
