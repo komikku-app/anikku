@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -86,7 +87,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                     .fillMaxWidth(),
             )
             var subScale by remember {
-                mutableStateOf(MPVLib.getPropertyDouble("sub-scale").toFloat())
+                mutableFloatStateOf(MPVLib.getPropertyDouble("sub-scale").toFloat())
             }
             var subPos by remember {
                 mutableStateOf(MPVLib.getPropertyInt("sub-pos"))
@@ -100,7 +101,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                     preferences.subtitleFontScale().set(it)
                     MPVLib.setPropertyDouble("sub-scale", it.toDouble())
                 },
-                max = 5f,
+                valueRange = 0f..5f,
                 icon = {
                     Icon(
                         Icons.Default.FormatSize,
@@ -111,13 +112,13 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
             SliderItem(
                 label = stringResource(MR.strings.player_sheets_sub_position),
                 value = subPos,
-                valueText = subPos.toString(),
                 onChange = {
                     subPos = it
                     preferences.subtitlePos().set(it)
                     MPVLib.setPropertyInt("sub-pos", it)
                 },
-                max = 150,
+                valueRange = 0..150,
+                steps = 0,
                 icon = {
                     Icon(
                         Icons.Default.AlignVerticalCenter,

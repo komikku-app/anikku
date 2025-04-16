@@ -258,10 +258,9 @@ fun SubtitleSettingsTypographyCard(
             }
             SliderItem(
                 label = stringResource(MR.strings.player_sheets_sub_typography_font_size),
-                max = 100,
-                min = 1,
+                valueRange = 1..100,
+                steps = 0,
                 value = fontSize,
-                valueText = fontSize.toString(),
                 onChange = {
                     fontSize = it
                     preferences.subtitleFontSize().set(it)
@@ -323,27 +322,27 @@ fun SubtitleSettingsTypographyCard(
                 }
             }
             SliderItem(
-                stringResource(MR.strings.player_sheets_sub_typography_border_size),
+                label = stringResource(MR.strings.player_sheets_sub_typography_border_size),
                 value = borderSize,
-                valueText = borderSize.toString(),
                 onChange = {
                     borderSize = it
                     preferences.subtitleBorderSize().set(it)
                     MPVLib.setPropertyInt("sub-border-size", it)
                 },
-                max = 100,
+                valueRange = 0..100,
+                steps = 0,
                 icon = { Icon(Icons.Default.BorderColor, null) },
             )
             SliderItem(
-                stringResource(MR.strings.player_sheets_subtitles_shadow_offset),
+                label = stringResource(MR.strings.player_sheets_subtitles_shadow_offset),
                 value = shadowOffset,
-                valueText = shadowOffset.toString(),
                 onChange = {
                     shadowOffset = it
                     preferences.shadowOffsetSubtitles().set(it)
                     MPVLib.setPropertyInt("sub-shadow-offset", it)
                 },
-                max = 100,
+                valueRange = 0..100,
+                steps = 0,
                 icon = { Icon(painterResource(R.drawable.sharp_shadow_24), null) },
             )
         }

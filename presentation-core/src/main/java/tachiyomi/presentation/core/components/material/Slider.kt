@@ -47,3 +47,40 @@ fun Slider(
         track = track,
     )
 }
+
+@Composable
+fun Slider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    @IntRange(from = 0) steps: Int = 0,
+    onValueChangeFinished: (() -> Unit)? = null,
+    colors: SliderColors = SliderDefaults.colors(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    thumb: @Composable (SliderState) -> Unit = {
+        SliderDefaults.Thumb(
+            interactionSource = interactionSource,
+            colors = colors,
+            enabled = enabled,
+        )
+    },
+    track: @Composable (SliderState) -> Unit = { sliderState ->
+        SliderDefaults.Track(colors = colors, enabled = enabled, sliderState = sliderState)
+    },
+) {
+    Slider(
+        value = value,
+        onValueChange = { onValueChange(it) },
+        modifier = modifier,
+        enabled = enabled,
+        valueRange = valueRange,
+        steps = steps,
+        onValueChangeFinished = onValueChangeFinished,
+        colors = colors,
+        interactionSource = interactionSource,
+        thumb = thumb,
+        track = track,
+    )
+}

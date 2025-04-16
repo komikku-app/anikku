@@ -37,6 +37,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SliderColors
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
@@ -222,6 +224,7 @@ fun BaseSliderItem(
     valueText: String = value.toString(),
     labelStyle: TextStyle = MaterialTheme.typography.bodyMedium,
     pillColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    colors: SliderColors = SliderDefaults.colors(),
 ) {
     val haptic = LocalHapticFeedback.current
     Column(
@@ -254,6 +257,7 @@ fun BaseSliderItem(
             },
             valueRange = valueRange,
             steps = steps,
+            colors = colors,
         )
     }
 }
