@@ -51,9 +51,10 @@ import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import androidx.core.graphics.toColorInt
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.player.components.ExpandableCard
-import eu.kanade.presentation.player.components.TintedSliderItem
+import eu.kanade.presentation.player.components.SliderItem
 import eu.kanade.tachiyomi.ui.player.controls.CARDS_MAX_WIDTH
 import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
@@ -199,9 +200,7 @@ fun resetColors(preferences: SubtitlePreferences, type: SubColorType) {
 }
 
 val getCurrentMPVColor: (SubColorType) -> Int = { colorType ->
-    MPVLib.getPropertyString(colorType.property)?.let {
-        android.graphics.Color.parseColor(it.uppercase())
-    }!!
+    MPVLib.getPropertyString(colorType.property)?.uppercase()?.toColorInt()!!
 }
 
 @Composable
@@ -211,39 +210,39 @@ fun SubtitlesColorPicker(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier) {
-        TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_red),
-            color.red,
-            color.red.toString(),
+        SliderItem(
+            label = stringResource(MR.strings.player_sheets_sub_color_red),
+            value = color.red,
             onChange = { onColorChange(color.copyAsArgb(red = it)) },
-            max = 255,
+            valueRange = 0..255,
+            steps = 0,
             tint = Color.Red,
         )
 
-        TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_green),
-            color.green,
-            color.green.toString(),
+        SliderItem(
+            label = stringResource(MR.strings.player_sheets_sub_color_green),
+            value = color.green,
             onChange = { onColorChange(color.copyAsArgb(green = it)) },
-            max = 255,
+            valueRange = 0..255,
+            steps = 0,
             tint = Color.Green,
         )
 
-        TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_blue),
-            color.blue,
-            color.blue.toString(),
+        SliderItem(
+            label = stringResource(MR.strings.player_sheets_sub_color_blue),
+            value = color.blue,
             onChange = { onColorChange(color.copyAsArgb(blue = it)) },
-            max = 255,
+            valueRange = 0..255,
+            steps = 0,
             tint = Color.Blue,
         )
 
-        TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_alpha),
-            color.alpha,
-            color.alpha.toString(),
+        SliderItem(
+            label = stringResource(MR.strings.player_sheets_sub_color_alpha),
+            value = color.alpha,
             onChange = { onColorChange(color.copyAsArgb(alpha = it)) },
-            max = 255,
+            valueRange = 0..255,
+            steps = 0,
             tint = Color.White,
         )
     }

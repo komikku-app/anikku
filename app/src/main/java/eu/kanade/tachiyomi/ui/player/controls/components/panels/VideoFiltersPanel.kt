@@ -121,13 +121,12 @@ fun FiltersCard(
                 SliderItem(
                     label = stringResource(filter.titleRes),
                     value = value,
-                    valueText = value.toString(),
                     onChange = {
                         filter.preference(decoderPreferences).set(it)
                         MPVLib.setPropertyInt(filter.mpvProperty, it)
                     },
-                    max = 100,
-                    min = -100,
+                    valueRange = -100..100,
+                    steps = 0,
                 )
             }
             item {

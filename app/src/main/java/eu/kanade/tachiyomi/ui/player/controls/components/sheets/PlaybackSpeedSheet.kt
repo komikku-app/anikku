@@ -78,8 +78,7 @@ fun PlaybackSpeedSheet(
                 value = speed,
                 valueText = stringResource(MR.strings.player_speed, speed),
                 onChange = onSpeedChange,
-                max = 6f,
-                min = 0.01f,
+                valueRange = 0.01f..6f,
             )
             val playbackSpeedPresets by preferences.speedPresets().collectAsState()
             Row(
