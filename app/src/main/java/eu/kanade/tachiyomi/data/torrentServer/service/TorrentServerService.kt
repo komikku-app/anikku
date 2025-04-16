@@ -6,8 +6,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.IBinder
+import androidx.core.content.ContextCompat
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
@@ -92,7 +94,9 @@ class TorrentServerService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
         val builder = context.notificationBuilder(Notifications.CHANNEL_TORRENT_SERVER) {
-            setSmallIcon(R.mipmap.ic_launcher)
+            setSmallIcon(R.drawable.ic_launcher_monochrome)
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
+            setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_foreground))
             setContentText(stringResource(AMR.strings.torrentserver_is_running))
             setContentTitle(stringResource(MR.strings.app_name))
             setAutoCancel(false)
