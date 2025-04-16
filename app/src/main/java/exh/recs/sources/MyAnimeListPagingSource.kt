@@ -32,7 +32,7 @@ class MyAnimeListPagingSource(manga: Manga, source: CatalogueSource?) : TrackerR
     override suspend fun getRecsById(id: String): List<SManga> {
         val apiUrl = endpoint.toHttpUrl()
             .newBuilder()
-            .addPathSegment("manga")
+            .addPathSegment("anime")
             .addPathSegment(id)
             .addPathSegment("recommendations")
             .build()
@@ -69,7 +69,7 @@ class MyAnimeListPagingSource(manga: Manga, source: CatalogueSource?) : TrackerR
     override suspend fun getRecsBySearch(search: String): List<SManga> {
         val url = endpoint.toHttpUrl()
             .newBuilder()
-            .addPathSegment("manga")
+            .addPathSegment("anime")
             .addQueryParameter("q", search)
             .build()
 
