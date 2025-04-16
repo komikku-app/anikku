@@ -105,7 +105,7 @@ class AniListPagingSource(manga: Manga, source: CatalogueSource?) : TrackerRecom
             """
             |query Recommendations(${'$'}id: Int!) {
                 |Page {
-                    |media(id: ${'$'}id, type: MANGA) {
+                    |media(id: ${'$'}id, type: ANIME) {
                         |recommendations {
                             |edges {
                                 |node {
@@ -145,7 +145,7 @@ class AniListPagingSource(manga: Manga, source: CatalogueSource?) : TrackerRecom
             """
             |query Recommendations(${'$'}search: String!) {
                 |Page {
-                    |media(search: ${'$'}search, type: MANGA) {
+                    |media(search: ${'$'}search, type: ANIME) {
                         |title {
                             |romaji
                             |english
