@@ -1,8 +1,7 @@
 name: 🐞 Issue report
 description: Report an issue in Anikku
-labels: [Bug]
+labels: [bug]
 body:
-
   - type: textarea
     id: reproduce-steps
     attributes:
@@ -53,7 +52,7 @@ body:
       label: Anikku version
       description: You can find your Anikku version in **More → About**.
       placeholder: |
-        Example: "0.16.4.3"
+        Example: "0.1.2"
     validations:
       required: true
 
