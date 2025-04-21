@@ -1196,10 +1196,10 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     /**
-     * Whether this presenter is initialized yet.
+     * Whether this viewModel is initialized with the correct episode.
      */
-    private fun needsInit(): Boolean {
-        return anime == null || currentEpisode.value == null
+    private fun needsInit(animeId: Long, episodeId: Long): Boolean {
+        return anime?.id != animeId || currentEpisode.value?.id != episodeId
     }
 
     data class InitResult(
@@ -1223,7 +1223,7 @@ class PlayerViewModel @JvmOverloads constructor(
         vidIndex: Int,
     ): Pair<InitResult, Result<Boolean>> {
         val defaultResult = InitResult(currentHosterList, qualityIndex, null)
-        if (!needsInit()) return Pair(defaultResult, Result.success(true))
+        if (!needsInit(animeId, initialEpisodeId)) return Pair(defaultResult, Result.success(true))
         return try {
             val anime = getAnime.await(animeId)
             if (anime != null) {
@@ -1247,7 +1247,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 _currentAnime.update { _ -> anime }
                 animeTitle.update { _ -> anime.title }
                 sourceManager.isInitialized.first { it }
-                if (episodeId == -1L) episodeId = initialEpisodeId
+                episodeId = initialEpisodeId
 
                 updateEpisodeList(initEpisodeList(anime))
 
