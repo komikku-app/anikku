@@ -650,7 +650,7 @@ class MangaScreen(
         withIOContext {
             MainActivity.startPlayerActivity(
                 context,
-                episode.animeId,
+                mangaId,
                 episode.id,
                 useExternalPlayer,
             )
