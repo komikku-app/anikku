@@ -13,7 +13,7 @@ import kotlin.coroutines.resume
 
 object WebViewUtil {
     private const val CHROME_PACKAGE = "com.android.chrome"
-    private const val SYSTEM_SETTINGS_PACKAGE = "com.android.settings"
+    private const val FALLBACK_PACKAGE = "com.google.android.webview"
 
     const val MINIMUM_WEBVIEW_VERSION = 118
 
@@ -61,7 +61,7 @@ object WebViewUtil {
 
             CHROME_PACKAGE
         } catch (_: PackageManager.NameNotFoundException) {
-            SYSTEM_SETTINGS_PACKAGE
+            FALLBACK_PACKAGE
         }
     }
 }
