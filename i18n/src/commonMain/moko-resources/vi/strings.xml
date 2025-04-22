@@ -678,7 +678,7 @@
     <string name="action_sort_next_updated">Cập nhật dự kiến tiếp theo</string>
     <string name="information_cloudflare_help">Nhấn vào đây để được trợ giúp về Cloudflare</string>
     <string name="pref_update_only_in_release_period">Chưa công bố</string>
-    <string name="unlock_app_title">Mở khóa Aniyomi</string>
+    <string name="unlock_app_title">Mở khóa Anikku</string>
     <string name="source_settings">Cài đặt nguồn</string>
     <string name="app_settings">Cài đặt ứng dụng</string>
     <string name="pref_storage_location">Vị trí kho chứa</string>
@@ -775,8 +775,8 @@
     <string name="also_set_chapter_settings_for_library">Ngoài ra có hiệu lực với tất cả truyện trong thư viện</string>
     <string name="dialog_with_checkbox_reset">Đặt lại mọi chương của manga này</string>
     <string name="download_insufficient_space">Không thể tãi chương vì dung lượng bộ nhớ xuống thấp</string>
-    <string name="download_queue_size_warning">Cảnh báo: các tải xuống hàng loạt lớn có thể dẫn đến các nguồn trở nên chậm hơn và / hoặc chặn Aniyomi. Nhấn vào để tìm hiểu thêm.</string>
-    <string name="information_webview_required">Aniyomi yêu cầu phải có WebView</string>
+    <string name="download_queue_size_warning">Cảnh báo: các tải xuống hàng loạt lớn có thể dẫn đến các nguồn trở nên chậm hơn và / hoặc chặn Anikku. Nhấn vào để tìm hiểu thêm.</string>
+    <string name="information_webview_required">Anikku yêu cầu phải có WebView</string>
     <string name="download_notifier_download_paused_chapters">Tải xuống đã tạm dừng</string>
     <string name="channel_new_chapters_episodes">Cập nhật chương</string>
     <string name="general_categories">Thể loại</string>
@@ -786,7 +786,7 @@
     <string name="confirm_exit">Hãy nhấn lại nút quay lại để thoát</string>
     <string name="information_empty_repos">Bạn chưa đặt repo.</string>
     <string name="action_add_repo">Thêm repo</string>
-    <string name="action_add_repo_message">Thêm repo bên ngoài vào Aniyomi. Link này có đuôi URL kết thúc với \"index.min.json\".</string>
+    <string name="action_add_repo_message">Thêm repo bên ngoài vào Anikku. Link này có đuôi URL kết thúc với \"index.min.json\".</string>
     <string name="error_repo_exists">Repo này đã tồn tại!</string>
     <string name="action_delete_repo">Xoá repo</string>
     <string name="invalid_repo_name">Repo URL không hợp lệ</string>
@@ -1002,7 +1002,7 @@
     <string name="bandwidth_hero">Bandwidth Hero (yêu cầu máy chủ Bandwidth Hero Proxy)</string>
     <string name="resmush">resmush.it</string>
     <string name="bandwidth_data_saver_server">Máy chủ Bandwidth Hero Proxy</string>
-    <string name="onboarding_storage_action_create_folder">Tạo thư mục Aniyomi mặc định</string>
+    <string name="onboarding_storage_action_create_folder">Tạo thư mục Anikku mặc định</string>
     <string name="download_speed_limit">Giới hạn tốc độ tải xuống</string>
     <string name="download_speed_limit_hint">Đặt thành 0 để tắt giới hạn tốc độ.</string>
     <string name="pref_mpv_scripts_summary">Cần có quyền truy cập bộ nhớ ngoài.</string>

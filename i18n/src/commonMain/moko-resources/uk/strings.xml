@@ -745,12 +745,12 @@
     <string name="also_set_episode_settings_for_library">Також застосувати до всіх аніме в моїй бібліотеці</string>
     <string name="dialog_with_checkbox_reset">Скинути усі розділи для цієї манґи</string>
     <string name="download_insufficient_space">Не вдалося завантажити через нестачу місця для зберігання</string>
-    <string name="download_queue_size_warning">Попередження: великий об\'єм завантажень може призвести до сповільнення роботи джерел та/або блокуванню Aniyomi.</string>
-    <string name="information_webview_required">WebView необхідний для Aniyomi</string>
+    <string name="download_queue_size_warning">Попередження: великий об\'єм завантажень може призвести до сповільнення роботи джерел та/або блокуванню Anikku.</string>
+    <string name="information_webview_required">WebView необхідний для Anikku</string>
     <string name="download_notifier_download_paused_chapters">Завантаження призупинено</string>
     <string name="channel_new_chapters_episodes">Оновлення розділів/епізодів</string>
     <string name="pref_default_home_tab_library">Встановіть стартовий екран на вкладку Манґа</string>
-    <string name="unofficial_extension_message_aniyomi">Це розширення не входить до переліку офіційних розширень Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Це розширення не входить до переліку офіційних розширень Anikku.</string>
     <string name="pref_intro_length">Пропустити тривалість вступу</string>
     <string name="pref_skip_length">Двічі торкніться, щоб пропустити інтро</string>
     <string name="default_anime_category">Категорія аніме за замовчуванням</string>
@@ -885,7 +885,7 @@
     <string name="sort_by_episode_number">За номером епізоду</string>
     <string name="confirm_delete_episodes">Ви впевнені, що хочете видалити вибрані епізоди?</string>
     <string name="action_global_anime_search">Глобальний пошук аніме</string>
-    <string name="unofficial_anime_extension_message">Це розширення не входить до офіційного списку розширень Aniyomi.</string>
+    <string name="unofficial_anime_extension_message">Це розширення не входить до офіційного списку розширень Anikku.</string>
     <string name="pref_backup_flags">Варіанти резервного копіювання</string>
     <string name="download_notifier_download_paused_episodes">Завантаження епізоду призупинено</string>
     <string name="pref_invalidate_download_cache_summary">Примусити застосунок повторно перевіряти завантажені розділи та епізоди</string>
@@ -1006,7 +1006,7 @@
     <string name="information_empty_repos">У вас немає встановлених репозиторіїв.</string>
     <string name="action_add_repo">Додати репозиторій</string>
     <string name="label_add_repo_input">URL-адреса репозиторію</string>
-    <string name="action_add_repo_message">Додайте додаткові репозиторії до Aniyomi. Це повинні бути URL-адреси, що закінчуються на \"index.min.json\".</string>
+    <string name="action_add_repo_message">Додайте додаткові репозиторії до Anikku. Це повинні бути URL-адреси, що закінчуються на \"index.min.json\".</string>
     <string name="action_delete_repo">Видалити репозиторій</string>
     <string name="invalid_repo_name">Неправильна URL-адреса репозиторія</string>
     <string name="delete_repo_confirmation">Бажаєте видалити репозиторій \"%s\"?</string>
@@ -1041,7 +1041,7 @@
     <string name="pref_auto_update_manga_on_mark_read">Оновлення прогресу, якщо позначено як прочитане/переглянуте</string>
     <string name="pref_right_double_tap">Двічі торкніться (праворуч)</string>
     <string name="pref_player_subtitle_lang_info">Мови субтитрів, які вибираються за замовчуванням у відео з декількома субтитрами. Дво- або трибуквені коди мов працюють. Кілька значень можна розділити комою.</string>
-    <string name="onboarding_storage_action_create_folder">Створіть папку Aniyomi за замовчуванням</string>
+    <string name="onboarding_storage_action_create_folder">Створіть папку Anikku за замовчуванням</string>
     <string name="anime_interval_expected_update">Очікується, що нові епізоди вийдуть приблизно через %1$s, перевіряються кожні %2$s.</string>
     <string name="pref_player_subtitle">субтитри</string>
     <string name="label_player_settings">Налаштування плеєра</string>

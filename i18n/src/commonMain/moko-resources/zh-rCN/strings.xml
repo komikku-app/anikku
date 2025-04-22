@@ -530,7 +530,7 @@
     <string name="notification_size_warning">大量更新会损害资源，并可能导致更新变慢、耗电增加。点击了解详情。</string>
     <string name="connected_to_wifi">仅连接 Wi-Fi 时</string>
     <string name="update_72hour">每 3 天</string>
-    <string name="download_queue_size_warning">警告：批量下载可能导致图源变慢，甚至会使得它们屏蔽 Aniyomi。点击了解详情。</string>
+    <string name="download_queue_size_warning">警告：批量下载可能导致图源变慢，甚至会使得它们屏蔽 Anikku。点击了解详情。</string>
     <string name="ext_update_all">全部更新</string>
     <string name="channel_app_updates">应用更新</string>
     <string name="database_clean">无需清理</string>
@@ -704,7 +704,7 @@
     <string name="exception_unknown_host">无法连接到 %s</string>
     <string name="source_settings">资源设置</string>
     <string name="app_settings">应用设置</string>
-    <string name="unlock_app_title">解锁 Aniyomi</string>
+    <string name="unlock_app_title">解锁 Anikku</string>
     <string name="action_sort_category">分类排序</string>
     <string name="action_move_to_bottom_all_for_series">将作品移到底部</string>
     <string name="notification_updating_progress">正在更新仓库…(%s)</string>
@@ -760,7 +760,7 @@
     <string name="label_extension_repos">插件仓库</string>
     <string name="information_empty_repos">尚未添加任何仓库。</string>
     <string name="label_add_repo_input">仓库网址</string>
-    <string name="action_add_repo_message">在 Aniyomi 中添加仓库，输入的网址结尾应为“index.min.json”。</string>
+    <string name="action_add_repo_message">在 Anikku 中添加仓库，输入的网址结尾应为“index.min.json”。</string>
     <string name="onboarding_storage_help_info">如果你是从旧版本更新而来但不知道该如何选择，可以查看存储指南了解更多。</string>
     <string name="onboarding_storage_help_action">存储指南</string>
     <string name="pref_storage_location">存储位置</string>
@@ -831,7 +831,7 @@
     <string name="default_anime_category">默认动画分类</string>
     <string name="pref_manga_library_update_categories_details">排除优先于包含，同时属于包含和排除分类的漫画不会自动更新。</string>
     <string name="pref_anime_library_update_categories_details">排除优先于包含，同时属于包含和排除分类的动画不会自动更新。</string>
-    <string name="unofficial_extension_message_aniyomi">此插件不是 Aniyomi 官方插件。</string>
+    <string name="unofficial_extension_message_aniyomi">此插件不是 Anikku 官方插件。</string>
     <string name="rotation_reverse_landscape">翻转横屏</string>
     <string name="rotation_sensor_portrait">感应竖屏</string>
     <string name="rotation_sensor_landscape">感应横屏</string>
@@ -914,11 +914,11 @@
     <string name="enable_volume_brightness_gestures">开启音量和亮度手势</string>
     <string name="enable_horizontal_seek_gesture">开启左右滑动定位手势</string>
     <string name="download_insufficient_space">存储空间不足，无法下载</string>
-    <string name="download_queue_size_warning">警告：批量下载可能导致资源变慢，甚至会使得它们屏蔽 Aniyomi。点击了解详情。</string>
+    <string name="download_queue_size_warning">警告：批量下载可能导致资源变慢，甚至会使得它们屏蔽 Anikku。点击了解详情。</string>
     <string name="video_list_empty_error">没有视频</string>
     <string name="notification_new_episodes">发现新的剧集</string>
     <string name="information_no_recent_anime">暂无观看记录</string>
-    <string name="information_webview_required">Aniyomi 依赖于 WebView</string>
+    <string name="information_webview_required">Anikku 依赖于 WebView</string>
     <string name="episode_settings_updated">已更新默认剧集设置</string>
     <string name="download_notifier_download_paused_chapters">章节下载已暂停</string>
     <string name="download_notifier_download_paused_episodes">剧集下载已暂停</string>
@@ -944,7 +944,7 @@
     <string name="label_anime">动画</string>
     <string name="action_global_manga_search">全局漫画搜索</string>
     <string name="action_global_anime_search">全局动画搜索</string>
-    <string name="unofficial_anime_extension_message">此插件不是Aniyomi官方插件。</string>
+    <string name="unofficial_anime_extension_message">此插件不是Anikku官方插件。</string>
     <string name="pref_hide_in_manga_library_items">隐藏已添加到仓库中的漫画作品</string>
     <string name="action_hide">隐藏</string>
     <string name="label_all">所有分类</string>
@@ -1020,7 +1020,7 @@
     <string name="bandwidth_data_saver_server">Bandwidth Hero 代理服务器</string>
     <string name="resmush">resmush.it</string>
     <string name="data_saver_image_quality_summary">数字越高代表存储的图片质量越好，同时文件会变大，80% 是控制文件大小和图片质量之间不错的中间数</string>
-    <string name="onboarding_storage_action_create_folder">创建默认 Aniyomi 文件夹</string>
+    <string name="onboarding_storage_action_create_folder">创建默认 Anikku 文件夹</string>
     <string name="data_saver_image_format_summary_on">Jpeg 文件大小比 Webp 更小 （可以保存更多资料），但它会使图片损失更多质量。
 \n目前压缩为 Jpeg</string>
     <string name="player_aniskip_skip">已跳过 %s</string>

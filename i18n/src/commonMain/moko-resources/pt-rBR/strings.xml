@@ -696,7 +696,7 @@
     <string name="exception_http">HTTP %d, verifique o site na WebView</string>
     <string name="exception_offline">Sem conexão de internet</string>
     <string name="exception_unknown_host">Não foi possível resolver %s</string>
-    <string name="unlock_app_title">Desbloquear Aniyomi</string>
+    <string name="unlock_app_title">Desbloquear Anikku</string>
     <string name="action_move_to_bottom_all_for_series">Mover série para o final</string>
     <string name="pref_relative_format">Datas relativas</string>
     <string name="pref_relative_format_summary">\"%1$s\" ao invés de \"%2$s\"</string>
@@ -757,7 +757,7 @@
     <string name="error_repo_exists">Este repositório já existe!</string>
     <string name="pref_library_update_smart_update">Atualização inteligente</string>
     <string name="invalid_repo_name">URL do repositório inválido</string>
-    <string name="action_add_repo_message">Adiciona repositórios adicionais ao Aniyomi. Deve ser uma URL que termine com \"index.min.json\".</string>
+    <string name="action_add_repo_message">Adiciona repositórios adicionais ao Anikku. Deve ser uma URL que termine com \"index.min.json\".</string>
     <string name="delete_repo_confirmation">Você deseja deletar o repositório \"%s\"?</string>
     <string name="action_delete_repo">Deletar repositório</string>
     <string name="action_add_repo">Adicionar repositório</string>
@@ -816,7 +816,7 @@
     <string name="default_anime_category">Categoria de anime padrão</string>
     <string name="pref_manga_library_update_categories_details">Os mangás nas categorias excluídas não serão atualizados, mesmo que também estejam nas categorias incluídas.</string>
     <string name="pref_anime_library_update_categories_details">Os animes nas categorias excluídas não serão atualizados, mesmo que também estejam nas categorias incluídas.</string>
-    <string name="unofficial_extension_message_aniyomi">Esta extensão não está na lista oficial de extensões do Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Esta extensão não está na lista oficial de extensões do Anikku.</string>
     <string name="pref_progress_mark_as_seen">Em que ponto marcar o episódio como visto</string>
     <string name="pref_preserve_watching_position">Lembrar a posição de reprodução nos episódios vistos</string>
     <string name="pref_category_player_orientation">Orientação</string>
@@ -884,11 +884,11 @@
     <string name="screenshot_show_subs">Mostrar legendas na captura de tela</string>
     <string name="recent_anime_time">Ep. %1$s - %2$s</string>
     <string name="download_insufficient_space">Não foi possível fazer o download devido ao pouco espaço de armazenamento</string>
-    <string name="download_queue_size_warning">Aviso: grandes downloads em massa podem tornar as fontes mais lentas e/ou começarem a bloquear o Aniyomi. Toque para saber mais.</string>
+    <string name="download_queue_size_warning">Aviso: grandes downloads em massa podem tornar as fontes mais lentas e/ou começarem a bloquear o Anikku. Toque para saber mais.</string>
     <string name="video_list_empty_error">Nenhum vídeo encontrado</string>
     <string name="notification_new_episodes">Novos episódios encontrados</string>
     <string name="information_no_recent_anime">Nada assistido recentemente</string>
-    <string name="information_webview_required">A WebView é necessária para Aniyomi</string>
+    <string name="information_webview_required">A WebView é necessária para Anikku</string>
     <string name="download_notifier_download_paused_chapters">Download pausado</string>
     <string name="channel_new_chapters_episodes">Atualizações de capítulo/episódio</string>
     <string name="no_next_episode">Próximo episódio não encontrado!</string>
@@ -953,7 +953,7 @@
     <string name="pref_remember_brightness">Lembrar e mudar para o último brilho usado</string>
     <string name="pref_remember_volume">Lembrar e mudar para o último volume usado</string>
     <string name="pref_mpv_conf">Editar o arquivo de configuração do MPV para obter mais configurações do reprodutor</string>
-    <string name="unofficial_anime_extension_message">Esta extensão não está na lista oficial de extensões do Aniyomi.</string>
+    <string name="unofficial_anime_extension_message">Esta extensão não está na lista oficial de extensões do Anikku.</string>
     <string name="pref_player_fullscreen">Mostrar conteúdo no recorte de exibição</string>
     <string name="enable_volume_brightness_gestures">Ativar Gestos de Volume e Brilho</string>
     <string name="pref_default_intro_length">Duração padrão do pulo de abertura</string>
@@ -993,7 +993,7 @@
     <string name="data_saver_image_format_summary_off">O tamanho do arquivo JPEG é consideravelmente menor que o Webp (o que significa que mais dados são salvos), mas também faz com que as imagens percam mais qualidade.
 \nAtualmente compacta para Webp</string>
     <string name="label_all">Todos</string>
-    <string name="onboarding_storage_action_create_folder">Crie a pasta Aniyomi padrão</string>
+    <string name="onboarding_storage_action_create_folder">Crie a pasta Anikku padrão</string>
     <string name="pref_debanding_gpu">GPU</string>
     <string name="action_hide">Esconder</string>
     <string name="label_category">Categoria</string>
