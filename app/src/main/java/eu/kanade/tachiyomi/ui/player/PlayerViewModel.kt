@@ -1643,6 +1643,9 @@ class PlayerViewModel @JvmOverloads constructor(
                     episode.episodeNumber.toFloat() == currentEp.episode_number
                 ) {
                     EpisodeUpdate(id = episode.id, read = true)
+                        // SY -->
+                        .also { deleteEpisodeIfNeeded(episode.toDbEpisode()) }
+                    // SY <--
                 } else {
                     null
                 }
