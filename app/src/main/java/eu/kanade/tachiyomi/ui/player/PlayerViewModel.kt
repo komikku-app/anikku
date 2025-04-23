@@ -194,6 +194,12 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _currentAnime = MutableStateFlow<Anime?>(null)
     val currentAnime = _currentAnime.asStateFlow()
 
+    /**
+     * The anime loaded in the player. It can be null when instantiated for a short time.
+     */
+    val anime: Anime?
+        get() = currentAnime.value
+
     private val _currentSource = MutableStateFlow<AnimeSource?>(null)
     val currentSource = _currentSource.asStateFlow()
 
@@ -1795,7 +1801,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * There's also a notification to allow sharing the image somewhere else or deleting it.
      */
     fun saveImage(imageStream: () -> InputStream, timePos: Int?) {
-        val anime = currentAnime.value ?: return
+        val anime = anime ?: return
 
         val context = Injekt.get<Application>()
         val notifier = SaveImageNotifier(context)
@@ -1805,7 +1811,11 @@ class PlayerViewModel @JvmOverloads constructor(
         val filename = generateFilename(anime, seconds) ?: return
 
         // Pictures directory.
-        val relativePath = DiskUtil.buildValidFilename(anime.title)
+        val relativePath = if (playerPreferences.folderPerAnime().get()) {
+            DiskUtil.buildValidFilename(anime.title)
+        } else {
+            ""
+        }
 
         // Copy file in background.
         viewModelScope.launchNonCancellable {
@@ -1814,7 +1824,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     image = Image.Page(
                         inputStream = imageStream,
                         name = filename,
-                        location = Location.Pictures.create(),
+                        location = Location.Pictures.create(relativePath),
                     ),
                 )
                 notifier.onComplete(uri)

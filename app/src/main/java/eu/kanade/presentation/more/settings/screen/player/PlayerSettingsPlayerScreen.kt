@@ -129,6 +129,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                     preference = rememberPlayerVolume,
                     title = stringResource(MR.strings.pref_remember_volume),
                 ),
+                // KMK -->
                 Preference.PreferenceItem.SwitchPreference(
                     preference = playerPreferences.skipRead(),
                     title = stringResource(AMR.strings.pref_skip_seen_episodes),
@@ -141,6 +142,12 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                     preference = playerPreferences.skipDupe(),
                     title = stringResource(AMR.strings.pref_skip_dupe_episodes),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.folderPerAnime(),
+                    title = stringResource(AMR.strings.pref_create_folder_per_anime),
+                    subtitle = stringResource(MR.strings.pref_create_folder_per_manga_summary),
+                ),
+                // KMK <--
             ),
         )
     }

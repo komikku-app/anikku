@@ -18,11 +18,15 @@ class PlayerPreferences(
         PlayerOrientation.SensorLandscape,
     )
 
+    // KMK -->
+    fun folderPerAnime() = preferenceStore.getBoolean("create_folder_per_anime", false)
+
     fun skipRead() = preferenceStore.getBoolean("skip_read", false)
 
     fun skipFiltered() = preferenceStore.getBoolean("skip_filtered", true)
 
     fun skipDupe() = preferenceStore.getBoolean("skip_dupe", false)
+    // KMK <--
 
     // Controls
 
