@@ -384,14 +384,14 @@ private fun VideoIcon(
         contentAlignment = Alignment.Center,
     ) {
         when (videoState) {
-            Video.State.QUEUE, Video.State.READY -> {}
-            Video.State.LOAD_VIDEO -> {
+            Video.State.Queue, Video.State.Ready -> {}
+            Video.State.LoadVideo -> {
                 CircularProgressIndicator(
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 2.dp,
                 )
             }
-            Video.State.ERROR -> {
+            Video.State.Error -> {
                 Icon(
                     Icons.Default.ErrorOutline,
                     null,

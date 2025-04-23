@@ -192,7 +192,7 @@ class EpisodeLoader {
         suspend fun loadHosterVideos(source: AnimeSource, hoster: Hoster): HosterState {
             return try {
                 val videos = getVideos(source, hoster)
-                HosterState.Ready(hoster.hosterName, videos, List(videos.size) { Video.State.QUEUE })
+                HosterState.Ready(hoster.hosterName, videos, List(videos.size) { Video.State.Queue })
             } catch (e: Exception) {
                 if (e is CancellationException) {
                     throw e

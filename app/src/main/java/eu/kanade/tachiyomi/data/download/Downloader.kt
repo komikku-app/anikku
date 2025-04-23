@@ -404,7 +404,7 @@ class Downloader(
     ): Video {
         val video = download.video!!
 
-        video.status = Video.State.LOAD_VIDEO
+        video.status = Video.State.LoadVideo
 
         var progressJob: Job? = null
 
@@ -448,10 +448,10 @@ class Downloader(
 
             video.videoUrl = file.uri.path ?: ""
             download.progress = 100
-            video.status = Video.State.READY
+            video.status = Video.State.Ready
             progressJob?.cancel()
         } catch (e: Exception) {
-            video.status = Video.State.ERROR
+            video.status = Video.State.Error
             notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
             progressJob?.cancel()
 

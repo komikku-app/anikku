@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.animesource.model
 
 import android.net.Uri
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -105,11 +107,15 @@ open class Video(
         headers: Headers? = null,
     ) : this(url, quality, videoUrl, headers)
 
-    @Transient
-    @Volatile
-    var status: State = State.QUEUE
+    @kotlinx.serialization.Transient
+    private val _statusFlow = MutableStateFlow<State>(State.Queue)
+
+    @kotlinx.serialization.Transient
+    val statusFlow = _statusFlow.asStateFlow()
+    var status: State
+        get() = _statusFlow.value
         set(value) {
-            field = value
+            _statusFlow.value = value
         }
 
     fun copy(
@@ -168,11 +174,11 @@ open class Video(
         )
     }
 
-    enum class State {
-        QUEUE,
-        LOAD_VIDEO,
-        READY,
-        ERROR,
+    sealed interface State {
+        data object Queue : State
+        data object LoadVideo : State
+        data object Ready : State
+        data object Error : State
     }
 }
 

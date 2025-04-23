@@ -218,7 +218,7 @@ class EpisodeOptionsDialogScreenModel(
                     HosterState.Ready(
                         hoster.hosterName,
                         videoList,
-                        List(videoList.size) { Video.State.LOAD_VIDEO },
+                        List(videoList.size) { Video.State.LoadVideo },
                     )
                 }
             }
@@ -279,10 +279,10 @@ class EpisodeOptionsDialogScreenModel(
 
         _hosterState.updateAt(
             hosterIndex,
-            selectedHosterState.getChangedAt(videoIndex, video, Video.State.LOAD_VIDEO),
+            selectedHosterState.getChangedAt(videoIndex, video, Video.State.LoadVideo),
         )
 
-        val resolvedVideo = if (selectedHosterState.videoState[videoIndex] != Video.State.READY) {
+        val resolvedVideo = if (selectedHosterState.videoState[videoIndex] != Video.State.Ready) {
             HosterLoader.getResolvedVideo(source, video)
         } else {
             video
@@ -292,7 +292,7 @@ class EpisodeOptionsDialogScreenModel(
             if (currentVideo.value == null) {
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.ERROR),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
                 )
 
                 val hosterStateList = hosterState.value?.getOrNull() ?: return false
@@ -312,7 +312,7 @@ class EpisodeOptionsDialogScreenModel(
                 _selectedHosterVideoIndex.update { _ -> oldSelectedIndex }
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.ERROR),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
                 )
                 return false
             }
@@ -320,7 +320,7 @@ class EpisodeOptionsDialogScreenModel(
 
         _hosterState.updateAt(
             hosterIndex,
-            selectedHosterState.getChangedAt(videoIndex, resolvedVideo, Video.State.READY),
+            selectedHosterState.getChangedAt(videoIndex, resolvedVideo, Video.State.Ready),
         )
         _currentVideo.update { _ -> resolvedVideo }
 

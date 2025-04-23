@@ -30,7 +30,7 @@ class HosterLoader {
 
             // Check for first preferred
             val isPreferred: (Pair<Video, Video.State>) -> Boolean = { (v, s) ->
-                v.preferred && (s == Video.State.READY || s == Video.State.QUEUE)
+                v.preferred && (s == Video.State.Ready || s == Video.State.Queue)
             }
             val prefHosterIdx = availableHosters.indexOfFirst {
                 (it.value as HosterState.Ready).let { hoster ->
@@ -47,7 +47,7 @@ class HosterLoader {
 
             // Check for first video with non-empty url
             val firstValid: (Pair<Video, Video.State>) -> Boolean = { (v, s) ->
-                v.videoUrl.isNotEmpty() && (s == Video.State.READY || s == Video.State.QUEUE)
+                v.videoUrl.isNotEmpty() && (s == Video.State.Ready || s == Video.State.Queue)
             }
             val firstAvailableHosterIdx = availableHosters.indexOfFirst {
                 (it.value as HosterState.Ready).let { hoster ->
@@ -93,7 +93,7 @@ class HosterLoader {
                                         (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                             prefIndex,
                                             video,
-                                            Video.State.LOAD_VIDEO,
+                                            Video.State.LoadVideo,
                                         )
 
                                     val resolvedVideo = getResolvedVideo(source, video)
@@ -106,7 +106,7 @@ class HosterLoader {
                                         (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                             prefIndex,
                                             video,
-                                            Video.State.ERROR,
+                                            Video.State.Error,
                                         )
                                 }
                             }
@@ -121,7 +121,7 @@ class HosterLoader {
                             (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                 videoIdx,
                                 video,
-                                Video.State.LOAD_VIDEO,
+                                Video.State.LoadVideo,
                             )
 
                         val resolvedVideo = getResolvedVideo(source, video)
@@ -134,7 +134,7 @@ class HosterLoader {
                             (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                 videoIdx,
                                 video,
-                                Video.State.ERROR,
+                                Video.State.Error,
                             )
                         val newResult = selectBestVideo(hosterStates)
                         hosterIdx = newResult.first

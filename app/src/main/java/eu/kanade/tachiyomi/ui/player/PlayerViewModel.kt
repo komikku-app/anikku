@@ -1426,7 +1426,7 @@ class PlayerViewModel @JvmOverloads constructor(
                         HosterState.Ready(
                             hoster.hosterName,
                             videoList,
-                            List(videoList.size) { Video.State.QUEUE },
+                            List(videoList.size) { Video.State.Queue },
                         )
                     }
                 }
@@ -1502,14 +1502,14 @@ class PlayerViewModel @JvmOverloads constructor(
 
         _hosterState.updateAt(
             hosterIndex,
-            selectedHosterState.getChangedAt(videoIndex, video, Video.State.LOAD_VIDEO),
+            selectedHosterState.getChangedAt(videoIndex, video, Video.State.LoadVideo),
         )
 
         // Pause until everything has loaded
         updatePausedState()
         pause()
 
-        val resolvedVideo = if (selectedHosterState.videoState[videoIndex] != Video.State.READY) {
+        val resolvedVideo = if (selectedHosterState.videoState[videoIndex] != Video.State.Ready) {
             HosterLoader.getResolvedVideo(source, video)
         } else {
             video
@@ -1519,7 +1519,7 @@ class PlayerViewModel @JvmOverloads constructor(
             if (currentVideo.value == null) {
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.ERROR),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
                 )
 
                 val (newHosterIdx, newVideoIdx) = HosterLoader.selectBestVideo(hosterState.value)
@@ -1539,7 +1539,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 _selectedHosterVideoIndex.update { _ -> oldSelectedIndex }
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.ERROR),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
                 )
                 return false
             }
@@ -1547,7 +1547,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
         _hosterState.updateAt(
             hosterIndex,
-            selectedHosterState.getChangedAt(videoIndex, resolvedVideo, Video.State.READY),
+            selectedHosterState.getChangedAt(videoIndex, resolvedVideo, Video.State.Ready),
         )
 
         _currentVideo.update { _ -> resolvedVideo }
@@ -1568,7 +1568,7 @@ class PlayerViewModel @JvmOverloads constructor(
             .getOrNull(videoIndex)
             ?: return
 
-        if (videoState == Video.State.ERROR) {
+        if (videoState == Video.State.Error) {
             return
         }
 
