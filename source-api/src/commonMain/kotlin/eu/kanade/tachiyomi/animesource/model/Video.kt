@@ -178,7 +178,7 @@ open class Video(
         data object Queue : State
         data object LoadVideo : State
         data object Ready : State
-        data object Error : State
+        data class Error(val error: Throwable) : State
     }
 }
 

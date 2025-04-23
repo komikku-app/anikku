@@ -391,13 +391,21 @@ private fun VideoIcon(
                     strokeWidth = 2.dp,
                 )
             }
-            Video.State.Error -> {
-                Icon(
-                    Icons.Default.ErrorOutline,
-                    null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            is Video.State.Error -> {
+                Row {
+                    Icon(
+                        Icons.Default.ErrorOutline,
+                        null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        text = videoState.error.toString(),
+                        modifier = Modifier
+                            .padding(start = MaterialTheme.padding.extraSmall)
+                            .alpha(DISABLED_ALPHA),
+                    )
+                }
             }
         }
     }

@@ -65,6 +65,7 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.PlayerViewModel.ExceptionWithStringResource
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetHosterContent
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetVideoContent
@@ -252,7 +253,7 @@ class EpisodeOptionsDialogScreenModel(
                     val (hosterIdx, videoIdx) = HosterLoader.selectBestVideo(hosterStateList)
                     if (hosterIdx == -1) {
                         _hosterState.update { _ ->
-                            Result.failure(NoSuchElementException("No available videos"))
+                            Result.failure(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))
                         }
                         return@launchIO
                     }
@@ -292,7 +293,7 @@ class EpisodeOptionsDialogScreenModel(
             if (currentVideo.value == null) {
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))),
                 )
 
                 val hosterStateList = hosterState.value?.getOrNull() ?: return false
@@ -300,7 +301,7 @@ class EpisodeOptionsDialogScreenModel(
                 val (newHosterIdx, newVideoIdx) = HosterLoader.selectBestVideo(hosterStateList)
                 if (newHosterIdx == -1) {
                     _hosterState.update { _ ->
-                        Result.failure(NoSuchElementException("No available videos"))
+                        Result.failure(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))
                     }
                     return false
                 }
@@ -312,7 +313,7 @@ class EpisodeOptionsDialogScreenModel(
                 _selectedHosterVideoIndex.update { _ -> oldSelectedIndex }
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))),
                 )
                 return false
             }
@@ -449,7 +450,7 @@ fun EpisodeOptionsDialog(
 
         val onError: () -> Unit = {
             logcat(LogPriority.ERROR) { "Error getting links" }
-            scope.launchUI { context.toast("No available videos") }
+            scope.launchUI { context.toast(MR.strings.no_available_videos) }
             EpisodeOptionsDialogScreen.onDismissDialog()
         }
         if (resultList?.isFailure == true) {

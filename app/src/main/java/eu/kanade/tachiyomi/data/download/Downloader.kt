@@ -451,7 +451,7 @@ class Downloader(
             video.status = Video.State.Ready
             progressJob?.cancel()
         } catch (e: Exception) {
-            video.status = Video.State.Error
+            video.status = Video.State.Error(e)
             notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
             progressJob?.cancel()
 

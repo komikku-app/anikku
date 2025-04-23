@@ -1519,7 +1519,7 @@ class PlayerViewModel @JvmOverloads constructor(
             if (currentVideo.value == null) {
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))),
                 )
 
                 val (newHosterIdx, newVideoIdx) = HosterLoader.selectBestVideo(hosterState.value)
@@ -1539,7 +1539,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 _selectedHosterVideoIndex.update { _ -> oldSelectedIndex }
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))),
                 )
                 return false
             }
@@ -1568,7 +1568,7 @@ class PlayerViewModel @JvmOverloads constructor(
             .getOrNull(videoIndex)
             ?: return
 
-        if (videoState == Video.State.Error) {
+        if (videoState is Video.State.Error) {
             return
         }
 

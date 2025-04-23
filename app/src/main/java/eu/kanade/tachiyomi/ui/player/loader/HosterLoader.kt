@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.ui.player.PlayerViewModel.ExceptionWithStringResource
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.withContext
+import tachiyomi.i18n.MR
 import kotlin.coroutines.cancellation.CancellationException
 
 class HosterLoader {
@@ -106,7 +108,7 @@ class HosterLoader {
                                         (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                             prefIndex,
                                             video,
-                                            Video.State.Error,
+                                            Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)),
                                         )
                                 }
                             }
@@ -134,7 +136,7 @@ class HosterLoader {
                             (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                 videoIdx,
                                 video,
-                                Video.State.Error,
+                                Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)),
                             )
                         val newResult = selectBestVideo(hosterStates)
                         hosterIdx = newResult.first
