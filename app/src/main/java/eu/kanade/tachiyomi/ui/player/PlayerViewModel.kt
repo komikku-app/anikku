@@ -1246,8 +1246,6 @@ class PlayerViewModel @JvmOverloads constructor(
                 sourceManager.isInitialized.first { it }
                 if (episodeId == -1L) episodeId = initialEpisodeId
 
-                checkTrackers(anime)
-
                 updateEpisodeList(initEpisodeList(anime))
 
                 val episode = currentPlaylist.value.first { it.id == episodeId }
@@ -1341,12 +1339,6 @@ class PlayerViewModel @JvmOverloads constructor(
                 }
             }
             .map { it.toDbEpisode() } to mangaMap
-    }
-
-    private var hasTrackers: Boolean = false
-    private val checkTrackers: (Anime) -> Unit = { anime ->
-        val tracks = runBlocking { getTracks.await(anime.id) }
-        hasTrackers = tracks.isNotEmpty()
     }
 
     private var getHosterVideoLinksJob: Job? = null
@@ -1612,19 +1604,21 @@ class PlayerViewModel @JvmOverloads constructor(
 
         val seconds = position * 1000L
         val totalSeconds = duration * 1000L
-        // Save last second seen and mark as seen if needed
-        currentEp.last_second_seen = seconds
         currentEp.total_seconds = totalSeconds
 
         episodePosition = seconds
 
-        val progress = playerPreferences.progressPreference().get()
-        val shouldTrack = !incognitoMode || hasTrackers
-        if (seconds >= totalSeconds * progress && shouldTrack) {
-            updateChapterProgressOnComplete(currentEp)
-        }
+        if (!incognitoMode) {
+            // Save last second seen and mark as seen if needed
+            currentEp.last_second_seen = seconds
 
-        saveWatchingProgress(currentEp)
+            val progress = playerPreferences.progressPreference().get()
+            if (seconds >= totalSeconds * progress) {
+                updateEpisodeProgressOnComplete(currentEp)
+            }
+
+            saveWatchingProgress(currentEp)
+        }
 
         val inDownloadRange = seconds.toDouble() / totalSeconds > 0.35
         if (inDownloadRange) {
@@ -1632,7 +1626,7 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    private fun updateChapterProgressOnComplete(currentEp: Episode) {
+    private fun updateEpisodeProgressOnComplete(currentEp: Episode) {
         currentEp.seen = true
         updateTrackEpisodeSeen(currentEp)
         deleteEpisodeIfNeeded(currentEp)
@@ -1721,10 +1715,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
     /**
      * Saves this [episode] progress (last second seen and whether it's seen).
-     * If incognito mode isn't on or has at least 1 tracker
+     * If incognito mode isn't on
      */
     private suspend fun saveEpisodeProgress(episode: Episode) {
-        if (!incognitoMode || hasTrackers) {
+        if (!incognitoMode) {
             updateEpisode.await(
                 EpisodeUpdate(
                     id = episode.id!!,
@@ -1892,7 +1886,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private fun updateTrackEpisodeSeen(episode: Episode) {
-        if (basePreferences.incognitoMode().get() || !hasTrackers) return
+        if (incognitoMode) return
         if (!trackPreferences.autoUpdateTrack().get()) return
 
         val anime = currentAnime.value ?: return
