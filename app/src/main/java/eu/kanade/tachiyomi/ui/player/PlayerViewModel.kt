@@ -77,6 +77,7 @@ import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
 import eu.kanade.tachiyomi.util.chapter.filterDownloaded
+import eu.kanade.tachiyomi.util.chapter.removeDuplicates
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.lang.byteSize
 import eu.kanade.tachiyomi.util.lang.takeBytes
@@ -136,6 +137,7 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 import eu.kanade.domain.track.interactor.TrackChapter as TrackEpisode
+import tachiyomi.domain.episode.model.Episode as DomainEpisode
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
@@ -321,7 +323,7 @@ class PlayerViewModel @JvmOverloads constructor(
     val primaryButton = _primaryButton.asStateFlow()
 
     private val unfilteredEpisodeList by lazy {
-        val anime = currentAnime.value!!
+        val anime = anime!!
         runBlocking { getEpisodesByAnimeId.await(anime.id) }
     }
 
@@ -364,7 +366,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun isEpisodeOnline(): Boolean? {
-        val anime = currentAnime.value ?: return null
+        val anime = anime ?: return null
         val episode = currentEpisode.value ?: return null
         val source = currentSource.value ?: return null
         return source is HttpSource &&
@@ -378,8 +380,8 @@ class PlayerViewModel @JvmOverloads constructor(
         _isLoadingEpisode.update { _ -> value }
     }
 
-    private fun updateEpisodeList(pair: Pair<List<Episode>, Map<Long, Anime>?>) {
-        _currentPlaylist.update { _ -> filterEpisodeList(pair.first, pair.second) }
+    private fun updateEpisodeList(episodeList: List<Episode>) {
+        _currentPlaylist.update { episodeList }
     }
 
     fun getDecoder() {
@@ -1101,26 +1103,8 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private var episodeToDownload: Download? = null
 
-    /**
-     * Episode list for the active anime. It's retrieved lazily and should be accessed for the first
-     * time in a background thread to avoid blocking the UI.
-     */
-    private fun filterEpisodeList(episodes: List<Episode>, animeMap: Map<Long, Anime>?): List<Episode> {
-        val anime = currentAnime.value ?: return episodes
-
-        // SY -->
-        fun isEpisodeDownloaded(episode: Episode): Boolean {
-            val episodeAnime = animeMap?.get(episode.anime_id) ?: anime
-            return downloadManager.isEpisodeDownloaded(
-                episodeName = episode.name,
-                episodeScanlator = episode.scanlator,
-                // SY -->
-                animeTitle = episodeAnime.ogTitle,
-                // SY <--
-                sourceId = episodeAnime.source,
-            )
-        }
-        // SY <--
+    private fun filterEpisodeList(episodes: List<Episode>): List<Episode> {
+        val anime = anime ?: return episodes
 
         val selectedEpisode = episodes.find { it.id == episodeId }
             ?: error("Requested episode of id $episodeId not found in episode list")
@@ -1131,9 +1115,19 @@ class PlayerViewModel @JvmOverloads constructor(
                 anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN &&
                 it.seen ||
                 anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED &&
-                !isEpisodeDownloaded(it) ||
+                !downloadManager.isEpisodeDownloaded(
+                    it.name,
+                    it.scanlator,
+                    anime.title,
+                    anime.source,
+                ) ||
                 anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED &&
-                isEpisodeDownloaded(it) ||
+                downloadManager.isEpisodeDownloaded(
+                    it.name,
+                    it.scanlator,
+                    anime.title,
+                    anime.source,
+                ) ||
                 anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED &&
                 !it.bookmark ||
                 anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED &&
@@ -1176,7 +1170,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun showEpisodeListDialog() {
-        if (currentAnime.value != null) {
+        if (anime != null) {
             showDialog(Dialogs.EpisodeList)
         }
     }
@@ -1202,7 +1196,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Whether this presenter is initialized yet.
      */
     private fun needsInit(): Boolean {
-        return currentAnime.value == null || currentEpisode.value == null
+        return anime == null || currentEpisode.value == null
     }
 
     data class InitResult(
@@ -1323,9 +1317,13 @@ class PlayerViewModel @JvmOverloads constructor(
         MPVLib.setPropertyDouble("user-data/current-anime/episode-number", episode.episode_number.toDouble())
     }
 
-    private fun initEpisodeList(anime: Anime): Pair<List<Episode>, Map<Long, Anime>?> {
+    /**
+     * Episode list for the active anime. It's retrieved lazily and should be accessed for the first
+     * time in a background thread to avoid blocking the UI.
+     */
+    private fun initEpisodeList(anime: Anime): List<Episode> {
         // SY -->
-        val (episodes, mangaMap) = runBlocking {
+        val (episodes, animeMap) = runBlocking {
             if (anime.source == MERGED_SOURCE_ID) {
                 getMergedChaptersByMangaId.await(anime.id) to
                     getMergedMangaById.await(anime.id)
@@ -1335,16 +1333,69 @@ class PlayerViewModel @JvmOverloads constructor(
             }
         }
 
-        return episodes
+        fun isEpisodeDownloaded(episode: DomainEpisode): Boolean {
+            val episodeAnime = animeMap?.get(episode.animeId) ?: anime
+            return downloadManager.isEpisodeDownloaded(
+                episodeName = episode.name,
+                episodeScanlator = episode.scanlator,
+                animeTitle = episodeAnime.ogTitle,
+                sourceId = episodeAnime.source,
+            )
+        }
+        // SY <--
+
+        val selectedEpisode = episodes.find { it.id == episodeId }
+            ?: error("Requested episode of id $episodeId not found in episode list")
+
+        val episodesForPlayer = when {
+            (playerPreferences.skipSeen().get() || playerPreferences.skipFiltered().get()) -> {
+                val filteredEpisodes = episodes.filterNot {
+                    when {
+                        playerPreferences.skipSeen().get() && it.seen -> true
+                        playerPreferences.skipFiltered().get() -> {
+                            (anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN && !it.seen) ||
+                                (anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN && it.seen) ||
+                                // SY -->
+                                (anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED && !isEpisodeDownloaded(it)) ||
+                                (anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED && isEpisodeDownloaded(it)) ||
+                                // SY <--
+                                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED && !it.bookmark) ||
+                                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED && it.bookmark) ||
+                                // AM (FILLERMARK) -->
+                                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED && !it.fillermark) ||
+                                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED && it.fillermark)
+                            // <-- AM (FILLERMARK)
+                        }
+                        else -> false
+                    }
+                }
+
+                if (filteredEpisodes.any { it.id == episodeId }) {
+                    filteredEpisodes
+                } else {
+                    filteredEpisodes + listOf(selectedEpisode)
+                }
+            }
+            else -> episodes
+        }
+
+        return episodesForPlayer
             .sortedWith(getEpisodeSort(anime, sortDescending = false))
             .run {
-                if (basePreferences.downloadedOnly().get()) {
-                    filterDownloaded(anime, mangaMap)
+                if (playerPreferences.skipDupe().get()) {
+                    removeDuplicates(selectedEpisode)
                 } else {
                     this
                 }
             }
-            .map { it.toDbEpisode() } to mangaMap
+            .run {
+                if (basePreferences.downloadedOnly().get()) {
+                    filterDownloaded(anime, animeMap)
+                } else {
+                    this
+                }
+            }
+            .map { it.toDbEpisode() }
     }
 
     private var getHosterVideoLinksJob: Job? = null
@@ -1566,7 +1617,7 @@ class PlayerViewModel @JvmOverloads constructor(
     )
 
     suspend fun loadEpisode(episodeId: Long?): EpisodeLoadResult? {
-        val anime = currentAnime.value ?: return null
+        val anime = anime ?: return null
         val source = sourceManager.getOrStub(anime.source)
 
         val chosenEpisode = currentPlaylist.value.firstOrNull { ep -> ep.id == episodeId } ?: return null
@@ -1666,22 +1717,29 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private fun downloadNextEpisodes() {
         if (downloadAheadAmount == 0) return
-        val anime = currentAnime.value ?: return
+        val anime = anime ?: return
 
         // Only download ahead if current + next episode is already downloaded too to avoid jank
         if (getCurrentEpisodeIndex() == currentPlaylist.value.lastIndex) return
         val currentEpisode = currentEpisode.value ?: return
 
         val nextEpisode = currentPlaylist.value[getCurrentEpisodeIndex() + 1]
-        val episodesAreDownloaded =
-            EpisodeLoader.isDownload(currentEpisode.toDomainEpisode()!!, anime) &&
-                EpisodeLoader.isDownload(nextEpisode.toDomainEpisode()!!, anime)
 
         viewModelScope.launchIO {
-            if (!episodesAreDownloaded) {
-                return@launchIO
-            }
+            val episodesAreDownloaded =
+                EpisodeLoader.isDownload(currentEpisode.toDomainEpisode()!!, anime) &&
+                    EpisodeLoader.isDownload(nextEpisode.toDomainEpisode()!!, anime)
+
+            if (!episodesAreDownloaded) return@launchIO
+
             val episodesToDownload = getNextChapters.await(anime.id, nextEpisode.id!!)
+                .run {
+                    if (playerPreferences.skipDupe().get()) {
+                        removeDuplicates(nextEpisode.toDomainEpisode()!!)
+                    } else {
+                        this
+                    }
+                }
                 .take(downloadAheadAmount)
             downloadManager.downloadEpisodes(anime, episodesToDownload)
         }
@@ -1767,22 +1825,6 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    // AM (FILLERMARK) -->
-    /**
-     * Fillermarks the currently active episode.
-     */
-    fun fillermarkEpisode(episodeId: Long?, fillermarked: Boolean) {
-        viewModelScope.launchNonCancellable {
-            updateEpisode.await(
-                EpisodeUpdate(
-                    id = episodeId!!,
-                    fillermark = fillermarked,
-                ),
-            )
-        }
-    }
-    // <-- AM (FILLERMARK)
-
     fun takeScreenshot(cachePath: String, showSubtitles: Boolean): InputStream? {
         val filename = cachePath + "/${System.currentTimeMillis()}_mpv_screenshot_tmp.png"
         val subtitleFlag = if (showSubtitles) "subtitles" else "video"
@@ -1844,7 +1886,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * image will be kept so it won't be taking lots of internal disk space.
      */
     fun shareImage(imageStream: () -> InputStream, timePos: Int?) {
-        val anime = currentAnime.value ?: return
+        val anime = anime ?: return
 
         val context = Injekt.get<Application>()
         val destDir = context.cacheImageDir
@@ -1873,7 +1915,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Sets the screenshot as cover and notifies the UI of the result.
      */
     fun setAsCover(imageStream: () -> InputStream) {
-        val anime = currentAnime.value ?: return
+        val anime = anime ?: return
 
         viewModelScope.launchNonCancellable {
             val result = try {
@@ -1902,7 +1944,7 @@ class PlayerViewModel @JvmOverloads constructor(
         if (incognitoMode) return
         if (!trackPreferences.autoUpdateTrack().get()) return
 
-        val anime = currentAnime.value ?: return
+        val anime = anime ?: return
         val context = Injekt.get<Application>()
 
         viewModelScope.launchNonCancellable {
@@ -1916,7 +1958,7 @@ class PlayerViewModel @JvmOverloads constructor(
      */
     private fun enqueueDeleteSeenEpisodes(episode: Episode) {
         if (!episode.seen) return
-        val anime = currentAnime.value ?: return
+        val anime = anime ?: return
         viewModelScope.launchNonCancellable {
             downloadManager.enqueueEpisodesToDelete(listOf(episode.toDomainEpisode()!!), anime)
         }
@@ -1935,9 +1977,9 @@ class PlayerViewModel @JvmOverloads constructor(
     /**
      * Returns the skipIntroLength used by this anime or the default one.
      */
-    fun getAnimeSkipIntroLength(): Int {
+    private fun getAnimeSkipIntroLength(): Int {
         val default = gesturePreferences.defaultIntroLength().get()
-        val anime = currentAnime.value ?: return default
+        val anime = anime ?: return default
         val skipIntroLength = anime.skipIntroLength
         val skipIntroDisable = anime.skipIntroDisable
         return when {
@@ -1951,7 +1993,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Updates the skipIntroLength for the open anime.
      */
     fun setAnimeSkipIntroLength(skipIntroLength: Long) {
-        val anime = currentAnime.value ?: return
+        val anime = anime ?: return
         if (!anime.favorite) return
         // Skip unnecessary database operation
         if (skipIntroLength == getAnimeSkipIntroLength().toLong()) return
@@ -1982,7 +2024,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * just works if tracking is enabled.
      */
     suspend fun aniSkipResponse(playerDuration: Int?): List<TimeStamp>? {
-        val animeId = currentAnime.value?.id ?: return null
+        val animeId = anime?.id ?: return null
         val trackerManager = Injekt.get<TrackerManager>()
         var malId: Long?
         val episodeNumber = currentEpisode.value?.episode_number?.toInt() ?: return null

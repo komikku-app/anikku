@@ -131,7 +131,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 ),
                 // KMK -->
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = playerPreferences.skipRead(),
+                    preference = playerPreferences.skipSeen(),
                     title = stringResource(AMR.strings.pref_skip_seen_episodes),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
