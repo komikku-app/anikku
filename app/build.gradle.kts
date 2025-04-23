@@ -122,6 +122,22 @@ android {
                 "libimagedecoder",
                 "libquickjs",
                 "libsqlite3x",
+                "libavcodec",
+                "libavdevice",
+                "libavfilter",
+                "libavformat",
+                "libavutil",
+                "libc++_shared",
+                "libffmpegkit",
+                "libffmpegkit_abidetect",
+                "libgojni",
+                "libmpv",
+                "libplayer",
+                "libpostproc",
+                "libsqlcipher",
+                "libswresample",
+                "libswscale",
+                "libxml2",
             )
                 .map { "**/$it.so" }
         }
