@@ -110,7 +110,7 @@ private class SyncSettingsSelectorModel(
             return BackupOptions(
                 libraryEntries = syncSettings.libraryEntries,
                 categories = syncSettings.categories,
-                chapters = syncSettings.chapters,
+                chapters = syncSettings.episodes,
                 tracking = syncSettings.tracking,
                 history = syncSettings.history,
                 appSettings = syncSettings.appSettings,
@@ -120,7 +120,7 @@ private class SyncSettingsSelectorModel(
 
                 // SY -->
                 customInfo = syncSettings.customInfo,
-                readEntries = syncSettings.readEntries,
+                readEntries = syncSettings.seenEntries,
                 savedSearchesFeeds = syncSettings.savedSearchesFeeds,
                 // SY <--
             )
@@ -130,7 +130,7 @@ private class SyncSettingsSelectorModel(
             return SyncSettings(
                 libraryEntries = backupOptions.libraryEntries,
                 categories = backupOptions.categories,
-                chapters = backupOptions.chapters,
+                episodes = backupOptions.chapters,
                 tracking = backupOptions.tracking,
                 history = backupOptions.history,
                 appSettings = backupOptions.appSettings,
@@ -140,7 +140,7 @@ private class SyncSettingsSelectorModel(
 
                 // SY -->
                 customInfo = backupOptions.customInfo,
-                readEntries = backupOptions.readEntries,
+                seenEntries = backupOptions.readEntries,
                 savedSearchesFeeds = backupOptions.savedSearchesFeeds,
                 // SY <--
             )

@@ -43,6 +43,7 @@ import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.episode.model.toDbEpisode
 import eu.kanade.domain.source.interactor.GetIncognitoState
+import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.screen.player.custombutton.CustomButtonFetchState
@@ -60,6 +61,7 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.saver.Location
+import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
@@ -178,6 +180,7 @@ class PlayerViewModel @JvmOverloads constructor(
     // ANK -->
     private val getIncognitoState: GetIncognitoState = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val syncPreferences: SyncPreferences = Injekt.get(),
     // ANK <--
 ) : ViewModel() {
 
@@ -1654,6 +1657,9 @@ class PlayerViewModel @JvmOverloads constructor(
      * seen, update tracking services, enqueue downloaded episode deletion and download next episode.
      */
     private fun onSecondReached(position: Int, duration: Int) {
+        val syncTriggerOpt = syncPreferences.getSyncTriggerOptions()
+        val isSyncEnabled = syncPreferences.isSyncEnabled()
+
         if (isLoadingEpisode.value) return
         val currentEp = currentEpisode.value ?: return
         if (episodeId == -1L) return
@@ -1672,9 +1678,23 @@ class PlayerViewModel @JvmOverloads constructor(
             val progress = playerPreferences.progressPreference().get()
             if (seconds >= totalSeconds * progress) {
                 updateEpisodeProgressOnComplete(currentEp)
+
+                // SY -->
+                // Check if syncing is enabled for episode seen:
+                if (isSyncEnabled && syncTriggerOpt.syncOnEpisodeSeen) {
+                    SyncDataJob.startNow(Injekt.get<Application>())
+                }
+                // SY <--
             }
 
             saveWatchingProgress(currentEp)
+
+            // SY -->
+            // Check if syncing is enabled for episode open:
+            if (isSyncEnabled && syncTriggerOpt.syncOnEpisodeOpen && currentEp.last_second_seen == 0L) {
+                SyncDataJob.startNow(Injekt.get<Application>())
+            }
+            // SY <--
         }
 
         val inDownloadRange = seconds.toDouble() / totalSeconds > 0.35

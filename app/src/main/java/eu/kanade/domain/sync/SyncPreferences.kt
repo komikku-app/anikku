@@ -52,7 +52,7 @@ class SyncPreferences(
         return SyncSettings(
             libraryEntries = preferenceStore.getBoolean("anime_lib_entries", true).get(),
             categories = preferenceStore.getBoolean("anime_categories", true).get(),
-            chapters = preferenceStore.getBoolean("episodes", true).get(),
+            episodes = preferenceStore.getBoolean("episodes", true).get(),
             tracking = preferenceStore.getBoolean("anime_tracking", true).get(),
             history = preferenceStore.getBoolean("anime_history", true).get(),
             appSettings = preferenceStore.getBoolean("appSettings", true).get(),
@@ -62,7 +62,7 @@ class SyncPreferences(
 
             // SY -->
             customInfo = preferenceStore.getBoolean("customInfo", true).get(),
-            readEntries = preferenceStore.getBoolean("readEntries", true).get(),
+            seenEntries = preferenceStore.getBoolean("seenEntries", true).get(),
             savedSearchesFeeds = preferenceStore.getBoolean("savedSearchesFeeds", true).get(),
             // SY <--
         )
@@ -71,7 +71,7 @@ class SyncPreferences(
     fun setSyncSettings(syncSettings: SyncSettings) {
         preferenceStore.getBoolean("anime_lib_entries", true).set(syncSettings.libraryEntries)
         preferenceStore.getBoolean("anime_categories", true).set(syncSettings.categories)
-        preferenceStore.getBoolean("episodes", true).set(syncSettings.chapters)
+        preferenceStore.getBoolean("episodes", true).set(syncSettings.episodes)
         preferenceStore.getBoolean("anime_tracking", true).set(syncSettings.tracking)
         preferenceStore.getBoolean("anime_history", true).set(syncSettings.history)
         preferenceStore.getBoolean("appSettings", true).set(syncSettings.appSettings)
@@ -81,15 +81,15 @@ class SyncPreferences(
 
         // SY -->
         preferenceStore.getBoolean("customInfo", true).set(syncSettings.customInfo)
-        preferenceStore.getBoolean("readEntries", true).set(syncSettings.readEntries)
+        preferenceStore.getBoolean("seenEntries", true).set(syncSettings.seenEntries)
         preferenceStore.getBoolean("savedSearchesFeeds", true).set(syncSettings.savedSearchesFeeds)
         // SY <--
     }
 
     fun getSyncTriggerOptions(): SyncTriggerOptions {
         return SyncTriggerOptions(
-            syncOnChapterRead = preferenceStore.getBoolean("sync_on_episode_seen", false).get(),
-            syncOnChapterOpen = preferenceStore.getBoolean("sync_on_episode_open", false).get(),
+            syncOnEpisodeSeen = preferenceStore.getBoolean("sync_on_episode_seen", false).get(),
+            syncOnEpisodeOpen = preferenceStore.getBoolean("sync_on_episode_open", false).get(),
             syncOnAppStart = preferenceStore.getBoolean("sync_on_app_start", false).get(),
             syncOnAppResume = preferenceStore.getBoolean("sync_on_app_resume", false).get(),
         )
@@ -97,9 +97,9 @@ class SyncPreferences(
 
     fun setSyncTriggerOptions(syncTriggerOptions: SyncTriggerOptions) {
         preferenceStore.getBoolean("sync_on_episode_seen", false)
-            .set(syncTriggerOptions.syncOnChapterRead)
+            .set(syncTriggerOptions.syncOnEpisodeSeen)
         preferenceStore.getBoolean("sync_on_episode_open", false)
-            .set(syncTriggerOptions.syncOnChapterOpen)
+            .set(syncTriggerOptions.syncOnEpisodeOpen)
         preferenceStore.getBoolean("sync_on_app_start", false)
             .set(syncTriggerOptions.syncOnAppStart)
         preferenceStore.getBoolean("sync_on_app_resume", false)

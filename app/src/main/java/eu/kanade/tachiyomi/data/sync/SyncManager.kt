@@ -81,7 +81,7 @@ class SyncManager(
         val backupOptions = BackupOptions(
             libraryEntries = syncOptions.libraryEntries,
             categories = syncOptions.categories,
-            chapters = syncOptions.chapters,
+            chapters = syncOptions.episodes,
             tracking = syncOptions.tracking,
             history = syncOptions.history,
             extensionRepoSettings = syncOptions.extensionRepoSettings,
@@ -91,7 +91,7 @@ class SyncManager(
 
             // SY -->
             customInfo = syncOptions.customInfo,
-            readEntries = syncOptions.readEntries,
+            readEntries = syncOptions.seenEntries,
             savedSearchesFeeds = syncOptions.savedSearchesFeeds,
             // SY <--
         )
