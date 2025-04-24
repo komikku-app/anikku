@@ -15,15 +15,20 @@ class PEMFileMigration : Migration {
         val storageManager = migrationContext.get<StorageManager>() ?: return false
         val context = migrationContext.get<Application>() ?: return false
 
-        val configDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
-            storageManager.getMPVConfigDirectory()!!.filePath!!
-        } else {
-            context.applicationContext.filesDir.path
-        }
+        try {
+            val configDir =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
+                    storageManager.getMPVConfigDirectory()!!.filePath!!
+                } else {
+                    context.applicationContext.filesDir.path
+                }
 
-        val pemFile = File(configDir, "cacert.pem")
-        if (pemFile.exists()) {
-            pemFile.delete()
+            val pemFile = File(configDir, "cacert.pem")
+            if (pemFile.exists()) {
+                pemFile.delete()
+            }
+        } catch (_: Exception) {
+            // Handle exception if needed
         }
 
         return true
