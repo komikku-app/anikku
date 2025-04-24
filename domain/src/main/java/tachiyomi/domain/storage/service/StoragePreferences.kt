@@ -9,6 +9,7 @@ class StoragePreferences(
     private val preferenceStore: PreferenceStore,
 ) {
 
+    // Storing URI of the directory (either file:/// or storage://
     fun baseStorageDirectory() = preferenceStore.getString(Preference.appStateKey("storage_dir"), folderProvider.path())
 
     // AM (FILE_SIZE) -->

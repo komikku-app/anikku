@@ -1,6 +1,5 @@
 package eu.kanade.presentation.more.settings.screen
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -78,6 +77,8 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.manga.interactor.GetFavorites
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.storage.service.StorageManager.Companion.allowAccessStorage
+import tachiyomi.domain.storage.service.StorageManager.Companion.directoryAccessible
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
@@ -154,6 +155,7 @@ object SettingsDataScreen : SearchableSettings {
                 }
 
                 UniFile.fromUri(context, uri)?.let {
+                    storageDirPref.set("") // Trigger recompose
                     storageDirPref.set(it.uri.toString())
                 }
             }
@@ -167,7 +169,20 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val storageDir by storageDirPref.collectAsState()
 
-        if (storageDir == storageDirPref.defaultValue()) {
+        // KMK -->
+        var locationValid by remember(storageDir) {
+            mutableStateOf(directoryAccessible(context, storageDir))
+        }
+
+        LaunchedEffect(storageDir) {
+            storageDirPref.changes()
+                .collectLatest {
+                    locationValid = directoryAccessible(context, storageDir)
+                }
+        }
+
+        if (!locationValid) {
+            // KMK <--
             return stringResource(MR.strings.no_location_set)
         }
 
@@ -184,13 +199,21 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val pickStorageLocation = storageLocationPicker(storagePreferences.baseStorageDirectory())
 
+        // KMK -->
+        val storagePref = storagePreferences.baseStorageDirectory()
+        // KMK <--
+
         return Preference.PreferenceItem.TextPreference(
             title = stringResource(MR.strings.pref_storage_location),
-            subtitle = storageLocationText(storagePreferences.baseStorageDirectory()),
+            subtitle = storageLocationText(/* KMK --> */storagePref/* KMK <-- */),
             onClick = {
                 try {
-                    pickStorageLocation.launch(null)
-                } catch (e: ActivityNotFoundException) {
+                    // KMK -->
+                    allowAccessStorage(context, storagePref) {
+                        // KMK <--
+                        pickStorageLocation.launch(null)
+                    }
+                } catch (e: Exception) {
                     context.toast(MR.strings.file_picker_error)
                 }
             },
