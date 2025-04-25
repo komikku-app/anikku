@@ -40,6 +40,7 @@ Features include:
   * `Bulk-favorite` multiple entries all at once.
   * `Fast browsing` (for who with large library experiencing slow loading)
   * Auto `2-way sync` progress with trackers.
+  * Support `Android TV`
   * From SY:
     * `Anime Recommendations` showing community recommends from Anilist, MyAnimeList.
     * Edit `Anime Info` manually, or fill data from MyAnimeList, Kitsu, Shikimori, Bangumi, Simkl.
@@ -72,22 +73,16 @@ Features include:
   * And many more from same maintainer's app for Manga reader: [Komikku](https://github.com/komikku-app/komikku)
 * Animetail:
   * Support for Cast functionality
-  * Support themes monet
-  * Android tv compatibility (only banner)
-  * Optimized Discord Rich Presence for Manga and Anime, no external API.
+  * Optimized Discord Rich Presence for Anime, no external API.
 * Kuukiyomi:
-  * Torrent support(Needs right extensions) (@Diegopyl1209)
-  * Custom Theme support
-  * resmush.it(Data Saver Provider)
+  * Torrent support (Needs right extensions) (@Diegopyl1209)
   * Group by tags in library
-  * Discord Rich Presence for Manga
 * Aniyomi:
   * Watching videos
   * Local watching of downloaded content
   * A configurable player built on mpv-android with multiple options and settings
   * Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [Simkl](https://simkl.in/), [Shikimori](https://shikimori.one), and [Bangumi](https://bgm.tv/)
   * Categories to organize your library
-  * Light and dark themes
   * Create backups locally to watch offline or to your desired cloud service
 * Other fork features:
   * Animiru:
