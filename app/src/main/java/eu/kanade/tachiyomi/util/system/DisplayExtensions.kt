@@ -26,9 +26,15 @@ fun Context.prepareTabletUiContext(): Context {
     val configuration = resources.configuration
     val expected = when (Injekt.get<UiPreferences>().tabletUiMode().get()) {
         TabletUiMode.AUTOMATIC ->
-            configuration.smallestScreenWidthDp >= when (configuration.orientation) {
-                Configuration.ORIENTATION_PORTRAIT -> TABLET_UI_MIN_SCREEN_WIDTH_PORTRAIT_DP
-                else -> TABLET_UI_MIN_SCREEN_WIDTH_LANDSCAPE_DP
+            // KMK -->
+            if (isTvBox(applicationContext)) {
+                true
+            } else {
+                // KMK <--
+                configuration.smallestScreenWidthDp >= when (configuration.orientation) {
+                    Configuration.ORIENTATION_PORTRAIT -> TABLET_UI_MIN_SCREEN_WIDTH_PORTRAIT_DP
+                    else -> TABLET_UI_MIN_SCREEN_WIDTH_LANDSCAPE_DP
+                }
             }
         TabletUiMode.ALWAYS -> true
         TabletUiMode.LANDSCAPE -> configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
