@@ -34,6 +34,7 @@ import eu.kanade.tachiyomi.source.getMangaDetails
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.all.MergedSource
+import eu.kanade.tachiyomi.util.system.isConnectedToEthernet
 import eu.kanade.tachiyomi.util.system.isConnectedToWifi
 import eu.kanade.tachiyomi.util.system.isRunning
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
@@ -131,7 +132,12 @@ class LibraryUpdateJob(private val context: Context, private val workerParams: W
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
                 val preferences = Injekt.get<LibraryPreferences>()
                 val restrictions = preferences.autoUpdateDeviceRestrictions().get()
-                if ((DEVICE_ONLY_ON_WIFI in restrictions) && !context.isConnectedToWifi()) {
+                if ((DEVICE_ONLY_ON_WIFI in restrictions) &&
+                    // KMK -->
+                    !context.isConnectedToEthernet() &&
+                    // KMK <--
+                    !context.isConnectedToWifi()
+                ) {
                     return Result.retry()
                 }
             }
@@ -595,6 +601,9 @@ class LibraryUpdateJob(private val context: Context, private val workerParams: W
                 val networkRequestBuilder = NetworkRequest.Builder()
                 if (DEVICE_ONLY_ON_WIFI in restrictions) {
                     networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    // KMK -->
+                    networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                    // KMK <--
                 }
                 if (DEVICE_NETWORK_NOT_METERED in restrictions) {
                     networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)

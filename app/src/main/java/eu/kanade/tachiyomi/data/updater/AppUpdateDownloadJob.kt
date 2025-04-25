@@ -25,6 +25,7 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.ProgressListener
 import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.connectivityManager
+import eu.kanade.tachiyomi.util.system.isConnectedToEthernet
 import eu.kanade.tachiyomi.util.system.isConnectedToWifi
 import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
@@ -72,6 +73,9 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
                 val restrictions = preferences.appShouldAutoUpdate().get()
                 if ((AppUpdatePolicy.DEVICE_ONLY_ON_WIFI in restrictions) &&
+                    // KMK -->
+                    !context.isConnectedToEthernet() &&
+                    // KMK <--
                     !context.isConnectedToWifi() ||
                     (AppUpdatePolicy.DEVICE_NETWORK_NOT_METERED in restrictions) &&
                     context.connectivityManager.isActiveNetworkMetered
@@ -294,6 +298,9 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
                         val networkRequestBuilder = NetworkRequest.Builder()
                         if (AppUpdatePolicy.DEVICE_ONLY_ON_WIFI in restrictions) {
                             networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                            // KMK -->
+                            networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                            // KMK <--
                         }
                         if (AppUpdatePolicy.DEVICE_NETWORK_NOT_METERED in restrictions) {
                             networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)

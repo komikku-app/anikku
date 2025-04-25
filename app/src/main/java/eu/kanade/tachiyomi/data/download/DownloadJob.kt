@@ -90,7 +90,7 @@ class DownloadJob(private val context: Context, workerParams: WorkerParameters) 
 
     private fun checkNetworkState(state: NetworkState, requireWifi: Boolean): Boolean {
         return if (state.isOnline) {
-            val noWifi = requireWifi && !state.isWifi
+            val noWifi = requireWifi && !state.isWifi && /* KMK --> */ !state.isEthernet /* KMK <-- */
             if (noWifi) {
                 downloadManager.downloaderStop(
                     applicationContext.getString(R.string.download_notifier_text_only_wifi),

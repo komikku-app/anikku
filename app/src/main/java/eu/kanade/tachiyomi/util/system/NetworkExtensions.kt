@@ -40,3 +40,16 @@ fun Context.isConnectedToWifi(): Boolean {
         wifiManager.connectionInfo.bssid != null
     }
 }
+
+// KMK -->
+/**
+ * Returns true if device is connected to Ethernet.
+ */
+fun Context.isConnectedToEthernet(): Boolean {
+    val activeNetwork = connectivityManager.activeNetwork ?: return false
+    val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+
+    return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) &&
+        networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}
+// KMK <--

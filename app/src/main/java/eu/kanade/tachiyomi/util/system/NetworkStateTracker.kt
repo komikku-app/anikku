@@ -11,6 +11,7 @@ data class NetworkState(
     val isConnected: Boolean,
     val isValidated: Boolean,
     val isWifi: Boolean,
+    val isEthernet: Boolean,
 ) {
     val isOnline = isConnected && isValidated
 }
@@ -22,6 +23,7 @@ fun Context.activeNetworkState(): NetworkState {
         isConnected = connectivityManager.activeNetworkInfo?.isConnected ?: false,
         isValidated = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) ?: false,
         isWifi = wifiManager.isWifiEnabled && capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ?: false,
+        isEthernet = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ?: false,
     )
 }
 
