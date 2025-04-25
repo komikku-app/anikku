@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">جميع المواد المشاهدة</string>
   <string name="action_filter_fillermarked">معبأة</string>
   <string name="action_fillermark_episode">حلقة Fillermark</string>
   <string name="action_remove_fillermark_episode">حلقة غير ملئت</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">إرسال سجلات تحطم مجهولة الهوية إلى المطورين.</string>
   <string name="pref_firebase">التحليلات وسجلات الأعطال</string>
   <string name="firebase_summary">إرسال سجلات تحطم و تحليلات سيمكننا من تحديد و إصلاح المشكلات، و تحسين الأداء، و جعل التحديثات المستقبلية أكثر صلة باحتياجاتك</string>
-  <string name="action_sort_last_update_check">التحقق من التحديث الأخير</string>
+  <string name="pref_skip_seen_episodes">تخطي الحلقات المعلّمة المشاهدة</string>
+  <string name="pref_skip_filtered_episodes">تخطي الحلقات المصفاة</string>
+  <string name="pref_skip_dupe_episodes">تخطي الحلقات المكررة</string>
   <string name="action_display_show_continue_watching_button">متابعة زر المشاهدة</string>
+  <string name="non_library_watched_settings">جميع المواد المشاهدة</string>
   <string name="sync_on_episode_seen">المزامنة في الحلقة المشاهدة</string>
   <string name="sync_on_episode_open">المزامنة عند فتح الحلقة</string>
   <string name="pref_library_summary_episode">التصنيفات، التحديث العام، تمرير الحلقة</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">بعد مشاهدة الحذف تلقائياً</string>
   <string name="pref_auto_update_anime_sync">تحديث التقدم بعد مشاهدة</string>
   <string name="pref_auto_update_anime_on_mark_seen">تحديث التقدم عند وضع علامة كمشاهدة</string>
-  <string name="pref_skip_seen_episodes">تخطي الحلقات المعلّمة المشاهدة</string>
-  <string name="pref_skip_filtered_episodes">تخطي الحلقات المصفاة</string>
-  <string name="pref_skip_dupe_episodes">تخطي الحلقات المكررة</string>
   <string name="clean_up_downloaded_episodes">تنظيف الحلقات المحملة</string>
   <string name="pref_invalidate_episode_download_cache_summary">إجبار التطبيق على إعادة تحميل الحلقات</string>
   <string name="pref_update_only_completely_seen">مع حلقة غير مرئية</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">الحلقة الخامسة إلى الأخيرة التي شوهدت</string>
   <string name="skipped_reason_not_caught_up_episode">تخطي بسبب وجود حلقات غير مرئية</string>
   <string name="skipped_reason_not_started_episode">تم تخطي لأنه لا توجد حلقات مشاهدة</string>
+  <string name="label_auto">تلقائي</string>
+  <string name="pref_library_items_per_row">العناصر في الصف الواحد</string>
+  <string name="pref_library_items_per_screen">العناصر لكل شاشة</string>
+  <string name="theme_monochrome">أحادية</string>
+  <string name="tracked_privately">تتبع على انفراد</string>
+  <string name="action_toggle_private_on">تتبع بشكل خاص</string>
+  <string name="action_toggle_private_off">تتبع بشكل عام</string>
+  <string name="export">تصدير</string>
+  <string name="library_list">قائمة المكتبة</string>
+  <string name="library_exported">تم تصدير المكتبة</string>
+  <string name="author">المؤلف</string>
+  <string name="artist">الفنان</string>
+  <string name="action_notes">الحواشي</string>
+  <string name="action_edit_notes">تعديل الملاحظات</string>
+  <string name="notes_placeholder">استمتع بالجزء حيث…</string>
+  <string name="possible_duplicates_title">التكرارات المحتملة</string>
+  <string name="possible_duplicates_summary">You have entries in your library with a similar name.\n\nSelect an entry to migrate or add anyway.</string>
+  <string name="clear_database_text">أنت على وشك إزالة المواد من قاعدة البيانات</string>
+  <string name="clear_database_history_warning">الحلقات المشاهدة والتقدم المحرز في الإدخالات غير المتعلقة بالمكتبة ستفقد</string>
+  <string name="clear_db_exclude_read">الاحتفاظ بمدخلات مع الحلقات المرئية</string>
+  <string name="action_sort_last_update_check">التحقق من التحديث الأخير</string>
+  <string name="pref_incognito_watching_mode_extension_summary">إيقاف مشاهدة تاريخ التمديد</string>
+  <string name="pref_library_update_show_tab_badge">إظهار العد غير المرئي على أيقونة التحديثات</string>
+  <string name="pref_behavior">السلوك</string>
+  <string name="pref_episode_swipe_end">الحلقة عند السحب إلى اليمين</string>
+  <string name="pref_episode_swipe_start">الحلقة عند السحب إلى اليسار</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">وضع علامة مكررة للحلقة المشاهدة كما هو مشهور</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">بعد مشاهدة الحلقة</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">بعد جلب حلقة جديدة</string>
+  <string name="action_display_unread_badge">الحلقات غير المرئية</string>
+  <string name="include_all_seen_entries">تضمين جميع المدخلات المرئية</string>
+  <string name="sync_progress_from_trackers_up_to_episode">مزامنة التقدم من التتبع حتى الحلقة %d</string>
+  <string name="download_cache_renew_interval_info_anime">إذا تم تعيين إلى \"يدوي\"، إما تحديث كل أنمي أو باستخدام إجراء \"إعادة الفهرسة\" في \"المتقدم\"</string>
+  <string name="pref_top_align_cover_summary_anime">إظهار الغلاف محافظ إلى الأعلى جنبا إلى جنب مع معلومات الأنمي</string>
+  <string name="pref_reset_player_flags">إعادة تعيين إعدادات المشغل لكل سلسلة</string>
+  <string name="pref_reset_player_flags_summary">إعادة تعيين تخطي طول المقدمة &amp; الحلقة التالية تبث كل السلسلة</string>
+  <string name="pref_reset_player_flags_success">إعادة تعيين إعدادات جميع اللاعبين</string>
+  <string name="pref_reset_player_flags_error">تعذر إعادة تعيين إعدادات اللاعب</string>
+  <string name="pref_storage_location_info_anime">تستخدم للنسخ الاحتياطية التلقائية، وتحميل الحلقة، والمصادر المحلية.</string>
+  <string name="tracking_info_anime">المزامنة في اتجاه واحد لتحديث تقدم الحلقة في خدمات التتبع الخارجية. إعداد التتبع للمدخلات الفردية من زر التتبع الخاص بها.</string>
+  <string name="pref_create_folder_per_anime">حفظ لقطات الشاشة في مجلدات منفصلة</string>
 </resources>

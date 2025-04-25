@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Όλες οι καταχωρήσεις που παρακολουθήθηκαν</string>
   <string name="action_filter_fillermarked">Συμπληρώματα</string>
   <string name="action_fillermark_episode">επεισόδιο Fillermark</string>
   <string name="action_remove_fillermark_episode">Ξαναγέμισμα επεισοδίου</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Αποστολή ανώνυμων αρχείων καταγραφής σφαλμάτων στους προγραμματιστές.</string>
   <string name="pref_firebase">Αναλύσεις και αρχεία καταγραφής κατάρρευσης</string>
   <string name="firebase_summary">Η αποστολή αρχείων καταγραφής σφαλμάτων και αναλύσεων θα μας επιτρέψει να εντοπίσουμε και να διορθώσουμε προβλήματα, να βελτιώσουμε την απόδοση και να κάνουμε μελλοντικές ενημερώσεις πιο σχετικές με τις ανάγκες σας</string>
-  <string name="action_sort_last_update_check">Τελευταίος έλεγχος ενημερώσεων</string>
+  <string name="pref_skip_seen_episodes">Παράλειψη επεισοδίων που σημειώθηκαν</string>
+  <string name="pref_skip_filtered_episodes">Παράλειψη φιλτραρισμένων επεισοδίων</string>
+  <string name="pref_skip_dupe_episodes">Παράλειψη διπλότυπων επεισοδίων</string>
   <string name="action_display_show_continue_watching_button">Συνέχιση παρακολούθησης κουμπιού</string>
+  <string name="non_library_watched_settings">Όλες οι καταχωρήσεις που παρακολουθήθηκαν</string>
   <string name="sync_on_episode_seen">Συγχρονισμός στο επεισόδιο</string>
   <string name="sync_on_episode_open">Συγχρονισμός στο Ανοικτό Επεισόδιο</string>
   <string name="pref_library_summary_episode">Κατηγορίες, γενική ενημέρωση, episode swipe</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">Μετά την παρακολούθηση διαγράφεται αυτόματα</string>
   <string name="pref_auto_update_anime_sync">Πρόοδος ενημέρωσης μετά την παρακολούθηση</string>
   <string name="pref_auto_update_anime_on_mark_seen">Ενημέρωση προόδου όταν επισημαίνεται ως παρακολουθούμενη</string>
-  <string name="pref_skip_seen_episodes">Παράλειψη επεισοδίων που σημειώθηκαν</string>
-  <string name="pref_skip_filtered_episodes">Παράλειψη φιλτραρισμένων επεισοδίων</string>
-  <string name="pref_skip_dupe_episodes">Παράλειψη διπλότυπων επεισοδίων</string>
   <string name="clean_up_downloaded_episodes">Εκκαθάριση κατεβασμένων επεισοδίων</string>
   <string name="pref_invalidate_episode_download_cache_summary">Αναγκαστική εφαρμογή για επανέλεγχο κατεβασμένων επεισοδίων</string>
   <string name="pref_update_only_completely_seen">Με αθέατο(α) επεισόδιο(α)</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">Πέμπτο έως τελευταίο επεισόδιο</string>
   <string name="skipped_reason_not_caught_up_episode">Παραλείφθηκε επειδή υπάρχουν αθέατα επεισόδια</string>
   <string name="skipped_reason_not_started_episode">Παραλείπεται επειδή δεν εμφανίζονται επεισόδια</string>
+  <string name="label_auto">Αυτόματο</string>
+  <string name="pref_library_items_per_row">Αντικείμενα ανά γραμμή</string>
+  <string name="pref_library_items_per_screen">Αντικείμενα ανά οθόνη</string>
+  <string name="theme_monochrome">Μονόχρωμο</string>
+  <string name="tracked_privately">Παρακολούθηση ιδιωτικά</string>
+  <string name="action_toggle_private_on">Παρακολούθηση ιδιωτικά</string>
+  <string name="action_toggle_private_off">Δημόσια παρακολούθηση</string>
+  <string name="export">Εξαγωγή</string>
+  <string name="library_list">Λίστα Βιβλιοθήκης</string>
+  <string name="library_exported">Η Βιβλιοθήκη Εξήχθη</string>
+  <string name="author">Συγγραφέας</string>
+  <string name="artist">Καλλιτέχνης</string>
+  <string name="action_notes">Σημειώσεις</string>
+  <string name="action_edit_notes">Επεξεργασία σημειώσεων</string>
+  <string name="notes_placeholder">Απόλαυσε το τμήμα όπου…</string>
+  <string name="possible_duplicates_title">Πιθανά διπλότυπα</string>
+  <string name="possible_duplicates_summary">Έχετε καταχωρήσεις στη βιβλιοθήκη σας με παρόμοιο όνομα.\n\nΕπιλέξτε μια καταχώρηση για μετεγκατάσταση ή προσθήκη ούτως ή άλλως.</string>
+  <string name="clear_database_text">Πρόκειται να αφαιρέσετε καταχωρήσεις από τη βάση δεδομένων</string>
+  <string name="clear_database_history_warning">Θα χαθούν επεισόδια και η πρόοδος των καταχωρήσεων εκτός βιβλιοθήκης</string>
+  <string name="clear_db_exclude_read">Διατήρηση καταχωρήσεων με δει επεισόδια</string>
+  <string name="action_sort_last_update_check">Τελευταίος έλεγχος ενημερώσεων</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Παύση παρακολούθησης ιστορικού για επέκταση</string>
+  <string name="pref_library_update_show_tab_badge">Εμφάνιση μη ορατού πλήθους στο εικονίδιο Ενημερώσεων</string>
+  <string name="pref_behavior">Συμπεριφορά</string>
+  <string name="pref_episode_swipe_end">Επεισόδιο όταν σύρετε προς τα δεξιά</string>
+  <string name="pref_episode_swipe_start">Επεισόδιο στο σύρσιμο προς τα αριστερά</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Σημείωση διπλού προβλημένου επεισοδίου όπως φαίνεται</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">Μετά την παρακολούθηση ενός επεισοδίου</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">Μετά την ανάκτηση νέου επεισοδίου</string>
+  <string name="action_display_unread_badge">Αθέατα επεισόδια</string>
+  <string name="include_all_seen_entries">Συμπερίληψη όλων των εμφανιζόμενων καταχωρήσεων</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Πρόοδος συγχρονισμού από Trackers μέχρι επεισόδιο %d</string>
+  <string name="download_cache_renew_interval_info_anime">Εάν οριστεί σε \"χειροκίνητη\", είτε ανανεώστε κάθε anime είτε χρησιμοποιώντας την ενέργεια \"Reindex downloads\" στο \"Advanced\"</string>
+  <string name="pref_top_align_cover_summary_anime">Εμφάνιση του καλύμματος που είναι ευθυγραμμισμένο στην κορυφή παράλληλα με τις πληροφορίες anime</string>
+  <string name="pref_reset_player_flags">Επαναφορά ρυθμίσεων παίκτη ανά σειρά</string>
+  <string name="pref_reset_player_flags_summary">Επαναφέρει το μήκος εισαγωγής &amp; επόμενο επεισόδιο αέρα όλων των σειρών</string>
+  <string name="pref_reset_player_flags_success">Επαναφορά όλων των ρυθμίσεων του παίκτη</string>
+  <string name="pref_reset_player_flags_error">Αδύνατη η επαναφορά των ρυθμίσεων του παίκτη</string>
+  <string name="pref_storage_location_info_anime">Χρησιμοποιείται για αυτόματα αντίγραφα ασφαλείας, λήψεις επεισοδίων και τοπική πηγή.</string>
+  <string name="tracking_info_anime">Ένας συγχρονισμός για να ενημερώσετε την πρόοδο επεισοδίου σε εξωτερικές υπηρεσίες ιχνηλάτησης. Ρυθμίστε την παρακολούθηση για μεμονωμένες καταχωρήσεις από το κουμπί παρακολούθησης.</string>
+  <string name="pref_create_folder_per_anime">Αποθήκευση στιγμιότυπων οθόνης σε ξεχωριστούς φακέλους</string>
 </resources>

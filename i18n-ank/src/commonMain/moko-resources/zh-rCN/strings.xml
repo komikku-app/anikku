@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">所有已观看的条目</string>
   <string name="action_filter_fillermarked">填充标记</string>
   <string name="action_fillermark_episode">Fillermark 剧集</string>
   <string name="action_remove_fillermark_episode">取消标记剧集</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">发送匿名崩溃日志给开发人员。</string>
   <string name="pref_firebase">分析和崩溃日志</string>
   <string name="firebase_summary">发送崩溃日志和分析将使我们能够识别和修复问题，提高性能，并使未来的更新更适合您的需要。</string>
-  <string name="action_sort_last_update_check">上次更新检查</string>
+  <string name="pref_skip_seen_episodes">跳过已标记的剧集</string>
+  <string name="pref_skip_filtered_episodes">跳过筛选过的剧集</string>
+  <string name="pref_skip_dupe_episodes">跳过重复剧集</string>
   <string name="action_display_show_continue_watching_button">继续关注按钮</string>
+  <string name="non_library_watched_settings">所有已观看的条目</string>
   <string name="sync_on_episode_seen">在剧集上同步</string>
   <string name="sync_on_episode_open">打开剧集时同步</string>
   <string name="pref_library_summary_episode">类别，全局更新，剧集滑动</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">观看后自动删除</string>
   <string name="pref_auto_update_anime_sync">观看后更新进度</string>
   <string name="pref_auto_update_anime_on_mark_seen">当标记为已观看时更新进度</string>
-  <string name="pref_skip_seen_episodes">跳过已标记的剧集</string>
-  <string name="pref_skip_filtered_episodes">跳过筛选过的剧集</string>
-  <string name="pref_skip_dupe_episodes">跳过重复剧集</string>
   <string name="clean_up_downloaded_episodes">清理下载的剧集</string>
   <string name="pref_invalidate_episode_download_cache_summary">强制应用重新检查已下载剧集</string>
   <string name="pref_update_only_completely_seen">带未见剧集</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">第五次至最后一次看到的剧集</string>
   <string name="skipped_reason_not_caught_up_episode">因有未见剧集而跳过</string>
   <string name="skipped_reason_not_started_episode">因为没有看到剧集而跳过</string>
+  <string name="label_auto">自动操作</string>
+  <string name="pref_library_items_per_row">每行项目</string>
+  <string name="pref_library_items_per_screen">每个屏幕上的项目</string>
+  <string name="theme_monochrome">单色</string>
+  <string name="tracked_privately">私密跟踪</string>
+  <string name="action_toggle_private_on">私下轨道</string>
+  <string name="action_toggle_private_off">公开音轨</string>
+  <string name="export">导出</string>
+  <string name="library_list">书库列表</string>
+  <string name="library_exported">已导出库</string>
+  <string name="author">作者</string>
+  <string name="artist">艺人</string>
+  <string name="action_notes">注</string>
+  <string name="action_edit_notes">编辑备注</string>
+  <string name="notes_placeholder">享受… 的部分</string>
+  <string name="possible_duplicates_title">可能的重复</string>
+  <string name="possible_duplicates_summary">您的库里有类似名称的条目。\n\n选择要迁移或添加的条目。</string>
+  <string name="clear_database_text">您将要从数据库中删除条目</string>
+  <string name="clear_database_history_warning">非知识库记录的剧集和进度将会丢失</string>
+  <string name="clear_db_exclude_read">保留带有可见剧集的条目</string>
+  <string name="action_sort_last_update_check">上次更新检查</string>
+  <string name="pref_incognito_watching_mode_extension_summary">暂停监视历史以获取扩展</string>
+  <string name="pref_library_update_show_tab_badge">在更新图标上显示未查看的计数</string>
+  <string name="pref_behavior">行为</string>
+  <string name="pref_episode_swipe_end">向右滑动剧集</string>
+  <string name="pref_episode_swipe_start">向左滑动剧集</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">标记重复可见剧集</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">观看剧集后</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">获取新剧集后</string>
+  <string name="action_display_unread_badge">未见剧集</string>
+  <string name="include_all_seen_entries">包括所有已看到的条目</string>
+  <string name="sync_progress_from_trackers_up_to_episode">从追踪器同步进度到剧集 %d</string>
+  <string name="download_cache_renew_interval_info_anime">如果设置为“手动”，可以刷新每个动画或者使用“高级”中的“重新索引下载”操作</string>
+  <string name="pref_top_align_cover_summary_anime">与动画信息一起显示顶部对齐的封面</string>
+  <string name="pref_reset_player_flags">重置每个系列播放器设置</string>
+  <string name="pref_reset_player_flags_summary">重置跳过介绍长度 &amp; 下一集播放所有系列</string>
+  <string name="pref_reset_player_flags_success">重置所有玩家设置</string>
+  <string name="pref_reset_player_flags_error">无法重置玩家设置</string>
+  <string name="pref_storage_location_info_anime">用于自动备份，剧集下载和本地源。</string>
+  <string name="tracking_info_anime">单向同步以更新外部跟踪服务的剧集进度。从跟踪按钮设置单个条目跟踪。</string>
+  <string name="pref_create_folder_per_anime">将屏幕截图保存到单独文件夹</string>
 </resources>

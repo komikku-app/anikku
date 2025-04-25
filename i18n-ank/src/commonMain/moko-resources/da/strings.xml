@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Alle sete poster</string>
   <string name="action_filter_fillermarked">Fyldemærket</string>
   <string name="action_fillermark_episode">Fillermark episode</string>
   <string name="action_remove_fillermark_episode">Unfillermark episode</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Send anonymiserede nedbrudslogs til udviklerne.</string>
   <string name="pref_firebase">Analyser og Crash logs</string>
   <string name="firebase_summary">Afsendelse af crash logs og analytics vil give os mulighed for at identificere og løse problemer, forbedre ydeevnen og gøre fremtidige opdateringer mere relevante for dine behov</string>
-  <string name="action_sort_last_update_check">Seneste opdateringstjek</string>
+  <string name="pref_skip_seen_episodes">Overspring markerede episoder</string>
+  <string name="pref_skip_filtered_episodes">Spring filtrerede episoder over</string>
+  <string name="pref_skip_dupe_episodes">Spring duplikerede episoder over</string>
   <string name="action_display_show_continue_watching_button">Fortsæt med at se knappen</string>
+  <string name="non_library_watched_settings">Alle sete poster</string>
   <string name="sync_on_episode_seen">Synkronisér på Episode set</string>
   <string name="sync_on_episode_open">Synkronisér når Episode åbnes</string>
   <string name="pref_library_summary_episode">Kategorier, global opdatering, episode swipe</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">Efter automatisk overvågning slettes</string>
   <string name="pref_auto_update_anime_sync">Opdaterings fremskridt efter overvågning</string>
   <string name="pref_auto_update_anime_on_mark_seen">Opdater fremskridt når markeret som overvåget</string>
-  <string name="pref_skip_seen_episodes">Overspring markerede episoder</string>
-  <string name="pref_skip_filtered_episodes">Spring filtrerede episoder over</string>
-  <string name="pref_skip_dupe_episodes">Spring duplikerede episoder over</string>
   <string name="clean_up_downloaded_episodes">Ryd downloadede episoder</string>
   <string name="pref_invalidate_episode_download_cache_summary">Tving app til at kontrollere downloadede episoder igen</string>
   <string name="pref_update_only_completely_seen">Med usete episode(r)</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">Femte til sidst set episode</string>
   <string name="skipped_reason_not_caught_up_episode">Sprunget over, fordi der er usete episoder</string>
   <string name="skipped_reason_not_started_episode">Sprunget over, fordi ingen episoder er set</string>
+  <string name="label_auto">Automatisk</string>
+  <string name="pref_library_items_per_row">Elementer pr. række</string>
+  <string name="pref_library_items_per_screen">Elementer pr. skærm</string>
+  <string name="theme_monochrome">Monokrom</string>
+  <string name="tracked_privately">Tracket privat</string>
+  <string name="action_toggle_private_on">Spor privat</string>
+  <string name="action_toggle_private_off">Spor offentligt</string>
+  <string name="export">Eksporter</string>
+  <string name="library_list">Biblioteksliste</string>
+  <string name="library_exported">Bibliotek Eksporteret</string>
+  <string name="author">Forfatter</string>
+  <string name="artist">Kunstner</string>
+  <string name="action_notes">Noter</string>
+  <string name="action_edit_notes">Rediger noter</string>
+  <string name="notes_placeholder">Nydt den del, hvor…</string>
+  <string name="possible_duplicates_title">Mulige dubletter</string>
+  <string name="possible_duplicates_summary">Du har poster i dit bibliotek med et lignende navn.\n\nVælg en post for at migrere eller tilføje alligevel.</string>
+  <string name="clear_database_text">Du er ved at fjerne poster fra databasen</string>
+  <string name="clear_database_history_warning">Set episoder og fremskridt af ikke-bibliotek poster vil gå tabt</string>
+  <string name="clear_db_exclude_read">Behold indgange med sete episoder</string>
+  <string name="action_sort_last_update_check">Seneste opdateringstjek</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Sæt på pause for at se historik for udvidelse</string>
+  <string name="pref_library_update_show_tab_badge">Vis usynlige antal på ikonet Opdateringer</string>
+  <string name="pref_behavior">Opførsel</string>
+  <string name="pref_episode_swipe_end">Episode ved stryg til højre</string>
+  <string name="pref_episode_swipe_start">Episode ved strygning til venstre</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Markér dubleret set episode som set</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">Efter at have set en episode</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">Efter at have hentet ny episode</string>
+  <string name="action_display_unread_badge">Usete episoder</string>
+  <string name="include_all_seen_entries">Inkluder alle sete indgange</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Synkroniser fremskridt fra Trackers op til episode %d</string>
+  <string name="download_cache_renew_interval_info_anime">Hvis sat til \"manual\", skal du enten opdatere hver anime eller bruge \"Reindex downloads\" handlingen i \"Avanceret\"</string>
+  <string name="pref_top_align_cover_summary_anime">Vis coveret justeret til toppen sammen med anime info</string>
+  <string name="pref_reset_player_flags">Nulstil indstillinger for hver serie afspiller</string>
+  <string name="pref_reset_player_flags_summary">Nulstiller overspring intro længde &amp; næste episode luftning af alle serier</string>
+  <string name="pref_reset_player_flags_success">Alle spillerindstillinger nulstilles</string>
+  <string name="pref_reset_player_flags_error">Spillerindstillinger kunne ikke nulstilles</string>
+  <string name="pref_storage_location_info_anime">Bruges til automatiske sikkerhedskopier, episode downloads, og lokal kilde.</string>
+  <string name="tracking_info_anime">One way sync to update the episode progress in external tracker services. Set up tracking for individual entries from their tracking button.</string>
+  <string name="pref_create_folder_per_anime">Gem skærmfotos i separate mapper</string>
 </resources>

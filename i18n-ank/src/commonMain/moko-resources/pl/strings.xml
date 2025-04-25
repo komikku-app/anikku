@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Wszystkie obejrzane wpisy</string>
   <string name="action_filter_fillermarked">Oznaczono jako wyróżnione</string>
   <string name="action_fillermark_episode">Odcinek Fillermark</string>
   <string name="action_remove_fillermark_episode">Niewypełniony odcinek</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Wyślij anonimowe dzienniki awarii do programistów.</string>
   <string name="pref_firebase">Analityka i dzienniki awarii</string>
   <string name="firebase_summary">Wysyłanie dzienników awarii i analiz pozwoli nam zidentyfikować i naprawić problemy, poprawić wydajność i sprawić, by przyszłe aktualizacje były bardziej odpowiednie do Twoich potrzeb</string>
-  <string name="action_sort_last_update_check">Sprawdzanie ostatniej aktualizacji</string>
+  <string name="pref_skip_seen_episodes">Pomiń zaznaczone odcinki</string>
+  <string name="pref_skip_filtered_episodes">Pomiń filtrowane odcinki</string>
+  <string name="pref_skip_dupe_episodes">Pomiń zduplikowane odcinki</string>
   <string name="action_display_show_continue_watching_button">Kontynuuj obserwowanie przycisku</string>
+  <string name="non_library_watched_settings">Wszystkie obejrzane wpisy</string>
   <string name="sync_on_episode_seen">Synchronizuj na widoku odcinka</string>
   <string name="sync_on_episode_open">Synchronizuj na otwartym odcinku</string>
   <string name="pref_library_summary_episode">Kategorie, globalna aktualizacja, przeciągnięcie odcinkiem</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">Po automatycznym usunięciu</string>
   <string name="pref_auto_update_anime_sync">Aktualizuj postęp po obejrzeniu</string>
   <string name="pref_auto_update_anime_on_mark_seen">Aktualizuj postęp, gdy oznaczono jako obejrzane</string>
-  <string name="pref_skip_seen_episodes">Pomiń zaznaczone odcinki</string>
-  <string name="pref_skip_filtered_episodes">Pomiń filtrowane odcinki</string>
-  <string name="pref_skip_dupe_episodes">Pomiń zduplikowane odcinki</string>
   <string name="clean_up_downloaded_episodes">Wyczyść pobrane odcinki</string>
   <string name="pref_invalidate_episode_download_cache_summary">Wymuś ponowne sprawdzenie pobranych odcinków przez aplikację</string>
   <string name="pref_update_only_completely_seen">Z nieobserwowanymi odcinkami</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">Piąty do ostatniego epizodu</string>
   <string name="skipped_reason_not_caught_up_episode">Pominięto, ponieważ są niezauważone odcinki</string>
   <string name="skipped_reason_not_started_episode">Pominięto, ponieważ żadne odcinki nie są widoczne</string>
+  <string name="label_auto">Auto</string>
+  <string name="pref_library_items_per_row">Pozycje w wierszu</string>
+  <string name="pref_library_items_per_screen">Przedmioty na ekran</string>
+  <string name="theme_monochrome">Monochromatyczne</string>
+  <string name="tracked_privately">Śledzone prywatnie</string>
+  <string name="action_toggle_private_on">Śledź prywatnie</string>
+  <string name="action_toggle_private_off">Śledź publicznie</string>
+  <string name="export">Eksportuj</string>
+  <string name="library_list">Lista bibliotek</string>
+  <string name="library_exported">Biblioteka wyeksportowana</string>
+  <string name="author">Autor</string>
+  <string name="artist">Artysta</string>
+  <string name="action_notes">Uwagi</string>
+  <string name="action_edit_notes">Edytuj notatki</string>
+  <string name="notes_placeholder">Podobała się część…</string>
+  <string name="possible_duplicates_title">Możliwe duplikaty</string>
+  <string name="possible_duplicates_summary">Masz wpisy do biblioteki o podobnej nazwie.\n\nWybierz wpis do migracji lub dodania.</string>
+  <string name="clear_database_text">Zamierzasz usunąć wpisy z bazy danych</string>
+  <string name="clear_database_history_warning">Widziane odcinki i postęp wpisów spoza biblioteki zostaną utracone</string>
+  <string name="clear_db_exclude_read">Zachowaj wpisy z widocznymi odcinkami</string>
+  <string name="action_sort_last_update_check">Sprawdzanie ostatniej aktualizacji</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Wstrzymaj historię oglądania rozszerzenia</string>
+  <string name="pref_library_update_show_tab_badge">Pokaż niewidoczny licznik na ikonie aktualizacji</string>
+  <string name="pref_behavior">Zachowanie</string>
+  <string name="pref_episode_swipe_end">Odcinek po przesunięciu w prawo</string>
+  <string name="pref_episode_swipe_start">Odcinek po przesunięciu w lewo</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Oznacz zduplikowane odcinki jako widoczne</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">Po obejrzeniu odcinka</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">Po pobraniu nowego odcinka</string>
+  <string name="action_display_unread_badge">Niewidoczne odcinki</string>
+  <string name="include_all_seen_entries">Dołącz wszystkie widoczne wpisy</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Zsynchronizuj postęp z trackerami do odcinka %d</string>
+  <string name="download_cache_renew_interval_info_anime">Jeśli ustawiono na \"manual\", odśwież każdy anime lub użyj akcji \"Reindex downloads\" w \"Advanced\"</string>
+  <string name="pref_top_align_cover_summary_anime">Pokaż okładkę wyrównaną do góry obok informacji anime</string>
+  <string name="pref_reset_player_flags">Resetuj ustawienia gracza według serii</string>
+  <string name="pref_reset_player_flags_summary">Resetuje odcinek &amp; następnego odcinka dla wszystkich serii</string>
+  <string name="pref_reset_player_flags_success">Resetowanie ustawień wszystkich graczy</string>
+  <string name="pref_reset_player_flags_error">Nie można zresetować ustawień gracza</string>
+  <string name="pref_storage_location_info_anime">Używane do automatycznych kopii zapasowych, pobierania odcinków i źródła lokalnego.</string>
+  <string name="tracking_info_anime">Synchronizacja jednokierunkowa w celu aktualizacji postępu odcinka w zewnętrznych usługach trackera. Ustaw śledzenie dla poszczególnych wpisów z ich przycisku śledzenia.</string>
+  <string name="pref_create_folder_per_anime">Zapisz zrzuty ekranu w osobnych folderach</string>
 </resources>

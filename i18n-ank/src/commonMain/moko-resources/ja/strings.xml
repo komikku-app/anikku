@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">すべての視聴項目</string>
   <string name="action_filter_fillermarked">塗りつぶし</string>
   <string name="action_fillermark_episode">Fillermarkエピソード</string>
   <string name="action_remove_fillermark_episode">フィラーマークのエピソード</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">匿名化されたクラッシュログを開発者に送信します。</string>
   <string name="pref_firebase">分析とクラッシュログ</string>
   <string name="firebase_summary">クラッシュログと分析を送信することで、問題の特定と修正、パフォーマンスの向上、今後のアップデートがお客様のニーズにより適切になるようになります。</string>
-  <string name="action_sort_last_update_check">最終更新確認</string>
+  <string name="pref_skip_seen_episodes">マークされたエピソードをスキップ</string>
+  <string name="pref_skip_filtered_episodes">フィルターされたエピソードをスキップ</string>
+  <string name="pref_skip_dupe_episodes">重複したエピソードをスキップ</string>
   <string name="action_display_show_continue_watching_button">視聴ボタンを続ける</string>
+  <string name="non_library_watched_settings">すべての視聴項目</string>
   <string name="sync_on_episode_seen">見られたエピソードで同期</string>
   <string name="sync_on_episode_open">エピソードオープン時に同期</string>
   <string name="pref_library_summary_episode">カテゴリ、グローバルアップデート、エピソードのスワイプ</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">視聴後自動的に削除</string>
   <string name="pref_auto_update_anime_sync">視聴後に進捗状況を更新</string>
   <string name="pref_auto_update_anime_on_mark_seen">視聴済みとしてマークされたときに進捗状況を更新する</string>
-  <string name="pref_skip_seen_episodes">マークされたエピソードをスキップ</string>
-  <string name="pref_skip_filtered_episodes">フィルターされたエピソードをスキップ</string>
-  <string name="pref_skip_dupe_episodes">重複したエピソードをスキップ</string>
   <string name="clean_up_downloaded_episodes">ダウンロードしたエピソードをクリーンアップする</string>
   <string name="pref_invalidate_episode_download_cache_summary">アプリにダウンロードしたエピソードを強制的に再チェックする</string>
   <string name="pref_update_only_completely_seen">目に見えないエピソードで</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">最後から最後までのエピソード</string>
   <string name="skipped_reason_not_caught_up_episode">見られないエピソードがあるのでスキップされました</string>
   <string name="skipped_reason_not_started_episode">エピソードが見られないためスキップされました</string>
+  <string name="label_auto">自動</string>
+  <string name="pref_library_items_per_row">1行あたりのアイテム</string>
+  <string name="pref_library_items_per_screen">画面ごとのアイテム</string>
+  <string name="theme_monochrome">モノクローム</string>
+  <string name="tracked_privately">プライベートトラッキング中</string>
+  <string name="action_toggle_private_on">トラックを非公開に</string>
+  <string name="action_toggle_private_off">誰でも追跡する</string>
+  <string name="export">エクスポート</string>
+  <string name="library_list">ライブラリ一覧</string>
+  <string name="library_exported">ライブラリをエクスポートしました</string>
+  <string name="author">作成者</string>
+  <string name="artist">アーティスト</string>
+  <string name="action_notes">メモ</string>
+  <string name="action_edit_notes">メモを編集</string>
+  <string name="notes_placeholder">… の部分を楽しみました。</string>
+  <string name="possible_duplicates_title">重複の可能性</string>
+  <string name="possible_duplicates_summary">ライブラリに同じ名前のエントリがあります。\n\nとにかく移行または追加するエントリを選択します。</string>
+  <string name="clear_database_text">データベースからエントリを削除しようとしています</string>
+  <string name="clear_database_history_warning">見られたエピソードと非ライブラリエントリの進行状況は失われます</string>
+  <string name="clear_db_exclude_read">見られたエピソードでエントリを保持</string>
+  <string name="action_sort_last_update_check">最終更新確認</string>
+  <string name="pref_incognito_watching_mode_extension_summary">拡張履歴の視聴を一時停止する</string>
+  <string name="pref_library_update_show_tab_badge">更新アイコンに見えない数を表示する</string>
+  <string name="pref_behavior">動作</string>
+  <string name="pref_episode_swipe_end">右スワイプ時のエピソード</string>
+  <string name="pref_episode_swipe_start">左スワイプ時のエピソード</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">見られたエピソードを見たとマークする</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">エピソードを見た後</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">新しいエピソードを取得した後</string>
+  <string name="action_display_unread_badge">未知のエピソード</string>
+  <string name="include_all_seen_entries">すべての見られた項目を含める</string>
+  <string name="sync_progress_from_trackers_up_to_episode">トラッカーからエピソード %dまでの進行状況を同期する</string>
+  <string name="download_cache_renew_interval_info_anime">「マニュアル」に設定されている場合は、各アニメをリフレッシュするか、「詳細」で「再インデックスダウンロード」アクションを使用します</string>
+  <string name="pref_top_align_cover_summary_anime">アニメ情報と並んでトップに表紙を表示する</string>
+  <string name="pref_reset_player_flags">系列ごとのプレイヤー設定をリセット</string>
+  <string name="pref_reset_player_flags_summary">全シリーズのイントロ長さ &amp; 次回放映をスキップする</string>
+  <string name="pref_reset_player_flags_success">すべてのプレイヤーの設定がリセットされました</string>
+  <string name="pref_reset_player_flags_error">プレーヤーの設定をリセットできませんでした</string>
+  <string name="pref_storage_location_info_anime">自動バックアップ、エピソードダウンロード、およびローカルソースに使用されます。</string>
+  <string name="tracking_info_anime">外部トラッカーサービスのエピソードの進行状況を更新するワンウェイ同期。トラッキングボタンから個々のエントリの追跡を設定。</string>
+  <string name="pref_create_folder_per_anime">スクリーンショットを別々のフォルダに保存する</string>
 </resources>

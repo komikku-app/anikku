@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Все просмотренные записи</string>
   <string name="action_filter_fillermarked">Заполнитель помечен</string>
   <string name="action_fillermark_episode">Заполнение эпизода</string>
   <string name="action_remove_fillermark_episode">Незаполненный эпизод</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Отправлять разработчикам анонимные журналы сбоев.</string>
   <string name="pref_firebase">Журналы аналитики и сбоев</string>
   <string name="firebase_summary">Отправка журналов сбоев и аналитики позволит нам выявлять и исправлять проблемы, улучшить производительность и сделать будущие обновления более актуальными для ваших потребностей.</string>
-  <string name="action_sort_last_update_check">Последняя проверка обновления</string>
+  <string name="pref_skip_seen_episodes">Пропустить отмеченные эпизоды</string>
+  <string name="pref_skip_filtered_episodes">Пропустить отфильтрованные выпуски</string>
+  <string name="pref_skip_dupe_episodes">Пропустить повторяющиеся эпизоды</string>
   <string name="action_display_show_continue_watching_button">Кнопка \"Продолжать\"</string>
+  <string name="non_library_watched_settings">Все просмотренные записи</string>
   <string name="sync_on_episode_seen">Синхронизация при просмотре эпизода</string>
   <string name="sync_on_episode_open">Синхронизация при открытии серии</string>
   <string name="pref_library_summary_episode">Категории, глобальное обновление, свайп эпизода</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">После просмотра автоматически удалять</string>
   <string name="pref_auto_update_anime_sync">После просмотра процесса обновления</string>
   <string name="pref_auto_update_anime_on_mark_seen">Обновить прогресс при отмеченном как просмотренный</string>
-  <string name="pref_skip_seen_episodes">Пропустить отмеченные эпизоды</string>
-  <string name="pref_skip_filtered_episodes">Пропустить отфильтрованные выпуски</string>
-  <string name="pref_skip_dupe_episodes">Пропустить повторяющиеся эпизоды</string>
   <string name="clean_up_downloaded_episodes">Очистка загруженных эпизодов</string>
   <string name="pref_invalidate_episode_download_cache_summary">Принудительное приложение для перепроверки загруженных эпизодов</string>
   <string name="pref_update_only_completely_seen">С незримыми эпизодами</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">5-й по последнему выпуску</string>
   <string name="skipped_reason_not_caught_up_episode">Пропущено, потому что есть невидимые эпизоды</string>
   <string name="skipped_reason_not_started_episode">Пропущено, потому что нет эпизодов</string>
+  <string name="label_auto">Авто</string>
+  <string name="pref_library_items_per_row">Элементов в строке</string>
+  <string name="pref_library_items_per_screen">Элементов на экране</string>
+  <string name="theme_monochrome">Монохромный</string>
+  <string name="tracked_privately">Отслеживается приватно</string>
+  <string name="action_toggle_private_on">Отслеживать приватно</string>
+  <string name="action_toggle_private_off">Общедоступный трек</string>
+  <string name="export">Экспорт</string>
+  <string name="library_list">Список библиотек</string>
+  <string name="library_exported">Библиотека экспортирована</string>
+  <string name="author">Автор</string>
+  <string name="artist">Художник</string>
+  <string name="action_notes">Примечания</string>
+  <string name="action_edit_notes">Изменить заметки</string>
+  <string name="notes_placeholder">Понравилась часть, где…</string>
+  <string name="possible_duplicates_title">Возможные дубликаты</string>
+  <string name="possible_duplicates_summary">You have entries in your library with a similar name.\n\nSelect an entry to migrate or add anyway.</string>
+  <string name="clear_database_text">Вы собираетесь удалить записи из базы данных</string>
+  <string name="clear_database_history_warning">Прогресс небиблиотечных записей будет утерян</string>
+  <string name="clear_db_exclude_read">Сохранить записи с просмотренными сериями</string>
+  <string name="action_sort_last_update_check">Последняя проверка обновления</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Приостановить историю просмотров расширения</string>
+  <string name="pref_library_update_show_tab_badge">Показывать невидимое количество на значке обновлений</string>
+  <string name="pref_behavior">Поведение</string>
+  <string name="pref_episode_swipe_end">Эпизод на свайпе вправо</string>
+  <string name="pref_episode_swipe_start">Эпизод при свайпе влево</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Отметить повторяющиеся просмотренные эпизоды как просмотренные</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">После просмотра эпизода</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">После получения нового эпизода</string>
+  <string name="action_display_unread_badge">Незримые эпизоды</string>
+  <string name="include_all_seen_entries">Включить все просмотренные записи</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Прогресс синхронизации трекеров до эпизода %d</string>
+  <string name="download_cache_renew_interval_info_anime">Если присвоено значение «вручную», то обновите каждый аниме или используйте действие «Переиндексировать загрузки» в разделе «Дополнительно»</string>
+  <string name="pref_top_align_cover_summary_anime">Показывать обложку, выровненную сверху рядом с информацией аниме</string>
+  <string name="pref_reset_player_flags">Сбросить настройки плеера для каждой серии</string>
+  <string name="pref_reset_player_flags_summary">Сброс пропускать длину вводного &amp; следующий выпуск всех серии</string>
+  <string name="pref_reset_player_flags_success">Настройки всех игроков сброшены</string>
+  <string name="pref_reset_player_flags_error">Не удалось сбросить настройки плеера</string>
+  <string name="pref_storage_location_info_anime">Используется для автоматического резервного копирования, загрузки эпизодов и локального источника.</string>
+  <string name="tracking_info_anime">Односторонняя синхронизация для обновления прогресса эпизода во внешних сервисах трекера. Настройте отслеживание для отдельных записей с их кнопкой отслеживания.</string>
+  <string name="pref_create_folder_per_anime">Сохранить скриншоты в отдельных папках</string>
 </resources>

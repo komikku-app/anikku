@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Kaikki katsotut tietueet</string>
   <string name="action_filter_fillermarked">Täydennetty</string>
   <string name="action_fillermark_episode">Fillermark-jakso</string>
   <string name="action_remove_fillermark_episode">Täyttömerkin poisto jakso</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Lähetä anonymisoituja kaatumislokeja kehittäjille.</string>
   <string name="pref_firebase">Analytiikka ja kaatumislokit</string>
   <string name="firebase_summary">Kaatumislokien ja analytiikan lähettäminen antaa meille mahdollisuuden tunnistaa ja korjata ongelmia, parantaa suorituskykyä ja tehdä tulevista päivityksistä entistä merkityksellisempiä tarpeisiisi</string>
-  <string name="action_sort_last_update_check">Viimeisin päivityksen tarkistus</string>
+  <string name="pref_skip_seen_episodes">Ohita merkityt jaksot nähtävissä</string>
+  <string name="pref_skip_filtered_episodes">Ohita suodatetut jaksot</string>
+  <string name="pref_skip_dupe_episodes">Ohita kaksoiskappaleet</string>
   <string name="action_display_show_continue_watching_button">Jatka katselua painike</string>
+  <string name="non_library_watched_settings">Kaikki katsotut tietueet</string>
   <string name="sync_on_episode_seen">Synkronointi Jakson päällä</string>
   <string name="sync_on_episode_open">Synkronoi Jakson avauksessa</string>
   <string name="pref_library_summary_episode">Luokat, yleinen päivitys, episodi pyyhkäisy</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">Poistamisen jälkeen automaattisesti</string>
   <string name="pref_auto_update_anime_sync">Päivitä edistyminen katselun jälkeen</string>
   <string name="pref_auto_update_anime_on_mark_seen">Päivitä edistyminen katsottaessa</string>
-  <string name="pref_skip_seen_episodes">Ohita merkityt jaksot nähtävissä</string>
-  <string name="pref_skip_filtered_episodes">Ohita suodatetut jaksot</string>
-  <string name="pref_skip_dupe_episodes">Ohita kaksoiskappaleet</string>
   <string name="clean_up_downloaded_episodes">Siivoa ladatut jaksot</string>
   <string name="pref_invalidate_episode_download_cache_summary">Pakota sovellus tarkistamaan ladatut jaksot</string>
   <string name="pref_update_only_completely_seen">Näkemättömillä jaksoilla</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">Viides tai viimeksi nähty episodi</string>
   <string name="skipped_reason_not_caught_up_episode">Ohitettu koska ei ole näkyviä jaksoja</string>
   <string name="skipped_reason_not_started_episode">Ohitettu koska jaksoja ei näytetä</string>
+  <string name="label_auto">Automaattinen</string>
+  <string name="pref_library_items_per_row">Kohteita riviä kohti</string>
+  <string name="pref_library_items_per_screen">Kohteita ruutua kohden</string>
+  <string name="theme_monochrome">Yksivärinen</string>
+  <string name="tracked_privately">Jäljitetty yksityisesti</string>
+  <string name="action_toggle_private_on">Seuraa yksityisesti</string>
+  <string name="action_toggle_private_off">Seuraa julkisesti</string>
+  <string name="export">Vie</string>
+  <string name="library_list">Kirjaston Lista</string>
+  <string name="library_exported">Kirjasto Viety</string>
+  <string name="author">Tekijä</string>
+  <string name="artist">Esittäjä</string>
+  <string name="action_notes">Muistiinpanot</string>
+  <string name="action_edit_notes">Muokkaa muistiinpanoja</string>
+  <string name="notes_placeholder">Nauti siitä osasta, jossa…</string>
+  <string name="possible_duplicates_title">Mahdolliset kaksoiskappaleet</string>
+  <string name="possible_duplicates_summary">Sinulla on merkintöjä kirjastossa, jolla on samanlainen nimi.\n\nValitse siirtyäksesi tai lisätäksesi muuten.</string>
+  <string name="clear_database_text">Olet aikeissa poistaa tietoja tietokannasta</string>
+  <string name="clear_database_history_warning">Ei-kirjaston tietojen jaksot ja edistyminen menetetään</string>
+  <string name="clear_db_exclude_read">Pidä merkinnät näkyvillä jaksoilla</string>
+  <string name="action_sort_last_update_check">Viimeisin päivityksen tarkistus</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Keskeytä laajennuksen historian katselu</string>
+  <string name="pref_library_update_show_tab_badge">Näytä näkymätön määrä päivitysten kuvakkeessa</string>
+  <string name="pref_behavior">Käyttäytyminen</string>
+  <string name="pref_episode_swipe_end">Jakso pyyhkäisemällä oikealle</string>
+  <string name="pref_episode_swipe_start">Jakso pyyhkäisemällä vasemmalle</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Merkitse kaksoiskappale nähtynä</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">Jakson katselun jälkeen</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">Noudattamisen jälkeen uusi jakso</string>
+  <string name="action_display_unread_badge">Näkemättömät jaksot</string>
+  <string name="include_all_seen_entries">Sisällytä kaikki nähtävät tietueet</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Synkronoi edistyminen Seuraajista jaksoon %d</string>
+  <string name="download_cache_renew_interval_info_anime">Jos valinta on \"manuaalinen\", joko päivitä jokainen anime tai käytä \"Uudelleenindeksoi lataukset\" toimintoa \"Lisäasetukset\"</string>
+  <string name="pref_top_align_cover_summary_anime">Näytä kansi, joka on linjattu yläreunaan anime info</string>
+  <string name="pref_reset_player_flags">Nollaa sarjan soittimen asetukset</string>
+  <string name="pref_reset_player_flags_summary">Nollaa ohita intro pituus &amp; seuraava jakso airing kaikkien sarjojen</string>
+  <string name="pref_reset_player_flags_success">Kaikki soittimen asetukset nollattu</string>
+  <string name="pref_reset_player_flags_error">Soittimen asetuksia ei voitu palauttaa</string>
+  <string name="pref_storage_location_info_anime">Käytetään automaattisiin varmuuskopioihin, jaksojen latauksiin ja paikalliseen lähdekoodiin.</string>
+  <string name="tracking_info_anime">Yhdensuuntainen synkronointi päivittääksesi jakson etenemisen ulkoisissa seurantapalveluissa. Määritä yksittäisten kirjausten seuranta niiden seuranta-painikkeesta.</string>
+  <string name="pref_create_folder_per_anime">Tallenna kuvakaappaukset erillisiin kansioihin</string>
 </resources>

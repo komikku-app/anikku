@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Toate intrările urmărite</string>
   <string name="action_filter_fillermarked">Fillermark</string>
   <string name="action_fillermark_episode">Episod Fillermark</string>
   <string name="action_remove_fillermark_episode">Dezcompletare episod</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Trimite jurnale anonimizate pentru erori dezvoltatorilor.</string>
   <string name="pref_firebase">Analize și jurnale de defecțiuni</string>
   <string name="firebase_summary">Trimiterea de jurnale de erori și analize ne va permite să identificăm și să rezolvăm probleme, să îmbunătățim performanța și să facem actualizările viitoare mai relevante pentru nevoile dumneavoastră</string>
-  <string name="action_sort_last_update_check">Ultima actualizare de verificare</string>
+  <string name="pref_skip_seen_episodes">Sari peste episoadele marcate</string>
+  <string name="pref_skip_filtered_episodes">Omite episoadele filtrate</string>
+  <string name="pref_skip_dupe_episodes">Sari peste episoadele duplicate</string>
   <string name="action_display_show_continue_watching_button">Continuă urmărirea butonului</string>
+  <string name="non_library_watched_settings">Toate intrările urmărite</string>
   <string name="sync_on_episode_seen">Sincronizare pe Episod văzut</string>
   <string name="sync_on_episode_open">Sincronizare la deschiderea episodului</string>
   <string name="pref_library_summary_episode">Categorii, actualizare globală, episod glisare</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">După vizionarea automată ștergere</string>
   <string name="pref_auto_update_anime_sync">Progresul actualizării după vizionare</string>
   <string name="pref_auto_update_anime_on_mark_seen">Actualizeaza progresul cand este marcat ca vizionat</string>
-  <string name="pref_skip_seen_episodes">Sari peste episoadele marcate</string>
-  <string name="pref_skip_filtered_episodes">Omite episoadele filtrate</string>
-  <string name="pref_skip_dupe_episodes">Sari peste episoadele duplicate</string>
   <string name="clean_up_downloaded_episodes">Curăță episoadele descărcate</string>
   <string name="pref_invalidate_episode_download_cache_summary">Forțează aplicația să reverifice episoadele descărcate</string>
   <string name="pref_update_only_completely_seen">Cu episoade nevăzute</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">Al cincilea și ultimul episod văzut</string>
   <string name="skipped_reason_not_caught_up_episode">Sărit pentru că există episoade nevăzute</string>
   <string name="skipped_reason_not_started_episode">Sărit pentru că nu sunt văzute episoade</string>
+  <string name="label_auto">Automat</string>
+  <string name="pref_library_items_per_row">Elemente pe rând</string>
+  <string name="pref_library_items_per_screen">Elemente pe ecran</string>
+  <string name="theme_monochrome">Monocrom</string>
+  <string name="tracked_privately">Urmărit privat</string>
+  <string name="action_toggle_private_on">Urmărește privat</string>
+  <string name="action_toggle_private_off">Urmăriți public</string>
+  <string name="export">Exportă</string>
+  <string name="library_list">Lista bibliotecilor</string>
+  <string name="library_exported">Bibliotecă exportată</string>
+  <string name="author">Autor</string>
+  <string name="artist">Artist</string>
+  <string name="action_notes">Note</string>
+  <string name="action_edit_notes">Editare note</string>
+  <string name="notes_placeholder">S-a bucurat de partea unde…</string>
+  <string name="possible_duplicates_title">Dubluri posibile</string>
+  <string name="possible_duplicates_summary">Ai intrări în biblioteca ta cu un nume similar.\n\nSelectează o intrare pentru a migra sau adăuga oricum.</string>
+  <string name="clear_database_text">Sunteți pe cale să eliminați intrările din baza de date</string>
+  <string name="clear_database_history_warning">Episoadele văzute şi progresul intrărilor non-bibliotecă vor fi pierdute</string>
+  <string name="clear_db_exclude_read">Păstraţi intrările cu episoade văzute</string>
+  <string name="action_sort_last_update_check">Ultima actualizare de verificare</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Pauză istoric vizionare pentru extensie</string>
+  <string name="pref_library_update_show_tab_badge">Arată numărătoarea neobservată pe icoana Actualizări</string>
+  <string name="pref_behavior">Comportament</string>
+  <string name="pref_episode_swipe_end">Episod la glisare spre dreapta</string>
+  <string name="pref_episode_swipe_start">Episod la glisare spre stânga</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Marchează episodul văzut ca fiind văzut</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">După urmărirea unui episod</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">După preluarea unui nou episod</string>
+  <string name="action_display_unread_badge">Episoade nevăzute</string>
+  <string name="include_all_seen_entries">Include toate intrările văzute</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Sincronizare progres de la Trackeri până la episod %d</string>
+  <string name="download_cache_renew_interval_info_anime">Dacă este setat \"manual\", fie reîmprospătați fiecare anime, fie folosind acțiunea \"Reindex downloads\" din \"Avansat\"</string>
+  <string name="pref_top_align_cover_summary_anime">Arată coperta aliniată în partea de sus alături de informații anime</string>
+  <string name="pref_reset_player_flags">Resetează setările per serie de jucători</string>
+  <string name="pref_reset_player_flags_summary">Resetează peste lungimea introductivă &amp; următorul episod de difuzare a tuturor seriilor</string>
+  <string name="pref_reset_player_flags_success">Toate setările jucătorului sunt resetate</string>
+  <string name="pref_reset_player_flags_error">Nu s-au putut reseta setările jucătorului</string>
+  <string name="pref_storage_location_info_anime">Folosit pentru copii de rezervă automate, descărcări episod și sursă locală.</string>
+  <string name="tracking_info_anime">Sincronizare unică pentru a actualiza progresul episodului în serviciile externe de tracker. Configurați urmărirea intrărilor individuale din butonul de urmărire.</string>
+  <string name="pref_create_folder_per_anime">Salvează capturile de ecran în dosare separate</string>
 </resources>

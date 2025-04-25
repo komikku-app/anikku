@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Todas as entradas acompanhadas</string>
   <string name="action_filter_fillermarked">Preenchido</string>
   <string name="action_fillermark_episode">Fillermark episódio</string>
   <string name="action_remove_fillermark_episode">Despreencher episódio</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Enviar registros de erro anônimos para os desenvolvedores.</string>
   <string name="pref_firebase">Logs de análise e erro</string>
   <string name="firebase_summary">O envio de registros de falhas e análises nos permitirá identificar e corrigir problemas, melhorar o desempenho e tornar as atualizações futuras mais relevantes para suas necessidades</string>
-  <string name="action_sort_last_update_check">Última verificação de atualização</string>
+  <string name="pref_skip_seen_episodes">Pular episódios marcados</string>
+  <string name="pref_skip_filtered_episodes">Pular episódios filtrados</string>
+  <string name="pref_skip_dupe_episodes">Pular episódios duplicados</string>
   <string name="action_display_show_continue_watching_button">Continuar observando botão</string>
+  <string name="non_library_watched_settings">Todas as entradas acompanhadas</string>
   <string name="sync_on_episode_seen">Sincronizar ao ver o episódio</string>
   <string name="sync_on_episode_open">Sincronização ao abrir o episódio</string>
   <string name="pref_library_summary_episode">Categorias, atualização global, deslize por episódio</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">Depois de assistir automaticamente excluir</string>
   <string name="pref_auto_update_anime_sync">Atualizar progresso após assistir</string>
   <string name="pref_auto_update_anime_on_mark_seen">Atualizar progresso quando marcado como assistido</string>
-  <string name="pref_skip_seen_episodes">Pular episódios marcados</string>
-  <string name="pref_skip_filtered_episodes">Pular episódios filtrados</string>
-  <string name="pref_skip_dupe_episodes">Pular episódios duplicados</string>
   <string name="clean_up_downloaded_episodes">Limpar episódios baixados</string>
   <string name="pref_invalidate_episode_download_cache_summary">Forçar o app a verificar novamente os episódios baixados</string>
   <string name="pref_update_only_completely_seen">Com episódio(s) desconhecido(s)</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">Em quinto a última vez visto o episódio</string>
   <string name="skipped_reason_not_caught_up_episode">Ignorado porque há episódios não vistos</string>
   <string name="skipped_reason_not_started_episode">Ignorado porque nenhum episódio é visto</string>
+  <string name="label_auto">Automático</string>
+  <string name="pref_library_items_per_row">Itens por linha</string>
+  <string name="pref_library_items_per_screen">Itens por tela</string>
+  <string name="theme_monochrome">Monocromático</string>
+  <string name="tracked_privately">Rastreado com privacidade</string>
+  <string name="action_toggle_private_on">Rastrear em particular</string>
+  <string name="action_toggle_private_off">Acompanhamento publicamente</string>
+  <string name="export">Exportação</string>
+  <string name="library_list">Lista de Biblioteca</string>
+  <string name="library_exported">Biblioteca exportada</string>
+  <string name="author">Autor</string>
+  <string name="artist">Artista</string>
+  <string name="action_notes">Observações</string>
+  <string name="action_edit_notes">Editar anotações</string>
+  <string name="notes_placeholder">Aproveitou a parte em…</string>
+  <string name="possible_duplicates_title">Possíveis cópias</string>
+  <string name="possible_duplicates_summary">Você tem entradas na sua biblioteca com um nome similar.\n\nSelecione uma entrada para migrar ou adicionar mesmo assim.</string>
+  <string name="clear_database_text">Você está prestes a remover entradas do banco de dados</string>
+  <string name="clear_database_history_warning">Episódios vistos e progresso de entradas sem biblioteca serão perdidos</string>
+  <string name="clear_db_exclude_read">Mantenha entradas com episódios vistos</string>
+  <string name="action_sort_last_update_check">Última verificação de atualização</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Pausar o histórico de acompanhamento pela extensão</string>
+  <string name="pref_library_update_show_tab_badge">Mostrar contagem não vista no ícone Atualizações</string>
+  <string name="pref_behavior">Comportamento</string>
+  <string name="pref_episode_swipe_end">Episódio ao deslizar para a direita</string>
+  <string name="pref_episode_swipe_start">Episódio ao deslizar para a esquerda</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Marcar episódio visível duplicado como visto</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">Depois de assistir a um episódio</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">Depois de obter um novo episódio</string>
+  <string name="action_display_unread_badge">Episódios não vistos</string>
+  <string name="include_all_seen_entries">Incluir todas as entradas vistas</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Progresso de sincronização dos Rastreadores até o episódio %d</string>
+  <string name="download_cache_renew_interval_info_anime">Se definido como \"manual\", recarregue cada anime ou usando a ação \"Reindexar downloads\" em \"Avançado\"</string>
+  <string name="pref_top_align_cover_summary_anime">Mostrar a capa alinhada ao topo ao lado da informação da animação</string>
+  <string name="pref_reset_player_flags">Redefinir configurações por série do reprodutor</string>
+  <string name="pref_reset_player_flags_summary">Resets skip intro length &amp; next episode airing of all series</string>
+  <string name="pref_reset_player_flags_success">Redefinir configurações do reprodutor</string>
+  <string name="pref_reset_player_flags_error">Não foi possível redefinir as configurações do reprodutor</string>
+  <string name="pref_storage_location_info_anime">Usado para backups automáticos, downloads de episódios e origem local.</string>
+  <string name="tracking_info_anime">Sincronização de uma forma para atualizar o progresso do episódio nos serviços de rastreador externo. Configure o acompanhamento para entradas individuais a partir do botão de rastreamento.</string>
+  <string name="pref_create_folder_per_anime">Salvar capturas de tela em pastas separadas</string>
 </resources>

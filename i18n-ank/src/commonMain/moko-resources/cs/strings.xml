@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="non_library_watched_settings">Všechny sledované položky</string>
   <string name="action_filter_fillermarked">Fillermarked</string>
   <string name="action_fillermark_episode">Fillermark epizoda</string>
   <string name="action_remove_fillermark_episode">Nevyplnit epizodu</string>
@@ -138,8 +137,11 @@
   <string name="onboarding_permission_crashlytics_description">Poslat vývojářům anonymizované protokoly chyb.</string>
   <string name="pref_firebase">Analytické a pádové protokoly</string>
   <string name="firebase_summary">Odesílání protokolů o selhání a analýzy nám umožní rozpoznat a opravit problémy, zlepšit výkon a zpřístupnit budoucí aktualizace vašim potřebám</string>
-  <string name="action_sort_last_update_check">Poslední kontrola aktualizace</string>
+  <string name="pref_skip_seen_episodes">Přeskočit epizody označené</string>
+  <string name="pref_skip_filtered_episodes">Přeskočit filtrované epizody</string>
+  <string name="pref_skip_dupe_episodes">Přeskočit duplicitní epizody</string>
   <string name="action_display_show_continue_watching_button">Tlačítko pokračovat ve sledování</string>
+  <string name="non_library_watched_settings">Všechny sledované položky</string>
   <string name="sync_on_episode_seen">Synchronizovat při epizodě</string>
   <string name="sync_on_episode_open">Synchronizovat při otevření epizody</string>
   <string name="pref_library_summary_episode">Kategorie, globální aktualizace, přejetí epizody</string>
@@ -149,9 +151,6 @@
   <string name="pref_remove_after_watching">Po sledování automaticky smazat</string>
   <string name="pref_auto_update_anime_sync">Probíhá aktualizace po sledování</string>
   <string name="pref_auto_update_anime_on_mark_seen">Průběh aktualizace, když je označen jako sledovaný</string>
-  <string name="pref_skip_seen_episodes">Přeskočit epizody označené</string>
-  <string name="pref_skip_filtered_episodes">Přeskočit filtrované epizody</string>
-  <string name="pref_skip_dupe_episodes">Přeskočit duplicitní epizody</string>
   <string name="clean_up_downloaded_episodes">Vyčistit stažené epizody</string>
   <string name="pref_invalidate_episode_download_cache_summary">Vynutit aplikaci znovu zkontrolovat stažené epizody</string>
   <string name="pref_update_only_completely_seen">S neviděnými epizodami</string>
@@ -163,4 +162,45 @@
   <string name="fifth_to_last_episode">Pátá až naposledy zjištěná epizoda</string>
   <string name="skipped_reason_not_caught_up_episode">Přeskočeno, protože existují neviditelné epizody</string>
   <string name="skipped_reason_not_started_episode">Přeskočeno, protože nebyly nalezeny žádné epizody</string>
+  <string name="label_auto">Automaticky</string>
+  <string name="pref_library_items_per_row">Položky na řádek</string>
+  <string name="pref_library_items_per_screen">Položky na obrazovku</string>
+  <string name="theme_monochrome">Monochromní</string>
+  <string name="tracked_privately">Zaznamenáno soukromě</string>
+  <string name="action_toggle_private_on">Sledovat soukromě</string>
+  <string name="action_toggle_private_off">Sledovat veřejně</string>
+  <string name="export">Exportovat</string>
+  <string name="library_list">Seznam knihoven</string>
+  <string name="library_exported">Knihovna exportována</string>
+  <string name="author">Autor</string>
+  <string name="artist">Umělec</string>
+  <string name="action_notes">Poznámky</string>
+  <string name="action_edit_notes">Upravit poznámky</string>
+  <string name="notes_placeholder">Užil si tu část, kde…</string>
+  <string name="possible_duplicates_title">Možné duplikáty</string>
+  <string name="possible_duplicates_summary">V knihovně máte záznamy s podobným názvem.\n\nVyberte položku pro migraci nebo přesto přidejte.</string>
+  <string name="clear_database_text">Chystáte se odstranit položky z databáze</string>
+  <string name="clear_database_history_warning">Zhlédnuté epizody a průběh neknihovny budou ztraceny</string>
+  <string name="clear_db_exclude_read">Ponechat záznamy pomocí viditelných epizod</string>
+  <string name="action_sort_last_update_check">Poslední kontrola aktualizace</string>
+  <string name="pref_incognito_watching_mode_extension_summary">Pozastavit historii sledování rozšíření</string>
+  <string name="pref_library_update_show_tab_badge">Zobrazit nezobrazené počty v ikoně Aktualizací</string>
+  <string name="pref_behavior">Chování</string>
+  <string name="pref_episode_swipe_end">Epizoda přejetím doprava</string>
+  <string name="pref_episode_swipe_start">Epizoda přejetím doleva</string>
+  <string name="pref_mark_duplicate_seen_episode_seen">Označit duplicitní epizodu jako viděnou</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_existing">Po zhlédnutí epizody</string>
+  <string name="pref_mark_duplicate_seen_episode_seen_new">Po načítání nové epizody</string>
+  <string name="action_display_unread_badge">Neznámé epizody</string>
+  <string name="include_all_seen_entries">Zahrnout všechny zobrazené položky</string>
+  <string name="sync_progress_from_trackers_up_to_episode">Synchronizovat postup od Trackeru až po epizodu %d</string>
+  <string name="download_cache_renew_interval_info_anime">Je-li nastaveno na \"manuální\", obnovte každé anime nebo použijte akci \"Reindexovat stahování\" v \"Rozšířené\"</string>
+  <string name="pref_top_align_cover_summary_anime">Zobrazit obal zarovnaný nahoře vedle informací anime</string>
+  <string name="pref_reset_player_flags">Resetovat nastavení přehrávače pro každou sérii</string>
+  <string name="pref_reset_player_flags_summary">Resetuje přeskočit úvodní délku &amp; další epizoda odvzdušnění všech sérií</string>
+  <string name="pref_reset_player_flags_success">Obnovení nastavení všech hráčů</string>
+  <string name="pref_reset_player_flags_error">Obnovení nastavení přehrávače se nezdařilo</string>
+  <string name="pref_storage_location_info_anime">Používá se pro automatické zálohy, stahování epizod a lokální zdroj.</string>
+  <string name="tracking_info_anime">Jednorázová synchronizace pro aktualizaci postupu epizody v externích sledovacích službách. Nastavte sledování pro jednotlivé položky z jejich sledovacího tlačítka.</string>
+  <string name="pref_create_folder_per_anime">Uložit screenshoty do oddělených složek</string>
 </resources>
