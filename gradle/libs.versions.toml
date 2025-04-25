@@ -1,5 +1,5 @@
 [versions]
-aboutlib_version = "11.4.0"
+aboutlib_version = "12.0.0"
 leakcanary = "2.14"
 moko = "0.24.5"
 nanohttpd-version = "2.3.1"
@@ -127,7 +127,7 @@ google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
 aboutLibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutlib_version" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 moko = { id = "dev.icerock.mobile.multiplatform-resources", version.ref = "moko" }
-firebase-crashlytics = { id = "com.google.firebase.crashlytics", version = "3.0.2" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version = "3.0.3" }
 
 [bundles]
 okhttp = ["okhttp-core", "okhttp-logging", "okhttp-brotli", "okhttp-dnsoverhttps"]
