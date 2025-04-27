@@ -439,7 +439,9 @@ class ExternalIntents {
         // Update the episode's progress and history
         launchIO {
             // AM (DISCORD) -->
-            DiscordRPCService.setAnimeScreen(context, DiscordRPCService.lastUsedScreen)
+            with(DiscordRPCService) {
+                discordScope.launchIO { setScreen(context) }
+            }
             // <-- AM (DISCORD)
             if (cause == "playback_completion" || (currentPosition == duration && duration == 0L)) {
                 saveEpisodeProgress(

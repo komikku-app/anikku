@@ -39,6 +39,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -158,7 +159,9 @@ data object HistoryTab : Tab {
 
         LaunchedEffect(Unit) {
             // AM (DISCORD) -->
-            DiscordRPCService.setAnimeScreen(context, DiscordScreen.HISTORY)
+            with(DiscordRPCService) {
+                discordScope.launchIO { setScreen(context, DiscordScreen.HISTORY) }
+            }
             // <-- AM (DISCORD)
             screenModel.events.collectLatest { e ->
                 when (e) {

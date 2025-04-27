@@ -1376,7 +1376,7 @@ class PlayerActivity : BaseActivity() {
     private fun updateDiscordRPC(exitingPlayer: Boolean) {
         if (!connectionsPreferences.enableDiscordRPC().get()) return
 
-        viewModel.viewModelScope.launchIO {
+        DiscordRPCService.discordScope.launchIO {
             try {
                 if (!exitingPlayer) {
                     val timePos = player.timePos ?: return@launchIO
@@ -1411,8 +1411,9 @@ class PlayerActivity : BaseActivity() {
                         ),
                     )
                 } else {
-                    val lastUsedScreen = DiscordRPCService.lastUsedScreen
-                    DiscordRPCService.setAnimeScreen(this@PlayerActivity, lastUsedScreen)
+                    with(DiscordRPCService) {
+                        setScreen(this@PlayerActivity)
+                    }
                 }
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) { "Error updating Discord RPC: ${e.message}" }
