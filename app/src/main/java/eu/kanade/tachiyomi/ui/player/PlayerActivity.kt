@@ -68,11 +68,11 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.images.WebImage
 import com.hippo.unifile.UniFile
-import eu.kanade.domain.connection.service.ConnectionPreferences
+import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.data.connection.discord.DiscordRPCService
-import eu.kanade.tachiyomi.data.connection.discord.PlayerData
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.PlayerData
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.torrentServer.TorrentServerApi
@@ -188,7 +188,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     // AM (CONNECTIONS) -->
-    private val connectionPreferences: ConnectionPreferences = Injekt.get()
+    private val connectionsPreferences: ConnectionsPreferences = Injekt.get()
     // <-- AM (CONNECTIONS)
 
     override fun onNewIntent(intent: Intent) {
@@ -1328,7 +1328,7 @@ class PlayerActivity : BaseActivity() {
 
     // AM (DISCORD) -->
     private fun updateDiscordRPC(exitingPlayer: Boolean) {
-        if (connectionPreferences.enableDiscordRPC().get()) {
+        if (connectionsPreferences.enableDiscordRPC().get()) {
             viewModel.viewModelScope.launchIO {
                 if (!exitingPlayer) {
                     val currentPosition = (player.timePos!!).toLong() * 1000
@@ -1348,7 +1348,7 @@ class PlayerActivity : BaseActivity() {
                             animeId = viewModel.currentAnime.value?.id ?: -1,
                             animeTitle = viewModel.currentAnime.value?.ogTitle ?: "",
                             thumbnailUrl = viewModel.currentAnime.value?.thumbnailUrl ?: "",
-                            episodeNumber = if (connectionPreferences.useChapterTitles().get()) {
+                            episodeNumber = if (connectionsPreferences.useChapterTitles().get()) {
                                 viewModel.currentEpisode.value?.name.toString()
                             } else {
                                 viewModel.currentEpisode.value?.episode_number.toString()

@@ -9,9 +9,9 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import eu.kanade.domain.connection.service.ConnectionPreferences
+import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.connection.ConnectionManager
+import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.util.system.toast
 import tachiyomi.i18n.MR
@@ -20,8 +20,8 @@ import java.io.File
 
 class DiscordLoginActivity : BaseActivity() {
 
-    private val connectionManager: ConnectionManager by injectLazy()
-    private val connectionPreferences: ConnectionPreferences by injectLazy()
+    private val connectionsManager: ConnectionsManager by injectLazy()
+    private val connectionsPreferences: ConnectionsPreferences by injectLazy()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,9 +58,9 @@ class DiscordLoginActivity : BaseActivity() {
     }
 
     private fun login(token: String) {
-        connectionPreferences.connectionsToken(connectionManager.discord).set(token)
-        connectionPreferences.setConnectionsCredentials(
-            connectionManager.discord,
+        connectionsPreferences.connectionsToken(connectionsManager.discord).set(token)
+        connectionsPreferences.setConnectionsCredentials(
+            connectionsManager.discord,
             "Discord",
             "Logged In",
         )

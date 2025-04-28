@@ -59,7 +59,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.domain.connection.service.ConnectionPreferences
+import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.components.AppStateBanners
 import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
@@ -70,8 +70,8 @@ import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.DefaultNavigatorScreenTransition
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.data.connection.discord.DiscordRPCService
-import eu.kanade.tachiyomi.data.connection.discord.DiscordScreen
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
@@ -127,7 +127,7 @@ class MainActivity : BaseActivity() {
     private var navigator: Navigator? = null
 
     // AM (CONNECTIONS) -->
-    private val connectionPreferences: ConnectionPreferences by injectLazy()
+    private val connectionsPreferences: ConnectionsPreferences by injectLazy()
     // <-- AM (CONNECTIONS)
 
     init {
@@ -246,7 +246,7 @@ class MainActivity : BaseActivity() {
                         .launchIn(this)
 
                     // AM (DISCORD) -->
-                    connectionPreferences.enableDiscordRPC().changes()
+                    connectionsPreferences.enableDiscordRPC().changes()
                         .drop(1)
                         .onEach {
                             if (it) {
@@ -256,7 +256,7 @@ class MainActivity : BaseActivity() {
                             }
                         }.launchIn(this)
 
-                    connectionPreferences.discordRPCStatus().changes()
+                    connectionsPreferences.discordRPCStatus().changes()
                         .drop(1)
                         .onEach {
                             DiscordRPCService.stop(this@MainActivity.applicationContext, 0L)
