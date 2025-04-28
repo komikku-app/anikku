@@ -60,6 +60,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -143,7 +145,7 @@ fun AnimeBottomActionMenu(
                 // AM (FILLERMARK) -->
                 if (onFillermarkClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_fillermark_episode),
+                        title = stringResource(AMR.strings.action_fillermark_episode),
                         icon = ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp),
                         toConfirm = confirm[2],
                         onLongClick = { onLongClickItem(2) },
@@ -152,7 +154,7 @@ fun AnimeBottomActionMenu(
                 }
                 if (onRemoveFillermarkClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_remove_fillermark_episode),
+                        title = stringResource(AMR.strings.action_remove_fillermark_episode),
                         icon = ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp),
                         toConfirm = confirm[3],
                         onLongClick = { onLongClickItem(3) },
@@ -370,7 +372,7 @@ fun LibraryBottomActionMenu(
                 // SY -->
                 if (showOverflow) {
                     Button(
-                        title = stringResource(MR.strings.reset_info),
+                        title = stringResource(SYMR.strings.reset_info),
                         icon = Icons.Outlined.Delete,
                         toConfirm = confirm[5],
                         onLongClick = { onLongClickItem(5) },

@@ -20,6 +20,7 @@ import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.interactor.SyncEpisodeProgressWithTrack
 import eu.kanade.domain.track.interactor.TrackEpisode
+import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import mihon.data.repository.ExtensionRepoRepositoryImpl
 import mihon.domain.episode.interactor.FilterEpisodesForDownload
 import mihon.domain.extensionrepo.interactor.CreateExtensionRepo
@@ -33,6 +34,7 @@ import mihon.domain.extensionrepo.service.ExtensionRepoService
 import mihon.domain.upcoming.interactor.GetUpcomingAnime
 import tachiyomi.data.anime.AnimeRepositoryImpl
 import tachiyomi.data.category.CategoryRepositoryImpl
+import tachiyomi.data.custombutton.CustomButtonRepositoryImpl
 import tachiyomi.data.episode.EpisodeRepositoryImpl
 import tachiyomi.data.history.HistoryRepositoryImpl
 import tachiyomi.data.release.ReleaseServiceImpl
@@ -63,6 +65,13 @@ import tachiyomi.domain.category.interactor.SetDisplayMode
 import tachiyomi.domain.category.interactor.SetSortModeForCategory
 import tachiyomi.domain.category.interactor.UpdateCategory
 import tachiyomi.domain.category.repository.CategoryRepository
+import tachiyomi.domain.custombuttons.interactor.CreateCustomButton
+import tachiyomi.domain.custombuttons.interactor.DeleteCustomButton
+import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
+import tachiyomi.domain.custombuttons.interactor.ReorderCustomButton
+import tachiyomi.domain.custombuttons.interactor.ToggleFavoriteCustomButton
+import tachiyomi.domain.custombuttons.interactor.UpdateCustomButton
+import tachiyomi.domain.custombuttons.repository.CustomButtonRepository
 import tachiyomi.domain.episode.interactor.GetEpisode
 import tachiyomi.domain.episode.interactor.GetEpisodeByUrlAndAnimeId
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
@@ -193,5 +202,15 @@ class DomainModule : InjektModule {
         addFactory { DeleteExtensionRepo(get()) }
         addFactory { ReplaceExtensionRepo(get()) }
         addFactory { UpdateExtensionRepo(get(), get()) }
+
+        addSingletonFactory<CustomButtonRepository> { CustomButtonRepositoryImpl(get()) }
+        addFactory { CreateCustomButton(get()) }
+        addFactory { DeleteCustomButton(get()) }
+        addFactory { GetCustomButtons(get()) }
+        addFactory { UpdateCustomButton(get()) }
+        addFactory { ReorderCustomButton(get()) }
+        addFactory { ToggleFavoriteCustomButton(get()) }
+
+        addFactory { TrackSelect(get(), get()) }
     }
 }

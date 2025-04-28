@@ -588,7 +588,7 @@
     <string name="empty_screen">Қателік пайда болды</string>
     <string name="download_notifier_downloader_title">Жүктеуіш</string>
     <string name="file_picker_error">Файл таңдайтын қолданба табылмады</string>
-    <string name="update_check_fdroid_migration_info">Жаңа нұсқа Anikku сайтында қолжетімді. F-Droid қолданбасының бейресми нұсқасынан көшуді білу үшін басыңыз.</string>
+    <string name="update_check_fdroid_migration_info">Жаңа нұсқа Aniyomi сайтында қолжетімді. F-Droid қолданбасының бейресми нұсқасынан көшуді білу үшін басыңыз.</string>
     <string name="complete_list">Оқылғандар Тізімі</string>
     <string name="on_hold_list">Тоқтап тұрғандар Тізімі</string>
     <string name="no_next_chapter">Келісі тарау табылмады</string>
@@ -694,8 +694,8 @@
     <string name="also_set_chapter_settings_for_library">Сонымен қоса кітапханадағы жазбаларға қолдану</string>
     <string name="dialog_with_checkbox_reset">Бұл жазба үшін түгел тарауларды қалпына келтіру</string>
     <string name="download_insufficient_space">Жадыда орын аз болғандықтан тараулар жүктелмеді</string>
-    <string name="download_queue_size_warning">Ескерту: Көп жүктеулер саны дереккөздер жұмысын баяулата алады және/немесе Anikku бұғатталына алады. Толығырақ оқу үшін басыңыз.</string>
-    <string name="information_webview_required">Anikku-ны қолдану үшін WebView керек</string>
+    <string name="download_queue_size_warning">Ескерту: Көп жүктеулер саны дереккөздер жұмысын баяулата алады және/немесе Aniyomi бұғатталына алады. Толығырақ оқу үшін басыңыз.</string>
+    <string name="information_webview_required">Aniyomi-ны қолдану үшін WebView керек</string>
     <string name="relative_time_now">Қазір</string>
     <string name="onboarding_storage_selection_required">Бір қалта таңдауыңыз міндетті</string>
     <string name="pref_relative_format">Салыстырмалы уақыт белгілері</string>
@@ -750,4 +750,13 @@
     <string name="label_data_storage">Дерек пен жад</string>
     <string name="delete_downloaded">Жүктелгендерді жою</string>
     <string name="action_set_interval">Аралық орнату</string>
+    <string name="label_player_settings">Ойнатқышты баптау</string>
+    <string name="action_search_player_settings">Ойнатқыш баптауында іздеу</string>
+    <string name="pref_player_internal">Қолданба ойнатқышы</string>
+    <string name="pref_category_external_player">Сыртқы ойнатқыш</string>
+    <string name="action_sort_random">Кездейсоқ</string>
+    <string name="action_copy_link">Сілтемені көшіру</string>
+    <string name="action_ok">ОК</string>
+    <string name="pref_progress_mark_as_seen">Қай кезде бөлімді көрілген деп есептеу керек</string>
+    <string name="pref_preserve_watching_position">Көрілген бөлімдерде де тоқтаған кезді есте сақтау</string>
 </resources>

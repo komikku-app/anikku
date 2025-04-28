@@ -498,7 +498,7 @@
     <string name="pref_dump_crash_logs_summary">Uložiť logy o chybách do súboru na zdieľanie s vývojármi</string>
     <string name="manga_cover">Obal</string>
     <string name="cover_saved">Obal uložený</string>
-    <string name="delete_category_confirmation">Prajete si vymazať kategóriu „%s“\?</string>
+    <string name="delete_category_confirmation">Prajete si vymazať kategóriu „%s“?</string>
     <string name="tapping_inverted_vertical">Vertikálne</string>
     <string name="backup_restore_missing_trackers">Sledovače, do ktorých nie ste prihlásení:</string>
     <string name="pref_dns_over_https">DNS cez HTTPS (DoH)</string>
@@ -629,8 +629,8 @@
     <string name="also_set_chapter_settings_for_library">Taktiež nastaviť pre všetky mangy v mojej knižnici</string>
     <string name="dialog_with_checkbox_reset">Resetovať všetky kapitoly mangy</string>
     <string name="download_insufficient_space">Nepodarilo sa stiahnuť kapitoly z dôvodu nedostatku úložného priestoru</string>
-    <string name="download_queue_size_warning">Upozornenie: Veľké hromadné sťahovanie môže viesť k spomaleniu zdrojov a/alebo blokovaniu Anikku. Klepnutím sa dozviete viac.</string>
-    <string name="information_webview_required">WebView je potrebné pre Anikku</string>
+    <string name="download_queue_size_warning">Upozornenie: Veľké hromadné sťahovanie môže viesť k spomaleniu zdrojov a/alebo blokovaniu Aniyomi. Klepnutím sa dozviete viac.</string>
+    <string name="information_webview_required">WebView je potrebné pre Aniyomi</string>
     <string name="scanlator">Prekladateľ</string>
     <string name="label_data_storage">Dáta a úložisko</string>
     <string name="action_set_interval">Nastaviť interval</string>

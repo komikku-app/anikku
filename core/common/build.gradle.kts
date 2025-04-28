@@ -56,6 +56,10 @@ dependencies {
     // FFmpeg-kit
     implementation(libs.ffmpeg.kit)
 
+    implementation(libs.injekt)
+
+    implementation(libs.torrentserver)
+
     // Tests
     testImplementation(libs.bundles.test)
 

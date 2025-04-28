@@ -86,10 +86,6 @@ class SyncPreferences(
             syncOnAppStart = preferenceStore.getBoolean("sync_on_app_start", false).get(),
             syncOnAppResume = preferenceStore.getBoolean("sync_on_app_resume", false).get(),
 
-            // Manga
-            syncOnChapterRead = preferenceStore.getBoolean("sync_on_chapter_read", false).get(),
-            syncOnChapterOpen = preferenceStore.getBoolean("sync_on_chapter_open", false).get(),
-
             // Anime
             syncOnEpisodeSeen = preferenceStore.getBoolean("sync_on_episode_seen", false).get(),
             syncOnEpisodeOpen = preferenceStore.getBoolean("sync_on_episode_open", false).get(),
@@ -102,16 +98,10 @@ class SyncPreferences(
         preferenceStore.getBoolean("sync_on_app_resume", false)
             .set(syncTriggerOptions.syncOnAppResume)
 
-        // Manga
-        preferenceStore.getBoolean("sync_on_chapter_read", false)
-            .set(syncTriggerOptions.syncOnChapterRead)
-        preferenceStore.getBoolean("sync_on_chapter_open", false)
-            .set(syncTriggerOptions.syncOnChapterOpen)
-
         // Anime
         preferenceStore.getBoolean("sync_on_episode_seen", false)
-            .set(syncTriggerOptions.syncOnChapterRead)
+            .set(syncTriggerOptions.syncOnEpisodeSeen)
         preferenceStore.getBoolean("sync_on_episode_open", false)
-            .set(syncTriggerOptions.syncOnChapterOpen)
+            .set(syncTriggerOptions.syncOnEpisodeOpen)
     }
 }

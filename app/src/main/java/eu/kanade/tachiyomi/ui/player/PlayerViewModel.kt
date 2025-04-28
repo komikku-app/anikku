@@ -23,11 +23,13 @@
 package eu.kanade.tachiyomi.ui.player
 
 import android.app.Application
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.media.AudioManager
 import android.net.Uri
 import android.provider.Settings
 import android.util.DisplayMetrics
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.Immutable
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.SavedStateHandle
@@ -36,12 +38,20 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.episode.model.toDbEpisode
 import eu.kanade.domain.track.interactor.TrackEpisode
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.presentation.more.settings.screen.player.custombutton.CustomButtonFetchState
+import eu.kanade.presentation.more.settings.screen.player.custombutton.getButtons
+import eu.kanade.tachiyomi.animesource.AnimeSource
+import eu.kanade.tachiyomi.animesource.model.ChapterType
+import eu.kanade.tachiyomi.animesource.model.Hoster
+import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.toHosterList
+import eu.kanade.tachiyomi.animesource.model.TimeStamp
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.database.models.Episode
 import eu.kanade.tachiyomi.data.database.models.toDomainEpisode
@@ -54,16 +64,18 @@ import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.source.Source
-import eu.kanade.tachiyomi.source.model.toVideoList
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.player.controls.components.IndexedSegment
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
+import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
+import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
-import eu.kanade.tachiyomi.util.AniSkipApi
-import eu.kanade.tachiyomi.util.SkipType
-import eu.kanade.tachiyomi.util.Stamp
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.episode.filterDownloadedEpisodes
 import eu.kanade.tachiyomi.util.lang.byteSize
@@ -73,8 +85,12 @@ import eu.kanade.tachiyomi.util.storage.cacheImageDir
 import eu.kanade.tachiyomi.util.system.toast
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.Utils
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -87,11 +103,15 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
+import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.anime.interactor.GetAnime
 import tachiyomi.domain.anime.model.Anime
+import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
+import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.episode.interactor.UpdateEpisode
@@ -109,6 +129,8 @@ import uy.kohesive.injekt.api.get
 import java.io.File
 import java.io.InputStream
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.cancellation.CancellationException
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
@@ -130,6 +152,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val getAnime: GetAnime = Injekt.get(),
     private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
+    private val getAnimeCategories: GetCategories = Injekt.get(),
     private val getTracks: GetTracks = Injekt.get(),
     private val upsertHistory: UpsertHistory = Injekt.get(),
     private val updateEpisode: UpdateEpisode = Injekt.get(),
@@ -137,6 +160,8 @@ class PlayerViewModel @JvmOverloads constructor(
     internal val playerPreferences: PlayerPreferences = Injekt.get(),
     internal val gesturePreferences: GesturePreferences = Injekt.get(),
     private val basePreferences: BasePreferences = Injekt.get(),
+    private val getCustomButtons: GetCustomButtons = Injekt.get(),
+    private val trackSelect: TrackSelect = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
 ) : ViewModel() {
 
@@ -157,6 +182,9 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val _currentSource = MutableStateFlow<Source?>(null)
     val currentSource = _currentSource.asStateFlow()
+
+    private val _isEpisodeOnline = MutableStateFlow(false)
+    val isEpisodeOnline = _isEpisodeOnline.asStateFlow()
 
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode = _isLoadingEpisode.asStateFlow()
@@ -181,19 +209,32 @@ class PlayerViewModel @JvmOverloads constructor(
     val selectedAudio = _selectedAudio.asStateFlow()
 
     val isLoadingTracks = MutableStateFlow(true)
+    val isCasting = MutableStateFlow(false)
 
-    private val _videoList = MutableStateFlow<List<Video>>(emptyList())
-    val videoList = _videoList.asStateFlow()
-    private val _selectedVideoIndex = MutableStateFlow(-1)
-    val selectedVideoIndex = _selectedVideoIndex.asStateFlow()
+    private val _hosterList = MutableStateFlow<List<Hoster>>(emptyList())
+    val hosterList = _hosterList.asStateFlow()
+    private val _isLoadingHosters = MutableStateFlow(true)
+    val isLoadingHosters = _isLoadingHosters.asStateFlow()
+    private val _hosterState = MutableStateFlow<List<HosterState>>(emptyList())
+    val hosterState = _hosterState.asStateFlow()
+    private val _hosterExpandedList = MutableStateFlow<List<Boolean>>(emptyList())
+    val hosterExpandedList = _hosterExpandedList.asStateFlow()
+    private val _selectedHosterVideoIndex = MutableStateFlow(Pair(-1, -1))
+    val selectedHosterVideoIndex = _selectedHosterVideoIndex.asStateFlow()
+    private val _currentVideo = MutableStateFlow<Video?>(null)
+    val currentVideo = _currentVideo.asStateFlow()
 
     private val _chapters = MutableStateFlow<List<IndexedSegment>>(emptyList())
     val chapters = _chapters.asStateFlow()
     private val _currentChapter = MutableStateFlow<IndexedSegment?>(null)
     val currentChapter = _currentChapter.asStateFlow()
+    private val _skipIntroText = MutableStateFlow<String?>(null)
+    val skipIntroText = _skipIntroText.asStateFlow()
 
     private val _pos = MutableStateFlow(0f)
     val pos = _pos.asStateFlow()
+
+    private var castProgressJob: Job? = null
 
     val duration = MutableStateFlow(0f)
 
@@ -202,6 +243,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val _paused = MutableStateFlow(false)
     val paused = _paused.asStateFlow()
+
+    // False because the video shouldn't start paused
+    private val _pausedState = MutableStateFlow<Boolean?>(false)
+    val pausedState = _pausedState.asStateFlow()
 
     private val _controlsShown = MutableStateFlow(!playerPreferences.hideControls().get())
     val controlsShown = _controlsShown.asStateFlow()
@@ -228,7 +273,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
     val sheetShown = MutableStateFlow(Sheets.None)
     val panelShown = MutableStateFlow(Panels.None)
-    val dialogShown = MutableStateFlow(Dialogs.None)
+    val dialogShown = MutableStateFlow<Dialogs>(Dialogs.None)
+
+    private val _dismissSheet = MutableStateFlow(false)
+    val dismissSheet = _dismissSheet.asStateFlow()
 
     private val _seekText = MutableStateFlow<String?>(null)
     val seekText = _seekText.asStateFlow()
@@ -241,13 +289,36 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _remainingTime = MutableStateFlow(0)
     val remainingTime = _remainingTime.asStateFlow()
 
-    private val _aniskipButton = MutableStateFlow<String?>(null)
-    val aniskipButton = _aniskipButton.asStateFlow()
-
     val cachePath: String = activity.cacheDir.path
 
-    private fun updateAniskipButton(value: String?) {
-        _aniskipButton.update { _ -> value }
+    private val _customButtons = MutableStateFlow<CustomButtonFetchState>(CustomButtonFetchState.Loading)
+    val customButtons = _customButtons.asStateFlow()
+
+    private val _primaryButtonTitle = MutableStateFlow("")
+    val primaryButtonTitle = _primaryButtonTitle.asStateFlow()
+
+    private val _primaryButton = MutableStateFlow<CustomButton?>(null)
+    val primaryButton = _primaryButton.asStateFlow()
+
+    init {
+        viewModelScope.launchIO {
+            try {
+                val buttons = getCustomButtons.getAll()
+                buttons.firstOrNull { it.isFavorite }?.let {
+                    _primaryButton.update { _ -> it }
+                    // If the button text is not empty, it has been set buy a lua script in which
+                    // case we don't want to override it
+                    if (_primaryButtonTitle.value.isEmpty()) {
+                        setPrimaryCustomButtonTitle(it)
+                    }
+                }
+                activity.setupCustomButtons(buttons)
+                _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                _customButtons.update { _ -> CustomButtonFetchState.Error(e.message ?: "Unable to fetch buttons") }
+            }
+        }
     }
 
     /**
@@ -352,16 +423,25 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+    /**
+     * When all subtitle/audio tracks are loaded, select the preferred one based on preferences,
+     * or select the first one in the list if trackSelect fails.
+     */
     fun onFinishLoadingTracks() {
-        val preferredSubtitle = activity.subtitleSelect.getPreferredSubtitleIndex(subtitleTracks.value)
-        preferredSubtitle?.let {
+        val preferredSubtitle = trackSelect.getPreferredTrackIndex(subtitleTracks.value)
+        (preferredSubtitle ?: subtitleTracks.value.firstOrNull())?.let {
             activity.player.sid = it.id
             activity.player.secondarySid = -1
         }
 
+        val preferredAudio = trackSelect.getPreferredTrackIndex(audioTracks.value, subtitle = false)
+        (preferredAudio ?: audioTracks.value.getOrNull(1))?.let {
+            activity.player.aid = it.id
+        }
+
         isLoadingTracks.update { _ -> true }
         updateIsLoadingEpisode(false)
-        unpause()
+        setPausedState()
     }
 
     @Immutable
@@ -400,25 +480,6 @@ class PlayerViewModel @JvmOverloads constructor(
     fun updateChapter(index: Long) {
         if (chapters.value.isEmpty() || index == -1L) return
         _currentChapter.update { chapters.value.getOrNull(index.toInt()) ?: return }
-    }
-
-    fun updateVideoList(videoList: List<Video>) {
-        _videoList.update { _ -> videoList }
-    }
-
-    fun setVideoIndex(idx: Int) {
-        _selectedVideoIndex.update { _ -> idx }
-    }
-
-    fun selectVideo(video: Video) {
-        updateIsLoadingEpisode(true)
-
-        val idx = videoList.value.indexOf(video)
-
-        activity.setVideoList(
-            qualityIndex = idx,
-            videos = videoList.value,
-        )
     }
 
     fun addAudio(uri: Uri) {
@@ -487,6 +548,24 @@ class PlayerViewModel @JvmOverloads constructor(
         _readAhead.update { value.toFloat() }
     }
 
+    private fun updatePausedState() {
+        if (pausedState.value == null) {
+            _pausedState.update { _ -> paused.value }
+        }
+    }
+
+    private fun setPausedState() {
+        pausedState.value?.let {
+            if (it) {
+                pause()
+            } else {
+                unpause()
+            }
+
+            _pausedState.update { _ -> null }
+        }
+    }
+
     fun pauseUnpause() {
         if (paused.value) {
             unpause()
@@ -544,6 +623,48 @@ class PlayerViewModel @JvmOverloads constructor(
         _areControlsLocked.update { false }
     }
 
+    fun dismissSheet() {
+        _dismissSheet.update { _ -> true }
+    }
+
+    private fun resetDismissSheet() {
+        _dismissSheet.update { _ -> false }
+    }
+
+    fun showSheet(sheet: Sheets) {
+        sheetShown.update { sheet }
+        if (sheet == Sheets.None) {
+            resetDismissSheet()
+            showControls()
+        } else {
+            hideControls()
+            panelShown.update { Panels.None }
+            dialogShown.update { Dialogs.None }
+        }
+    }
+
+    fun showPanel(panel: Panels) {
+        panelShown.update { panel }
+        if (panel == Panels.None) {
+            showControls()
+        } else {
+            hideControls()
+            sheetShown.update { Sheets.None }
+            dialogShown.update { Dialogs.None }
+        }
+    }
+
+    fun showDialog(dialog: Dialogs) {
+        dialogShown.update { dialog }
+        if (dialog == Dialogs.None) {
+            showControls()
+        } else {
+            hideControls()
+            sheetShown.update { Sheets.None }
+            panelShown.update { Panels.None }
+        }
+    }
+
     fun seekBy(offset: Int, precise: Boolean = false) {
         MPVLib.command(arrayOf("seek", offset.toString(), if (precise) "relative+exact" else "relative"))
     }
@@ -556,10 +677,9 @@ class PlayerViewModel @JvmOverloads constructor(
     fun changeBrightnessTo(
         brightness: Float,
     ) {
+        currentBrightness.update { _ -> brightness.coerceIn(-0.75f, 1f) }
         activity.window.attributes = activity.window.attributes.apply {
-            screenBrightness = brightness.coerceIn(0f, 1f).also {
-                currentBrightness.update { _ -> it }
-            }
+            screenBrightness = brightness.coerceIn(0f, 1f)
         }
     }
 
@@ -658,7 +778,143 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+    fun handleLuaInvocation(property: String, value: String) {
+        val data = value
+            .removePrefix("\"")
+            .removeSuffix("\"")
+            .ifEmpty { return }
+
+        when (property.substringAfterLast("/")) {
+            "show_text" -> playerUpdate.update { PlayerUpdates.ShowText(data) }
+            "toggle_ui" -> {
+                when (data) {
+                    "show" -> showControls()
+                    "toggle" -> {
+                        if (controlsShown.value) hideControls() else showControls()
+                    }
+                    "hide" -> {
+                        sheetShown.update { Sheets.None }
+                        panelShown.update { Panels.None }
+                        dialogShown.update { Dialogs.None }
+                        hideControls()
+                    }
+                }
+            }
+            "show_panel" -> {
+                when (data) {
+                    "subtitle_settings" -> showPanel(Panels.SubtitleSettings)
+                    "subtitle_delay" -> showPanel(Panels.SubtitleDelay)
+                    "audio_delay" -> showPanel(Panels.AudioDelay)
+                    "video_filters" -> showPanel(Panels.VideoFilters)
+                }
+            }
+            "set_button_title" -> {
+                _primaryButtonTitle.update { _ -> data }
+            }
+            "reset_button_title" -> {
+                _customButtons.value.getButtons().firstOrNull { it.isFavorite }?.let {
+                    setPrimaryCustomButtonTitle(it)
+                }
+            }
+            "switch_episode" -> {
+                when (data) {
+                    "n" -> changeEpisode(false)
+                    "p" -> changeEpisode(true)
+                }
+            }
+            "launch_int_picker" -> {
+                val (title, nameFormat, start, stop, step, pickerProperty) = data.split("|")
+                val defaultValue = MPVLib.getPropertyInt(pickerProperty)
+                showDialog(
+                    Dialogs.IntegerPicker(
+                        defaultValue = defaultValue,
+                        minValue = start.toInt(),
+                        maxValue = stop.toInt(),
+                        step = step.toInt(),
+                        nameFormat = nameFormat,
+                        title = title,
+                        onChange = { MPVLib.setPropertyInt(pickerProperty, it) },
+                        onDismissRequest = { showDialog(Dialogs.None) },
+                    ),
+                )
+            }
+            "pause" -> {
+                when (data) {
+                    "pause" -> pause()
+                    "unpause" -> unpause()
+                    "pauseunpause" -> pauseUnpause()
+                }
+            }
+            "seek_to_with_text" -> {
+                val (seekValue, text) = data.split("|", limit = 2)
+                seekToWithText(seekValue.toInt(), text)
+            }
+            "seek_by_with_text" -> {
+                val (seekValue, text) = data.split("|", limit = 2)
+                seekByWithText(seekValue.toInt(), text)
+            }
+            "seek_by" -> seekByWithText(data.toInt(), null)
+            "seek_to" -> seekToWithText(data.toInt(), null)
+            "toggle_button" -> {
+                fun showButton() {
+                    if (_primaryButton.value == null) {
+                        _primaryButton.update {
+                            customButtons.value.getButtons().firstOrNull { it.isFavorite }
+                        }
+                    }
+                }
+
+                when (data) {
+                    "show" -> showButton()
+                    "hide" -> _primaryButton.update { null }
+                    "toggle" -> if (_primaryButton.value == null) showButton() else _primaryButton.update { null }
+                }
+            }
+
+            "software_keyboard" -> when (data) {
+                "show" -> forceShowSoftwareKeyboard()
+                "hide" -> forceHideSoftwareKeyboard()
+                "toggle" -> if (inputMethodManager.isActive) {
+                    forceHideSoftwareKeyboard()
+                } else {
+                    forceShowSoftwareKeyboard()
+                }
+            }
+        }
+
+        MPVLib.setPropertyString(property, "")
+    }
+
+    private operator fun <T> List<T>.component6(): T = get(5)
+
+    private val inputMethodManager = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    private fun forceShowSoftwareKeyboard() {
+        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+    }
+
+    private fun forceHideSoftwareKeyboard() {
+        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0)
+    }
+
     private val doubleTapToSeekDuration = gesturePreferences.skipLengthPreference().get()
+    private val preciseSeek = gesturePreferences.playerSmoothSeek().get()
+    private val showSeekBar = gesturePreferences.showSeekBar().get()
+
+    private fun seekToWithText(seekValue: Int, text: String?) {
+        _isSeekingForwards.value = seekValue > 0
+        _doubleTapSeekAmount.value = seekValue - pos.value.toInt()
+        _seekText.update { _ -> text }
+        seekTo(seekValue, preciseSeek)
+        if (showSeekBar) showSeekBar()
+    }
+
+    private fun seekByWithText(value: Int, text: String?) {
+        _doubleTapSeekAmount.update { if (value < 0 && it < 0 || pos.value + value > duration.value) 0 else it + value }
+        _seekText.update { text }
+        _isSeekingForwards.value = value > 0
+        seekBy(value, preciseSeek)
+        if (showSeekBar) showSeekBar()
+    }
 
     fun updateSeekAmount(amount: Int) {
         _doubleTapSeekAmount.update { _ -> amount }
@@ -673,8 +929,8 @@ class PlayerViewModel @JvmOverloads constructor(
             _doubleTapSeekAmount.value -= doubleTapToSeekDuration
         }
         _isSeekingForwards.value = false
-        seekBy(-doubleTapToSeekDuration, gesturePreferences.playerSmoothSeek().get())
-        if (gesturePreferences.showSeekBar().get()) showSeekBar()
+        seekBy(-doubleTapToSeekDuration, preciseSeek)
+        if (showSeekBar) showSeekBar()
     }
 
     fun rightSeek() {
@@ -682,30 +938,33 @@ class PlayerViewModel @JvmOverloads constructor(
             _doubleTapSeekAmount.value += doubleTapToSeekDuration
         }
         _isSeekingForwards.value = true
-        seekBy(doubleTapToSeekDuration, gesturePreferences.playerSmoothSeek().get())
-        if (gesturePreferences.showSeekBar().get()) showSeekBar()
+        seekBy(doubleTapToSeekDuration, preciseSeek)
+        if (showSeekBar) showSeekBar()
     }
 
-    private fun rightSeekToWithText(seekDuration: Int, text: String?) {
-        _isSeekingForwards.value = true
-        _doubleTapSeekAmount.value = 1
-        _seekText.update { _ -> text }
-        seekTo(seekDuration)
-        if (gesturePreferences.showSeekBar().get()) showSeekBar()
+    fun resetHosterState() {
+        _pausedState.update { _ -> false }
+        _hosterState.update { _ -> emptyList() }
+        _hosterList.update { _ -> emptyList() }
+        _hosterExpandedList.update { _ -> emptyList() }
+        _selectedHosterVideoIndex.update { _ -> Pair(-1, -1) }
     }
 
     fun changeEpisode(previous: Boolean, autoPlay: Boolean = false) {
         if (previous && !hasPreviousEpisode.value) {
-            activity.toast(activity.stringResource(MR.strings.no_prev_episode))
+            activity.showToast(activity.stringResource(MR.strings.no_prev_episode))
             return
         }
 
         if (!previous && !hasNextEpisode.value) {
-            activity.toast(activity.stringResource(MR.strings.no_next_episode))
+            activity.showToast(activity.stringResource(MR.strings.no_next_episode))
             return
         }
 
-        activity.changeEpisode(getAdjacentEpisodeId(previous = previous), autoPlay = autoPlay)
+        activity.changeEpisode(
+            episodeId = getAdjacentEpisodeId(previous = previous),
+            autoPlay = autoPlay,
+        )
     }
 
     fun handleLeftDoubleTap() {
@@ -763,6 +1022,20 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+    fun updateCastProgress(position: Float) {
+        _pos.update { position }
+    }
+
+    fun resumeFromCast() {
+        val lastPosition = _pos.value
+
+        logcat { "Reanudando el video local desde: $lastPosition segundos" }
+
+        if (lastPosition > 0) {
+            seekTo(lastPosition.toInt()) // Mueve el reproductor local a la última posición
+        }
+    }
+
     // ====== OLD ======
 
     private val eventChannel = Channel<Event>()
@@ -786,7 +1059,7 @@ class PlayerViewModel @JvmOverloads constructor(
     /**
      * The current video's quality index. Used to restore from process kill.
      */
-    private var qualityIndex = savedState.get<Int>("quality_index") ?: 0
+    private var qualityIndex = savedState.get<Pair<Int, Int>>("quality_index") ?: Pair(-1, -1)
         set(value) {
             savedState["quality_index"] = value
             field = value
@@ -802,8 +1075,6 @@ class PlayerViewModel @JvmOverloads constructor(
         }
 
     private var episodeToDownload: Download? = null
-
-    var currentVideoList: List<Video>? = null
 
     private fun filterEpisodeList(episodes: List<Episode>): List<Episode> {
         val anime = currentAnime.value ?: return episodes
@@ -870,6 +1141,12 @@ class PlayerViewModel @JvmOverloads constructor(
         _hasPreviousEpisode.update { _ -> value }
     }
 
+    fun showEpisodeListDialog() {
+        if (currentAnime.value != null) {
+            showDialog(Dialogs.EpisodeList)
+        }
+    }
+
     /**
      * Called when the activity is saved and not changing configurations. It updates the database
      * to persist the current progress of the active episode.
@@ -881,6 +1158,12 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+    // ====== Initialize anime, episode, hoster, and video list ======
+
+    fun updateIsLoadingHosters(value: Boolean) {
+        _isLoadingHosters.update { _ -> value }
+    }
+
     /**
      * Whether this presenter is initialized yet.
      */
@@ -888,21 +1171,32 @@ class PlayerViewModel @JvmOverloads constructor(
         return currentAnime.value == null || currentEpisode.value == null
     }
 
-    /**
-     * Initializes this presenter with the given [animeId] and [initialEpisodeId]. This method will
-     * fetch the anime from the database and initialize the episode.
-     */
+    data class InitResult(
+        val hosterList: List<Hoster>?,
+        val videoIndex: Pair<Int, Int>,
+        val position: Long?,
+    )
+
+    private var currentHosterList: List<Hoster>? = null
+
+    class ExceptionWithStringResource(
+        message: String,
+        val stringResource: StringResource,
+    ) : Exception(message)
+
     suspend fun init(
         animeId: Long,
         initialEpisodeId: Long,
-        vidList: String,
+        hostList: String,
+        hostIndex: Int,
         vidIndex: Int,
     ): Pair<InitResult, Result<Boolean>> {
-        val defaultResult = InitResult(currentVideoList, 0, null)
+        val defaultResult = InitResult(currentHosterList, qualityIndex, null)
         if (!needsInit()) return Pair(defaultResult, Result.success(true))
         return try {
             val anime = getAnime.await(animeId)
             if (anime != null) {
+                _currentAnime.update { _ -> anime }
                 animeTitle.update { _ -> anime.title }
                 sourceManager.isInitialized.first { it }
                 if (episodeId == -1L) episodeId = initialEpisodeId
@@ -912,36 +1206,49 @@ class PlayerViewModel @JvmOverloads constructor(
                 updateEpisodeList(initEpisodeList(anime))
 
                 val episode = currentPlaylist.value.first { it.id == episodeId }
-                mediaTitle.update { _ -> episode.name }
-
                 val source = sourceManager.getOrStub(anime.source)
 
                 _currentEpisode.update { _ -> episode }
-                _currentAnime.update { _ -> anime }
                 _currentSource.update { _ -> source }
+
+                updateEpisode(episode)
 
                 _hasPreviousEpisode.update { _ -> getCurrentEpisodeIndex() != 0 }
                 _hasNextEpisode.update { _ -> getCurrentEpisodeIndex() != currentPlaylist.value.size - 1 }
 
-                val currentEp = currentEpisode.value ?: throw Exception("No episode loaded.")
-                if (vidList.isNotBlank()) {
-                    currentVideoList = vidList.toVideoList().ifEmpty {
-                        currentVideoList = null
-                        throw Exception("Video selected from empty list?")
+                // Write to mpv table
+                MPVLib.setPropertyString("user-data/current-anime/anime-title", anime.title)
+                MPVLib.setPropertyInt("user-data/current-anime/intro-length", getAnimeSkipIntroLength())
+                MPVLib.setPropertyString(
+                    "user-data/current-anime/category",
+                    getAnimeCategories.await(anime.id).joinToString {
+                        it.name
+                    },
+                )
+
+                val currentEp = currentEpisode.value
+                    ?: throw ExceptionWithStringResource("No episode loaded", MR.strings.no_episode_loaded)
+                if (hostList.isNotBlank()) {
+                    currentHosterList = hostList.toHosterList().ifEmpty {
+                        currentHosterList = null
+                        throw ExceptionWithStringResource(
+                            "Hoster selected from empty list",
+                            MR.strings.select_hoster_from_empty_list,
+                        )
                     }
-                    qualityIndex = vidIndex
+                    qualityIndex = Pair(hostIndex, vidIndex)
                 } else {
-                    EpisodeLoader.getLinks(currentEp.toDomainEpisode()!!, anime, source)
+                    EpisodeLoader.getHosters(currentEp.toDomainEpisode()!!, anime, source)
                         .takeIf { it.isNotEmpty() }
-                        ?.also { currentVideoList = it }
+                        ?.also { currentHosterList = it }
                         ?: run {
-                            currentVideoList = null
-                            throw Exception("Video list is empty.")
+                            currentHosterList = null
+                            throw ExceptionWithStringResource("Hoster list is empty", MR.strings.no_hosters)
                         }
                 }
 
                 val result = InitResult(
-                    videoList = currentVideoList,
+                    hosterList = currentHosterList,
                     videoIndex = qualityIndex,
                     position = episodePosition,
                 )
@@ -955,11 +1262,11 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    data class InitResult(
-        val videoList: List<Video>?,
-        val videoIndex: Int,
-        val position: Long?,
-    )
+    private fun updateEpisode(episode: Episode) {
+        mediaTitle.update { _ -> episode.name }
+        _isEpisodeOnline.update { _ -> isEpisodeOnline() == true }
+        MPVLib.setPropertyDouble("user-data/current-anime/episode-number", episode.episode_number.toDouble())
+    }
 
     private fun initEpisodeList(anime: Anime): List<Episode> {
         val episodes = runBlocking { getEpisodesByAnimeId.await(anime.id) }
@@ -982,28 +1289,254 @@ class PlayerViewModel @JvmOverloads constructor(
         hasTrackers = tracks.isNotEmpty()
     }
 
-    suspend fun loadEpisode(episodeId: Long?): Pair<List<Video>?, String>? {
+    private var getHosterVideoLinksJob: Job? = null
+
+    fun cancelHosterVideoLinksJob() {
+        getHosterVideoLinksJob?.cancel()
+    }
+
+    /**
+     * Set the video list for hosters.
+     */
+    fun loadHosters(source: AnimeSource, hosterList: List<Hoster>, hosterIndex: Int, videoIndex: Int) {
+        val hasFoundPreferredVideo = AtomicBoolean(false)
+
+        _hosterList.update { _ -> hosterList }
+        _hosterExpandedList.update { _ ->
+            List(hosterList.size) { true }
+        }
+
+        getHosterVideoLinksJob?.cancel()
+        getHosterVideoLinksJob = viewModelScope.launchIO {
+            _hosterState.update { _ ->
+                hosterList.map { hoster ->
+                    if (hoster.videoList == null) {
+                        HosterState.Loading(hoster.hosterName)
+                    } else {
+                        val videoList = hoster.videoList!!
+                        HosterState.Ready(
+                            hoster.hosterName,
+                            videoList,
+                            List(videoList.size) { Video.State.QUEUE },
+                        )
+                    }
+                }
+            }
+
+            try {
+                coroutineScope {
+                    hosterList.mapIndexed { hosterIdx, hoster ->
+                        async {
+                            val hosterState = EpisodeLoader.loadHosterVideos(source, hoster)
+
+                            _hosterState.updateAt(hosterIdx, hosterState)
+
+                            if (hosterState is HosterState.Ready) {
+                                if (hosterIdx == hosterIndex) {
+                                    hosterState.videoList.getOrNull(videoIndex)?.let {
+                                        hasFoundPreferredVideo.set(true)
+                                        val success = loadVideo(source, it, hosterIndex, videoIndex)
+                                        if (!success) {
+                                            hasFoundPreferredVideo.set(false)
+                                        }
+                                    }
+                                }
+
+                                val prefIndex = hosterState.videoList.indexOfFirst { it.preferred }
+                                if (prefIndex != -1 && hosterIndex == -1) {
+                                    if (hasFoundPreferredVideo.compareAndSet(false, true)) {
+                                        if (selectedHosterVideoIndex.value == Pair(-1, -1)) {
+                                            val success =
+                                                loadVideo(
+                                                    source,
+                                                    hosterState.videoList[prefIndex],
+                                                    hosterIdx,
+                                                    prefIndex,
+                                                )
+                                            if (!success) {
+                                                hasFoundPreferredVideo.set(false)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }.awaitAll()
+
+                    if (hasFoundPreferredVideo.compareAndSet(false, true)) {
+                        val (hosterIdx, videoIdx) = HosterLoader.selectBestVideo(hosterState.value)
+                        if (hosterIdx == -1) {
+                            throw ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)
+                        }
+
+                        val video = (hosterState.value[hosterIdx] as HosterState.Ready).videoList[videoIdx]
+
+                        loadVideo(source, video, hosterIdx, videoIdx)
+                    }
+                }
+            } catch (e: CancellationException) {
+                _hosterState.update { _ ->
+                    hosterList.map { HosterState.Idle(it.hosterName) }
+                }
+
+                throw e
+            }
+        }
+    }
+
+    private suspend fun loadVideo(source: AnimeSource?, video: Video, hosterIndex: Int, videoIndex: Int): Boolean {
+        val selectedHosterState = (_hosterState.value[hosterIndex] as? HosterState.Ready) ?: return false
+        updateIsLoadingEpisode(true)
+
+        val oldSelectedIndex = _selectedHosterVideoIndex.value
+        _selectedHosterVideoIndex.update { _ -> Pair(hosterIndex, videoIndex) }
+
+        _hosterState.updateAt(
+            hosterIndex,
+            selectedHosterState.getChangedAt(videoIndex, video, Video.State.LOAD_VIDEO),
+        )
+
+        // Pause until everything has loaded
+        updatePausedState()
+        pause()
+
+        val resolvedVideo = if (selectedHosterState.videoState[videoIndex] != Video.State.READY) {
+            HosterLoader.getResolvedVideo(source, video)
+        } else {
+            video
+        }
+
+        if (resolvedVideo == null || resolvedVideo.videoUrl.isEmpty()) {
+            if (currentVideo.value == null) {
+                _hosterState.updateAt(
+                    hosterIndex,
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.ERROR),
+                )
+
+                val (newHosterIdx, newVideoIdx) = HosterLoader.selectBestVideo(hosterState.value)
+                if (newHosterIdx == -1) {
+                    if (_hosterState.value.any { it is HosterState.Loading }) {
+                        _selectedHosterVideoIndex.update { _ -> Pair(-1, -1) }
+                        return false
+                    } else {
+                        throw ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)
+                    }
+                }
+
+                val newVideo = (hosterState.value[newHosterIdx] as HosterState.Ready).videoList[newVideoIdx]
+
+                return loadVideo(source, newVideo, newHosterIdx, newVideoIdx)
+            } else {
+                _selectedHosterVideoIndex.update { _ -> oldSelectedIndex }
+                _hosterState.updateAt(
+                    hosterIndex,
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.ERROR),
+                )
+                return false
+            }
+        }
+
+        _hosterState.updateAt(
+            hosterIndex,
+            selectedHosterState.getChangedAt(videoIndex, resolvedVideo, Video.State.READY),
+        )
+
+        _currentVideo.update { _ -> resolvedVideo }
+
+        qualityIndex = Pair(hosterIndex, videoIndex)
+
+        activity.setVideo(resolvedVideo)
+        return true
+    }
+
+    fun onVideoClicked(hosterIndex: Int, videoIndex: Int) {
+        val hosterState = _hosterState.value[hosterIndex] as? HosterState.Ready
+        val video = hosterState?.videoList
+            ?.getOrNull(videoIndex)
+            ?: return // Shouldn't happen, but just in case™
+
+        val videoState = hosterState.videoState
+            .getOrNull(videoIndex)
+            ?: return
+
+        if (videoState == Video.State.ERROR) {
+            return
+        }
+
+        viewModelScope.launchIO {
+            val success = loadVideo(currentSource.value, video, hosterIndex, videoIndex)
+            if (success) {
+                if (sheetShown.value == Sheets.QualityTracks) {
+                    dismissSheet()
+                }
+            } else {
+                updateIsLoadingEpisode(false)
+            }
+        }
+    }
+
+    fun onHosterClicked(index: Int) {
+        when (hosterState.value[index]) {
+            is HosterState.Ready -> {
+                _hosterExpandedList.updateAt(index, !_hosterExpandedList.value[index])
+            }
+            is HosterState.Idle -> {
+                val hosterName = hosterList.value[index].hosterName
+                _hosterState.updateAt(index, HosterState.Loading(hosterName))
+
+                viewModelScope.launchIO {
+                    val hosterState = EpisodeLoader.loadHosterVideos(currentSource.value!!, hosterList.value[index])
+                    _hosterState.updateAt(index, hosterState)
+                }
+            }
+            is HosterState.Loading, is HosterState.Error -> {}
+        }
+    }
+
+    private fun <T> MutableStateFlow<List<T>>.updateAt(index: Int, newValue: T) {
+        this.update { values ->
+            values.toMutableList().apply {
+                this[index] = newValue
+            }
+        }
+    }
+
+    data class EpisodeLoadResult(
+        val hosterList: List<Hoster>?,
+        val episodeTitle: String,
+        val source: AnimeSource,
+    )
+
+    suspend fun loadEpisode(episodeId: Long?): EpisodeLoadResult? {
         val anime = currentAnime.value ?: return null
         val source = sourceManager.getOrStub(anime.source)
 
         val chosenEpisode = currentPlaylist.value.firstOrNull { ep -> ep.id == episodeId } ?: return null
 
         _currentEpisode.update { _ -> chosenEpisode }
+        updateEpisode(chosenEpisode)
 
         return withIOContext {
             try {
-                val currentEpisode = currentEpisode.value ?: throw Exception("No episode loaded.")
-                currentVideoList = EpisodeLoader.getLinks(
+                val currentEpisode =
+                    currentEpisode.value
+                        ?: throw ExceptionWithStringResource("No episode loaded", MR.strings.no_episode_loaded)
+                currentHosterList = EpisodeLoader.getHosters(
                     currentEpisode.toDomainEpisode()!!,
                     anime,
                     source,
                 )
+
                 this@PlayerViewModel.episodeId = currentEpisode.id!!
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e) { e.message ?: "Error getting links" }
             }
 
-            Pair(currentVideoList, anime.title + " - " + chosenEpisode.name)
+            EpisodeLoadResult(
+                hosterList = currentHosterList,
+                episodeTitle = anime.title + " - " + chosenEpisode.name,
+                source = source,
+            )
         }
     }
 
@@ -1015,6 +1548,7 @@ class PlayerViewModel @JvmOverloads constructor(
         if (isLoadingEpisode.value) return
         val currentEp = currentEpisode.value ?: return
         if (episodeId == -1L) return
+        if (duration == 0) return
 
         val seconds = position * 1000L
         val totalSeconds = duration * 1000L
@@ -1307,12 +1841,14 @@ class PlayerViewModel @JvmOverloads constructor(
     /**
      * Returns the skipIntroLength used by this anime or the default one.
      */
-    fun getAnimeSkipIntroLength(resolveDefault: Boolean = true): Int {
+    fun getAnimeSkipIntroLength(): Int {
         val default = gesturePreferences.defaultIntroLength().get()
         val anime = currentAnime.value ?: return default
         val skipIntroLength = anime.skipIntroLength
+        val skipIntroDisable = anime.skipIntroDisable
         return when {
-            resolveDefault && skipIntroLength <= 0 -> default
+            skipIntroDisable -> 0
+            skipIntroLength <= 0 -> default
             else -> anime.skipIntroLength
         }
     }
@@ -1322,9 +1858,11 @@ class PlayerViewModel @JvmOverloads constructor(
      */
     fun setAnimeSkipIntroLength(skipIntroLength: Long) {
         val anime = currentAnime.value ?: return
+        if (!anime.favorite) return
+        // Skip unnecessary database operation
+        if (skipIntroLength == getAnimeSkipIntroLength().toLong()) return
         viewModelScope.launchIO {
             setAnimeViewerFlags.awaitSetSkipIntroLength(anime.id, skipIntroLength)
-            logcat(LogPriority.INFO) { "New Skip Intro Length is ${anime.skipIntroLength}" }
             _currentAnime.update { _ -> getAnime.await(anime.id) }
         }
     }
@@ -1349,7 +1887,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Returns the response of the AniSkipApi for this episode.
      * just works if tracking is enabled.
      */
-    suspend fun aniSkipResponse(playerDuration: Int?): List<Stamp>? {
+    suspend fun aniSkipResponse(playerDuration: Int?): List<TimeStamp>? {
         val animeId = currentAnime.value?.id ?: return null
         val trackerManager = Injekt.get<TrackerManager>()
         var malId: Long?
@@ -1374,101 +1912,108 @@ class PlayerViewModel @JvmOverloads constructor(
         return null
     }
 
-    val aniSkipEnable = gesturePreferences.aniSkipEnabled().get()
-    private val netflixStyle = gesturePreferences.enableNetflixStyleAniSkip().get()
+    val introSkipEnabled = playerPreferences.enableSkipIntro().get()
+    private val autoSkip = playerPreferences.autoSkipIntro().get()
+    private val netflixStyle = playerPreferences.enableNetflixStyleIntroSkip().get()
 
-    var aniSkipInterval: List<Stamp>? = null
-    private val defaultWaitingTime = gesturePreferences.waitingTimeAniSkip().get()
-    var waitingAniSkip = defaultWaitingTime
+    private val defaultWaitingTime = playerPreferences.waitingTimeIntroSkip().get()
+    var waitingSkipIntro = defaultWaitingTime
 
-    private var skipType: SkipType? = null
-
-    fun aniSkipStuff(position: Long) {
-        if (!aniSkipEnable) return
-        // if it doesn't find any interval it will show the +85 button
-        if (aniSkipInterval == null) return
-
-        val autoSkipAniSkip = gesturePreferences.autoSkipAniSkip().get()
-
-        skipType =
-            aniSkipInterval
-                ?.firstOrNull {
-                    it.interval.startTime <= position &&
-                        it.interval.endTime > position
-                }?.skipType
-        skipType?.let { skipType ->
-            if (netflixStyle) {
-                // show a toast with the seconds before the skip
-                if (waitingAniSkip == defaultWaitingTime) {
-                    activity.toast(
-                        "AniSkip: ${activity.stringResource(
-                            MR.strings.player_aniskip_dontskip_toast,
-                            skipType.getString(),
-                            waitingAniSkip,
-                        )}",
-                    )
-                }
-                showAniskipButton(aniSkipInterval!!, skipType, waitingAniSkip)
-                waitingAniSkip--
-            } else if (autoSkipAniSkip) {
-                rightSeekToWithText(
-                    seekDuration = aniSkipInterval!!.first { it.skipType == skipType }.interval.endTime.toInt(),
-                    text = activity.stringResource(MR.strings.player_aniskip_skip, skipType.getString()),
-                )
-            } else {
-                showAniskipButton(skipType)
+    fun setChapter(position: Float) {
+        getCurrentChapter(position)?.let { (chapterIndex, chapter) ->
+            if (currentChapter.value != chapter) {
+                _currentChapter.update { _ -> chapter }
             }
-        } ?: run {
-            updateAniskipButton(null)
-            waitingAniSkip = defaultWaitingTime
+
+            if (!introSkipEnabled) {
+                return
+            }
+
+            if (chapter.chapterType == ChapterType.Other) {
+                _skipIntroText.update { _ -> null }
+                waitingSkipIntro = defaultWaitingTime
+            } else {
+                val nextChapterPos = chapters.value.getOrNull(chapterIndex + 1)?.start ?: pos.value
+
+                if (netflixStyle) {
+                    // show a toast with the seconds before the skip
+                    if (waitingSkipIntro == defaultWaitingTime) {
+                        activity.showToast(
+                            "Skip Intro: ${activity.stringResource(
+                                MR.strings.player_aniskip_dontskip_toast,
+                                chapter.name,
+                                waitingSkipIntro,
+                            )}",
+                        )
+                    }
+                    showSkipIntroButton(chapter, nextChapterPos, waitingSkipIntro)
+                    waitingSkipIntro--
+                } else if (autoSkip) {
+                    seekToWithText(
+                        seekValue = nextChapterPos.toInt(),
+                        text = activity.stringResource(MR.strings.player_intro_skipped, chapter.name),
+                    )
+                } else {
+                    updateSkipIntroButton(chapter.chapterType)
+                }
+            }
         }
     }
 
-    private fun showAniskipButton(skipType: SkipType) {
-        val skipButtonString = when (skipType) {
-            SkipType.ED -> MR.strings.player_aniskip_ed
-            SkipType.OP -> MR.strings.player_aniskip_op
-            SkipType.RECAP -> MR.strings.player_aniskip_recap
-            SkipType.MIXED_OP -> MR.strings.player_aniskip_mixedOp
-        }
+    private fun updateSkipIntroButton(chapterType: ChapterType) {
+        val skipButtonString = chapterType.getStringRes()
 
-        updateAniskipButton(activity.stringResource(skipButtonString))
+        _skipIntroText.update { _ ->
+            skipButtonString?.let {
+                activity.stringResource(
+                    MR.strings.player_skip_action,
+                    activity.stringResource(skipButtonString),
+                )
+            }
+        }
     }
 
-    private fun showAniskipButton(aniSkipResponse: List<Stamp>, skipType: SkipType, waitingTime: Int) {
-        val skipTime = when (skipType) {
-            SkipType.ED -> aniSkipResponse.first { it.skipType == SkipType.ED }.interval
-            SkipType.OP -> aniSkipResponse.first { it.skipType == SkipType.OP }.interval
-            SkipType.RECAP -> aniSkipResponse.first { it.skipType == SkipType.RECAP }.interval
-            SkipType.MIXED_OP -> aniSkipResponse.first { it.skipType == SkipType.MIXED_OP }.interval
-        }
+    private fun showSkipIntroButton(chapter: IndexedSegment, nextChapterPos: Float, waitingTime: Int) {
         if (waitingTime > -1) {
             if (waitingTime > 0) {
-                updateAniskipButton(activity.stringResource(MR.strings.player_aniskip_dontskip))
+                _skipIntroText.update { _ -> activity.stringResource(MR.strings.player_aniskip_dontskip) }
             } else {
-                rightSeekToWithText(
-                    seekDuration = skipTime.endTime.toInt(),
-                    text = activity.stringResource(MR.strings.player_aniskip_skip, skipType.getString()),
+                seekToWithText(
+                    seekValue = nextChapterPos.toInt(),
+                    text = activity.stringResource(MR.strings.player_aniskip_skip, chapter.name),
                 )
             }
         } else {
             // when waitingTime is -1, it means that the user cancelled the skip
-            showAniskipButton(skipType)
+            updateSkipIntroButton(chapter.chapterType)
         }
     }
 
-    fun aniskipPressed() {
-        if (skipType != null) {
+    fun onSkipIntro() {
+        getCurrentChapter()?.let { (chapterIndex, chapter) ->
             // this stops the counter
-            if (waitingAniSkip > 0 && netflixStyle) {
-                waitingAniSkip = -1
+            if (waitingSkipIntro > 0 && netflixStyle) {
+                waitingSkipIntro = -1
                 return
             }
-            rightSeekToWithText(
-                seekDuration = aniSkipInterval!!.first { it.skipType == skipType }.interval.endTime.toInt(),
-                text = activity.stringResource(MR.strings.player_aniskip_skip, skipType!!.getString()),
+
+            val nextChapterPos = chapters.value.getOrNull(chapterIndex + 1)?.start ?: pos.value
+
+            seekToWithText(
+                seekValue = nextChapterPos.toInt(),
+                text = activity.stringResource(MR.strings.player_aniskip_skip, chapter.name),
             )
         }
+    }
+
+    private fun getCurrentChapter(position: Float? = null): IndexedValue<IndexedSegment>? {
+        return chapters.value.withIndex()
+            .filter { it.value.start <= (position ?: pos.value) }
+            .maxByOrNull { it.value.start }
+    }
+
+    fun setPrimaryCustomButtonTitle(button: CustomButton) {
+        _primaryButtonTitle.update { _ -> button.name }
     }
 
     sealed class Event {
@@ -1476,6 +2021,14 @@ class PlayerViewModel @JvmOverloads constructor(
         data class SavedImage(val result: SaveImageResult) : Event()
         data class ShareImage(val uri: Uri, val seconds: String) : Event()
     }
+}
+
+fun CustomButton.execute() {
+    MPVLib.command(arrayOf("script-message", "call_button_$id"))
+}
+
+fun CustomButton.executeLongPress() {
+    MPVLib.command(arrayOf("script-message", "call_button_${id}_long"))
 }
 
 fun Float.normalize(inMin: Float, inMax: Float, outMin: Float, outMax: Float): Float {

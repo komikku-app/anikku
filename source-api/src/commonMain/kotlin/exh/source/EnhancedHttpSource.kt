@@ -1,5 +1,6 @@
 package exh.source
 
+import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.source.model.AnimesPage
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SAnime
@@ -89,6 +90,9 @@ class EnhancedHttpSource(
      * @param response the response from the site.
      */
     override fun episodeVideoParse(response: Response) =
+        throw UnsupportedOperationException("Should never be called!")
+
+    override fun hosterListParse(response: Response) =
         throw UnsupportedOperationException("Should never be called!")
 
     /**
@@ -235,6 +239,8 @@ class EnhancedHttpSource(
      * [1.x API] Get the list of videos a episode has.
      */
     override suspend fun getVideoList(episode: SEpisode): List<Video> = source().getVideoList(episode)
+    override fun videoListParse(response: Response, hoster: Hoster) =
+        throw UnsupportedOperationException("Should never be called!")
 
     /**
      * Returns an observable with the video containing the source url of the video. If there's any

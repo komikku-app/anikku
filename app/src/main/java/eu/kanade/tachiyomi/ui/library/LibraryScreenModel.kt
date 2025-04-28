@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.compareToWithCollator
@@ -75,6 +76,7 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.GetTracksPerAnime
 import tachiyomi.domain.track.model.Track
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
@@ -323,9 +325,10 @@ class LibraryScreenModel(
 
         fun LibrarySort.comparator(): Comparator<LibraryItem> = Comparator { i1, i2 ->
             // SY -->
+            // Use groupSort when provided, otherwise use the sort from the category
             val sort = groupSort ?: keys.find { it.id == i1.libraryAnime.category }!!.sort
             // SY <--
-            when (this.type) {
+            when (sort.type) {
                 LibrarySort.Type.Alphabetical -> {
                     sortAlphabetically(i1, i2)
                 }
@@ -338,8 +341,8 @@ class LibraryScreenModel(
                 LibrarySort.Type.UnseenCount -> when {
                     // Ensure unseen content comes first
                     i1.libraryAnime.unseenCount == i2.libraryAnime.unseenCount -> 0
-                    i1.libraryAnime.unseenCount == 0L -> if (this.isAscending) 1 else -1
-                    i2.libraryAnime.unseenCount == 0L -> if (this.isAscending) -1 else 1
+                    i1.libraryAnime.unseenCount == 0L -> if (sort.isAscending) 1 else -1
+                    i2.libraryAnime.unseenCount == 0L -> if (sort.isAscending) -1 else 1
                     else -> i1.libraryAnime.unseenCount.compareTo(i2.libraryAnime.unseenCount)
                 }
                 LibrarySort.Type.TotalEpisodes -> {
@@ -360,8 +363,8 @@ class LibraryScreenModel(
                     item1Score.compareTo(item2Score)
                 }
                 LibrarySort.Type.AiringTime -> when {
-                    i1.libraryAnime.anime.nextEpisodeAiringAt == 0L -> if (this.isAscending) 1 else -1
-                    i2.libraryAnime.anime.nextEpisodeAiringAt == 0L -> if (this.isAscending) -1 else 1
+                    i1.libraryAnime.anime.nextEpisodeAiringAt == 0L -> if (sort.isAscending) 1 else -1
+                    i2.libraryAnime.anime.nextEpisodeAiringAt == 0L -> if (sort.isAscending) -1 else 1
                     i1.libraryAnime.unseenCount == i2.libraryAnime.unseenCount ->
                         i1.libraryAnime.anime.nextEpisodeAiringAt.compareTo(
                             i2.libraryAnime.anime.nextEpisodeAiringAt,
@@ -382,8 +385,10 @@ class LibraryScreenModel(
                 return@mapValues value.shuffled(Random(libraryPreferences.randomSortSeed().get()))
             }
 
-            val comparator = key.sort.comparator()
-                .let { if (key.sort.isAscending) it else it.reversed() }
+            // Use groupSort if we're in a grouped mode, otherwise use the category's sort
+            val sortMode = groupSort ?: key.sort
+            val comparator = sortMode.comparator()
+                .let { if (sortMode.isAscending) it else it.reversed() }
                 .thenComparator(sortAlphabetically)
 
             value.sortedWith(comparator)
@@ -901,23 +906,25 @@ class LibraryScreenModel(
                 }
             }
             LibraryGroup.BY_TAG -> {
-                val tags: List<String> = libraryAnime.flatMap { item ->
-                    item.libraryAnime.anime.genre?.distinct() ?: emptyList()
+                val defaultTag = context.stringResource(SYMR.strings.ungrouped)
+                val tags = libraryAnime.flatMap { it.libraryAnime.anime.genre.orEmpty() }.distinct()
+                val groupedAnime = libraryAnime.flatMap { item ->
+                    item.libraryAnime.anime.genre?.map { it to item } ?: listOf(defaultTag to item)
+                }.groupBy({ it.first }, { it.second }).toList()
+
+                val (bigGroups, defaultGroups) = groupedAnime.partition { (genre, groups) -> genre != defaultTag && groups.size > 3 }
+                val groupedEntries = bigGroups.flatMap { it.second }
+                val defaultGroupEntries = defaultGroups.flatMap { it.second }.distinct().filterNot { it in groupedEntries }
+
+                (bigGroups + (defaultTag to defaultGroupEntries)).toMap().mapKeys { (genre, _) ->
+                    Category(
+                        id = genre.hashCode().toLong(),
+                        name = genre,
+                        order = tags.indexOf(genre).takeUnless { it == -1 }?.toLong() ?: Long.MAX_VALUE,
+                        flags = 0,
+                        hidden = false,
+                    )
                 }
-                libraryAnime.flatMap { item ->
-                    item.libraryAnime.anime.genre?.distinct()?.map { genre ->
-                        Pair(genre, item)
-                    } ?: emptyList()
-                }.groupBy({ it.first }, { it.second }).filterValues { it.size > 3 }
-                    .mapKeys { (genre, _) ->
-                        Category(
-                            id = genre.hashCode().toLong(),
-                            name = genre,
-                            order = tags.indexOf(genre).takeUnless { it == -1 }?.toLong() ?: Long.MAX_VALUE,
-                            flags = 0,
-                            hidden = false,
-                        )
-                    }
             }
             else -> {
                 libraryAnime.groupBy { item ->

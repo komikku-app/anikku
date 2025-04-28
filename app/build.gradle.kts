@@ -156,6 +156,9 @@ dependencies {
     // SY -->
     implementation(projects.i18nSy)
     // SY <--
+    // ANK
+    implementation(projects.i18nAnk)
+    // ANK
     implementation(projects.core.archive)
     implementation(projects.core.common)
     implementation(projects.coreMetadata)

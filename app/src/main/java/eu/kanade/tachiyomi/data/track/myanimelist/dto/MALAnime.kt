@@ -23,4 +23,5 @@ data class MALAnime(
 @Serializable
 data class MALAnimeCovers(
     val large: String = "",
+    val medium: String,
 )

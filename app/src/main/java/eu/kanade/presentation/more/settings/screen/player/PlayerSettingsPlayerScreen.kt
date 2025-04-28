@@ -11,8 +11,8 @@ import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.tachiyomi.data.torrentServer.TorrentServerPreferences
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
+import eu.kanade.tachiyomi.torrentServer.TorrentServerPreferences
 import eu.kanade.tachiyomi.ui.player.AMNIS
 import eu.kanade.tachiyomi.ui.player.JUST_PLAYER
 import eu.kanade.tachiyomi.ui.player.MPV_KT
@@ -28,11 +28,14 @@ import eu.kanade.tachiyomi.ui.player.VLC_PLAYER
 import eu.kanade.tachiyomi.ui.player.WEB_VIDEO_CASTER
 import eu.kanade.tachiyomi.ui.player.X_PLAYER
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.util.LocalHttpServerHolder
+import eu.kanade.tachiyomi.util.LocalHttpServerService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -51,6 +54,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
         val basePreferences = remember { Injekt.get<BasePreferences>() }
         val torrentServerPreferences = remember { Injekt.get<TorrentServerPreferences>() }
         val deviceSupportsPip = basePreferences.deviceHasPip()
+        val localHttpServerHolder = remember { Injekt.get<LocalHttpServerHolder>() }
 
         return listOfNotNull(
             Preference.PreferenceItem.ListPreference(
@@ -79,13 +83,16 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 }.toPersistentMap(),
             ),
             getControlsGroup(playerPreferences = playerPreferences),
+            getHosterGroup(playerPreferences = playerPreferences),
             getDisplayGroup(playerPreferences = playerPreferences),
+            getIntroSkipGroup(playerPreferences = playerPreferences),
             if (deviceSupportsPip) getPipGroup(playerPreferences = playerPreferences) else null,
             getExternalPlayerGroup(
                 playerPreferences = playerPreferences,
                 basePreferences = basePreferences,
             ),
             getTorrentServerGroup(torrentServerPreferences),
+            geCastServerGroup(localHttpServerHolder),
         )
     }
 
@@ -120,6 +127,26 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     pref = rememberPlayerVolume,
                     title = stringResource(MR.strings.pref_remember_volume),
+                ),
+            ),
+        )
+    }
+
+    @Composable
+    private fun getHosterGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
+        val showFailure = playerPreferences.showFailedHosters()
+        val showEmpty = playerPreferences.showEmptyHosters()
+
+        return Preference.PreferenceGroup(
+            title = stringResource(MR.strings.pref_hosters),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = showFailure,
+                    title = stringResource(MR.strings.pref_hosters_show_failure),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = showEmpty,
+                    title = stringResource(MR.strings.pref_hosters_show_empty),
                 ),
             ),
         )
@@ -185,6 +212,68 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
     }
 
     @Composable
+    private fun getIntroSkipGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
+        val enableSkipIntro = playerPreferences.enableSkipIntro()
+        val isIntroSkipEnabled by enableSkipIntro.collectAsState()
+
+        val enableAutoAniSkip = playerPreferences.autoSkipIntro()
+        val enableNetflixAniSkip = playerPreferences.enableNetflixStyleIntroSkip()
+        val waitingTimeAniSkip = playerPreferences.waitingTimeIntroSkip()
+
+        // AniSkip
+        val enableAniSkip = playerPreferences.aniSkipEnabled()
+        val disableAniSkipChapters = playerPreferences.disableAniSkipOnChapters()
+        val isAniSkipEnabled by enableAniSkip.collectAsState()
+
+        return Preference.PreferenceGroup(
+            title = stringResource(MR.strings.pref_category_intro_skip),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = enableSkipIntro,
+                    title = stringResource(MR.strings.pref_enable_intro_skip),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = enableAutoAniSkip,
+                    title = stringResource(MR.strings.pref_enable_auto_skip_ani_skip),
+                    enabled = isIntroSkipEnabled,
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = enableNetflixAniSkip,
+                    title = stringResource(MR.strings.pref_enable_netflix_style_aniskip),
+                    enabled = isIntroSkipEnabled,
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    pref = waitingTimeAniSkip,
+                    title = stringResource(MR.strings.pref_waiting_time_aniskip),
+                    entries = persistentMapOf(
+                        5 to stringResource(MR.strings.pref_waiting_time_aniskip_5),
+                        6 to stringResource(MR.strings.pref_waiting_time_aniskip_6),
+                        7 to stringResource(MR.strings.pref_waiting_time_aniskip_7),
+                        8 to stringResource(MR.strings.pref_waiting_time_aniskip_8),
+                        9 to stringResource(MR.strings.pref_waiting_time_aniskip_9),
+                        10 to stringResource(MR.strings.pref_waiting_time_aniskip_10),
+                    ),
+                    enabled = isIntroSkipEnabled,
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = enableAniSkip,
+                    title = stringResource(MR.strings.pref_enable_aniskip),
+                    enabled = isIntroSkipEnabled,
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = disableAniSkipChapters,
+                    title = stringResource(MR.strings.pref_disable_aniskip_chapter),
+                    enabled = isIntroSkipEnabled && isAniSkipEnabled,
+                ),
+                Preference.PreferenceItem.InfoPreference(
+                    title = stringResource(MR.strings.pref_category_player_aniskip_info),
+                    enabled = isIntroSkipEnabled,
+                ),
+            ),
+        )
+    }
+
+    @Composable
     private fun getPipGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
         val enablePip = playerPreferences.enablePip()
         val pipEpisodeToasts = playerPreferences.pipEpisodeToasts()
@@ -224,11 +313,11 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
     private fun getCastGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
         val enableCast = playerPreferences.enableCast()
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_category_cast),
+            title = stringResource(AMR.strings.pref_category_cast),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     pref = enableCast,
-                    title = stringResource(MR.strings.pref_enable_cast),
+                    title = stringResource(AMR.strings.pref_enable_cast),
                 ),
             ),
         )
@@ -281,11 +370,11 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
         val trackers by trackersPref.collectAsState()
 
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_category_torrentserver),
+            title = stringResource(AMR.strings.pref_category_torrentserver),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.EditTextPreference(
                     pref = torrentServerPreferences.port(),
-                    title = stringResource(MR.strings.pref_torrentserver_port),
+                    title = stringResource(AMR.strings.pref_torrentserver_port),
                     onValueChanged = {
                         try {
                             Integer.parseInt(it)
@@ -298,7 +387,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.MultiLineEditTextPreference(
                     pref = torrentServerPreferences.trackers(),
-                    title = context.stringResource(MR.strings.pref_torrent_trackers),
+                    title = context.stringResource(AMR.strings.pref_torrent_trackers),
                     subtitle = trackersPref.asState(scope).value
                         .lines().take(2)
                         .joinToString(
@@ -311,11 +400,35 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_reset_torrent_trackers_string),
+                    title = stringResource(AMR.strings.pref_reset_torrent_trackers_string),
                     enabled = remember(trackers) { trackers != trackersPref.defaultValue() },
                     onClick = {
                         trackersPref.delete()
                         context.stringResource(MR.strings.requires_app_restart)
+                    },
+                ),
+            ),
+        )
+    }
+
+    @Composable
+    private fun geCastServerGroup(
+        localHttpServerHolder: LocalHttpServerHolder,
+    ): Preference.PreferenceGroup {
+        return Preference.PreferenceGroup(
+            title = stringResource(AMR.strings.pref_category_castserver),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.EditTextPreference(
+                    pref = localHttpServerHolder.port(),
+                    title = stringResource(AMR.strings.pref_cast_server_port),
+                    onValueChanged = {
+                        try {
+                            Integer.parseInt(it)
+                            LocalHttpServerService.stop()
+                            true
+                        } catch (e: Exception) {
+                            false
+                        }
                     },
                 ),
             ),

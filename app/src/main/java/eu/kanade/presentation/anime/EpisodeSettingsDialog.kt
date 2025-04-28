@@ -25,6 +25,7 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.RadioItem
 import tachiyomi.presentation.core.components.SortItem
@@ -139,7 +140,7 @@ private fun ColumnScope.FilterPage(
     )
     // AM (FILLERMARK) -->
     TriStateItem(
-        label = stringResource(MR.strings.action_filter_fillermarked),
+        label = stringResource(AMR.strings.action_filter_fillermarked),
         state = fillermarkedFilter,
         onClick = onFillermarkedFilterChanged,
     )
@@ -154,7 +155,7 @@ private fun ColumnScope.SortPage(
 ) {
     listOf(
         MR.strings.sort_by_source to Anime.EPISODE_SORTING_SOURCE,
-        MR.strings.sort_by_number to Anime.EPISODE_SORTING_NUMBER,
+        MR.strings.sort_by_episode_number to Anime.EPISODE_SORTING_NUMBER,
         MR.strings.sort_by_upload_date to Anime.EPISODE_SORTING_UPLOAD_DATE,
         MR.strings.action_sort_alpha to Anime.EPISODE_SORTING_ALPHABET,
     ).map { (titleRes, mode) ->

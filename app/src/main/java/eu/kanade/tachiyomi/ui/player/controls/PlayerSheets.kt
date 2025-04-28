@@ -22,13 +22,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import dev.vivvvek.seeker.Segment
-import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.ui.player.Decoder
 import eu.kanade.tachiyomi.ui.player.Panels
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.AudioTracksSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ChaptersSheet
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.MoreSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.PlaybackSpeedSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
@@ -36,6 +36,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import tachiyomi.domain.custombuttons.model.CustomButton
 import java.io.InputStream
 
 @Composable
@@ -55,9 +56,13 @@ fun PlayerSheets(
     onSelectAudio: (Int) -> Unit,
 
     // video sheet
-    videoList: ImmutableList<Video>,
-    currentVideo: Video?,
-    onSelectVideo: (Video) -> Unit,
+    isLoadingHosters: Boolean,
+    hosterState: List<HosterState>,
+    expandedState: List<Boolean>,
+    selectedVideoIndex: Pair<Int, Int>,
+    onClickHoster: (Int) -> Unit,
+    onClickVideo: (Int, Int) -> Unit,
+    displayHosters: Pair<Boolean, Boolean>,
 
     // chapters sheet
     chapter: Segment?,
@@ -75,8 +80,7 @@ fun PlayerSheets(
     // More sheet
     sleepTimerTimeRemaining: Int,
     onStartSleepTimer: (Int) -> Unit,
-    // TODO(customButtons)
-    // buttons: ImmutableList<CustomButtonEntity>,
+    buttons: ImmutableList<CustomButton>,
 
     // Screenshot sheet
     showSubtitles: Boolean,
@@ -90,6 +94,7 @@ fun PlayerSheets(
 
     onOpenPanel: (Panels) -> Unit,
     onDismissRequest: () -> Unit,
+    dismissSheet: Boolean,
 ) {
     when (sheetShown) {
         Sheets.None -> {}
@@ -129,12 +134,16 @@ fun PlayerSheets(
         }
 
         Sheets.QualityTracks -> {
-            if (videoList.isEmpty()) return
             QualitySheet(
-                videoList = videoList,
-                currentVideo = currentVideo,
-                onClick = onSelectVideo,
+                isLoadingHosters = isLoadingHosters,
+                hosterState = hosterState,
+                expandedState = expandedState,
+                selectedVideoIndex = selectedVideoIndex,
+                onClickHoster = onClickHoster,
+                onClickVideo = onClickVideo,
+                displayHosters = displayHosters,
                 onDismissRequest = onDismissRequest,
+                dismissSheet = dismissSheet,
             )
         }
 
@@ -144,7 +153,8 @@ fun PlayerSheets(
                 chapters,
                 currentChapter = chapter,
                 onClick = { onSeekToChapter(chapters.indexOf(it)) },
-                onDismissRequest,
+                onDismissRequest = onDismissRequest,
+                dismissSheet = dismissSheet,
             )
         }
 
@@ -156,8 +166,7 @@ fun PlayerSheets(
                 onStartTimer = onStartSleepTimer,
                 onDismissRequest = onDismissRequest,
                 onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
-                // TODO(customButtons)
-                // customButtons = buttons,
+                customButtons = buttons,
             )
         }
 

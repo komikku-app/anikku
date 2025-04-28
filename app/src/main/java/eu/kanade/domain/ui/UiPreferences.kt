@@ -42,6 +42,10 @@ class UiPreferences(
 
     fun navStyle() = preferenceStore.getEnum("bottom_rail_nav_style", NavStyle.MOVE_HISTORY_TO_MORE)
 
+    // SY -->
+    fun bottomBarLabels() = preferenceStore.getBoolean("pref_show_bottom_bar_labels", true)
+    // SY <--
+
     companion object {
         fun dateFormat(format: String): DateTimeFormatter = when (format) {
             "" -> DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)

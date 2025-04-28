@@ -29,6 +29,7 @@ import eu.kanade.presentation.components.DownloadDropdownMenu
 import eu.kanade.presentation.components.UpIcon
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.theme.active
 
@@ -127,7 +128,7 @@ fun AnimeToolbar(
                                 if (onClickEditInfo != null) {
                                     add(
                                         AppBar.OverflowAction(
-                                            title = stringResource(MR.strings.action_edit_info),
+                                            title = stringResource(SYMR.strings.action_edit_info),
                                             onClick = onClickEditInfo,
                                         ),
                                     )

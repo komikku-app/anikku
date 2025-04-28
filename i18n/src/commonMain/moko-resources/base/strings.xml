@@ -7,11 +7,7 @@
     <string name="not_selected">Not selected</string>
     <string name="action_menu_overflow_description">More options</string>
     <string name="action_bar_up_description">Navigate up</string>
-
-    <string name="app_name" translatable="false">Anikku</string>
-    <!-- unpublished -> 4C1B4D71 / published -> F033F567 -->
-    <string name="app_cast_id" translatable="false">F033F567</string>
-    <string name="media_route_menu_title">EXTEND</string>
+    <string name="app_name" translatable="false">Aniyomi</string>
     <string name="name">Name</string>
     <string name="categories">Categories</string>
     <string name="manga">Manga</string>
@@ -214,6 +210,10 @@
     <string name="pref_remember_brightness">Remember and switch to the last used brightness</string>
     <string name="pref_remember_volume">Remember and switch to the last used volume</string>
 
+    <string name="pref_hosters">Hosters</string>
+    <string name="pref_hosters_show_failure">Display failed hosters</string>
+    <string name="pref_hosters_show_empty">Display empty hosters</string>
+
     <string name="pref_player_fullscreen">Show content in display cutout</string>
     <string name="pref_player_hide_controls">Hide player controls when opening the player</string>
     <string name="pref_show_system_bar">Show system status bar with controls</string>
@@ -221,6 +221,21 @@
     <string name="pref_player_time_to_disappear">Hide player controls time</string>
     <string name="pref_player_time_to_disappear_summary">%1$s ms</string>
     <string name="pref_panel_opacity">Panel opacity</string>
+
+    <string name="pref_category_intro_skip">Intro skip</string>
+    <string name="pref_enable_intro_skip">Enable intro skip</string>
+    <string name="pref_enable_auto_skip_ani_skip">Enable auto skip</string>
+    <string name="pref_enable_netflix_style_aniskip">Enable Netflix style</string>
+    <string name="pref_waiting_time_aniskip">Button timeout</string>
+    <string name="pref_waiting_time_aniskip_5">5 seconds</string>
+    <string name="pref_waiting_time_aniskip_6">6 seconds</string>
+    <string name="pref_waiting_time_aniskip_7">7 seconds</string>
+    <string name="pref_waiting_time_aniskip_8">8 seconds</string>
+    <string name="pref_waiting_time_aniskip_9">9 seconds</string>
+    <string name="pref_waiting_time_aniskip_10">10 seconds</string>
+    <string name="pref_category_player_aniskip_info">AniSkip requires the anime to be tracked with MAL or Anilist to work</string>
+    <string name="pref_enable_aniskip">Enable AniSkip</string>
+    <string name="pref_disable_aniskip_chapter">Disable AniSkip if video already contains chapters</string>
 
     <string name="pref_category_pip">Picture-in-Picture (PiP)</string>
     <string name="pref_enable_pip">Enable the use of PiP mode</string>
@@ -254,17 +269,6 @@
     <string name="pref_skip_disable">Disable</string>
     <string name="pref_player_smooth_seek">Enable precise seeking</string>
     <string name="pref_player_smooth_seek_summary">When enabled, seeking will not focus on keyframes, leading to slower but precise seeking</string>
-    <string name="pref_category_player_aniskip_info">AniSkip requires the anime to be tracked with MAL or Anilist to work</string>
-    <string name="pref_enable_aniskip">Enable AniSkip</string>
-    <string name="pref_enable_auto_skip_ani_skip">Enable auto skip</string>
-    <string name="pref_enable_netflix_style_aniskip">Enable Netflix style</string>
-    <string name="pref_waiting_time_aniskip">Button timeout</string>
-    <string name="pref_waiting_time_aniskip_5">5 seconds</string>
-    <string name="pref_waiting_time_aniskip_6">6 seconds</string>
-    <string name="pref_waiting_time_aniskip_7">7 seconds</string>
-    <string name="pref_waiting_time_aniskip_8">8 seconds</string>
-    <string name="pref_waiting_time_aniskip_9">9 seconds</string>
-    <string name="pref_waiting_time_aniskip_10">10 seconds</string>
 
     <string name="pref_category_double_tap">Double tap</string>
     <string name="pref_left_double_tap">Double tap (left)</string>
@@ -322,6 +326,24 @@
     <string name="pref_player_audio_channels_reverse_stereo">Reverse stereo</string>
     <string name="pref_player_audio_boost_cap">Volume boost cap</string>
 
+    <!-- Player settings - Custom Buttons -->
+    <string name="pref_player_custom_button">Custom buttons</string>
+    <string name="pref_player_custom_button_summary">Execute lua code with custom buttons</string>
+    <string name="pref_player_custom_button_header">Edit custom buttons</string>
+    <string name="pref_player_custom_button_guide">Custom buttons guide</string>
+    <string name="pref_player_custom_button_empty">You have no custom buttons. Tap the plus button to create a custom button.</string>
+    <string name="pref_player_custom_button_add">Add button</string>
+    <string name="pref_player_custom_button_edit">Edit button</string>
+    <string name="pref_player_custom_button_title">Title</string>
+    <string name="pref_player_custom_button_error_exists">Button already exists!</string>
+    <string name="pref_player_custom_button_content">Lua code</string>
+    <string name="pref_player_custom_button_content_long">Lua code (on long press)</string>
+    <string name="pref_player_custom_button_optional">(optional)</string>
+    <string name="pref_player_custom_button_delete">Delete button</string>
+    <string name="pref_player_custom_button_delete_confirm">Do you wish to delete the button "%s"?</string>
+    <string name="pref_player_custom_button_startup">On startup</string>
+    <string name="pref_player_custom_button_id">(ID: %d)</string>
+
     <!-- Player settings - Advanced -->
     <string name="pref_player_advanced">Advanced</string>
     <string name="pref_player_advanced_summary">Scripts, mpv.conf, input.conf</string>
@@ -333,11 +355,14 @@
 
     <!-- Player -->
 
-    <!-- Player - aniskip -->
-    <string name="player_aniskip_op">Skip Opening</string>
-    <string name="player_aniskip_ed">Skip Ending</string>
-    <string name="player_aniskip_mixedOp">Skip MixedOp</string>
-    <string name="player_aniskip_recap">Skip Recap</string>
+    <!-- Player - skip intro button -->
+    <string name="player_skip_action">Skip %1$s</string>
+    <string name="player_intro_skipped">%1$s skipped</string>
+    <string name="player_chapter_type_opening">Opening</string>
+    <string name="player_chapter_type_ending">Ending</string>
+    <string name="player_chapter_type_recap">Recap</string>
+    <string name="player_chapter_type_mixedop">Mixed opening</string>
+
 
     <!-- Player - Bottom left -->
     <string name="player_speed" translatable="false">%.2fx</string>
@@ -356,11 +381,17 @@
     <string name="numeric_chooser_value_too_small">Value too small</string>
     <string name="enable_auto_play">Auto-play is on</string>
     <string name="disable_auto_play">Auto-play is off</string>
-    <string name="no_next_episode">Next Episode not found!</string>
-    <string name="no_prev_episode">Previous Episode not found!</string>
     <string name="player_aniskip_dontskip">Don\'t skip</string>
     <string name="player_aniskip_dontskip_toast">Skipping %s in %d seconds</string>
     <string name="player_aniskip_skip">%s skipped</string>
+
+    <!-- Errors -->
+    <string name="no_next_episode">Next Episode not found!</string>
+    <string name="no_prev_episode">Previous Episode not found!</string>
+    <string name="no_available_videos">No available videos</string>
+    <string name="no_hosters">Hoster list is empty</string>
+    <string name="no_episode_loaded">No episode loaded</string>
+    <string name="select_hoster_from_empty_list">Hoster selected from empty list</string>
 
     <!-- Sheets -->
 
@@ -432,6 +463,10 @@
 
     <!-- Sheets - Audio tracks -->
     <string name="player_sheets_add_ext_audio">Add external audio tracks</string>
+
+    <!-- Sheets - Quality list -->
+    <string name="player_hoster_tap_to_load">Tap to load videos</string>
+    <string name="player_hoster_failed">Failed to load videos</string>
 
     <!-- Sheets - Decoders -->
     <string name="player_sheets_decoder_formatted">%s (%s)</string>
@@ -526,6 +561,7 @@
     <string name="pref_category_display">Display</string>
     <string name="pref_library_columns">Grid size</string>
     <string name="pref_library_columns_per_row">%d per row</string>
+    <string name="pref_library_rows">List size</string>
     <string name="portrait">Portrait</string>
     <string name="landscape">Landscape</string>
     <string name="pref_category_library_update">Global update</string>
@@ -599,7 +635,7 @@
     <string name="information_empty_repos">You have no repos set.</string>
     <string name="action_add_repo">Add repo</string>
     <string name="label_add_repo_input">Repo URL</string>
-    <string name="action_add_repo_message">Add additional repos to Anikku. This should be a URL that ends with \"index.min.json\".</string>
+    <string name="action_add_repo_message">Add additional repos to Aniyomi. This should be a URL that ends with \"index.min.json\".</string>
     <string name="error_repo_exists">This repo already exists!</string>
     <string name="action_delete_repo">Delete repo</string>
     <string name="invalid_repo_name">Invalid repo URL</string>
@@ -777,6 +813,7 @@
     <string name="app_settings">App settings</string>
     <string name="source_settings">Source settings</string>
     <string name="extensionRepo_settings">Extension repos</string>
+    <string name="custom_button_settings">Custom buttons</string>
     <string name="private_settings">Include sensitive settings (e.g., tracker login tokens)</string>
     <string name="non_library_settings">All read/watched entries</string>
     <string name="creating_backup">Creating backup</string>
@@ -1124,6 +1161,7 @@
     <string name="label_anime_library">Anime</string>
     <string name="label_anime">Anime</string>
     <string name="label_manga">Manga</string>
+    <string name="label_recent_anime_updates">Anime Updates</string>
     <string name="label_manga_sources">Manga Sources</string>
     <string name="label_anime_sources">Anime Sources</string>
     <string name="label_watched_duration">Watched duration</string>
@@ -1255,7 +1293,7 @@
     <string name="episode_progress_no_total">Progress: %1$s</string>
     <string name="recent_anime_time">Ep. %1$s - %2$s</string>
     <string name="download_insufficient_space">Couldn\'t download due to low storage space</string>
-    <string name="download_queue_size_warning">Warning: large bulk downloads may lead to sources becoming slower and/or blocking Anikku. Tap to learn more.</string>
+    <string name="download_queue_size_warning">Warning: large bulk downloads may lead to sources becoming slower and/or blocking Aniyomi. Tap to learn more.</string>
     <string name="video_list_empty_error">No video found</string>
     <string name="notification_new_episodes">New episodes found</string>
     <string name="information_no_recent_anime">Nothing watched recently</string>
@@ -1313,11 +1351,7 @@
     <string name="unseen">Unseen</string>
     <string name="label_manga_extension_repos">Manga extension repos</string>
     <string name="label_anime_extension_repos">Anime extension repos</string>
-    <string name="onboarding_storage_action_create_folder">Create default Anikku folder</string>
-    <string name="safe_download">Safe downloading mode for anime</string>
-    <string name="safe_download_summary">Enable single thread and no range downloading mode</string>
-    <string name="download_threads_number">Thread count</string>
-    <string name="download_threads_number_summary">Number of threads to use for downloading, might get your IP blocked if too high, usually 4 is a good number to avoid heavy load on source servers.</string>
-    <string name="download_speed_limit">Download speed limit</string>
+    <string name="onboarding_storage_action_create_folder">Create default Aniyomi folder</string>
+    <string name="download_speed_limit">Chapter download speed limit</string>
     <string name="download_speed_limit_hint">Set to 0 to disable the speed limit.</string>
 </resources>

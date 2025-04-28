@@ -37,6 +37,8 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_CHAR
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_NETWORK_NOT_METERED
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_ONLY_ON_WIFI
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -205,16 +207,16 @@ object SettingsLibraryScreen : SearchableSettings {
                 // SY -->
                 Preference.PreferenceItem.ListPreference(
                     pref = libraryPreferences.groupLibraryUpdateType(),
-                    title = stringResource(MR.strings.anime_library_group_updates),
+                    title = stringResource(SYMR.strings.library_group_updates),
                     entries = persistentMapOf(
                         GroupLibraryMode.GLOBAL to stringResource(
-                            MR.strings.library_group_updates_global,
+                            SYMR.strings.library_group_updates_global,
                         ),
                         GroupLibraryMode.ALL_BUT_UNGROUPED to stringResource(
-                            MR.strings.library_group_updates_all_but_ungrouped,
+                            SYMR.strings.library_group_updates_all_but_ungrouped,
                         ),
                         GroupLibraryMode.ALL to stringResource(
-                            MR.strings.library_group_updates_all,
+                            SYMR.strings.library_group_updates_all,
                         ),
                     ),
                 ),
@@ -259,7 +261,7 @@ object SettingsLibraryScreen : SearchableSettings {
                             stringResource(MR.strings.action_bookmark_episode),
                         // AM (FILLERMARK) -->
                         LibraryPreferences.EpisodeSwipeAction.ToggleFillermark to stringResource(
-                            MR.strings.action_fillermark_episode,
+                            AMR.strings.action_fillermark_episode,
                         ),
                         // <-- AM (FILLERMARK)
                         LibraryPreferences.EpisodeSwipeAction.ToggleSeen to
@@ -278,7 +280,7 @@ object SettingsLibraryScreen : SearchableSettings {
                             stringResource(MR.strings.action_bookmark_episode),
                         // AM (FILLERMARK) -->
                         LibraryPreferences.EpisodeSwipeAction.ToggleFillermark to stringResource(
-                            MR.strings.action_fillermark_episode,
+                            AMR.strings.action_fillermark_episode,
                         ),
                         // <-- AM (FILLERMARK)
                         LibraryPreferences.EpisodeSwipeAction.ToggleSeen to

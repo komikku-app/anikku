@@ -192,6 +192,7 @@ WHERE _id = :animeId;
 
 selectLastInsertedRowId:
 SELECT last_insert_rowid();
+
 getBySource:
 SELECT * FROM animes WHERE source = :sourceId;
 

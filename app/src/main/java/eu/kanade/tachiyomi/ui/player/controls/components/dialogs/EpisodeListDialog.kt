@@ -50,7 +50,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun EpisodeListDialog(
-    displayMode: Long,
+    displayMode: Long?,
     currentEpisodeIndex: Int,
     episodeList: List<Episode>,
     dateRelativeTime: Boolean,
@@ -64,7 +64,7 @@ fun EpisodeListDialog(
     val episodeListState = rememberLazyListState(initialFirstVisibleItemIndex = itemScrollIndex)
 
     PlayerDialog(
-        titleRes = MR.strings.episodes,
+        title = stringResource(MR.strings.episodes),
         modifier = Modifier.fillMaxHeight(fraction = 0.8F).fillMaxWidth(fraction = 0.8F),
         onDismissRequest = onDismissRequest,
     ) {

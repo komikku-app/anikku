@@ -14,7 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.ui.unit.dp
 import eu.kanade.domain.connections.service.ConnectionsPreferences
-import eu.kanade.presentation.more.settings.widget.ConnectionPreferenceWidget
+import eu.kanade.presentation.more.settings.widget.ConnectionsPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.EditTextPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.InfoWidget
 import eu.kanade.presentation.more.settings.widget.ListPreferenceWidget
@@ -188,6 +188,7 @@ internal fun PreferenceItem(
                     },
                     singleLine = false,
                     canBeBlank = item.canBeBlank,
+                    formatSubtitle = false,
                 )
             }
             is Preference.PreferenceItem.EditTextInfoPreference -> {
@@ -223,7 +224,7 @@ internal fun PreferenceItem(
                     .getString(ConnectionsPreferences.connectionsUsername(item.service.id))
                     .collectAsState()
                 item.service.run {
-                    ConnectionPreferenceWidget(
+                    ConnectionsPreferenceWidget(
                         service = this,
                         checked = uName.isNotEmpty(),
                         onClick = { if (isLogged) item.openSettings() else item.login() },

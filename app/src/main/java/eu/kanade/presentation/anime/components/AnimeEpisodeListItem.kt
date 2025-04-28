@@ -46,6 +46,7 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import me.saket.swipe.SwipeableActionsBox
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
 import tachiyomi.presentation.core.i18n.stringResource
@@ -148,7 +149,7 @@ fun AnimeEpisodeListItem(
                     if (fillermark) {
                         Icon(
                             imageVector = ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp),
-                            contentDescription = stringResource(MR.strings.action_filter_fillermarked),
+                            contentDescription = stringResource(AMR.strings.action_filter_fillermarked),
                             modifier = Modifier
                                 .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
                             tint = MaterialTheme.colorScheme.tertiary,

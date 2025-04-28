@@ -47,7 +47,6 @@ import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.core.view.WindowCompat
@@ -58,41 +57,32 @@ import androidx.lifecycle.viewModelScope
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
-import com.google.android.gms.cast.MediaInfo
-import com.google.android.gms.cast.MediaLoadRequestData
-import com.google.android.gms.cast.MediaMetadata
-import com.google.android.gms.cast.framework.CastContext
-import com.google.android.gms.cast.framework.CastSession
-import com.google.android.gms.cast.framework.SessionManagerListener
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
-import com.google.android.gms.common.images.WebImage
 import com.hippo.unifile.UniFile
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
+import eu.kanade.tachiyomi.animesource.model.ChapterType
+import eu.kanade.tachiyomi.animesource.model.Hoster
+import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.serialize
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.PlayerData
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
-import eu.kanade.tachiyomi.data.torrentServer.TorrentServerApi
-import eu.kanade.tachiyomi.data.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
 import eu.kanade.tachiyomi.databinding.PlayerLayoutBinding
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.source.isNsfw
-import eu.kanade.tachiyomi.source.model.serialize
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
+import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.player.controls.PlayerControls
-import eu.kanade.tachiyomi.ui.player.controls.components.IndexedSegment
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
-import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import eu.kanade.tachiyomi.util.Stamp
-import eu.kanade.tachiyomi.util.SubtitleSelect
+import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
+import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import `is`.xyz.mpv.MPVLib
@@ -110,6 +100,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
@@ -120,7 +111,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Calendar
-import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -135,18 +125,14 @@ class PlayerActivity : BaseActivity() {
     private var mediaSession: MediaSession? = null
     private val gesturePreferences: GesturePreferences by lazy { viewModel.gesturePreferences }
     private val playerPreferences: PlayerPreferences by lazy { viewModel.playerPreferences }
-    private val subtitlePreferences: SubtitlePreferences = Injekt.get()
     private val audioPreferences: AudioPreferences = Injekt.get()
     private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get()
     private val networkPreferences: NetworkPreferences = Injekt.get()
     private val storageManager: StorageManager = Injekt.get()
-    private var mCastContext: CastContext? = null
-    private var mSessionManagerListener: SessionManagerListener<CastSession>? = null
-    internal var mCastSession: CastSession? = null
-    private var isInCastMode: Boolean = false
-    private var isCastApiAvailable = false
 
-    internal val subtitleSelect by lazy { SubtitleSelect(subtitlePreferences) }
+    // Cast -->
+    val castManager: CastManager by lazy { CastManager(this, Injekt.get()) }
+    // <-- Cast
 
     private var audioFocusRequest: AudioFocusRequestCompat? = null
     private var restoreAudioFocus: () -> Unit = {}
@@ -174,14 +160,16 @@ class PlayerActivity : BaseActivity() {
             context: Context,
             animeId: Long?,
             episodeId: Long?,
-            vidList: List<Video>? = null,
+            hostList: List<Hoster>? = null,
+            hostIndex: Int? = null,
             vidIndex: Int? = null,
         ): Intent {
             return Intent(context, PlayerActivity::class.java).apply {
                 putExtra("animeId", animeId)
                 putExtra("episodeId", episodeId)
+                hostIndex?.let { putExtra("hostIndex", it) }
                 vidIndex?.let { putExtra("vidIndex", it) }
-                vidList?.let { putExtra("vidList", it.serialize()) }
+                hostList?.let { putExtra("hostList", it.serialize()) }
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         }
@@ -191,13 +179,15 @@ class PlayerActivity : BaseActivity() {
     private val connectionsPreferences: ConnectionsPreferences = Injekt.get()
     // <-- AM (CONNECTIONS)
 
+    @SuppressLint("MissingSuperCall")
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
         val animeId = intent.extras?.getLong("animeId") ?: -1
         val episodeId = intent.extras?.getLong("episodeId") ?: -1
-        val vidList = intent.extras?.getString("vidList") ?: ""
-        val vidIndex = intent.extras?.getInt("vidIndex") ?: 0
+        val hostList = intent.extras?.getString("hostList") ?: ""
+        val hostIndex = intent.extras?.getInt("hostIndex") ?: -1
+        val vidIndex = intent.extras?.getInt("vidIndex") ?: -1
         if (animeId == -1L || episodeId == -1L) {
             finish()
             return
@@ -212,8 +202,9 @@ class PlayerActivity : BaseActivity() {
 
         lifecycleScope.launchNonCancellable {
             viewModel.updateIsLoadingEpisode(true)
+            viewModel.updateIsLoadingHosters(true)
 
-            val initResult = viewModel.init(animeId, episodeId, vidList, vidIndex)
+            val initResult = viewModel.init(animeId, episodeId, hostList, hostIndex, vidIndex)
             if (!initResult.second.getOrDefault(false)) {
                 val exception = initResult.second.exceptionOrNull() ?: IllegalStateException(
                     "Unknown error",
@@ -223,11 +214,14 @@ class PlayerActivity : BaseActivity() {
                 }
             }
 
+            viewModel.updateIsLoadingHosters(false)
+
             lifecycleScope.launch {
-                setVideoList(
-                    qualityIndex = initResult.first.videoIndex,
-                    videos = initResult.first.videoList,
-                    position = initResult.first.position,
+                viewModel.loadHosters(
+                    source = viewModel.currentSource.value!!,
+                    hosterList = initResult.first.hosterList ?: emptyList(),
+                    hosterIndex = initResult.first.videoIndex.first,
+                    videoIndex = initResult.first.videoIndex.second,
                 )
             }
         }
@@ -248,7 +242,9 @@ class PlayerActivity : BaseActivity() {
         setupPlayerOrientation()
 
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
-            toast(throwable.message)
+            runOnUiThread {
+                toast(throwable.message)
+            }
             logcat(LogPriority.ERROR, throwable)
             finish()
         }
@@ -268,17 +264,21 @@ class PlayerActivity : BaseActivity() {
                 }
             }
             .launchIn(lifecycleScope)
-        viewModel.viewModelScope.launchUI {
+        viewModel.viewModelScope.launchIO {
             // AM (DISCORD) -->
             updateDiscordRPC(exitingPlayer = false)
 
             // <-- AM (DISCORD)
         }
+        // Cast -->
+        castManager
+        // <-- Cast
 
         binding.controls.setContent {
             TachiyomiTheme {
                 PlayerControls(
                     viewModel = viewModel,
+                    castManager = castManager, // Pass the castManager instance
                     onBackPress = {
                         if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
                             enterPictureInPictureMode(createPipParams())
@@ -300,56 +300,61 @@ class PlayerActivity : BaseActivity() {
                 )
             }
         }
-        isCastApiAvailable =
-            GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS
-        try {
-            if (isCastApiAvailable) {
-                mCastContext = CastContext.getSharedInstance(this)
-                mCastSession = mCastContext!!.sessionManager.currentCastSession
-                setupCastListener()
-            }
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Service the google play services not available" }
-        }
 
         onNewIntent(this.intent)
     }
 
     override fun onDestroy() {
+        player.isExiting = true
+
         audioFocusRequest?.let {
             AudioManagerCompat.abandonAudioFocusRequest(audioManager, it)
         }
         audioFocusRequest = null
-        mediaSession?.release()
+
+        mediaSession?.let {
+            it.isActive = false
+            it.release()
+        }
+
         if (noisyReceiver.initialized) {
             unregisterReceiver(noisyReceiver)
             noisyReceiver.initialized = false
         }
 
-        player.isExiting = true
         MPVLib.removeLogObserver(playerObserver)
         MPVLib.removeObserver(playerObserver)
         player.destroy()
+        castManager.cleanup()
 
         // AM (DISCORD) -->
         updateDiscordRPC(exitingPlayer = true)
         // <-- AM (DISCORD)
-
         super.onDestroy()
     }
 
     override fun onPause() {
-        if (!isInPictureInPictureMode) {
+        // Mantener sesión Cast activa
+        castManager.maintainCastSessionBackground()
+        viewModel.saveCurrentEpisodeWatchingProgress()
+
+        if (isInPictureInPictureMode) {
+            super.onPause()
+            return
+        }
+
+        player.isExiting = true
+        if (isFinishing) {
+            MPVLib.command(arrayOf("stop"))
+        } else {
             viewModel.pause()
         }
-        viewModel.saveCurrentEpisodeWatchingProgress()
+
         updateDiscordRPC(exitingPlayer = false)
         super.onPause()
     }
 
     override fun onStop() {
-        viewModel.pause()
-        viewModel.saveCurrentEpisodeWatchingProgress()
         window.attributes.screenBrightness.let {
             if (playerPreferences.rememberPlayerBrightness().get() && it != -1f) {
                 playerPreferences.playerBrightnessValue().set(it)
@@ -363,6 +368,7 @@ class PlayerActivity : BaseActivity() {
         super.onStop()
     }
 
+    @SuppressLint("MissingSuperCall")
     override fun onUserLeaveHint() {
         if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
             enterPictureInPictureMode()
@@ -416,6 +422,20 @@ class PlayerActivity : BaseActivity() {
             }
         }
         updateDiscordRPC(exitingPlayer = false)
+
+        castManager.apply {
+            registerSessionListener()
+            if (castState.value == CastManager.CastState.CONNECTED) {
+                updateCastState(CastManager.CastState.CONNECTED)
+            }
+            viewModel.isCasting.value = castState.value == CastManager.CastState.CONNECTED
+        }
+    }
+
+    private fun executeMPVCommand(commands: Array<String>) {
+        if (!player.isExiting) {
+            MPVLib.command(commands)
+        }
     }
 
     private fun setupPlayerMPV() {
@@ -424,9 +444,6 @@ class PlayerActivity : BaseActivity() {
         val configDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
             storageManager.getMPVConfigDirectory()!!.filePath!!
         } else {
-            if (advancedPlayerPreferences.mpvScripts().get()) {
-                copyScripts()
-            }
             applicationContext.filesDir.path
         }
 
@@ -435,6 +452,7 @@ class PlayerActivity : BaseActivity() {
         val mpvInputFile = File("$configDir/input.conf")
         advancedPlayerPreferences.mpvInput().get().let { mpvInputFile.writeText(it) }
 
+        copyScripts()
         copyAssets(configDir)
         copyFontsDirectory()
 
@@ -451,18 +469,18 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun copyScripts() {
-        CoroutineScope(Dispatchers.IO).launchIO {
-            // First, delete all present scripts
-            val scriptsDir = {
-                UniFile.fromFile(applicationContext.filesDir)?.createDirectory("scripts")
-            }
-            val scriptOptsDir = {
-                UniFile.fromFile(applicationContext.filesDir)?.createDirectory("script-opts")
-            }
-            scriptsDir()?.delete()
-            scriptOptsDir()?.delete()
+        // First, delete all present scripts
+        val scriptsDir = {
+            UniFile.fromFile(applicationContext.filesDir)?.createDirectory("scripts")
+        }
+        val scriptOptsDir = {
+            UniFile.fromFile(applicationContext.filesDir)?.createDirectory("script-opts")
+        }
+        scriptsDir()?.delete()
+        scriptOptsDir()?.delete()
 
-            // Then, copy the scripts from the Aniyomi directory
+        // Then, copy the scripts from the Aniyomi directory
+        if (advancedPlayerPreferences.mpvScripts().get()) {
             storageManager.getScriptsDirectory()?.listFiles()?.forEach { file ->
                 val outFile = scriptsDir()?.createFile(file.name)
                 outFile?.let {
@@ -475,6 +493,13 @@ class PlayerActivity : BaseActivity() {
                     file.openInputStream().copyTo(it.openOutputStream())
                 }
             }
+        }
+
+        // Copy over the bridge file
+        val luaFile = scriptsDir()?.createFile("aniyomi.lua")
+        val luaBridge = assets.open("aniyomi.lua")
+        luaFile?.openOutputStream()?.bufferedWriter()?.use { scriptLua ->
+            luaBridge.bufferedReader().use { scriptLua.write(it.readText()) }
         }
     }
 
@@ -523,6 +548,53 @@ class PlayerActivity : BaseActivity() {
                 "osd-fonts-dir",
                 applicationContext.filesDir.path,
             )
+        }
+    }
+
+    fun setupCustomButtons(buttons: List<CustomButton>) {
+        CoroutineScope(Dispatchers.IO).launchIO {
+            val scriptsDir = {
+                UniFile.fromFile(applicationContext.filesDir)?.createDirectory("scripts")
+            }
+
+            val primaryButtonId = viewModel.primaryButton.value?.id ?: 0L
+
+            val customButtonsContent = buildString {
+                append(
+                    """
+                        local lua_modules = mp.find_config_file('scripts')
+                        if lua_modules then
+                            package.path = package.path .. ';' .. lua_modules .. '/?.lua;' .. lua_modules .. '/?/init.lua;' .. '${scriptsDir()!!}' .. '/?.lua'
+                        end
+                        local aniyomi = require 'aniyomi'
+                    """.trimIndent(),
+                )
+
+                buttons.forEach { button ->
+                    append(
+                        """
+                            ${button.getButtonOnStartup(primaryButtonId)}
+                            function button${button.id}()
+                                ${button.getButtonContent(primaryButtonId)}
+                            end
+                            mp.register_script_message('call_button_${button.id}', button${button.id})
+                            function button${button.id}long()
+                                ${button.getButtonLongPressContent(primaryButtonId)}
+                            end
+                            mp.register_script_message('call_button_${button.id}_long', button${button.id}long)
+                        """.trimIndent(),
+                    )
+                }
+            }
+
+            val file = scriptsDir()?.createFile("custombuttons.lua")
+            file?.openOutputStream()?.bufferedWriter()?.use {
+                it.write(customButtonsContent)
+            }
+
+            file?.let {
+                MPVLib.command(arrayOf("load-script", it.filePath))
+            }
         }
     }
 
@@ -577,17 +649,16 @@ class PlayerActivity : BaseActivity() {
     }
 
     override fun onResume() {
-        isCastApiAvailable =
-            GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS
-        try {
-            if (isCastApiAvailable) {
-                mCastContext!!.sessionManager.addSessionManagerListener(
-                    mSessionManagerListener!!,
-                    CastSession::class.java,
-                )
-                isInCastMode = mCastSession != null && mCastSession!!.isConnected
-            }
-        } catch (_: Exception) {
+        if (!player.isExiting) {
+            super.onResume()
+            return
+        }
+
+        player.isExiting = false
+        // Reconectar Cast si estaba activo
+        castManager.apply {
+            reconnect()
+            registerSessionListener()
         }
         super.onResume()
 
@@ -608,6 +679,10 @@ class PlayerActivity : BaseActivity() {
         super.onConfigurationChanged(newConfig)
     }
 
+    fun showToast(message: String) {
+        runOnUiThread { toast(message) }
+    }
+
     // A bunch of observers
 
     internal fun onObserverEvent(property: String, value: Long) {
@@ -615,13 +690,14 @@ class PlayerActivity : BaseActivity() {
         when (property) {
             "time-pos" -> {
                 viewModel.updatePlayBackPos(value.toFloat())
-                viewModel.aniSkipStuff(value)
+                viewModel.setChapter(value.toFloat())
             }
             "demuxer-cache-time" -> viewModel.updateReadAhead(value = value)
             "volume" -> viewModel.setMPVVolume(value.toInt())
             "volume-max" -> viewModel.volumeBoostCap = value.toInt() - 100
-            "chapter" -> viewModel.updateChapter(value)
+            // "chapter" -> viewModel.updateChapter(value)
             "duration" -> viewModel.duration.update { value.toFloat() }
+            "user-data/current-anime/intro-length" -> viewModel.setAnimeSkipIntroLength(value)
         }
     }
 
@@ -632,7 +708,6 @@ class PlayerActivity : BaseActivity() {
                 viewModel.loadChapters()
                 viewModel.updateChapter(0)
             }
-            // TODO(tracklist)
             "track-list" -> viewModel.loadTracks()
         }
     }
@@ -641,12 +716,16 @@ class PlayerActivity : BaseActivity() {
         if (player.isExiting) return
         when (property) {
             "pause" -> {
-                if (value) {
+                if (value && player.paused == true) {
                     viewModel.pause()
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                } else {
+                } else if (!value && player.paused == false) {
                     viewModel.unpause()
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+
+                runCatching {
+                    setPictureInPictureParams(createPipParams())
                 }
                 updateDiscordRPC(exitingPlayer = false)
             }
@@ -682,8 +761,7 @@ class PlayerActivity : BaseActivity() {
                 viewModel.updateSubtitle(viewModel.selectedSubtitles.value.first, it)
             }
             "hwdec", "hwdec-current" -> viewModel.getDecoder()
-            // TODO(custombutton)
-            // "user-data/mpvkt" -> viewModel.handleLuaInvocation(property, value)
+            "user-data/aniyomi" -> viewModel.handleLuaInvocation(property, value)
         }
     }
 
@@ -779,6 +857,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun setupPlayerOrientation() {
+        if (player.isExiting) return
         requestedOrientation = when (playerPreferences.defaultPlayerOrientationType().get()) {
             PlayerOrientation.Free -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
             PlayerOrientation.Video -> if ((player.getVideoOutAspect() ?: 0.0) > 1.0) {
@@ -854,18 +933,18 @@ class PlayerActivity : BaseActivity() {
                     }
 
                     override fun onPause() {
-                        isCastApiAvailable =
-                            GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this@PlayerActivity) ==
-                            ConnectionResult.SUCCESS
-                        try {
-                            if (isCastApiAvailable) {
-                                mCastContext!!.sessionManager.removeSessionManagerListener(
-                                    mSessionManagerListener!!,
-                                    CastSession::class.java,
-                                )
+                        // Cast -->
+                        castManager.apply {
+                            if (!isInPictureInPictureMode) {
+                                unregisterSessionListener()
                             }
-                        } catch (_: Exception) {
+
+                            // Si está transmitiendo, mantener sesión activa
+                            if (castState.value == CastManager.CastState.CONNECTED) {
+                                maintainCastSessionBackground()
+                            }
                         }
+                        //
                         when (playAction) {
                             SingleActionGesture.None -> {}
                             SingleActionGesture.Seek -> {}
@@ -966,15 +1045,19 @@ class PlayerActivity : BaseActivity() {
         viewModel.panelShown.update { _ -> Panels.None }
         viewModel.pause()
         viewModel.isLoading.update { _ -> true }
-
-        aniskipStamps = emptyList()
+        viewModel.resetHosterState()
 
         lifecycleScope.launch {
             viewModel.updateIsLoadingEpisode(true)
+            viewModel.updateIsLoadingHosters(true)
+            viewModel.cancelHosterVideoLinksJob()
 
             val pipEpisodeToasts = playerPreferences.pipEpisodeToasts().get()
+            val switchMethod = viewModel.loadEpisode(episodeId)
 
-            when (val switchMethod = viewModel.loadEpisode(episodeId)) {
+            viewModel.updateIsLoadingHosters(false)
+
+            when (switchMethod) {
                 null -> {
                     if (viewModel.currentAnime.value != null && !autoPlay) {
                         launchUI { toast(MR.strings.no_next_episode) }
@@ -983,13 +1066,21 @@ class PlayerActivity : BaseActivity() {
                 }
 
                 else -> {
-                    if (switchMethod.first != null) {
+                    if (switchMethod.hosterList != null) {
                         when {
-                            switchMethod.first!!.isEmpty() -> setInitialEpisodeError(
-                                Exception("Video list is empty."),
+                            switchMethod.hosterList.isEmpty() -> setInitialEpisodeError(
+                                PlayerViewModel.ExceptionWithStringResource(
+                                    "Hoster list is empty",
+                                    MR.strings.no_hosters,
+                                ),
                             )
                             else -> {
-                                setVideoList(qualityIndex = 0, switchMethod.first!!)
+                                viewModel.loadHosters(
+                                    source = switchMethod.source,
+                                    hosterList = switchMethod.hosterList,
+                                    hosterIndex = -1,
+                                    videoIndex = -1,
+                                )
                             }
                         }
                     } else {
@@ -997,7 +1088,7 @@ class PlayerActivity : BaseActivity() {
                     }
 
                     if (isInPictureInPictureMode && pipEpisodeToasts) {
-                        launchUI { toast(switchMethod.second) }
+                        launchUI { toast(switchMethod.episodeTitle) }
                     }
                 }
             }
@@ -1011,47 +1102,39 @@ class PlayerActivity : BaseActivity() {
         )
     }
 
-    fun setVideoList(
-        qualityIndex: Int,
-        videos: List<Video>?,
-        fromStart: Boolean = false,
-        position: Long? = null,
-    ) {
+    fun setVideo(video: Video?, position: Long? = null) {
         if (player.isExiting) return
-        viewModel.updateVideoList(videos ?: emptyList())
-        if (videos == null) return
+        if (video == null) return
 
-        videos.getOrNull(qualityIndex)?.let {
-            viewModel.setVideoIndex(qualityIndex)
-            setHttpOptions(it)
-            if (viewModel.isLoadingEpisode.value) {
-                viewModel.currentEpisode.value?.let { episode ->
-                    val preservePos = playerPreferences.preserveWatchingPosition().get()
-                    val resumePosition = position
-                        ?: if ((episode.seen && !preservePos) || fromStart) {
-                            0L
-                        } else {
-                            episode.last_second_seen
-                        }
-                    MPVLib.command(arrayOf("set", "start", "${resumePosition / 1000F}"))
-                }
-            } else {
-                player.timePos?.let {
-                    MPVLib.command(arrayOf("set", "start", "${player.timePos}"))
-                }
+        setHttpOptions(video)
+
+        if (viewModel.isLoadingEpisode.value) {
+            viewModel.currentEpisode.value?.let { episode ->
+                val preservePos = playerPreferences.preserveWatchingPosition().get()
+                val resumePosition = position
+                    ?: if (episode.seen && !preservePos) {
+                        0L
+                    } else {
+                        episode.last_second_seen
+                    }
+                MPVLib.command(arrayOf("set", "start", "${resumePosition / 1000F}"))
             }
-            if (it.videoUrl?.startsWith(TorrentServerUtils.hostUrl) == true ||
-                it.videoUrl?.startsWith("magnet") == true ||
-                it.videoUrl?.endsWith(".torrent") == true
-            ) {
-                launchIO {
-                    TorrentServerService.start()
-                    TorrentServerService.wait(10)
-                    torrentLinkHandler(it.videoUrl!!, it.quality)
-                }
-            } else {
-                MPVLib.command(arrayOf("loadfile", parseVideoUrl(it.videoUrl)))
+        } else {
+            player.timePos?.let {
+                MPVLib.command(arrayOf("set", "start", "${player.timePos}"))
             }
+        }
+        if (video.videoUrl.startsWith(TorrentServerUtils.hostUrl) ||
+            video.videoUrl.startsWith("magnet") ||
+            video.videoUrl.endsWith(".torrent")
+        ) {
+            launchIO {
+                TorrentServerService.start()
+                TorrentServerService.wait(10)
+                torrentLinkHandler(video.videoUrl, video.quality)
+            }
+        } else {
+            MPVLib.command(arrayOf("loadfile", parseVideoUrl(video.videoUrl)))
         }
         updateDiscordRPC(exitingPlayer = false)
     }
@@ -1089,7 +1172,11 @@ class PlayerActivity : BaseActivity() {
      * this case the activity is closed and a toast is shown to the user.
      */
     private fun setInitialEpisodeError(error: Throwable) {
-        toast(error.message)
+        if (error is PlayerViewModel.ExceptionWithStringResource) {
+            toast(error.stringResource)
+        } else {
+            toast(error.message)
+        }
         logcat(LogPriority.ERROR, error)
         finish()
     }
@@ -1164,23 +1251,6 @@ class PlayerActivity : BaseActivity() {
         )
     }
 
-    private fun clearTracks() {
-        val count = MPVLib.getPropertyInt("track-list/count")!!
-        // Note that because events are async, properties might disappear at any moment
-        // so use ?: continue instead of !!
-        for (i in 0 until count) {
-            val type = MPVLib.getPropertyString("track-list/$i/type") ?: continue
-            val mpvId = MPVLib.getPropertyInt("track-list/$i/id") ?: continue
-            when (type) {
-                "video" -> MPVLib.command(arrayOf("video-remove", "$mpvId"))
-                "audio" -> MPVLib.command(arrayOf("audio-remove", "$mpvId"))
-                "sub" -> MPVLib.command(arrayOf("sub-remove", "$mpvId"))
-            }
-        }
-
-        viewModel.isLoadingTracks.update { _ -> true }
-    }
-
     // TODO: exception java.util.ConcurrentModificationException:
     //  UPDATE: MAY HAVE BEEN FIXED
     // at java.lang.Object java.util.ArrayList$Itr.next() (ArrayList.java:860)
@@ -1188,29 +1258,40 @@ class PlayerActivity : BaseActivity() {
     // at void eu.kanade.tachiyomi.ui.player.PlayerActivity.event(int) (PlayerActivity.kt:1566)
     // at void is.xyz.mpv.MPVLib.event(int) (MPVLib.java:86)
     private fun fileLoaded() {
+        if (player.isExiting) return
         setMpvMediaTitle()
         setupPlayerOrientation()
-        clearTracks()
+        setupChapters()
         setupTracks()
 
         // aniSkip stuff
-        viewModel.waitingAniSkip = gesturePreferences.waitingTimeAniSkip().get()
+        viewModel.waitingSkipIntro = playerPreferences.waitingTimeIntroSkip().get()
         runBlocking {
-            if (viewModel.aniSkipEnable) {
-                viewModel.aniSkipInterval = viewModel.aniSkipResponse(player.duration)
-                viewModel.aniSkipInterval?.let {
-                    aniskipStamps = it
-                    updateChapters(it, player.duration)
+            if (
+                viewModel.introSkipEnabled &&
+                playerPreferences.aniSkipEnabled().get() &&
+                !(playerPreferences.disableAniSkipOnChapters().get() && viewModel.chapters.value.isNotEmpty())
+            ) {
+                viewModel.aniSkipResponse(player.duration)?.let {
+                    viewModel.updateChapters(
+                        ChapterUtils.mergeChapters(
+                            currentChapters = viewModel.chapters.value,
+                            stamps = it,
+                            duration = player.duration,
+                        ),
+                    )
+                    viewModel.setChapter(viewModel.pos.value)
                 }
             }
         }
     }
 
     private fun setupTracks() {
-        val audioTracks = viewModel.videoList.value.getOrNull(viewModel.selectedVideoIndex.value)
-            ?.audioTracks?.takeIf { it.isNotEmpty() }
-        val subtitleTracks = viewModel.videoList.value.getOrNull(viewModel.selectedVideoIndex.value)
-            ?.subtitleTracks?.takeIf { it.isNotEmpty() }
+        if (player.isExiting) return
+        viewModel.isLoadingTracks.update { _ -> true }
+
+        val audioTracks = viewModel.currentVideo.value?.audioTracks?.takeIf { it.isNotEmpty() }
+        val subtitleTracks = viewModel.currentVideo.value?.subtitleTracks?.takeIf { it.isNotEmpty() }
 
         // If no external audio or subtitle tracks are present, loadTracks() won't be
         // called and we need to call onFinishLoadingTracks() manually
@@ -1220,21 +1301,47 @@ class PlayerActivity : BaseActivity() {
         }
 
         audioTracks?.forEach { audio ->
-            MPVLib.command(arrayOf("audio-add", audio.url, "auto", audio.lang))
+            executeMPVCommand(arrayOf("audio-add", audio.url, "auto", audio.lang))
         }
         subtitleTracks?.forEach { sub ->
-            MPVLib.command(arrayOf("sub-add", sub.url, "auto", sub.lang))
+            executeMPVCommand(arrayOf("sub-add", sub.url, "auto", sub.lang))
         }
 
         viewModel.isLoadingTracks.update { _ -> false }
     }
 
+    private fun setupChapters() {
+        if (player.isExiting) return
+
+        val timestamps = viewModel.currentVideo.value?.timestamps?.takeIf { it.isNotEmpty() }
+            ?.map { timestamp ->
+                if (timestamp.name.isEmpty() && timestamp.type != ChapterType.Other) {
+                    timestamp.copy(
+                        name = timestamp.type.getStringRes()?.let(::stringResource) ?: "",
+                    )
+                } else {
+                    timestamp
+                }
+            }
+            ?: return
+
+        viewModel.updateChapters(
+            ChapterUtils.mergeChapters(
+                currentChapters = viewModel.chapters.value,
+                stamps = timestamps,
+                duration = player.duration,
+            ),
+        )
+        viewModel.setChapter(viewModel.pos.value)
+    }
+
     private fun setMpvMediaTitle() {
+        if (player.isExiting) return
         val anime = viewModel.currentAnime.value ?: return
         val episode = viewModel.currentEpisode.value ?: return
 
-        viewModel.animeTitle.update { _ -> anime.title }
-        viewModel.mediaTitle.update { _ -> episode.name }
+        // Write to mpv table
+        MPVLib.setPropertyString("user-data/current-anime/episode-title", episode.name)
 
         val epNumber = episode.episode_number.let { number ->
             if (ceil(number) == floor(number)) number.toInt() else number
@@ -1256,102 +1363,39 @@ class PlayerActivity : BaseActivity() {
         }
     }
 
-    private var aniskipStamps: List<Stamp> = emptyList()
-    private fun updateChapters(stamps: List<Stamp>? = null, duration: Int? = null) {
-        val aniskipStamps = stamps ?: aniskipStamps
-        val sortedAniskipStamps = aniskipStamps.sortedBy { it.interval.startTime }
-        val aniskipChapters = sortedAniskipStamps.mapIndexed { i, it ->
-            val startTime = if (i == 0 && it.interval.startTime < 1.0) {
-                0.0
-            } else {
-                it.interval.startTime
-            }
-            val startChapter = IndexedSegment(
-                index = -2, // Index -2 is used to indicate that this is an AniSkip chapter
-                name = it.skipType.getString(),
-                start = startTime.toFloat(),
-                color = Color(0xFFD8BBDF),
-            )
-            val nextStart = sortedAniskipStamps.getOrNull(i + 1)?.interval?.startTime
-            val isNotLastChapter = abs(it.interval.endTime - (duration?.toDouble() ?: -2.0)) > 1.0
-            val isNotAdjacent = nextStart == null || (abs(it.interval.endTime - nextStart) > 1.0)
-            if (isNotLastChapter && isNotAdjacent) {
-                val endChapter = IndexedSegment(
-                    index = -1,
-                    name = "",
-                    start = it.interval.endTime.toFloat(),
-                )
-                return@mapIndexed listOf(startChapter, endChapter)
-            } else {
-                listOf(startChapter)
-            }
-        }.flatten()
-        val playerChapters = viewModel.chapters.value.filter { playerChapter ->
-            aniskipChapters.none { aniskipChapter ->
-                abs(aniskipChapter.start - playerChapter.start) < 1.0 && aniskipChapter.index == -2
-            }
-        }.map {
-            IndexedSegment(it.name, it.start, it.color)
-        }.sortedBy { it.start }.mapIndexed { i, it ->
-            if (i == 0 && it.start < 1.0) {
-                IndexedSegment(
-                    it.name,
-                    0.0f,
-                    index = it.index,
-                )
-            } else {
-                it
-            }
-        }
-        val filteredAniskipChapters = aniskipChapters.filter { aniskipChapter ->
-            playerChapters.none { playerChapter ->
-                abs(aniskipChapter.start - playerChapter.start) < 1.0 && aniskipChapter.index != -2
-            }
-        }
-        val startChapter = if ((playerChapters + filteredAniskipChapters).isNotEmpty() &&
-            playerChapters.none { it.start == 0.0f } &&
-            filteredAniskipChapters.none { it.start == 0.0f }
-        ) {
-            listOf(
-                IndexedSegment(
-                    index = -1,
-                    name = "",
-                    start = 0.0f,
-                ),
-            )
-        } else {
-            emptyList()
-        }
-        val combinedChapters = (startChapter + playerChapters + filteredAniskipChapters).sortedBy { it.start }
-        viewModel.updateChapters(combinedChapters)
-    }
-
     // AM (DISCORD) -->
     private fun updateDiscordRPC(exitingPlayer: Boolean) {
-        if (connectionsPreferences.enableDiscordRPC().get()) {
-            viewModel.viewModelScope.launchIO {
+        if (!connectionsPreferences.enableDiscordRPC().get()) return
+
+        viewModel.viewModelScope.launchIO {
+            try {
                 if (!exitingPlayer) {
-                    val currentPosition = (player.timePos!!).toLong() * 1000
+                    val timePos = player.timePos ?: return@launchIO
+                    val duration = player.duration ?: 1440
+
+                    val currentPosition = timePos.toLong() * 1000
                     val startTimestamp = Calendar.getInstance().apply {
                         timeInMillis = System.currentTimeMillis() - currentPosition
                     }
-                    val durationInSeconds = player.duration ?: 1440
                     val endTimestamp = Calendar.getInstance().apply {
                         timeInMillis = startTimestamp.timeInMillis
-                        add(Calendar.SECOND, durationInSeconds)
+                        add(Calendar.SECOND, duration)
                     }
+
+                    val anime = viewModel.currentAnime.value ?: return@launchIO
+                    val episode = viewModel.currentEpisode.value ?: return@launchIO
 
                     DiscordRPCService.setPlayerActivity(
                         context = this@PlayerActivity,
                         PlayerData(
                             incognitoMode = viewModel.currentSource.value?.isNsfw() == true || viewModel.incognitoMode,
-                            animeId = viewModel.currentAnime.value?.id ?: -1,
-                            animeTitle = viewModel.currentAnime.value?.ogTitle ?: "",
-                            thumbnailUrl = viewModel.currentAnime.value?.thumbnailUrl ?: "",
+                            animeId = anime.id,
+                            animeTitle = anime.ogTitle,
+                            thumbnailUrl = anime.thumbnailUrl ?: "",
                             episodeNumber = if (connectionsPreferences.useChapterTitles().get()) {
-                                viewModel.currentEpisode.value?.name.toString()
+                                episode.name
                             } else {
-                                viewModel.currentEpisode.value?.episode_number.toString()
+                                episode.episode_number.toString()
                             },
                             startTimestamp = startTimestamp.timeInMillis,
                             endTimestamp = endTimestamp.timeInMillis,
@@ -1361,96 +1405,9 @@ class PlayerActivity : BaseActivity() {
                     val lastUsedScreen = DiscordRPCService.lastUsedScreen
                     DiscordRPCService.setAnimeScreen(this@PlayerActivity, lastUsedScreen)
                 }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR) { "Error updating Discord RPC: ${e.message}" }
             }
         }
-    }
-    // <-- AM (DISCORD)
-
-// -- CAST --
-
-    private fun setupCastListener() {
-        mSessionManagerListener = object : SessionManagerListener<CastSession> {
-            override fun onSessionEnded(session: CastSession, error: Int) {
-                onApplicationDisconnected()
-            }
-
-            override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) {
-                onApplicationConnected(session)
-            }
-
-            override fun onSessionResumeFailed(session: CastSession, error: Int) {
-                onApplicationDisconnected()
-            }
-
-            override fun onSessionStarted(session: CastSession, sessionId: String) {
-                onApplicationConnected(session)
-            }
-
-            override fun onSessionStartFailed(session: CastSession, error: Int) {
-                onApplicationDisconnected()
-            }
-
-            override fun onSessionStarting(session: CastSession) {}
-            override fun onSessionEnding(session: CastSession) {}
-            override fun onSessionResuming(session: CastSession, sessionId: String) {}
-            override fun onSessionSuspended(session: CastSession, reason: Int) {}
-
-            private fun onApplicationConnected(castSession: CastSession) {
-                mCastSession = castSession
-                if (player.timePos != null) {
-                    player.paused = true
-                    loadRemoteMedia()
-                }
-                isInCastMode = true
-                invalidateOptionsMenu()
-            }
-
-            private fun onApplicationDisconnected() {
-                player.paused = true
-                isInCastMode = false
-                invalidateOptionsMenu()
-            }
-        }
-    }
-
-    private fun loadRemoteMedia() {
-        // Validar que las dependencias necesarias estén inicializadas
-        if (mCastSession == null || viewModel.currentAnime.value == null || viewModel.currentEpisode.value == null) {
-            logcat(LogPriority.ERROR) { "Cannot load remote media: Missing session or data" }
-            return
-        }
-        val remoteMediaClient = mCastSession!!.remoteMediaClient ?: return
-        try {
-            remoteMediaClient.load(
-                MediaLoadRequestData.Builder()
-                    .setMediaInfo(buildMediaInfo())
-                    .setAutoplay(true)
-                    .setCurrentTime((player.timePos ?: 0).toLong() * 1000)
-                    .build(),
-            )
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Error loading remote media" }
-        }
-    }
-
-    private fun buildMediaInfo(): MediaInfo {
-        val currentAnime = viewModel.currentAnime.value ?: throw IllegalStateException("Anime data not available")
-        val currentvideo = viewModel.videoList.value[viewModel.selectedVideoIndex.value]
-        val cuarenteEpisode =
-            viewModel.currentEpisode.value ?: throw IllegalStateException("Episode data not available")
-
-        val movieMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
-            putString(MediaMetadata.KEY_TITLE, currentAnime.title)
-            putString(MediaMetadata.KEY_SUBTITLE, cuarenteEpisode.name)
-            addImage(WebImage(Uri.parse(currentAnime.thumbnailUrl)))
-        }
-        val videoUrl = currentvideo.videoUrl ?: throw IllegalStateException("Video URL not available")
-
-        return MediaInfo.Builder(videoUrl)
-            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-            .setContentType("video/mp4")
-            .setMetadata(movieMetadata)
-            .setStreamDuration((player.duration ?: 0).toLong())
-            .build()
     }
 }

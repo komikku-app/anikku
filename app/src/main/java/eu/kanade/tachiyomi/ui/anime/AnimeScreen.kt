@@ -35,16 +35,17 @@ import eu.kanade.presentation.anime.components.DeleteEpisodesDialog
 import eu.kanade.presentation.anime.components.SetIntervalDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
+import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsGesturesScreen.SkipIntroLengthDialog
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.presentation.util.isTabletUi
-import eu.kanade.tachiyomi.data.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.isSourceForTorrents
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.anime.track.TrackInfoDialogHomeScreen
 import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialog
 import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialogScreenModel
@@ -338,17 +339,20 @@ class AnimeScreen(
                         screenModel.setAnimeViewerFlags.awaitSetSkipIntroLength(animeId, newLength)
                     }
                 }
-                // TODO(custombuttons)
-                /*
                 SkipIntroLengthDialog(
-                    currentSkipIntroLength = successState.anime.skipIntroLength,
-                    defaultSkipIntroLength = screenModel.gesturePreferences.defaultIntroLength().get(),
-                    fromPlayer = false,
-                    updateSkipIntroLength = ::updateSkipIntroLength,
+                    initialSkipIntroLength = if (!successState.anime.skipIntroDisable &&
+                        successState.anime.skipIntroLength == 0
+                    ) {
+                        screenModel.gesturePreferences.defaultIntroLength().get()
+                    } else {
+                        successState.anime.skipIntroLength
+                    },
                     onDismissRequest = onDismissRequest,
+                    onValueChanged = {
+                        updateSkipIntroLength(it.toLong())
+                        onDismissRequest()
+                    },
                 )
-
-                 */
             }
             is AnimeScreenModel.Dialog.ShowQualities -> {
                 EpisodeOptionsDialogScreen.onDismissDialog = onDismissRequest

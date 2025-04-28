@@ -735,8 +735,8 @@
     <string name="also_set_chapter_settings_for_library">Ook toepassen op alle manga in mijn bibliotheek</string>
     <string name="dialog_with_checkbox_reset">Stel alle hoofdstukken voor dit item opnieuw in</string>
     <string name="download_insufficient_space">Kon hoofdstukken niet downloaden omdat er te weinig opslagruimte is</string>
-    <string name="download_queue_size_warning">Waarschuwing: grote bulk downloads kunnen leiden tot trager werkende bronnen en/of Anikku blokkeren</string>
-    <string name="information_webview_required">WebView is vereist voor Anikku</string>
+    <string name="download_queue_size_warning">Waarschuwing: grote bulk downloads kunnen leiden tot trager werkende bronnen en/of Aniyomi blokkeren</string>
+    <string name="information_webview_required">WebView is vereist voor Aniyomi</string>
     <string name="download_notifier_download_paused_chapters">Download gepauzeerd</string>
     <string name="channel_new_chapters_episodes">Hoofdstukupdates</string>
     <string name="selected">Geselecteerd</string>
@@ -776,10 +776,6 @@
     <string name="unseen">Onbekeken</string>
     <string name="label_anime_extension_repos">Bronnen voor Anime extensies</string>
     <string name="onboarding_storage_action_create_folder">Maak standaard Aniyomi-map</string>
-    <string name="safe_download">Veilige downloadmodus voor anime</string>
-    <string name="safe_download_summary">Activeer single thread en no range downloadmodus</string>
-    <string name="download_threads_number">Aantal threads</string>
-    <string name="download_threads_number_summary">Aantal threads dat wordt gebruikt voor het downloaden. Een te hoog aantal kan leiden tot een blokkade van je IP-adres. 4 is meestal een goed aantal om zware belasting van de bronservers te voorkomen.</string>
     <string name="download_speed_limit">Beperk downloadsnelheid</string>
     <string name="onboarding_action_skip">Overslaan</string>
     <string name="onboarding_storage_info">Selecteer een map waar %1$s downloads van hoofdstukken, back-ups meer kan opslaan.

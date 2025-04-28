@@ -34,6 +34,8 @@ import tachiyomi.domain.library.model.LibrarySort
 import tachiyomi.domain.library.model.sort
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.BaseSortItem
 import tachiyomi.presentation.core.components.CheckboxItem
 import tachiyomi.presentation.core.components.HeadingItem
@@ -42,6 +44,7 @@ import tachiyomi.presentation.core.components.SettingsChipRow
 import tachiyomi.presentation.core.components.SliderItem
 import tachiyomi.presentation.core.components.SortItem
 import tachiyomi.presentation.core.components.TriStateItem
+import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
@@ -61,7 +64,7 @@ fun LibrarySettingsDialog(
             stringResource(MR.strings.action_sort),
             stringResource(MR.strings.action_display),
             // SY -->
-            stringResource(MR.strings.group),
+            stringResource(SYMR.strings.group),
             // SY <--
         ),
     ) { page ->
@@ -203,7 +206,7 @@ private fun ColumnScope.SortPage(
         }
         listOfNotNull(
             MR.strings.action_sort_alpha to LibrarySort.Type.Alphabetical,
-            MR.strings.action_sort_total to LibrarySort.Type.TotalEpisodes,
+            MR.strings.action_sort_total_episodes to LibrarySort.Type.TotalEpisodes,
             MR.strings.action_sort_last_seen to LibrarySort.Type.LastSeen,
             MR.strings.action_sort_last_anime_update to LibrarySort.Type.LastUpdate,
             MR.strings.action_sort_unseen_count to LibrarySort.Type.UnseenCount,
@@ -273,17 +276,29 @@ private fun ColumnScope.DisplayPage(
         }
     }
 
-    if (displayMode != LibraryDisplayMode.List) {
-        val configuration = LocalConfiguration.current
-        val columnPreference = remember {
-            if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                screenModel.libraryPreferences.landscapeColumns()
-            } else {
-                screenModel.libraryPreferences.portraitColumns()
-            }
+    val configuration = LocalConfiguration.current
+    val columnPreference = remember {
+        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            screenModel.libraryPreferences.landscapeColumns()
+        } else {
+            screenModel.libraryPreferences.portraitColumns()
         }
+    }
 
-        val columns by columnPreference.collectAsState()
+    val columns by columnPreference.collectAsState()
+    if (displayMode == LibraryDisplayMode.List) {
+        SliderItem(
+            label = stringResource(MR.strings.pref_library_rows),
+            max = 10,
+            value = columns,
+            valueText = if (columns > 0) {
+                pluralStringResource(MR.plurals.pref_library_entries_in_column, columns, columns)
+            } else {
+                stringResource(MR.strings.label_default)
+            },
+            onChange = columnPreference::set,
+        )
+    } else {
         SliderItem(
             label = stringResource(MR.strings.pref_library_columns),
             max = 10,
@@ -311,7 +326,7 @@ private fun ColumnScope.DisplayPage(
         pref = screenModel.libraryPreferences.languageBadge(),
     )
     CheckboxItem(
-        label = stringResource(MR.strings.action_display_show_continue_watching_button),
+        label = stringResource(AMR.strings.action_display_show_continue_watching_button),
         pref = screenModel.libraryPreferences.showContinueWatchingButton(),
     )
 

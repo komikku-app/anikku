@@ -63,6 +63,7 @@ import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.library.model.LibraryAnime
 import tachiyomi.domain.library.model.LibraryGroup
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
@@ -185,7 +186,7 @@ data object LibraryTab : Tab {
                         if (!SyncDataJob.isRunning(context)) {
                             SyncDataJob.startNow(context)
                         } else {
-                            context.toast(MR.strings.sync_in_progress)
+                            context.toast(SYMR.strings.sync_in_progress)
                         }
                     },
                     searchQuery = state.searchQuery,
@@ -268,10 +269,6 @@ data object LibraryTab : Tab {
         when (val dialog = state.dialog) {
             is LibraryScreenModel.Dialog.SettingsSheet -> run {
                 val category = state.categories.getOrNull(screenModel.activeCategoryIndex)
-                if (category == null) {
-                    onDismissRequest()
-                    return@run
-                }
                 LibrarySettingsDialog(
                     onDismissRequest = onDismissRequest,
                     screenModel = settingsScreenModel,

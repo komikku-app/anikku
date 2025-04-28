@@ -50,7 +50,6 @@ fun MoreScreen(
     onClickDownloadQueue: () -> Unit,
     onClickCategories: () -> Unit,
     onClickStats: () -> Unit,
-    onClickStorage: () -> Unit,
     onClickDataAndStorage: () -> Unit,
     onClickPlayerSettings: () -> Unit,
     onClickSettings: () -> Unit,
