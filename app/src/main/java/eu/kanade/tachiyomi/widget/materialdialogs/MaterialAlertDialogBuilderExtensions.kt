@@ -1,20 +1,17 @@
 package eu.kanade.tachiyomi.widget.materialdialogs
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.view.LayoutInflater
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.getSystemService
-import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eu.kanade.presentation.theme.colorscheme.AndroidViewColorScheme
 import eu.kanade.tachiyomi.databinding.DialogStubTextinputBinding
@@ -40,7 +37,7 @@ fun DialogStubTextinputBinding.setPositiveButton(text: String, onClick: (String)
     positiveButton.text = text
 
     positiveButton.setOnClickListener {
-        val textEdit = textField.editText
+        val textEdit = textInputLayout.editText
         onClick(textEdit?.text?.toString() ?: "")
     }
     return this
@@ -57,13 +54,13 @@ fun DialogStubTextinputBinding.setNegativeButton(text: String, onClick: () -> Un
 
 @Suppress("unused")
 fun DialogStubTextinputBinding.setHint(hint: String? = null): DialogStubTextinputBinding {
-    textField.hint = hint
+    textInputLayout.hint = hint
     return this
 }
 
 fun DialogStubTextinputBinding.setTextEdit(prefill: String? = null): DialogStubTextinputBinding {
     // KMK <--
-    textField.editText?.apply {
+    textInputLayout.editText?.apply {
         setText(prefill, TextView.BufferType.EDITABLE)
         post {
             requestFocusFromTouch()
@@ -74,38 +71,15 @@ fun DialogStubTextinputBinding.setTextEdit(prefill: String? = null): DialogStubT
     return this
 }
 
-fun DialogStubTextinputBinding.setColors(colors: AndroidViewColorScheme): DialogStubTextinputBinding {
-    textField.boxStrokeColor = colors.iconColor
+fun DialogStubTextinputBinding.setColors(colorScheme: AndroidViewColorScheme): DialogStubTextinputBinding {
+    colorScheme.setTextInputLayoutColor(textInputLayout)
+    colorScheme.setEditTextColor(textInputEdit)
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        textField.cursorColor = ColorStateList.valueOf(colors.iconColor)
-    }
+    alertTitle.setTextColor(colorScheme.textColor)
+    positiveButton.setTextColor(colorScheme.iconColor)
+    negativeButton.setTextColor(colorScheme.iconColor)
 
-    textField.editText?.apply {
-        setTextColor(colors.textColor)
-        highlightColor = colors.textHighlightColor
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            textSelectHandle?.let { drawable ->
-                drawable.setTint(colors.iconColor)
-                setTextSelectHandle(drawable)
-            }
-            textSelectHandleLeft?.let { drawable ->
-                drawable.setTint(colors.iconColor)
-                setTextSelectHandleLeft(drawable)
-            }
-            textSelectHandleRight?.let { drawable ->
-                drawable.setTint(colors.iconColor)
-                setTextSelectHandleRight(drawable)
-            }
-        }
-    }
-
-    alertTitle.setTextColor(colors.textColor)
-    positiveButton.setTextColor(colors.iconColor)
-    negativeButton.setTextColor(colors.iconColor)
-
-    root.background = RoundedCornerDrawable(color = colors.dialogBgColor)
+    root.background = RoundedCornerDrawable(color = colorScheme.dialogBgColor)
 
     return this
 }
@@ -139,23 +113,3 @@ class RoundedCornerDrawable(val color: Int, private val cornerRadius: Float = 72
     }
 }
 // KMK <--
-
-fun MaterialAlertDialogBuilder.setTextInput(
-    hint: String? = null,
-    prefill: String? = null,
-    onTextChanged: (String) -> Unit,
-): MaterialAlertDialogBuilder {
-    val binding = DialogStubTextinputBinding.inflate(LayoutInflater.from(context))
-    binding.textField.hint = hint
-    binding.textField.editText?.apply {
-        setText(prefill, TextView.BufferType.EDITABLE)
-        doAfterTextChanged {
-            onTextChanged(it?.toString() ?: "")
-        }
-        post {
-            requestFocusFromTouch()
-            context.getSystemService<InputMethodManager>()?.showSoftInput(this, 0)
-        }
-    }
-    return setView(binding.root)
-}
