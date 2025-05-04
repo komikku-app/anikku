@@ -176,6 +176,8 @@
     <string name="clear_database_history_warning">Seen episodes and progress of non-library entries will be lost</string>
     <string name="clear_db_exclude_read">Keep entries with seen episodes</string>
     <string name="logging_in">Logging in…</string>
+    <string name="storage_failed_to_create_download_directory">Failed to create download directory</string>
+    <string name="storage_failed_to_create_directory">Failed to create directory: %s</string>
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->

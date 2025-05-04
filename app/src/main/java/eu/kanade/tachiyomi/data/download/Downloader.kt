@@ -356,18 +356,29 @@ class Downloader(
      * @param download the episode to be downloaded.
      */
     private suspend fun downloadEpisode(download: Download) {
+        val animeDir = provider.getMangaDir(/* SY --> */ download.manga.ogTitle /* SY <-- */, download.source).getOrElse { e ->
+            download.status = Download.State.ERROR
+            notifier.onError(e.message, download.chapter.name, download.manga.title, download.manga.id)
+            return
+        }
+
+        val availSpace = DiskUtil.getAvailableStorageSpace(animeDir)
+        if (availSpace != -1L && availSpace < MIN_DISK_SPACE) {
+            download.status = Download.State.ERROR
+            notifier.onError(
+                context.stringResource(MR.strings.download_insufficient_space),
+                download.chapter.name,
+                download.manga.title,
+                download.manga.id,
+            )
+            return
+        }
+
+        val episodeDirname = provider.getChapterDirName(download.episode.name, download.episode.scanlator)
+        val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
+
         // This try catch manages errors during download
         try {
-            val animeDir = provider.getMangaDir(/* SY --> */ download.anime.ogTitle /* SY <-- */, download.source)
-
-            val availSpace = DiskUtil.getAvailableStorageSpace(animeDir)
-            if (availSpace != -1L && availSpace < MIN_DISK_SPACE) {
-                throw Exception(context.stringResource(MR.strings.download_insufficient_space))
-            }
-
-            val episodeDirname = provider.getChapterDirName(download.episode.name, download.episode.scanlator)
-            val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
-
             if (download.video == null) {
                 // Pull video from network and add them to download object
                 try {
@@ -384,11 +395,12 @@ class Downloader(
             getOrDownloadVideoFile(download, tmpDir)
 
             ensureSuccessfulAnimeDownload(download, animeDir, tmpDir, episodeDirname)
-        } catch (e: Exception) {
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            // If the page list threw, it will resume here
+            logcat(LogPriority.ERROR, error)
             download.status = Download.State.ERROR
-            notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
-        } finally {
-            notifier.dismissProgress()
+            notifier.onError(error.message, download.chapter.name, download.manga.title, download.manga.id)
         }
     }
 
