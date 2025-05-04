@@ -704,7 +704,20 @@ class Downloader(
     ): UniFile {
         try {
             val file = tmpDir.createFile("${filename}_tmp.mkv")!!
-            context.copyToClipboard("Episode download location", tmpDir.filePath!!.substringBeforeLast("_tmp"))
+            // KMK -->
+            try {
+                // Use the main looper to show toast from the correct thread
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    try {
+                        context.copyToClipboard("Episode download location", tmpDir.filePath!!.substringBeforeLast("_tmp"))
+                    } catch (e: SecurityException) {
+                        logcat(LogPriority.ERROR) { "Clipboard permission not granted: " + e.message }
+                    }
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR) { "Error copying to clipboard: " + e.message }
+            }
+            // KMK <--
 
             // TODO: support other file formats!!
             // start download with intent
