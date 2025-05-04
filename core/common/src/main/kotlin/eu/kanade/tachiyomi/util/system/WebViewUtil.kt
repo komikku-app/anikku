@@ -13,7 +13,6 @@ import kotlin.coroutines.resume
 
 object WebViewUtil {
     private const val CHROME_PACKAGE = "com.android.chrome"
-    private const val FALLBACK_PACKAGE = "com.google.android.webview"
 
     const val MINIMUM_WEBVIEW_VERSION = 118
 
@@ -55,13 +54,20 @@ object WebViewUtil {
         return context.packageManager.hasSystemFeature(PackageManager.FEATURE_WEBVIEW)
     }
 
-    fun spoofedPackageName(context: Context): String {
+    fun spoofedPackageName(context: Context): String? {
         return try {
             context.packageManager.getPackageInfo(CHROME_PACKAGE, PackageManager.GET_META_DATA)
 
             CHROME_PACKAGE
         } catch (_: PackageManager.NameNotFoundException) {
-            FALLBACK_PACKAGE
+            // KMK -->
+            context.defaultBrowserPackageName().takeUnless { it.isNullOrBlank() } ?: run {
+                val packages = context.getAllInstalledPackages()
+                packages.firstOrNull { it.contains("chrome") }
+                    ?: packages.firstOrNull { it.contains("webview") }
+                    ?: packages.firstOrNull { it.contains("android") && it.contains("setting") }
+            }
+            // KMK <--
         }
     }
 }

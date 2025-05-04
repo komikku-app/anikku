@@ -291,8 +291,16 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                     setOf("getAll", "getPackageName", "<init>").any { trace.methodName.equals(it, ignoreCase = true) }
             }
 
-            if (isChromiumCall) return WebViewUtil.spoofedPackageName(applicationContext)
-        } catch (_: Exception) {
+            if (isChromiumCall) {
+                return WebViewUtil.spoofedPackageName(applicationContext)
+                    // KMK -->
+                    ?: super.getPackageName()
+                // KMK <--
+            }
+        } catch (e: Exception) {
+            // KMK -->
+            logcat(LogPriority.ERROR, e, "WEBVIEW") { "Failed to retrieve spoofed package name" }
+            // KMK <--
         }
 
         return super.getPackageName()
