@@ -224,7 +224,7 @@ class MyAnimeListApi(
 
     private suspend fun getListPage(offset: Int): MALUserSearchResult {
         return withIOContext {
-            val urlBuilder = "$BASE_API_URL/users/@me/mangalist".toUri().buildUpon()
+            val urlBuilder = "$BASE_API_URL/users/@me/animelist".toUri().buildUpon()
                 .appendQueryParameter("fields", "list_status{start_date,finish_date}")
                 .appendQueryParameter("limit", LIST_PAGINATION_AMOUNT.toString())
             if (offset > 0) {
