@@ -175,6 +175,7 @@
     <string name="clear_database_text">You’re about to remove entries from the database</string>
     <string name="clear_database_history_warning">Seen episodes and progress of non-library entries will be lost</string>
     <string name="clear_db_exclude_read">Keep entries with seen episodes</string>
+    <string name="logging_in">Logging in…</string>
 
     <!-- Mihon, Aniyomi, Komikku & SY which need to replace manga => anime -->
         <!-- Mihon -->
