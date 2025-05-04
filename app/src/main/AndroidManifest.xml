@@ -230,14 +230,7 @@
         <activity android:label="Discord Login"
             android:name=".ui.setting.connections.DiscordLoginActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:exported="false"
-            tools:ignore="AppLinkUrlError">
-            <intent-filter android:autoVerify="false">
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="account.samsung.com" android:path="/accounts/oauth/callback"/>
-            </intent-filter>
+            android:exported="false">
         </activity>
         <service
             android:name=".data.connections.discord.DiscordRPCService"
