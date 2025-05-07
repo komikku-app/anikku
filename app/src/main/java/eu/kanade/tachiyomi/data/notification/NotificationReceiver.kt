@@ -267,9 +267,9 @@ class NotificationReceiver : BroadcastReceiver() {
 
         private const val ACTION_OPEN_ENTRY = "$ID.$NAME.ACTION_OPEN_ENTRY"
 
-        private const val ACTION_RESUME_DOWNLOADS = "$ID.$NAME.ACTION_RESUME_ANIME_DOWNLOADS"
-        private const val ACTION_PAUSE_DOWNLOADS = "$ID.$NAME.ACTION_PAUSE_ANIME_DOWNLOADS"
-        private const val ACTION_CLEAR_DOWNLOADS = "$ID.$NAME.ACTION_CLEAR_ANIME_DOWNLOADS"
+        private const val ACTION_RESUME_DOWNLOADS = "$ID.$NAME.ACTION_RESUME_DOWNLOADS"
+        private const val ACTION_PAUSE_DOWNLOADS = "$ID.$NAME.ACTION_PAUSE_DOWNLOADS"
+        private const val ACTION_CLEAR_DOWNLOADS = "$ID.$NAME.ACTION_CLEAR_DOWNLOADS"
 
         private const val ACTION_DISMISS_NOTIFICATION = "$ID.$NAME.ACTION_DISMISS_NOTIFICATION"
 
@@ -587,7 +587,7 @@ class NotificationReceiver : BroadcastReceiver() {
          */
         internal fun openExtensionsPendingActivity(context: Context): PendingIntent {
             val intent = Intent(context, MainActivity::class.java).apply {
-                action = Constants.SHORTCUT_ANIMEEXTENSIONS
+                action = Constants.SHORTCUT_EXTENSIONS
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             return PendingIntent.getActivity(
