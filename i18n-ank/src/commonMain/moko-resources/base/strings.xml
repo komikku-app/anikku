@@ -198,6 +198,7 @@
     <string name="sync_on_episode_seen">Sync on Episode Seen</string>
     <string name="sync_on_episode_open">Sync on Episode Open</string>
     <string name="include_all_seen_entries">Include all seen entries</string>
+    <string name="only_show_updated_entries_episodes">Only show entries with new episode</string>
 
         <!-- Komikku -->
     <string name="sync_progress_from_trackers_up_to_episode">Sync progress from Trackers up to episode %d</string>

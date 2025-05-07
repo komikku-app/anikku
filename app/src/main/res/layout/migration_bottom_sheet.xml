@@ -58,7 +58,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="true"
-                android:text="@string/chapters" />
+                android:text="@string/episodes" />
 
             <CheckBox
                 android:id="@+id/mig_categories"
@@ -219,7 +219,7 @@
                 android:layout_marginBottom="82dp"
                 android:paddingHorizontal="16.dp"
                 android:paddingVertical="16dp"
-                android:text="@string/only_show_updated_entries" />
+                android:text="@string/only_show_updated_entries_episodes" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

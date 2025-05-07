@@ -227,7 +227,7 @@ fun DuplicateMangaDialog(
                                 },
                                 Modifier.align(Alignment.CenterHorizontally),
                             ) {
-                                Text(text = stringResource(MR.strings.action_show_manga))
+                                Text(text = stringResource(MR.strings.action_show_anime))
                             }
 
                             TextButton(
@@ -347,7 +347,7 @@ private fun DuplicateMangaListItem(
                     color = MaterialTheme.colorScheme.secondary,
                     textColor = MaterialTheme.colorScheme.onSecondary,
                     text = pluralStringResource(
-                        MR.plurals.manga_num_chapters,
+                        MR.plurals.anime_num_episodes,
                         duplicate.chapterCount.toInt(),
                         duplicate.chapterCount,
                     ),

@@ -76,7 +76,7 @@ object MigrationFlags {
     /** Returns information about applicable flags with default selections. */
     fun getFlags(manga: Manga?, defaultSelectedBitMap: Int): List<MigrationFlag> {
         val flags = mutableListOf<MigrationFlag>()
-        flags += MigrationFlag.create(CHAPTERS, defaultSelectedBitMap, MR.strings.chapters)
+        flags += MigrationFlag.create(CHAPTERS, defaultSelectedBitMap, MR.strings.episodes)
         flags += MigrationFlag.create(CATEGORIES, defaultSelectedBitMap, MR.strings.categories)
         // KMK -->
         flags += MigrationFlag.create(TRACK, defaultSelectedBitMap, MR.strings.track)

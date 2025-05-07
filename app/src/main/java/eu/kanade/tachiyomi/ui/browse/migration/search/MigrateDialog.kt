@@ -104,7 +104,7 @@ internal fun MigrateDialog(
                     TextButton(
                         onClick = { onClickTitle() },
                     ) {
-                        Text(text = stringResource(MR.strings.action_show_manga))
+                        Text(text = stringResource(MR.strings.action_show_anime))
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
