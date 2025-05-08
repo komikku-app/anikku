@@ -20,9 +20,8 @@ kotlin {
 
 dependencies {
     implementation(projects.i18n)
-    // SY -->
     implementation(projects.i18nSy)
-    // SY <--
+    implementation(projects.i18nAnk)
 
     api(libs.logcat)
 

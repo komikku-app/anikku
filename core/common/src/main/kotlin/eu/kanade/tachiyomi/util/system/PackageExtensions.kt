@@ -6,6 +6,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.net.toUri
+import logcat.LogPriority
+import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.util.system.logcat
+import tachiyomi.i18n.ank.AMR
 import java.util.Collections
 
 fun Context.defaultBrowserPackageName(): String? {
@@ -60,8 +64,24 @@ fun Context.isPackageInstalled(packageName: String): Boolean {
 }
 
 fun Context.launchRequestPackageInstallsPermission() {
-    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-        data = "package:$packageName".toUri()
-        startActivity(this)
+    // KMK -->
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // KMK <--
+        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+            data = "package:$packageName".toUri()
+            startActivity(this)
+        }
+        // KMK -->
+    } else {
+        // For Android 7.1 (API 25) and below
+        val intent = Intent(Settings.ACTION_SECURITY_SETTINGS)
+        try {
+            startActivity(intent)
+            toast(stringResource(AMR.strings.install_unknown_apps_permission_required))
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+            toast(e.message ?: stringResource(AMR.strings.unable_open_security_settings))
+        }
     }
+    // KMK <--
 }
