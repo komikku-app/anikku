@@ -245,4 +245,7 @@
 
     <string name="skipped_reason_not_caught_up_episode">Skipped because there are unseen episodes</string>
     <string name="skipped_reason_not_started_episode">Skipped because no episodes are seen</string>
+
+    <string name="install_unknown_apps_permission_required">Allow permission for app to 'install unknown app' so it can install extensions</string>
+    <string name="unable_open_security_settings">"Unable to open security settings"</string>
 </resources>
