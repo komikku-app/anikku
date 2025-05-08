@@ -30,6 +30,7 @@ import eu.kanade.tachiyomi.ui.player.X_PLAYER
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.LocalHttpServerService
+import eu.kanade.tachiyomi.util.system.deviceHasPip
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
@@ -54,8 +55,8 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
         val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
         val basePreferences = remember { Injekt.get<BasePreferences>() }
         val torrentServerPreferences = remember { Injekt.get<TorrentServerPreferences>() }
-        val deviceSupportsPip = basePreferences.deviceHasPip()
         val localHttpServerHolder = remember { Injekt.get<LocalHttpServerHolder>() }
+        val deviceSupportsPip = LocalContext.current.deviceHasPip()
 
         return listOfNotNull(
             Preference.PreferenceItem.ListPreference(

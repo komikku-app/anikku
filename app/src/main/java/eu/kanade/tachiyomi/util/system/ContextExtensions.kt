@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -78,6 +79,11 @@ fun Context.openDiscordLoginActivity() {
     }
 }
 // <-- AM (DISCORD)
+
+// KMK -->
+fun Context.deviceHasPip() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+    packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+// KMK <--
 
 fun Context.createFileInCacheDir(name: String): File {
     val file = File(externalCacheDir, name)

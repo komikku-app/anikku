@@ -29,7 +29,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
-import android.content.pm.PackageManager
 import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.graphics.Rect
@@ -46,6 +45,7 @@ import android.view.View
 import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -84,6 +84,7 @@ import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.util.system.deviceHasPip
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import `is`.xyz.mpv.MPVLib
@@ -140,8 +141,7 @@ class PlayerActivity : BaseActivity() {
 
     private var pipRect: Rect? = null
     val isPipSupportedAndEnabled by lazy {
-        packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) &&
-            playerPreferences.enablePip().get()
+        /* KMK --> */ deviceHasPip() /* KMK <-- */ && playerPreferences.enablePip().get()
     }
 
     private var pipReceiver: BroadcastReceiver? = null
@@ -280,7 +280,13 @@ class PlayerActivity : BaseActivity() {
                     viewModel = viewModel,
                     castManager = castManager, // Pass the castManager instance
                     onBackPress = {
-                        if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
+                        if (isPipSupportedAndEnabled &&
+                            // KMK -->
+                            deviceHasPip() &&
+                            // KMK <--
+                            player.paused == false &&
+                            playerPreferences.pipOnExit().get()
+                        ) {
                             enterPictureInPictureMode(createPipParams())
                         } else {
                             finish()
@@ -373,20 +379,32 @@ class PlayerActivity : BaseActivity() {
 
     @SuppressLint("MissingSuperCall")
     override fun onUserLeaveHint() {
-        if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
-            enterPictureInPictureMode()
+        if (isPipSupportedAndEnabled &&
+            // KMK -->
+            deviceHasPip() &&
+            // KMK <--
+            player.paused == false &&
+            playerPreferences.pipOnExit().get()
+        ) {
+            enterPictureInPictureMode(/* KMK --> */ createPipParams() /* KMK <-- */)
         }
         super.onUserLeaveHint()
     }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
+        if (isPipSupportedAndEnabled &&
+            // KMK -->
+            deviceHasPip() &&
+            // KMK <--
+            player.paused == false &&
+            playerPreferences.pipOnExit().get()
+        ) {
             if (viewModel.sheetShown.value == Sheets.None &&
                 viewModel.panelShown.value == Panels.None &&
                 viewModel.dialogShown.value == Dialogs.None
             ) {
-                enterPictureInPictureMode()
+                enterPictureInPictureMode(/* KMK --> */ createPipParams() /* KMK <-- */)
             }
         } else {
             super.onBackPressed()
@@ -395,7 +413,11 @@ class PlayerActivity : BaseActivity() {
 
     override fun onStart() {
         super.onStart()
-        setPictureInPictureParams(createPipParams())
+        // KMK -->
+        if (deviceHasPip()) {
+            // KMK <--
+            setPictureInPictureParams(createPipParams())
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.setFlags(
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -734,7 +756,11 @@ class PlayerActivity : BaseActivity() {
                 }
 
                 runCatching {
-                    setPictureInPictureParams(createPipParams())
+                    // KMK -->
+                    if (deviceHasPip()) {
+                        // KMK <--
+                        setPictureInPictureParams(createPipParams())
+                    }
                 }
 
                 updateDiscordRPC(exitingPlayer = false)
@@ -775,12 +801,11 @@ class PlayerActivity : BaseActivity() {
         }
     }
 
-    @SuppressLint("NewApi")
     internal fun onObserverEvent(property: String, value: Double) {
         if (player.isExiting) return
         when (property) {
             "speed" -> viewModel.playbackSpeed.update { value.toFloat() }
-            "video-params/aspect" -> if (isPipSupportedAndEnabled) createPipParams()
+            "video-params/aspect" -> if (isPipSupportedAndEnabled /* KMK --> */ && deviceHasPip() /* KMK <-- */) createPipParams()
         }
     }
 
@@ -795,6 +820,7 @@ class PlayerActivity : BaseActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun createPipParams(): PictureInPictureParams {
         val builder = PictureInPictureParams.Builder()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -829,6 +855,7 @@ class PlayerActivity : BaseActivity() {
         return builder.build()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         if (!isInPictureInPictureMode) {
