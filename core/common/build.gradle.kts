@@ -55,6 +55,7 @@ dependencies {
 
     // FFmpeg-kit
     implementation(libs.ffmpeg.kit)
+    implementation(libs.webkit)
 
     // Tests
     testImplementation(libs.bundles.test)
