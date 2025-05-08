@@ -1,5 +1,7 @@
 package tachiyomi.domain.storage.service
 
+import android.Manifest
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -8,6 +10,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -131,10 +134,16 @@ class StorageManager(
         ) {
             try {
                 val documentTreeIntent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-                if (isIntentAvailable(context, documentTreeIntent)) {
-                    pickStorageLocation()
-                } else {
+                // Fire TV devices are not allowed to use SAF, see https://developer.amazon.com/docs/fire-tv/storage-dev-guidelines.html
+                // It's also not possible to check if the SAF intent is available on Fire TV devices,
+                // as it will always return true, but the intent will fail to launch.
+                if (Build.MANUFACTURER == "Amazon" &&
+                    (Build.MODEL.startsWith("AFT") || Build.MODEL.startsWith("AFN")) ||
+                    !isIntentAvailable(context, documentTreeIntent)
+                ) {
                     handleStoragePermission(context, storageDirPref)
+                } else {
+                    pickStorageLocation()
                 }
             } catch (e: ActivityNotFoundException) {
                 fallbackToScopedStorage(context, storageDirPref)
@@ -148,22 +157,48 @@ class StorageManager(
             context: Context,
             storageDirPref: Preference<String>,
         ) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (!Environment.isExternalStorageManager()) {
-                    try {
-                        val permissionIntent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                            data = "package:${context.packageName}".toUri()
-                        }
-                        context.startActivity(permissionIntent)
-                    } catch (e: ActivityNotFoundException) {
-                        val fallbackIntent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                        context.startActivity(fallbackIntent)
-                    }
-                } else {
-                    updateStoragePreference(context, storageDirPref)
-                }
+            if (hasManageExternalStoragePermission(context)) {
+                updateStoragePreference(context, storageDirPref)
             } else {
-                throw ActivityNotFoundException(context.stringResource(MR.strings.file_picker_error))
+                requestManageExternalStoragePermission(context)
+            }
+        }
+
+        private fun hasManageExternalStoragePermission(context: Context): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) ==
+                    PackageManager.PERMISSION_GRANTED
+            } else {
+                context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                    PackageManager.PERMISSION_GRANTED
+            }
+        }
+
+        private fun requestManageExternalStoragePermission(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                        data = "package:${context.packageName}".toUri()
+                    }
+                    context.startActivity(intent)
+                } catch (e: ActivityNotFoundException) {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    context.startActivity(intent)
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ActivityCompat.requestPermissions(
+                    context as Activity,
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    1001,
+                )
+            } else {
+                ActivityCompat.requestPermissions(
+                    context as Activity,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    1001,
+                )
             }
         }
 
