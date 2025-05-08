@@ -80,6 +80,7 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetAllManga
 import tachiyomi.domain.manga.interactor.ResetViewerFlags
 import tachiyomi.domain.release.service.AppUpdatePolicy
@@ -110,6 +111,7 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         val basePreferences = remember { Injekt.get<BasePreferences>() }
         val networkPreferences = remember { Injekt.get<NetworkPreferences>() }
+        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
         val unsortedPreferences = remember { Injekt.get<UnsortedPreferences>() }
 
         return listOf(
@@ -169,7 +171,7 @@ object SettingsAdvancedScreen : SearchableSettings {
             getBackgroundActivityGroup(),
             getDataGroup(),
             getNetworkGroup(networkPreferences = networkPreferences),
-            getLibraryGroup(),
+            getLibraryGroup(libraryPreferences = libraryPreferences),
             getExtensionsGroup(basePreferences = basePreferences),
             // SY -->
             getDownloaderGroup(),
@@ -336,7 +338,9 @@ object SettingsAdvancedScreen : SearchableSettings {
     }
 
     @Composable
-    private fun getLibraryGroup(): Preference.PreferenceGroup {
+    private fun getLibraryGroup(
+        libraryPreferences: LibraryPreferences,
+    ): Preference.PreferenceGroup {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
         // KMK -->
@@ -372,6 +376,11 @@ object SettingsAdvancedScreen : SearchableSettings {
                             }
                         }
                     },
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.updateMangaTitles(),
+                    title = stringResource(AMR.strings.pref_update_library_manga_titles),
+                    subtitle = stringResource(AMR.strings.pref_update_library_manga_titles_summary),
                 ),
             ),
         )
