@@ -77,6 +77,7 @@ import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
+import eu.kanade.tachiyomi.util.system.deviceHasPip
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
@@ -490,7 +491,7 @@ fun PlayerControls(
                         onPressSkipIntroButton = viewModel::onSkipIntro,
                         isPipAvailable = activity.isPipSupportedAndEnabled,
                         onPipClick = {
-                            if (!viewModel.isLoadingEpisode.value) {
+                            if (/* KMK --> */ activity.deviceHasPip() && /* KMK <-- */ !viewModel.isLoadingEpisode.value) {
                                 activity.enterPictureInPictureMode(activity.createPipParams())
                             }
                         },

@@ -1,7 +1,6 @@
 package eu.kanade.domain.base
 
 import android.content.Context
-import android.content.pm.PackageManager
 import dev.icerock.moko.resources.StringResource
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
@@ -20,10 +19,6 @@ class BasePreferences(
     fun incognitoMode() = preferenceStore.getBoolean(Preference.appStateKey("incognito_mode"), false)
 
     fun extensionInstaller() = ExtensionInstallerPreference(context, preferenceStore)
-
-    fun deviceHasPip() = context.packageManager.hasSystemFeature(
-        PackageManager.FEATURE_PICTURE_IN_PICTURE,
-    )
 
     fun shownOnboardingFlow() = preferenceStore.getBoolean(Preference.appStateKey("onboarding_complete"), false)
 

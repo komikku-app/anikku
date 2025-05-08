@@ -85,6 +85,7 @@ import eu.kanade.tachiyomi.util.lang.byteSize
 import eu.kanade.tachiyomi.util.lang.takeBytes
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
+import eu.kanade.tachiyomi.util.system.deviceHasPip
 import eu.kanade.tachiyomi.util.system.toast
 import exh.source.MERGED_SOURCE_ID
 import `is`.xyz.mpv.MPVLib
@@ -608,7 +609,11 @@ class PlayerViewModel @JvmOverloads constructor(
         activity.player.paused = true
         _paused.update { true }
         runCatching {
-            activity.setPictureInPictureParams(activity.createPipParams())
+            // KMK -->
+            if (activity.deviceHasPip()) {
+                // KMK <--
+                activity.setPictureInPictureParams(activity.createPipParams())
+            }
         }
     }
 
