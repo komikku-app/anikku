@@ -17,6 +17,7 @@
 
 package eu.kanade.tachiyomi.ui.player.controls
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -50,7 +51,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -482,7 +482,7 @@ fun PlayerControls(
                         end.linkTo(seekbar.end)
                     },
                 ) {
-                    val activity = LocalContext.current as PlayerActivity
+                    val activity = LocalActivity.current as PlayerActivity
                     BottomRightPlayerControls(
                         customButton = customButton,
                         customButtonTitle = customButtonTitle,
@@ -615,7 +615,7 @@ fun PlayerControls(
             onDismissRequest = { viewModel.showPanel(Panels.None) },
         )
 
-        val activity = LocalContext.current as PlayerActivity
+        val activity = LocalActivity.current as PlayerActivity
         val dialog by viewModel.dialogShown.collectAsState()
         val anime by viewModel.currentAnime.collectAsState()
         val playlist by viewModel.currentPlaylist.collectAsState()
