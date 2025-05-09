@@ -1,5 +1,6 @@
 package eu.kanade.domain.ui
 
+import android.os.Build
 import androidx.compose.material3.FabPosition
 import com.materialkolor.PaletteStyle
 import eu.kanade.domain.ui.model.AppTheme
@@ -18,7 +19,14 @@ class UiPreferences(
     private val preferenceStore: PreferenceStore,
 ) {
 
-    fun themeMode() = preferenceStore.getEnum("pref_theme_mode_key", ThemeMode.SYSTEM)
+    fun themeMode() = preferenceStore.getEnum(
+        "pref_theme_mode_key",
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ThemeMode.SYSTEM
+        } else {
+            ThemeMode.LIGHT
+        },
+    )
 
     fun appTheme() = preferenceStore.getEnum(
         "pref_app_theme",
