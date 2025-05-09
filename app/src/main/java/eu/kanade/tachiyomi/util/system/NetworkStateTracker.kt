@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.os.Build
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 
@@ -13,7 +14,11 @@ data class NetworkState(
     val isWifi: Boolean,
     val isEthernet: Boolean,
 ) {
-    val isOnline = isConnected && isValidated
+    val isOnline = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        isConnected && isValidated
+    } else {
+        isConnected
+    }
 }
 
 @Suppress("DEPRECATION")

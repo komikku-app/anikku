@@ -2,6 +2,7 @@ package eu.kanade.presentation.manga.components
 
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.updatePadding
 import coil3.asDrawable
 import coil3.imageLoader
@@ -212,10 +214,12 @@ fun MangaCoverDialog(
                                 // Copy bitmap in case it came from memory cache
                                 // Because SSIV needs to thoroughly read the image
                                 val copy = (drawable as? BitmapDrawable)?.let {
-                                    BitmapDrawable(
-                                        view.context.resources,
-                                        it.bitmap.copy(Bitmap.Config.HARDWARE, false),
-                                    )
+                                    val config = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        Bitmap.Config.HARDWARE
+                                    } else {
+                                        Bitmap.Config.ARGB_8888
+                                    }
+                                    it.bitmap.copy(config, false).toDrawable(view.context.resources)
                                 } ?: drawable
                                 view.setImage(copy, ReaderPageImageView.Config(zoomDuration = 500))
                             }

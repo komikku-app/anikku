@@ -37,7 +37,7 @@ object WebViewUtil {
         val webView = androidx.webkit.WebViewCompat.getCurrentWebViewPackage(context)
             ?: return "how did you get here?"
         val pm = context.packageManager
-        val label = webView.applicationInfo!!.loadLabel(pm)
+        val label = webView.applicationInfo?.loadLabel(pm) ?: "Unknown"
         val version = webView.versionName
         return "$label $version"
     }
