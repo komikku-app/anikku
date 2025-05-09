@@ -94,15 +94,12 @@ class BrowseRecommendsScreen(
                         onSelectAll = {
                             mangaList.itemSnapshotList.items
                                 .map { it.value }
-                                .forEach { manga ->
-                                    bulkFavoriteScreenModel.select(manga)
-                                }
+                                .forEach { bulkFavoriteScreenModel.select(it) }
                         },
                         onReverseSelection = {
-                            bulkFavoriteScreenModel.reverseSelection(
-                                mangaList.itemSnapshotList.items
-                                    .map { it.value },
-                            )
+                            mangaList.itemSnapshotList.items
+                                .map { it.value }
+                                .let { bulkFavoriteScreenModel.reverseSelection(it) }
                         },
                     )
                 } else {
