@@ -88,6 +88,7 @@ import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.getNameForMangaInfo
+import eu.kanade.tachiyomi.source.isIncognitoModeEnabled
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.ui.manga.ChapterList
 import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
@@ -620,6 +621,9 @@ private fun MangaScreenSmallImpl(
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
+                            // KMK -->
+                            isSourceIncognito = remember { state.source.isIncognitoModeEnabled() },
+                            // KMK <--
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
                             // KMK -->
@@ -1079,6 +1083,9 @@ private fun MangaScreenLargeImpl(
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
+                            // KMK -->
+                            isSourceIncognito = remember { state.source.isIncognitoModeEnabled() },
+                            // KMK <--
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
                             // KMK -->
