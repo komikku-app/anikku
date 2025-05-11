@@ -22,6 +22,7 @@ import eu.kanade.tachiyomi.source.getPopularManga
 import eu.kanade.tachiyomi.source.getSearchManga
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.ui.browse.feed.MaxFeedItems
+import exh.source.LOCAL_SOURCE_PACKAGE
 import exh.util.nullIfBlank
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -58,6 +59,7 @@ import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
+import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
@@ -137,6 +139,7 @@ open class SourceFeedScreenModel(
     fun toggleIncognitoMode() {
         val packageName = when {
             source is StubSource -> null
+            source.isLocal() -> LOCAL_SOURCE_PACKAGE
             else -> extensionManager.getExtensionPackage(sourceId)
         }
         packageName?.let {

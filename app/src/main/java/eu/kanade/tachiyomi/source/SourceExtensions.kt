@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.online.all.MergedSource
+import exh.source.LOCAL_SOURCE_PACKAGE
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.presentation.core.icons.FlagEmoji
 import tachiyomi.source.local.isLocal
@@ -89,7 +90,10 @@ fun Source.isLocalOrStub(): Boolean = isLocal() || this is StubSource
 
 // KMK -->
 fun Source.isIncognitoModeEnabled(incognitoExtensions: Set<String>? = null): Boolean {
-    val extensionPackage = Injekt.get<ExtensionManager>().getExtensionPackage(id)
+    val extensionPackage = when {
+        isLocal() -> LOCAL_SOURCE_PACKAGE
+        else -> Injekt.get<ExtensionManager>().getExtensionPackage(id)
+    }
     return extensionPackage in (incognitoExtensions ?: Injekt.get<SourcePreferences>().incognitoExtensions().get())
 }
 // KMK <--
