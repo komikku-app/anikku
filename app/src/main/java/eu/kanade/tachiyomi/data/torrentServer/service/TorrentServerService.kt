@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.coroutines.EmptyCoroutineContext
@@ -105,7 +106,7 @@ class TorrentServerService : Service() {
             setUsesChronometer(true)
             addAction(
                 R.drawable.ic_close_24dp,
-                "Stop",
+                stringResource(SYMR.strings.action_stop),
                 exitPendingIntent,
             )
         }
