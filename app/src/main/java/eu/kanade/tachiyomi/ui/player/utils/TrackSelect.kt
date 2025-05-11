@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Locale
+import java.util.MissingResourceException
 
 class TrackSelect(
     private val subtitlePreferences: SubtitlePreferences = Injekt.get(),
@@ -40,26 +41,29 @@ class TrackSelect(
             tracks.any { t -> containsLang(t, locale) }
         } ?: return null
 
-        val filtered = tracks.withIndex()
-            .filterNot { (_, track) ->
-                blacklist.any { track.name.contains(it, true) }
+        val filtered = tracks.asSequence()
+            .filterNot { track ->
+                blacklist.any { track.name.contains(it, true) } ||
+                    !containsLang(track, chosenLocale)
             }
-            .filter { (_, track) ->
-                containsLang(track, chosenLocale)
-            }
+            .toList()
 
-        return filtered.firstOrNull { (_, track) ->
-            whitelist.any { track.name.contains(it, true) }
-        }?.value ?: filtered.getOrNull(0)?.value
+        return filtered.firstOrNull { track ->
+            whitelist.isNotEmpty() && whitelist.any { track.name.contains(it, true) }
+        } ?: filtered.firstOrNull()
     }
 
     private fun containsLang(track: VideoTrack, locale: Locale): Boolean {
-        val localName = locale.getDisplayName(locale)
-        val englishName = locale.getDisplayName(Locale.ENGLISH).substringBefore(" (")
-        val langRegex = Regex("""\b${locale.isO3Language}|${locale.language}\b""", RegexOption.IGNORE_CASE)
+        try {
+            val localName = locale.getDisplayName(locale)
+            val englishName = locale.getDisplayName(Locale.ENGLISH).substringBefore(" (")
+            val langRegex = Regex("""\b${locale.isO3Language}|${locale.language}\b""", RegexOption.IGNORE_CASE)
 
-        return track.name.contains(localName, true) ||
-            track.name.contains(englishName, true) ||
-            track.language?.let { langRegex.find(it) != null } == true
+            return track.name.contains(localName, true) ||
+                track.name.contains(englishName, true) ||
+                track.language?.let { langRegex.find(it) != null } == true
+        } catch (e: MissingResourceException) {
+            return false
+        }
     }
 }
