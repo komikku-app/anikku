@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.paging.Pager
@@ -18,11 +19,13 @@ import eu.kanade.core.preference.asState
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.interactor.GetExhSavedSearch
 import eu.kanade.domain.source.interactor.GetIncognitoState
+import eu.kanade.domain.source.interactor.ToggleIncognito
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.util.removeCovers
@@ -65,6 +68,7 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.interactor.InsertSavedSearch
 import tachiyomi.domain.source.model.EXHSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
+import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.repository.SourcePagingSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
@@ -94,6 +98,10 @@ open class BrowseSourceScreenModel(
     private val updateManga: UpdateManga = Injekt.get(),
     private val addTracks: AddTracks = Injekt.get(),
     private val getIncognitoState: GetIncognitoState = Injekt.get(),
+    // KMK -->
+    private val toggleIncognito: ToggleIncognito = Injekt.get(),
+    private val extensionManager: ExtensionManager = Injekt.get(),
+    // KMK <--
 
     // SY -->
     unsortedPreferences: UnsortedPreferences = Injekt.get(),
@@ -113,6 +121,10 @@ open class BrowseSourceScreenModel(
 
     private val filterSerializer = FilterSerializer()
     // SY <--
+
+    // KMK -->
+    var incognitoMode = mutableStateOf(getIncognitoState.await(source.id))
+    // KMK <--
 
     init {
         // KMK -->
@@ -145,10 +157,6 @@ open class BrowseSourceScreenModel(
                 }
             }.join()
 
-            if (!getIncognitoState.await(source.id)) {
-                sourcePreferences.lastUsedSource().set(source.id)
-            }
-
             // SY -->
             val savedSearchId = savedSearch
             val jsonFilters = filtersJson
@@ -179,8 +187,29 @@ open class BrowseSourceScreenModel(
                 }
                 .launchIn(screenModelScope)
             // SY <--
+
+            // KMK-->
+            getIncognitoState.subscribe(sourceId)
+                .onEach {
+                    if (!it) sourcePreferences.lastUsedSource().set(source.id)
+                    incognitoMode.value = it
+                }
+                .launchIn(screenModelScope)
+            // KMK <--
         }
     }
+
+    // KMK -->
+    fun toggleIncognitoMode() {
+        val packageName = when {
+            source is StubSource -> null
+            else -> extensionManager.getExtensionPackage(sourceId)
+        }
+        packageName?.let {
+            toggleIncognito.await(it, !incognitoMode.value)
+        }
+    }
+    // KMK <--
 
     /**
      * Flow of Pager flow tied to [State.listing]

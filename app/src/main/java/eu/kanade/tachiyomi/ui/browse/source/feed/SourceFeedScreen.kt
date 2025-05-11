@@ -139,6 +139,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                             ),
                         )
                     }.takeIf { screenModel.source is HttpSource },
+                    onToggleIncognito = screenModel::toggleIncognitoMode,
                     onSourceSettingClick = {
                         navigator.push(SourcePreferencesScreen(screenModel.source.id))
                     }.takeIf { isConfigurableSource },

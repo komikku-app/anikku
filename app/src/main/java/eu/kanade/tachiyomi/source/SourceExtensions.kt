@@ -88,9 +88,9 @@ private fun getMergedSourcesString(
 fun Source.isLocalOrStub(): Boolean = isLocal() || this is StubSource
 
 // KMK -->
-fun Source.isIncognitoModeEnabled(): Boolean {
+fun Source.isIncognitoModeEnabled(incognitoExtensions: Set<String>? = null): Boolean {
     val extensionPackage = Injekt.get<ExtensionManager>().getExtensionPackage(id)
-    return extensionPackage in Injekt.get<SourcePreferences>().incognitoExtensions().get()
+    return extensionPackage in (incognitoExtensions ?: Injekt.get<SourcePreferences>().incognitoExtensions().get())
 }
 // KMK <--
 

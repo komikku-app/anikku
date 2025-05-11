@@ -219,6 +219,7 @@ data class BrowseSourceScreen(
                             onWebViewClick = onWebViewClick,
                             onHelpClick = onHelpClick,
                             // KMK -->
+                            onToggleIncognito = screenModel::toggleIncognitoMode,
                             onSettingsClick = {
                                 navigator.push(SourcePreferencesScreen(sourceId))
                             }.takeIf { isConfigurableSource },
