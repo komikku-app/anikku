@@ -350,6 +350,9 @@ dependencies {
     // Google drive
     implementation(sylibs.google.api.services.drive)
 
+    // ZXing Android Embedded
+    implementation(sylibs.zxing.android.embedded)
+
     // mpv-android
     implementation(libs.aniyomi.mpv)
     // FFmpeg-kit

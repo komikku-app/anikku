@@ -407,6 +407,9 @@
             android:name="android.webkit.WebView.MetricsOptOut"
             android:value="true" />
 
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            tools:remove="screenOrientation" />
     </application>
 
 </manifest>

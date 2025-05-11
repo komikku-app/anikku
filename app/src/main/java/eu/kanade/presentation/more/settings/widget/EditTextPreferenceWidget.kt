@@ -34,6 +34,7 @@ fun EditTextPreferenceWidget(
     dialogSubtitle: String? = null,
     icon: ImageVector?,
     value: String,
+    widget: @Composable (() -> Unit)? = null,
     onConfirm: suspend (String) -> Boolean,
     singleLine: Boolean = true,
     canBeBlank: Boolean = false,
@@ -45,6 +46,7 @@ fun EditTextPreferenceWidget(
         title = title,
         subtitle = if (formatSubtitle) subtitle?.format(value) else subtitle,
         icon = icon,
+        widget = widget,
         onPreferenceClick = { isDialogShown = true },
     )
 
