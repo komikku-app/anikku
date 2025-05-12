@@ -310,7 +310,7 @@ class DiscordRPCService : Service() {
                 val discordIncognito = isIncognito(categories, playerData.incognitoMode)
 
                 val animeTitle = playerData.animeTitle.takeUnless { discordIncognito }
-                val episodeNumber = getFormattedEpisodeNumber(playerData, discordIncognito)
+                val episodeNumber = getFormattedEpisodeNumber(context, playerData, discordIncognito)
                 val (startTime, end) = getTimestamps(playerData)
 
                 withIOContext {
@@ -358,7 +358,7 @@ class DiscordRPCService : Service() {
                 val discordIncognito = isIncognito(categories, readerData.incognitoMode)
 
                 val mangaTitle = readerData.mangaTitle.takeUnless { discordIncognito }
-                val chapterNumber = getFormattedChapterNumber(readerData, discordIncognito)
+                val chapterNumber = getFormattedChapterNumber(context, readerData, discordIncognito)
 
                 withIOContext {
                     val rpcExternalAsset = getRPCExternalAsset()
@@ -396,7 +396,7 @@ class DiscordRPCService : Service() {
             return discordIncognitoMode || incognitoMode || incognitoCategory
         }
 
-        private fun getFormattedEpisodeNumber(playerData: PlayerData, discordIncognito: Boolean): String? {
+        private fun getFormattedEpisodeNumber(context: Context, playerData: PlayerData, discordIncognito: Boolean): String? {
             if (discordIncognito) return null
 
             val episodeNumber = playerData.episodeNumber ?: return null
@@ -404,13 +404,25 @@ class DiscordRPCService : Service() {
 
             return when {
                 useChapterTitles -> episodeNumber
-                ceil(episodeNumber.toDouble()) == floor(episodeNumber.toDouble()) ->
-                    "Episode ${episodeNumber.toInt()}"
-                else -> "Episode $episodeNumber"
+                ceil(episodeNumber.toDouble()) == floor(episodeNumber.toDouble()) -> {
+                    try {
+                        context.getString(R.string.notification_episodes_single).format(
+                            episodeNumber.toDouble().toInt(),
+                        )
+                    } catch (_: NumberFormatException) {
+                        context.getString(R.string.notification_episodes_single).format(
+                            episodeNumber,
+                        )
+                    }
+                }
+                else ->
+                    context.getString(R.string.notification_episodes_single).format(
+                        episodeNumber,
+                    )
             }
         }
 
-        private fun getFormattedChapterNumber(readerData: ReaderData, discordIncognito: Boolean): String? {
+        private fun getFormattedChapterNumber(context: Context, readerData: ReaderData, discordIncognito: Boolean): String? {
             if (discordIncognito) return null
 
             val chapterNumber = readerData.chapterNumber ?: return null
@@ -420,9 +432,21 @@ class DiscordRPCService : Service() {
 
             return when {
                 useChapterTitles -> "$chapterNumber $progress"
-                ceil(chapterNumber.toDouble()) == floor(chapterNumber.toDouble()) ->
-                    "Chapter ${chapterNumber.toInt()} $progress"
-                else -> "Chapter $chapterNumber $progress"
+                ceil(chapterNumber.toDouble()) == floor(chapterNumber.toDouble()) -> {
+                    try {
+                        context.getString(R.string.notification_chapters_single).format(
+                            "${chapterNumber.toDouble().toInt()} $progress",
+                        )
+                    } catch (_: NumberFormatException) {
+                        context.getString(R.string.notification_chapters_single).format(
+                            "$chapterNumber $progress",
+                        )
+                    }
+                }
+                else ->
+                    context.getString(R.string.notification_chapters_single).format(
+                        "$chapterNumber $progress",
+                    )
             }
         }
 
