@@ -163,7 +163,7 @@ object SettingsAppearanceScreen : SearchableSettings {
             Injekt.get<UiPreferences>().themeCoverBased().asState(scope)
         }
         return Preference.PreferenceGroup(
-            title = stringResource(KMR.strings.pref_manga_info),
+            title = stringResource(AMR.strings.pref_anime_info),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.themeCoverBased(),
