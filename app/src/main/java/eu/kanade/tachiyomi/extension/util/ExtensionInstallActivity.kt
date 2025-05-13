@@ -2,18 +2,23 @@ package eu.kanade.tachiyomi.extension.util
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.extension.model.InstallStep
 import eu.kanade.tachiyomi.util.system.hasMiuiPackageInstaller
 import eu.kanade.tachiyomi.util.system.toast
+import logcat.LogPriority
+import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.File
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Activity used to install extensions, because we can only receive the result of the installation
- * with [startActivityForResult], which we need to update the UI.
+ * Activity used to install extensions, because we can only receive the install completion
+ * broadcast if we use [startActivityForResult] with the package installer.
  */
 class ExtensionInstallActivity : Activity() {
 
@@ -21,9 +26,14 @@ class ExtensionInstallActivity : Activity() {
     private var ignoreUntil = 0L
     private var ignoreResult = false
     private var hasIgnoredResult = false
+    private var tempApkFilePath: String? = null
+    private var tempFileUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        tempApkFilePath = intent.getStringExtra(ExtensionInstaller.EXTRA_APK_FILEPATH)
+        tempFileUri = intent.data
 
         @Suppress("DEPRECATION")
         val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE)
@@ -42,6 +52,8 @@ class ExtensionInstallActivity : Activity() {
             // Either install package can't be found (probably bots) or there's a security exception
             // with the download manager. Nothing we can workaround.
             toast(error.message)
+            logcat(LogPriority.ERROR, error)
+            this.finish()
         }
     }
 
@@ -51,6 +63,10 @@ class ExtensionInstallActivity : Activity() {
             return
         }
         if (requestCode == INSTALL_REQUEST_CODE) {
+            // Clean up temp file if needed
+            cleanupTempApkFile()
+            val file = UniFile.fromUri(applicationContext, tempFileUri)
+            file?.delete()
             checkInstallationResult(resultCode)
         }
         finish()
@@ -74,6 +90,22 @@ class ExtensionInstallActivity : Activity() {
         }
         extensionManager.updateInstallStep(downloadId, newStep)
     }
-}
 
-private const val INSTALL_REQUEST_CODE = 500
+    private fun cleanupTempApkFile() {
+        tempApkFilePath?.let {
+            try {
+                val tempFile = File(it)
+                if (tempFile.exists()) {
+                    tempFile.delete()
+                    logcat { "Deleted temporary APK file: $it" }
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e) { "Failed to delete temporary APK file" }
+            }
+        }
+    }
+
+    companion object {
+        private const val INSTALL_REQUEST_CODE = 500
+    }
+}

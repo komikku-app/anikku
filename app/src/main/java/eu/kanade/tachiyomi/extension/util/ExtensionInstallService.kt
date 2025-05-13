@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.extension.installer.Installer
 import eu.kanade.tachiyomi.extension.installer.PackageInstallerInstaller
 import eu.kanade.tachiyomi.extension.installer.ShizukuInstaller
+import eu.kanade.tachiyomi.extension.util.ExtensionInstaller.Companion.EXTRA_APK_FILEPATH
 import eu.kanade.tachiyomi.extension.util.ExtensionInstaller.Companion.EXTRA_DOWNLOAD_ID
 import eu.kanade.tachiyomi.util.system.getSerializableExtraCompat
 import eu.kanade.tachiyomi.util.system.notificationBuilder
@@ -78,9 +79,11 @@ class ExtensionInstallService : Service() {
             downloadId: Long,
             uri: Uri,
             installer: BasePreferences.ExtensionInstaller,
+            filePath: String?,
         ): Intent {
             return Intent(context, ExtensionInstallService::class.java)
                 .setDataAndType(uri, ExtensionInstaller.APK_MIME)
+                .putExtra(EXTRA_APK_FILEPATH, filePath ?: "")
                 .putExtra(EXTRA_DOWNLOAD_ID, downloadId)
                 .putExtra(EXTRA_INSTALLER, installer)
         }

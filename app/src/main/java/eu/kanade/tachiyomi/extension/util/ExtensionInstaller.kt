@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
@@ -155,10 +156,29 @@ internal class ExtensionInstaller(private val context: Context) {
      * @param uri The uri of the extension to install.
      */
     fun installApk(downloadId: Long, uri: Uri) {
+        val apkFile = UniFile.fromUri(context, uri)
+        if (apkFile == null) {
+            logcat(LogPriority.ERROR) { "Can't open APK file" }
+            updateInstallStep(downloadId, InstallStep.Error)
+            return
+        }
+        apkFile.size().let { size ->
+            if (size == 0L) {
+                logcat(LogPriority.ERROR) { "APK file has 0 size" }
+                updateInstallStep(downloadId, InstallStep.Error)
+                return
+            }
+        }
         when (val installer = extensionInstaller.get()) {
             BasePreferences.ExtensionInstaller.LEGACY -> {
+                val publicUri = if (isFireTvOrAndroid7Device()) {
+                    val publicApkFile = copyApkToPublicStorage(downloadId, uri)
+                    publicApkFile?.getUriCompat(context) ?: uri
+                } else uri
+
                 val intent = Intent(context, ExtensionInstallActivity::class.java)
-                    .setDataAndType(uri, APK_MIME)
+                    .setDataAndType(publicUri, APK_MIME)
+                    .putExtra(EXTRA_APK_FILEPATH, publicUri.path ?: "")
                     .putExtra(EXTRA_DOWNLOAD_ID, downloadId)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
@@ -194,10 +214,72 @@ internal class ExtensionInstaller(private val context: Context) {
                 tempFile.delete()
             }
             else -> {
-                val intent = ExtensionInstallService.getIntent(context, downloadId, uri, installer)
+                val intent = ExtensionInstallService.getIntent(
+                    context,
+                    downloadId,
+                    uri,
+                    installer,
+                    uri.path,
+                )
                 ContextCompat.startForegroundService(context, intent)
             }
         }
+    }
+
+    /**
+     * Checks if the device is a Fire TV or running Android 7.x
+     */
+    private fun isFireTvOrAndroid7Device(): Boolean {
+        val model = Build.MODEL.lowercase()
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val isFireTv = manufacturer.contains("amazon") &&
+            (model.contains("fire") || model.startsWith("aft"))
+
+        val isAndroid7 = Build.VERSION.SDK_INT == Build.VERSION_CODES.N_MR1
+
+        return isFireTv || isAndroid7
+    }
+
+    /**
+     * Copy the APK to a public location that the package installer can access
+     */
+    private fun copyApkToPublicStorage(downloadId: Long, uri: Uri): File? {
+        try {
+            val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (!publicDir.exists() && !publicDir.mkdirs()) {
+                logcat(LogPriority.ERROR) { "Failed to create public downloads directory" }
+                return null
+            }
+
+            var retry = 3
+            while (retry > 0) {
+                retry -= 1
+                val apkFile = File(publicDir, "extension_$downloadId.apk")
+
+                // Delete the file if it already exists to avoid issues
+                if (apkFile.exists()) {
+                    apkFile.delete()
+                }
+
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    apkFile.outputStream().use { output ->
+                        input.copyTo(output)
+                        output.flush()
+                    }
+                }
+
+                // Verify the file was properly copied
+                if (apkFile.length() == 0L) {
+                    logcat(LogPriority.ERROR) { "Copied APK file has 0 size" }
+                    continue
+                }
+
+                return apkFile
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e) { "Failed to copy APK to public storage" }
+        }
+        return null
     }
 
     /**
@@ -318,6 +400,7 @@ internal class ExtensionInstaller(private val context: Context) {
     companion object {
         const val APK_MIME = "application/vnd.android.package-archive"
         const val EXTRA_DOWNLOAD_ID = "ExtensionInstaller.extra.DOWNLOAD_ID"
+        const val EXTRA_APK_FILEPATH = "ExtensionInstaller.extra.APK_FILEPATH"
         const val FILE_SCHEME = "file://"
     }
 }
