@@ -14,6 +14,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.util.storage.DiskUtil
+import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -137,10 +138,7 @@ class StorageManager(
                 // Fire TV devices are not allowed to use SAF, see https://developer.amazon.com/docs/fire-tv/storage-dev-guidelines.html
                 // It's also not possible to check if the SAF intent is available on Fire TV devices,
                 // as it will always return true, but the intent will fail to launch.
-                if (Build.MANUFACTURER == "Amazon" &&
-                    (Build.MODEL.startsWith("AFT") || Build.MODEL.startsWith("AFN")) ||
-                    !isIntentAvailable(context, documentTreeIntent)
-                ) {
+                if (DeviceUtil.isFireTV || !isIntentAvailable(context, documentTreeIntent)) {
                     handleStoragePermission(context, storageDirPref)
                 } else {
                     pickStorageLocation()

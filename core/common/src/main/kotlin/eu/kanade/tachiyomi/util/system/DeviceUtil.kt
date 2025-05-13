@@ -48,6 +48,16 @@ object DeviceUtil {
         Build.MANUFACTURER.equals("samsung", ignoreCase = true)
     }
 
+    /**
+     * Checks if the device is a Fire TV or running Android 7.x
+     */
+    val isFireTV: Boolean by lazy {
+        val model = Build.MODEL.lowercase()
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        manufacturer.contains("amazon") &&
+            (model.contains("fire") || model.startsWith("aft") || model.startsWith("afn"))
+    }
+
     val oneUiVersion: Double? by lazy {
         try {
             val semPlatformIntField = Build.VERSION::class.java.getDeclaredField("SEM_PLATFORM_INT")
