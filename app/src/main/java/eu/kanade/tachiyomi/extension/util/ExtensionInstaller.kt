@@ -302,16 +302,48 @@ internal class ExtensionInstaller(private val context: Context) {
                 return
             }
 
-            val query = DownloadManager.Query().setFilterById(id)
-            downloadManager.query(query).use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val localUri = cursor.getString(
+            // All file operations are moved to background thread to avoid UI blocking
+            Thread {
+                val query = DownloadManager.Query().setFilterById(id)
+                val localUri = downloadManager.query(query).use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        updateInstallStep(id, InstallStep.Error)
+                        return@Thread
+                    }
+                    cursor.getString(
                         cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI),
                     ).removePrefix(FILE_SCHEME)
-
-                    installApk(id, File(localUri).getUriCompat(context))
                 }
-            }
+
+                val apkFile = File(localUri)
+
+                // Retry mechanism to wait for file to be fully written
+                var attempts = 0
+                while (apkFile.length() == 0L && attempts < 10) {
+                    attempts++
+                    logcat(LogPriority.INFO) { "Waiting for APK file: attempt $attempts" }
+                    try {
+                        Thread.sleep(1000) // Reduced to 200ms for faster retry
+                    } catch (e: InterruptedException) {
+                        logcat(LogPriority.WARN, e) { "Interrupted while waiting for APK file" }
+                        Thread.currentThread().interrupt() // Restore interruption status
+                        updateInstallStep(id, InstallStep.Error)
+                        return@Thread
+                    }
+                    if (apkFile.length() > 0L) {
+                        break
+                    }
+                }
+
+                // Must update UI on the main thread
+                if (apkFile.length() == 0L) {
+                    logcat(LogPriority.ERROR) { "APK file has 0 size after $attempts attempts" }
+                    updateInstallStep(id, InstallStep.Error)
+                    return@Thread
+                }
+
+                installApk(id, apkFile.getUriCompat(context))
+            }.start()
         }
     }
 
