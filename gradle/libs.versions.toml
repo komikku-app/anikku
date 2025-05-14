@@ -117,7 +117,7 @@ seeker = "io.github.2307vivek:seeker:1.2.2"
 truetypeparser = "io.github.yubyf:truetypeparser-light:2.1.4"
 
 media-router = "androidx.mediarouter:mediarouter:1.7.0"
-cast-play-services = "com.google.android.gms:play-services-cast-framework:22.0.0"
+cast-play-services = "com.google.android.gms:play-services-cast-framework:22.1.0"
 
 spotless-gradle = { group = "com.diffplug.spotless", name = "spotless-plugin-gradle", version.ref = "spotless" }
 ktlint-core = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "ktlint-core" }
