@@ -40,7 +40,7 @@ Features include:
   * `Bulk-favorite` multiple entries all at once.
   * `Fast browsing` (for who with large library experiencing slow loading)
   * Auto `2-way sync` progress with trackers.
-  * Support `Android TV`
+  * Support `Android TV`, `Fire TV`.
   * From SY:
     * `Anime Recommendations` showing community recommends from Anilist, MyAnimeList.
     * Edit `Anime Info` manually, or fill data from MyAnimeList, Kitsu, Shikimori, Bangumi, Simkl.
@@ -71,12 +71,6 @@ Features include:
   * Auto-install app update.
   * Configurable interval to refresh entries from downloaded storage.
   * And many more from same maintainer's app for Manga reader: [Komikku](https://github.com/komikku-app/komikku)
-* Animetail:
-  * Support for Cast functionality
-  * Optimized Discord Rich Presence for Anime, no external API.
-* Kuukiyomi:
-  * Torrent support (Needs right extensions) (@Diegopyl1209)
-  * Group by tags in library
 * Aniyomi:
   * Watching videos
   * Local watching of downloaded content
@@ -84,9 +78,11 @@ Features include:
   * Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [Simkl](https://simkl.in/), [Shikimori](https://shikimori.one), and [Bangumi](https://bgm.tv/)
   * Categories to organize your library
   * Create backups locally to watch offline or to your desired cloud service
-* Other fork features:
-  * Animiru:
-    * Discord Rich Presence
+* Other forks' features:
+  * Torrent support (Needs right extensions) (@Diegopyl1209)
+  * Support for Cast functionality (Animetail)
+  * Group by tags in library (Kuukiyomi)
+  * Discord Rich Presence (Animiru, Kuukiyomi, Animetail)
 
 # Issues, Feature Requests and Contributing
 
