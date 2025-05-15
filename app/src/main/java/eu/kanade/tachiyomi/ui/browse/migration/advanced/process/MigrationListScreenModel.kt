@@ -7,6 +7,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.toSManga
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.getChapterList
 import eu.kanade.tachiyomi.source.getMangaDetails
@@ -36,7 +37,6 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.interactor.GetMergedReferencesById
@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class MigrationListScreenModel(
     private val config: MigrationProcedureConfig,
-    private val preferences: UnsortedPreferences = Injekt.get(),
+    private val preferences: SourcePreferences = Injekt.get(),
     private val sourceManager: SourceManager = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
     private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
@@ -211,7 +211,7 @@ class MigrationListScreenModel(
 
                                                 try {
                                                     syncChaptersWithSource.await(chapters, localManga, source)
-                                                } catch (e: Exception) {
+                                                } catch (_: Exception) {
                                                     return@async2 null
                                                 }
                                                 manga.progress.value =
@@ -223,7 +223,7 @@ class MigrationListScreenModel(
                                         } catch (e: CancellationException) {
                                             // Ignore cancellations
                                             throw e
-                                        } catch (e: Exception) {
+                                        } catch (_: Exception) {
                                             null
                                         }
                                     }
@@ -254,7 +254,7 @@ class MigrationListScreenModel(
                                 } catch (e: CancellationException) {
                                     // Ignore cancellations
                                     throw e
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     null
                                 }
                                 manga.progress.value = validSources.size to (index + 1)
@@ -267,7 +267,7 @@ class MigrationListScreenModel(
                     // KMK -->
                     manga.searchingJob?.await()
                     // KMK <--
-                } catch (e: CancellationException) {
+                } catch (_: CancellationException) {
                     // Ignore canceled migrations
                     continue
                 }
@@ -333,7 +333,7 @@ class MigrationListScreenModel(
                     val source = sourceManager.get(manga.source)!!
                     val chapters = source.getChapterList(manga.toSManga())
                     syncChaptersWithSource.await(chapters, manga, source)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     return@async null
                 }
                 manga

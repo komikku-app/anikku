@@ -81,6 +81,24 @@ class SourcePreferences(
     fun sourcesTabCategoriesFilter() = preferenceStore.getBoolean("sources_tab_categories_filter", false)
 
     fun sourcesTabSourcesInCategories() = preferenceStore.getStringSet("sources_tab_source_categories", mutableSetOf())
+
+    fun migrateFlags() = preferenceStore.getInt("migrate_flags", Int.MAX_VALUE)
+
+    fun migrationSources() = preferenceStore.getString("migrate_sources", "")
+
+    fun smartMigration() = preferenceStore.getBoolean("smart_migrate", false)
+
+    fun useSourceWithMost() = preferenceStore.getBoolean("use_source_with_most", false)
+
+    fun skipPreMigration() = preferenceStore.getBoolean(Preference.appStateKey("skip_pre_migration"), false)
+
+    fun hideNotFoundMigration() = preferenceStore.getBoolean("hide_not_found_migration", false)
+
+    fun showOnlyUpdatesMigration() = preferenceStore.getBoolean("show_only_updates_migration", false)
+
+    fun allowLocalSourceHiddenFolders() = preferenceStore.getBoolean("allow_local_source_hidden_folders", false)
+
+    fun recommendationSearchFlags() = preferenceStore.getInt("rec_search_flags", Int.MAX_VALUE)
     // SY <--
 
     // KMK -->

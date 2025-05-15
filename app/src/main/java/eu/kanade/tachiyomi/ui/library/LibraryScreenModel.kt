@@ -40,6 +40,7 @@ import exh.search.QueryComponent
 import exh.search.SearchEngine
 import exh.search.Text
 import exh.source.MERGED_SOURCE_ID
+import exh.util.cancellable
 import exh.util.isLewd
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
@@ -50,7 +51,6 @@ import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce

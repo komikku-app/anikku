@@ -3,6 +3,7 @@
 package eu.kanade.tachiyomi.source
 
 import android.content.Context
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.repository.StubSourceRepository
 import tachiyomi.domain.source.service.SourceManager
@@ -52,7 +52,7 @@ class AndroidSourceManager(
     }
 
     // SY -->
-    private val preferences: UnsortedPreferences by injectLazy()
+    private val sourcePreferences: SourcePreferences by injectLazy()
     // SY <--
 
     init {
@@ -66,7 +66,7 @@ class AndroidSourceManager(
                                 Injekt.get(),
                                 Injekt.get(),
                                 // SY -->
-                                preferences.allowLocalSourceHiddenFolders()::get,
+                                sourcePreferences.allowLocalSourceHiddenFolders()::get,
                                 // SY <--
                             ),
                         ),

@@ -44,6 +44,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.manga.model.toSManga
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.browse.components.BulkFavoriteDialogs
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
@@ -108,7 +109,6 @@ import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.UnsortedPreferences
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.interactor.GetRemoteManga
@@ -381,7 +381,7 @@ class MangaScreen(
             onMigrateClicked = {
                 // SY -->
                 PreMigrationScreen.navigateToMigration(
-                    Injekt.get<UnsortedPreferences>().skipPreMigration().get(),
+                    Injekt.get<SourcePreferences>().skipPreMigration().get(),
                     navigator,
                     listOfNotNull(successState.manga.id),
                 )
@@ -425,7 +425,7 @@ class MangaScreen(
                         context,
                         navigator,
                         successState.mergedData,
-                        action = { _, nav, manga, source -> screenModel.openMangaFolder(source, manga) },
+                        action = { _, _, manga, source -> screenModel.openMangaFolder(source, manga) },
                         titleRes = KMR.strings.action_open_folder,
                     )
                 }
