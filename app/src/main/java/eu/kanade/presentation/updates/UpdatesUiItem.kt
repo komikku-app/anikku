@@ -1,8 +1,13 @@
 package eu.kanade.presentation.updates
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -124,45 +129,56 @@ internal fun LazyListScope.updatesUiItems(
             }
             is UpdatesUiModel.Item -> {
                 val updatesItem = item.item
-                UpdatesUiItem(
-                    modifier = Modifier.animateItemFastScroll(),
-                    update = updatesItem.update,
-                    selected = updatesItem.selected,
-                    readProgress = updatesItem.update.lastPageRead
-                        .takeIf { !updatesItem.update.read && it > 0L }
-                        ?.let {
-                            stringResource(
-                                MR.strings.episode_progress,
-                                formatProgress(it),
-                                formatProgress(updatesItem.update.totalPages),
-                            )
-                        },
-                    onLongClick = {
-                        onUpdateSelected(updatesItem, !updatesItem.selected, true, true)
-                    },
-                    onClick = {
-                        when {
-                            selectionMode -> onUpdateSelected(updatesItem, !updatesItem.selected, true, false)
-                            else -> onClickUpdate(updatesItem, false)
-                        }
-                    },
-                    onClickCover = { onClickCover(updatesItem) }.takeIf { !selectionMode },
-                    onDownloadChapter = { action: ChapterDownloadAction ->
-                        onDownloadChapter(listOf(updatesItem), action)
-                    }.takeIf { !selectionMode },
-                    downloadStateProvider = updatesItem.downloadStateProvider,
-                    downloadProgressProvider = updatesItem.downloadProgressProvider,
-                    // AM (FILE_SIZE) -->
-                    updatesItem = updatesItem,
-                    // <-- AM (FILE_SIZE)
-                    // KMK -->
-                    isLeader = item is UpdatesUiModel.Leader,
-                    isExpandable = item.isExpandable,
-                    expanded = expandedState.contains(updatesItem.update.groupByDateAndManga()),
-                    collapseToggle = collapseToggle,
-                    usePanoramaCover = usePanoramaCover,
+                val isLeader = item is UpdatesUiModel.Leader
+                val isExpanded = expandedState.contains(updatesItem.update.groupByDateAndManga())
+
+                // KMK -->
+                AnimatedVisibility(
+                    visible = isLeader || isExpanded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
                     // KMK <--
-                )
+                    UpdatesUiItem(
+                        modifier = Modifier.animateItemFastScroll(),
+                        update = updatesItem.update,
+                        selected = updatesItem.selected,
+                        readProgress = updatesItem.update.lastPageRead
+                            .takeIf { !updatesItem.update.read && it > 0L }
+                            ?.let {
+                                stringResource(
+                                    MR.strings.episode_progress,
+                                    formatProgress(it),
+                                    formatProgress(updatesItem.update.totalPages),
+                                )
+                            },
+                        onLongClick = {
+                            onUpdateSelected(updatesItem, !updatesItem.selected, true, true)
+                        },
+                        onClick = {
+                            when {
+                                selectionMode -> onUpdateSelected(updatesItem, !updatesItem.selected, true, false)
+                                else -> onClickUpdate(updatesItem, false)
+                            }
+                        },
+                        onClickCover = { onClickCover(updatesItem) }.takeIf { !selectionMode },
+                        onDownloadChapter = { action: ChapterDownloadAction ->
+                            onDownloadChapter(listOf(updatesItem), action)
+                        }.takeIf { !selectionMode },
+                        downloadStateProvider = updatesItem.downloadStateProvider,
+                        downloadProgressProvider = updatesItem.downloadProgressProvider,
+                        // AM (FILE_SIZE) -->
+                        updatesItem = updatesItem,
+                        // <-- AM (FILE_SIZE)
+                        // KMK -->
+                        isLeader = isLeader,
+                        isExpandable = item.isExpandable,
+                        expanded = isExpanded,
+                        collapseToggle = collapseToggle,
+                        usePanoramaCover = usePanoramaCover,
+                        // KMK <--
+                    )
+                }
             }
         }
     }
@@ -380,6 +396,11 @@ fun CollapseButton(
     collapseToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val painter = rememberAnimatedVectorPainter(
+        AnimatedImageVector.animatedVectorResource(R.drawable.anim_caret_down),
+        !expanded,
+    )
+
     Box(
         modifier = modifier
             .size(IndicatorSize + MaterialTheme.padding.extraSmall),
@@ -389,9 +410,8 @@ fun CollapseButton(
             onClick = { collapseToggle() },
             modifier = Modifier.size(IndicatorSize),
         ) {
-            val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_caret_down)
             Icon(
-                painter = rememberAnimatedVectorPainter(image, !expanded),
+                painter = painter,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )

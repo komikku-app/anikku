@@ -30,7 +30,6 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel
-import eu.kanade.tachiyomi.ui.updates.groupByDateAndManga
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -137,15 +136,8 @@ fun UpdateScreen(
                         updatesLastUpdatedItem(lastUpdated)
 
                         updatesUiItems(
-                            uiModels = state.getUiModel()
-                                // KMK -->
-                                .filter {
-                                    when (it) {
-                                        is UpdatesUiModel.Header, is UpdatesUiModel.Leader -> true
-                                        is UpdatesUiModel.Item ->
-                                            state.expandedState.contains(it.item.update.groupByDateAndManga())
-                                    }
-                                },
+                            uiModels = state.getUiModel(),
+                            // KMK -->
                             expandedState = state.expandedState,
                             collapseToggle = collapseToggle,
                             usePanoramaCover = usePanoramaCover.value,
