@@ -97,6 +97,11 @@ data object UpdatesTab : Tab {
             // <-- AM (FILLERMARK)
             onMultiMarkAsReadClicked = screenModel::markUpdatesRead,
             onMultiDeleteClicked = screenModel::showConfirmDeleteChapters,
+            // KMK -->
+            updateSwipeStartAction = screenModel.chapterSwipeStartAction,
+            updateSwipeEndAction = screenModel.chapterSwipeEndAction,
+            onUpdateSwipe = screenModel::updateSwipe,
+            // KMK <--
             onUpdateSelected = screenModel::toggleSelection,
             onOpenChapter = { updateItem: UpdatesItem, altPlayer: Boolean ->
                 scope.launchIO {

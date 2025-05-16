@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -81,33 +82,43 @@ fun MangaChapterListItem(
     // <-- AM (FILE_SIZE)
     modifier: Modifier = Modifier,
 ) {
-    val start = getSwipeAction(
-        action = chapterSwipeStartAction,
-        read = read,
-        bookmark = bookmark,
-        // AM (FILLERMARK) -->
-        fillermark = fillermark,
-        // <-- AM (FILLERMARK)
-        downloadState = downloadStateProvider(),
-        background = MaterialTheme.colorScheme.primaryContainer,
-        onSwipe = { onChapterSwipe(chapterSwipeStartAction) },
-    )
-    val end = getSwipeAction(
-        action = chapterSwipeEndAction,
-        read = read,
-        bookmark = bookmark,
-        // AM (FILLERMARK) -->
-        fillermark = fillermark,
-        // <-- AM (FILLERMARK)
-        downloadState = downloadStateProvider(),
-        background = MaterialTheme.colorScheme.primaryContainer,
-        onSwipe = { onChapterSwipe(chapterSwipeEndAction) },
-    )
+    // KMK -->
+    val fillermarkIcon = if (!fillermark) {
+        ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)
+    } else {
+        ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp)
+    }
+    val swipeBackground = MaterialTheme.colorScheme.primaryContainer
+    val swipeStart = remember(chapterSwipeStartAction, read, bookmark, fillermark, downloadStateProvider()) {
+        // KMK <--
+        getSwipeAction(
+            action = chapterSwipeStartAction,
+            read = read,
+            bookmark = bookmark,
+            downloadState = downloadStateProvider(),
+            background = swipeBackground,
+            fillermarkIcon = fillermarkIcon,
+            onSwipe = { onChapterSwipe(chapterSwipeStartAction) },
+        )
+    }
+    // KMK -->
+    val swipeEnd = remember(chapterSwipeEndAction, read, bookmark, fillermark, downloadStateProvider()) {
+        // KMK <--
+        getSwipeAction(
+            action = chapterSwipeEndAction,
+            read = read,
+            bookmark = bookmark,
+            downloadState = downloadStateProvider(),
+            background = swipeBackground,
+            fillermarkIcon = fillermarkIcon,
+            onSwipe = { onChapterSwipe(chapterSwipeEndAction) },
+        )
+    }
 
     SwipeableActionsBox(
         modifier = Modifier.clipToBounds(),
-        startActions = listOfNotNull(start),
-        endActions = listOfNotNull(end),
+        startActions = listOfNotNull(swipeStart),
+        endActions = listOfNotNull(swipeEnd),
         swipeThreshold = swipeActionThreshold,
         backgroundUntilSwipeThreshold = MaterialTheme.colorScheme.surfaceContainerLowest,
     ) {
@@ -234,16 +245,13 @@ fun MangaChapterListItem(
     }
 }
 
-@Composable
-private fun getSwipeAction(
+internal fun getSwipeAction(
     action: LibraryPreferences.ChapterSwipeAction,
     read: Boolean,
     bookmark: Boolean,
-    // AM (FILLERMARK) -->
-    fillermark: Boolean,
-    // <-- AM (FILLERMARK)
     downloadState: Download.State,
     background: Color,
+    fillermarkIcon: ImageVector,
     onSwipe: () -> Unit,
 ): me.saket.swipe.SwipeAction? {
     return when (action) {
@@ -261,13 +269,8 @@ private fun getSwipeAction(
         )
         // AM (FILLERMARK) -->
         LibraryPreferences.ChapterSwipeAction.ToggleFillermark -> {
-            val icon = if (!fillermark) {
-                ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)
-            } else {
-                ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp)
-            }
             swipeAction(
-                icon = icon,
+                icon = fillermarkIcon,
                 background = background,
                 isUndo = bookmark,
                 onSwipe = onSwipe,
@@ -335,7 +338,9 @@ private fun swipeAction(
     return me.saket.swipe.SwipeAction(
         icon = {
             Icon(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .size(IndicatorSize),
                 imageVector = icon,
                 tint = contentColorFor(background),
                 contentDescription = null,
@@ -347,4 +352,4 @@ private fun swipeAction(
     )
 }
 
-private val swipeActionThreshold = 56.dp
+internal val swipeActionThreshold = 56.dp

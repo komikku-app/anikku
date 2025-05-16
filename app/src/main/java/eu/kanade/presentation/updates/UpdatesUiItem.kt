@@ -39,10 +39,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,7 +53,10 @@ import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.ChapterDownloadIndicator
 import eu.kanade.presentation.manga.components.DotSeparatorText
 import eu.kanade.presentation.manga.components.MangaCover
+import eu.kanade.presentation.manga.components.MangaCoverHide
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
+import eu.kanade.presentation.manga.components.getSwipeAction
+import eu.kanade.presentation.manga.components.swipeActionThreshold
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.R
@@ -59,8 +65,11 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel.UpdateSelectionOptions
 import eu.kanade.tachiyomi.ui.updates.groupByDateAndManga
+import exh.debug.DebugToggles
+import me.saket.swipe.SwipeableActionsBox
 import mihon.feature.upcoming.DateHeading
 import tachiyomi.core.common.util.lang.withIOContext
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.updates.model.UpdatesWithRelations
@@ -101,6 +110,11 @@ internal fun LazyListScope.updatesUiItems(
     onClickCover: (UpdatesItem) -> Unit,
     onClickUpdate: (UpdatesItem, altPlayer: Boolean) -> Unit,
     onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
+    // KMK -->
+    updateSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
+    updateSwipeEndAction: LibraryPreferences.ChapterSwipeAction,
+    onUpdateSwipe: (UpdatesItem, LibraryPreferences.ChapterSwipeAction) -> Unit,
+    // KMK <--
 ) {
     items(
         items = uiModels,
@@ -194,6 +208,11 @@ internal fun LazyListScope.updatesUiItems(
                         updatesItem = updatesItem,
                         // <-- AM (FILE_SIZE)
                         // KMK -->
+                        updateSwipeStartAction = updateSwipeStartAction,
+                        updateSwipeEndAction = updateSwipeEndAction,
+                        onUpdateSwipe = {
+                            onUpdateSwipe(updatesItem, it)
+                        },
                         isLeader = isLeader,
                         isExpandable = item.isExpandable,
                         expanded = isExpanded,
@@ -223,6 +242,9 @@ private fun UpdatesUiItem(
     updatesItem: UpdatesItem,
     // <-- AM (FILE_SIZE)
     // KMK -->
+    updateSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
+    updateSwipeEndAction: LibraryPreferences.ChapterSwipeAction,
+    onUpdateSwipe: (LibraryPreferences.ChapterSwipeAction) -> Unit,
     isLeader: Boolean,
     isExpandable: Boolean,
     expanded: Boolean,
@@ -237,178 +259,226 @@ private fun UpdatesUiItem(
     val haptic = LocalHapticFeedback.current
     val textAlpha = if (update.read) DISABLED_ALPHA else 1f
 
-    Row(
-        modifier = modifier
-            .selectedBackground(selected)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = {
-                    onLongClick()
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                },
-            )
-            .padding(
-                // KMK -->
-                vertical = if (isLeader) MaterialTheme.padding.extraSmall else 0.dp,
-                // KMK <--
-                horizontal = MaterialTheme.padding.medium,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // KMK -->
-        val mangaCover = update.coverData
-        val coverIsWide = coverRatio.floatValue <= RatioSwitchToPanorama
-        val bgColor = mangaCover.dominantCoverColors?.first?.let { Color(it) }
-        val onBgColor = mangaCover.dominantCoverColors?.second
-        if (isLeader) {
-            if (usePanoramaCover && coverIsWide) {
-                MangaCover.Panorama(
-                    modifier = Modifier
-                        .padding(top = MaterialTheme.padding.small)
-                        .width(UpdateItemPanoramaWidth),
-                    data = mangaCover,
-                    onClick = onClickCover,
-                    // KMK -->
-                    bgColor = bgColor,
-                    tint = onBgColor,
-                    size = MangaCover.Size.Medium,
-                    onCoverLoaded = { _, result ->
-                        val image = result.result.image
-                        coverRatio.floatValue = image.height.toFloat() / image.width
-                    },
-                    // KMK <--
-                )
-            } else {
-                // KMK <--
-                MangaCover.Book(
-                    modifier = Modifier
-                        // KMK -->
-                        .padding(top = MaterialTheme.padding.small)
-                        .width(UpdateItemWidth),
-                    // KMK <--
-                    data = mangaCover,
-                    onClick = onClickCover,
-                    // KMK -->
-                    bgColor = bgColor,
-                    tint = onBgColor,
-                    size = MangaCover.Size.Medium,
-                    onCoverLoaded = { _, result ->
-                        val image = result.result.image
-                        coverRatio.floatValue = image.height.toFloat() / image.width
-                    },
-                )
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .width(if (usePanoramaCover && coverIsWide) UpdateItemPanoramaWidth else UpdateItemWidth),
-            )
-            // KMK <--
-        }
+    // KMK -->
+    val fillermarkIcon = if (!update.fillermark) {
+        ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)
+    } else {
+        ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp)
+    }
+    val swipeBackground = MaterialTheme.colorScheme.primaryContainer
+    val swipeStart = remember(updateSwipeStartAction, update.read, update.bookmark, update.fillermark, downloadStateProvider()) {
+        getSwipeAction(
+            action = updateSwipeStartAction,
+            read = update.read,
+            bookmark = update.bookmark,
+            downloadState = downloadStateProvider(),
+            background = swipeBackground,
+            fillermarkIcon = fillermarkIcon,
+            onSwipe = { onUpdateSwipe(updateSwipeStartAction) },
+        )
+    }
+    val swipeEnd = remember(updateSwipeEndAction, update.read, update.bookmark, update.fillermark, downloadStateProvider()) {
+        getSwipeAction(
+            action = updateSwipeEndAction,
+            read = update.read,
+            bookmark = update.bookmark,
+            downloadState = downloadStateProvider(),
+            background = swipeBackground,
+            fillermarkIcon = fillermarkIcon,
+            onSwipe = { onUpdateSwipe(updateSwipeEndAction) },
+        )
+    }
 
-        Column(
+    SwipeableActionsBox(
+        modifier = modifier.clipToBounds(),
+        startActions = listOfNotNull(swipeStart),
+        endActions = listOfNotNull(swipeEnd),
+        swipeThreshold = swipeActionThreshold,
+        backgroundUntilSwipeThreshold = MaterialTheme.colorScheme.surfaceContainerLowest,
+    ) {
+        // KMK <--
+        Row(
             modifier = Modifier
-                .padding(horizontal = MaterialTheme.padding.medium)
-                .weight(1f),
+                .selectedBackground(selected)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = {
+                        onLongClick()
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    },
+                )
+                .padding(top = if (isLeader) MaterialTheme.padding.small else 0.dp)
+                .padding(
+                    // KMK -->
+                    vertical = if (isLeader) MaterialTheme.padding.extraSmall else 0.dp,
+                    // KMK <--
+                    horizontal = MaterialTheme.padding.medium,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // KMK -->
+            val mangaCover = update.coverData
+            val coverIsWide = coverRatio.floatValue <= RatioSwitchToPanorama
+            val bgColor = mangaCover.dominantCoverColors?.first?.let { Color(it) }
+            val onBgColor = mangaCover.dominantCoverColors?.second
             if (isLeader) {
-                // KMK <--
-                Text(
-                    text = update.mangaTitle,
-                    maxLines = 1,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = LocalContentColor.current.copy(alpha = textAlpha),
-                    overflow = TextOverflow.Ellipsis,
+                if (DebugToggles.HIDE_COVER_IMAGE_ONLY_SHOW_COLOR.enabled) {
+                    MangaCoverHide.Book(
+                        modifier = Modifier
+                            .width(UpdateItemWidth),
+                        bgColor = bgColor ?: (MaterialTheme.colorScheme.surface.takeIf { selected }),
+                        tint = onBgColor,
+                        size = MangaCover.Size.Medium,
+                    )
+                } else {
+                    if (usePanoramaCover && coverIsWide) {
+                        MangaCover.Panorama(
+                            modifier = Modifier
+                                .width(UpdateItemPanoramaWidth),
+                            data = mangaCover,
+                            onClick = onClickCover,
+                            // KMK -->
+                            bgColor = bgColor,
+                            tint = onBgColor,
+                            size = MangaCover.Size.Medium,
+                            onCoverLoaded = { _, result ->
+                                val image = result.result.image
+                                coverRatio.floatValue = image.height.toFloat() / image.width
+                            },
+                            // KMK <--
+                        )
+                    } else {
+                        // KMK <--
+                        MangaCover.Book(
+                            modifier = Modifier
+                                // KMK -->
+                                .width(UpdateItemWidth),
+                            // KMK <--
+                            data = mangaCover,
+                            onClick = onClickCover,
+                            // KMK -->
+                            bgColor = bgColor,
+                            tint = onBgColor,
+                            size = MangaCover.Size.Medium,
+                            onCoverLoaded = { _, result ->
+                                val image = result.result.image
+                                coverRatio.floatValue = image.height.toFloat() / image.width
+                            },
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .width(if (usePanoramaCover && coverIsWide) UpdateItemPanoramaWidth else UpdateItemWidth),
                 )
+                // KMK <--
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                var textHeight by remember { mutableIntStateOf(0) }
-                if (!update.read) {
-                    Icon(
-                        imageVector = Icons.Filled.Circle,
-                        contentDescription = stringResource(MR.strings.unread),
-                        modifier = Modifier
-                            .height(8.dp)
-                            .padding(end = 4.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                if (update.bookmark) {
-                    Icon(
-                        imageVector = Icons.Filled.Bookmark,
-                        contentDescription = stringResource(MR.strings.action_filter_bookmarked),
-                        modifier = Modifier
-                            .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                }
-                Text(
-                    text = update.chapterName,
-                    maxLines = 1,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = LocalContentColor.current.copy(alpha = textAlpha),
-                    overflow = TextOverflow.Ellipsis,
-                    onTextLayout = { textHeight = it.size.height },
-                    modifier = Modifier
-                        .weight(weight = 1f, fill = false),
-                )
-                if (readProgress != null) {
-                    DotSeparatorText()
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = MaterialTheme.padding.medium)
+                    .weight(1f),
+            ) {
+                // KMK -->
+                if (isLeader) {
+                    // KMK <--
                     Text(
-                        text = readProgress,
+                        text = update.mangaTitle,
                         maxLines = 1,
-                        color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = LocalContentColor.current.copy(alpha = textAlpha),
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-        }
 
-        // KMK -->
-        if (isLeader && isExpandable) {
-            CollapseButton(
-                expanded = expanded,
-                collapseToggle = { collapseToggle(update.groupByDateAndManga()) },
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    var textHeight by remember { mutableIntStateOf(0) }
+                    if (!update.read) {
+                        Icon(
+                            imageVector = Icons.Filled.Circle,
+                            contentDescription = stringResource(MR.strings.unread),
+                            modifier = Modifier
+                                .height(8.dp)
+                                .padding(end = 4.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    if (update.bookmark) {
+                        Icon(
+                            imageVector = Icons.Filled.Bookmark,
+                            contentDescription = stringResource(MR.strings.action_filter_bookmarked),
+                            modifier = Modifier
+                                .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                    }
+                    Text(
+                        text = update.chapterName,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = LocalContentColor.current.copy(alpha = textAlpha),
+                        overflow = TextOverflow.Ellipsis,
+                        onTextLayout = { textHeight = it.size.height },
+                        modifier = Modifier
+                            .weight(weight = 1f, fill = false),
+                    )
+                    if (readProgress != null) {
+                        DotSeparatorText()
+                        Text(
+                            text = readProgress,
+                            maxLines = 1,
+                            color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+
+            // KMK -->
+            if (isLeader && isExpandable) {
+                CollapseButton(
+                    expanded = expanded,
+                    collapseToggle = { collapseToggle(update.groupByDateAndManga()) },
+                )
+            }
+            // KMK <--
+
+            // AM (FILE_SIZE) -->
+            var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
+            if (downloadStateProvider() == Download.State.DOWNLOADED &&
+                storagePreferences.showChapterFileSize().get() &&
+                fileSizeAsync == null
+            ) {
+                LaunchedEffect(update, Unit) {
+                    fileSizeAsync = withIOContext {
+                        downloadProvider.getChapterFileSize(
+                            update.chapterName,
+                            null,
+                            update.scanlator,
+                            // AM (CUSTOM_INFORMATION) -->
+                            update.ogMangaTitle,
+                            // <-- AM (CUSTOM_INFORMATION)
+                            sourceManager.getOrStub(update.sourceId),
+                        )
+                    }
+                    updatesItem.fileSize = fileSizeAsync
+                }
+            }
+            // <-- AM (FILE_SIZE)
+
+            ChapterDownloadIndicator(
+                enabled = onDownloadChapter != null,
+                modifier = Modifier.padding(start = 4.dp),
+                downloadStateProvider = downloadStateProvider,
+                downloadProgressProvider = downloadProgressProvider,
+                onClick = { onDownloadChapter?.invoke(it) },
+                // AM (FILE_SIZE) -->
+                fileSize = fileSizeAsync,
+                // <-- AM (FILE_SIZE)
             )
         }
-        // KMK <--
-
-        // AM (FILE_SIZE) -->
-        var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
-        if (downloadStateProvider() == Download.State.DOWNLOADED &&
-            storagePreferences.showChapterFileSize().get() &&
-            fileSizeAsync == null
-        ) {
-            LaunchedEffect(update, Unit) {
-                fileSizeAsync = withIOContext {
-                    downloadProvider.getChapterFileSize(
-                        update.chapterName,
-                        null,
-                        update.scanlator,
-                        // AM (CUSTOM_INFORMATION) -->
-                        update.ogMangaTitle,
-                        // <-- AM (CUSTOM_INFORMATION)
-                        sourceManager.getOrStub(update.sourceId),
-                    )
-                }
-                updatesItem.fileSize = fileSizeAsync
-            }
-        }
-        // <-- AM (FILE_SIZE)
-
-        ChapterDownloadIndicator(
-            enabled = onDownloadChapter != null,
-            modifier = Modifier.padding(start = 4.dp),
-            downloadStateProvider = downloadStateProvider,
-            downloadProgressProvider = downloadProgressProvider,
-            onClick = { onDownloadChapter?.invoke(it) },
-            // AM (FILE_SIZE) -->
-            fileSize = fileSizeAsync,
-            // <-- AM (FILE_SIZE)
-        )
     }
 }
 
@@ -444,8 +514,8 @@ fun CollapseButton(
 
 private val IndicatorSize = MaterialTheme.padding.large
 
-private val UpdateItemPanoramaWidth = 126.dp // Book cover
-private val UpdateItemWidth = 56.dp
+private val UpdateItemPanoramaWidth = 108.dp // Book cover
+private val UpdateItemWidth = 48.dp
 // KMK <--
 
 private fun formatProgress(milliseconds: Long): String {
