@@ -43,10 +43,12 @@ import exh.search.Text
 import exh.source.MERGED_SOURCE_ID
 import exh.util.isLewd
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.cancellable
@@ -72,6 +74,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.category.interactor.GetCategoriesPerLibraryManga
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
@@ -136,6 +139,7 @@ class LibraryScreenModel(
     // SY <--
     // KMK -->
     private val smartSearchMerge: SmartSearchMerge = Injekt.get(),
+    private val getCategoriesPerLibraryManga: GetCategoriesPerLibraryManga = Injekt.get(),
     // KMK <--
 ) : StateScreenModel<LibraryScreenModel.State>(State()) {
 
@@ -144,12 +148,15 @@ class LibraryScreenModel(
     init {
         screenModelScope.launchIO {
             combine(
-                state.map { it.searchQuery }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS),
-                getLibraryFlow(),
-                getTracksPerManga.subscribe(),
                 combine(
-                    getTrackingFilterFlow(),
+                    state.map { it.searchQuery }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS),
+                    getLibraryFlow(),
                     downloadCache.changes,
+                    ::Triple,
+                ),
+                combine(
+                    getTracksPerManga.subscribe(),
+                    getTrackingFilterFlow(),
                     ::Pair,
                 ),
                 // SY -->
@@ -159,12 +166,25 @@ class LibraryScreenModel(
                     ::Pair,
                 ),
                 // SY <--
-            ) { searchQuery, library, tracks, (trackingFilter, _), (groupType, sort) ->
+                // KMK -->
+                combine(
+                    getCategoriesPerLibraryManga.subscribe(),
+                    state.map { it.filterCategory }.distinctUntilChanged(),
+                    ::Pair,
+                ),
+                // KMK <--
+            ) { (searchQuery, library, _), (tracks, trackingFilter), (groupType, sort), (categoriesPerManga, filterCategory) ->
                 library
                     // SY -->
-                    .applyGrouping(groupType)
+                    .applyGrouping(/* KMK --> */ if (filterCategory) LibraryGroup.UNGROUPED else /* KMK <-- */ groupType)
                     // SY <--
-                    .applyFilters(tracks, trackingFilter)
+                    .applyFilters(
+                        tracks,
+                        trackingFilter,
+                        // KMK -->
+                        categoriesPerManga,
+                        // KMK <--
+                    )
                     .applySort(
                         tracks,
                         trackingFilter.keys,
@@ -229,7 +249,10 @@ class LibraryScreenModel(
                     prefs.filterLewd,
                     // SY <--
                 ) + trackFilter.values
-                ).any { it != TriState.DISABLED }
+                ).any { it != TriState.DISABLED } ||
+                // KMK -->
+                prefs.filterCategories
+            // KMK <--
         }
             .distinctUntilChanged()
             .onEach {
@@ -255,6 +278,25 @@ class LibraryScreenModel(
             }
             .launchIn(screenModelScope)
         // SY <--
+
+        // KMK -->
+        libraryPreferences.filterCategories().changes()
+            .onEach {
+                mutableState.update { state ->
+                    state.copy(filterCategory = it)
+                }
+            }.launchIn(screenModelScope)
+
+        screenModelScope.launchIO {
+            getCategories
+                .subscribe()
+                .collect { categories ->
+                    mutableState.update { state ->
+                        state.copy(libraryCategories = categories.filterNot(Category::isSystemCategory))
+                    }
+                }
+        }
+        // KMK <--
     }
 
     /**
@@ -263,6 +305,9 @@ class LibraryScreenModel(
     private suspend fun LibraryMap.applyFilters(
         trackMap: Map<Long, List<Track>>,
         trackingFilter: Map<Long, TriState>,
+        // KMK -->
+        categoriesPerManga: Map<Long, Set<Long>>,
+        // KMK <--
     ): LibraryMap {
         val prefs = getLibraryItemPreferencesFlow().first()
         val downloadedOnly = prefs.globalFilterDownloaded
@@ -286,6 +331,12 @@ class LibraryScreenModel(
         // SY -->
         val filterLewd = prefs.filterLewd
         // SY <--
+
+        // KMK -->
+        val filterCategories = prefs.filterCategories
+        val includedCategories = prefs.filterCategoriesInclude
+        val excludedCategories = prefs.filterCategoriesExclude
+        // KMK <--
 
         val filterFnDownloaded: (LibraryItem) -> Boolean = {
             applyFilter(filterDownloaded) {
@@ -344,6 +395,19 @@ class LibraryScreenModel(
             !isExcluded && isIncluded
         }
 
+        // KMK -->
+        val filterFnCategories: (LibraryItem) -> Boolean = categories@{ item ->
+            if (!filterCategories) return@categories true
+
+            val mangaCategories = categoriesPerManga[item.libraryManga.id].orEmpty()
+
+            val isExcluded = excludedCategories.any { it in mangaCategories }
+            val isIncluded = includedCategories.isEmpty() || includedCategories.all { it in mangaCategories }
+
+            !isExcluded && isIncluded
+        }
+        // KMK <--
+
         val filterFn: (LibraryItem) -> Boolean = {
             filterFnDownloaded(it) &&
                 filterFnUnread(it) &&
@@ -356,8 +420,11 @@ class LibraryScreenModel(
                 filterFnIntervalCustom(it) &&
                 filterFnTracking(it) &&
                 // SY -->
-                filterFnLewd(it)
-            // SY <--
+                filterFnLewd(it) &&
+                // SY <--
+                // KMK -->
+                filterFnCategories(it)
+            // KMK <---
         }
 
         return mapValues { (_, value) -> value.fastFilter(filterFn) }
@@ -511,6 +578,9 @@ class LibraryScreenModel(
             // KMK -->
             libraryPreferences.sourceBadge().changes(),
             libraryPreferences.useLangIcon().changes(),
+            libraryPreferences.filterCategories().changes(),
+            libraryPreferences.filterCategoriesInclude().changes(),
+            libraryPreferences.filterCategoriesExclude().changes(),
             // KMK <--
         ) {
             ItemPreferences(
@@ -535,6 +605,9 @@ class LibraryScreenModel(
                 // KMK -->
                 sourceBadge = it[14] as Boolean,
                 useLangIcon = it[15] as Boolean,
+                filterCategories = it[16] as Boolean,
+                filterCategoriesInclude = (it[17] as Set<*>).filterIsInstance<String>().mapNotNull(String::toLongOrNull).toImmutableSet(),
+                filterCategoriesExclude = (it[18] as Set<*>).filterIsInstance<String>().mapNotNull(String::toLongOrNull).toImmutableSet(),
                 // KMK <--
             )
         }
@@ -1343,6 +1416,11 @@ class LibraryScreenModel(
         // SY -->
         val filterLewd: TriState,
         // SY <--
+        // KMK -->
+        val filterCategories: Boolean,
+        val filterCategoriesInclude: ImmutableSet<Long>,
+        val filterCategoriesExclude: ImmutableSet<Long>,
+        // KMK <--
     )
 
     @Immutable
@@ -1361,6 +1439,10 @@ class LibraryScreenModel(
         val ogCategories: List<Category> = emptyList(),
         val groupType: Int = LibraryGroup.BY_DEFAULT,
         // SY <--
+        // KMK -->
+        val libraryCategories: List<Category> = emptyList(),
+        val filterCategory: Boolean = false,
+        // KMK <--
     ) {
         private val libraryCount by lazy {
             library.values

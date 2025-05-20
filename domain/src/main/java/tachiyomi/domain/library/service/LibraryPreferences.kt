@@ -123,6 +123,17 @@ class LibraryPreferences(
     )
     // SY <--
 
+    // KMK -->
+    fun filterCategories() = preferenceStore.getBoolean(
+        "pref_filter_library_categories",
+        false,
+    )
+
+    fun filterCategoriesInclude() = preferenceStore.getStringSet(FILTER_LIBRARY_CATEGORIES_INCLUDE_PREF_KEY, emptySet())
+
+    fun filterCategoriesExclude() = preferenceStore.getStringSet(FILTER_LIBRARY_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
+    // KMK <--
+
     fun filterTracking(id: Int) = preferenceStore.getEnum(
         "pref_filter_animelib_tracked_${id}_v2",
         TriState.DISABLED,
@@ -277,10 +288,20 @@ class LibraryPreferences(
         const val DEFAULT_CATEGORY_PREF_KEY = "default_anime_category"
         private const val LIBRARY_UPDATE_CATEGORIES_PREF_KEY = "animelib_update_categories"
         private const val LIBRARY_UPDATE_CATEGORIES_EXCLUDE_PREF_KEY = "animelib_update_categories_exclude"
+
+        // KMK -->
+        private const val FILTER_LIBRARY_CATEGORIES_INCLUDE_PREF_KEY = "pref_filter_library_categories_include"
+        private const val FILTER_LIBRARY_CATEGORIES_EXCLUDE_PREF_KEY = "pref_filter_library_categories_exclude"
+        // KMK <--
+
         val categoryPreferenceKeys = setOf(
             DEFAULT_CATEGORY_PREF_KEY,
             LIBRARY_UPDATE_CATEGORIES_PREF_KEY,
             LIBRARY_UPDATE_CATEGORIES_EXCLUDE_PREF_KEY,
+            // KMK -->
+            FILTER_LIBRARY_CATEGORIES_INCLUDE_PREF_KEY,
+            FILTER_LIBRARY_CATEGORIES_EXCLUDE_PREF_KEY,
+            // KMK <--
         )
     }
 }

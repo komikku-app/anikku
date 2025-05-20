@@ -22,3 +22,12 @@ VALUES (:animeId, :categoryId);
 deleteAnimeCategoryByAnimeId:
 DELETE FROM animes_categories
 WHERE anime_id = :animeId;
+
+-- KMK -->
+getCategoriesPerLibraryManga:
+SELECT AC.anime_id, AC.category_id
+FROM animes_categories AC
+JOIN animes A
+ON AC.anime_id = A._id
+WHERE A.favorite = 1;
+-- KMK <--
