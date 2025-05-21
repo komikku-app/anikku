@@ -364,7 +364,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         return client.newCall(hosterListRequest(episode))
             .awaitSuccess()
             .let { response ->
-                hosterListParse(response).sortHosters()
+                hosterListParse(response)
             }
     }
 
@@ -400,7 +400,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         return client.newCall(videoListRequest(hoster))
             .awaitSuccess()
             .let { response ->
-                videoListParse(response, hoster).sortVideos()
+                videoListParse(response, hoster)
             }
     }
 
@@ -445,18 +445,17 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param episode the episode.
      * @return the videos for the episode.
      */
-    @Suppress("DEPRECATION")
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
+        @Suppress("DEPRECATION")
         return fetchVideoList(episode).awaitSingle()
     }
 
-    @Suppress("DEPRECATION")
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getVideoList"))
     override fun fetchVideoList(episode: SEpisode): Observable<List<Video>> {
         return client.newCall(videoListRequest(episode))
             .asObservableSuccess()
             .map { response ->
-                videoListParse(response).sort()
+                videoListParse(response)
             }
     }
 
@@ -482,7 +481,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @since extensions-lib 16
      */
-    protected open fun List<Hoster>.sortHosters(): List<Hoster> {
+    open fun List<Hoster>.sortHosters(): List<Hoster> {
         return this
     }
 
@@ -491,8 +490,9 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @since extensions-lib 16
      */
-    protected open fun List<Video>.sortVideos(): List<Video> {
-        return this
+    open fun List<Video>.sortVideos(): List<Video> {
+        @Suppress("DEPRECATION")
+        return sort()
     }
 
     /**
