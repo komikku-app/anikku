@@ -374,6 +374,8 @@ class MangaScreen(
             onClickSourceSettingsClicked = {
                 navigator.push(SourcePreferencesScreen(successState.source.id))
             }.takeIf { isConfigurableSource },
+            onOpenMangaFolder = { screenModel.openMangaFolder() }
+                .takeIf { successState.source !is StubSource },
             onRelatedMangasScreenClick = {
                 if (successState.isRelatedMangasFetched == null) {
                     scope.launchIO { screenModel.fetchRelatedMangasFromSource(onDemand = true) }

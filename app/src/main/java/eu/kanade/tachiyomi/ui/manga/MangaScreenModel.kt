@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.ui.manga
 
 import android.content.Context
+import android.content.Intent
+import android.provider.DocumentsContract
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -46,6 +48,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.coil.getBestColor
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
+import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
@@ -142,13 +145,12 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Calendar
-import kotlin.collections.filter
-import kotlin.collections.forEach
 import kotlin.math.floor
 import androidx.compose.runtime.State as RuntimeState
 
@@ -170,6 +172,7 @@ class MangaScreenModel(
     private val uiPreferences: UiPreferences = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
     private val refreshTracks: RefreshTracks = Injekt.get(),
+    private val downloadProvider: DownloadProvider = Injekt.get(),
     // KMK <--
     private val trackerManager: TrackerManager = Injekt.get(),
     private val trackChapter: TrackChapter = Injekt.get(),
@@ -817,6 +820,27 @@ class MangaScreenModel(
             }
         } else {
             /* SY <-- */ downloadManager.deleteManga(state.manga, state.source)
+        }
+    }
+
+    /**
+     * Opens manga folder with the system's file manager.
+     */
+    fun openMangaFolder() {
+        try {
+            val currentManga = manga
+            val currentSource = source
+            if (currentManga == null || currentSource == null || currentSource is StubSource) return
+
+            val mangaDir = downloadProvider.findMangaDir(/* SY --> */ currentManga.ogTitle /* SY <-- */, currentSource) ?: return
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(mangaDir.uri, DocumentsContract.Document.MIME_TYPE_DIR)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+            context.toast(e.message ?: context.stringResource(KMR.strings.error_opening_folder))
         }
     }
 
