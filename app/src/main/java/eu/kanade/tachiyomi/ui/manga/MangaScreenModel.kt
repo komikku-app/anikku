@@ -112,6 +112,11 @@ import tachiyomi.domain.chapter.service.calculateChapterGap
 import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.domain.libraryUpdateError.interactor.DeleteLibraryUpdateErrors
+import tachiyomi.domain.libraryUpdateError.interactor.InsertLibraryUpdateErrors
+import tachiyomi.domain.libraryUpdateError.model.LibraryUpdateError
+import tachiyomi.domain.libraryUpdateErrorMessage.interactor.InsertLibraryUpdateErrorMessages
+import tachiyomi.domain.libraryUpdateErrorMessage.model.LibraryUpdateErrorMessage
 import tachiyomi.domain.manga.interactor.DeleteMergeById
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
 import tachiyomi.domain.manga.interactor.GetManga
@@ -200,6 +205,11 @@ class MangaScreenModel(
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
     internal val setAnimeViewerFlags: SetAnimeViewerFlags = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+    // KMK -->
+    private val deleteLibraryUpdateErrors: DeleteLibraryUpdateErrors = Injekt.get(),
+    private val insertLibraryUpdateErrors: InsertLibraryUpdateErrors = Injekt.get(),
+    private val insertLibraryUpdateErrorMessages: InsertLibraryUpdateErrorMessages = Injekt.get(),
+    // KMK <--
     // AM (FILE_SIZE) -->
     storagePreferences: StoragePreferences = Injekt.get(),
     // <-- AM (FILE_SIZE)
@@ -521,6 +531,9 @@ class MangaScreenModel(
             withIOContext {
                 val networkManga = state.source.getMangaDetails(state.manga.toSManga())
                 updateManga.awaitUpdateFromSource(state.manga, networkManga, manualFetch)
+                // KMK -->
+                clearErrorFromDB(state.manga.id)
+                // KMK <--
             }
         } catch (e: Throwable) {
             // Ignore early hints "errors" that aren't handled by OkHttp
@@ -530,8 +543,28 @@ class MangaScreenModel(
             screenModelScope.launch {
                 snackbarHostState.showSnackbar(message = with(context) { e.formattedMessage })
             }
+            // KMK -->
+            writeErrorToDB(state.manga to with(context) { e.formattedMessage })
+            // KMK <--
         }
     }
+
+    // KMK -->
+    private suspend fun clearErrorFromDB(mangaId: Long) {
+        deleteLibraryUpdateErrors.deleteMangaError(mangaIds = listOf(mangaId))
+    }
+
+    private suspend fun writeErrorToDB(error: Pair<Manga, String?>) {
+        val errorMessage = error.second ?: context.stringResource(MR.strings.unknown_error)
+        val errorMessageId = insertLibraryUpdateErrorMessages.insert(
+            libraryUpdateErrorMessage = LibraryUpdateErrorMessage(-1L, errorMessage),
+        )
+
+        insertLibraryUpdateErrors.upsert(
+            LibraryUpdateError(id = -1L, mangaId = error.first.id, messageId = errorMessageId),
+        )
+    }
+    // KMK <--
 
     // SY -->
     fun updateMangaInfo(
@@ -979,6 +1012,9 @@ class MangaScreenModel(
                     state.source.fetchChaptersForMergedManga(state.manga, manualFetch)
                 }
                 // SY <--
+                // KMK -->
+                clearErrorFromDB(state.manga.id)
+                // KMK <--
             }
         } catch (e: Throwable) {
             val message = if (e is NoResultsException) {
@@ -993,6 +1029,9 @@ class MangaScreenModel(
             }
             val newManga = mangaRepository.getMangaById(mangaId)
             updateSuccessState { it.copy(manga = newManga, isRefreshingData = false) }
+            // KMK -->
+            writeErrorToDB(state.manga to message)
+            // KMK <--
         }
     }
 
