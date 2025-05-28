@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import mihon.domain.manga.model.toDomainManga
+import tachiyomi.core.common.util.QuerySanitizer.sanitize
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.model.Manga
@@ -18,7 +19,7 @@ class SourceSearchPagingSource(
     private val filters: FilterList,
 ) : BaseSourcePagingSource(source) {
     override suspend fun requestNextPage(currentPage: Int): MangasPage {
-        return source?.getSearchAnime(currentPage, query, filters)
+        return source?.getSearchAnime(currentPage, query.sanitize(), filters)
             // KMK -->
             ?: MangasPage(emptyList(), false)
         // KMK <--

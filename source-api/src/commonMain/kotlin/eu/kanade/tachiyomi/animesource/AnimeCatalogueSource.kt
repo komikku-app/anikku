@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
 import rx.Observable
+import tachiyomi.core.common.util.QuerySanitizer.sanitize
 import tachiyomi.core.common.util.lang.awaitSingle
 import tachiyomi.core.common.util.system.logcat
 
@@ -222,7 +223,7 @@ interface AnimeCatalogueSource : AnimeSource {
             words.map { keyword ->
                 launch {
                     runCatching {
-                        getSearchAnime(1, keyword, FilterList()).animes
+                        getSearchAnime(1, keyword.sanitize(), FilterList()).animes
                     }
                         .onSuccess { if (it.isNotEmpty()) pushResults(Pair(keyword, it), false) }
                         .onFailure { e ->
