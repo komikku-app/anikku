@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
+import tachiyomi.core.common.preference.getLongArray
 import tachiyomi.domain.library.model.LibraryDisplayMode
 
 class SourcePreferences(
@@ -22,6 +23,8 @@ class SourcePreferences(
     )
 
     fun enabledLanguages() = preferenceStore.getStringSet("source_languages", LocaleHelper.getDefaultEnabledLanguages())
+
+    fun migrationSources() = preferenceStore.getLongArray("migration_sources", emptyList())
 
     fun disabledSources() = preferenceStore.getStringSet("hidden_anime_catalogues", emptySet())
 
@@ -83,8 +86,6 @@ class SourcePreferences(
     fun sourcesTabSourcesInCategories() = preferenceStore.getStringSet("sources_tab_source_categories", mutableSetOf())
 
     fun migrateFlags() = preferenceStore.getInt("migrate_flags", Int.MAX_VALUE)
-
-    fun migrationSources() = preferenceStore.getString("migrate_sources", "")
 
     fun smartMigration() = preferenceStore.getBoolean("smart_migrate", false)
 
