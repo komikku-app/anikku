@@ -249,8 +249,8 @@ private const val DOWNLOADS_PATH = "downloads"
 private const val LOCAL_SOURCE_PATH = "localanime"
 private const val MPV_CONFIG_PATH = "mpv-config"
 private const val FONTS_PATH = "fonts"
-private const val SCRIPTS_PATH = "scripts"
-private const val SCRIPT_OPTS_PATH = "script-opts"
+const val SCRIPTS_PATH = "scripts"
+const val SCRIPT_OPTS_PATH = "script-opts"
 
 // SY -->
 private const val LOGS_PATH = "logs"
