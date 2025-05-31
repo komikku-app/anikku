@@ -75,6 +75,7 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -417,6 +418,18 @@ private fun UpdatesUiItem(
                         )
                         Spacer(modifier = Modifier.width(2.dp))
                     }
+                    // AM (FILLERMARK) -->
+                    if (update.fillermark) {
+                        Icon(
+                            painter = rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)),
+                            contentDescription = stringResource(AMR.strings.action_filter_fillermarked),
+                            modifier = Modifier
+                                .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
+                            tint = MaterialTheme.colorScheme.tertiary,
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                    }
+                    // <-- AM (FILLERMARK)
                     Text(
                         text = update.chapterName,
                         maxLines = 1,
