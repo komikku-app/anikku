@@ -1,5 +1,5 @@
 [versions]
-aboutlib_version = "12.0.1"
+aboutlib_version = "12.2.0"
 leakcanary = "2.14"
 moko = "0.24.5"
 nanohttpd-version = "2.3.1"
