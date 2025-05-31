@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -260,11 +261,13 @@ private fun UpdatesUiItem(
     val textAlpha = if (update.read) DISABLED_ALPHA else 1f
 
     // KMK -->
-    val fillermarkIcon = if (!update.fillermark) {
-        ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)
-    } else {
-        ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp)
-    }
+    val fillermarkPainter = rememberVectorPainter(
+        if (!update.fillermark) {
+            ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)
+        } else {
+            ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp)
+        },
+    )
     val swipeBackground = MaterialTheme.colorScheme.primaryContainer
     val swipeStart = remember(updateSwipeStartAction, update.read, update.bookmark, update.fillermark, downloadStateProvider()) {
         getSwipeAction(
@@ -273,7 +276,7 @@ private fun UpdatesUiItem(
             bookmark = update.bookmark,
             downloadState = downloadStateProvider(),
             background = swipeBackground,
-            fillermarkIcon = fillermarkIcon,
+            fillermarkPainter = fillermarkPainter,
             onSwipe = { onUpdateSwipe(updateSwipeStartAction) },
         )
     }
@@ -284,7 +287,7 @@ private fun UpdatesUiItem(
             bookmark = update.bookmark,
             downloadState = downloadStateProvider(),
             background = swipeBackground,
-            fillermarkIcon = fillermarkIcon,
+            fillermarkPainter = fillermarkPainter,
             onSwipe = { onUpdateSwipe(updateSwipeEndAction) },
         )
     }

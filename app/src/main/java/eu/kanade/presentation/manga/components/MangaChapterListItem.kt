@@ -37,6 +37,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -83,11 +85,13 @@ fun MangaChapterListItem(
     modifier: Modifier = Modifier,
 ) {
     // KMK -->
-    val fillermarkIcon = if (!fillermark) {
-        ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)
-    } else {
-        ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp)
-    }
+    val fillermarkPainter = rememberVectorPainter(
+        if (!fillermark) {
+            ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)
+        } else {
+            ImageVector.vectorResource(id = R.drawable.ic_fillermark_border_24dp)
+        },
+    )
     val swipeBackground = MaterialTheme.colorScheme.primaryContainer
     val swipeStart = remember(chapterSwipeStartAction, read, bookmark, fillermark, downloadStateProvider()) {
         // KMK <--
@@ -97,7 +101,7 @@ fun MangaChapterListItem(
             bookmark = bookmark,
             downloadState = downloadStateProvider(),
             background = swipeBackground,
-            fillermarkIcon = fillermarkIcon,
+            fillermarkPainter = fillermarkPainter,
             onSwipe = { onChapterSwipe(chapterSwipeStartAction) },
         )
     }
@@ -110,7 +114,7 @@ fun MangaChapterListItem(
             bookmark = bookmark,
             downloadState = downloadStateProvider(),
             background = swipeBackground,
-            fillermarkIcon = fillermarkIcon,
+            fillermarkPainter = fillermarkPainter,
             onSwipe = { onChapterSwipe(chapterSwipeEndAction) },
         )
     }
@@ -162,7 +166,7 @@ fun MangaChapterListItem(
                     // AM (FILLERMARK) -->
                     if (fillermark) {
                         Icon(
-                            imageVector = ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp),
+                            painter = rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)),
                             contentDescription = stringResource(AMR.strings.action_filter_fillermarked),
                             modifier = Modifier
                                 .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
@@ -251,7 +255,7 @@ internal fun getSwipeAction(
     bookmark: Boolean,
     downloadState: Download.State,
     background: Color,
-    fillermarkIcon: ImageVector,
+    fillermarkPainter: VectorPainter,
     onSwipe: () -> Unit,
 ): me.saket.swipe.SwipeAction? {
     return when (action) {
@@ -270,7 +274,7 @@ internal fun getSwipeAction(
         // AM (FILLERMARK) -->
         LibraryPreferences.ChapterSwipeAction.ToggleFillermark -> {
             swipeAction(
-                icon = fillermarkIcon,
+                painter = fillermarkPainter,
                 background = background,
                 isUndo = bookmark,
                 onSwipe = onSwipe,
@@ -331,20 +335,37 @@ fun NextEpisodeAiringListItem(
 
 private fun swipeAction(
     onSwipe: () -> Unit,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    // KMK -->
+    painter: VectorPainter? = null,
+    // KMK <--
     background: Color,
     isUndo: Boolean = false,
 ): me.saket.swipe.SwipeAction {
     return me.saket.swipe.SwipeAction(
         icon = {
-            Icon(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .size(IndicatorSize),
-                imageVector = icon,
-                tint = contentColorFor(background),
-                contentDescription = null,
-            )
+            if (icon != null) {
+                Icon(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .size(IndicatorSize),
+                    imageVector = icon,
+                    tint = contentColorFor(background),
+                    contentDescription = null,
+                )
+            }
+            // KMK -->
+            if (painter != null) {
+                Icon(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .size(IndicatorSize),
+                    painter = painter,
+                    tint = contentColorFor(background),
+                    contentDescription = null,
+                )
+            }
+            // KMK <--
         },
         background = background,
         onSwipe = onSwipe,
