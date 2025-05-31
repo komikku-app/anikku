@@ -489,20 +489,22 @@ private fun CategoriesFilter(
     categories: List<Category>,
 ) {
     val filterCategories by libraryPreferences.filterCategories().collectAsState()
+    val categoriesByIdString = remember(categories) {
+        categories.associateBy { it.id.toString() }
+    }
 
     val filterCategoriesInclude = libraryPreferences.filterCategoriesInclude()
     val filterCategoriesExclude = libraryPreferences.filterCategoriesExclude()
     val included by filterCategoriesInclude.collectAsState()
     val excluded by filterCategoriesExclude.collectAsState()
-
     var showCategoriesDialog by rememberSaveable { mutableStateOf(false) }
     if (showCategoriesDialog) {
         TriStateListDialog(
             title = stringResource(MR.strings.categories),
             message = stringResource(KMR.strings.pref_library_filter_categories_details),
             items = categories,
-            initialChecked = included.mapNotNull { id -> categories.find { it.id.toString() == id } },
-            initialInversed = excluded.mapNotNull { id -> categories.find { it.id.toString() == id } },
+            initialChecked = included.mapNotNull { id -> categoriesByIdString[id] },
+            initialInversed = excluded.mapNotNull { id -> categoriesByIdString[id] },
             itemLabel = { it.visualName },
             onDismissRequest = { showCategoriesDialog = false },
             onValueChanged = { newIncluded, newExcluded ->

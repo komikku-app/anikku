@@ -129,6 +129,12 @@ object SettingsDownloadScreen : SearchableSettings {
 
         val downloadNewChapters by downloadNewChaptersPref.collectAsState()
 
+        // KMK -->
+        val categoriesByIdString = remember(allCategories) {
+            allCategories.associateBy { it.id.toString() }
+        }
+        // KMK <--
+
         val included by downloadNewChapterCategoriesPref.collectAsState()
         val excluded by downloadNewChapterCategoriesExcludePref.collectAsState()
         var showDialog by rememberSaveable { mutableStateOf(false) }
@@ -137,8 +143,12 @@ object SettingsDownloadScreen : SearchableSettings {
                 title = stringResource(MR.strings.categories),
                 message = stringResource(MR.strings.pref_download_new_categories_details),
                 items = allCategories,
-                initialChecked = included.mapNotNull { id -> allCategories.find { it.id.toString() == id } },
-                initialInversed = excluded.mapNotNull { id -> allCategories.find { it.id.toString() == id } },
+                initialChecked = included.mapNotNull { id ->
+                    /* KMK --> */ categoriesByIdString[id] /* KMK <-- */
+                },
+                initialInversed = excluded.mapNotNull { id ->
+                    /* KMK --> */ categoriesByIdString[id] /* KMK <-- */
+                },
                 itemLabel = { it.visualName },
                 onDismissRequest = { showDialog = false },
                 onValueChanged = { newIncluded, newExcluded ->

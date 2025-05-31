@@ -231,30 +231,38 @@ object SettingsDiscordScreen : SearchableSettings {
         enabled: Boolean,
     ): Preference.PreferenceGroup {
         val getCategories = remember { Injekt.get<GetCategories>() }
-        val allAnimeCategories by getCategories.subscribe().collectAsState(
+        val allCategories by getCategories.subscribe().collectAsState(
             initial = runBlocking { getCategories.await() },
         )
+        // KMK -->
+        val categoriesByIdString = remember(allCategories) {
+            allCategories.associateBy { it.id.toString() }
+        }
+        // KMK <--
 
         val discordRPCIncognitoPref = connectionsPreferences.discordRPCIncognito()
         val discordRPCIncognitoCategoriesPref = connectionsPreferences.discordRPCIncognitoCategories()
 
-        val includedAnime by discordRPCIncognitoCategoriesPref.collectAsState()
-        var showAnimeDialog by rememberSaveable { mutableStateOf(false) }
-        if (showAnimeDialog) {
+        val included by discordRPCIncognitoCategoriesPref.collectAsState()
+        // FIXME: The fuck is this?
+        var showDialog by rememberSaveable { mutableStateOf(false) }
+        if (showDialog) {
             TriStateListDialog(
                 title = stringResource(R.string.general_categories),
                 message = stringResource(R.string.pref_discord_incognito_categories_details),
-                items = allAnimeCategories,
-                initialChecked = includedAnime.mapNotNull { id -> allAnimeCategories.find { it.id.toString() == id } },
-                initialInversed = includedAnime.mapNotNull { allAnimeCategories.find { false } },
+                items = allCategories,
+                initialChecked = included.mapNotNull { id ->
+                    /* KMK --> */ categoriesByIdString[id] /* KMK <-- */
+                },
+                initialInversed = included.mapNotNull { allCategories.find { false } },
                 itemLabel = { it.visualName },
-                onDismissRequest = { showAnimeDialog = false },
+                onDismissRequest = { showDialog = false },
                 onValueChanged = { newIncluded, _ ->
                     discordRPCIncognitoCategoriesPref.set(
                         newIncluded.fastMap { it.id.toString() }
                             .toSet(),
                     )
-                    showAnimeDialog = false
+                    showDialog = false
                 },
                 onlyChecked = true,
             )
@@ -271,10 +279,10 @@ object SettingsDiscordScreen : SearchableSettings {
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(R.string.general_categories),
                     subtitle = getCategoriesLabel(
-                        allCategories = allAnimeCategories,
-                        included = includedAnime,
+                        allCategories = allCategories,
+                        included = included,
                     ),
-                    onClick = { showAnimeDialog = true },
+                    onClick = { showDialog = true },
                 ),
                 Preference.PreferenceItem.InfoPreference(
                     stringResource(R.string.pref_discord_incognito_categories_details),
