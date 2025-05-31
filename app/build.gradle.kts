@@ -29,7 +29,7 @@ android {
         applicationId = "app.anikku"
 
         versionCode = 3
-        versionName = "0.1.2"
+        versionName = "0.1.3"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
