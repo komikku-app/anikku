@@ -141,7 +141,7 @@ fun QualitySheet(
                         videoState = (hosterState.first() as HosterState.Ready).videoState,
                         selectedVideoIndex = selectedVideoIndex.second,
                         onClickVideo = onClickVideo,
-                        modifier = modifier.padding(paddingValues = qualitySheetPadding),
+                        modifier = Modifier.padding(paddingValues = qualitySheetPadding),
                     )
                 } else {
                     QualitySheetHosterContent(

@@ -106,7 +106,7 @@ private fun VerticalSliderInternal(
         contentAlignment = Alignment.BottomCenter,
     ) {
         Box(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth(fraction = 0.5f)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(16.dp))
