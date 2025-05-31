@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.model.copy
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.getChapterList
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.online.HttpSource
 import exh.source.MERGED_SOURCE_ID
@@ -135,7 +136,7 @@ class MergedSource : HttpSource() {
                                 try {
                                     val (source, loadedManga, reference) = it.load()
                                     if (loadedManga != null && reference.getChapterUpdates) {
-                                        val chapterList = source.getEpisodeList(loadedManga.toSManga())
+                                        val chapterList = source.getChapterList(loadedManga.toSManga())
                                         val results =
                                             syncChaptersWithSource.await(chapterList, loadedManga, source)
 

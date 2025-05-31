@@ -75,8 +75,6 @@ import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionsScreen
 import eu.kanade.tachiyomi.ui.browse.extension.details.SourcePreferencesScreen
-import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialog
-import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialogScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
@@ -102,6 +100,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import mihon.feature.migration.config.MigrationConfigScreen
+import mihon.feature.migration.dialog.MigrateMangaDialog
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
@@ -508,13 +507,12 @@ class MangaScreen(
             }
 
             is MangaScreenModel.Dialog.Migrate -> {
-                MigrateDialog(
-                    oldManga = dialog.oldManga,
-                    newManga = dialog.newManga,
-                    screenModel = rememberScreenModel { MigrateDialogScreenModel() },
+                MigrateMangaDialog(
+                    current = dialog.current,
+                    target = dialog.target,
+                    // Initiated from the context of [dialog.target] so we show [dialog.current].
+                    onClickTitle = { navigator.push(MangaScreen(dialog.current.id)) },
                     onDismissRequest = onDismissRequest,
-                    onClickTitle = { navigator.push(MangaScreen(dialog.oldManga.id)) },
-                    onPopScreen = onDismissRequest,
                 )
             }
             MangaScreenModel.Dialog.SettingsSheet -> ChapterSettingsDialog(
