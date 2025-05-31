@@ -2,7 +2,7 @@
 <resources>
     <string name="action_filter_fillermarked">Remplissage</string>
     <string name="action_fillermark_episode">Marquer l\'épisode</string>
-    <string name="action_remove_fillermark_episode">Marquer l\'épisode</string>
+    <string name="action_remove_fillermark_episode">Démarquer l\\\'épisode</string>
     <string name="pref_not_download_fillermarked_items">Refuser le téléchargement des épisodes marqués par le remplissage</string>
     <string name="pref_show_downloaded_episode_file_size">Afficher la taille du fichier d\'épisode téléchargé</string>
     <string name="special_services">Services spéciaux</string>
@@ -62,7 +62,7 @@
     <string name="pref_flare_solverr_url_summary">URL de l\'instance FlareSolverr à utiliser par exemple http://192.168.1.202:8191/v1</string>
     <string name="pref_test_flare_solverr_and_update_user_agent">Tester FlareSolverr et mettre à jour l\'agent utilisateur</string>
     <string name="pref_test_flare_solverr_and_update_user_agent_summary">Testez FlareSolverr pour mettre à jour l\'agent utilisateur. Une seule fois, puis basculez si nécessaire.</string>
-    <string name="media_route_menu_title">SUPPRIMÉ</string>
+    <string name="media_route_menu_title">ÉTENDRE</string>
     <string name="pref_category_cast">Paramètres du cast</string>
     <string name="pref_enable_cast">Activer ou désactiver le cast</string>
     <string name="action_cast">Envoyer au cast</string>
@@ -103,7 +103,7 @@
     <string name="cast_volume">Volume</string>
     <string name="cast_end_session">Fin de la session de diffusion</string>
     <string name="cast_subtitle_settings">Paramètres des sous-titres</string>
-    <string name="cast_subtitle_font_size">Font Size</string>
+    <string name="cast_subtitle_font_size">Taille de police</string>
     <string name="cast_subtitle_text_color">Couleur du texte</string>
     <string name="cast_subtitle_background">Arrière-plan</string>
     <string name="cast_subtitle_shadow">Ombre</string>
@@ -206,6 +206,6 @@
     <string name="logging_in">Connexion en cours…</string>
     <string name="storage_failed_to_create_download_directory">Échec de la création du répertoire de téléchargement</string>
     <string name="storage_failed_to_create_directory">Échec de la création du répertoire : %s</string>
-    <string name="pref_anime_info">Anime Info</string>
+    <string name="pref_anime_info">Infos sur l\'anime</string>
     <string name="only_show_updated_entries_episodes">Afficher uniquement les entrées avec un nouvel épisode</string>
 </resources>
