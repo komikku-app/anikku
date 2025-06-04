@@ -2,4 +2,9 @@
 <resources>
     <!-- unpublished -> 4C1B4D71 / published -> F033F567 -->
     <string name="app_cast_id" translatable="false">null</string>
+    <string name="app_icon_anikun_1" translatable="false">Anikun 1</string>
+    <string name="app_icon_anikun_2" translatable="false">Anikun 2</string>
+    <string name="app_icon_anikun_3" translatable="false">Anikun 3</string>
+    <string name="app_icon_onigiri_1" translatable="false">Onigiri 1</string>
+    <string name="app_icon_onigiri_2" translatable="false">Onigiri 2</string>
 </resources>

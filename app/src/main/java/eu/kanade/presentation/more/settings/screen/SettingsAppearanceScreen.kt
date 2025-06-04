@@ -14,18 +14,22 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.materialkolor.PaletteStyle
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.domain.ui.model.AppIcon
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.TabletUiMode
 import eu.kanade.domain.ui.model.ThemeMode
 import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+import eu.kanade.domain.ui.model.setAppIcon
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.appearance.AppCustomThemeColorPickerScreen
 import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
 import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
 import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableMap
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
@@ -228,9 +232,35 @@ object SettingsAppearanceScreen : SearchableSettings {
             UiPreferences.dateFormat(dateFormat).format(now)
         }
 
+        // KMK -->
+        val appIcons = remember(context) {
+            mapOf(
+                AppIcon.DEFAULT to context.getString(R.string.label_default),
+                AppIcon.ANIKUN1 to context.getString(R.string.app_icon_anikun_1),
+                AppIcon.ANIKUN2 to context.getString(R.string.app_icon_anikun_2),
+                AppIcon.ANIKUN3 to context.getString(R.string.app_icon_anikun_3),
+                AppIcon.ONIGIRI1 to context.getString(R.string.app_icon_onigiri_1),
+                AppIcon.ONIGIRI2 to context.getString(R.string.app_icon_onigiri_2),
+            ).toImmutableMap()
+        }
+        // KMK <--
+
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_display),
             preferenceItems = persistentListOf(
+                // KMK -->
+                Preference.PreferenceItem.ListPreference(
+                    preference = uiPreferences.appIcon(),
+                    entries = appIcons,
+                    title = stringResource(AMR.strings.pref_app_icon),
+                    onValueChanged = { newIcon ->
+                        setAppIcon(context, newIcon)
+                        val selectedLabel = appIcons[newIcon] ?: newIcon.name.lowercase()
+                        context.toast(context.stringResource(AMR.strings.pref_app_icon_toast, selectedLabel))
+                        true
+                    },
+                ),
+                // KMK <--
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_app_language),
                     onClick = { navigator.push(AppLanguageScreen()) },

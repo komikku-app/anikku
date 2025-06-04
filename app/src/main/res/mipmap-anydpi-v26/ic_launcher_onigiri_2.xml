@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@color/ic_launcher_background_onigiri"/>
+  <foreground android:drawable="@mipmap/ic_launcher_foreground_onigiri_2"/>
+  <monochrome android:drawable="@drawable/ic_launcher_monochrome_onigiri"/>
+</adaptive-icon>
