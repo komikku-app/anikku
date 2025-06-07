@@ -58,6 +58,7 @@ dependencies {
 
     // Tests
     testImplementation(libs.bundles.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
     // SY -->
     implementation(sylibs.xlog)
