@@ -1,6 +1,8 @@
 package exh.recs.sources
 
 import dev.icerock.moko.resources.StringResource
+import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
+import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.CatalogueSource
@@ -24,7 +26,9 @@ import uy.kohesive.injekt.injectLazy
  */
 abstract class RecommendationPagingSource(
     protected val manga: Manga,
-    source: CatalogueSource? = null,
+    // KMK -->
+    source: RecommendationSource = RecommendationSource(),
+    // KMK <--
 ) : BaseSourcePagingSource(source) {
     // Display name
     abstract val name: String
@@ -44,7 +48,7 @@ abstract class RecommendationPagingSource(
         internal fun createSources(
             manga: Manga,
             // KMK -->
-            sourceCatalogue: SourceCatalogue,
+            recommendationSource: RecommendationSource,
             // KMK <--
         ): List<RecommendationPagingSource> {
             return buildList {
@@ -106,11 +110,40 @@ abstract class TrackerRecommendationPagingSource(
 }
 
 // KMK -->
-internal class SourceCatalogue(
-    internal val sourceId: Long,
+class RecommendationSource(
+    override val id: Long = RECOMMENDS_SOURCE,
     sourceManager: SourceManager = Injekt.get(),
-) {
-    val source = sourceManager.get(sourceId)
-        ?.let { it as CatalogueSource }
+) : CatalogueSource {
+    private val delegate by lazy {
+        sourceManager.get(id)
+            ?.let { it as CatalogueSource }
+    }
+
+    override val name: String by lazy { delegate?.name ?: "Recommends Source" }
+    override val lang: String by lazy { delegate?.lang ?: "all" }
+    override val supportsLatest by lazy { delegate?.supportsLatest ?: false }
+
+    override suspend fun getAnimeDetails(anime: SAnime) =
+        delegate?.getAnimeDetails(anime)
+            ?: throw UnsupportedOperationException()
+    override suspend fun getEpisodeList(anime: SAnime) =
+        delegate?.getEpisodeList(anime)
+            ?: throw UnsupportedOperationException()
+
+    override fun fetchPopularAnime(page: Int) =
+        delegate?.fetchPopularAnime(page)
+            ?: throw UnsupportedOperationException()
+    override fun fetchSearchAnime(page: Int, query: String, filters: AnimeFilterList) =
+        delegate?.fetchSearchAnime(page, query, filters)
+            ?: throw UnsupportedOperationException()
+    override fun fetchLatestUpdates(page: Int) =
+        delegate?.fetchLatestUpdates(page)
+            ?: throw UnsupportedOperationException()
+
+    override fun getFilterList() =
+        delegate?.getFilterList()
+            ?: throw UnsupportedOperationException()
 }
+
+const val RECOMMENDS_SOURCE = -1L
 // KMK <--
