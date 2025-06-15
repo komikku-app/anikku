@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.animesource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
-import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.coroutineScope
@@ -220,10 +219,11 @@ interface AnimeCatalogueSource : AnimeSource {
         if (words.isEmpty()) return
 
         coroutineScope {
+            val filterList = getFilterList()
             words.map { keyword ->
                 launch {
                     runCatching {
-                        getSearchAnime(1, keyword.sanitize(), FilterList()).animes
+                        getSearchAnime(1, keyword.sanitize(), filterList).animes
                     }
                         .onSuccess { if (it.isNotEmpty()) pushResults(Pair(keyword, it), false) }
                         .onFailure { e ->
