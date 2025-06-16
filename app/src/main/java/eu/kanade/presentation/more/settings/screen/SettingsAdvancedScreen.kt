@@ -3,6 +3,7 @@ package eu.kanade.presentation.more.settings.screen
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import android.webkit.WebStorage
 import android.webkit.WebView
@@ -142,9 +143,18 @@ object SettingsAdvancedScreen : SearchableSettings {
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(MR.strings.pref_manage_notifications),
                 onClick = {
-                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    // SY -->
+                    val intent = Intent().apply {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        } else {
+                            setAction("android.settings.APP_NOTIFICATION_SETTINGS")
+                            putExtra("app_package", context.packageName)
+                            putExtra("app_uid", context.applicationInfo.uid)
+                        }
                     }
+                    // SY <--
                     context.startActivity(intent)
                 },
             ),
