@@ -115,7 +115,7 @@ seeker = "io.github.2307vivek:seeker:1.2.2"
 
 truetypeparser = "io.github.yubyf:truetypeparser-light:2.1.4"
 
-media-router = "androidx.mediarouter:mediarouter:1.7.0"
+media-router = "androidx.mediarouter:mediarouter:1.8.0"
 cast-play-services = "com.google.android.gms:play-services-cast-framework:22.1.0"
 
 spotless-gradle = { group = "com.diffplug.spotless", name = "spotless-plugin-gradle", version.ref = "spotless" }
