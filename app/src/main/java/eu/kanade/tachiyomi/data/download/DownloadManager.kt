@@ -32,6 +32,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.io.Archive
 import tachiyomi.source.local.io.LocalSourceFileSystem
+import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -337,6 +338,10 @@ class DownloadManager(
             }
             provider.findMangaDir(/* SY --> */ manga.ogTitle /* SY <-- */, source)?.delete()
             cache.removeManga(manga)
+
+            // KMK -->
+            if (source.isLocal()) return@launchIO
+            // KMK <--
 
             // Delete source directory if empty
             val sourceDir = provider.findSourceDir(source)

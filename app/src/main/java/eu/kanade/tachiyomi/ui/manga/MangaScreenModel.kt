@@ -106,6 +106,7 @@ import tachiyomi.data.source.NoResultsException
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.chapter.interactor.DeleteChapters
 import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
 import tachiyomi.domain.chapter.interactor.UpdateChapter
@@ -212,6 +213,7 @@ class MangaScreenModel(
     private val deleteLibraryUpdateErrors: DeleteLibraryUpdateErrors = Injekt.get(),
     private val insertLibraryUpdateErrors: InsertLibraryUpdateErrors = Injekt.get(),
     private val insertLibraryUpdateErrorMessages: InsertLibraryUpdateErrorMessages = Injekt.get(),
+    private val deleteChaptersFromDb: DeleteChapters = Injekt.get(),
     // KMK <--
     // AM (FILE_SIZE) -->
     storagePreferences: StoragePreferences = Injekt.get(),
@@ -1417,12 +1419,63 @@ class MangaScreenModel(
                         ignoreCategoryExclusion = true,
                         // KMK <--
                     )
+                    // KMK -->
+                    if (source?.isLocal() == true) {
+                        // Refresh chapters state for Local source
+                        fetchChaptersFromSource()
+                    }
+                    // KMK <--
                 }
             } catch (e: Throwable) {
                 logcat(LogPriority.ERROR, e)
             }
         }
     }
+
+    // KMK -->
+    fun clearManga(
+        deleteDownload: Boolean,
+        removeChapters: Boolean,
+    ) {
+        if (deleteDownload) {
+            deleteDownloadedData()
+        }
+        if (removeChapters) {
+            removeChaptersDatabase()
+        }
+    }
+
+    private fun deleteDownloadedData() {
+        screenModelScope.launchNonCancellable {
+            try {
+                successState?.let { state ->
+                    downloadManager.deleteManga(
+                        manga = state.manga,
+                        source = state.source,
+                        removeQueued = true,
+                    )
+                    if (source?.isLocal() == true) {
+                        // Refresh chapters state for Local source
+                        fetchChaptersFromSource()
+                    }
+                }
+            } catch (e: Throwable) {
+                logcat(LogPriority.ERROR, e)
+            }
+        }
+    }
+
+    private fun removeChaptersDatabase() {
+        screenModelScope.launchNonCancellable {
+            try {
+                successState?.chapters?.map { it.id }
+                    ?.let { deleteChaptersFromDb.await(it) }
+            } catch (e: Throwable) {
+                logcat(LogPriority.ERROR, e)
+            }
+        }
+    }
+    // KMK <--
 
     private fun downloadNewChapters(chapters: List<Chapter>) {
         screenModelScope.launchNonCancellable {
@@ -1719,6 +1772,10 @@ class MangaScreenModel(
         data class EditMergedSettings(val mergedData: MergedMangaData) : Dialog
         // SY <--
 
+        // KMK -->
+        data class ClearManga(val isMergedSource: Boolean) : Dialog
+        // KMK <--
+
         data object ChangeAnimeSkipIntro : Dialog
         data object SettingsSheet : Dialog
         data object TrackSheet : Dialog
@@ -1774,6 +1831,12 @@ class MangaScreenModel(
         }
     }
     // SY <--
+
+    // KMK -->
+    fun showClearMangaDialog(isMergedSource: Boolean) {
+        updateSuccessState { it.copy(dialog = Dialog.ClearManga(isMergedSource)) }
+    }
+    // KMK <--
 
     fun showAnimeSkipIntroDialog() {
         updateSuccessState { it.copy(dialog = Dialog.ChangeAnimeSkipIntro) }

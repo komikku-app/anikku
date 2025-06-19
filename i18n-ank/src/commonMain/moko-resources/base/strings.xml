@@ -249,4 +249,7 @@
 
     <string name="skipped_reason_not_caught_up_episode">Skipped because there are unseen episodes</string>
     <string name="skipped_reason_not_started_episode">Skipped because no episodes are seen</string>
+
+    <string name="action_clear_anime">Clear anime</string>
+    <string name="episodes_from_database">Episodes &amp; History from Database</string>
 </resources>

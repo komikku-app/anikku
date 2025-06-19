@@ -50,6 +50,7 @@ import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.manga.EditCoverAction
 import eu.kanade.presentation.manga.EpisodeOptionsDialogScreen
 import eu.kanade.presentation.manga.MangaScreen
+import eu.kanade.presentation.manga.components.ClearMangaDialog
 import eu.kanade.presentation.manga.components.DeleteChaptersDialog
 import eu.kanade.presentation.manga.components.MangaCoverDialog
 import eu.kanade.presentation.manga.components.SetIntervalDialog
@@ -374,8 +375,9 @@ class MangaScreen(
             onClickSourceSettingsClicked = {
                 navigator.push(SourcePreferencesScreen(successState.source.id))
             }.takeIf { isConfigurableSource },
+            onClearManga = { screenModel.showClearMangaDialog(successState.source is MergedSource) },
             onOpenMangaFolder = { screenModel.openMangaFolder() }
-                .takeIf { successState.source !is StubSource },
+                .takeIf { successState.source !is StubSource && successState.source !is MergedSource },
             onRelatedMangasScreenClick = {
                 if (successState.isRelatedMangasFetched == null) {
                     scope.launchIO { screenModel.fetchRelatedMangasFromSource(onDemand = true) }
@@ -624,6 +626,15 @@ class MangaScreen(
                     onDismissRequest = onDismissRequest,
                 )
             }
+            // KMK -->
+            is MangaScreenModel.Dialog.ClearManga -> {
+                ClearMangaDialog(
+                    isMergedSource = dialog.isMergedSource,
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = screenModel::clearManga,
+                )
+            }
+            // KMK <--
         }
     }
 
