@@ -10,7 +10,6 @@ import android.os.PowerManager
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
-import eu.kanade.tachiyomi.ui.setting.connections.DiscordLoginActivity
 import eu.kanade.tachiyomi.util.lang.truncateCenter
 import logcat.LogPriority
 import rikka.sui.Sui
@@ -67,17 +66,6 @@ fun Context.openInBrowser(uri: Uri, forceDefaultBrowser: Boolean = false) {
         toast(e.message)
     }
 }
-
-// AM (DISCORD) -->
-fun Context.openDiscordLoginActivity() {
-    try {
-        val intent = Intent(this, DiscordLoginActivity::class.java)
-        startActivity(intent)
-    } catch (e: Exception) {
-        toast(e.message)
-    }
-}
-// <-- AM (DISCORD)
 
 fun Context.createFileInCacheDir(name: String): File {
     val file = File(externalCacheDir, name)
