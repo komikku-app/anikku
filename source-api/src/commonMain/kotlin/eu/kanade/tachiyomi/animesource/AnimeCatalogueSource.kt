@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.animesource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
-import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -94,7 +93,6 @@ interface AnimeCatalogueSource : AnimeSource {
      * @since komikku/extensions-lib 1.6
      */
     val supportsRelatedAnimes: Boolean get() = false
-    val supportsRelatedMangas: Boolean get() = supportsRelatedAnimes
 
     /**
      * Extensions doesn't want to use App's [getRelatedAnimeListBySearch].
@@ -102,7 +100,6 @@ interface AnimeCatalogueSource : AnimeSource {
      * @since komikku/extensions-lib 1.6
      */
     val disableRelatedAnimesBySearch: Boolean get() = false
-    val disableRelatedMangasBySearch: Boolean get() = disableRelatedAnimesBySearch
 
     /**
      * Disable showing any related animes.
@@ -110,7 +107,6 @@ interface AnimeCatalogueSource : AnimeSource {
      * @since komikku/extensions-lib 1.6
      */
     val disableRelatedAnimes: Boolean get() = false
-    val disableRelatedMangas: Boolean get() = disableRelatedAnimes
 
     /**
      * Get all the available related animes for a anime.
@@ -134,11 +130,6 @@ interface AnimeCatalogueSource : AnimeSource {
             }
         }
     }
-    override suspend fun getRelatedMangaList(
-        manga: SManga,
-        exceptionHandler: (Throwable) -> Unit,
-        pushResults: suspend (relatedManga: Pair<String, List<SManga>>, completed: Boolean) -> Unit,
-    ) = getRelatedAnimeList(manga, exceptionHandler, pushResults)
 
     /**
      * Get related animes provided by extension
@@ -156,10 +147,6 @@ interface AnimeCatalogueSource : AnimeSource {
                 logcat(LogPriority.ERROR, e) { "## getRelatedAnimeListByExtension: $e" }
             }
     }
-    suspend fun getRelatedMangaListByExtension(
-        manga: SManga,
-        pushResults: suspend (relatedManga: Pair<String, List<SManga>>, completed: Boolean) -> Unit,
-    ) = getRelatedAnimeListByExtension(manga, pushResults)
 
     /**
      * Fetch related animes for a anime from source/site.
@@ -170,7 +157,6 @@ interface AnimeCatalogueSource : AnimeSource {
      * @throws UnsupportedOperationException if a source doesn't support related animes.
      */
     suspend fun fetchRelatedAnimeList(anime: SAnime): List<SAnime> = throw UnsupportedOperationException("Unsupported!")
-    suspend fun fetchRelatedMangaList(manga: SManga): List<SManga> = fetchRelatedAnimeList(manga)
 
     /**
      * Slit & strip anime's title into separate searchable keywords.
@@ -223,7 +209,7 @@ interface AnimeCatalogueSource : AnimeSource {
             words.map { keyword ->
                 launch {
                     runCatching {
-                        getSearchAnime(1, keyword.sanitize(), filterList).animes
+                        getRelatedAnimePage(1, keyword.sanitize(), filterList).animes
                     }
                         .onSuccess { if (it.isNotEmpty()) pushResults(Pair(keyword, it), false) }
                         .onFailure { e ->
@@ -233,9 +219,13 @@ interface AnimeCatalogueSource : AnimeSource {
             }
         }
     }
-    suspend fun getRelatedMangaListBySearch(
-        manga: SManga,
-        pushResults: suspend (relatedManga: Pair<String, List<SManga>>, completed: Boolean) -> Unit,
-    ) = getRelatedAnimeListBySearch(manga, pushResults)
+
+    /**
+     * TODO: This should become a similar catalog as getPopular, which support pages and group into different category.
+     *  Clicking each category should allow open more page.
+     */
+    suspend fun getRelatedAnimePage(page: Int, query: String, filterList: AnimeFilterList): AnimesPage {
+        return getSearchAnime(page, query, filterList)
+    }
     // KMK <--
 }

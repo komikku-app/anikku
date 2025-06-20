@@ -13,7 +13,6 @@ import eu.kanade.tachiyomi.network.ProgressListener
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.newCachelessCallWithProgress
-import eu.kanade.tachiyomi.source.model.SManga
 import exh.pref.DelegateSourcePreferences
 import exh.source.DelegatedHttpSource
 import kotlinx.coroutines.async
@@ -262,7 +261,6 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @since komikku/extensions-lib 1.6
      */
     override val supportsRelatedAnimes: Boolean get() = true
-    override val supportsRelatedMangas: Boolean get() = supportsRelatedAnimes
 
     /**
      * Fetch related animes for a anime from source/site.
@@ -282,7 +280,6 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
                 }
         }.await()
     }
-    override suspend fun fetchRelatedMangaList(manga: SManga) = fetchRelatedAnimeList(manga)
 
     /**
      * Returns the request for get related anime list. Override only if it's needed to override
@@ -295,7 +292,6 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     protected open fun relatedAnimeListRequest(anime: SAnime): Request {
         return animeDetailsRequest(anime)
     }
-    protected open fun relatedMangaListRequest(manga: SManga) = relatedAnimeListRequest(manga)
 
     /**
      * Parses the response from the site and returns a list of related animes.
@@ -304,7 +300,6 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param response the response from the site.
      */
     protected open fun relatedAnimeListParse(response: Response): List<SAnime> = popularAnimeParse(response).animes
-    protected open fun relatedMangaListParse(response: Response) = relatedAnimeListParse(response)
     // KMK <--
 
     /**
