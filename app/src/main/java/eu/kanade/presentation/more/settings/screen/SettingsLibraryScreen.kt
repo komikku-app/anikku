@@ -248,7 +248,7 @@ object SettingsLibraryScreen : SearchableSettings {
         libraryPreferences: LibraryPreferences,
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
-            title = stringResource(AMR.strings.pref_behavior),
+            title = stringResource(MR.strings.pref_behavior_episode),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeToStartAction(),

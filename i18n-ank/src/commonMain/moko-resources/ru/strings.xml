@@ -185,9 +185,6 @@
     <string name="action_sort_last_update_check">Последняя проверка обновления</string>
     <string name="pref_incognito_watching_mode_extension_summary">Приостановить историю просмотров расширения</string>
     <string name="pref_library_update_show_tab_badge">Показывать невидимое количество на значке обновлений</string>
-    <string name="pref_behavior">Поведение</string>
-    <string name="pref_episode_swipe_end">Эпизод на свайпе вправо</string>
-    <string name="pref_episode_swipe_start">Эпизод при свайпе влево</string>
     <string name="pref_mark_duplicate_seen_episode_seen">Отметить повторяющиеся просмотренные эпизоды как просмотренные</string>
     <string name="pref_mark_duplicate_seen_episode_seen_existing">После просмотра эпизода</string>
     <string name="pref_mark_duplicate_seen_episode_seen_new">После получения нового эпизода</string>

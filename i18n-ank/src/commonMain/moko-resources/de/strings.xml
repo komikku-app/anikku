@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Letzte Update-Prüfung</string>
   <string name="pref_incognito_watching_mode_extension_summary">Überwachungsverlauf pausieren für Erweiterung</string>
   <string name="pref_library_update_show_tab_badge">Zeige ungesehene Anzahl bei Updates</string>
-  <string name="pref_behavior">Verhalten</string>
-  <string name="pref_episode_swipe_end">Folge beim Wischen nach rechts</string>
-  <string name="pref_episode_swipe_start">Folge beim Wischen nach links</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Duplikate gesehene Episode als gesehen markieren</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Nach einer Episode ansehen</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Nach dem Abrufen neuer Episode</string>

@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Poslední kontrola aktualizace</string>
   <string name="pref_incognito_watching_mode_extension_summary">Pozastavit historii sledování rozšíření</string>
   <string name="pref_library_update_show_tab_badge">Zobrazit nezobrazené počty v ikoně Aktualizací</string>
-  <string name="pref_behavior">Chování</string>
-  <string name="pref_episode_swipe_end">Epizoda přejetím doprava</string>
-  <string name="pref_episode_swipe_start">Epizoda přejetím doleva</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Označit duplicitní epizodu jako viděnou</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Po zhlédnutí epizody</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Po načítání nové epizody</string>

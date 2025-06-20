@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Viimeisin päivityksen tarkistus</string>
   <string name="pref_incognito_watching_mode_extension_summary">Keskeytä laajennuksen historian katselu</string>
   <string name="pref_library_update_show_tab_badge">Näytä näkymätön määrä päivitysten kuvakkeessa</string>
-  <string name="pref_behavior">Käyttäytyminen</string>
-  <string name="pref_episode_swipe_end">Jakso pyyhkäisemällä oikealle</string>
-  <string name="pref_episode_swipe_start">Jakso pyyhkäisemällä vasemmalle</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Merkitse kaksoiskappale nähtynä</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Jakson katselun jälkeen</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Noudattamisen jälkeen uusi jakso</string>

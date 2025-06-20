@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">التحقق من التحديث الأخير</string>
   <string name="pref_incognito_watching_mode_extension_summary">إيقاف مشاهدة تاريخ التمديد</string>
   <string name="pref_library_update_show_tab_badge">إظهار العد غير المرئي على أيقونة التحديثات</string>
-  <string name="pref_behavior">السلوك</string>
-  <string name="pref_episode_swipe_end">الحلقة عند السحب إلى اليمين</string>
-  <string name="pref_episode_swipe_start">الحلقة عند السحب إلى اليسار</string>
   <string name="pref_mark_duplicate_seen_episode_seen">وضع علامة مكررة للحلقة المشاهدة كما هو مشهور</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">بعد مشاهدة الحلقة</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">بعد جلب حلقة جديدة</string>

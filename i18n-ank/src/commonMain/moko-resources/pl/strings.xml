@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Sprawdzanie ostatniej aktualizacji</string>
   <string name="pref_incognito_watching_mode_extension_summary">Wstrzymaj historię oglądania rozszerzenia</string>
   <string name="pref_library_update_show_tab_badge">Pokaż niewidoczny licznik na ikonie aktualizacji</string>
-  <string name="pref_behavior">Zachowanie</string>
-  <string name="pref_episode_swipe_end">Odcinek po przesunięciu w prawo</string>
-  <string name="pref_episode_swipe_start">Odcinek po przesunięciu w lewo</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Oznacz zduplikowane odcinki jako widoczne</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Po obejrzeniu odcinka</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Po pobraniu nowego odcinka</string>

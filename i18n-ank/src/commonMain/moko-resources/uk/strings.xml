@@ -185,9 +185,6 @@
     <string name="action_sort_last_update_check">Остання перевірка оновлень</string>
     <string name="pref_incognito_watching_mode_extension_summary">Призупиніть перегляд історії розширень</string>
     <string name="pref_library_update_show_tab_badge">Показувати непоказану кількість на іконці Оновлень</string>
-    <string name="pref_behavior">Поведінка</string>
-    <string name="pref_episode_swipe_end">Епізод при свайпі вправо</string>
-    <string name="pref_episode_swipe_start">Епізод по свайпу вліво</string>
     <string name="pref_mark_duplicate_seen_episode_seen">Помітити серію показаного дублікату</string>
     <string name="pref_mark_duplicate_seen_episode_seen_existing">Після перегляду серії</string>
     <string name="pref_mark_duplicate_seen_episode_seen_new">Після отримання нової серії</string>

@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">最終更新確認</string>
   <string name="pref_incognito_watching_mode_extension_summary">拡張履歴の視聴を一時停止する</string>
   <string name="pref_library_update_show_tab_badge">更新アイコンに見えない数を表示する</string>
-  <string name="pref_behavior">動作</string>
-  <string name="pref_episode_swipe_end">右スワイプ時のエピソード</string>
-  <string name="pref_episode_swipe_start">左スワイプ時のエピソード</string>
   <string name="pref_mark_duplicate_seen_episode_seen">見られたエピソードを見たとマークする</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">エピソードを見た後</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">新しいエピソードを取得した後</string>

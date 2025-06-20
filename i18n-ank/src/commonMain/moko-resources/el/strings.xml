@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Τελευταίος έλεγχος ενημερώσεων</string>
   <string name="pref_incognito_watching_mode_extension_summary">Παύση παρακολούθησης ιστορικού για επέκταση</string>
   <string name="pref_library_update_show_tab_badge">Εμφάνιση μη ορατού πλήθους στο εικονίδιο Ενημερώσεων</string>
-  <string name="pref_behavior">Συμπεριφορά</string>
-  <string name="pref_episode_swipe_end">Επεισόδιο όταν σύρετε προς τα δεξιά</string>
-  <string name="pref_episode_swipe_start">Επεισόδιο στο σύρσιμο προς τα αριστερά</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Σημείωση διπλού προβλημένου επεισοδίου όπως φαίνεται</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Μετά την παρακολούθηση ενός επεισοδίου</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Μετά την ανάκτηση νέου επεισοδίου</string>

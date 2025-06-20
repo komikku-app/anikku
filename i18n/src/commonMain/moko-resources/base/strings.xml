@@ -1353,9 +1353,9 @@
     <string name="extension_settings">Extension settings</string>
     <string name="theme_cottoncandy">Cotton Candy</string>
     <string name="theme_mocha">Mocha</string>
-    <string name="pref_episode_swipe">Episode swipe</string>
-    <string name="pref_episode_swipe_end">Swipe to right action</string>
-    <string name="pref_episode_swipe_start">Swipe to left action</string>
+    <string name="pref_behavior_episode">Episode behavior</string>
+    <string name="pref_episode_swipe_end">Episode on swipe to right</string>
+    <string name="pref_episode_swipe_start">Episode on swipe to left</string>
     <string name="pref_category_hide_hidden">Hide hidden categories from categories and storage screen</string>
     <string name="pref_update_anime_release_grace_period">Expected anime release grace period</string>
     <string name="data_saver_exclude">Exclude from data saver</string>

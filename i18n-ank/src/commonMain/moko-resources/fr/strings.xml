@@ -185,9 +185,6 @@
     <string name="action_sort_last_update_check">Vérification de la dernière mise à jour</string>
     <string name="pref_incognito_watching_mode_extension_summary">Mettre en pause l\'historique de surveillance de l\'extension</string>
     <string name="pref_library_update_show_tab_badge">Afficher le comptage des invisibles sur l\'icône des mises à jour</string>
-    <string name="pref_behavior">Comportement</string>
-    <string name="pref_episode_swipe_end">Épisode en glissement vers la droite</string>
-    <string name="pref_episode_swipe_start">Épisode en glissement vers la gauche</string>
     <string name="pref_mark_duplicate_seen_episode_seen">Marquer l\'épisode vu en double comme vu</string>
     <string name="pref_mark_duplicate_seen_episode_seen_existing">Après avoir regardé un épisode</string>
     <string name="pref_mark_duplicate_seen_episode_seen_new">Après avoir récupéré un nouvel épisode</string>

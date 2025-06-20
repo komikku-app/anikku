@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Seneste opdateringstjek</string>
   <string name="pref_incognito_watching_mode_extension_summary">Sæt på pause for at se historik for udvidelse</string>
   <string name="pref_library_update_show_tab_badge">Vis usynlige antal på ikonet Opdateringer</string>
-  <string name="pref_behavior">Opførsel</string>
-  <string name="pref_episode_swipe_end">Episode ved stryg til højre</string>
-  <string name="pref_episode_swipe_start">Episode ved strygning til venstre</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Markér dubleret set episode som set</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Efter at have set en episode</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Efter at have hentet ny episode</string>

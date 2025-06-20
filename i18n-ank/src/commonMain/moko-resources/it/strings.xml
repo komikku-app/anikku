@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Controllo ultimo aggiornamento</string>
   <string name="pref_incognito_watching_mode_extension_summary">Metti in pausa la cronologia per l\'estensione</string>
   <string name="pref_library_update_show_tab_badge">Mostra il conteggio non visto sull\'icona Aggiornamenti</string>
-  <string name="pref_behavior">Comportamento</string>
-  <string name="pref_episode_swipe_end">Episodio allo scorrimento verso destra</string>
-  <string name="pref_episode_swipe_start">Episodio allo scorrimento verso sinistra</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Segna l\'episodio duplicato visto come visto</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Dopo aver guardato un episodio</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Dopo aver recuperato il nuovo episodio</string>

@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Ultima actualizare de verificare</string>
   <string name="pref_incognito_watching_mode_extension_summary">Pauză istoric vizionare pentru extensie</string>
   <string name="pref_library_update_show_tab_badge">Arată numărătoarea neobservată pe icoana Actualizări</string>
-  <string name="pref_behavior">Comportament</string>
-  <string name="pref_episode_swipe_end">Episod la glisare spre dreapta</string>
-  <string name="pref_episode_swipe_start">Episod la glisare spre stânga</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Marchează episodul văzut ca fiind văzut</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">După urmărirea unui episod</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">După preluarea unui nou episod</string>

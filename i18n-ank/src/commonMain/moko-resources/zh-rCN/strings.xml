@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">上次更新检查</string>
   <string name="pref_incognito_watching_mode_extension_summary">暂停监视历史以获取扩展</string>
   <string name="pref_library_update_show_tab_badge">在更新图标上显示未查看的计数</string>
-  <string name="pref_behavior">行为</string>
-  <string name="pref_episode_swipe_end">向右滑动剧集</string>
-  <string name="pref_episode_swipe_start">向左滑动剧集</string>
   <string name="pref_mark_duplicate_seen_episode_seen">标记重复可见剧集</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">观看剧集后</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">获取新剧集后</string>

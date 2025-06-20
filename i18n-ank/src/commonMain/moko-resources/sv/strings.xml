@@ -185,9 +185,6 @@
   <string name="action_sort_last_update_check">Senaste uppdateringskontroll</string>
   <string name="pref_incognito_watching_mode_extension_summary">Pausa bevakningshistorik för tillägg</string>
   <string name="pref_library_update_show_tab_badge">Visa osynlig räkning på uppdateringsikonen</string>
-  <string name="pref_behavior">Beteende</string>
-  <string name="pref_episode_swipe_end">Avsnitt vid svep till höger</string>
-  <string name="pref_episode_swipe_start">Avsnitt vid svep åt vänster</string>
   <string name="pref_mark_duplicate_seen_episode_seen">Markera som dubblett sett avsnitt som sett</string>
   <string name="pref_mark_duplicate_seen_episode_seen_existing">Efter att ha tittat på ett avsnitt</string>
   <string name="pref_mark_duplicate_seen_episode_seen_new">Efter hämtning av nytt avsnitt</string>
