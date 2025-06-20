@@ -236,6 +236,9 @@ class LibraryPreferences(
         )
     }
 
+    fun hideMissingChapters() = preferenceStore.getBoolean("pref_hide_missing_chapter_indicators", false)
+    // endregion
+
     // region Swipe Actions
 
     fun swipeToStartAction() = preferenceStore.getEnum(
