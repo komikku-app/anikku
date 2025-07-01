@@ -166,11 +166,6 @@ interface AnimeCatalogueSource : AnimeSource {
      * @return List of keywords.
      */
     fun String.stripKeywordForRelatedAnimes(): List<String> {
-        val regexWhitespace = Regex("\\s+")
-        val regexSpecialCharacters =
-            Regex("([!~#$%^&*+_|/\\\\,?:;'“”‘’\"<>(){}\\[\\]。・～：—！？、―«»《》〘〙【】「」｜]|\\s-|-\\s|\\s\\.|\\.\\s)")
-        val regexNumberOnly = Regex("^\\d+$")
-
         return replace(regexSpecialCharacters, " ")
             .split(regexWhitespace)
             .map {
@@ -181,7 +176,13 @@ interface AnimeCatalogueSource : AnimeSource {
             // exclude single character
             .filter { it.length > 1 }
     }
-    fun String.stripKeywordForRelatedMangas() = stripKeywordForRelatedAnimes()
+
+    val regexWhitespace
+        get() = Regex("\\s+")
+    val regexNumberOnly
+        get() = Regex("^\\d+$")
+    val regexSpecialCharacters
+        get() = Regex("([!~#$%^&*+_|/\\\\,?:;'“”‘’\"<>(){}\\[\\]。・～：—！？、―«»《》〘〙【】「」｜]|\\s-|-\\s|\\s\\.|\\.\\s)")
 
     /**
      * Get related animes by searching for each keywords from anime's title.
