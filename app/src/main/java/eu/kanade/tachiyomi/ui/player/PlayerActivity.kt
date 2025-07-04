@@ -1281,7 +1281,7 @@ class PlayerActivity : BaseActivity() {
             context = applicationContext,
             message = stringResource(AYMR.strings.share_screenshot_info, anime.title, episode.name, seconds),
         )
-        startActivity(Intent.createChooser(intent, stringResource(MR.strings.action_share)))
+        startActivity(intent)
     }
 
     /**
