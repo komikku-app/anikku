@@ -42,6 +42,7 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -199,7 +200,7 @@ data object HistoryTab : Tab {
                 extPlayer,
             )
         } else {
-            snackbarHostState.showSnackbar(context.stringResource(MR.strings.no_next_episode))
+            snackbarHostState.showSnackbar(context.stringResource(AYMR.strings.no_next_episode))
         }
     }
 }

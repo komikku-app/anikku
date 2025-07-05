@@ -36,6 +36,7 @@ import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.math.RoundingMode
@@ -180,13 +181,13 @@ class LibraryUpdateNotifier(
             Notifications.ID_NEW_EPISODES,
             Notifications.CHANNEL_NEW_EPISODES,
         ) {
-            setContentTitle(context.stringResource(MR.strings.notification_new_episodes))
+            setContentTitle(context.stringResource(AYMR.strings.notification_new_episodes))
             if (updates.size == 1 && !securityPreferences.hideNotificationContent().get()) {
                 setContentText(updates.first().first.title.chop(NOTIF_TITLE_MAX_LEN))
             } else {
                 setContentText(
                     context.pluralStringResource(
-                        MR.plurals.notification_new_episodes_summary,
+                        AYMR.plurals.notification_new_episodes_summary,
                         updates.size,
                         updates.size,
                     ),
@@ -268,7 +269,7 @@ class LibraryUpdateNotifier(
             // Mark chapters as read action
             addAction(
                 R.drawable.ic_done_24dp,
-                context.stringResource(MR.strings.action_mark_as_seen),
+                context.stringResource(AYMR.strings.action_mark_as_seen),
                 NotificationReceiver.markAsReadPendingBroadcast(
                     context,
                     manga,
@@ -279,7 +280,7 @@ class LibraryUpdateNotifier(
             // View chapters action
             addAction(
                 R.drawable.ic_book_24dp,
-                context.stringResource(MR.strings.action_view_episodes),
+                context.stringResource(AYMR.strings.action_view_episodes),
                 NotificationReceiver.openChapterPendingActivity(
                     context,
                     manga,
@@ -334,7 +335,7 @@ class LibraryUpdateNotifier(
             0 -> {
                 // "1 new chapter" or "5 new chapters"
                 context.pluralStringResource(
-                    MR.plurals.notification_episodes_generic,
+                    AYMR.plurals.notification_episodes_generic,
                     chapters.size,
                     chapters.size,
                 )
@@ -345,13 +346,13 @@ class LibraryUpdateNotifier(
                 if (remaining == 0) {
                     // "Chapter 2.5"
                     context.stringResource(
-                        MR.strings.notification_episodes_single,
+                        AYMR.strings.notification_episodes_single,
                         displayableChapterNumbers.first(),
                     )
                 } else {
                     // "Chapter 2.5 and 10 more"
                     context.stringResource(
-                        MR.strings.notification_episodes_single_and_more,
+                        AYMR.strings.notification_episodes_single_and_more,
                         displayableChapterNumbers.first(),
                         remaining,
                     )
@@ -367,7 +368,7 @@ class LibraryUpdateNotifier(
                         .take(NOTIF_MAX_EPISODES)
                         .joinToString()
                     context.pluralStringResource(
-                        MR.plurals.notification_episodes_multiple_and_more,
+                        AYMR.plurals.notification_episodes_multiple_and_more,
                         remaining,
                         joinedChapterNumbers,
                         remaining,
@@ -375,7 +376,7 @@ class LibraryUpdateNotifier(
                 } else {
                     // "Chapters 1, 2.5, 3"
                     context.stringResource(
-                        MR.strings.notification_episodes_multiple,
+                        AYMR.strings.notification_episodes_multiple,
                         displayableChapterNumbers.joinToString(),
                     )
                 }

@@ -18,7 +18,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.FloatingActionAddButton
 import eu.kanade.presentation.more.settings.screen.player.custombutton.CustomButtonScreenState
 import tachiyomi.domain.custombuttons.model.CustomButton
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.components.material.topSmallPaddingValues
@@ -42,13 +42,13 @@ fun CustomButtonScreen(
     Scaffold(
         topBar = { scrollBehavior ->
             AppBar(
-                title = stringResource(MR.strings.pref_player_custom_button_header),
+                title = stringResource(AYMR.strings.pref_player_custom_button_header),
                 navigateUp = navigateUp,
                 actions = {
                     IconButton(onClick = onClickFAQ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                            contentDescription = stringResource(MR.strings.pref_player_custom_button_guide),
+                            contentDescription = stringResource(AYMR.strings.pref_player_custom_button_guide),
                         )
                     }
                 },
@@ -64,7 +64,7 @@ fun CustomButtonScreen(
     ) { paddingValues ->
         if (state.isEmpty) {
             EmptyScreen(
-                stringRes = MR.strings.pref_player_custom_button_empty,
+                stringRes = AYMR.strings.pref_player_custom_button_empty,
                 modifier = Modifier.padding(paddingValues),
             )
             return@Scaffold

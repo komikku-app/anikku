@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -14,7 +15,7 @@ fun UpdatesDeleteConfirmationDialog(
 ) {
     AlertDialog(
         text = {
-            Text(text = stringResource(MR.strings.confirm_delete_episodes))
+            Text(text = stringResource(AYMR.strings.confirm_delete_episodes))
         },
         onDismissRequest = onDismissRequest,
         confirmButton = {

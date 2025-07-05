@@ -26,6 +26,7 @@ import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.domain.manga.interactor.FetchInterval
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
@@ -63,7 +64,7 @@ fun DeleteChaptersDialog(
             Text(text = stringResource(MR.strings.are_you_sure))
         },
         text = {
-            Text(text = stringResource(MR.strings.confirm_delete_episodes))
+            Text(text = stringResource(AYMR.strings.confirm_delete_episodes))
         },
     )
 }
@@ -153,7 +154,7 @@ fun SetIntervalDialog(
                 if (nextUpdateDays != null && nextUpdateDays >= 0 && interval >= 0) {
                     Text(
                         stringResource(
-                            MR.strings.anime_interval_expected_update,
+                            AYMR.strings.anime_interval_expected_update,
                             pluralStringResource(
                                 MR.plurals.day,
                                 count = nextUpdateDays,
@@ -168,7 +169,7 @@ fun SetIntervalDialog(
                     )
                 } else {
                     Text(
-                        stringResource(MR.strings.anime_interval_expected_update_null),
+                        stringResource(AYMR.strings.anime_interval_expected_update_null),
                     )
                 }
                 Spacer(Modifier.height(MaterialTheme.padding.small))

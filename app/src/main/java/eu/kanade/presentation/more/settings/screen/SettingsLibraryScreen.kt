@@ -41,6 +41,7 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_ONLY
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.MARK_DUPLICATE_CHAPTER_READ_EXISTING
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.MARK_DUPLICATE_CHAPTER_READ_NEW
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -144,7 +145,7 @@ object SettingsLibraryScreen : SearchableSettings {
         if (showCategoriesDialog) {
             TriStateListDialog(
                 title = stringResource(MR.strings.categories),
-                message = stringResource(MR.strings.pref_anime_library_update_categories_details),
+                message = stringResource(AYMR.strings.pref_anime_library_update_categories_details),
                 items = allCategories,
                 initialChecked = included.mapNotNull { id -> allCategories.find { it.id.toString() == id } },
                 initialInversed = excluded.mapNotNull { id -> allCategories.find { it.id.toString() == id } },
@@ -248,7 +249,7 @@ object SettingsLibraryScreen : SearchableSettings {
         libraryPreferences: LibraryPreferences,
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_behavior_episode),
+            title = stringResource(AYMR.strings.pref_behavior_episode),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeToStartAction(),
@@ -263,11 +264,11 @@ object SettingsLibraryScreen : SearchableSettings {
                         ),
                         // <-- AM (FILLERMARK)
                         LibraryPreferences.ChapterSwipeAction.ToggleRead to
-                            stringResource(MR.strings.action_mark_as_seen),
+                            stringResource(AYMR.strings.action_mark_as_seen),
                         LibraryPreferences.ChapterSwipeAction.Download to
                             stringResource(MR.strings.action_download),
                     ),
-                    title = stringResource(MR.strings.pref_episode_swipe_start),
+                    title = stringResource(AYMR.strings.pref_episode_swipe_start),
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeToEndAction(),
@@ -282,11 +283,11 @@ object SettingsLibraryScreen : SearchableSettings {
                         ),
                         // <-- AM (FILLERMARK)
                         LibraryPreferences.ChapterSwipeAction.ToggleRead to
-                            stringResource(MR.strings.action_mark_as_seen),
+                            stringResource(AYMR.strings.action_mark_as_seen),
                         LibraryPreferences.ChapterSwipeAction.Download to
                             stringResource(MR.strings.action_download),
                     ),
-                    title = stringResource(MR.strings.pref_episode_swipe_end),
+                    title = stringResource(AYMR.strings.pref_episode_swipe_end),
                 ),
                 Preference.PreferenceItem.MultiSelectListPreference(
                     preference = libraryPreferences.markDuplicateReadChapterAsRead(),

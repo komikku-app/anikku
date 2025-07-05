@@ -112,6 +112,7 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -609,7 +610,7 @@ class MangaScreen(
                 EpisodeOptionsDialogScreen.onDismissDialog = onDismissRequest
                 val episodeTitle = if (dialog.manga.displayMode == Manga.EPISODE_DISPLAY_NUMBER) {
                     stringResource(
-                        MR.strings.display_mode_episode,
+                        AYMR.strings.display_mode_episode,
                         formatChapterNumber(dialog.chapter.episodeNumber),
                     )
                 } else {

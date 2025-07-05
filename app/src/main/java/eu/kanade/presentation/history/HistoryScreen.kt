@@ -27,6 +27,7 @@ import eu.kanade.tachiyomi.ui.history.HistoryScreenModel
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.ListGroupHeader
@@ -100,7 +101,7 @@ fun HistoryScreen(
                 val msg = if (!state.searchQuery.isNullOrEmpty()) {
                     MR.strings.no_results_found
                 } else {
-                    MR.strings.information_no_recent_anime
+                    AYMR.strings.information_no_recent_anime
                 }
                 EmptyScreen(
                     stringRes = msg,

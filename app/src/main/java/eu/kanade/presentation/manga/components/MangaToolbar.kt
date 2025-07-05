@@ -28,6 +28,7 @@ import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -156,7 +157,7 @@ fun MangaToolbar(
                     if (changeAnimeSkipIntro != null) {
                         add(
                             AppBar.OverflowAction(
-                                title = stringResource(MR.strings.action_change_intro_length),
+                                title = stringResource(AYMR.strings.action_change_intro_length),
                                 onClick = changeAnimeSkipIntro,
                             ),
                         )

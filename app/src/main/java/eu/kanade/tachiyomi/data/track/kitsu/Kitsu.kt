@@ -14,6 +14,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 import java.text.DecimalFormat
 import tachiyomi.domain.track.model.Track as DomainTrack
@@ -47,8 +48,8 @@ class Kitsu(id: Long) : BaseTracker(id, "Kitsu"), DeletableTracker {
     }
 
     override fun getStatus(status: Long): StringResource? = when (status) {
-        WATCHING -> MR.strings.currently_watching
-        PLAN_TO_WATCH -> MR.strings.want_to_watch
+        WATCHING -> AYMR.strings.currently_watching
+        PLAN_TO_WATCH -> AYMR.strings.want_to_watch
         COMPLETED -> MR.strings.completed
         ON_HOLD -> MR.strings.on_hold
         DROPPED -> MR.strings.dropped

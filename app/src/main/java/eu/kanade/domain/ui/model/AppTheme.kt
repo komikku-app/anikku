@@ -2,6 +2,7 @@ package eu.kanade.domain.ui.model
 
 import dev.icerock.moko.resources.StringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 
@@ -13,8 +14,12 @@ enum class AppTheme(val titleRes: StringResource?) {
     CUSTOM(KMR.strings.theme_custom),
 
     // Aniyomi themes
-    COTTONCANDY(KMR.strings.theme_cottoncandy),
-    MOCHA(KMR.strings.theme_mocha),
+    COTTONCANDY(AYMR.strings.theme_cottoncandy),
+    MOCHA(AYMR.strings.theme_mocha),
+    CLOUDFLARE(AYMR.strings.theme_cloudflare),
+    DOOM(AYMR.strings.theme_doom),
+    MATRIX(AYMR.strings.theme_matrix),
+    SAPPHIRE(AYMR.strings.theme_sapphire),
 
     CATPPUCCIN(MR.strings.theme_catppuccin),
     GREEN_APPLE(MR.strings.theme_greenapple),
@@ -28,12 +33,6 @@ enum class AppTheme(val titleRes: StringResource?) {
     YINYANG(MR.strings.theme_yinyang),
     YOTSUBA(MR.strings.theme_yotsuba),
     MONOCHROME(AMR.strings.theme_monochrome),
-
-    // Aniyomi themes
-    CLOUDFLARE(KMR.strings.theme_cloudflare),
-    DOOM(KMR.strings.theme_doom),
-    MATRIX(KMR.strings.theme_matrix),
-    SAPPHIRE(KMR.strings.theme_sapphire),
 
     // Deprecated
     DARK_BLUE(null),

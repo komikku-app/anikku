@@ -28,7 +28,7 @@ import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StorageManager
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.io.Archive
 import tachiyomi.source.local.io.LocalSourceFileSystem
@@ -198,7 +198,7 @@ class DownloadManager(
             .filter { "video" in it.type.orEmpty() }
 
         if (files.isEmpty()) {
-            throw Exception(context.stringResource(MR.strings.video_list_empty_error))
+            throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
         }
 
         val file = files[0]

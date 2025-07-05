@@ -50,6 +50,7 @@ import tachiyomi.domain.library.model.LibrarySort
 import tachiyomi.domain.library.model.sort
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -141,7 +142,7 @@ private fun ColumnScope.FilterPage(
     )
     val filterUnread by screenModel.libraryPreferences.filterUnread().collectAsState()
     TriStateItem(
-        label = stringResource(MR.strings.action_filter_unseen),
+        label = stringResource(AYMR.strings.action_filter_unseen),
         state = filterUnread,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterUnread) },
     )
@@ -256,15 +257,15 @@ private fun ColumnScope.SortPage(
         // SY <--
         listOfNotNull(
             MR.strings.action_sort_alpha to LibrarySort.Type.Alphabetical,
-            MR.strings.action_sort_total_episodes to LibrarySort.Type.TotalChapters,
-            MR.strings.action_sort_last_seen to LibrarySort.Type.LastRead,
+            AYMR.strings.action_sort_total_episodes to LibrarySort.Type.TotalChapters,
+            AYMR.strings.action_sort_last_seen to LibrarySort.Type.LastRead,
             AMR.strings.action_sort_last_update_check to LibrarySort.Type.LastUpdate,
-            MR.strings.action_sort_unseen_count to LibrarySort.Type.UnreadCount,
-            MR.strings.action_sort_latest_episode to LibrarySort.Type.LatestChapter,
-            MR.strings.action_sort_episode_fetch_date to LibrarySort.Type.ChapterFetchDate,
+            AYMR.strings.action_sort_unseen_count to LibrarySort.Type.UnreadCount,
+            AYMR.strings.action_sort_latest_episode to LibrarySort.Type.LatestChapter,
+            AYMR.strings.action_sort_episode_fetch_date to LibrarySort.Type.ChapterFetchDate,
             MR.strings.action_sort_date_added to LibrarySort.Type.DateAdded,
             trackerMeanPair,
-            MR.strings.action_sort_airing_time to LibrarySort.Type.AiringTime,
+            AYMR.strings.action_sort_airing_time to LibrarySort.Type.AiringTime,
             // SY -->
             tagSortPair,
             // SY <--
@@ -373,7 +374,7 @@ private fun ColumnScope.DisplayPage(
 
     HeadingItem(MR.strings.overlay_header)
     CheckboxItem(
-        label = stringResource(MR.strings.action_display_download_badge_anime),
+        label = stringResource(AYMR.strings.action_display_download_badge_anime),
         pref = screenModel.libraryPreferences.downloadBadge(),
     )
     CheckboxItem(

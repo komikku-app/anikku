@@ -26,6 +26,7 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.RadioItem
@@ -142,7 +143,7 @@ private fun ColumnScope.FilterPage(
         onClick = onDownloadFilterChanged,
     )
     TriStateItem(
-        label = stringResource(MR.strings.action_filter_unseen),
+        label = stringResource(AYMR.strings.action_filter_unseen),
         state = unreadFilter,
         onClick = onUnreadFilterChanged,
     )
@@ -168,7 +169,7 @@ private fun ColumnScope.SortPage(
 ) {
     listOf(
         MR.strings.sort_by_source to Manga.EPISODE_SORTING_SOURCE,
-        MR.strings.sort_by_episode_number to Manga.EPISODE_SORTING_NUMBER,
+        AYMR.strings.sort_by_episode_number to Manga.EPISODE_SORTING_NUMBER,
         MR.strings.sort_by_upload_date to Manga.EPISODE_SORTING_UPLOAD_DATE,
         MR.strings.action_sort_alpha to Manga.EPISODE_SORTING_ALPHABET,
     ).map { (titleRes, mode) ->
@@ -187,7 +188,7 @@ private fun ColumnScope.DisplayPage(
 ) {
     listOf(
         MR.strings.show_title to Manga.EPISODE_DISPLAY_NAME,
-        MR.strings.show_episode_number to Manga.EPISODE_DISPLAY_NUMBER,
+        AYMR.strings.show_episode_number to Manga.EPISODE_DISPLAY_NUMBER,
     ).map { (titleRes, mode) ->
         RadioItem(
             label = stringResource(titleRes),
@@ -206,7 +207,7 @@ private fun SetAsDefaultDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = stringResource(MR.strings.episode_settings)) },
+        title = { Text(text = stringResource(AYMR.strings.episode_settings)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -214,7 +215,7 @@ private fun SetAsDefaultDialog(
                 Text(text = stringResource(MR.strings.confirm_set_chapter_settings))
 
                 LabeledCheckbox(
-                    label = stringResource(MR.strings.also_set_episode_settings_for_library),
+                    label = stringResource(AYMR.strings.also_set_episode_settings_for_library),
                     checked = optionalChecked,
                     onCheckedChange = { optionalChecked = it },
                 )

@@ -62,6 +62,7 @@ import `is`.xyz.mpv.MPVLib
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.deleteAndGet
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -81,7 +82,7 @@ fun SubtitleSettingsColorsCard(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.medium),
             ) {
                 Icon(Icons.Default.Palette, null)
-                Text(stringResource(MR.strings.player_sheets_sub_colors_title))
+                Text(stringResource(AYMR.strings.player_sheets_sub_colors_title))
             }
         },
         modifier = modifier.widthIn(max = CARDS_MAX_WIDTH),
@@ -161,17 +162,17 @@ enum class SubColorType(
     val preference: (SubtitlePreferences) -> Preference<Int>,
 ) {
     Text(
-        MR.strings.player_sheets_subtitles_color_text,
+        AYMR.strings.player_sheets_subtitles_color_text,
         "sub-color",
         preference = SubtitlePreferences::textColorSubtitles,
     ),
     Border(
-        MR.strings.player_sheets_subtitles_color_border,
+        AYMR.strings.player_sheets_subtitles_color_border,
         "sub-border-color",
         preference = SubtitlePreferences::borderColorSubtitles,
     ),
     Background(
-        MR.strings.player_sheets_subtitles_color_background,
+        AYMR.strings.player_sheets_subtitles_color_background,
         "sub-back-color",
         preference = SubtitlePreferences::backgroundColorSubtitles,
     ),
@@ -211,7 +212,7 @@ fun SubtitlesColorPicker(
 ) {
     Column(modifier) {
         SliderItem(
-            label = stringResource(MR.strings.player_sheets_sub_color_red),
+            label = stringResource(AYMR.strings.player_sheets_sub_color_red),
             value = color.red,
             onChange = { onColorChange(color.copyAsArgb(red = it)) },
             valueRange = 0..255,
@@ -220,7 +221,7 @@ fun SubtitlesColorPicker(
         )
 
         SliderItem(
-            label = stringResource(MR.strings.player_sheets_sub_color_green),
+            label = stringResource(AYMR.strings.player_sheets_sub_color_green),
             value = color.green,
             onChange = { onColorChange(color.copyAsArgb(green = it)) },
             valueRange = 0..255,
@@ -229,7 +230,7 @@ fun SubtitlesColorPicker(
         )
 
         SliderItem(
-            label = stringResource(MR.strings.player_sheets_sub_color_blue),
+            label = stringResource(AYMR.strings.player_sheets_sub_color_blue),
             value = color.blue,
             onChange = { onColorChange(color.copyAsArgb(blue = it)) },
             valueRange = 0..255,
@@ -238,7 +239,7 @@ fun SubtitlesColorPicker(
         )
 
         SliderItem(
-            label = stringResource(MR.strings.player_sheets_sub_color_alpha),
+            label = stringResource(AYMR.strings.player_sheets_sub_color_alpha),
             value = color.alpha,
             onChange = { onColorChange(color.copyAsArgb(alpha = it)) },
             valueRange = 0..255,

@@ -104,6 +104,7 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.VerticalFastScroller
@@ -784,7 +785,7 @@ private fun MangaScreenSmallImpl(
                             ) {
                                 NextEpisodeAiringListItem(
                                     title = stringResource(
-                                        MR.strings.display_mode_episode,
+                                        AYMR.strings.display_mode_episode,
                                         formatChapterNumber(state.airingEpisodeNumber),
                                     ),
                                     date = formatTime(state.airingTime, useDayFormat = true),
@@ -1244,7 +1245,7 @@ private fun MangaScreenLargeImpl(
                                     ) {
                                         NextEpisodeAiringListItem(
                                             title = stringResource(
-                                                MR.strings.display_mode_episode,
+                                                AYMR.strings.display_mode_episode,
                                                 formatChapterNumber(state.airingEpisodeNumber),
                                             ),
                                             date = formatTime(state.airingTime, useDayFormat = true),
@@ -1396,7 +1397,7 @@ private fun LazyListScope.sharedChapterItems(
                 MangaChapterListItem(
                     title = if (manga.displayMode == Manga.EPISODE_DISPLAY_NUMBER) {
                         stringResource(
-                            MR.strings.display_mode_episode,
+                            AYMR.strings.display_mode_episode,
                             formatChapterNumber(item.chapter.chapterNumber),
                         )
                     } else {
@@ -1413,7 +1414,7 @@ private fun LazyListScope.sharedChapterItems(
                         }
                         ?.let {
                             stringResource(
-                                MR.strings.episode_progress,
+                                AYMR.strings.episode_progress,
                                 formatTime(it),
                                 formatTime(item.chapter.totalPages),
                             )

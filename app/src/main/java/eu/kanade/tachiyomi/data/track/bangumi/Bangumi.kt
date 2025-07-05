@@ -13,6 +13,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.model.Track as DomainTrack
 
@@ -99,8 +100,8 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi") {
     }
 
     override fun getStatus(status: Long): StringResource? = when (status) {
-        WATCHING -> MR.strings.watching
-        PLAN_TO_WATCH -> MR.strings.plan_to_watch
+        WATCHING -> AYMR.strings.watching
+        PLAN_TO_WATCH -> AYMR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
         ON_HOLD -> MR.strings.on_hold
         DROPPED -> MR.strings.dropped

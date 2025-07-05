@@ -49,6 +49,7 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import me.saket.swipe.SwipeableActionsBox
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
@@ -147,7 +148,7 @@ fun MangaChapterListItem(
                     if (!read) {
                         Icon(
                             imageVector = Icons.Filled.Circle,
-                            contentDescription = stringResource(MR.strings.unseen),
+                            contentDescription = stringResource(AYMR.strings.unseen),
                             modifier = Modifier
                                 .height(8.dp)
                                 .padding(end = 4.dp),

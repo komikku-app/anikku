@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.flowOf
 import okhttp3.OkHttpClient
 import tachiyomi.domain.track.model.Track
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 
 data class DummyTracker(
     override val id: Long,
@@ -42,12 +43,12 @@ data class DummyTracker(
     override fun getStatusList(): List<Long> = valStatuses
 
     override fun getStatus(status: Long): StringResource? = when (status) {
-        1L -> MR.strings.watching
-        2L -> MR.strings.plan_to_watch
+        1L -> AYMR.strings.watching
+        2L -> AYMR.strings.plan_to_watch
         3L -> MR.strings.completed
         4L -> MR.strings.on_hold
         5L -> MR.strings.dropped
-        6L -> MR.strings.repeating_anime
+        6L -> AYMR.strings.repeating_anime
         else -> null
     }
 

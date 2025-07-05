@@ -72,6 +72,7 @@ import tachiyomi.domain.manga.model.MangaWithChapterCount
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.Badge
@@ -236,7 +237,7 @@ fun DuplicateMangaDialog(
                                 },
                                 Modifier.align(Alignment.CenterHorizontally),
                             ) {
-                                Text(text = stringResource(MR.strings.action_show_anime))
+                                Text(text = stringResource(AYMR.strings.action_show_anime))
                             }
 
                             TextButton(
@@ -356,7 +357,7 @@ private fun DuplicateMangaListItem(
                     color = MaterialTheme.colorScheme.secondary,
                     textColor = MaterialTheme.colorScheme.onSecondary,
                     text = pluralStringResource(
-                        MR.plurals.anime_num_episodes,
+                        AYMR.plurals.anime_num_episodes,
                         duplicate.chapterCount.toInt(),
                         duplicate.chapterCount,
                     ),

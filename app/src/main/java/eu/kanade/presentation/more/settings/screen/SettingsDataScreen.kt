@@ -87,6 +87,7 @@ import tachiyomi.domain.storage.service.StorageManager.Companion.allowAccessStor
 import tachiyomi.domain.storage.service.StorageManager.Companion.directoryAccessible
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -368,7 +369,7 @@ object SettingsDataScreen : SearchableSettings {
                 // <-- AM (FILE_SIZE)
 
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.label_storage),
+                    title = stringResource(AYMR.strings.label_storage),
                     icon = Icons.Outlined.Storage,
                     onClick = {
                         navigator.push(StorageScreen)

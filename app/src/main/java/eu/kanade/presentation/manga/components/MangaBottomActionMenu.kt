@@ -71,6 +71,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -134,7 +135,7 @@ fun MangaBottomActionMenu(
             ) {
                 if (onBookmarkClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_bookmark_episode),
+                        title = stringResource(AYMR.strings.action_bookmark_episode),
                         icon = Icons.Outlined.BookmarkAdd,
                         toConfirm = confirm[0],
                         onLongClick = { onLongClickItem(0) },
@@ -143,7 +144,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onRemoveBookmarkClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_remove_bookmark_episode),
+                        title = stringResource(AYMR.strings.action_remove_bookmark_episode),
                         icon = Icons.Outlined.BookmarkRemove,
                         toConfirm = confirm[1],
                         onLongClick = { onLongClickItem(1) },
@@ -172,7 +173,7 @@ fun MangaBottomActionMenu(
                 // <-- AM (FILLERMARK)
                 if (onMarkAsReadClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_mark_as_seen),
+                        title = stringResource(AYMR.strings.action_mark_as_seen),
                         icon = Icons.Outlined.DoneAll,
                         toConfirm = confirm[4],
                         onLongClick = { onLongClickItem(4) },
@@ -181,7 +182,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onMarkAsUnreadClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_mark_as_unseen),
+                        title = stringResource(AYMR.strings.action_mark_as_unseen),
                         icon = Icons.Outlined.RemoveDone,
                         toConfirm = confirm[5],
                         onLongClick = { onLongClickItem(5) },
@@ -190,7 +191,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onMarkPreviousAsReadClicked != null) {
                     Button(
-                        title = stringResource(MR.strings.action_mark_previous_as_seen),
+                        title = stringResource(AYMR.strings.action_mark_previous_as_seen),
                         icon = ImageVector.vectorResource(R.drawable.ic_done_prev_24dp),
                         toConfirm = confirm[6],
                         onLongClick = { onLongClickItem(6) },
@@ -217,7 +218,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onExternalClicked != null && !playerPreferences.alwaysUseExternalPlayer().get()) {
                     Button(
-                        title = stringResource(MR.strings.action_play_externally),
+                        title = stringResource(AYMR.strings.action_play_externally),
                         icon = Icons.AutoMirrored.Outlined.OpenInNew,
                         toConfirm = confirm[9],
                         onLongClick = { onLongClickItem(9) },
@@ -226,7 +227,7 @@ fun MangaBottomActionMenu(
                 }
                 if (onInternalClicked != null && playerPreferences.alwaysUseExternalPlayer().get()) {
                     Button(
-                        title = stringResource(MR.strings.action_play_internally),
+                        title = stringResource(AYMR.strings.action_play_internally),
                         icon = Icons.AutoMirrored.Outlined.Input,
                         toConfirm = confirm[10],
                         onLongClick = { onLongClickItem(10) },
@@ -401,14 +402,14 @@ fun LibraryBottomActionMenu(
                     onClick = onChangeCategoryClicked,
                 )
                 Button(
-                    title = stringResource(MR.strings.action_mark_as_seen),
+                    title = stringResource(AYMR.strings.action_mark_as_seen),
                     icon = Icons.Outlined.DoneAll,
                     toConfirm = confirm[1],
                     onLongClick = { onLongClickItem(1) },
                     onClick = onMarkAsReadClicked,
                 )
                 Button(
-                    title = stringResource(MR.strings.action_mark_as_unseen),
+                    title = stringResource(AYMR.strings.action_mark_as_unseen),
                     icon = Icons.Outlined.RemoveDone,
                     toConfirm = confirm[2],
                     onLongClick = { onLongClickItem(2) },

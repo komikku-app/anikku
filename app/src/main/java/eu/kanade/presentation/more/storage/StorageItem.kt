@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.tachiyomi.util.toSize
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
@@ -53,7 +54,7 @@ fun StorageItem(
     modifier: Modifier = Modifier,
     onDelete: (Long) -> Unit,
 ) {
-    val pluralCount = MR.plurals.anime_num_episodes
+    val pluralCount = AYMR.plurals.anime_num_episodes
     var showDeleteDialog by remember {
         mutableStateOf(false)
     }
@@ -164,13 +165,13 @@ private fun ItemDeleteDialog(
         title = {
             Text(
                 text = stringResource(
-                    MR.strings.delete_downloads_for_anime,
+                    AYMR.strings.delete_downloads_for_anime,
                 ),
             )
         },
         text = {
             Text(
-                text = stringResource(MR.strings.delete_confirmation, title),
+                text = stringResource(AYMR.strings.delete_confirmation, title),
             )
         },
     )

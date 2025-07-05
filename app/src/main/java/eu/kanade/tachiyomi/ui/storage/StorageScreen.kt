@@ -12,7 +12,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.storage.StorageScreenContent
 import eu.kanade.tachiyomi.ui.main.MainActivity
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -31,7 +31,7 @@ object StorageScreen : Screen {
         Scaffold(
             topBar = {
                 AppBar(
-                    title = stringResource(MR.strings.label_storage),
+                    title = stringResource(AYMR.strings.label_storage),
                     navigateUp = navigator::pop,
                 )
             },

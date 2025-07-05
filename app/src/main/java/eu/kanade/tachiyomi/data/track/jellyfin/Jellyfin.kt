@@ -14,6 +14,7 @@ import kotlinx.collections.immutable.persistentListOf
 import okhttp3.Dns
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
 class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
@@ -40,8 +41,8 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
     override fun getStatusList(): List<Long> = listOf(UNSEEN, WATCHING, COMPLETED)
 
     override fun getStatus(status: Long): StringResource? = when (status) {
-        UNSEEN -> MR.strings.unseen
-        WATCHING -> MR.strings.watching
+        UNSEEN -> AYMR.strings.unseen
+        WATCHING -> AYMR.strings.watching
         COMPLETED -> MR.strings.completed
         else -> null
     }

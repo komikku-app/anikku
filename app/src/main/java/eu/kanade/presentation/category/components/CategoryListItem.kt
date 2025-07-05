@@ -23,7 +23,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import tachiyomi.domain.category.model.Category
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.kmk.KMR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -80,7 +80,7 @@ fun ReorderableCollectionItemScope.CategoryListItem(
                         } else {
                             Icons.Outlined.VisibilityOff
                         },
-                        contentDescription = stringResource(KMR.strings.action_hide),
+                        contentDescription = stringResource(AYMR.strings.action_hide),
                     )
                 },
             )

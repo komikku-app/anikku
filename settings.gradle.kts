@@ -51,6 +51,7 @@ include(":core:common")
 include(":data")
 include(":domain")
 include(":i18n")
+include(":i18n-aniyomi")
 // KMK -->
 include(":i18n-kmk")
 include(":i18n-ank")

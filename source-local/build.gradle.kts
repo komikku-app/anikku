@@ -10,6 +10,7 @@ kotlin {
             dependencies {
                 implementation(projects.sourceApi)
                 api(projects.i18n)
+                api(projects.i18nAniyomi)
                 // SY -->
                 api(projects.i18nSy)
                 // SY <--

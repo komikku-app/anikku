@@ -58,6 +58,7 @@ import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
@@ -339,7 +340,7 @@ class Downloader(
                     maxDownloadsFromSource > EPISODES_PER_SOURCE_QUEUE_WARNING_THRESHOLD
                 ) {
                     notifier.onWarning(
-                        context.stringResource(MR.strings.download_queue_size_warning),
+                        context.stringResource(AYMR.strings.download_queue_size_warning),
                         WARNING_NOTIF_TIMEOUT_MS,
                         NotificationHandler.openUrl(
                             context,
@@ -390,7 +391,7 @@ class Downloader(
                     download.video = fetchedVideo
                 } catch (e: Exception) {
                     logcat(LogPriority.ERROR, e)
-                    throw Exception(context.stringResource(MR.strings.video_list_empty_error))
+                    throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
                 }
             }
 

@@ -8,12 +8,13 @@ import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.data.track.shikimori.Shikimori
 import eu.kanade.tachiyomi.data.track.simkl.Simkl
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.sy.SYMR
 
 enum class TrackStatus(val long: Long, val res: StringResource) {
-    WATCHING(11L, MR.strings.watching),
-    REWATCHING(17L, MR.strings.repeating_anime),
-    PLAN_TO_WATCH(16L, MR.strings.plan_to_watch),
+    WATCHING(11L, AYMR.strings.watching),
+    REWATCHING(17L, AYMR.strings.repeating_anime),
+    PLAN_TO_WATCH(16L, AYMR.strings.plan_to_watch),
     PAUSED(4L, MR.strings.on_hold),
     COMPLETED(5L, MR.strings.completed),
     DROPPED(6L, MR.strings.dropped),

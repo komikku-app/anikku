@@ -75,6 +75,7 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
@@ -164,7 +165,7 @@ internal fun LazyListScope.updatesUiItems(
                             .takeIf { !updatesItem.update.read && it > 0L }
                             ?.let {
                                 stringResource(
-                                    MR.strings.episode_progress,
+                                    AYMR.strings.episode_progress,
                                     formatProgress(it),
                                     formatProgress(updatesItem.update.totalPages),
                                 )

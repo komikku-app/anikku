@@ -52,6 +52,7 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.domain.track.interactor.InsertTrack
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -106,7 +107,7 @@ internal fun MigrateDialog(
                     TextButton(
                         onClick = { onClickTitle() },
                     ) {
-                        Text(text = stringResource(MR.strings.action_show_anime))
+                        Text(text = stringResource(AYMR.strings.action_show_anime))
                     }
 
                     Spacer(modifier = Modifier.weight(1f))

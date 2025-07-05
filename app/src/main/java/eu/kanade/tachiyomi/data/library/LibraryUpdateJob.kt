@@ -83,6 +83,7 @@ import tachiyomi.domain.source.model.SourceNotInstalledException
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -413,7 +414,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                     } catch (e: Throwable) {
                                         val errorMessage = when (e) {
                                             is NoResultsException ->
-                                                context.stringResource(MR.strings.no_episodes_error)
+                                                context.stringResource(AYMR.strings.no_episodes_error)
                                             // failedUpdates will already have the source,
                                             // don't need to copy it into the message
                                             is SourceNotInstalledException -> context.stringResource(

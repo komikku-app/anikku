@@ -63,6 +63,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.padding
@@ -137,7 +138,7 @@ object SettingsTrackingScreen : SearchableSettings {
             ),
             Preference.PreferenceItem.SwitchPreference(
                 preference = trackPreferences.showNextChapterAiringTime(),
-                title = stringResource(MR.strings.pref_show_next_episode_airing_time),
+                title = stringResource(AYMR.strings.pref_show_next_episode_airing_time),
             ),
             Preference.PreferenceItem.ListPreference(
                 preference = trackPreferences.autoUpdateTrackOnMarkRead(),

@@ -199,6 +199,7 @@ kotlin {
 
 dependencies {
     implementation(projects.i18n)
+    implementation(projects.i18nAniyomi)
     // KMK -->
     implementation(projects.i18nKmk)
     implementation(projects.i18nAnk)

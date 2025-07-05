@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.injectLazy
 
@@ -76,7 +77,7 @@ object MigrationFlags {
     /** Returns information about applicable flags with default selections. */
     fun getFlags(manga: Manga?, defaultSelectedBitMap: Int): List<MigrationFlag> {
         val flags = mutableListOf<MigrationFlag>()
-        flags += MigrationFlag.create(CHAPTERS, defaultSelectedBitMap, MR.strings.episodes)
+        flags += MigrationFlag.create(CHAPTERS, defaultSelectedBitMap, AYMR.strings.episodes)
         flags += MigrationFlag.create(CATEGORIES, defaultSelectedBitMap, MR.strings.categories)
         // KMK -->
         flags += MigrationFlag.create(TRACK, defaultSelectedBitMap, MR.strings.track)

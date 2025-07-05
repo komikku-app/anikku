@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.backup.restore
 import dev.icerock.moko.resources.StringResource
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.kmk.KMR
 
 data class RestoreOptions(
@@ -66,7 +67,7 @@ data class RestoreOptions(
                 setter = { options, enabled -> options.copy(extensionRepoSettings = enabled) },
             ),
             Entry(
-                label = MR.strings.custom_button_settings,
+                label = AYMR.strings.custom_button_settings,
                 getter = RestoreOptions::customButtons,
                 setter = { options, enabled -> options.copy(customButtons = enabled) },
             ),

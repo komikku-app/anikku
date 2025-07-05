@@ -21,6 +21,7 @@ import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -154,11 +155,11 @@ object SettingsDownloadScreen : SearchableSettings {
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = downloadNewChaptersPref,
-                    title = stringResource(MR.strings.pref_download_new_episodes),
+                    title = stringResource(AYMR.strings.pref_download_new_episodes),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = downloadNewUnreadChaptersOnlyPref,
-                    title = stringResource(MR.strings.pref_download_new_unseen_episodes_only),
+                    title = stringResource(AYMR.strings.pref_download_new_unseen_episodes_only),
                     enabled = downloadNewChapters,
                 ),
                 Preference.PreferenceItem.TextPreference(
@@ -189,13 +190,13 @@ object SettingsDownloadScreen : SearchableSettings {
                             if (it == 0) {
                                 stringResource(MR.strings.disabled)
                             } else {
-                                pluralStringResource(MR.plurals.next_unseen_episodes, count = it, it)
+                                pluralStringResource(AYMR.plurals.next_unseen_episodes, count = it, it)
                             }
                         }
                         .toImmutableMap(),
-                    title = stringResource(MR.strings.auto_download_while_watching),
+                    title = stringResource(AYMR.strings.auto_download_while_watching),
                 ),
-                Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.download_ahead_info_anime)),
+                Preference.PreferenceItem.InfoPreference(stringResource(AYMR.strings.download_ahead_info_anime)),
             ),
         )
     }
@@ -227,16 +228,16 @@ object SettingsDownloadScreen : SearchableSettings {
             mapOf("" to "None") + packageNames.zip(packageNamesReadable).toMap()
 
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_category_external_downloader),
+            title = stringResource(AYMR.strings.pref_category_external_downloader),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = useExternalDownloader,
-                    title = stringResource(MR.strings.pref_use_external_downloader),
+                    title = stringResource(AYMR.strings.pref_use_external_downloader),
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = externalDownloaderPreference,
                     entries = packageNamesMap.toPersistentMap(),
-                    title = stringResource(MR.strings.pref_external_downloader_selection),
+                    title = stringResource(AYMR.strings.pref_external_downloader_selection),
                 ),
             ),
         )

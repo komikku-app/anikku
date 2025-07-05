@@ -12,7 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.withContext
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import kotlin.coroutines.cancellation.CancellationException
 
 class HosterLoader {
@@ -108,7 +108,7 @@ class HosterLoader {
                                         (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                             prefIndex,
                                             video,
-                                            Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)),
+                                            Video.State.Error(ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos)),
                                         )
                                 }
                             }
@@ -136,7 +136,7 @@ class HosterLoader {
                             (hosterStates[hosterIdx] as HosterState.Ready).getChangedAt(
                                 videoIdx,
                                 video,
-                                Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)),
+                                Video.State.Error(ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos)),
                             )
                         val newResult = selectBestVideo(hosterStates)
                         hosterIdx = newResult.first

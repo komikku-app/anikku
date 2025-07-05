@@ -29,6 +29,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.kmk.KMR
 import java.io.File
 import java.text.SimpleDateFormat
@@ -300,7 +301,7 @@ class BackupRestorer(
 
         restoreProgress += 1
         notifier.showRestoreProgress(
-            context.stringResource(MR.strings.custom_button_settings),
+            context.stringResource(AYMR.strings.custom_button_settings),
             restoreProgress,
             restoreAmount,
             isSync,

@@ -248,7 +248,7 @@ object SettingsDiscordScreen : SearchableSettings {
         var showAnimeDialog by rememberSaveable { mutableStateOf(false) }
         if (showAnimeDialog) {
             TriStateListDialog(
-                title = stringResource(MR.strings.general_categories),
+                title = stringResource(MR.strings.categories),
                 message = stringResource(AMR.strings.pref_discord_incognito_categories_details),
                 items = allAnimeCategories,
                 initialChecked = includedAnime.mapNotNull { id -> allAnimeCategories.find { it.id.toString() == id } },
@@ -267,7 +267,7 @@ object SettingsDiscordScreen : SearchableSettings {
         }
 
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.general_categories),
+            title = stringResource(MR.strings.categories),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = discordRPCIncognitoPref,
@@ -275,7 +275,7 @@ object SettingsDiscordScreen : SearchableSettings {
                     subtitle = stringResource(AMR.strings.pref_discord_incognito_summary),
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.general_categories),
+                    title = stringResource(MR.strings.categories),
                     subtitle = getCategoriesLabel(
                         allCategories = allAnimeCategories,
                         included = includedAnime,

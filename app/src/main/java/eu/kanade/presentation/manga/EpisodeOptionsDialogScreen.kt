@@ -91,6 +91,7 @@ import tachiyomi.domain.episode.interactor.GetEpisode
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -253,7 +254,7 @@ class EpisodeOptionsDialogScreenModel(
                     val (hosterIdx, videoIdx) = HosterLoader.selectBestVideo(hosterStateList)
                     if (hosterIdx == -1) {
                         _hosterState.update { _ ->
-                            Result.failure(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))
+                            Result.failure(ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos))
                         }
                         return@launchIO
                     }
@@ -293,7 +294,7 @@ class EpisodeOptionsDialogScreenModel(
             if (currentVideo.value == null) {
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos))),
                 )
 
                 val hosterStateList = hosterState.value?.getOrNull() ?: return false
@@ -301,7 +302,7 @@ class EpisodeOptionsDialogScreenModel(
                 val (newHosterIdx, newVideoIdx) = HosterLoader.selectBestVideo(hosterStateList)
                 if (newHosterIdx == -1) {
                     _hosterState.update { _ ->
-                        Result.failure(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))
+                        Result.failure(ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos))
                     }
                     return false
                 }
@@ -313,7 +314,7 @@ class EpisodeOptionsDialogScreenModel(
                 _selectedHosterVideoIndex.update { _ -> oldSelectedIndex }
                 _hosterState.updateAt(
                     hosterIndex,
-                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", MR.strings.no_available_videos))),
+                    selectedHosterState.getChangedAt(videoIndex, video, Video.State.Error(ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos))),
                 )
                 return false
             }
@@ -442,7 +443,7 @@ fun EpisodeOptionsDialog(
         )
 
         Text(
-            text = stringResource(MR.strings.choose_video_quality),
+            text = stringResource(AYMR.strings.choose_video_quality),
             modifier = Modifier.padding(horizontal = TabbedDialogPaddings.Horizontal),
             fontStyle = FontStyle.Italic,
             style = MaterialTheme.typography.bodyMedium,
@@ -450,7 +451,7 @@ fun EpisodeOptionsDialog(
 
         val onError: () -> Unit = {
             logcat(LogPriority.ERROR) { "Error getting links" }
-            scope.launchUI { context.toast(MR.strings.no_available_videos) }
+            scope.launchUI { context.toast(AYMR.strings.no_available_videos) }
             EpisodeOptionsDialogScreen.onDismissDialog()
         }
         if (resultList?.isFailure == true) {
@@ -502,7 +503,7 @@ private fun VideoList(
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val copiedString = stringResource(MR.strings.copied_video_link_to_clipboard)
+    val copiedString = stringResource(AYMR.strings.copied_video_link_to_clipboard)
 
     AnimatedVisibility(
         visible = !showAllQualities,
@@ -640,7 +641,7 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_start_download_internally),
+            text = stringResource(AYMR.strings.action_start_download_internally),
             icon = Icons.Outlined.Download,
             onClick = {
                 onDownloadClicked()
@@ -649,7 +650,7 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_start_download_externally),
+            text = stringResource(AYMR.strings.action_start_download_externally),
             icon = Icons.Outlined.SystemUpdateAlt,
             onClick = {
                 onExtDownloadClicked()
@@ -658,7 +659,7 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_play_externally),
+            text = stringResource(AYMR.strings.action_play_externally),
             icon = Icons.AutoMirrored.Outlined.OpenInNew,
             onClick = {
                 onExtPlayerClicked()
@@ -667,7 +668,7 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_play_internally),
+            text = stringResource(AYMR.strings.action_play_internally),
             icon = Icons.AutoMirrored.Outlined.Input,
             onClick = {
                 onIntPlayerClicked()
