@@ -521,13 +521,14 @@ class LibraryScreenModel(
                     item1Score.compareTo(item2Score)
                 }
                 LibrarySort.Type.AiringTime -> when {
+                    i1.libraryManga.unreadCount != i2.libraryManga.unreadCount ->
+                        i1.libraryManga.unreadCount.compareTo(i2.libraryManga.unreadCount)
+                    i1.libraryManga.manga.nextEpisodeAiringAt == i2.libraryManga.manga.nextEpisodeAiringAt -> 0
                     i1.libraryManga.manga.nextEpisodeAiringAt == 0L -> if (sort.isAscending) 1 else -1
                     i2.libraryManga.manga.nextEpisodeAiringAt == 0L -> if (sort.isAscending) -1 else 1
-                    i1.libraryManga.unreadCount == i2.libraryManga.unreadCount ->
-                        i1.libraryManga.manga.nextEpisodeAiringAt.compareTo(
-                            i2.libraryManga.manga.nextEpisodeAiringAt,
-                        )
-                    else -> i1.libraryManga.unreadCount.compareTo(i2.libraryManga.unreadCount)
+                    else -> i1.libraryManga.manga.nextEpisodeAiringAt.compareTo(
+                        i2.libraryManga.manga.nextEpisodeAiringAt,
+                    )
                 }
                 LibrarySort.Type.Random -> {
                     error("Why Are We Still Here? Just To Suffer?")
