@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.bundles.js.engine)
 
     // FFmpeg-kit
-    implementation(libs.ffmpeg.kit)
+    implementation(aniyomilibs.ffmpeg.kit)
 
     // Tests
     testImplementation(libs.bundles.test)
@@ -65,9 +65,8 @@ dependencies {
     implementation(sylibs.exifinterface)
     // SY <--
 
-    // TAIL
     implementation(libs.injekt)
-    implementation(libs.torrentserver)
+    implementation(aniyomilibs.torrentserver)
 
     // Tests
     testImplementation(libs.bundles.test)
