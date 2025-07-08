@@ -10,5 +10,4 @@ val migrations: List<Migration>
         // KMK -->
         SetupAppUpdateMigration(),
         // KMK <--
-        PEMFileMigration(),
     )
