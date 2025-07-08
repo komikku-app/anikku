@@ -38,6 +38,9 @@ open class Video(
     val subtitleTracks: List<Track> = emptyList(),
     val audioTracks: List<Track> = emptyList(),
     val timestamps: List<TimeStamp> = emptyList(),
+    val mpvArgs: List<Pair<String, String>> = emptyList(),
+    val ffmpegStreamArgs: List<Pair<String, String>> = emptyList(),
+    val ffmpegVideoArgs: List<Pair<String, String>> = emptyList(),
     val internalData: String = "",
     val initialized: Boolean = false,
     // TODO(1.6): Remove after ext lib bump
@@ -82,6 +85,9 @@ open class Video(
         subtitleTracks: List<Track> = emptyList(),
         audioTracks: List<Track> = emptyList(),
         timestamps: List<TimeStamp> = emptyList(),
+        mpvArgs: List<Pair<String, String>> = emptyList(),
+        ffmpegStreamArgs: List<Pair<String, String>> = emptyList(),
+        ffmpegVideoArgs: List<Pair<String, String>> = emptyList(),
         internalData: String = "",
     ) : this(
         videoUrl = videoUrl,
@@ -93,6 +99,9 @@ open class Video(
         subtitleTracks = subtitleTracks,
         audioTracks = audioTracks,
         timestamps = timestamps,
+        mpvArgs = mpvArgs,
+        ffmpegStreamArgs = ffmpegStreamArgs,
+        ffmpegVideoArgs = ffmpegVideoArgs,
         internalData = internalData,
         videoPageUrl = "",
     )
@@ -128,6 +137,9 @@ open class Video(
         subtitleTracks: List<Track> = this.subtitleTracks,
         audioTracks: List<Track> = this.audioTracks,
         timestamps: List<TimeStamp> = this.timestamps,
+        mpvArgs: List<Pair<String, String>> = this.mpvArgs,
+        ffmpegStreamArgs: List<Pair<String, String>> = this.ffmpegStreamArgs,
+        ffmpegVideoArgs: List<Pair<String, String>> = this.ffmpegVideoArgs,
         internalData: String = this.internalData,
     ): Video {
         return Video(
@@ -140,6 +152,9 @@ open class Video(
             subtitleTracks = subtitleTracks,
             audioTracks = audioTracks,
             timestamps = timestamps,
+            mpvArgs = mpvArgs,
+            ffmpegStreamArgs = ffmpegStreamArgs,
+            ffmpegVideoArgs = ffmpegVideoArgs,
             internalData = internalData,
         )
     }
@@ -154,6 +169,9 @@ open class Video(
         subtitleTracks: List<Track> = this.subtitleTracks,
         audioTracks: List<Track> = this.audioTracks,
         timestamps: List<TimeStamp> = this.timestamps,
+        mpvArgs: List<Pair<String, String>> = this.mpvArgs,
+        ffmpegStreamArgs: List<Pair<String, String>> = this.ffmpegStreamArgs,
+        ffmpegVideoArgs: List<Pair<String, String>> = this.ffmpegVideoArgs,
         internalData: String = this.internalData,
         initialized: Boolean = this.initialized,
         videoPageUrl: String = this.videoPageUrl,
@@ -168,6 +186,9 @@ open class Video(
             subtitleTracks = subtitleTracks,
             audioTracks = audioTracks,
             timestamps = timestamps,
+            mpvArgs = mpvArgs,
+            ffmpegStreamArgs = ffmpegStreamArgs,
+            ffmpegVideoArgs = ffmpegVideoArgs,
             internalData = internalData,
             initialized = initialized,
             videoPageUrl = videoPageUrl,
@@ -179,6 +200,10 @@ open class Video(
         data object LoadVideo : State
         data object Ready : State
         data class Error(val error: Throwable) : State
+    }
+
+    companion object {
+        const val MPV_ARGS_TAG = "ANIYOMI_MPV_ARGS"
     }
 }
 
@@ -193,6 +218,9 @@ data class SerializableVideo(
     val subtitleTracks: List<Track> = emptyList(),
     val audioTracks: List<Track> = emptyList(),
     val timestamps: List<TimeStamp> = emptyList(),
+    val mpvArgs: List<Pair<String, String>> = emptyList(),
+    val ffmpegStreamArgs: List<Pair<String, String>> = emptyList(),
+    val ffmpegVideoArgs: List<Pair<String, String>> = emptyList(),
     val internalData: String = "",
     val initialized: Boolean = false,
     // TODO(1.6): Remove after ext lib bump
@@ -213,6 +241,9 @@ data class SerializableVideo(
                         vid.subtitleTracks,
                         vid.audioTracks,
                         vid.timestamps,
+                        vid.mpvArgs,
+                        vid.ffmpegStreamArgs,
+                        vid.ffmpegVideoArgs,
                         vid.internalData,
                         vid.initialized,
                         vid.videoPageUrl,
@@ -235,6 +266,9 @@ data class SerializableVideo(
                         sVid.subtitleTracks,
                         sVid.audioTracks,
                         sVid.timestamps,
+                        sVid.mpvArgs,
+                        sVid.ffmpegStreamArgs,
+                        sVid.ffmpegVideoArgs,
                         sVid.internalData,
                         sVid.initialized,
                         sVid.videoPageUrl,
