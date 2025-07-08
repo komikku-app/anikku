@@ -5,6 +5,8 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
+import eu.kanade.presentation.util.getInvalidLanguageError
+import eu.kanade.presentation.util.isLanguageListValid
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -31,6 +33,17 @@ object PlayerSettingsSubtitleScreen : SearchableSettings {
                 preference = langPref,
                 title = stringResource(AYMR.strings.pref_player_subtitle_lang),
                 dialogSubtitle = stringResource(AYMR.strings.pref_player_subtitle_lang_info),
+                validate = { pref ->
+                    isLanguageListValid(pref)
+                },
+                errorMessage = { pref ->
+                    getInvalidLanguageError(pref) { invalidLang ->
+                        stringResource(
+                            AYMR.strings.pref_player_subtitle_invalid_lang,
+                            invalidLang,
+                        )
+                    }
+                },
             ),
             Preference.PreferenceItem.EditTextInfoPreference(
                 preference = whitelist,

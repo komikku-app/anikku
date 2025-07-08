@@ -13,6 +13,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,8 @@ fun EditTextPreferenceWidget(
     singleLine: Boolean = true,
     canBeBlank: Boolean = false,
     formatSubtitle: Boolean = true,
+    validate: (String) -> Boolean = { true },
+    errorMessage: @Composable ((String) -> String)? = null,
 ) {
     var isDialogShown by remember { mutableStateOf(false) }
 
@@ -56,6 +59,16 @@ fun EditTextPreferenceWidget(
         var textFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
             mutableStateOf(TextFieldValue(value))
         }
+        val isValidText by remember(validate) {
+            derivedStateOf {
+                validate(textFieldValue.text)
+            }
+        }
+        val isError by remember {
+            derivedStateOf {
+                (textFieldValue.text.isBlank() && !canBeBlank) || !isValidText
+            }
+        }
         AlertDialog(
             onDismissRequest = onDismissRequest,
             title = {
@@ -71,7 +84,7 @@ fun EditTextPreferenceWidget(
                     value = textFieldValue,
                     onValueChange = { textFieldValue = it },
                     trailingIcon = {
-                        if (textFieldValue.text.isBlank() && !canBeBlank) {
+                        if (isError) {
                             Icon(imageVector = Icons.Filled.Error, contentDescription = null)
                         } else {
                             IconButton(onClick = { textFieldValue = TextFieldValue("") }) {
@@ -79,7 +92,12 @@ fun EditTextPreferenceWidget(
                             }
                         }
                     },
-                    isError = textFieldValue.text.isBlank() && !canBeBlank,
+                    supportingText = {
+                        if (!isValidText && errorMessage != null) {
+                            Text(errorMessage(textFieldValue.text))
+                        }
+                    },
+                    isError = isError,
                     singleLine = singleLine,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -89,7 +107,10 @@ fun EditTextPreferenceWidget(
             ),
             confirmButton = {
                 TextButton(
-                    enabled = textFieldValue.text != value && (textFieldValue.text.isNotBlank() || canBeBlank),
+                    enabled =
+                    textFieldValue.text != value &&
+                        (textFieldValue.text.isNotBlank() || canBeBlank) &&
+                        isValidText,
                     onClick = {
                         scope.launch {
                             if (onConfirm(textFieldValue.text)) {

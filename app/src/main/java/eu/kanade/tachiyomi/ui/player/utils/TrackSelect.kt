@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.player.utils
 
 import androidx.core.os.LocaleListCompat
+import eu.kanade.presentation.util.parseCommaSeparatedList
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
@@ -19,19 +20,19 @@ class TrackSelect(
             subtitlePreferences.preferredSubLanguages().get()
         } else {
             audioPreferences.preferredAudioLanguages().get()
-        }.split(",").filter { it.isNotEmpty() }
+        }.parseCommaSeparatedList()
 
         val whitelist = if (subtitle) {
             subtitlePreferences.subtitleWhitelist().get()
         } else {
             ""
-        }.split(",").filter { it.isNotEmpty() }
+        }.parseCommaSeparatedList()
 
         val blacklist = if (subtitle) {
             subtitlePreferences.subtitleBlacklist().get()
         } else {
             ""
-        }.split(",").filter { it.isNotEmpty() }
+        }.parseCommaSeparatedList()
 
         val locales = prefLangs.map(::Locale).ifEmpty {
             listOf(LocaleListCompat.getDefault()[0]!!)
@@ -57,7 +58,7 @@ class TrackSelect(
         try {
             val localName = locale.getDisplayName(locale)
             val englishName = locale.getDisplayName(Locale.ENGLISH).substringBefore(" (")
-            val langRegex = Regex("""\b${locale.isO3Language}|${locale.language}\b""", RegexOption.IGNORE_CASE)
+            val langRegex = Regex("""\b${locale.getISO3Language()}|${locale.language}\b""", RegexOption.IGNORE_CASE)
 
             return track.name.contains(localName, true) ||
                 track.name.contains(englishName, true) ||
