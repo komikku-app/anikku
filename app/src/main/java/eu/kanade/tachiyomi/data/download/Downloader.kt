@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -647,10 +648,22 @@ class Downloader(
         val audioMetadata = formatMetadata(video.audioTracks, "a")
 
         val sourceStreamOptions = video.ffmpegStreamArgs.joinToString(" ") { (key, value) ->
-            if (value.isNotBlank()) "-$key \"${value.replace("\"", "\\\"")}\"" else "-$key"
+            val sanitizedKey = sanitizeFFmpegKey(key)
+            if (value.isNotBlank()) {
+                val sanitizedValue = sanitizeFFmpegValue(value)
+                "-$sanitizedKey \"${sanitizedValue.replace("\"", "\\\"")}\""
+            } else {
+                "-$sanitizedKey"
+            }
         }
         val sourceVideoOptions = video.ffmpegVideoArgs.joinToString(" ") { (key, value) ->
-            if (value.isNotBlank()) "-$key \"${value.replace("\"", "\\\"")}\"" else "-$key"
+            val sanitizedKey = sanitizeFFmpegKey(key)
+            if (value.isNotBlank()) {
+                val sanitizedValue = sanitizeFFmpegValue(value)
+                "-$sanitizedKey \"${sanitizedValue.replace("\"", "\\\"")}\""
+            } else {
+                "-$sanitizedKey"
+            }
         }
 
         val videoInput = buildList {
@@ -923,3 +936,43 @@ class Downloader(
 
 // Arbitrary minimum required space to start a download: 200 MB
 private const val MIN_DISK_SPACE = 200L * 1024 * 1024
+private val DANGEROUS_CHARS = listOf(";", "|", "&", "`", "$", "(", ")", "<", ">", "\\", "\n", "\r").toImmutableList()
+private val ALLOWED_KEY_PATTERN = Regex("^[a-zA-Z0-9_-]+$")
+
+/**
+ * Sanitizes FFmpeg parameter values to prevent command injection.
+ * Allows common FFmpeg parameter characters while blocking dangerous ones.
+ *
+ * @param value the value to sanitize
+ * @return sanitized value or throws exception if invalid
+ */
+fun sanitizeFFmpegValue(value: String): String {
+    // Block dangerous characters that could be used for command injection
+    for (char in DANGEROUS_CHARS) {
+        if (value.contains(char)) {
+            throw SecurityException("Invalid FFmpeg parameter value: contains unsafe character '$char'")
+        }
+    }
+
+    // Additional validation - reject if it looks like a command
+    if (value.trim().startsWith("-") || value.contains("&&") || value.contains("||")) {
+        throw SecurityException("Invalid FFmpeg parameter value: appears to contain command injection")
+    }
+
+    return value
+}
+
+/**
+ * Sanitizes FFmpeg parameter keys to prevent command injection.
+ * Only allows alphanumeric characters, underscores, and hyphens for keys.
+ *
+ * @param key the key to sanitize
+ * @return sanitized key or throws exception if invalid
+ */
+fun sanitizeFFmpegKey(key: String): String {
+    if (!ALLOWED_KEY_PATTERN.matches(key)) {
+        throw SecurityException("Invalid FFmpeg parameter key: contains unsafe characters")
+    }
+
+    return key
+}

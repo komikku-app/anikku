@@ -67,6 +67,8 @@ import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.serial
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.PlayerData
+import eu.kanade.tachiyomi.data.download.sanitizeFFmpegKey
+import eu.kanade.tachiyomi.data.download.sanitizeFFmpegValue
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
@@ -1144,7 +1146,9 @@ class PlayerActivity : BaseActivity() {
             }
         } else {
             val videoOptions = video.mpvArgs.joinToString(",") { (option, value) ->
-                "$option=\"${value.replace("\"", "\\\"")}\""
+                val sanitizedOption = sanitizeFFmpegKey(option)
+                val sanitizedValue = sanitizeFFmpegValue(value)
+                "$sanitizedOption=\"${sanitizedValue.replace("\"", "\\\"")}\""
             }
 
             MPVLib.command(
