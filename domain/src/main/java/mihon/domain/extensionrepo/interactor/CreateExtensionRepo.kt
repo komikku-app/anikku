@@ -75,6 +75,6 @@ class CreateExtensionRepo(
 
         // cuong-tran's key
         const val ANIKKU_SIGNATURE = "cbec121aa82ebb02aaa73806992e0368a97d47b5451ed6524816d03084c45905"
-        const val REPO_SIGNATURE = "e6490d498d40b98e939b91e821f0cb95c28381ba98b8b686c15296465b5edf21"
+        const val REPO_SIGNATURE = "45f2bddbeb6f77a5241ea4e970f5af7b8321b6fcffdd402cbf6bc2c3de015f0f"
     }
 }
