@@ -281,6 +281,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         }.await()
     }
 
+    override val regexWhitespace by lazy { Regex("\\s+") }
+    override val regexNumberOnly by lazy { Regex("^\\d+$") }
+    override val regexSpecialCharacters by lazy { Regex("([!~#$%^&*+_|/\\\\,?:;'“”‘’\"<>(){}\\[\\]。・～：—！？、―«»《》〘〙【】「」｜]|\\s-|-\\s|\\s\\.|\\.\\s)") }
+
     /**
      * Returns the request for get related anime list. Override only if it's needed to override
      * the url, send different headers or request method like POST.
