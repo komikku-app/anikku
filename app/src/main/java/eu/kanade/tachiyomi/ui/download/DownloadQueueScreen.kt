@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -219,15 +219,15 @@ object DownloadQueueScreen : Screen() {
                     ExtendedFloatingActionButton(
                         text = {
                             val id = if (isRunning) {
-                                MR.strings.action_pause
+                                AYMR.strings.action_stop
                             } else {
-                                MR.strings.action_resume
+                                AYMR.strings.action_continue
                             }
                             Text(text = stringResource(id))
                         },
                         icon = {
                             val icon = if (isRunning) {
-                                Icons.Outlined.Pause
+                                Icons.Filled.Stop
                             } else {
                                 Icons.Filled.PlayArrow
                             }

@@ -85,7 +85,7 @@ internal class DownloadNotifier(private val context: Context) {
                 // Pause action
                 addAction(
                     R.drawable.ic_pause_24dp,
-                    context.stringResource(MR.strings.action_pause),
+                    context.stringResource(AYMR.strings.action_stop),
                     NotificationReceiver.pauseDownloadsPendingBroadcast(context),
                 )
                 addAction(
@@ -108,7 +108,7 @@ internal class DownloadNotifier(private val context: Context) {
                 val title = download.manga.title.chop(15)
                 val quotedTitle = Pattern.quote(title)
                 val chapter = download.chapter.name.replaceFirst(
-                    "$quotedTitle[\\s]*[-]*[\\s]*".toRegex(RegexOption.IGNORE_CASE),
+                    "$quotedTitle\\s*-*\\s*".toRegex(RegexOption.IGNORE_CASE),
                     "",
                 )
                 setContentTitle("$title - $chapter".chop(30))
