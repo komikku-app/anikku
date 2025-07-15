@@ -8,10 +8,10 @@ object ChapterRecognition {
     private const val NUMBER_PATTERN = """([0-9]+)(\.[0-9]+)?(\.?[a-z]+)?"""
 
     /**
-     * All cases with Ch.xx
-     * Mokushiroku Alice Vol.1 Ch. 4: Misrepresentation -R> 4
+     * All cases with e.xx, exx, episode xx, or ep xx
+     * kaguya-sama wa kokurasetai - s01e01v2 (BD 1080p HEVC) -R> 01
      */
-    private val basic = Regex("""(?<=ep\.) *$NUMBER_PATTERN""")
+    private val basic = Regex("""(?<=\be\.|\be|episode|\bep) *$NUMBER_PATTERN""")
 
     /**
      * Example: Bleach 567: Down With Snowwhite -R> 567
@@ -19,10 +19,17 @@ object ChapterRecognition {
     private val number = Regex(NUMBER_PATTERN)
 
     /**
-     * Regex used to remove unwanted tags
-     * Example Prison School 12 v.1 vol004 version1243 volume64 -R> Prison School 12
+     * Regex to remove tags
+     * Example: [flugel] kaguya-sama wa kokurasetai - s01e01v2 (bd 1080p hevc) [multi audio] [80ac7b2e]
+     * -> kaguya-sama wa kokurasetai - s01e01v2
      */
-    private val unwanted = Regex("""\b(?:v|ver|vol|version|volume|season|s)[^a-z]?[0-9]+""")
+    private val tagRegex = Regex("""^\[[^]]+]|\[[^]]+]\s*${'$'}|^\([^)]+\)|\([^)]+\)\s*${'$'}""")
+
+    /**
+     * Regex used to remove unwanted tags
+     * Example kaguya-sama wa kokurasetai - s01e01v2 1080p ->
+     */
+    private val unwanted = Regex("""\b(?:v|ver|version|season|s)[^a-z]?[0-9]+|\b\d+p\b|hi10""")
 
     /**
      * Regex used to remove unwanted whitespace
@@ -41,7 +48,7 @@ object ChapterRecognition {
         }
 
         // Get chapter title with lower case
-        val cleanChapterName = chapterName.lowercase()
+        var cleanChapterName = chapterName.lowercase()
             // Remove manga title from chapter title.
             .replace(mangaTitle.lowercase(), "").trim()
             // Remove comma's or hyphens.
@@ -49,6 +56,11 @@ object ChapterRecognition {
             .replace('-', '.')
             // Remove unwanted white spaces.
             .replace(unwantedWhiteSpace, "")
+
+        // Remove all tags while they exist
+        while (tagRegex.containsMatchIn(cleanChapterName)) {
+            cleanChapterName = tagRegex.replace(cleanChapterName, "").trim()
+        }
 
         val numberMatch = number.findAll(cleanChapterName)
 
