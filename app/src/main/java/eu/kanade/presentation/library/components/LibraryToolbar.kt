@@ -1,5 +1,6 @@
 package eu.kanade.presentation.library.components
 
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.components.AppBar
@@ -45,6 +47,7 @@ fun LibraryToolbar(
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
+    onInvalidateDownloadCache: (Context) -> Unit,
 ) = when {
     selectedCount > 0 -> LibrarySelectionToolbar(
         selectedCount = selectedCount,
@@ -66,6 +69,7 @@ fun LibraryToolbar(
         isSyncEnabled = isSyncEnabled,
         // SY <--
         scrollBehavior = scrollBehavior,
+        onInvalidateDownloadCache = onInvalidateDownloadCache,
     )
 }
 
@@ -84,7 +88,9 @@ private fun LibraryRegularToolbar(
     isSyncEnabled: Boolean,
     // SY <--
     scrollBehavior: TopAppBarScrollBehavior?,
+    onInvalidateDownloadCache: (Context) -> Unit,
 ) {
+    val context = LocalContext.current
     val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
     SearchToolbar(
         titleContent = {
@@ -127,6 +133,12 @@ private fun LibraryRegularToolbar(
                     AppBar.OverflowAction(
                         title = stringResource(MR.strings.action_open_random_manga),
                         onClick = onClickOpenRandomManga,
+                    ),
+                    AppBar.OverflowAction(
+                        title = stringResource(MR.strings.pref_invalidate_download_cache),
+                        onClick = {
+                            onInvalidateDownloadCache(context)
+                        },
                     ),
                 ).builder().apply {
                     // SY -->
