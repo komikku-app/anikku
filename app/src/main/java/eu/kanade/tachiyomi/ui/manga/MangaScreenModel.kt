@@ -12,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.palette.graphics.Palette
@@ -259,6 +258,11 @@ class MangaScreenModel(
 
     private val selectedPositions: Array<Int> = arrayOf(-1, -1) // first and last selected index in list
     private val selectedChapterIds: HashSet<Long> = HashSet()
+
+    internal var showTrackDialogAfterCategorySelection: Boolean = false
+
+    internal val autoOpenTrack: Boolean
+        get() = successState?.hasLoggedInTrackers == true && trackPreferences.trackOnAddingToLibrary().get()
 
     // SY -->
     private data class CombineState(
@@ -756,11 +760,17 @@ class MangaScreenModel(
                     }
 
                     // Choose a category
-                    else -> showChangeCategoryDialog()
+                    else -> {
+                        showTrackDialogAfterCategorySelection = true
+                        showChangeCategoryDialog()
+                    }
                 }
 
                 // Finally match with enhanced tracking when available
                 addTracks.bindEnhancedTrackers(manga, state.source)
+                if (autoOpenTrack && !showTrackDialogAfterCategorySelection) {
+                    showTrackDialog()
+                }
             }
         }
     }
@@ -1910,10 +1920,6 @@ class MangaScreenModel(
                 // KMK <--
             }
 
-            val isAnySelected by lazy {
-                chapters.fastAny { it.selected }
-            }
-
             val chapterListItems by lazy {
                 processedChapters.insertSeparators { before, after ->
                     val (lowerChapter, higherChapter) = if (manga.sortDescending()) {
@@ -1940,9 +1946,6 @@ class MangaScreenModel(
                         }
                 }
             }
-
-            val trackingAvailable: Boolean
-                get() = trackItems.isNotEmpty()
 
             val airingEpisodeNumber: Double
                 get() = nextAiringEpisode.first.toDouble()

@@ -133,12 +133,16 @@ object SettingsTrackingScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
-                preference = trackPreferences.autoUpdateTrack(),
-                title = stringResource(AMR.strings.pref_auto_update_anime_sync),
+                preference = trackPreferences.trackOnAddingToLibrary(),
+                title = stringResource(AYMR.strings.pref_track_on_add_library),
             ),
             Preference.PreferenceItem.SwitchPreference(
                 preference = trackPreferences.showNextChapterAiringTime(),
                 title = stringResource(AYMR.strings.pref_show_next_episode_airing_time),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = trackPreferences.autoUpdateTrack(),
+                title = stringResource(AMR.strings.pref_auto_update_anime_sync),
             ),
             Preference.PreferenceItem.ListPreference(
                 preference = trackPreferences.autoUpdateTrackOnMarkRead(),
