@@ -28,6 +28,7 @@ import eu.kanade.presentation.manga.DownloadAction
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
+import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
 import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.Source
@@ -875,6 +876,19 @@ class LibraryScreenModel(
         clearSelection()
     }
     // SY <--
+
+    // KMK -->
+    /**
+     * Update Selected Mangas
+     */
+    fun refreshSelectedManga(): Boolean {
+        val mangaIds = state.value.selection.map { it.manga.id }
+        return LibraryUpdateJob.startNow(
+            context = preferences.context,
+            mangaIds = mangaIds,
+        )
+    }
+    // KMK <--
 
     /**
      * Marks mangas' chapters read status.
