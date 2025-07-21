@@ -24,6 +24,7 @@
     <string name="discord_accounts">Discord Accounts</string>
     <string name="active_account">Active Account</string>
     <string name="no_accounts_found">No accounts found</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
 
     <!-- Discord section -->
     <string name="browsing">Browsing</string>

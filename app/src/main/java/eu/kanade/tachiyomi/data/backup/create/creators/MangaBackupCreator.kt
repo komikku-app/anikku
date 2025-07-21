@@ -61,7 +61,11 @@ class MangaBackupCreator(
             handler.awaitList {
                 episodesQueries.getEpisodesByAnimeId(
                     animeId = manga.id,
-                    applyScanlatorFilter = 0, // false
+                    applyFilter = 0, // false
+                    // KMK -->
+                    Manga.EPISODE_SHOW_NOT_BOOKMARKED,
+                    Manga.EPISODE_SHOW_BOOKMARKED,
+                    // KMK <--
                     mapper = backupChapterMapper,
                 )
             }

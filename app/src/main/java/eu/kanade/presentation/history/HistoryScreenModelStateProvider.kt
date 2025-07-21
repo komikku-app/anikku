@@ -98,6 +98,13 @@ class HistoryScreenModelStateProvider : PreviewParameterProvider<HistoryScreenMo
                         ogTitle = "Test Title",
                         // SY <--
                         chapterNumber = Random.nextDouble(),
+                        // KMK -->
+                        read = Random.nextBoolean(),
+                        lastPageRead = Random.nextLong(1, 10),
+                        totalPages = Random.nextLong(1, 100),
+                        totalChapters = Random.nextLong(1, 100),
+                        readCount = 1,
+                        // KMK <--
                         readAt = Date.from(Instant.now()),
                         readDuration = Random.nextLong(),
                         coverData = MangaCover(

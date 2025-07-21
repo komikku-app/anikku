@@ -250,7 +250,16 @@ class SyncManager(
     }
 
     private suspend fun isMangaDifferent(localManga: Manga, remoteManga: BackupManga): Boolean {
-        val localChapters = handler.await { episodesQueries.getEpisodesByAnimeId(localManga.id, 0).executeAsList() }
+        val localChapters = handler.await {
+            episodesQueries.getEpisodesByAnimeId(
+                localManga.id,
+                0,
+                // KMK -->
+                Manga.EPISODE_SHOW_NOT_BOOKMARKED,
+                Manga.EPISODE_SHOW_BOOKMARKED,
+                // KMK <--
+            ).executeAsList()
+        }
         val localCategories = getCategories.await(localManga.id).map { it.order }
 
         if (areChaptersDifferent(localChapters, remoteManga.episodes)) {

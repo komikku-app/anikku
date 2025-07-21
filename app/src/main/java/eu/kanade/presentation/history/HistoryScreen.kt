@@ -22,12 +22,14 @@ import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.history.components.HistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import eu.kanade.presentation.updates.formatProgress
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.history.HistoryScreenModel
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.ListGroupHeader
@@ -166,6 +168,16 @@ private fun HistoryScreenContent(
                         onClickDelete = { onClickDelete(value) },
                         onClickFavorite = { onClickFavorite(value) },
                         // KMK -->
+                        readProgress = value.lastPageRead
+                            .takeIf { !value.read && it > 0L }
+                            ?.let {
+                                stringResource(
+                                    AMR.strings.episode_progress_short,
+                                    formatProgress(it),
+                                    formatProgress(value.totalPages),
+                                )
+                            },
+                        hasUnread = value.unreadCount > 0,
                         usePanoramaCover = usePanoramaCover,
                         // KMK <--
                     )

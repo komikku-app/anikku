@@ -60,13 +60,22 @@ WHERE _id = :id;
 getEpisodesByAnimeId:
 SELECT EP.*
 FROM episodes EP
+-- KMK -->
+JOIN animes A ON EP.anime_id = A._id
+-- KMK <--
 LEFT JOIN excluded_scanlators ES
 ON EP.anime_id = ES.anime_id
 AND EP.scanlator = ES.scanlator
 WHERE EP.anime_id = :animeId
 AND (
-    :applyScanlatorFilter = 0
-    OR ES.scanlator IS NULL
+    :applyFilter = 0
+    -- KMK -->
+    OR (
+        ES.scanlator IS NULL
+        AND ((A.episode_flags & :bookmarkUnmask) = 0 OR EP.bookmark = 0)
+        AND ((A.episode_flags & :bookmarkMask) = 0 OR EP.bookmark = 1)
+    )
+    -- KMK <--
 );
 
 getScanlatorsByAnimeId:
@@ -109,10 +118,19 @@ ON EP.anime_id = A.anime_id
 LEFT JOIN excluded_scanlators ES
 ON A.merge_id = ES.anime_id
 AND EP.scanlator = ES.scanlator
+-- KMK -->
+JOIN animes AM ON AM._id = :animeId
+-- KMK <--
 WHERE A.merge_id = :animeId
 AND (
-    :applyScanlatorFilter = 0
-    OR ES.scanlator IS NULL
+    :applyFilter = 0
+    -- KMK -->
+    OR (
+        ES.scanlator IS NULL
+        AND ((AM.episode_flags & :bookmarkUnmask) = 0 OR EP.bookmark = 0)
+        AND ((AM.episode_flags & :bookmarkMask) = 0 OR EP.bookmark = 1)
+    )
+    -- KMK <--
 );
 
 getScanlatorsByMergeId:

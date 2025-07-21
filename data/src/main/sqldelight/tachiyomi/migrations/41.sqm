@@ -1,4 +1,63 @@
--- NOTE: must update MERGED_SOURCE_ID (6969) here
+DROP VIEW IF EXISTS historyView;
+
+CREATE VIEW historyView AS
+SELECT
+    history._id AS id,
+    animes._id AS animeId,
+    episodes._id AS episodeId,
+    animes.title,
+    animes.thumbnail_url AS thumbnailUrl,
+    animes.source,
+    animes.favorite,
+    animes.cover_last_modified,
+    episodes.episode_number AS episodeNumber,
+    -- KMK -->
+    animes.episode_flags AS episodeFlags,
+    episodes.seen AS seen,
+    episodes.last_second_seen AS lastSecondSeen,
+    episodes.total_seconds AS totalSeconds,
+    coalesce(EP.total, 0) AS totalCount,
+    coalesce(EP.seenCount, 0) AS seenCount,
+    coalesce(EP.bookmarkCount, 0) AS bookmarkCount,
+    coalesce(EP.bookmarkSeenCount, 0) AS bookmarkSeenCount,
+    -- KMK <--
+    history.last_seen AS seenAt,
+    history.time_watch AS watchDuration,
+    max_last_seen.last_seen AS maxSeenAt,
+    max_last_seen.episode_id AS maxSeenAtEpisodeId
+FROM animes
+JOIN episodes
+ON animes._id = episodes.anime_id
+JOIN history
+ON episodes._id = history.episode_id
+JOIN (
+    SELECT episodes.anime_id,episodes._id AS episode_id, MAX(history.last_seen) AS last_seen
+    FROM episodes JOIN history
+    ON episodes._id = history.episode_id
+    GROUP BY episodes.anime_id
+) AS max_last_seen
+ON episodes.anime_id = max_last_seen.anime_id
+-- KMK -->
+LEFT JOIN(
+    SELECT
+        episodes.anime_id,
+        count(*) AS total,
+        sum(seen) AS seenCount,
+        sum(bookmark) AS bookmarkCount,
+        sum(CASE WHEN bookmark = 1 AND seen = 1 THEN 1 ELSE 0 END) AS bookmarkSeenCount,
+        excluded_scanlators.scanlator AS ex_scanlator
+    FROM episodes
+    LEFT JOIN excluded_scanlators
+    ON episodes.anime_id = excluded_scanlators.anime_id
+    AND episodes.scanlator = excluded_scanlators.scanlator
+    WHERE ex_scanlator IS NULL
+    GROUP BY episodes.anime_id
+) AS EP
+ON animes._id = EP.anime_id;
+-- KMK <--
+
+DROP VIEW IF EXISTS libraryView;
+
 CREATE VIEW libraryView AS
 SELECT
     A.*,
@@ -99,13 +158,3 @@ ON A._id = EP.merge_id  -- ON ME.merge_id = EP.merge_id
 LEFT JOIN animes_categories AS AC
 ON AC.anime_id = A._id
 WHERE A.source = 6969;
-
-library:
-SELECT *
-FROM libraryView
-WHERE libraryView.favorite = 1;
-
-seenAnimeNonLibrary:
-SELECT *
-FROM libraryView
-WHERE libraryView.favorite = 0 AND libraryView.seenCount != 0;

@@ -535,7 +535,7 @@ private val UpdateItemPanoramaWidth = 108.dp // Book cover
 private val UpdateItemWidth = 48.dp
 // KMK <--
 
-private fun formatProgress(milliseconds: Long): String {
+internal fun formatProgress(milliseconds: Long): String {
     return if (milliseconds > 3600000L) {
         String.format(
             "%d:%02d:%02d",

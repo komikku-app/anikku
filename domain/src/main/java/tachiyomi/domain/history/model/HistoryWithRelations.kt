@@ -13,6 +13,13 @@ data class HistoryWithRelations(
     val ogTitle: String,
     // SY <--
     val chapterNumber: Double,
+    // KMK -->
+    val read: Boolean,
+    val lastPageRead: Long,
+    val totalPages: Long,
+    val totalChapters: Long,
+    val readCount: Long,
+    // KMK <--
     val readAt: Date?,
     val readDuration: Long,
     val coverData: MangaCover,
@@ -24,4 +31,9 @@ data class HistoryWithRelations(
         private val customMangaManager: GetCustomMangaInfo by injectLazy()
     }
     // SY <--
+
+    // KMK -->
+    val unreadCount
+        get() = totalChapters - readCount
+    // KMK <--
 }

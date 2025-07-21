@@ -8,6 +8,7 @@ import tachiyomi.data.DatabaseHandler
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.chapter.repository.ChapterRepository
+import tachiyomi.domain.manga.model.Manga
 
 class ChapterRepositoryImpl(
     private val handler: DatabaseHandler,
@@ -88,9 +89,17 @@ class ChapterRepositoryImpl(
         }
     }
 
-    override suspend fun getChapterByMangaId(mangaId: Long, applyScanlatorFilter: Boolean): List<Chapter> {
+    override suspend fun getChapterByMangaId(mangaId: Long, applyFilter: Boolean): List<Chapter> {
         return handler.awaitList {
-            episodesQueries.getEpisodesByAnimeId(mangaId, applyScanlatorFilter.toLong(), ChapterMapper::mapChapter)
+            episodesQueries.getEpisodesByAnimeId(
+                mangaId,
+                applyFilter.toLong(),
+                // KMK -->
+                Manga.EPISODE_SHOW_NOT_BOOKMARKED,
+                Manga.EPISODE_SHOW_BOOKMARKED,
+                // KMK <--
+                ChapterMapper::mapChapter,
+            )
         }
     }
 
@@ -125,9 +134,17 @@ class ChapterRepositoryImpl(
         return handler.awaitOneOrNull { episodesQueries.getEpisodeById(id, ChapterMapper::mapChapter) }
     }
 
-    override suspend fun getChapterByMangaIdAsFlow(mangaId: Long, applyScanlatorFilter: Boolean): Flow<List<Chapter>> {
+    override suspend fun getChapterByMangaIdAsFlow(mangaId: Long, applyFilter: Boolean): Flow<List<Chapter>> {
         return handler.subscribeToList {
-            episodesQueries.getEpisodesByAnimeId(mangaId, applyScanlatorFilter.toLong(), ChapterMapper::mapChapter)
+            episodesQueries.getEpisodesByAnimeId(
+                mangaId,
+                applyFilter.toLong(),
+                // KMK -->
+                Manga.EPISODE_SHOW_NOT_BOOKMARKED,
+                Manga.EPISODE_SHOW_BOOKMARKED,
+                // KMK <--
+                ChapterMapper::mapChapter,
+            )
         }
     }
 
@@ -146,11 +163,15 @@ class ChapterRepositoryImpl(
         return handler.awaitList { episodesQueries.getEpisodeByUrl(url, ChapterMapper::mapChapter) }
     }
 
-    override suspend fun getMergedChapterByMangaId(mangaId: Long, applyScanlatorFilter: Boolean): List<Chapter> {
+    override suspend fun getMergedChapterByMangaId(mangaId: Long, applyFilter: Boolean): List<Chapter> {
         return handler.awaitList {
             episodesQueries.getMergedEpisodesByAnimeId(
                 mangaId,
-                applyScanlatorFilter.toLong(),
+                applyFilter.toLong(),
+                // KMK -->
+                Manga.EPISODE_SHOW_NOT_BOOKMARKED,
+                Manga.EPISODE_SHOW_BOOKMARKED,
+                // KMK <--
                 ChapterMapper::mapChapter,
             )
         }
@@ -158,12 +179,16 @@ class ChapterRepositoryImpl(
 
     override suspend fun getMergedChapterByMangaIdAsFlow(
         mangaId: Long,
-        applyScanlatorFilter: Boolean,
+        applyFilter: Boolean,
     ): Flow<List<Chapter>> {
         return handler.subscribeToList {
             episodesQueries.getMergedEpisodesByAnimeId(
                 mangaId,
-                applyScanlatorFilter.toLong(),
+                applyFilter.toLong(),
+                // KMK -->
+                Manga.EPISODE_SHOW_NOT_BOOKMARKED,
+                Manga.EPISODE_SHOW_BOOKMARKED,
+                // KMK <--
                 ChapterMapper::mapChapter,
             )
         }

@@ -8,6 +8,10 @@ data class LibraryManga(
     val totalChapters: Long,
     val readCount: Long,
     val bookmarkCount: Long,
+    // KMK -->
+    val bookmarkReadCount: Long,
+    val chapterFlags: Long,
+    // KMK <--
     // AM (FILLERMARK) -->
     val fillermarkCount: Long,
     // <-- AM (FILLERMARK)
@@ -18,7 +22,13 @@ data class LibraryManga(
     val id: Long = manga.id
 
     val unreadCount
-        get() = totalChapters - readCount
+        get() = when {
+            // KMK -->
+            chapterFlags and Manga.EPISODE_SHOW_NOT_BOOKMARKED != 0L -> totalChapters - bookmarkCount - (readCount - bookmarkReadCount)
+            chapterFlags and Manga.EPISODE_SHOW_BOOKMARKED != 0L -> bookmarkCount - bookmarkReadCount
+            // KMK <--
+            else -> totalChapters - readCount
+        }
 
     val hasBookmarks
         get() = bookmarkCount > 0

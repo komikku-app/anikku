@@ -9,6 +9,16 @@ SELECT
     animes.favorite,
     animes.cover_last_modified,
     episodes.episode_number AS episodeNumber,
+    -- KMK -->
+    animes.episode_flags AS episodeFlags,
+    episodes.seen AS seen,
+    episodes.last_second_seen AS lastSecondSeen,
+    episodes.total_seconds AS totalSeconds,
+    coalesce(EP.total, 0) AS totalCount,
+    coalesce(EP.seenCount, 0) AS seenCount,
+    coalesce(EP.bookmarkCount, 0) AS bookmarkCount,
+    coalesce(EP.bookmarkSeenCount, 0) AS bookmarkSeenCount,
+    -- KMK <--
     history.last_seen AS seenAt,
     history.time_watch AS watchDuration,
     max_last_seen.last_seen AS maxSeenAt,
@@ -24,7 +34,25 @@ JOIN (
     ON episodes._id = history.episode_id
     GROUP BY episodes.anime_id
 ) AS max_last_seen
-ON episodes.anime_id = max_last_seen.anime_id;
+ON episodes.anime_id = max_last_seen.anime_id
+-- KMK -->
+LEFT JOIN(
+    SELECT
+        episodes.anime_id,
+        count(*) AS total,
+        sum(seen) AS seenCount,
+        sum(bookmark) AS bookmarkCount,
+        sum(CASE WHEN bookmark = 1 AND seen = 1 THEN 1 ELSE 0 END) AS bookmarkSeenCount,
+        excluded_scanlators.scanlator AS ex_scanlator
+    FROM episodes
+    LEFT JOIN excluded_scanlators
+    ON episodes.anime_id = excluded_scanlators.anime_id
+    AND episodes.scanlator = excluded_scanlators.scanlator
+    WHERE ex_scanlator IS NULL
+    GROUP BY episodes.anime_id
+) AS EP
+ON animes._id = EP.anime_id;
+-- KMK <--
 
 history:
 SELECT
@@ -37,6 +65,21 @@ source,
 favorite,
 cover_last_modified,
 episodeNumber,
+-- KMK -->
+seen,
+lastSecondSeen,
+totalSeconds,
+CASE
+    WHEN (episodeFlags & :bookmarkUnmask) != 0 THEN totalCount - bookmarkCount
+    WHEN (episodeFlags & :bookmarkMask) != 0 THEN bookmarkCount
+    ELSE totalCount
+END AS totalCount,
+CASE
+    WHEN (episodeFlags & :bookmarkUnmask) != 0 THEN seenCount - bookmarkSeenCount
+    WHEN (episodeFlags & :bookmarkMask) != 0 THEN bookmarkSeenCount
+    ELSE seenCount
+END AS seenCount,
+-- KMK <--
 seenAt,
 watchDuration
 FROM historyView
@@ -56,6 +99,21 @@ source,
 favorite,
 cover_last_modified,
 episodeNumber,
+-- KMK -->
+seen,
+lastSecondSeen,
+totalSeconds,
+CASE
+    WHEN (episodeFlags & :bookmarkUnmask) != 0 THEN totalCount - bookmarkCount
+    WHEN (episodeFlags & :bookmarkMask) != 0 THEN bookmarkCount
+    ELSE totalCount
+END AS totalCount,
+CASE
+    WHEN (episodeFlags & :bookmarkUnmask) != 0 THEN seenCount - bookmarkSeenCount
+    WHEN (episodeFlags & :bookmarkMask) != 0 THEN bookmarkSeenCount
+    ELSE seenCount
+END AS seenCount,
+-- KMK <--
 seenAt,
 watchDuration
 FROM historyView
