@@ -14,14 +14,14 @@ object LibraryGroup {
     const val BY_TAG = 4
     const val UNGROUPED = 5
 
-    fun groupTypeStringRes(type: Int, hasCategories: Boolean = true): StringResource {
+    fun groupTypeStringRes(type: Int): StringResource {
         return when (type) {
             BY_STATUS -> MR.strings.status
             BY_SOURCE -> MR.strings.label_sources
             BY_TRACK_STATUS -> SYMR.strings.tracking_status
             BY_TAG -> AMR.strings.tag
             UNGROUPED -> SYMR.strings.ungrouped
-            else -> if (hasCategories) MR.strings.categories else SYMR.strings.ungrouped
+            else -> MR.strings.categories
         }
     }
 }
