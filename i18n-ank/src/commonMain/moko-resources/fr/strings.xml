@@ -205,4 +205,5 @@
     <string name="storage_failed_to_create_directory">Échec de la création du répertoire : %s</string>
     <string name="pref_anime_info">Infos sur l\'anime</string>
     <string name="only_show_updated_entries_episodes">Afficher uniquement les entrées avec un nouvel épisode</string>
+    <string name="pref_app_icon">Icône d\'application</string>
 </resources>
