@@ -15,10 +15,10 @@ import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.ShouldUpdateDbChapter
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.chapter.model.toChapterUpdate
 import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.chapter.service.ChapterRecognition
+import tachiyomi.domain.episode.model.NoEpisodesException
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.source.local.isLocal
@@ -53,7 +53,7 @@ class SyncChaptersWithSource(
         fetchWindow: Pair<Long, Long> = Pair(0, 0),
     ): List<Chapter> {
         if (rawSourceChapters.isEmpty() && !source.isLocal()) {
-            throw NoChaptersException()
+            throw NoEpisodesException()
         }
 
         val now = ZonedDateTime.now()
