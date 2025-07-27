@@ -257,9 +257,8 @@ actual class LocalSource(
                     }
                 }
             }
-            .sortedWith { e1, e2 ->
-                val e = e2.episode_number.compareTo(e1.episode_number)
-                if (e == 0) e2.name.compareToCaseInsensitiveNaturalOrder(e1.name) else e
+            .sortedWith { c1, c2 ->
+                c2.name.compareToCaseInsensitiveNaturalOrder(c1.name)
             }
 
         // Generate the cover from the first episode found if not available
