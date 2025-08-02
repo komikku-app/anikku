@@ -1,11 +1,11 @@
 package eu.kanade.presentation.manga
 
 enum class DownloadAction {
-    NEXT_1_EPISODE,
-    NEXT_5_EPISODES,
-    NEXT_10_EPISODES,
-    NEXT_25_EPISODES,
-    UNSEEN_EPISODES,
+    NEXT_1_CHAPTER,
+    NEXT_5_CHAPTERS,
+    NEXT_10_CHAPTERS,
+    NEXT_25_CHAPTERS,
+    UNSEEN_CHAPTERS,
 }
 
 enum class EditCoverAction {
@@ -22,11 +22,11 @@ enum class MangaScreenItem {
     INFO_BUTTONS,
     // SY <--
 
-    EPISODE_HEADER,
-    EPISODE,
+    CHAPTER_HEADER,
+    CHAPTER,
     AIRING_TIME,
 
     // KMK -->
-    RELATED_ANIMES,
+    RELATED_MANGAS,
     // KMK <--
 }

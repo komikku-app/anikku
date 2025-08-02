@@ -27,7 +27,7 @@ abstract class CommonStorageScreenModel<T>(
     private val getDownloadSize: T.() -> Long,
     private val getDownloadCount: T.() -> Int,
     private val getId: T.() -> Long,
-    private val getCategoryId: T.() -> Long,
+    private val getCategoryIds: T.() -> List<Long>,
     private val getTitle: T.() -> String,
     private val getThumbnail: T.() -> String?,
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
@@ -58,16 +58,16 @@ abstract class CommonStorageScreenModel<T>(
                     val distinctLibraries = libraries.distinctBy {
                         it.getId()
                     }.filter { item ->
-                        val categoryId = item.getCategoryId()
+                        val categoryIds = item.getCategoryIds()
                         when {
                             // if all is selected, we want to make sure to include all entries
                             // from only visible categories
-                            selectedCategory == AllCategory -> categories.find {
-                                it.id == categoryId
-                            } != null
+                            selectedCategory == AllCategory -> categories.any {
+                                it.id in categoryIds
+                            }
 
                             // else include only entries from the selected category
-                            else -> categoryId == selectedCategory.id
+                            else -> selectedCategory.id in categoryIds
                         }
                     }
 

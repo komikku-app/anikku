@@ -698,8 +698,8 @@ private fun MangaScreenSmallImpl(
                             if (state.relatedMangasSorted?.isNotEmpty() != false) {
                                 item { HorizontalDivider() }
                                 item(
-                                    key = MangaScreenItem.RELATED_ANIMES,
-                                    contentType = MangaScreenItem.RELATED_ANIMES,
+                                    key = MangaScreenItem.RELATED_MANGAS,
+                                    contentType = MangaScreenItem.RELATED_MANGAS,
                                 ) {
                                     Column {
                                         RelatedMangaTitle(
@@ -722,8 +722,8 @@ private fun MangaScreenSmallImpl(
                             }
                         } else if (!showRelatedMangasInOverflow) {
                             item(
-                                key = MangaScreenItem.RELATED_ANIMES,
-                                contentType = MangaScreenItem.RELATED_ANIMES,
+                                key = MangaScreenItem.RELATED_MANGAS,
+                                contentType = MangaScreenItem.RELATED_MANGAS,
                             ) {
                                 OutlinedButtonWithArrow(
                                     text = stringResource(KMR.strings.pref_source_related_mangas)
@@ -752,8 +752,8 @@ private fun MangaScreenSmallImpl(
                     // SY <--
 
                     item(
-                        key = MangaScreenItem.EPISODE_HEADER,
-                        contentType = MangaScreenItem.EPISODE_HEADER,
+                        key = MangaScreenItem.CHAPTER_HEADER,
+                        contentType = MangaScreenItem.CHAPTER_HEADER,
                     ) {
                         val missingChapterCount = remember(chapters) {
                             chapters.map { it.chapter.chapterNumber }.missingChaptersCount()
@@ -1174,8 +1174,8 @@ private fun MangaScreenLargeImpl(
                                 if (expandRelatedMangas) {
                                     if (state.relatedMangasSorted?.isNotEmpty() != false) {
                                         item(
-                                            key = MangaScreenItem.RELATED_ANIMES,
-                                            contentType = MangaScreenItem.RELATED_ANIMES,
+                                            key = MangaScreenItem.RELATED_MANGAS,
+                                            contentType = MangaScreenItem.RELATED_MANGAS,
                                         ) {
                                             Column {
                                                 RelatedMangaTitle(
@@ -1199,8 +1199,8 @@ private fun MangaScreenLargeImpl(
                                     }
                                 } else if (!showRelatedMangasInOverflow) {
                                     item(
-                                        key = MangaScreenItem.RELATED_ANIMES,
-                                        contentType = MangaScreenItem.RELATED_ANIMES,
+                                        key = MangaScreenItem.RELATED_MANGAS,
+                                        contentType = MangaScreenItem.RELATED_MANGAS,
                                     ) {
                                         OutlinedButtonWithArrow(
                                             text = stringResource(KMR.strings.pref_source_related_mangas),
@@ -1212,8 +1212,8 @@ private fun MangaScreenLargeImpl(
                             // KMK <--
 
                             item(
-                                key = MangaScreenItem.EPISODE_HEADER,
-                                contentType = MangaScreenItem.EPISODE_HEADER,
+                                key = MangaScreenItem.CHAPTER_HEADER,
+                                contentType = MangaScreenItem.CHAPTER_HEADER,
                             ) {
                                 val missingChapterCount = remember(chapters) {
                                     chapters.map { it.chapter.chapterNumber }.missingChaptersCount()
@@ -1365,7 +1365,7 @@ private fun LazyListScope.sharedChapterItems(
                 is ChapterList.Item -> "chapter-${item.id}"
             }
         },
-        contentType = { MangaScreenItem.EPISODE },
+        contentType = { MangaScreenItem.CHAPTER },
     ) { item ->
         val haptic = LocalHapticFeedback.current
 

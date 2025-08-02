@@ -60,6 +60,7 @@ import exh.recs.batch.RecommendationSearchProgressDialog
 import exh.recs.batch.SearchStatus
 import exh.source.MERGED_SOURCE_ID
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -86,6 +87,7 @@ import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 
 data object LibraryTab : Tab {
+    @Suppress("unused")
     private fun readResolve(): Any = LibraryTab
 
     override val options: TabOptions
@@ -149,18 +151,15 @@ data object LibraryTab : Tab {
                     defaultCategoryTitle = stringResource(MR.strings.label_default),
                     page = screenModel.activeCategoryIndex,
                 )
-                val tabVisible = state.showCategoryTabs && state.categories.size > 1
                 LibraryToolbar(
                     hasActiveFilters = state.hasActiveFilters,
                     selectedCount = state.selection.size,
                     title = title,
                     onClickUnselectAll = screenModel::clearSelection,
-                    onClickSelectAll = { screenModel.selectAll(screenModel.activeCategoryIndex) },
-                    onClickInvertSelection = { screenModel.invertSelection(screenModel.activeCategoryIndex) },
+                    onClickSelectAll = screenModel::selectAll,
+                    onClickInvertSelection = screenModel::invertSelection,
                     onClickFilter = screenModel::showSettingsDialog,
-                    onClickRefresh = {
-                        onClickRefresh(state.categories[screenModel.activeCategoryIndex.coerceAtMost(state.categories.lastIndex)])
-                    },
+                    onClickRefresh = { onClickRefresh(screenModel.activeCategory) },
                     onClickGlobalUpdate = { onClickRefresh(null) },
                     onClickOpenRandomManga = {
                         scope.launch {
@@ -190,7 +189,8 @@ data object LibraryTab : Tab {
                         Injekt.get<DownloadCache>().invalidateCache()
                         context.toast(MR.strings.download_cache_invalidated)
                     },
-                    scrollBehavior = scrollBehavior.takeIf { !tabVisible }, // For scroll overlay when no tab
+                    // For scroll overlay when no tab
+                    scrollBehavior = scrollBehavior.takeIf { !state.showCategoryTabs },
                 )
             },
             bottomBar = {
@@ -199,14 +199,14 @@ data object LibraryTab : Tab {
                     onChangeCategoryClicked = screenModel::openChangeCategoryDialog,
                     onMarkAsReadClicked = { screenModel.markReadSelection(true) },
                     onMarkAsUnreadClicked = { screenModel.markReadSelection(false) },
-                    onDownloadClicked = screenModel::runDownloadActionSelection
-                        .takeIf { state.selection.fastAll { !it.manga.isLocal() } },
+                    onDownloadClicked = screenModel::performDownloadAction
+                        .takeIf { state.selectedManga.fastAll { !it.isLocal() } },
                     onDeleteClicked = screenModel::openDeleteMangaDialog,
                     // SY -->
                     onClickMigrate = {
-                        val selectedMangaIds = state.selection
-                            .filterNot { it.manga.source == MERGED_SOURCE_ID }
-                            .map { it.manga.id }
+                        val selectedMangaIds = state.selectedManga
+                            .filterNot { it.source == MERGED_SOURCE_ID }
+                            .map { it.id }
                         screenModel.clearSelection()
                         if (selectedMangaIds.isNotEmpty()) {
                             PreMigrationScreen.navigateToMigration(
@@ -219,23 +219,23 @@ data object LibraryTab : Tab {
                         }
                     },
                     onClickCollectRecommendations = screenModel::showRecommendationSearchDialog.takeIf { state.selection.size > 1 },
-                    onClickResetInfo = screenModel::openResetInfoMangaDialog.takeIf { state.showResetInfo },
                     // SY <--
                     // KMK -->
+                    onClickResetInfo = screenModel::openResetInfoMangaDialog.takeIf { state.showResetInfo },
                     onClickMerge = {
                         if (state.selection.size == 1) {
-                            val manga = state.selection.first().manga
+                            val manga = state.selectedManga.first()
                             // Invoke merging for this manga
                             screenModel.clearSelection()
                             val smartSearchConfig = SourcesScreen.SmartSearchConfig(manga.title, manga.id)
                             navigator.push(SourcesScreen(smartSearchConfig))
                         } else if (state.selection.isNotEmpty()) {
                             // Invoke multiple merge
-                            val selection = state.selection
+                            val selectedManga = state.selectedManga
                             screenModel.clearSelection()
                             scope.launchIO {
-                                val mergingMangas = selection.filterNot { it.manga.source == MERGED_SOURCE_ID }
-                                val mergedMangaId = screenModel.smartSearchMerge(selection)
+                                val mergingMangas = selectedManga.filterNot { it.source == MERGED_SOURCE_ID }
+                                val mergedMangaId = screenModel.smartSearchMerge(selectedManga.toPersistentList())
                                 snackbarHostState.showSnackbar(context.stringResource(SYMR.strings.entry_merged))
                                 if (mergedMangaId != null) {
                                     val result = snackbarHostState.showSnackbar(
@@ -245,7 +245,7 @@ data object LibraryTab : Tab {
                                     )
                                     if (result == SnackbarResult.ActionPerformed) {
                                         screenModel.removeMangas(
-                                            mangaList = mergingMangas.map { it.manga },
+                                            mangas = mergingMangas,
                                             deleteFromLibrary = true,
                                             deleteChapters = false,
                                         )
@@ -280,7 +280,9 @@ data object LibraryTab : Tab {
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { contentPadding ->
             when {
-                state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+                state.isLoading -> {
+                    LoadingScreen(Modifier.padding(contentPadding))
+                }
                 state.searchQuery.isNullOrEmpty() && !state.hasActiveFilters && state.isLibraryEmpty -> {
                     val handler = LocalUriHandler.current
                     EmptyScreen(
@@ -297,7 +299,7 @@ data object LibraryTab : Tab {
                 }
                 else -> {
                     LibraryContent(
-                        categories = state.categories,
+                        categories = state.displayedCategories,
                         searchQuery = state.searchQuery,
                         selection = state.selection,
                         contentPadding = contentPadding,
@@ -305,7 +307,7 @@ data object LibraryTab : Tab {
                         hasActiveFilters = state.hasActiveFilters,
                         showPageTabs = state.showCategoryTabs || !state.searchQuery.isNullOrEmpty(),
                         onChangeCurrentPage = { screenModel.activeCategoryIndex = it },
-                        onMangaClicked = { navigator.push(MangaScreen(it)) },
+                        onClickManga = { navigator.push(MangaScreen(it)) },
                         onContinueReadingClicked = { it: LibraryManga ->
                             scope.launchIO {
                                 val chapter = screenModel.getNextUnreadChapter(it.manga)
@@ -314,18 +316,19 @@ data object LibraryTab : Tab {
                             Unit
                         }.takeIf { state.showMangaContinueButton },
                         onToggleSelection = screenModel::toggleSelection,
-                        onToggleRangeSelection = {
-                            screenModel.toggleRangeSelection(it)
+                        onToggleRangeSelection = { category, manga ->
+                            screenModel.toggleRangeSelection(category, manga)
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         },
-                        onRefresh = onClickRefresh,
+                        onRefresh = { onClickRefresh(screenModel.activeCategory) },
                         onGlobalSearchClicked = {
                             navigator.push(GlobalSearchScreen(screenModel.state.value.searchQuery ?: ""))
                         },
-                        getNumberOfMangaForCategory = { state.getMangaCountForCategory(it) },
+                        getItemCountForCategory = { state.getItemCountForCategory(it) },
                         getDisplayMode = { screenModel.getDisplayMode() },
-                        getColumnsForOrientation = { screenModel.getColumnsPreferenceForCurrentOrientation(it) },
-                    ) { state.getLibraryItemsByPage(it) }
+                        getColumnsForOrientation = { screenModel.getColumnsForOrientation(it) },
+                        getItemsForCategory = { state.getItemsForCategory(it) },
+                    )
                 }
             }
         }
@@ -333,16 +336,15 @@ data object LibraryTab : Tab {
         val onDismissRequest = screenModel::closeDialog
         when (val dialog = state.dialog) {
             is LibraryScreenModel.Dialog.SettingsSheet -> run {
-                val category = state.categories.getOrNull(screenModel.activeCategoryIndex)
                 LibrarySettingsDialog(
                     onDismissRequest = onDismissRequest,
                     screenModel = settingsScreenModel,
-                    category = category,
+                    category = screenModel.activeCategory,
                     // SY -->
-                    hasCategories = state.categories.fastAny { !it.isSystemCategory },
+                    hasCategories = state.libraryData.categories.fastAny { !it.isSystemCategory },
                     // SY <--
                     // KMK -->
-                    categories = state.libraryCategories,
+                    categories = state.libraryData.categories.filterNot(Category::isSystemCategory),
                     // KMK <--
                 )
             }
@@ -372,7 +374,7 @@ data object LibraryTab : Tab {
                     },
                 )
             }
-            // SY -->
+            // KMK -->
             is LibraryScreenModel.Dialog.ResetInfoManga -> {
                 ResetInfoMangaDialog(
                     onDismissRequest = onDismissRequest,
@@ -382,6 +384,8 @@ data object LibraryTab : Tab {
                     },
                 )
             }
+            // KMK <--
+            // SY -->
             is LibraryScreenModel.Dialog.RecommendationSearchSheet -> {
                 RecommendationSearchBottomSheetDialog(
                     onDismissRequest = onDismissRequest,
