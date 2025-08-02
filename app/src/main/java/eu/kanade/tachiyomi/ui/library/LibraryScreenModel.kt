@@ -521,7 +521,7 @@ class LibraryScreenModel(
                 // SY <--
                 // KMK -->
                 filterFnCategories(it)
-            // KMK <---
+            // KMK <--
         }
     }
 
