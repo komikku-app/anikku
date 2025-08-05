@@ -130,11 +130,11 @@ chapter_counts AS (
         M._id AS manga_id,
         count(*) AS chapter_count
     FROM duplicates M
-    JOIN episodes C
-    ON M._id = C.anime_id
+    JOIN episodes EP
+    ON M._id = EP.anime_id
     LEFT JOIN excluded_scanlators ES
-    ON C.anime_id = ES.anime_id
-    AND C.scanlator = ES.scanlator
+    ON EP.anime_id = ES.anime_id
+    AND EP.scanlator = ES.scanlator
     WHERE ES.scanlator IS NULL
     GROUP BY M._id
 )

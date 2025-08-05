@@ -86,7 +86,6 @@ object MangaMapper {
         coverLastModified: Long,
         dateAdded: Long,
         // SY -->
-        @Suppress("UNUSED_PARAMETER")
         filteredScanlators: String?,
         // SY <--
         updateStrategy: UpdateStrategy,
@@ -127,7 +126,7 @@ object MangaMapper {
             coverLastModified,
             dateAdded,
             // SY -->
-            null,
+            filteredScanlators,
             // SY <--
             updateStrategy,
             calculateInterval,
@@ -199,7 +198,9 @@ object MangaMapper {
             chapterFlags,
             coverLastModified,
             dateAdded,
+            // SY -->
             filteredScanlators,
+            // SY <--
             updateStrategy,
             calculateInterval,
             lastModifiedAt,

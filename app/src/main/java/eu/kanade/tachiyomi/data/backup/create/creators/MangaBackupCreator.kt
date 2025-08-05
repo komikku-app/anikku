@@ -52,11 +52,16 @@ class MangaBackupCreator(
         }
         // SY <--
 
+        mangaObject.excludedScanlators = handler.awaitList {
+            excluded_scanlatorsQueries.getExcludedScanlatorsByAnimeId(manga.id)
+        }
+
         if (options.chapters) {
             // Backup all the chapters
             handler.awaitList {
                 episodesQueries.getEpisodesByAnimeId(
                     animeId = manga.id,
+                    applyScanlatorFilter = 0, // false
                     mapper = backupChapterMapper,
                 )
             }

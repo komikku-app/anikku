@@ -1,3 +1,5 @@
+DROP VIEW IF EXISTS updatesView;
+
 -- NOTE: must update MERGED_SOURCE_ID (6969) here
 CREATE VIEW updatesView AS
 SELECT
@@ -63,16 +65,3 @@ WHERE favorite = 1 AND source = 6969
 AND excluded_scanlators.scanlator IS NULL
 AND date_fetch > date_added
 ORDER BY datefetch DESC;
-
-getRecentUpdates:
-SELECT *
-FROM updatesView
-WHERE dateUpload > :after
-LIMIT :limit;
-
-getUpdatesBySeenStatus:
-SELECT *
-FROM updatesView
-WHERE seen = :seen
-AND dateUpload > :after
-LIMIT :limit;

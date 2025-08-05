@@ -2,6 +2,7 @@ package tachiyomi.data.chapter
 
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
+import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.domain.chapter.model.Chapter
@@ -87,9 +88,9 @@ class ChapterRepositoryImpl(
         }
     }
 
-    override suspend fun getChapterByMangaId(mangaId: Long): List<Chapter> {
+    override suspend fun getChapterByMangaId(mangaId: Long, applyScanlatorFilter: Boolean): List<Chapter> {
         return handler.awaitList {
-            episodesQueries.getEpisodesByAnimeId(mangaId, ChapterMapper::mapChapter)
+            episodesQueries.getEpisodesByAnimeId(mangaId, applyScanlatorFilter.toLong(), ChapterMapper::mapChapter)
         }
     }
 
@@ -124,9 +125,9 @@ class ChapterRepositoryImpl(
         return handler.awaitOneOrNull { episodesQueries.getEpisodeById(id, ChapterMapper::mapChapter) }
     }
 
-    override suspend fun getChapterByMangaIdAsFlow(mangaId: Long): Flow<List<Chapter>> {
+    override suspend fun getChapterByMangaIdAsFlow(mangaId: Long, applyScanlatorFilter: Boolean): Flow<List<Chapter>> {
         return handler.subscribeToList {
-            episodesQueries.getEpisodesByAnimeId(mangaId, ChapterMapper::mapChapter)
+            episodesQueries.getEpisodesByAnimeId(mangaId, applyScanlatorFilter.toLong(), ChapterMapper::mapChapter)
         }
     }
 
@@ -145,10 +146,11 @@ class ChapterRepositoryImpl(
         return handler.awaitList { episodesQueries.getEpisodeByUrl(url, ChapterMapper::mapChapter) }
     }
 
-    override suspend fun getMergedChapterByMangaId(mangaId: Long): List<Chapter> {
+    override suspend fun getMergedChapterByMangaId(mangaId: Long, applyScanlatorFilter: Boolean): List<Chapter> {
         return handler.awaitList {
             episodesQueries.getMergedEpisodesByAnimeId(
                 mangaId,
+                applyScanlatorFilter.toLong(),
                 ChapterMapper::mapChapter,
             )
         }
@@ -156,10 +158,12 @@ class ChapterRepositoryImpl(
 
     override suspend fun getMergedChapterByMangaIdAsFlow(
         mangaId: Long,
+        applyScanlatorFilter: Boolean,
     ): Flow<List<Chapter>> {
         return handler.subscribeToList {
             episodesQueries.getMergedEpisodesByAnimeId(
                 mangaId,
+                applyScanlatorFilter.toLong(),
                 ChapterMapper::mapChapter,
             )
         }

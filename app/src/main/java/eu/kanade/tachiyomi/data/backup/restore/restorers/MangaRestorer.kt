@@ -90,6 +90,7 @@ class MangaRestorer(
                 backupCategories = backupCategories,
                 history = backupManga.history,
                 tracks = backupManga.tracking,
+                excludedScanlators = backupManga.excludedScanlators,
                 // SY -->
                 mergedMangaReferences = backupManga.mergedMangaReferences,
                 customManga = backupManga.getCustomMangaInfo(),
@@ -345,6 +346,7 @@ class MangaRestorer(
         backupCategories: List<BackupCategory>,
         history: List<BackupHistory>,
         tracks: List<BackupTracking>,
+        excludedScanlators: List<String>,
         // SY -->
         mergedMangaReferences: List<BackupMergedMangaReference>,
         customManga: CustomMangaInfo?,
@@ -354,6 +356,7 @@ class MangaRestorer(
         restoreChapters(manga, chapters)
         restoreTracking(manga, tracks)
         restoreHistory(manga, history)
+        restoreExcludedScanlators(manga, excludedScanlators)
         updateManga.awaitUpdateFetchInterval(manga, now, currentFetchWindow)
         // SY -->
         restoreMergedMangaReferencesForManga(manga.id, mergedMangaReferences)
@@ -587,4 +590,27 @@ class MangaRestorer(
     // SY <--
 
     private fun Track.forComparison() = this.copy(id = 0L, mangaId = 0L)
+
+    /**
+     * Restores the excluded scanlators for the manga.
+     *
+     * @param manga the manga whose excluded scanlators have to be restored.
+     * @param excludedScanlators the excluded scanlators to restore.
+     */
+    private suspend fun restoreExcludedScanlators(manga: Manga, excludedScanlators: List<String>) {
+        if (excludedScanlators.isEmpty()) return
+        val existingExcludedScanlators = handler.awaitList {
+            excluded_scanlatorsQueries.getExcludedScanlatorsByAnimeId(manga.id)
+            // KMK -->
+        }.toSet()
+        val toInsert = excludedScanlators.toSet().subtract(existingExcludedScanlators)
+        if (toInsert.isNotEmpty()) {
+            handler.await(inTransaction = true) {
+                // KMK <--
+                toInsert.forEach {
+                    excluded_scanlatorsQueries.insert(manga.id, it)
+                }
+            }
+        }
+    }
 }

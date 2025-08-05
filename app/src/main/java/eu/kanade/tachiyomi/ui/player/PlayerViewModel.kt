@@ -328,7 +328,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val unfilteredEpisodeList by lazy {
         val anime = anime!!
-        runBlocking { getEpisodesByAnimeId.await(anime.id) }
+        runBlocking { getEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = false) }
     }
 
     init {
@@ -1329,11 +1329,11 @@ class PlayerViewModel @JvmOverloads constructor(
         // SY -->
         val (episodes, animeMap) = runBlocking {
             if (anime.source == MERGED_SOURCE_ID) {
-                getMergedChaptersByMangaId.await(anime.id) to
+                getMergedChaptersByMangaId.await(anime.id, applyScanlatorFilter = true) to
                     getMergedMangaById.await(anime.id)
                         .associateBy { it.id }
             } else {
-                getEpisodesByAnimeId.await(anime.id) to null
+                getEpisodesByAnimeId.await(anime.id, applyScanlatorFilter = true) to null
             }
         }
 
