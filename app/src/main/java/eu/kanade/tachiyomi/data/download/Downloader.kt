@@ -318,7 +318,10 @@ class Downloader(
                     maxDownloadsFromSource > EPISODES_PER_SOURCE_QUEUE_WARNING_THRESHOLD
                 ) {
                     notifier.onWarning(
-                        context.stringResource(AYMR.strings.download_queue_size_warning),
+                        context.stringResource(
+                            AYMR.strings.download_queue_size_warning,
+                            context.stringResource(MR.strings.app_name),
+                        ),
                         WARNING_NOTIF_TIMEOUT_MS,
                         NotificationHandler.openUrl(
                             context,
