@@ -17,8 +17,11 @@ import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import eu.kanade.domain.sync.SyncPreferences
+import eu.kanade.tachiyomi.data.backup.BackupDetector
 import eu.kanade.tachiyomi.data.backup.models.Backup
+import eu.kanade.tachiyomi.data.backup.models.LegacyBackup
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
@@ -122,11 +125,24 @@ class GoogleDriveSyncService(context: Context, json: Json, syncPreferences: Sync
             drive.files().get(gdriveFileId).executeMediaAsInputStream().use { inputStream ->
                 GZIPInputStream(inputStream).use { gzipInputStream ->
                     val byteArray = gzipInputStream.readBytes()
-                    val backup = protoBuf.decodeFromByteArray(Backup.serializer(), byteArray)
+                    // ANK -->
+                    val backup = if (BackupDetector.isLegacyBackup(byteArray)) {
+                        protoBuf.decodeFromByteArray(LegacyBackup.serializer(), byteArray)
+                            .toBackup()
+                    } else {
+                        protoBuf.decodeFromByteArray(Backup.serializer(), byteArray)
+                    }
+                    // ANK <--
                     val deviceId = fileList[0].appProperties["deviceId"] ?: ""
                     return SyncData(deviceId = deviceId, backup = backup)
                 }
             }
+            // ANK -->
+        } catch (e: SerializationException) {
+            val errMsg = context.stringResource(MR.strings.invalid_backup_file_unknown)
+            logcat(LogPriority.ERROR, throwable = e) { errMsg }
+            throw IOException(errMsg)
+            // ANK <--
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, throwable = e) { "Error downloading file" }
             throw Exception("Failed to download sync data: ${e.message}", e)

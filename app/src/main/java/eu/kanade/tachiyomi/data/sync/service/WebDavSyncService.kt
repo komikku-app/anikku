@@ -2,7 +2,9 @@ package eu.kanade.tachiyomi.data.sync.service
 
 import android.content.Context
 import eu.kanade.domain.sync.SyncPreferences
+import eu.kanade.tachiyomi.data.backup.BackupDetector
 import eu.kanade.tachiyomi.data.backup.models.Backup
+import eu.kanade.tachiyomi.data.backup.models.LegacyBackup
 import eu.kanade.tachiyomi.data.sync.SyncNotifier
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.PUT
@@ -141,7 +143,14 @@ class WebDavSyncService(
                     val newETag = response.headers["ETag"]?.trim('"') ?: ""
                     val bytes = response.body.byteStream().use { it.readBytes() }
                     try {
-                        val backup = protoBuf.decodeFromByteArray(Backup.serializer(), bytes)
+                        // ANK -->
+                        val backup = if (BackupDetector.isLegacyBackup(bytes)) {
+                            protoBuf.decodeFromByteArray(LegacyBackup.serializer(), bytes)
+                                .toBackup()
+                        } else {
+                            protoBuf.decodeFromByteArray(Backup.serializer(), bytes)
+                        }
+                        // ANK <--
                         Pair(SyncData(backup = backup), newETag)
                     } catch (e: Exception) {
                         xLogE("Invalid backup format:", e)

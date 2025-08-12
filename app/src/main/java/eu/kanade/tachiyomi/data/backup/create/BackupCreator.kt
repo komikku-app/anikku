@@ -108,8 +108,9 @@ class BackupCreator(
                 backupSources = backupSources(backupManga),
                 backupPreferences = backupAppPreferences(options),
                 backupExtensionRepo = backupExtensionRepos(options),
-                backupCustomButton = backupCustomButtons(options),
                 backupSourcePreferences = backupSourcePreferences(options),
+
+                backupCustomButton = backupCustomButtons(options),
                 backupExtensions = backupExtensions(options),
 
                 // SY -->
