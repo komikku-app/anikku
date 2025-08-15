@@ -519,7 +519,13 @@ class LibraryScreenModel(
                     // KMK -->
                     .filterNot { !showHiddenCategories && it.hidden }
                     // KMK <--
-                    .associateWith { groupCache[it.id]?.toList().orEmpty() }
+                    .associateWith {
+                        groupCache[it.id]?.toList()
+                            // KMK -->
+                            ?.distinct()
+                            // KMK <--
+                            .orEmpty()
+                    }
             }
             // KMK -->
             LibraryGroup.UNGROUPED -> {
@@ -962,13 +968,15 @@ class LibraryScreenModel(
     fun removeMangas(mangas: List<Manga>, deleteFromLibrary: Boolean, deleteChapters: Boolean) {
         screenModelScope.launchNonCancellable {
             if (deleteFromLibrary) {
-                val toDelete = mangas.map {
-                    it.removeCovers(coverCache)
-                    MangaUpdate(
-                        favorite = false,
-                        id = it.id,
-                    )
-                }
+                val toDelete = mangas
+                    .distinctBy { it.id }
+                    .map {
+                        it.removeCovers(coverCache)
+                        MangaUpdate(
+                            favorite = false,
+                            id = it.id,
+                        )
+                    }
                 updateManga.awaitAll(toDelete)
             }
 
@@ -1319,6 +1327,9 @@ class LibraryScreenModel(
                         // KMK <--
                     )
                 }
+                    // KMK -->
+                    .mapValues { (_, values) -> values.distinct() }
+                // KMK <--
             }
             LibraryGroup.BY_SOURCE -> {
                 // KMK -->
@@ -1416,7 +1427,7 @@ class LibraryScreenModel(
                     )
                 }
                     // KMK -->
-                    .mapValues { (_, libraryItem) -> libraryItem.fastMap { it.id } }
+                    .mapValues { (_, libraryItem) -> libraryItem.fastMap { it.id }.distinct() }
                 // KMK <--
             }
             else -> emptyMap()
