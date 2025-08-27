@@ -104,9 +104,6 @@ import tachiyomi.source.local.LocalSource
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import kotlin.collections.map
-import kotlin.collections.orEmpty
-import kotlin.collections.toList
 import kotlin.random.Random
 import tachiyomi.domain.source.model.Source as DomainSource
 
@@ -1293,13 +1290,20 @@ class LibraryScreenModel(
         return when (groupType) {
             LibraryGroup.BY_TRACK_STATUS -> {
                 val tracks = runBlocking { getTracks.await() }.groupBy { it.mangaId }
-                groupBy { item ->
-                    val status = tracks[item.libraryManga.manga.id]?.firstNotNullOfOrNull { track ->
+                // KMK -->
+                val groupCache = mutableMapOf</* Track.status */ Int, MutableList</* LibraryItem */ Long>>()
+                forEach { item ->
+                    val statuses = tracks[item.libraryManga.manga.id]?.mapNotNull { track ->
                         TrackStatus.parseTrackerStatus(trackerManager, track.trackerId, track.status)
-                    } ?: TrackStatus.OTHER
-
-                    status.int
-                }.mapKeys { (id) ->
+                    }
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: listOf(TrackStatus.OTHER)
+                    statuses.forEach { status ->
+                        groupCache.getOrPut(status.int) { mutableListOf() }.add(item.id)
+                    }
+                }
+                // KMK <--
+                groupCache.mapKeys { (id) ->
                     Category(
                         id = id.toLong(),
                         name = TrackStatus.entries
@@ -1317,54 +1321,70 @@ class LibraryScreenModel(
                 }
             }
             LibraryGroup.BY_SOURCE -> {
-                val sources: List<Long>
-                groupBy { item ->
-                    item.libraryManga.manga.source
-                }.also {
-                    sources = it.keys
-                        .map {
-                            sourceManager.getOrStub(it)
-                        }
-                        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.ifBlank { it.id.toString() } })
-                        .map { it.id }
-                }.mapKeys {
-                    Category(
-                        id = it.key,
-                        name = if (it.key == LocalSource.ID) {
+                // KMK -->
+                val groupCache = mutableMapOf</* Source.id */ Long, MutableList</* LibraryItem */ Long>>()
+                forEach { item ->
+                    groupCache.getOrPut(item.libraryManga.manga.source) { mutableListOf() }.add(item.id)
+                }
+                val sources = groupCache.keys
+                    .map { sourceManager.getOrStub(it) }
+                    .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.ifBlank { it.id.toString() } })
+
+                sources.associate {
+                    val category = Category(
+                        id = it.id,
+                        name = if (it.id == LocalSource.ID) {
                             context.stringResource(MR.strings.local_source)
                         } else {
-                            val source = sourceManager.getOrStub(it.key)
-                            source.name.ifBlank { source.id.toString() }
+                            it.name.ifBlank { it.id.toString() }
                         },
-                        order = sources.indexOf(it.key).takeUnless { it == -1 }?.toLong() ?: Long.MAX_VALUE,
+                        order = sources.indexOf(it).toLong(),
                         flags = 0,
                         // KMK -->
                         hidden = false,
                         // KMK <--
                     )
+                    category to groupCache[it.id]?.distinct().orEmpty()
                 }
+                // KMK <--
             }
+            // KMK -->
             LibraryGroup.BY_TAG -> {
                 val defaultTag = context.stringResource(SYMR.strings.ungrouped)
-                val tags = flatMap { it.libraryManga.manga.genre.orEmpty() }.distinct()
-                val groupedManga = flatMap { item ->
-                    item.libraryManga.manga.genre?.map { it to item } ?: listOf(defaultTag to item)
-                }.groupBy({ it.first }, { it.second }).toList()
+                val tagGroups = mutableMapOf<String, MutableList<Long>>()
 
-                val (bigGroups, defaultGroups) = groupedManga.partition { (genre, groups) -> genre != defaultTag && groups.size > 3 }
-                val groupedEntries = bigGroups.flatMap { it.second }
+                forEach { item ->
+                    val genres = item.libraryManga.manga.genre.orEmpty()
+                    if (genres.isEmpty()) {
+                        tagGroups.getOrPut(defaultTag) { mutableListOf() }.add(item.id)
+                    } else {
+                        genres.forEach { genre ->
+                            tagGroups.getOrPut(genre) { mutableListOf() }.add(item.id)
+                        }
+                    }
+                }
+
+                val sortedGenres = tagGroups.keys.filter { it != defaultTag }.sorted()
+                val tagOrderMap = sortedGenres.withIndex().associate { (idx, genre) -> genre to idx.toLong() } +
+                    mapOf(defaultTag to Long.MAX_VALUE)
+
+                val groupedManga = tagGroups.toList()
+                val (bigGroups, defaultGroups) = groupedManga.partition { (genre, itemIds) -> genre != defaultTag && itemIds.size > 3 }
+                val groupedEntries = bigGroups.flatMap { it.second }.toSet()
                 val defaultGroupEntries = defaultGroups.flatMap { it.second }.distinct().filterNot { it in groupedEntries }
 
                 (bigGroups + (defaultTag to defaultGroupEntries)).toMap().mapKeys { (genre, _) ->
+                    val index = tagOrderMap[genre] ?: Long.MAX_VALUE
                     Category(
-                        id = genre.hashCode().toLong(),
+                        id = index,
                         name = genre,
-                        order = tags.indexOf(genre).takeUnless { it == -1 }?.toLong() ?: Long.MAX_VALUE,
+                        order = index,
                         flags = 0,
                         hidden = false,
                     )
                 }
             }
+            // KMK <--
             LibraryGroup.BY_STATUS -> {
                 groupBy { item ->
                     item.libraryManga.manga.status
@@ -1395,12 +1415,12 @@ class LibraryScreenModel(
                         // KMK <--
                     )
                 }
+                    // KMK -->
+                    .mapValues { (_, libraryItem) -> libraryItem.fastMap { it.id } }
+                // KMK <--
             }
             else -> emptyMap()
         }.toSortedMap(compareBy { it.order })
-            // KMK -->
-            .mapValues { (_, libraryItem) -> libraryItem.fastMap { it.id } }
-        // KMK <--
     }
 
     fun runRecommendationSearch(selection: List<Manga>) {
