@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFilter
+import androidx.compose.ui.util.fastFlatMap
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
@@ -163,7 +164,7 @@ class LibraryScreenModel(
                 // KMK <--
                 getLibraryItemPreferencesFlow(),
             ) { (searchQuery, categories, favorites), (tracksMap, trackingFilters), (includedCategories, excludedCategories), itemPreferences ->
-                val showSystemCategory = favorites.any { it.libraryManga.categories.contains(0) }
+                val showSystemCategory = favorites.fastAny { it.libraryManga.categories.contains(0) }
                 val filteredFavorites = favorites
                     .applyFilters(
                         tracksMap,
@@ -321,7 +322,7 @@ class LibraryScreenModel(
                 // SY <--
                 *trackFilters.values.toTypedArray(),
             )
-                .any { it != TriState.DISABLED } ||
+                .fastAny { it != TriState.DISABLED } ||
                 // KMK -->
                 prefs.filterCategories
             // KMK <--
@@ -482,7 +483,7 @@ class LibraryScreenModel(
         val filterFnCategories: (LibraryItem) -> Boolean = categories@{ item ->
             if (!filterCategories) return@categories true
 
-            val mangaCategories = item.libraryManga.categories.filterNot { it == 0L }.toSet()
+            val mangaCategories = item.libraryManga.categories.fastFilterNot { it == 0L }.toSet()
 
             // Early return
             if (mangaCategories.isEmpty()) {
@@ -534,9 +535,9 @@ class LibraryScreenModel(
                         groupCache.getOrPut(categoryId) { mutableListOf() }.add(item.id)
                     }
                 }
-                return categories.filter { showSystemCategory || !it.isSystemCategory }
+                return categories.fastFilter { showSystemCategory || !it.isSystemCategory }
                     // KMK -->
-                    .filterNot { !showHiddenCategories && it.hidden }
+                    .fastFilterNot { !showHiddenCategories && it.hidden }
                     // KMK <--
                     .associateWith {
                         groupCache[it.id]?.toList()
@@ -1229,7 +1230,7 @@ class LibraryScreenModel(
         lastSelectionCategory = null
         mutableState.update { state ->
             val newSelection = state.selection.mutate { list ->
-                state.getItemsForCategoryId(state.activeCategory?.id).map { it.id }.let(list::addAll)
+                state.getItemsForCategoryId(state.activeCategory?.id).fastMap { it.id }.let(list::addAll)
             }
             state.copy(selection = newSelection)
         }
@@ -1268,7 +1269,7 @@ class LibraryScreenModel(
 
             // Hide the default category because it has a different behavior than the ones from db.
             // KMK -->
-            val categories = state.value.libraryData.categories.filter { it.id != 0L }
+            val categories = state.value.libraryData.categories.fastFilter { it.id != 0L }
             // KMK <--
 
             // Get indexes of the common categories to preselect.
@@ -1276,7 +1277,7 @@ class LibraryScreenModel(
             // Get indexes of the mix categories to preselect.
             val mix = getMixCategories(mangaList)
             val preselected = categories
-                .map {
+                .fastMap {
                     when (it) {
                         in common -> CheckboxState.State.Checked(it)
                         in mix -> CheckboxState.TriState.Exclude(it)
@@ -1331,7 +1332,7 @@ class LibraryScreenModel(
                 // KMK -->
                 val groupCache = mutableMapOf</* Track.status */ Int, MutableList</* LibraryItem */ Long>>()
                 forEach { item ->
-                    val statuses = tracks[item.libraryManga.manga.id]?.mapNotNull { track ->
+                    val statuses = tracks[item.libraryManga.manga.id]?.fastMapNotNull { track ->
                         TrackStatus.parseTrackerStatus(trackerManager, track.trackerId, track.status)
                     }
                         ?.takeIf { it.isNotEmpty() }
@@ -1395,12 +1396,12 @@ class LibraryScreenModel(
                 val defaultTag = context.stringResource(SYMR.strings.ungrouped)
                 val tagGroups = mutableMapOf<String, MutableList<Long>>()
 
-                forEach { item ->
+                fastForEach { item ->
                     val genres = item.libraryManga.manga.genre.orEmpty()
                     if (genres.isEmpty()) {
                         tagGroups.getOrPut(defaultTag) { mutableListOf() }.add(item.id)
                     } else {
-                        genres.forEach { genre ->
+                        genres.fastForEach { genre ->
                             tagGroups.getOrPut(genre) { mutableListOf() }.add(item.id)
                         }
                     }
@@ -1412,8 +1413,8 @@ class LibraryScreenModel(
 
                 val groupedManga = tagGroups.toList()
                 val (bigGroups, defaultGroups) = groupedManga.partition { (genre, itemIds) -> genre != defaultTag && itemIds.size > 3 }
-                val groupedEntries = bigGroups.flatMap { it.second }.toSet()
-                val defaultGroupEntries = defaultGroups.flatMap { it.second }.distinct().filterNot { it in groupedEntries }
+                val groupedEntries = bigGroups.fastFlatMap { it.second }.toSet()
+                val defaultGroupEntries = defaultGroups.fastFlatMap { it.second }.distinct().fastFilterNot { it in groupedEntries }
 
                 (bigGroups + (defaultTag to defaultGroupEntries)).toMap().mapKeys { (genre, _) ->
                     val index = tagOrderMap[genre] ?: Long.MAX_VALUE
@@ -1600,7 +1601,7 @@ class LibraryScreenModel(
         }
 
         fun getItemsForCategory(category: Category): List<LibraryItem> {
-            return groupedFavorites[category].orEmpty().mapNotNull { libraryData.favoritesById[it] }
+            return groupedFavorites[category].orEmpty().fastMapNotNull { libraryData.favoritesById[it] }
         }
 
         fun getItemCountForCategory(category: Category): Int? {
