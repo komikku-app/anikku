@@ -39,7 +39,7 @@ class EpisodeLoader {
             source: AnimeSource,
             sourceManager: SourceManager? = null,
             mergedReferences: List<MergedMangaReference> = emptyList(),
-            mergedManga: Map<Long, Anime> = emptyMap(),
+            mergedManga: Map<Long, Anime>? = null,
         ): List<Hoster> {
             val isDownloaded = isDownload(episode, anime)
             return when {
@@ -50,7 +50,7 @@ class EpisodeLoader {
                     } ?: error("Merge reference null")
                     val actualSource = sourceManager?.get(mangaReference.animeSourceId)
                         ?: error("Source ${mangaReference.animeSourceId} was null")
-                    val manga = mergedManga[episode.animeId] ?: error("Anime for merged episode was null")
+                    val manga = mergedManga?.get(episode.animeId) ?: error("Anime for merged episode was null")
                     val isMergedMangaDownloaded = isDownload(episode, manga)
                     when {
                         isMergedMangaDownloaded -> getHostersOnDownloaded(

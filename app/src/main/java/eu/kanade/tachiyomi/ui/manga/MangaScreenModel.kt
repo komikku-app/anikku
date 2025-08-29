@@ -406,15 +406,11 @@ class MangaScreenModel(
                         .map { sourceManager.getOrStub(it) },
                 )
             }
-            val chapters = (
-                if (manga.source ==
-                    MERGED_SOURCE_ID
-                ) {
-                    getMergedChaptersByMangaId.await(mangaId, applyFilter = true)
-                } else {
-                    getMangaAndChapters.awaitChapters(mangaId, applyFilter = true)
-                }
-                )
+            val chapters = if (manga.source == MERGED_SOURCE_ID) {
+                getMergedChaptersByMangaId.await(mangaId, applyFilter = true)
+            } else {
+                getMangaAndChapters.awaitChapters(mangaId, applyFilter = true)
+            }
                 .toChapterListItems(manga, mergedData)
             // SY <--
 
@@ -1478,20 +1474,39 @@ class MangaScreenModel(
         screenModelScope.launchNonCancellable {
             try {
                 successState?.let { state ->
-                    downloadManager.deleteChapters(
-                        chapters,
-                        state.manga,
-                        state.source,
-                        // KMK -->
-                        ignoreCategoryExclusion = true,
+                    // KMK --?
+                    if (state.source.id == MERGED_SOURCE_ID) {
+                        chapters.groupBy { it.mangaId }.forEach { map ->
+                            val manga = state.mergedData?.manga?.get(map.key) ?: return@forEach
+                            val source = state.mergedData.sources.find { it.id != MERGED_SOURCE_ID && manga.source == it.id } ?: return@forEach
+                            downloadManager.deleteChapters(
+                                map.value,
+                                manga,
+                                source,
+                                ignoreCategoryExclusion = true,
+                            )
+                            if (source.isLocal()) {
+                                // Refresh chapters state for Local source
+                                fetchChaptersFromSource()
+                            }
+                        }
+                    } else {
                         // KMK <--
-                    )
-                    // KMK -->
-                    if (source?.isLocal() == true) {
-                        // Refresh chapters state for Local source
-                        fetchChaptersFromSource()
+                        downloadManager.deleteChapters(
+                            chapters,
+                            state.manga,
+                            state.source,
+                            // KMK -->
+                            ignoreCategoryExclusion = true,
+                            // KMK <--
+                        )
+                        // KMK -->
+                        if (state.source.isLocal()) {
+                            // Refresh chapters state for Local source
+                            fetchChaptersFromSource()
+                        }
+                        // KMK <--
                     }
-                    // KMK <--
                 }
             } catch (e: Throwable) {
                 logcat(LogPriority.ERROR, e)
@@ -1516,14 +1531,31 @@ class MangaScreenModel(
         screenModelScope.launchNonCancellable {
             try {
                 successState?.let { state ->
-                    downloadManager.deleteManga(
-                        manga = state.manga,
-                        source = state.source,
-                        removeQueued = true,
-                    )
-                    if (source?.isLocal() == true) {
-                        // Refresh chapters state for Local source
-                        fetchChaptersFromSource()
+                    if (state.source.id == MERGED_SOURCE_ID) {
+                        state.mergedData?.manga
+                            ?.forEach { (_, manga) ->
+                                val source = state.mergedData.sources.find { it.id != MERGED_SOURCE_ID && manga.source == it.id } ?: return@forEach
+
+                                downloadManager.deleteManga(
+                                    manga = manga,
+                                    source = source,
+                                    removeQueued = true,
+                                )
+                                if (source.isLocal()) {
+                                    // Refresh chapters state for Local source
+                                    fetchChaptersFromSource()
+                                }
+                            }
+                    } else {
+                        downloadManager.deleteManga(
+                            manga = state.manga,
+                            source = state.source,
+                            removeQueued = true,
+                        )
+                        if (state.source.isLocal()) {
+                            // Refresh chapters state for Local source
+                            fetchChaptersFromSource()
+                        }
                     }
                 }
             } catch (e: Throwable) {
