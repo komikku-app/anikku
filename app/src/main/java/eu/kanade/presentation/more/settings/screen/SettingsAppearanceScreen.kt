@@ -1,6 +1,7 @@
 package eu.kanade.presentation.more.settings.screen
 
 import android.app.Activity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -41,6 +42,7 @@ import uy.kohesive.injekt.api.get
 import java.time.LocalDate
 
 object SettingsAppearanceScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = SettingsAppearanceScreen
 
     @ReadOnlyComposable
@@ -132,7 +134,6 @@ object SettingsAppearanceScreen : SearchableSettings {
                                     stringResource(KMR.strings.pref_theme_cover_based_style_fidelity)
                                 PaletteStyle.Content ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_content)
-                                else -> it.name
                             }
                         }
                         .toImmutableMap(),
@@ -196,7 +197,6 @@ object SettingsAppearanceScreen : SearchableSettings {
                                     stringResource(KMR.strings.pref_theme_cover_based_style_fidelity)
                                 PaletteStyle.Content ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_content)
-                                else -> it.name
                             }
                         }
                         .toImmutableMap(),
@@ -233,6 +233,10 @@ object SettingsAppearanceScreen : SearchableSettings {
         }
 
         // KMK -->
+        val currentLanguage = remember {
+            AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: ""
+        }
+
         val appIcons = remember(context) {
             mapOf(
                 AppIcon.DEFAULT to context.getString(R.string.label_default),
@@ -262,7 +266,8 @@ object SettingsAppearanceScreen : SearchableSettings {
                 ),
                 // KMK <--
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_app_language),
+                    title = stringResource(MR.strings.pref_app_language) +
+                        if (currentLanguage.isNotEmpty() && !currentLanguage.startsWith("en")) " (App Language)" else "",
                     onClick = { navigator.push(AppLanguageScreen()) },
                 ),
                 Preference.PreferenceItem.ListPreference(
