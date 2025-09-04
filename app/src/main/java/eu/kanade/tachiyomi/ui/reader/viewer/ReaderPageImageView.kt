@@ -23,6 +23,7 @@ import coil3.dispose
 import coil3.imageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import coil3.request.crossfade
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
@@ -361,6 +362,9 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 },
             )
             .crossfade(false)
+            // KMK -->
+            .allowHardware(false) // Disable hardware bitmaps for GIFs
+            // KMK <--
             .build()
         context.imageLoader.enqueue(request)
     }
