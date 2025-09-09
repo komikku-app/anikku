@@ -92,7 +92,7 @@ abstract class BaseTracker(
         updateRemote(track)
     }
 
-    override suspend fun setRemoteLastChapterRead(track: Track, chapterNumber: Int) {
+    override suspend fun setRemoteLastChapterRead(track: Track, chapterNumber: Int): /* KMK --> */ Track /* KMK <-- */ {
         if (
             track.last_episode_seen == 0.0 &&
             track.last_episode_seen < chapterNumber &&
@@ -106,6 +106,9 @@ abstract class BaseTracker(
             track.finished_watching_date = System.currentTimeMillis()
         }
         updateRemote(track)
+        // KMK -->
+        return track
+        // KMK <--
     }
 
     override suspend fun setRemoteScore(track: Track, scoreString: String) {
