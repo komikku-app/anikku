@@ -237,6 +237,10 @@ class LibraryPreferences(
     }
 
     fun hideMissingChapters() = preferenceStore.getBoolean("pref_hide_missing_chapter_indicators", false)
+
+    // KMK -->
+    fun showEmptyCategoriesSearch() = preferenceStore.getBoolean("show_empty_categories_search", false)
+    // KMK <--
     // endregion
 
     // region Swipe Actions

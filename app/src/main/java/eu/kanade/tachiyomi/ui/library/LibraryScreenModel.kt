@@ -226,7 +226,8 @@ class LibraryScreenModel(
                 combine(
                     libraryPreferences.sortingMode().changes(),
                     libraryPreferences.showHiddenCategories().changes(),
-                    ::Pair,
+                    libraryPreferences.showEmptyCategoriesSearch().changes(),
+                    ::Triple,
                 ),
                 combine(
                     state.map { it.filterCategory }.distinctUntilChanged(),
@@ -234,7 +235,7 @@ class LibraryScreenModel(
                     ::Pair,
                 ),
                 // KMK <--
-            ) { (data, groupType, noActiveFilterOrSearch), (sort, showHiddenCategories), (filterCategory, includedCategories) ->
+            ) { (data, groupType, noActiveFilterOrSearch), (sort, showHiddenCategories, showEmptyCategoriesSearch), (filterCategory, includedCategories) ->
                 data.favorites
                     .applyGrouping(
                         data.categories,
@@ -259,7 +260,7 @@ class LibraryScreenModel(
                     // KMK -->
                     .filter {
                         // Hide empty categories if no active filter or search
-                        noActiveFilterOrSearch || it.value.isNotEmpty()
+                        showEmptyCategoriesSearch || noActiveFilterOrSearch || it.value.isNotEmpty()
                     }
                     .let {
                         // Fall back to default category if no categories are present
