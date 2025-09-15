@@ -141,11 +141,6 @@ data object UpdatesTab : Tab {
         }
 
         LaunchedEffect(Unit) {
-            // AM (DISCORD) -->
-            with(DiscordRPCService) {
-                discordScope.launchIO { setScreen(context, DiscordScreen.UPDATES) }
-            }
-            // <-- AM (DISCORD)
             screenModel.events.collectLatest { event ->
                 when (event) {
                     Event.InternalError -> screenModel.snackbarHostState.showSnackbar(
@@ -170,6 +165,12 @@ data object UpdatesTab : Tab {
         LaunchedEffect(state.isLoading) {
             if (!state.isLoading) {
                 (context as? MainActivity)?.ready = true
+
+                // AM (DISCORD) -->
+                with(DiscordRPCService) {
+                    discordScope.launchIO { setScreen(context, DiscordScreen.UPDATES) }
+                }
+                // <-- AM (DISCORD)
             }
         }
         DisposableEffect(Unit) {
@@ -178,10 +179,6 @@ data object UpdatesTab : Tab {
             onDispose {
                 screenModel.resetNewUpdatesCount()
             }
-        }
-
-        LaunchedEffect(Unit) {
-            (context as? MainActivity)?.ready = true
         }
     }
 

@@ -19,7 +19,7 @@ const val RICH_PRESENCE_TAG = "discord_rpc"
 // Constant for application id
 internal const val RICH_PRESENCE_APPLICATION_ID = "1365208874440986685"
 
-const val DOWNLOAD_BUTTON_LABEL = "Download"
+val DOWNLOAD_BUTTON_LABEL_RES = R.string.discord_download_button_anime
 const val DOWNLOAD_BUTTON_URL = "https://anikku-app.github.io/download/"
 const val DISCORD_BUTTON_LABEL = "Discord"
 const val DISCORD_BUTTON_URL = "https://discord.gg/85jB7V5AJR"
@@ -65,10 +65,10 @@ data class Activity(
 
 @Serializable
 data class Presence(
-    val activities: List<Activity> = listOf(),
-    val afk: Boolean = true,
-    val since: Long? = null,
     val status: String? = null,
+    val afk: Boolean = true,
+    val activities: List<Activity> = listOf(),
+    val since: Long? = null,
 ) {
     @Serializable
     data class Response(
@@ -111,6 +111,26 @@ data class Res(
     val op: Int,
     val d: JsonElement,
 )
+
+enum class ActivityType(val value: Int) {
+    /** Playing a game. */
+    PLAYING(0),
+
+    /** Streaming a game. */
+    STREAMING(1),
+
+    /** Listening to music. */
+    LISTENING(2),
+
+    /** Watching a video. */
+    WATCHING(3),
+
+    /** Competing in a game. */
+    COMPETING(5),
+
+    /** Custom activity type, not defined by Discord. */
+    CUSTOM(4),
+}
 
 @Suppress("MagicNumber")
 enum class OpCode(val value: Int) {
@@ -161,38 +181,27 @@ data class PlayerData(
     val endTimestamp: Long? = null,
 )
 
-data class ReaderData(
-    val incognitoMode: Boolean = false,
-    val mangaId: Long? = null,
-    val mangaTitle: String? = null,
-    val chapterProgress: Pair<Int, Int> = Pair(0, 0),
-    val chapterNumber: String? = null,
-    val thumbnailUrl: String? = null,
-)
-
 // Enum class for standard Rich Presence in-app screens
 enum class DiscordScreen(
     @StringRes val text: Int,
     @StringRes val details: Int,
     val imageUrl: String,
 ) {
-    APP(R.string.app_name, R.string.browsing, ANIKKU_IMAGE),
-    LIBRARY(R.string.label_library, R.string.browsing, LIBRARY_IMAGE_URL),
-    UPDATES(R.string.label_recent_updates, R.string.scrolling, UPDATES_IMAGE_URL),
-    HISTORY(R.string.label_recent_manga, R.string.scrolling, HISTORY_IMAGE_URL),
-    BROWSE(R.string.label_sources, R.string.browsing, BROWSE_IMAGE_URL),
-    MORE(R.string.label_settings, R.string.messing, MORE_IMAGE_URL),
-    WEBVIEW(R.string.action_web_view, R.string.browsing, WEBVIEW_IMAGE_URL),
+    APP(R.string.app_name, R.string.discord_status_using, ANIKKU_IMAGE),
+    LIBRARY(R.string.label_library, R.string.discord_status_browsing, LIBRARY_IMAGE_URL),
+    UPDATES(R.string.label_recent_updates, R.string.discord_status_scrolling, UPDATES_IMAGE_URL),
+    HISTORY(R.string.label_recent_manga, R.string.discord_status_scrolling, HISTORY_IMAGE_URL),
+    BROWSE(R.string.label_sources, R.string.discord_status_browsing, BROWSE_IMAGE_URL),
+    MORE(R.string.label_settings, R.string.discord_status_messing, MORE_IMAGE_URL),
+    WEBVIEW(R.string.action_web_view, R.string.discord_status_browsing, WEBVIEW_IMAGE_URL),
     VIDEO(R.string.video, R.string.watching, VIDEO_IMAGE_URL),
-    MANGA(R.string.manga, R.string.reading, MANGA_IMAGE_URL),
 }
 
 // Constants for standard Rich Presence image urls
 private const val ANIKKU_IMAGE_URL = "emojis/1365215966178312265.webp?quality=lossless"
 private const val ANIKKU_PREVIEW_IMAGE_URL = "emojis/1365215966178312265.webp?quality=lossless"
 
-@Suppress("SimplifyBooleanWithConstants")
-private val ANIKKU_IMAGE = if (isPreviewBuildType == true) ANIKKU_PREVIEW_IMAGE_URL else ANIKKU_IMAGE_URL
+private val ANIKKU_IMAGE = if (isPreviewBuildType) ANIKKU_PREVIEW_IMAGE_URL else ANIKKU_IMAGE_URL
 private const val LIBRARY_IMAGE_URL = "emojis/1365262809050644591.webp?quality=lossless"
 private const val UPDATES_IMAGE_URL = "emojis/1365261957883625492.webp?quality=lossless"
 private const val HISTORY_IMAGE_URL = "emojis/1365262076787949598.webp?quality=lossless"
@@ -200,6 +209,4 @@ private const val BROWSE_IMAGE_URL = "emojis/1365263374992146576.webp?quality=lo
 private const val MORE_IMAGE_URL = "emojis/1365261438276599849.webp?quality=lossless"
 private const val WEBVIEW_IMAGE_URL = "emojis/1365262268811579443.webp?quality=lossless"
 private const val VIDEO_IMAGE_URL = "emojis/1365261809182965832.webp?quality=lossless"
-private const val MANGA_IMAGE_URL = "emojis/1365263962622529576.webp?quality=lossless"
-
 // <-- AM (DISCORD)

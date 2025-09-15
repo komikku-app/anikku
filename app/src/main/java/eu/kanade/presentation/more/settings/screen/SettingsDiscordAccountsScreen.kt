@@ -1,5 +1,6 @@
 package eu.kanade.presentation.more.settings.screen
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,8 +29,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -42,15 +45,15 @@ import eu.kanade.tachiyomi.ui.setting.connections.DiscordLoginScreen
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.logcat
-import mihon.core.migration.Migrator.scope
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object DiscordAccountsScreen : Screen {
+    @Suppress("unused")
     private fun readResolve(): Any = DiscordAccountsScreen
 
     @Composable
@@ -72,12 +75,12 @@ private fun DiscordAccountsScreenContent() {
     val screenModel = remember { DiscordAccountsScreenModel() }
     val state by screenModel.state.collectAsState()
 
-    val noAccountsFoundString = stringResource(AMR.strings.no_accounts_found)
+    val noAccountsFoundString = stringResource(KMR.strings.no_accounts_found)
 
     Scaffold(
         topBar = {
             AppBar(
-                title = stringResource(AMR.strings.discord_accounts),
+                title = stringResource(KMR.strings.discord_accounts),
                 navigateUp = navigator::pop,
                 actions = {
                     IconButton(
@@ -99,15 +102,18 @@ private fun DiscordAccountsScreenContent() {
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
+            val (isLoading, error, accounts) = state.let { Triple(it.isLoading, it.error, it.accounts) }
+            val context = LocalContext.current
+
             when {
-                state.isLoading -> {
+                isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                     )
                 }
-                state.error != null -> {
+                error != null -> {
                     Text(
-                        text = state.error!!,
+                        text = error,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -120,11 +126,11 @@ private fun DiscordAccountsScreenContent() {
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(16.dp),
                     ) {
-                        items(state.accounts) { account ->
+                        items(accounts) { account ->
                             DiscordAccountItem(
                                 account = account,
                                 onRemove = { screenModel.removeAccount(account.id) },
-                                onSetActive = { screenModel.setActiveAccount(account.id) },
+                                onSetActive = { screenModel.setActiveAccount(account.id, context) },
                             )
                         }
                     }
@@ -145,7 +151,7 @@ class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(
     private var noAccountsFoundString: String = ""
 
     init {
-        scope.launch {
+        screenModelScope.launch {
             connectionsPreferences.discordAccounts().changes()
                 .collect { loadAccounts() }
         }
@@ -157,7 +163,7 @@ class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(
     }
 
     private fun loadAccounts() {
-        scope.launch {
+        screenModelScope.launch {
             mutableState.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 val accounts = discord.getAccounts()
@@ -190,7 +196,7 @@ class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(
     }
 
     fun removeAccount(accountId: String) {
-        scope.launch {
+        screenModelScope.launch {
             mutableState.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 discord.removeAccount(accountId)
@@ -201,12 +207,12 @@ class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(
         }
     }
 
-    fun setActiveAccount(accountId: String) {
-        scope.launch {
+    fun setActiveAccount(accountId: String, context: Context) {
+        screenModelScope.launch {
             mutableState.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 discord.setActiveAccount(accountId)
-                discord.restartRichPresence()
+                discord.restartRichPresence(context)
                 loadAccounts()
             }.onFailure { e ->
                 mutableState.update { it.copy(isLoading = false, error = e.message ?: "Unknown error") }
@@ -252,7 +258,7 @@ private fun DiscordAccountItem(
                 )
                 if (account.isActive) {
                     Text(
-                        text = stringResource(AMR.strings.active_account),
+                        text = stringResource(KMR.strings.active_account),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )

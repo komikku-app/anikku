@@ -26,10 +26,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.model.Category.Companion.UNCATEGORIZED_ID
+import tachiyomi.i18n.aniyomi.AYMR
 import timber.log.Timber
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -43,6 +45,7 @@ class DiscordRPCService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Timber.tag(TAG).i("Starting Discord RPC service")
 
         val token = connectionsPreferences.connectionsToken(connectionsManager.discord).get()
 
@@ -97,6 +100,51 @@ class DiscordRPCService : Service() {
 
     override fun onBind(intent: Intent): IBinder? = null
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_RESTART -> restartRPC()
+            STOP_SERVICE -> {
+                Timber.tag(TAG).i("Stopping Discord RPC service")
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        }
+        return START_STICKY
+    }
+
+    private fun restartRPC() {
+        try {
+            Timber.tag(TAG).i("Restarting Discord RPC service")
+            // Close existing RPC connection
+            rpc?.closeRPC()
+            rpc = null
+
+            // Get fresh token and status
+            val token = connectionsPreferences.connectionsToken(connectionsManager.discord).get()
+            if (token.isBlank()) {
+                Timber.tag(TAG).w("Discord RPC restart failed due to missing token")
+                stopSelf()
+                return
+            }
+
+            val status = when (connectionsPreferences.discordRPCStatus().get()) {
+                -1 -> "dnd"
+                0 -> "idle"
+                else -> "online"
+            }
+
+            // Reinitialize RPC
+            rpc = DiscordRPC(token, status)
+            discordScope.launchIO {
+                setScreen(this@DiscordRPCService)
+            }
+            Timber.tag(TAG).i("Discord RPC restarted successfully")
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to restart Discord RPC: ${e.message}")
+            stopSelf()
+        }
+    }
+
     private fun notification(context: Context) {
         // KMK -->
         val stopIntent = NotificationReceiver.stopDiscordRPCService(context)
@@ -128,6 +176,9 @@ class DiscordRPCService : Service() {
         private val job = SupervisorJob()
         internal val discordScope = CoroutineScope(Dispatchers.IO + job)
 
+        private const val ACTION_RESTART = "eu.kanade.tachiyomi.DISCORD_RPC_RESTART"
+        private const val STOP_SERVICE = "eu.kanade.tachiyomi.DISCORD_RPC_STOP"
+
         fun start(context: Context) {
             handler.removeCallbacksAndMessages(null)
             if (rpc == null && connectionsPreferences.enableDiscordRPC().get()) {
@@ -141,8 +192,44 @@ class DiscordRPCService : Service() {
         }
 
         fun stop(context: Context, delay: Long = 30000L) {
-            val serviceIntent = Intent(context, DiscordRPCService::class.java)
-            handler.postDelayed({ context.stopService(serviceIntent) }, delay)
+            handler.removeCallbacksAndMessages(null)
+            if (delay > 0) {
+                handler.postDelayed({
+                    val stopIntent = Intent(context, DiscordRPCService::class.java).apply {
+                        action = STOP_SERVICE
+                    }
+                    try {
+                        context.startService(stopIntent)
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).e(e, "Failed to stop Discord RPC service: ${e.message}")
+                    }
+                }, delay)
+            } else {
+                val stopIntent = Intent(context, DiscordRPCService::class.java).apply {
+                    action = STOP_SERVICE
+                }
+                try {
+                    context.startService(stopIntent)
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e, "Failed to stop Discord RPC service: ${e.message}")
+                }
+            }
+        }
+
+        fun restart(context: Context) {
+            if (connectionsPreferences.enableDiscordRPC().get()) {
+                val restartIntent = Intent(context, DiscordRPCService::class.java).apply {
+                    action = ACTION_RESTART
+                }
+                try {
+                    context.startForegroundService(restartIntent)
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e, "Failed to send restart intent: ${e.message}")
+                    // Fallback to stop/start if service isn't running
+                    stop(context, 0L)
+                    handler.postDelayed({ start(context) }, 1000L)
+                }
+            }
         }
 
         private var since = 0L
@@ -150,7 +237,7 @@ class DiscordRPCService : Service() {
         private var lastUsedScreen = DiscordScreen.APP
             set(value) {
                 // Only update if the new screen is not a media/webview screen
-                if (value !in listOf(DiscordScreen.VIDEO, DiscordScreen.MANGA, DiscordScreen.WEBVIEW)) {
+                if (value !in listOf(DiscordScreen.VIDEO, DiscordScreen.WEBVIEW)) {
                     field = value
                 }
             }
@@ -169,7 +256,6 @@ class DiscordRPCService : Service() {
             context: Context,
             discordScreen: DiscordScreen = lastUsedScreen,
             playerData: PlayerData = PlayerData(),
-            readerData: ReaderData = ReaderData(),
             sinceTime: Long = since,
         ) {
             rpc ?: return
@@ -189,11 +275,6 @@ class DiscordRPCService : Service() {
                     playerData.animeTitle,
                     playerData.episodeNumber.takeIf { showProgress },
                     playerData.thumbnailUrl ?: discordScreen.imageUrl,
-                )
-                DiscordScreen.MANGA -> Triple(
-                    readerData.mangaTitle,
-                    readerData.chapterNumber.takeIf { showProgress },
-                    readerData.thumbnailUrl ?: discordScreen.imageUrl,
                 )
                 else -> Triple(
                     null,
@@ -252,7 +333,7 @@ class DiscordRPCService : Service() {
             // Build buttons only if needed
             val buttonLabels = mutableListOf<String>().apply {
                 if (showButtons) {
-                    if (showDownloadButton) add(DOWNLOAD_BUTTON_LABEL)
+                    if (showDownloadButton) add(context.getString(DOWNLOAD_BUTTON_LABEL_RES, appName))
                     if (showDiscordButton) add(DISCORD_BUTTON_LABEL)
                 }
             }
@@ -275,12 +356,17 @@ class DiscordRPCService : Service() {
                     name = name,
                     details = details,
                     state = state,
-                    type = 3,
+                    type = ActivityType.WATCHING.value,
                     timestamps = timestamps,
                     assets = Activity.Assets(
                         largeImage = "$MP_PREFIX$imageUrl",
                         smallImage = "$MP_PREFIX${DiscordScreen.APP.imageUrl}",
-                        smallText = context.getString(DiscordScreen.APP.text),
+                        largeText = context.getString(
+                            R.string.discord_status_description,
+                            context.getString(discordScreen.details),
+                            title ?: context.getString(discordScreen.text),
+                        ),
+                        smallText = context.getString(R.string.discord_app_description_anime),
                     ),
                     buttons = buttonLabels.takeIf { it.isNotEmpty() },
                     metadata = metadata,
@@ -289,19 +375,18 @@ class DiscordRPCService : Service() {
             )
         }
 
-        @Suppress("SwallowedException", "TooGenericExceptionCaught", "CyclomaticComplexMethod")
         internal suspend fun setPlayerActivity(
             context: Context,
             playerData: PlayerData = PlayerData(),
         ) {
             // Early return if any required data is missing
             if (rpc == null) {
-                Timber.tag(TAG).d("RPC client is null, skipping player activity update")
+                Timber.tag(TAG).w("RPC client is null, skipping player activity update")
                 return
             }
 
             if (playerData.thumbnailUrl == null || playerData.animeId == null) {
-                Timber.tag(TAG).d("Missing required data for player activity: thumbnailUrl=${playerData.thumbnailUrl}, animeId=${playerData.animeId}")
+                Timber.tag(TAG).w("Missing required data for player activity: thumbnailUrl=${playerData.thumbnailUrl}, animeId=${playerData.animeId}")
                 return
             }
 
@@ -337,51 +422,6 @@ class DiscordRPCService : Service() {
             }
         }
 
-        @Suppress("SwallowedException", "TooGenericExceptionCaught", "CyclomaticComplexMethod")
-        internal suspend fun setReaderActivity(
-            context: Context,
-            readerData: ReaderData = ReaderData(),
-        ) {
-            // Early return if any required data is missing
-            if (rpc == null) {
-                Timber.tag(TAG).d("RPC client is null, skipping reader activity update")
-                return
-            }
-
-            if (readerData.thumbnailUrl == null || readerData.mangaId == null) {
-                Timber.tag(TAG).d("Missing required data for reader activity: thumbnailUrl=${readerData.thumbnailUrl}, mangaId=${readerData.mangaId}")
-                return
-            }
-
-            try {
-                val categories = getCategories(readerData.mangaId)
-                val discordIncognito = isIncognito(categories, readerData.incognitoMode)
-
-                val mangaTitle = readerData.mangaTitle.takeUnless { discordIncognito }
-                val chapterNumber = getFormattedChapterNumber(context, readerData, discordIncognito)
-
-                withIOContext {
-                    val rpcExternalAsset = getRPCExternalAsset()
-                    val mangaThumbnail =
-                        getDiscordThumbnail(rpcExternalAsset, readerData.thumbnailUrl, discordIncognito)
-
-                    discordScope.launchIO {
-                        setScreen(
-                            context = context,
-                            discordScreen = DiscordScreen.MANGA,
-                            readerData = readerData.copy(
-                                mangaTitle = mangaTitle,
-                                chapterNumber = chapterNumber,
-                                thumbnailUrl = mangaThumbnail,
-                            ),
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "Error setting reader activity: ${e.message}")
-            }
-        }
-
         // Helper functions
         private suspend fun getCategories(id: Long): List<String> =
             Injekt.get<GetCategories>()
@@ -400,53 +440,15 @@ class DiscordRPCService : Service() {
             if (discordIncognito) return null
 
             val episodeNumber = playerData.episodeNumber ?: return null
+            val episodeNumberDouble = episodeNumber.toDoubleOrNull()
             val useChapterTitles = connectionsPreferences.useChapterTitles().get()
 
             return when {
-                useChapterTitles -> episodeNumber
-                ceil(episodeNumber.toDouble()) == floor(episodeNumber.toDouble()) -> {
-                    try {
-                        context.getString(R.string.notification_episodes_single).format(
-                            episodeNumber.toDouble().toInt(),
-                        )
-                    } catch (_: NumberFormatException) {
-                        context.getString(R.string.notification_episodes_single).format(
-                            episodeNumber,
-                        )
-                    }
+                useChapterTitles || episodeNumberDouble == null -> episodeNumber
+                ceil(episodeNumberDouble) == floor(episodeNumberDouble) -> {
+                    context.stringResource(AYMR.strings.notification_episodes_single, episodeNumberDouble.toInt())
                 }
-                else ->
-                    context.getString(R.string.notification_episodes_single).format(
-                        episodeNumber,
-                    )
-            }
-        }
-
-        private fun getFormattedChapterNumber(context: Context, readerData: ReaderData, discordIncognito: Boolean): String? {
-            if (discordIncognito) return null
-
-            val chapterNumber = readerData.chapterNumber ?: return null
-            val (current, total) = readerData.chapterProgress
-            val useChapterTitles = connectionsPreferences.useChapterTitles().get()
-            val progress = "($current/$total)"
-
-            return when {
-                useChapterTitles -> "$chapterNumber $progress"
-                ceil(chapterNumber.toDouble()) == floor(chapterNumber.toDouble()) -> {
-                    try {
-                        context.getString(R.string.notification_chapters_single).format(
-                            "${chapterNumber.toDouble().toInt()} $progress",
-                        )
-                    } catch (_: NumberFormatException) {
-                        context.getString(R.string.notification_chapters_single).format(
-                            "$chapterNumber $progress",
-                        )
-                    }
-                }
-                else ->
-                    context.getString(R.string.notification_chapters_single).format(
-                        "$chapterNumber $progress",
-                    )
+                else -> context.stringResource(AYMR.strings.notification_episodes_single, episodeNumber)
             }
         }
 

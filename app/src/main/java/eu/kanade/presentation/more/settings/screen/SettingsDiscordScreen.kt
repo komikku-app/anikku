@@ -23,31 +23,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.util.fastMap
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.coroutines.runBlocking
+import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object SettingsDiscordScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = SettingsDiscordScreen
 
     @ReadOnlyComposable
     @Composable
-    override fun getTitleRes() = AMR.strings.pref_category_connections
+    override fun getTitleRes() = KMR.strings.pref_category_connections
 
     @Composable
     override fun RowScope.AppBarAction() {
@@ -74,6 +74,7 @@ object SettingsDiscordScreen : SearchableSettings {
         val showButtonsPref = connectionsPreferences.discordShowButtons()
         val showDownloadButtonPref = connectionsPreferences.discordShowDownloadButton()
         val showDiscordButtonPref = connectionsPreferences.discordShowDiscordButton()
+        val showProgressEnabled by showProgressPref.collectAsState()
 
         val enableDRPC by enableDRPCPref.collectAsState()
         val showButtons by showButtonsPref.collectAsState()
@@ -108,13 +109,13 @@ object SettingsDiscordScreen : SearchableSettings {
                     showCustomMessageDialog = false
                     tempCustomMessage = customMessagePref.get()
                 },
-                title = { Text(stringResource(AMR.strings.pref_discord_custom_message)) },
+                title = { Text(stringResource(KMR.strings.pref_discord_custom_message)) },
                 text = {
                     Column {
                         OutlinedTextField(
                             value = tempCustomMessage,
                             onValueChange = { tempCustomMessage = it },
-                            label = { Text(stringResource(AMR.strings.pref_discord_custom_message_summary)) },
+                            label = { Text(stringResource(KMR.strings.pref_discord_custom_message_summary)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
@@ -154,30 +155,24 @@ object SettingsDiscordScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.TextPreference(
-                title = stringResource(AMR.strings.discord_accounts),
+                title = stringResource(KMR.strings.discord_accounts),
                 onClick = { navigator.push(DiscordAccountsScreen) },
             ),
             Preference.PreferenceGroup(
-                title = stringResource(AMR.strings.connections_discord),
+                title = stringResource(KMR.strings.connections_discord),
                 preferenceItems = persistentListOf(
                     Preference.PreferenceItem.SwitchPreference(
                         preference = enableDRPCPref,
-                        title = stringResource(AMR.strings.pref_enable_discord_rpc),
-                    ),
-                    Preference.PreferenceItem.SwitchPreference(
-                        preference = useChapterTitlesPref,
-                        title = stringResource(AMR.strings.show_chapters_titles_title),
-                        subtitle = stringResource(AMR.strings.show_chapters_titles_subtitle),
-                        enabled = enableDRPC,
+                        title = stringResource(KMR.strings.pref_enable_discord_rpc),
                     ),
                     Preference.PreferenceItem.ListPreference(
                         preference = discordRPCStatus,
                         entries = persistentMapOf(
-                            -1 to stringResource(AMR.strings.pref_discord_dnd),
-                            0 to stringResource(AMR.strings.pref_discord_idle),
-                            1 to stringResource(AMR.strings.pref_discord_online),
+                            -1 to stringResource(KMR.strings.pref_discord_dnd),
+                            0 to stringResource(KMR.strings.pref_discord_idle),
+                            1 to stringResource(KMR.strings.pref_discord_online),
                         ),
-                        title = stringResource(AMR.strings.pref_discord_status),
+                        title = stringResource(KMR.strings.pref_discord_status),
                         enabled = enableDRPC,
                     ),
                 ),
@@ -187,39 +182,45 @@ object SettingsDiscordScreen : SearchableSettings {
                 enabled = enableDRPC,
             ),
             Preference.PreferenceGroup(
-                title = stringResource(AMR.strings.pref_category_discord_customization),
+                title = stringResource(KMR.strings.pref_category_discord_customization),
                 enabled = enableDRPC,
                 preferenceItems = persistentListOf(
                     Preference.PreferenceItem.TextPreference(
-                        title = stringResource(AMR.strings.pref_discord_custom_message),
-                        subtitle = stringResource(AMR.strings.pref_discord_custom_message_summary),
+                        title = stringResource(KMR.strings.pref_discord_custom_message),
+                        subtitle = stringResource(KMR.strings.pref_discord_custom_message_summary),
                         onClick = { showCustomMessageDialog = true },
                     ),
                     Preference.PreferenceItem.SwitchPreference(
                         preference = showProgressPref,
-                        title = stringResource(AMR.strings.pref_discord_show_progress),
-                        subtitle = stringResource(AMR.strings.pref_discord_show_progress_summary),
+                        title = stringResource(KMR.strings.pref_discord_show_progress),
+                        subtitle = stringResource(AMR.strings.pref_discord_show_progress_summary_episode),
+                    ),
+                    Preference.PreferenceItem.SwitchPreference(
+                        preference = useChapterTitlesPref,
+                        title = stringResource(AMR.strings.show_episodes_titles_title),
+                        subtitle = stringResource(AMR.strings.show_episodes_titles_subtitle),
+                        enabled = showProgressEnabled,
                     ),
                     Preference.PreferenceItem.SwitchPreference(
                         preference = showTimestampPref,
-                        title = stringResource(AMR.strings.pref_discord_show_timestamp),
-                        subtitle = stringResource(AMR.strings.pref_discord_show_timestamp_summary),
+                        title = stringResource(KMR.strings.pref_discord_show_timestamp),
+                        subtitle = stringResource(AMR.strings.pref_discord_show_timestamp_summary_episode),
                     ),
                     Preference.PreferenceItem.SwitchPreference(
                         preference = showButtonsPref,
-                        title = stringResource(AMR.strings.pref_discord_show_buttons),
-                        subtitle = stringResource(AMR.strings.pref_discord_show_buttons_summary),
+                        title = stringResource(KMR.strings.pref_discord_show_buttons),
+                        subtitle = stringResource(KMR.strings.pref_discord_show_buttons_summary),
                     ),
                     Preference.PreferenceItem.SwitchPreference(
                         preference = showDownloadButtonPref,
-                        title = stringResource(AMR.strings.pref_discord_show_download_button),
-                        subtitle = stringResource(AMR.strings.pref_discord_show_download_button_summary),
+                        title = stringResource(KMR.strings.pref_discord_show_download_button),
+                        subtitle = stringResource(KMR.strings.pref_discord_show_download_button_summary),
                         enabled = showButtons,
                     ),
                     Preference.PreferenceItem.SwitchPreference(
                         preference = showDiscordButtonPref,
-                        title = stringResource(AMR.strings.pref_discord_show_discord_button),
-                        subtitle = stringResource(AMR.strings.pref_discord_show_discord_button_summary),
+                        title = stringResource(KMR.strings.pref_discord_show_discord_button),
+                        subtitle = stringResource(KMR.strings.pref_discord_show_discord_button_summary),
                         enabled = showButtons,
                     ),
                 ),
@@ -237,53 +238,28 @@ object SettingsDiscordScreen : SearchableSettings {
         enabled: Boolean,
     ): Preference.PreferenceGroup {
         val getCategories = remember { Injekt.get<GetCategories>() }
-        val allAnimeCategories by getCategories.subscribe().collectAsState(
-            initial = runBlocking { getCategories.await() },
-        )
+        val allCategories by getCategories.subscribe().collectAsState(initial = emptyList())
 
         val discordRPCIncognitoPref = connectionsPreferences.discordRPCIncognito()
         val discordRPCIncognitoCategoriesPref = connectionsPreferences.discordRPCIncognitoCategories()
-
-        val includedAnime by discordRPCIncognitoCategoriesPref.collectAsState()
-        var showAnimeDialog by rememberSaveable { mutableStateOf(false) }
-        if (showAnimeDialog) {
-            TriStateListDialog(
-                title = stringResource(MR.strings.categories),
-                message = stringResource(AMR.strings.pref_discord_incognito_categories_details),
-                items = allAnimeCategories,
-                initialChecked = includedAnime.mapNotNull { id -> allAnimeCategories.find { it.id.toString() == id } },
-                initialInversed = includedAnime.mapNotNull { allAnimeCategories.find { false } },
-                itemLabel = { it.visualName },
-                onDismissRequest = { showAnimeDialog = false },
-                onValueChanged = { newIncluded, _ ->
-                    discordRPCIncognitoCategoriesPref.set(
-                        newIncluded.fastMap { it.id.toString() }
-                            .toSet(),
-                    )
-                    showAnimeDialog = false
-                },
-                onlyChecked = true,
-            )
-        }
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.categories),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = discordRPCIncognitoPref,
-                    title = stringResource(AMR.strings.pref_discord_incognito),
-                    subtitle = stringResource(AMR.strings.pref_discord_incognito_summary),
+                    title = stringResource(KMR.strings.pref_discord_incognito),
+                    subtitle = stringResource(KMR.strings.pref_discord_incognito_summary),
                 ),
-                Preference.PreferenceItem.TextPreference(
+                Preference.PreferenceItem.MultiSelectListPreference(
+                    preference = discordRPCIncognitoCategoriesPref,
+                    entries = allCategories
+                        .associate { it.id.toString() to it.visualName }
+                        .toImmutableMap(),
                     title = stringResource(MR.strings.categories),
-                    subtitle = getCategoriesLabel(
-                        allCategories = allAnimeCategories,
-                        included = includedAnime,
-                    ),
-                    onClick = { showAnimeDialog = true },
                 ),
                 Preference.PreferenceItem.InfoPreference(
-                    stringResource(AMR.strings.pref_discord_incognito_categories_details),
+                    stringResource(KMR.strings.pref_discord_incognito_categories_details),
                 ),
             ),
             enabled = enabled,

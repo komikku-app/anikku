@@ -2,50 +2,7 @@
 <resources>
     <string name="pref_app_icon">App icon</string>
     <string name="pref_app_icon_toast">App icon changed to %s</string>
-    <!-- Connections section -->
-    <string name="special_services">Special Services</string>
-    <string name="pref_category_connections">Connections</string>
-    <string name="pref_connections_summary">Discord, more to come..</string>
-    <string name="connections_info">Special Services that are unique to Anikku and enhance the way you use the app</string>
-    <string name="connections_discord">Discord</string>
-    <string name="connections_discord_info">This Discord Service works through token logging. Use at your own risk. Your token is stored locally and Anikku does not share it anywhere else</string>
-    <string name="pref_discord_rpc">Discord Rich Presence</string>
-    <string name="show_chapters_titles_title">Show Episodes Titles</string>
-    <string name="show_chapters_titles_subtitle">Show the title of the episode you are watching</string>
-    <string name="pref_enable_discord_rpc">Enable Discord Rich Presence</string>
-    <string name="pref_discord_status">Discord Status</string>
-    <string name="pref_discord_dnd">⛔ Do Not Disturb</string>
-    <string name="pref_discord_idle">🌙 Idle</string>
-    <string name="pref_discord_online">🟢 Online</string>
-    <string name="pref_category_discord_incognito">RPC Incognito</string>
-    <string name="pref_discord_incognito">Discord Incognito mode</string>
-    <string name="pref_discord_incognito_summary">Overridden when Incognito Mode is enabled</string>
-    <string name="pref_discord_incognito_categories_details">Entries in included categories will not be displayed in Discord</string>
-    <string name="discord_accounts">Discord Accounts</string>
-    <string name="active_account">Active Account</string>
-    <string name="no_accounts_found">No accounts found</string>
     <string name="episode_progress_short">%1$s/%2$s</string>
-
-    <!-- Discord section -->
-    <string name="browsing">Browsing</string>
-    <string name="scrolling">Scrolling through</string>
-    <string name="messing">Messing around with</string>
-    <string name="video">Video</string>
-
-    <!-- Discord RPC Customization -->
-    <string name="pref_category_discord_customization">Discord Customization</string>
-    <string name="pref_discord_custom_message">Custom Message</string>
-    <string name="pref_discord_custom_message_summary">Custom message that will be displayed on Discord</string>
-    <string name="pref_discord_show_progress">Show Progress</string>
-    <string name="pref_discord_show_progress_summary">Display the current episode progress</string>
-    <string name="pref_discord_show_timestamp">Show Time</string>
-    <string name="pref_discord_show_timestamp_summary">Display elapsed/remaining time</string>
-    <string name="pref_discord_show_buttons">Show Buttons</string>
-    <string name="pref_discord_show_buttons_summary">Display buttons to download the app or join the Discord server</string>
-    <string name="pref_discord_show_download_button">Show Download Button</string>
-    <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
-    <string name="pref_discord_show_discord_button">Show Discord Button</string>
-    <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
 
     <!-- Torrent -->
     <string name="install_amnis">Amnis Player needs to be installed</string>
@@ -208,6 +165,15 @@
     <string name="download_cache_renew_interval_info_anime">If set to "manual", either refresh each anime or using the "Reindex downloads" action in "Advanced"</string>
     <string name="pref_top_align_cover_summary_anime">Show the cover aligned to the top alongside anime info</string>
     <string name="pref_anime_info">Anime Info</string>
+
+        <!-- Discord section -->
+    <string name="discord_download_button_anime">Watch on %s</string>
+    <string name="discord_app_description_anime">Anikku - an anime watching app</string>
+    <string name="show_episodes_titles_title">Show Episodes Titles</string>
+    <string name="show_episodes_titles_subtitle">Show the title of the episode you are watching</string>
+    <string name="video">Video</string>
+    <string name="pref_discord_show_progress_summary_episode">Display the current episode progress</string>
+    <string name="pref_discord_show_timestamp_summary_episode">Display elapsed/remaining time</string>
 
         <!-- Aniyomi -->
     <string name="pref_library_summary_episode">Categories, global update, episode swipe</string>

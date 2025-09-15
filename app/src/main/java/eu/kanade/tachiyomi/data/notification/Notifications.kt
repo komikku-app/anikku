@@ -194,11 +194,6 @@ object Notifications {
                     setName("Torrent server")
                     setShowBadge(false)
                 },
-                // AM (DISCORD) -->
-                buildNotificationChannel(CHANNEL_DISCORD_RPC, IMPORTANCE_LOW) {
-                    setName(context.getString(R.string.pref_discord_rpc))
-                },
-                // <-- AM (DISCORD)
                 buildNotificationChannel(CHANNEL_APP_UPDATE, IMPORTANCE_DEFAULT) {
                     setGroup(GROUP_APK_UPDATES)
                     setName(context.stringResource(MR.strings.channel_app_updates))
@@ -207,6 +202,11 @@ object Notifications {
                     setGroup(GROUP_APK_UPDATES)
                     setName(context.stringResource(MR.strings.channel_ext_updates))
                 },
+                // AM (DISCORD) -->
+                buildNotificationChannel(CHANNEL_DISCORD_RPC, IMPORTANCE_LOW) {
+                    setName(context.getString(R.string.pref_discord_rpc))
+                },
+                // <-- AM (DISCORD)
             ),
         )
     }

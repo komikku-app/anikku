@@ -7,16 +7,16 @@ package eu.kanade.tachiyomi.data.connections.discord
 import android.graphics.Color
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.ConnectionsService
+import exh.log.xLogE
 import kotlinx.serialization.json.Json
-import logcat.LogPriority
-import tachiyomi.core.common.util.system.logcat
-import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
+import timber.log.Timber
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class Discord(id: Long) : ConnectionsService(id) {
 
-    override fun nameStrRes() = AMR.strings.connections_discord
+    override fun nameStrRes() = KMR.strings.connections_discord
 
     override fun getLogo() = R.drawable.ic_discord_24dp
 
@@ -32,6 +32,13 @@ class Discord(id: Long) : ConnectionsService(id) {
         // Not Needed
     }
 
+    override val isLogged: Boolean
+        get() = getToken().isNotBlank()
+
+    override fun getToken(): String {
+        return connectionsPreferences.connectionsToken(this).get()
+    }
+
     private val json = Injekt.get<Json>()
 
     fun getAccounts(): List<DiscordAccount> {
@@ -43,13 +50,13 @@ class Discord(id: Long) : ConnectionsService(id) {
                 emptyList()
             }
         } catch (e: Exception) {
+            Timber.e(e, "Failed to parse Discord accounts")
             emptyList()
         }
     }
 
     fun addAccount(account: DiscordAccount) {
         val accounts = getAccounts().toMutableList()
-        logcat(LogPriority.DEBUG) { "Debug: Adding account: $account" }
 
         if (account.isActive) {
             accounts.replaceAll { it.copy(isActive = false) }
@@ -63,7 +70,6 @@ class Discord(id: Long) : ConnectionsService(id) {
             accounts.add(account)
         }
 
-        logcat(LogPriority.DEBUG) { "Debug: Updated accounts: $accounts" } // Debug log
         saveAccounts(accounts)
     }
 
@@ -77,19 +83,15 @@ class Discord(id: Long) : ConnectionsService(id) {
         val accounts = getAccounts().toMutableList()
         accounts.replaceAll { it.copy(isActive = it.id == accountId) }
         saveAccounts(accounts)
-        // Update active token and restart RPC
+        // Update active token (should restart RPC later)
         accounts.find { it.id == accountId }?.let { account ->
             connectionsPreferences.connectionsToken(this).set(account.token)
-            // Trigger RPC restart
-            connectionsPreferences.enableDiscordRPC().set(false)
-            connectionsPreferences.enableDiscordRPC().set(true)
         }
     }
 
-    fun restartRichPresence() {
-        // Trigger RPC restart by toggling the preference
-        connectionsPreferences.enableDiscordRPC().set(false)
-        connectionsPreferences.enableDiscordRPC().set(true)
+    fun restartRichPresence(context: android.content.Context) {
+        // Direct restart via service intent
+        DiscordRPCService.restart(context)
     }
 
     private fun saveAccounts(accounts: List<DiscordAccount>) {
@@ -97,7 +99,7 @@ class Discord(id: Long) : ConnectionsService(id) {
             val accountsJson = json.encodeToString(accounts)
             connectionsPreferences.discordAccounts().set(accountsJson)
         } catch (e: Exception) {
-            e.printStackTrace()
+            xLogE("Failed to save Discord accounts", e)
         }
     }
 }

@@ -418,6 +418,7 @@ data object LibraryTab : Tab {
         LaunchedEffect(state.isLoading) {
             if (!state.isLoading) {
                 (context as? MainActivity)?.ready = true
+
                 // AM (DISCORD) -->
                 with(DiscordRPCService) {
                     discordScope.launchIO { setScreen(context, DiscordScreen.LIBRARY) }

@@ -273,11 +273,13 @@ class PlayerActivity : BaseActivity() {
                 }
             }
             .launchIn(lifecycleScope)
+
+        // AM (DISCORD) -->
         viewModel.viewModelScope.launchIO {
-            // AM (DISCORD) -->
             updateDiscordRPC(exitingPlayer = false)
-            // <-- AM (DISCORD)
         }
+        // <-- AM (DISCORD)
+
         // Cast -->
         castManager
         // <-- Cast
@@ -348,7 +350,9 @@ class PlayerActivity : BaseActivity() {
         // Maintain active Cast session
         castManager.maintainCastSessionBackground()
 
-        updateDiscordRPC(exitingPlayer = false)
+        // AM (DISCORD) -->
+        updateDiscordRPC(exitingPlayer = true)
+        // <-- AM (DISCORD)
 
         if (isInPictureInPictureMode) {
             super.onPause()
@@ -433,7 +437,10 @@ class PlayerActivity : BaseActivity() {
                 if (it != -1f) viewModel.changeBrightnessTo(it)
             }
         }
+
+        // AM (DISCORD) -->
         updateDiscordRPC(exitingPlayer = false)
+        // <-- AM (DISCORD)
 
         castManager.apply {
             // Register session listener cast
@@ -689,7 +696,9 @@ class PlayerActivity : BaseActivity() {
             registerSessionListener()
         }
 
+        // AM (DISCORD) -->
         updateDiscordRPC(exitingPlayer = false)
+        // <-- AM (DISCORD)
 
         if (!player.isExiting) {
             super.onResume()
@@ -764,7 +773,9 @@ class PlayerActivity : BaseActivity() {
                     setPictureInPictureParams(createPipParams())
                 }
 
+                // AM (DISCORD) -->
                 updateDiscordRPC(exitingPlayer = false)
+                // <-- AM (DISCORD)
             }
 
             "paused-for-cache" -> {
@@ -1183,7 +1194,10 @@ class PlayerActivity : BaseActivity() {
                 ),
             )
         }
+
+        // AM (DISCORD) -->
         updateDiscordRPC(exitingPlayer = false)
+        // <-- AM (DISCORD)
     }
 
     private fun torrentLinkHandler(videoUrl: String, quality: String) {

@@ -80,7 +80,6 @@ import eu.kanade.tachiyomi.data.LibraryUpdateStatus
 import eu.kanade.tachiyomi.data.SyncStatus
 import eu.kanade.tachiyomi.data.coil.MangaCoverMetadata
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
-import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
@@ -326,12 +325,10 @@ class MainActivity : BaseActivity() {
                         .onEach {
                             with(DiscordRPCService) {
                                 discordScope.launchIO {
-                                    stop(this@MainActivity.applicationContext, 0L)
-                                    start(this@MainActivity.applicationContext)
-                                    setScreen(this@MainActivity, DiscordScreen.LIBRARY)
+                                    restart(this@MainActivity.applicationContext)
                                 }
                             }
-                        }
+                        }.launchIn(this)
                     // <-- AM (DISCORD)
                 }
 

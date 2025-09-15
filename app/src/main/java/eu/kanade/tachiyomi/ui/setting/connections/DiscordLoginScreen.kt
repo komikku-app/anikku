@@ -45,7 +45,6 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordAccount
 import eu.kanade.tachiyomi.network.NetworkHelper
-import eu.kanade.tachiyomi.util.defaultJson
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
 import eu.kanade.tachiyomi.util.system.toast
@@ -53,12 +52,14 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -187,7 +188,7 @@ class DiscordLoginScreen : Screen() {
                 Box {
                     Column {
                         AppBar(
-                            title = stringResource(MR.strings.login_title, stringResource(AMR.strings.connections_discord)),
+                            title = stringResource(MR.strings.login_title, stringResource(KMR.strings.connections_discord)),
                             subtitle = currentUrl,
                             navigateUp = { navigator.pop() },
                             actions = {
@@ -214,7 +215,7 @@ class DiscordLoginScreen : Screen() {
                                 .align(Alignment.BottomCenter),
                         )
                         is LoadingState.Loading -> LinearProgressIndicator(
-                            progress = { (loadingState as? LoadingState.Loading)?.progress ?: 1f },
+                            progress = { loadingState.progress },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter),
@@ -271,6 +272,7 @@ class DiscordLoginScreen : Screen() {
         val connectionsManager: ConnectionsManager by lazy { Injekt.get() }
         val connectionsPreferences: ConnectionsPreferences by lazy { Injekt.get() }
         val networkHelper: NetworkHelper by lazy { Injekt.get() }
+        val json: Json by lazy { Injekt.get<Json>() }
 
         @Suppress("OPT_IN_USAGE")
         launchIO {
@@ -283,7 +285,7 @@ class DiscordLoginScreen : Screen() {
                 ).execute().use { response ->
                     if (response.isSuccessful) {
                         val body = response.body.string()
-                        val account = defaultJson.decodeFromString<DiscordAccount>(body)
+                        val account = json.decodeFromString<DiscordAccount>(body)
                             .copy(
                                 token = token,
                                 isActive = true,

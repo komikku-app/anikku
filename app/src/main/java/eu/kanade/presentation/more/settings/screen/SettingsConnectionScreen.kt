@@ -49,17 +49,18 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object SettingsConnectionScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = SettingsConnectionScreen
 
     @ReadOnlyComposable
     @Composable
-    override fun getTitleRes() = AMR.strings.pref_category_connections
+    override fun getTitleRes() = KMR.strings.pref_category_connections
 
     @Composable
     override fun getPreferences(): List<Preference> {
@@ -81,7 +82,7 @@ object SettingsConnectionScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceGroup(
-                title = stringResource(AMR.strings.special_services),
+                title = stringResource(KMR.strings.special_services),
                 preferenceItems = persistentListOf(
                     Preference.PreferenceItem.ConnectionPreference(
                         title = stringResource(connectionsManager.discord.nameStrRes()),
@@ -91,11 +92,13 @@ object SettingsConnectionScreen : SearchableSettings {
                         },
                         openSettings = { navigator.push(SettingsDiscordScreen) },
                     ),
-                    Preference.PreferenceItem.InfoPreference(
-                        stringResource(AMR.strings.connections_discord_info),
+                    Preference.PreferenceItem.TextPreference(
+                        title = stringResource(KMR.strings.pref_discord_configuration),
+                        enabled = connectionsManager.discord.isLogged,
+                        onClick = { navigator.push(SettingsDiscordScreen) },
                     ),
                     Preference.PreferenceItem.InfoPreference(
-                        stringResource(AMR.strings.connections_info),
+                        stringResource(KMR.strings.connections_discord_info, stringResource(MR.strings.app_name)),
                     ),
                 ),
             ),
