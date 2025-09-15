@@ -121,7 +121,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="?selectableItemBackgroundBorderless"
-                android:contentDescription="@string/fetch_chapter_updates"
+                android:contentDescription="@string/fetch_episode_updates"
                 android:padding="8dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"

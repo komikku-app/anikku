@@ -31,6 +31,7 @@ import exh.source.MERGED_SOURCE_ID
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -133,8 +134,8 @@ class EditMergedSettingsState(
 
     override fun onToggleChapterUpdatesClicked(position: Int) {
         MaterialAlertDialogBuilder(context)
-            .setTitle(SYMR.strings.chapter_updates_merged_entry.getString(context))
-            .setMessage(SYMR.strings.chapter_updates_merged_entry_desc.getString(context))
+            .setTitle(AMR.strings.episode_updates_merged_entry.getString(context))
+            .setMessage(AMR.strings.episode_updates_merged_entry_desc.getString(context))
             .setPositiveButton(MR.strings.action_ok.getString(context)) { _, _ ->
                 toggleChapterUpdates(position)
             }
@@ -155,7 +156,7 @@ class EditMergedSettingsState(
                 if (it is EditMergedMangaHolder) {
                     it.updateChapterUpdatesIcon(!reference.getChapterUpdates)
                 }
-            } ?: context.toast(SYMR.strings.merged_chapter_updates_error)
+            } ?: context.toast(AMR.strings.merged_episode_updates_error)
 
             manga to reference.copy(getChapterUpdates = !reference.getChapterUpdates)
         }
@@ -163,8 +164,8 @@ class EditMergedSettingsState(
 
     override fun onToggleChapterDownloadsClicked(position: Int) {
         MaterialAlertDialogBuilder(context)
-            .setTitle(SYMR.strings.download_merged_entry.getString(context))
-            .setMessage(SYMR.strings.download_merged_entry_desc.getString(context))
+            .setTitle(AMR.strings.download_merged_anime_entry.getString(context))
+            .setMessage(AMR.strings.download_merged_anime_entry_desc.getString(context))
             .setPositiveButton(MR.strings.action_ok.getString(context)) { _, _ ->
                 toggleChapterDownloads(position)
             }
@@ -185,7 +186,7 @@ class EditMergedSettingsState(
                 if (it is EditMergedMangaHolder) {
                     it.updateDownloadChaptersIcon(!reference.downloadChapters)
                 }
-            } ?: context.toast(SYMR.strings.merged_toggle_download_chapters_error)
+            } ?: context.toast(AMR.strings.merged_toggle_download_episodes_error)
 
             manga to reference.copy(downloadChapters = !reference.downloadChapters)
         }

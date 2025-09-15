@@ -379,8 +379,8 @@ object SettingsAdvancedScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = libraryPreferences.updateMangaTitles(),
-                    title = stringResource(AMR.strings.pref_update_library_manga_titles),
-                    subtitle = stringResource(AMR.strings.pref_update_library_manga_titles_summary),
+                    title = stringResource(AMR.strings.pref_update_library_anime_titles),
+                    subtitle = stringResource(AMR.strings.pref_update_library_anime_titles_summary),
                 ),
             ),
         )

@@ -93,7 +93,7 @@ class ClearDatabaseScreen : Screen() {
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
-                                        text = stringResource(AMR.strings.clear_db_exclude_read),
+                                        text = stringResource(AMR.strings.clear_db_exclude_seen),
                                         modifier = Modifier.weight(1f),
                                     )
                                     Switch(
@@ -103,7 +103,7 @@ class ClearDatabaseScreen : Screen() {
                                 }
                                 if (!keepReadManga) {
                                     Text(
-                                        text = stringResource(AMR.strings.clear_database_history_warning),
+                                        text = stringResource(AMR.strings.clear_database_seen_history_warning),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error,
                                     )

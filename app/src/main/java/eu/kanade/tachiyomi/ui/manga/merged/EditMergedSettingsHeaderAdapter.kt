@@ -15,6 +15,7 @@ import exh.log.xLogD
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.source.service.SourceManager
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.sy.SYMR
 import uy.kohesive.injekt.injectLazy
 
@@ -58,8 +59,8 @@ class EditMergedSettingsHeaderAdapter(
                 listOfNotNull(
                     itemView.context.stringResource(SYMR.strings.no_dedupe),
                     itemView.context.stringResource(SYMR.strings.dedupe_priority),
-                    itemView.context.stringResource(SYMR.strings.dedupe_most_chapters),
-                    itemView.context.stringResource(SYMR.strings.dedupe_highest_chapter),
+                    itemView.context.stringResource(AMR.strings.dedupe_most_episodes),
+                    itemView.context.stringResource(AMR.strings.dedupe_highest_episode),
                 ),
                 // KMK -->
                 colorScheme,

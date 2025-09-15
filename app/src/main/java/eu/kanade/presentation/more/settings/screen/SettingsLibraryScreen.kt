@@ -301,7 +301,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = libraryPreferences.hideMissingChapters(),
-                    title = stringResource(MR.strings.pref_hide_missing_chapter_indicators),
+                    title = stringResource(AMR.strings.pref_hide_missing_episode_indicators),
                 ),
             ),
         )

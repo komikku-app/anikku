@@ -378,7 +378,7 @@ private fun ColumnScope.DisplayPage(
         pref = screenModel.libraryPreferences.downloadBadge(),
     )
     CheckboxItem(
-        label = stringResource(AMR.strings.action_display_unread_badge),
+        label = stringResource(AMR.strings.action_display_unseen_badge),
         pref = screenModel.libraryPreferences.unreadBadge(),
     )
     CheckboxItem(
