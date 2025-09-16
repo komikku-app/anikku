@@ -19,7 +19,7 @@ seeker = { module = "io.github.2307vivek:seeker", version.ref = "seeker" }
 truetypeparser = { module = "io.github.yubyf:truetypeparser-light", version.ref = "truetypeparser" }
 
 torrentserver = "com.github.Diegopyl1209:torrentserver-aniyomi:c18f58e51b"
-media-router = "androidx.mediarouter:mediarouter:1.7.0"
+media-router = "androidx.mediarouter:mediarouter:1.8.1"
 cast-play-services = "com.google.android.gms:play-services-cast-framework:22.1.0"
 
 [bundles]
