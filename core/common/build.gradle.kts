@@ -54,11 +54,7 @@ dependencies {
     implementation(libs.bundles.js.engine)
 
     // FFmpeg-kit
-    implementation(libs.ffmpeg.kit)
-
-    implementation(libs.injekt)
-
-    implementation(libs.torrentserver)
+    implementation(aniyomilibs.ffmpeg.kit)
 
     // Tests
     testImplementation(libs.bundles.test)
@@ -68,4 +64,10 @@ dependencies {
     implementation(sylibs.xlog)
     implementation(sylibs.exifinterface)
     // SY <--
+
+    implementation(libs.injekt)
+    implementation(aniyomilibs.torrentserver)
+
+    // Tests
+    testImplementation(libs.bundles.test)
 }

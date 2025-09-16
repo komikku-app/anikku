@@ -1,3 +1,4 @@
+-allowaccessmodification
 -dontusemixedcaseclassnames
 -ignorewarnings
 -verbose

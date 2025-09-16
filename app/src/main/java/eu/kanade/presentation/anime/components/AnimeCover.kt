@@ -1,3 +1,5 @@
+@file:Suppress("PropertyName")
+
 package eu.kanade.presentation.anime.components
 
 import androidx.annotation.ColorInt

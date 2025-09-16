@@ -7,8 +7,8 @@
 package eu.kanade.tachiyomi.data.connections.discord
 
 import androidx.annotation.StringRes
-import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.util.system.isPreviewBuildType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -176,13 +176,13 @@ enum class DiscordScreen(
     @StringRes val details: Int,
     val imageUrl: String,
 ) {
-    APP(R.string.app_name, R.string.browsing, ANIMETAIL_IMAGE),
-    LIBRARY(R.string.label_library, R.string.browsing, LIBRARY_IMAGE_URL),
-    UPDATES(R.string.label_recent_updates, R.string.scrolling, UPDATES_IMAGE_URL),
-    HISTORY(R.string.label_recent_manga, R.string.scrolling, HISTORY_IMAGE_URL),
-    BROWSE(R.string.label_sources, R.string.browsing, BROWSE_IMAGE_URL),
-    MORE(R.string.label_settings, R.string.messing, MORE_IMAGE_URL),
-    WEBVIEW(R.string.action_web_view, R.string.browsing, WEBVIEW_IMAGE_URL),
+    APP(R.string.app_name, R.string.discord_status_using, ANIMETAIL_IMAGE),
+    LIBRARY(R.string.label_library, R.string.discord_status_browsing, LIBRARY_IMAGE_URL),
+    UPDATES(R.string.label_recent_updates, R.string.discord_status_scrolling, UPDATES_IMAGE_URL),
+    HISTORY(R.string.label_recent_manga, R.string.discord_status_scrolling, HISTORY_IMAGE_URL),
+    BROWSE(R.string.label_sources, R.string.discord_status_browsing, BROWSE_IMAGE_URL),
+    MORE(R.string.label_settings, R.string.discord_status_messing, MORE_IMAGE_URL),
+    WEBVIEW(R.string.action_web_view, R.string.discord_status_browsing, WEBVIEW_IMAGE_URL),
     VIDEO(R.string.video, R.string.watching, VIDEO_IMAGE_URL),
     MANGA(R.string.manga, R.string.reading, MANGA_IMAGE_URL),
 }
@@ -191,7 +191,7 @@ enum class DiscordScreen(
 // change the image Urls used here to match animetail brown/ green theme, Luft
 private const val ANIMETAIL_IMAGE_URL = "emojis/1286834441981005824.webp?quality=lossless"
 private const val ANIMETAIL_PREVIEW_IMAGE_URL = "emojis/1286834519533420544.webp?quality=lossless"
-private val ANIMETAIL_IMAGE = if (BuildConfig.PREVIEW == true) ANIMETAIL_PREVIEW_IMAGE_URL else ANIMETAIL_IMAGE_URL
+private val ANIMETAIL_IMAGE = if (isPreviewBuildType) ANIMETAIL_PREVIEW_IMAGE_URL else ANIMETAIL_IMAGE_URL
 private const val LIBRARY_IMAGE_URL = "emojis/1235353629867638924.webp?quality=lossless"
 private const val UPDATES_IMAGE_URL = "emojis/1235354596570955917.webp?quality=lossless"
 private const val HISTORY_IMAGE_URL = "emojis/1235354299089817671.webp?quality=lossless"

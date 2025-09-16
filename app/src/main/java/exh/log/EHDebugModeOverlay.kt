@@ -32,6 +32,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import java.text.DecimalFormat
@@ -98,7 +99,7 @@ private fun buildInfo(context: Context) = buildAnnotatedString {
     }
     append('\n')
     appendItem("Build type:", BuildConfig.BUILD_TYPE)
-    appendItem("Debug mode:", BuildConfig.DEBUG.asEnabledString())
+    appendItem("Debug mode:", isDebugBuildType.asEnabledString())
     appendItem("Version code:", BuildConfig.VERSION_CODE.toString())
     appendItem("Commit SHA:", BuildConfig.COMMIT_SHA)
     appendItem("Log level:", EHLogLevel.currentLogLevel.name.lowercase(Locale.getDefault()))

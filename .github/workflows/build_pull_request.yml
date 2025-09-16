@@ -30,6 +30,7 @@ jobs:
           fetch-depth: 0
 
       - name: Dependency Review
+        if: github.repository == 'komikku-app/anikku'
         uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9 # v4.7.1
 
       - name: Validate Gradle Wrapper
@@ -64,16 +65,21 @@ jobs:
         run: ./gradlew spotlessCheck
 
       - name: Build app
-        run: ./gradlew assembleStandardRelease
+        if: github.repository == github.event.pull_request.head.repo.full_name
+        run: ./gradlew assemblePreview -Pinclude-telemetry -Penable-updater
+
+      - name: Build app
+        if: github.repository != github.event.pull_request.head.repo.full_name
+        run: ./gradlew assemblePreview
 
       - name: Run unit tests
-        run: ./gradlew testReleaseUnitTest testStandardReleaseUnitTest
+        run: ./gradlew testReleaseUnitTest
 
       - name: Sign APK
         if: github.repository == github.event.pull_request.head.repo.full_name
         uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
         with:
-          releaseDirectory: app/build/outputs/apk/standard/release
+          releaseDirectory: app/build/outputs/apk/preview
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -81,15 +87,34 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
 
+      - name: Signed File name
+        id: signed_filename
+        if: github.repository == github.event.pull_request.head.repo.full_name
+        run: |
+          echo "SIGNED_TRAIL=-signed" >> $GITHUB_OUTPUT
+
+      - name: Rename apk
+        id: current_commit
+        run: |
+          set -e
+          echo "The git ref is: ${{ github.ref }}"
+          version_tag=p$(echo ${{ github.ref }} | cut -d '/' -f 3)
+          commit_count=$(git rev-list --count HEAD)
+          echo "VERSION_TAG=$version_tag"
+          echo "VERSION_TAG=$version_tag" >> $GITHUB_OUTPUT
+          echo "COMMIT_COUNT=$commit_count"
+          echo "COMMIT_COUNT=$commit_count" >> $GITHUB_OUTPUT
+          mv app/build/outputs/apk/preview/app-universal-preview${{ steps.signed_filename.outputs.SIGNED_TRAIL }}.apk Anikku-$version_tag-r$commit_count.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: arm64-v8a-${{ github.sha }}
-          path: app/build/outputs/apk/standard/release/app-standard-universal-release-unsigned-signed.apk
+          name: Anikku-${{ steps.current_commit.outputs.VERSION_TAG }}-r${{ steps.current_commit.outputs.COMMIT_COUNT }}.apk
+          path: ./*.apk
           retention-days: 1
 
       - name: Upload mapping
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mapping-${{ github.sha }}
-          path: app/build/outputs/mapping/standardRelease
+          path: app/build/outputs/mapping/preview

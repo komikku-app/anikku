@@ -59,6 +59,8 @@ import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.animatorDurationScale
 import eu.kanade.tachiyomi.util.system.cancelNotification
+import eu.kanade.tachiyomi.util.system.isDebugBuildType
+import eu.kanade.tachiyomi.util.system.isPreviewBuildType
 import eu.kanade.tachiyomi.util.system.notify
 import exh.log.CrashlyticsPrinter
 import exh.log.EHLogLevel
@@ -70,9 +72,9 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import logcat.LogPriority
 import logcat.LogcatLogger
-import mihon.core.firebase.FirebaseConfig
 import mihon.core.migration.Migrator
 import mihon.core.migration.migrations.migrations
+import mihon.telemetry.TelemetryConfig
 import org.conscrypt.Conscrypt
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.Preference
@@ -101,10 +103,14 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     override fun onCreate() {
         super<Application>.onCreate()
         patchInjekt()
-        FirebaseConfig.init(applicationContext)
+        TelemetryConfig.init(
+            applicationContext,
+            isPreviewBuildType,
+            BuildConfig.COMMIT_COUNT,
+        )
 
         // KMK -->
-        if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
+        if (isDebugBuildType) Timber.plant(Timber.DebugTree())
         // KMK <--
 
         GlobalExceptionHandler.initialize(applicationContext, CrashActivity::class.java)
@@ -171,12 +177,12 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
         privacyPreferences.analytics()
             .changes()
-            .onEach(FirebaseConfig::setAnalyticsEnabled)
+            .onEach(TelemetryConfig::setAnalyticsEnabled)
             .launchIn(scope)
 
         privacyPreferences.crashlytics()
             .changes()
-            .onEach(FirebaseConfig::setCrashlyticsEnabled)
+            .onEach(TelemetryConfig::setCrashlyticsEnabled)
             .launchIn(scope)
 
         setAppCompatDelegateThemeMode(Injekt.get<UiPreferences>().themeMode().get())
@@ -305,7 +311,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
         val logLevel = when {
             EHLogLevel.shouldLog(EHLogLevel.EXTREME) -> LogLevel.ALL
-            EHLogLevel.shouldLog(EHLogLevel.EXTRA) || BuildConfig.DEBUG -> LogLevel.DEBUG
+            EHLogLevel.shouldLog(EHLogLevel.EXTRA) || isDebugBuildType -> LogLevel.DEBUG
             else -> LogLevel.WARN
         }
 
@@ -340,7 +346,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         }
 
         // Install Crashlytics in prod
-        if (!BuildConfig.DEBUG) {
+        if (!isDebugBuildType) {
             printers += CrashlyticsPrinter(LogLevel.ERROR)
         }
 
@@ -352,7 +358,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         xLogD("Application booting...")
         xLogD(
             """
-                App version: ${BuildConfig.VERSION_NAME} (${BuildConfig.FLAVOR}, ${BuildConfig.COMMIT_SHA}, ${BuildConfig.VERSION_CODE})
+                App version: ${BuildConfig.VERSION_NAME}, ${BuildConfig.COMMIT_SHA}, ${BuildConfig.VERSION_CODE})
                 Build version: ${BuildConfig.COMMIT_COUNT}
                 Android version: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})
                 Android build ID: ${Build.DISPLAY}

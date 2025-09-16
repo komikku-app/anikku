@@ -90,9 +90,11 @@ import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.util.system.dpToPx
+import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import eu.kanade.tachiyomi.util.system.isNavigationBarNeedsScrim
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
+import eu.kanade.tachiyomi.util.system.updaterEnabled
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -275,7 +277,7 @@ class MainActivity : BaseActivity() {
                 ShowOnboarding()
             }
 
-            var showChangelog by remember { mutableStateOf(didMigration && !BuildConfig.DEBUG) }
+            var showChangelog by remember { mutableStateOf(didMigration && !isDebugBuildType) }
             if (showChangelog) {
                 AlertDialog(
                     onDismissRequest = { showChangelog = false },
@@ -352,7 +354,7 @@ class MainActivity : BaseActivity() {
 
         // App updates
         LaunchedEffect(Unit) {
-            if (BuildConfig.INCLUDE_UPDATER) {
+            if (updaterEnabled) {
                 try {
                     // KMK -->
                     AppUpdateJob.setupTask(context)

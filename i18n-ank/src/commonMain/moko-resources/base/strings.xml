@@ -2,49 +2,7 @@
 <resources>
     <string name="pref_app_icon">App icon</string>
     <string name="pref_app_icon_toast">App icon changed to %s</string>
-    <!-- Connections section -->
-    <string name="special_services">Special Services</string>
-    <string name="pref_category_connections">Connections</string>
-    <string name="pref_connections_summary">Discord, more to come..</string>
-    <string name="connections_info">Special Services that are unique to Anikku and enhance the way you use the app</string>
-    <string name="connections_discord">Discord</string>
-    <string name="connections_discord_info">This Discord Service works through token logging. Use at your own risk. Your token is stored locally and Anikku does not share it anywhere else</string>
-    <string name="pref_discord_rpc">Discord Rich Presence</string>
-    <string name="show_chapters_titles_title">Show Episodes Titles</string>
-    <string name="show_chapters_titles_subtitle">Show the title of the episode you are watching</string>
-    <string name="pref_enable_discord_rpc">Enable Discord Rich Presence</string>
-    <string name="pref_discord_status">Discord Status</string>
-    <string name="pref_discord_dnd">⛔ Do Not Disturb</string>
-    <string name="pref_discord_idle">🌙 Idle</string>
-    <string name="pref_discord_online">🟢 Online</string>
-    <string name="pref_category_discord_incognito">RPC Incognito</string>
-    <string name="pref_discord_incognito">Discord Incognito mode</string>
-    <string name="pref_discord_incognito_summary">Overridden when Incognito Mode is enabled</string>
-    <string name="pref_discord_incognito_categories_details">Entries in included categories will not be displayed in Discord</string>
-    <string name="discord_accounts">Discord Accounts</string>
-    <string name="active_account">Active Account</string>
-    <string name="no_accounts_found">No accounts found</string>
-
-    <!-- Discord section -->
-    <string name="browsing">Browsing</string>
-    <string name="scrolling">Scrolling through</string>
-    <string name="messing">Messing around with</string>
-    <string name="video">Video</string>
-
-    <!-- Discord RPC Customization -->
-    <string name="pref_category_discord_customization">Discord Customization</string>
-    <string name="pref_discord_custom_message">Custom Message</string>
-    <string name="pref_discord_custom_message_summary">Custom message that will be displayed on Discord</string>
-    <string name="pref_discord_show_progress">Show Progress</string>
-    <string name="pref_discord_show_progress_summary">Display the current episode progress</string>
-    <string name="pref_discord_show_timestamp">Show Time</string>
-    <string name="pref_discord_show_timestamp_summary">Display elapsed/remaining time</string>
-    <string name="pref_discord_show_buttons">Show Buttons</string>
-    <string name="pref_discord_show_buttons_summary">Display buttons to download the app or join the Discord server</string>
-    <string name="pref_discord_show_download_button">Show Download Button</string>
-    <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
-    <string name="pref_discord_show_discord_button">Show Discord Button</string>
-    <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
 
     <!-- Torrent -->
     <string name="install_amnis">Amnis Player needs to be installed</string>
@@ -175,8 +133,8 @@
     <string name="possible_duplicates_title">Possible duplicates</string>
     <string name="possible_duplicates_summary">You have entries in your library with a similar name.\n\nSelect an entry to migrate or add anyway.</string>
     <string name="clear_database_text">You’re about to remove entries from the database</string>
-    <string name="clear_database_history_warning">Seen episodes and progress of non-library entries will be lost</string>
-    <string name="clear_db_exclude_read">Keep entries with seen episodes</string>
+    <string name="clear_database_seen_history_warning">Seen episodes and progress of non-library entries will be lost</string>
+    <string name="clear_db_exclude_seen">Keep entries with seen episodes</string>
     <string name="logging_in">Logging in…</string>
     <string name="storage_failed_to_create_download_directory">Failed to create download directory</string>
     <string name="storage_failed_to_create_directory">Failed to create directory: %s</string>
@@ -188,25 +146,45 @@
     <string name="non_library_watched_settings">All watched entries</string>
     <string name="channel_new_episodes">Episode updates</string>
     <string name="pref_incognito_watching_mode_extension_summary">Pause watching history for extension</string>
-    <string name="pref_library_update_show_tab_badge">Show unseen count on Updates icon</string>
+    <string name="pref_library_update_show_tab_badge_unseen">Show unseen count on Updates icon</string>
     <string name="pref_mark_duplicate_seen_episode_seen">Mark duplicate seen episode as seen</string>
     <string name="pref_mark_duplicate_seen_episode_seen_existing">After watching a episode</string>
     <string name="pref_mark_duplicate_seen_episode_seen_new">After fetching new episode</string>
-    <string name="action_display_unread_badge">Unseen episodes</string>
-    <string name="pref_update_library_manga_titles">Update library anime titles to match source</string>
-    <string name="pref_update_library_manga_titles_summary">Warning: if an anime is renamed, it will be removed from the download queue (if present).</string>
+    <string name="action_display_unseen_badge">Unseen episodes</string>
+    <string name="pref_update_library_anime_titles">Update library anime titles to match source</string>
+    <string name="pref_update_library_anime_titles_summary">Warning: if an anime is renamed, it will be removed from the download queue (if present).</string>
+    <string name="pref_hide_missing_episode_indicators">Hide missing episode indicators</string>
 
         <!-- SY -->
     <string name="sync_on_episode_seen">Sync on Episode Seen</string>
     <string name="sync_on_episode_open">Sync on Episode Open</string>
     <string name="include_all_seen_entries">Include all seen entries</string>
-    <string name="only_show_updated_entries_episodes">Only show entries with new episode</string>
+    <string name="only_show_updated_entries_episodes">Only show entries with new episodes</string>
+    <string name="use_most_episodes">Use source with the most episodes (slower)</string>
+    <string name="dedupe_most_episodes">Show source with most episodes</string>
+    <string name="dedupe_highest_episode">Show source with highest episode number</string>
+    <string name="episode_updates_merged_entry">Toggle episode updates</string>
+    <string name="episode_updates_merged_entry_desc">Toggling this will disable or enable episode updates for this merged entry</string>
+    <string name="merged_episode_updates_error">Toggle episode updates error</string>
+    <string name="fetch_episode_updates">Fetch episode updates</string>
+    <string name="merged_toggle_download_episodes_error">Toggle download episodes error</string>
+    <string name="download_merged_anime_entry">Toggle new episode downloads</string>
+    <string name="download_merged_anime_entry_desc">Toggling this will disable or enable episode downloads for this merged entry</string>
 
         <!-- Komikku -->
     <string name="sync_progress_from_trackers_up_to_episode">Sync progress from Trackers up to episode %d</string>
     <string name="download_cache_renew_interval_info_anime">If set to "manual", either refresh each anime or using the "Reindex downloads" action in "Advanced"</string>
     <string name="pref_top_align_cover_summary_anime">Show the cover aligned to the top alongside anime info</string>
     <string name="pref_anime_info">Anime Info</string>
+
+        <!-- Discord section -->
+    <string name="discord_download_button_anime">Watch on %s</string>
+    <string name="discord_app_description_anime">Anikku - an anime watching app</string>
+    <string name="show_episodes_titles_title">Show Episodes Titles</string>
+    <string name="show_episodes_titles_subtitle">Show the title of the episode you are watching</string>
+    <string name="video">Video</string>
+    <string name="pref_discord_show_progress_summary_episode">Display the current episode progress</string>
+    <string name="pref_discord_show_timestamp_summary_episode">Display elapsed/remaining time</string>
 
         <!-- Aniyomi -->
     <string name="pref_library_summary_episode">Categories, global update, episode swipe</string>

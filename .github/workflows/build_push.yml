@@ -101,15 +101,15 @@ jobs:
         run: ./gradlew spotlessCheck
 
       - name: Build app
-        run: ./gradlew assembleStandardRelease
+        run: ./gradlew assembleRelease -Pinclude-telemetry -Penable-updater
 
       - name: Run unit tests
-        run: ./gradlew testReleaseUnitTest testStandardReleaseUnitTest
+        run: ./gradlew testReleaseUnitTest
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
         with:
-          releaseDirectory: app/build/outputs/apk/standard/release
+          releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -127,7 +127,7 @@ jobs:
           echo "VERSION_TAG=$version_tag" >> $GITHUB_OUTPUT
           echo "COMMIT_COUNT=$commit_count"
           echo "COMMIT_COUNT=$commit_count" >> $GITHUB_OUTPUT
-          mv app/build/outputs/apk/standard/release/app-standard-universal-release-unsigned-signed.apk Anikku-$version_tag-r$commit_count.apk
+          mv app/build/outputs/apk/release/app-universal-release-unsigned-signed.apk Anikku-$version_tag-r$commit_count.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -140,4 +140,4 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mapping-${{ github.sha }}
-          path: app/build/outputs/mapping/standardRelease
+          path: app/build/outputs/mapping/release

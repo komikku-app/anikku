@@ -46,7 +46,7 @@ import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
@@ -200,8 +200,8 @@ object SettingsMainScreen : Screen() {
         ),
         // AM (CONNECTIONS) -->
         Item(
-            titleRes = AMR.strings.pref_category_connections,
-            subtitleRes = AMR.strings.pref_connections_summary,
+            titleRes = KMR.strings.pref_category_connections,
+            subtitleRes = KMR.strings.pref_connections_summary,
             icon = Icons.Outlined.Link,
             screen = SettingsConnectionsScreen,
         ),

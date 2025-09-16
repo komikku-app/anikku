@@ -13,7 +13,6 @@ import androidx.core.content.PermissionChecker
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
-import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.ui.setting.connections.DiscordLoginActivity
 import eu.kanade.tachiyomi.util.lang.truncateCenter
 import logcat.LogPriority
@@ -153,7 +152,7 @@ fun Context.isInstalledFromFDroid(): Boolean {
 
     return installerPackageName == "org.fdroid.fdroid" ||
         // F-Droid builds typically disable the updater
-        (!BuildConfig.INCLUDE_UPDATER && !isDevFlavor)
+        (!updaterEnabled && !isDebugBuildType)
 }
 
 fun Context.launchRequestPackageInstallsPermission() {

@@ -51,7 +51,7 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -59,7 +59,7 @@ object SettingsConnectionsScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
-    override fun getTitleRes() = AMR.strings.pref_category_connections
+    override fun getTitleRes() = KMR.strings.pref_category_connections
 
     @Composable
     override fun getPreferences(): List<Preference> {
@@ -94,9 +94,6 @@ object SettingsConnectionsScreen : SearchableSettings {
                     ),
                     Preference.PreferenceItem.InfoPreference(
                         stringResource(R.string.connections_discord_info),
-                    ),
-                    Preference.PreferenceItem.InfoPreference(
-                        stringResource(R.string.connections_info),
                     ),
                 ),
             ),

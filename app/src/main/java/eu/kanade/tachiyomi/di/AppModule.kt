@@ -7,7 +7,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import eu.kanade.domain.track.store.DelayedTrackingStore
-import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
@@ -22,6 +21,7 @@ import eu.kanade.tachiyomi.network.JavaScriptEngine
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.AndroidSourceManager
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
+import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
@@ -56,7 +56,7 @@ class AppModule(val app: Application) : InjektModule {
             schema = Database.Schema,
             context = app,
             name = "tachiyomi.animedb",
-            factory = if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            factory = if (isDebugBuildType && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 // Support database inspector in Android Studio
                 FrameworkSQLiteOpenHelperFactory()
             } else {
@@ -122,7 +122,7 @@ class AppModule(val app: Application) : InjektModule {
 
         addSingletonFactory { CoverCache(app) }
 
-        addSingletonFactory { NetworkHelper(app, get(), BuildConfig.DEBUG) }
+        addSingletonFactory { NetworkHelper(app, get(), isDebugBuildType) }
         addSingletonFactory { JavaScriptEngine(app) }
 
         addSingletonFactory<SourceManager> { AndroidSourceManager(app, get(), get()) }

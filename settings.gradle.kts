@@ -29,6 +29,9 @@ dependencyResolutionManagement {
         create("sylibs") {
             from(files("gradle/sy.versions.toml"))
         }
+        create("aniyomilibs") {
+            from(files("gradle/aniyomi.versions.toml"))
+        }
     }
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -48,6 +51,7 @@ include(":core:common")
 include(":data")
 include(":domain")
 include(":i18n")
+include(":i18n-aniyomi")
 // KMK -->
 include(":i18n-kmk")
 include(":i18n-ank")
@@ -61,3 +65,4 @@ include(":presentation-core")
 include(":presentation-widget")
 include(":source-api")
 include(":source-local")
+include(":telemetry")
