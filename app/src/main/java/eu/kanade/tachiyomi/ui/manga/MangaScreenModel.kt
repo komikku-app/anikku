@@ -1872,7 +1872,7 @@ class MangaScreenModel(
         // SY <--
 
         // KMK -->
-        data class ClearManga(val isMergedSource: Boolean) : Dialog
+        data object ClearManga : Dialog
         // KMK <--
 
         data object ChangeAnimeSkipIntro : Dialog
@@ -1938,8 +1938,8 @@ class MangaScreenModel(
     // SY <--
 
     // KMK -->
-    fun showClearMangaDialog(isMergedSource: Boolean) {
-        updateSuccessState { it.copy(dialog = Dialog.ClearManga(isMergedSource)) }
+    fun showClearMangaDialog() {
+        updateSuccessState { it.copy(dialog = Dialog.ClearManga) }
     }
     // KMK <--
 

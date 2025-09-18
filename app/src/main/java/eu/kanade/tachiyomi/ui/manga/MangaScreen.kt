@@ -413,7 +413,7 @@ class MangaScreen(
             onClickSourceSettingsClicked = {
                 navigator.push(SourcePreferencesScreen(successState.source.id))
             }.takeIf { isConfigurableSource },
-            onClearManga = { screenModel.showClearMangaDialog(successState.source is MergedSource) },
+            onClearManga = { screenModel.showClearMangaDialog() },
             onOpenMangaFolder = { screenModel.openMangaFolder() }
                 .takeIf { successState.source !is StubSource && successState.source !is MergedSource },
             onRelatedMangasScreenClick = {
@@ -677,7 +677,6 @@ class MangaScreen(
             // KMK -->
             is MangaScreenModel.Dialog.ClearManga -> {
                 ClearMangaDialog(
-                    isMergedSource = dialog.isMergedSource,
                     onDismissRequest = onDismissRequest,
                     onConfirm = screenModel::clearManga,
                 )
