@@ -1,15 +1,16 @@
 package eu.kanade.tachiyomi.torrentServer
 
-import dev.icerock.moko.graphics.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.torrentServer.model.Torrent
 import eu.kanade.tachiyomi.torrentServer.model.TorrentRequest
 import kotlinx.serialization.json.Json
+import logcat.LogPriority
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
+import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.InputStream
 
@@ -22,7 +23,7 @@ object TorrentServerApi {
         return try {
             network.client.newCall(GET("$hostUrl/echo")).execute().body.string()
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) println(e.message)
+            logcat(LogPriority.DEBUG) { e.toString() }
             ""
         }
     }
@@ -32,7 +33,7 @@ object TorrentServerApi {
         return try {
             network.client.newCall(GET("$hostUrl/shutdown")).execute().body.string()
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) println(e.message)
+            logcat(LogPriority.DEBUG) { e.toString() }
             ""
         }
     }
