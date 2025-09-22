@@ -302,7 +302,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.imagesInDescription(),
-                    title = stringResource(MR.strings.pref_display_images_description),
+                    title = stringResource(AMR.strings.pref_display_images_description_anime),
                 ),
             ),
         )
