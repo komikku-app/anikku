@@ -130,8 +130,8 @@
     <string name="default_anime_category">Domyślna kategoria anime</string>
     <string name="pref_manga_library_update_categories_details">Tytuły w wykluczonych kategoriach nie będą aktualizowane, nawet jeśli są również w uwzględnionych kategoriach.</string>
     <string name="pref_anime_library_update_categories_details">Anime w wykluczonych kategoriach nie będzie aktualizowane, nawet jeśli znajdują się również w uwzględnionych kategoriach.</string>
-    <string name="unofficial_extension_message_aniyomi">To rozszerzenie nie pochodzi z oficjalnej listy rozszerzeń Aniyomi.</string>
-    <string name="unofficial_anime_extension_message">To rozszerzenie nie pochodzi z oficjalnej listy rozszerzeń Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">To rozszerzenie nie pochodzi z oficjalnej listy rozszerzeń Anikku.</string>
+    <string name="unofficial_anime_extension_message">To rozszerzenie nie pochodzi z oficjalnej listy rozszerzeń Anikku.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">Wykluczone kategorie</string>
     <string name="pref_remove_exclude_categories_anime">Wyłączone kategorie anime</string>

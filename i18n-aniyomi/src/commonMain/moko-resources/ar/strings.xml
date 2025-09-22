@@ -298,7 +298,7 @@
     <string name="default_anime_category">تصنيف الأنمي الإفتراضي</string>
     <string name="pref_manga_library_update_categories_details">المانجا في الفئات المستبعدة لن يتم تحديثها حتى وإن كانت أيضا في الفئات المضمنة.</string>
     <string name="pref_anime_library_update_categories_details">لن يتم تحديث الأنيمي في الفئات المستبعدة حتى لو كانت في الفئات المضمنة أيضًا.</string>
-    <string name="unofficial_extension_message_aniyomi">هذا الامتداد ليس من قائمة ملحقات \"Aniyomi\" الرسمية.</string>
+    <string name="unofficial_extension_message_aniyomi">هذا الامتداد ليس من قائمة ملحقات \"Anikku\" الرسمية.</string>
     <string name="unofficial_anime_extension_message">هذا الملحق ليس من قائمة ملحقات انيومي الرسمية.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">فئات المستثناة</string>
@@ -411,7 +411,7 @@
     <string name="unseen">إزالة المشاهدة</string>
     <string name="label_manga_extension_repos">مخزن إضافة المانغا</string>
     <string name="label_anime_extension_repos">مخزن إضافة الأنمي</string>
-    <string name="onboarding_storage_action_create_folder">إنشاء مجلد Aniyomi افتراضي</string>
+    <string name="onboarding_storage_action_create_folder">إنشاء مجلد Anikku افتراضي</string>
     <string name="download_speed_limit">حد سرعة التنزيل</string>
     <string name="download_speed_limit_hint">اضبطه على 0 لتعطيل حد السرعة.</string>
 </resources>

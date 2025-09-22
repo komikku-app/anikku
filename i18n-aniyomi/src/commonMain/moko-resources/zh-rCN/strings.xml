@@ -302,8 +302,8 @@
     <string name="default_anime_category">默认动画分类</string>
     <string name="pref_manga_library_update_categories_details">排除优先于包含，同时属于包含和排除分类的漫画不会自动更新。</string>
     <string name="pref_anime_library_update_categories_details">排除优先于包含，同时属于包含和排除分类的动画不会自动更新。</string>
-    <string name="unofficial_extension_message_aniyomi">此插件不是 Aniyomi 官方插件。</string>
-    <string name="unofficial_anime_extension_message">此插件不是Aniyomi官方插件。</string>
+    <string name="unofficial_extension_message_aniyomi">此插件不是 Anikku 官方插件。</string>
+    <string name="unofficial_anime_extension_message">此插件不是Anikku官方插件。</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">排除的漫画分类</string>
     <string name="pref_remove_exclude_categories_anime">排除的动画分类</string>
@@ -415,7 +415,7 @@
     <string name="unseen">未看</string>
     <string name="label_manga_extension_repos">漫画插件仓库</string>
     <string name="label_anime_extension_repos">动画插件仓库</string>
-    <string name="onboarding_storage_action_create_folder">创建默认 Aniyomi 文件夹</string>
+    <string name="onboarding_storage_action_create_folder">创建默认 Anikku 文件夹</string>
     <string name="download_speed_limit">限速下载</string>
     <string name="download_speed_limit_hint">归零则取消限速。</string>
 </resources>

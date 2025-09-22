@@ -302,8 +302,8 @@
     <string name="default_anime_category">Kategori anime standar default</string>
     <string name="pref_manga_library_update_categories_details">Manga dalam kategori yang dikecualikan tidak akan diperbarui meskipun masuk dalam kategori yang disertakan.</string>
     <string name="pref_anime_library_update_categories_details">Anime dalam kategori yang dikecualikan tidak akan diperbarui meskipun masuk dalam kategori yang disertakan.</string>
-    <string name="unofficial_extension_message_aniyomi">Ektension ini bukan dari daftar ekstension official Aniyomi.</string>
-    <string name="unofficial_anime_extension_message">Ekstensi ini bukan dari daftar ekstensi resmi Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Ektension ini bukan dari daftar ekstension official Anikku.</string>
+    <string name="unofficial_anime_extension_message">Ekstensi ini bukan dari daftar ekstensi resmi Anikku.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">Kategori yang dikecualikan</string>
     <string name="pref_remove_exclude_categories_anime">Kategori anime yang dikecualikan</string>
@@ -415,7 +415,7 @@
     <string name="unseen">Tak terlihat</string>
     <string name="label_manga_extension_repos">Repo ekstensi manga</string>
     <string name="label_anime_extension_repos">Repo ekstensi anime</string>
-    <string name="onboarding_storage_action_create_folder">Buat folder Aniyomi bawaan</string>
+    <string name="onboarding_storage_action_create_folder">Buat folder Anikku bawaan</string>
     <string name="download_speed_limit">Batas kecepatan unduh</string>
     <string name="download_speed_limit_hint">Setel ke 0 untuk menonaktifkan batas kecepatan.</string>
 </resources>

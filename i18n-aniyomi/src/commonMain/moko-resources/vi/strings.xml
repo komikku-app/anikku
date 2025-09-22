@@ -266,7 +266,7 @@
     <string name="unseen">Bỏ đã xem</string>
     <string name="label_manga_extension_repos">Repo Manga Extension</string>
     <string name="label_anime_extension_repos">Repo Anime Extension</string>
-    <string name="onboarding_storage_action_create_folder">Tạo thư mục Aniyomi mặc định</string>
+    <string name="onboarding_storage_action_create_folder">Tạo thư mục Anikku mặc định</string>
     <string name="download_speed_limit">Giới hạn tốc độ tải xuống</string>
     <string name="download_speed_limit_hint">Đặt thành 0 để tắt giới hạn tốc độ.</string>
 </resources>

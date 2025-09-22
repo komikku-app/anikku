@@ -310,8 +310,8 @@
     <string name="default_anime_category">Varsayılan anime kategorisi</string>
     <string name="pref_manga_library_update_categories_details">Hariç tutulan kategorilerdeki girdiler, dahil edilen kategorilerde olsa bile güncellenmeyecektir.</string>
     <string name="pref_anime_library_update_categories_details">Hariç tutulan kategorilerdeki animeler, dahil edilen kategorilerde de olsalar dahi güncellenmeyecektir.</string>
-    <string name="unofficial_extension_message_aniyomi">Bu uzantı, resmi Aniyomi uzantıları listesinden değildir.</string>
-    <string name="unofficial_anime_extension_message">Bu uzantı, resmi Aniyomi uzantıları listesinden değil.</string>
+    <string name="unofficial_extension_message_aniyomi">Bu uzantı, resmi Anikku uzantıları listesinden değildir.</string>
+    <string name="unofficial_anime_extension_message">Bu uzantı, resmi Anikku uzantıları listesinden değil.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">Hariç tutulan manga kategorileri</string>
     <string name="pref_remove_exclude_categories_anime">Hariç tutulan anime kategorileri</string>
@@ -423,7 +423,7 @@
     <string name="unseen">İzlenmemiş</string>
     <string name="label_manga_extension_repos">Manga eklenti depoları</string>
     <string name="label_anime_extension_repos">Anime eklenti depoları</string>
-    <string name="onboarding_storage_action_create_folder">Varsayılan Aniyomi klasörünü oluştur</string>
+    <string name="onboarding_storage_action_create_folder">Varsayılan Anikku klasörünü oluştur</string>
     <string name="download_speed_limit">Bölüm indirme hızı sınırı</string>
     <string name="download_speed_limit_hint">Hız sınırını devre dışı bırakmak için 0 olarak ayarlayın.</string>
 </resources>

@@ -302,8 +302,8 @@
     <string name="default_anime_category">Категория аниме по умолчанию</string>
     <string name="pref_manga_library_update_categories_details">Манга в исключённых категориях не обновляется, даже если она также находится во включённых категориях.</string>
     <string name="pref_anime_library_update_categories_details">Аниме в исключённых категориях не обновляется, даже если она также находится во включённых категориях.</string>
-    <string name="unofficial_extension_message_aniyomi">Это расширение не входит в официальный список расширений Aniyomi.</string>
-    <string name="unofficial_anime_extension_message">Это расширение не входит в официальный список расширений Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Это расширение не входит в официальный список расширений Anikku.</string>
+    <string name="unofficial_anime_extension_message">Это расширение не входит в официальный список расширений Anikku.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">Исключённые категории манги</string>
     <string name="pref_remove_exclude_categories_anime">Исключённые категории аниме</string>
@@ -413,7 +413,7 @@
     <string name="unseen">Не просмотрено</string>
     <string name="label_manga_extension_repos">Репозитории расширений манги</string>
     <string name="label_anime_extension_repos">Репозитории расширений аниме</string>
-    <string name="onboarding_storage_action_create_folder">Создать папку Aniyomi по умолчанию</string>
+    <string name="onboarding_storage_action_create_folder">Создать папку Anikku по умолчанию</string>
     <string name="download_speed_limit">Ограничение скорости загрузки</string>
     <string name="download_speed_limit_hint">Установите значение 0, чтобы отключить ограничение скорости.</string>
 </resources>

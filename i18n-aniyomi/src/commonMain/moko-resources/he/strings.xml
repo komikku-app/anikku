@@ -122,8 +122,8 @@
     <string name="default_anime_category">קטגוריית ברירת מחדל אנימה</string>
     <string name="pref_manga_library_update_categories_details">מנגה בקטגוריות שאינן נכללות לא יעודכנו גם אם הן נמצאות גם בקטגוריות כלולות.</string>
     <string name="pref_anime_library_update_categories_details">אנימה בקטגוריות שאינן נכללות לא יעודכנו גם אם הן נמצאות גם בקטגוריות כלולות.</string>
-    <string name="unofficial_extension_message_aniyomi">הרחבה זו אינה מרשימת ההרחבות הרשמית של אניומי (Aniyomi).</string>
-    <string name="unofficial_anime_extension_message">הרחבה זו אינה מרשימת ההרחבות הרשמית של אניומי (Aniyomi).</string>
+    <string name="unofficial_extension_message_aniyomi">הרחבה זו אינה מרשימת ההרחבות הרשמית של אניומי (Anikku).</string>
+    <string name="unofficial_anime_extension_message">הרחבה זו אינה מרשימת ההרחבות הרשמית של אניומי (Anikku).</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">קטגוריות מאנגה שאינן נכללות</string>
     <string name="pref_remove_exclude_categories_anime">קטגוריות אנימה לא נכללות</string>

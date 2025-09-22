@@ -266,7 +266,7 @@
     <string name="unseen">未看</string>
     <string name="label_manga_extension_repos">漫畫擴充庫</string>
     <string name="label_anime_extension_repos">動漫擴充庫</string>
-    <string name="onboarding_storage_action_create_folder">建立預設的 Aniyomi 資料夾</string>
+    <string name="onboarding_storage_action_create_folder">建立預設的 Anikku 資料夾</string>
     <string name="download_speed_limit">下載速度限制</string>
     <string name="download_speed_limit_hint">設定為 0 以停用速度限制。</string>
 </resources>

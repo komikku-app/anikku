@@ -311,8 +311,8 @@
     <string name="default_anime_category">Categoria anime predefinita</string>
     <string name="pref_manga_library_update_categories_details">I manga nelle categorie escluse non verranno aggiornati anche se sono anche nelle categorie incluse.</string>
     <string name="pref_anime_library_update_categories_details">Gli anime nelle categorie escluse non verranno aggiornati anche se sono anche nelle categorie incluse.</string>
-    <string name="unofficial_extension_message_aniyomi">Questa estensione non proviene dalla lista di estensioni ufficiali Aniyomi.</string>
-    <string name="unofficial_anime_extension_message">Questa estensione non è dall\'elenco ufficiale delle estensioni Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Questa estensione non proviene dalla lista di estensioni ufficiali Anikku.</string>
+    <string name="unofficial_anime_extension_message">Questa estensione non è dall\'elenco ufficiale delle estensioni Anikku.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">Categorie manga escluse</string>
     <string name="pref_remove_exclude_categories_anime">Categorie anime escluse</string>
@@ -424,7 +424,7 @@
     <string name="unseen">Non visto</string>
     <string name="label_manga_extension_repos">Repo delle estensioni manga</string>
     <string name="label_anime_extension_repos">Repo delle estensioni anime</string>
-    <string name="onboarding_storage_action_create_folder">Crea una cartella default per Aniyomi</string>
+    <string name="onboarding_storage_action_create_folder">Crea una cartella default per Anikku</string>
     <string name="download_speed_limit">Limite velocità di download dei capitoli</string>
     <string name="download_speed_limit_hint">Imposta a 0 per disattivare il limite di velocità.</string>
 </resources>

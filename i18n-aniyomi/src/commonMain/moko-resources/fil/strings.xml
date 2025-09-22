@@ -284,8 +284,8 @@
     <string name="default_anime_category">Default na kategorya ng anime</string>
     <string name="pref_manga_library_update_categories_details">Ang mga entry sa mga ibinukod na kategorya ay hindi maa-update kahit na sila ay kasama rin sa mga kategoryang kasama.</string>
     <string name="pref_anime_library_update_categories_details">Ang mga anime sa mga ibinukod na kategorya ay hindi maa-update kahit na sila ay kasama rin sa mga kategoryang kasama.</string>
-    <string name="unofficial_extension_message_aniyomi">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Aniyomi.</string>
-    <string name="unofficial_anime_extension_message">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Anikku.</string>
+    <string name="unofficial_anime_extension_message">Ang extension na ito ay hindi mula sa opisyal na listahan ng mga extension ng Anikku.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">Kategoryang di-kasama</string>
     <string name="pref_remove_exclude_categories_anime">Hindi kasama ang mga kategorya ng anime</string>
@@ -397,7 +397,7 @@
     <string name="unseen">Hindi pa nakikita</string>
     <string name="label_manga_extension_repos">Extension repo ng manga</string>
     <string name="label_anime_extension_repos">Extension repo ng anime</string>
-    <string name="onboarding_storage_action_create_folder">Lumikha ng default na Aniyomi folder</string>
+    <string name="onboarding_storage_action_create_folder">Lumikha ng default na Anikku folder</string>
     <string name="download_speed_limit">Limito ng bilis ng pag-download</string>
     <string name="download_speed_limit_hint">Ilagay ay 0 para tanggalin ang limitadong bilis.</string>
 </resources>

@@ -141,8 +141,8 @@
     <string name="default_anime_category">Categoria anime per defecte</string>
     <string name="pref_manga_library_update_categories_details">Els elements de les categories excloses no s\'actualitzaran encara que també siguin a les categories incloses.</string>
     <string name="pref_anime_library_update_categories_details">L\'anime de categories excloses no serà actualitzat tot i que esiguin dins les categories incloses.</string>
-    <string name="unofficial_extension_message_aniyomi">Aquesta extensió no és de la llista oficial d\'extensions d\'Aniyomi.</string>
-    <string name="unofficial_anime_extension_message">Aquesta extensió no és del llistat d\'extensions oficials d\'Aniyomi.</string>
+    <string name="unofficial_extension_message_aniyomi">Aquesta extensió no és de la llista oficial d\'extensions d\'Anikku.</string>
+    <string name="unofficial_anime_extension_message">Aquesta extensió no és del llistat d\'extensions oficials d\'Anikku.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">Categories excloses</string>
     <string name="pref_remove_exclude_categories_anime">Categories d\'anime excloses</string>

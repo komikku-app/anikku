@@ -150,8 +150,8 @@
     <string name="default_anime_category">기본 애니메이션 카테고리</string>
     <string name="pref_manga_library_update_categories_details">카테고리가 업데이트에서 제외된 경우 다른 카테고리에 포함되어 있어도 업데이트 되지 않습니다.</string>
     <string name="pref_anime_library_update_categories_details">제외된 카테고리의 애니메이션은 포함된 카테고리에 있어도 업데이트되지 않습니다.</string>
-    <string name="unofficial_extension_message_aniyomi">이 확장 앱은 Aniyomi의 공식 확장 앱이 아닙니다.</string>
-    <string name="unofficial_anime_extension_message">이 확장 앱은 Aniyomi의 공식 확장 앱이 아닙니다.</string>
+    <string name="unofficial_extension_message_aniyomi">이 확장 앱은 Anikku의 공식 확장 앱이 아닙니다.</string>
+    <string name="unofficial_anime_extension_message">이 확장 앱은 Anikku의 공식 확장 앱이 아닙니다.</string>
     <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">제외된 카테고리</string>
     <string name="pref_remove_exclude_categories_anime">제외된 애니메이션 카테고리</string>
@@ -262,7 +262,7 @@
     <string name="unseen">보지 않음</string>
     <string name="label_manga_extension_repos">만화 확장앱 저장소</string>
     <string name="label_anime_extension_repos">애니메이션 확장앱 저장소</string>
-    <string name="onboarding_storage_action_create_folder">기본 Aniyomi 폴더 생성</string>
+    <string name="onboarding_storage_action_create_folder">기본 Anikku 폴더 생성</string>
     <string name="download_speed_limit">다운로드 속도 제한</string>
     <string name="download_speed_limit_hint">속도 제한을 비활성화하려면 0으로 설정하세요.</string>
 </resources>
