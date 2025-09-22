@@ -36,7 +36,7 @@ fun SwitchPreference(
 ) {
     Row(
         modifier = modifier
-            .toggleable(value, true, Role.Switch, onValueChange)
+            .toggleable(value, true, Role.Switch, null, onValueChange)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
