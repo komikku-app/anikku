@@ -200,4 +200,15 @@
     <string name="pref_storage_location_info_anime">Використовується для автоматичного завантаження резервних копій, епізод та локального джерела.</string>
     <string name="tracking_info_anime">Одностороння синхронізація для оновлення прогресу епізод у зовнішніх сервісах. Налаштувайте відстеження для окремих записів кнопкою відстеження.</string>
     <string name="pref_create_folder_per_anime">Зберегти скріншоти в окремі папки</string>
+    <string name="pref_app_icon">Іконка додатку</string>
+    <string name="pref_app_icon_toast">Іконку додатку змінено на %s</string>
+    <string name="logging_in">Заходимо…</string>
+    <string name="storage_failed_to_create_download_directory">Не вдалося створити шлях для завантажень</string>
+    <string name="storage_failed_to_create_directory">Не вдалося створити шлях: %s</string>
+    <string name="pref_update_library_manga_titles">Оновити назви аніме у бібліотеці відповідно до джерела</string>
+    <string name="pref_update_library_manga_titles_summary">Попередження: якщо аніме буде перейменовано, його буде видалено з черги завантажень (якщо воно там є).</string>
+    <string name="only_show_updated_entries_episodes">Показувати лише записи з новими епізодами</string>
+    <string name="pref_anime_info">Інформація про аніме</string>
+    <string name="action_clear_anime">Очистити аніме</string>
+    <string name="episodes_from_database">Епізоди та історія з бази даних</string>
 </resources>
