@@ -52,7 +52,7 @@ body:
       label: Anikku version
       description: You can find your Anikku version in **More → About**.
       placeholder: |
-        Example: "0.1.2"
+        Example: "0.2.0"
     validations:
       required: true
 
