@@ -317,7 +317,7 @@ fun SelectItem(
         )
 
         ExposedDropdownMenu(
-            modifier = Modifier.exposedDropdownSize(matchTextFieldWidth = true),
+            modifier = Modifier.exposedDropdownSize(matchAnchorWidth = true),
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
