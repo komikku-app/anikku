@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import eu.kanade.tachiyomi.animesource.model.FetchType
+import tachiyomi.i18n.animiru.AMMR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
 import tachiyomi.presentation.core.components.material.padding
@@ -26,6 +28,9 @@ fun ChapterHeader(
     missingChapterCount: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // AY -->
+    fetchType: FetchType = FetchType.Episodes,
+    // <-- AY
 ) {
     Row(
         modifier = modifier
@@ -47,25 +52,37 @@ fun ChapterHeader(
                 text = if (chapterCount == null) {
                     stringResource(AYMR.strings.episodes)
                 } else {
-                    pluralStringResource(AYMR.plurals.anime_num_episodes, count = chapterCount, chapterCount)
+                    // AY -->
+                    val pluralCount = when (fetchType) {
+                        FetchType.Seasons -> AYMR.plurals.anime_num_seasons
+                        FetchType.Episodes -> AYMR.plurals.anime_num_episodes
+                    }
+                    pluralStringResource(pluralCount, count = chapterCount, chapterCount)
+                    // <-- AY
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
-            MissingChaptersWarning(missingChapterCount)
+            MissingChaptersWarning(fetchType, missingChapterCount)
         }
     }
 }
 
 @Composable
-private fun MissingChaptersWarning(count: Int) {
+private fun MissingChaptersWarning(fetchType: FetchType, count: Int) {
     if (count == 0) {
         return
     }
 
+    // AY -->
+    val pluralRes = when (fetchType) {
+        FetchType.Seasons -> AMMR.plurals.missing_seasons
+        FetchType.Episodes -> AMMR.plurals.missing_episodes
+    }
+    // <-- AY
     Text(
-        text = pluralStringResource(AYMR.plurals.missing_items, count = count, count),
+        text = pluralStringResource(pluralRes, count = count, count),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.bodySmall,

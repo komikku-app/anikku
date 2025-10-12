@@ -16,10 +16,6 @@ interface Chapter : SChapter, Serializable {
 
     var bookmark: Boolean
 
-    // AY -->
-    var fillermark: Boolean
-    // <-- AY
-
     var last_page_read: Long
 
     var total_pages: Long
@@ -54,9 +50,6 @@ interface Chapter : SChapter, Serializable {
         }
 }
 
-val Chapter.isRecognizedNumber: Boolean
-    get() = chapter_number >= 0f
-
 fun Chapter.toDomainChapter(): DomainChapter? {
     if (id == null || manga_id == null) return null
     return DomainChapter(
@@ -76,6 +69,10 @@ fun Chapter.toDomainChapter(): DomainChapter? {
         dateUpload = date_upload,
         chapterNumber = chapter_number.toDouble(),
         scanlator = scanlator,
+        // AY -->
+        summary = summary,
+        previewUrl = preview_url,
+        // <-- AY
         lastModifiedAt = last_modified,
         version = version,
     )

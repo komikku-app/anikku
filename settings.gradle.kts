@@ -29,9 +29,11 @@ dependencyResolutionManagement {
         create("sylibs") {
             from(files("gradle/sy.versions.toml"))
         }
+        // AY -->
         create("aniyomilibs") {
             from(files("gradle/aniyomi.versions.toml"))
         }
+        // <-- AY
     }
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -60,6 +62,9 @@ include(":flagkit")
 // SY -->
 include(":i18n-sy")
 // SY <--
+// AM -->
+include(":i18n-animiru")
+// <-- AM
 include(":macrobenchmark")
 include(":presentation-core")
 include(":presentation-widget")

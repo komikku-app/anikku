@@ -130,6 +130,12 @@ class RecommendationSource(
         delegate?.getEpisodeList(anime)
             ?: throw UnsupportedOperationException()
 
+    // ANK -->
+    override suspend fun getSeasonList(anime: SAnime) =
+        delegate?.getSeasonList(anime)
+            ?: throw UnsupportedOperationException()
+    // ANK <--
+
     override fun fetchPopularAnime(page: Int) =
         delegate?.fetchPopularAnime(page)
             ?: throw UnsupportedOperationException()

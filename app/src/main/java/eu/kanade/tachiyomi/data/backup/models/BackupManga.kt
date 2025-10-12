@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.backup.models
 
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
@@ -42,6 +43,18 @@ data class BackupManga(
     @ProtoNumber(110) var notes: String = "",
     @ProtoNumber(111) var initialized: Boolean = false,
 
+    // AY -->
+    // Aniyomi specific values
+    @ProtoNumber(500) var backgroundUrl: String? = null,
+    // @ProtoNumber(501) Broken in aniyomi, do not use
+    @ProtoNumber(502) var parentId: Long? = null,
+    @ProtoNumber(503) var id: Long? = null, // Used to associate seasons with parents. Do not use for anything else.
+    @ProtoNumber(504) var seasonFlags: Long = 0,
+    @ProtoNumber(505) var seasonNumber: Double = -1.0,
+    @ProtoNumber(506) var seasonSourceOrder: Long = 0,
+    @ProtoNumber(507) var fetchType: FetchType = FetchType.Episodes,
+    // <-- AY
+
     // SY specific values
     @ProtoNumber(600) var mergedMangaReferences: List<BackupMergedMangaReference> = emptyList(),
     @ProtoNumber(602) var customStatus: Int = 0,
@@ -67,6 +80,9 @@ data class BackupManga(
             ogGenre = this@BackupManga.genre,
             ogStatus = this@BackupManga.status.toLong(),
             // SY <--
+            // AY -->
+            backgroundUrl = this@BackupManga.backgroundUrl,
+            // <-- AY
             favorite = this@BackupManga.favorite,
             source = this@BackupManga.source,
             dateAdded = this@BackupManga.dateAdded,
@@ -78,6 +94,13 @@ data class BackupManga(
             version = this@BackupManga.version,
             notes = this@BackupManga.notes,
             initialized = this@BackupManga.initialized,
+            // AY -->
+            fetchType = this@BackupManga.fetchType,
+            parentId = this@BackupManga.parentId,
+            seasonFlags = this@BackupManga.seasonFlags,
+            seasonNumber = this@BackupManga.seasonNumber,
+            seasonSourceOrder = this@BackupManga.seasonSourceOrder,
+            // <-- AY
         )
     }
 }

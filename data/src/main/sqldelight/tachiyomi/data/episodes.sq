@@ -20,6 +20,10 @@ CREATE TABLE episodes(
     last_modified_at INTEGER NOT NULL DEFAULT 0,
     version INTEGER NOT NULL DEFAULT 0,
     is_syncing INTEGER NOT NULL DEFAULT 0,
+    -- AY -->
+    summary TEXT,
+    preview_url TEXT,
+    -- <-- AY
     FOREIGN KEY(anime_id) REFERENCES animes (_id)
     ON DELETE CASCADE
 );
@@ -89,14 +93,6 @@ FROM episodes
 WHERE bookmark
 AND anime_id = :animeId;
 
--- AY -->
-getFillermarkedEpisodesByAnimeId:
-SELECT *
-FROM episodes
-WHERE fillermark
-AND anime_id = :animeId;
--- <-- AY
-
 getEpisodeByUrl:
 SELECT *
 FROM episodes
@@ -151,8 +147,8 @@ SET is_syncing = 0
 WHERE is_syncing = 1;
 
 insert:
-INSERT INTO episodes(anime_id, url, name, scanlator, seen, bookmark, fillermark, last_second_seen, total_seconds, episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing)
-VALUES (:animeId, :url, :name, :scanlator, :seen, :bookmark, :fillermark, :lastSecondSeen, :totalSeconds, :episodeNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0);
+INSERT INTO episodes(anime_id, url, name, scanlator, seen, bookmark, fillermark, last_second_seen, total_seconds, episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, summary, preview_url)
+VALUES (:animeId, :url, :name, :scanlator, :seen, :bookmark, :fillermark, :lastSecondSeen, :totalSeconds, :episodeNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :summary, :previewUrl);
 
 update:
 UPDATE episodes
@@ -172,7 +168,11 @@ SET anime_id = coalesce(:animeId, anime_id),
     date_fetch = coalesce(:dateFetch, date_fetch),
     date_upload = coalesce(:dateUpload, date_upload),
     version = coalesce(:version, version),
-    is_syncing = coalesce(:isSyncing, is_syncing)
+    is_syncing = coalesce(:isSyncing, is_syncing),
+    -- AY -->
+    summary = coalesce(:summary, summary),
+    preview_url = coalesce(:previewUrl, preview_url)
+    -- <-- AY
 WHERE _id = :episodeId;
 
 selectLastInsertedRowId:

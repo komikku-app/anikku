@@ -72,6 +72,11 @@ class AndroidSourceManager(
                                 // SY -->
                                 sourcePreferences.allowLocalSourceHiddenFolders()::get,
                                 // SY <--
+                                // AY -->
+                                Injekt.get(),
+                                Injekt.get(),
+                                Injekt.get(),
+                                // <-- AY
                             ),
                         ),
                     ).apply {

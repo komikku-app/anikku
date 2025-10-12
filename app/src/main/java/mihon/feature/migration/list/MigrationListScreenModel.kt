@@ -3,10 +3,12 @@ package mihon.feature.migration.list
 import androidx.annotation.FloatRange
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import eu.kanade.domain.anime.interactor.SyncSeasonsWithSource
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.getChapterList
 import eu.kanade.tachiyomi.source.getMangaDetails
@@ -37,6 +39,7 @@ import mihon.feature.migration.list.search.SmartSourceSearchEngine
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
@@ -57,6 +60,9 @@ class MigrationListScreenModel(
     private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     private val updateManga: UpdateManga = Injekt.get(),
     private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
+    // AY -->
+    private val syncSeasonsWithSource: SyncSeasonsWithSource = Injekt.get(),
+    // <-- AY
     private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
     private val migrateManga: MigrateMangaUseCase = Injekt.get(),
 ) : StateScreenModel<MigrationListScreenModel.State>(State()) {
@@ -122,6 +128,18 @@ class MigrationListScreenModel(
             chapterCount = chapters.size,
         )
     }
+
+    // AY -->
+    private suspend fun Anime.toMismatchSearchResult(): SearchResult.MismatchedFetchType {
+        val episodeInfo = getChapterInfo(id)
+        val source = sourceManager.getOrStub(source).getNameForMangaInfo()
+        return SearchResult.MismatchedFetchType(
+            anime = this,
+            episodeCount = episodeInfo.chapterCount,
+            source = source,
+        )
+    }
+    // <-- AY
 
     private suspend fun Manga.toSuccessSearchResult(): SearchResult.Success {
         val chapterInfo = getChapterInfo(id)
@@ -191,7 +209,15 @@ class MigrationListScreenModel(
                 }
             }
 
-            manga.searchResult.value = result?.first?.toSuccessSearchResult() ?: SearchResult.NotFound
+            manga.searchResult.value = result?.first?.let {
+                // AY -->
+                if (manga.manga.fetchType == it.fetchType) {
+                    it.toSuccessSearchResult()
+                } else {
+                    it.toMismatchSearchResult()
+                }
+                // <-- AY
+            } ?: SearchResult.NotFound
 
             if (result == null && hideUnmatched) {
                 removeManga(manga)
@@ -260,11 +286,23 @@ class MigrationListScreenModel(
     // KMK -->
     private fun State.migrationComplete() =
         // KMK <--
-        items.all { it.searchResult.value != SearchResult.Searching } &&
+        items.all {
+            it.searchResult.value != SearchResult.Searching &&
+                // AY -->
+                it.searchResult.value !is SearchResult.MismatchedFetchType
+            // <-- AY
+        } &&
             items.any { it.searchResult.value is SearchResult.Success }
 
+    // AY -->
+    sealed interface MigrateSearchResult {
+        data class Success(val anime: Anime) : MigrateSearchResult
+        data class Failure(val fetchType: FetchType) : MigrateSearchResult
+    }
+    // <-- AY
+
     /** Set a manga picked from manual search to be used as migration target */
-    fun useMangaForMigration(current: Long, target: Long, onMissingChapters: () -> Unit) {
+    fun useMangaForMigration(current: Long, target: Long, onMissingChapters: (FetchType) -> Unit) {
         val migratingManga = items.find { it.manga.id == current } ?: return
         migratingManga.searchResult.value = SearchResult.Searching
         screenModelScope.launchIO {
@@ -272,30 +310,54 @@ class MigrationListScreenModel(
                 val manga = getManga.await(target) ?: return@async null
                 try {
                     val source = sourceManager.get(manga.source)!!
-                    val chapters = source.getChapterList(manga.toSManga())
-                    syncChaptersWithSource.await(chapters, manga, source)
+                    // AY -->
+                    when (manga.fetchType) {
+                        FetchType.Seasons -> {
+                            val seasons = source.getSeasonList(manga.toSManga())
+                            syncSeasonsWithSource.await(seasons, manga, source)
+                        }
+                        // <-- AY
+                        FetchType.Episodes -> {
+                            val chapters = source.getChapterList(manga.toSManga())
+                            syncChaptersWithSource.await(chapters, manga, source)
+                        }
+                    }
                 } catch (_: Exception) {
-                    return@async null
+                    // AY -->
+                    return@async MigrateSearchResult.Failure(manga.fetchType)
                 }
-                manga
+                MigrateSearchResult.Success(manga)
+                // <-- AY
             }
                 .await()
 
-            if (result == null) {
+            // AY -->
+            if (result is MigrateSearchResult.Failure) {
+                // <-- AY
                 migratingManga.searchResult.value = SearchResult.NotFound
-                withUIContext { onMissingChapters() }
+                // AY -->
+                withUIContext { onMissingChapters(result.fetchType) }
+                // <-- AY
                 return@launchIO
             }
 
+            // AY -->
+            val resultAnime = (result as MigrateSearchResult.Success).anime
+            if (migratingManga.manga.fetchType != resultAnime.fetchType) {
+                migratingManga.searchResult.value = resultAnime.toMismatchSearchResult()
+                return@launchIO
+            }
+            // <-- AY
+
             try {
-                val newManga = sourceManager.getOrStub(result.source).getMangaDetails(result.toSManga())
-                updateManga.awaitUpdateFromSource(result, newManga, true)
+                val newAnime = sourceManager.getOrStub(resultAnime.source).getAnimeDetails(resultAnime.toSManga())
+                updateManga.awaitUpdateFromSource(resultAnime, newAnime, true)
             } catch (e: CancellationException) {
                 // Ignore cancellations
                 throw e
             } catch (_: Exception) {
             }
-            migratingManga.searchResult.value = result.toSuccessSearchResult()
+            migratingManga.searchResult.value = resultAnime.toSuccessSearchResult()
             updateMigrationProgress()
         }
     }

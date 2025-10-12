@@ -22,9 +22,19 @@ class SAnimeImpl : SAnime {
 
     override var thumbnail_url: String? = null
 
+    // AY -->
+    override var background_url: String? = null
+    // <-- AY
+
     override var update_strategy: AnimeUpdateStrategy = AnimeUpdateStrategy.ALWAYS_UPDATE
 
     override var initialized: Boolean = false
+
+    // AY -->
+    override var fetch_type: FetchType = FetchType.Episodes
+
+    override var season_number: Double = -1.0
+    // <-- AY
 
     // SY -->
     override val originalTitle: String

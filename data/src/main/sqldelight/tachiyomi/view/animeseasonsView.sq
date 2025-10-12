@@ -1,0 +1,52 @@
+-- AY -->
+CREATE VIEW animeseasonsView AS
+SELECT
+    A.*,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.total, 0)
+        WHEN 0 THEN coalesce(ASS.child_count, 0)
+    END AS totalCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.seenCount, 0)
+        WHEN 0 THEN coalesce(ASS.fully_seen_seasons, 0)
+    END AS seenCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.latestUpload, 0)
+        WHEN 0 THEN coalesce(ASS.max_latest_upload, 0)
+    END AS latestUpload,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fetchedAt, 0)
+        WHEN 0 THEN coalesce(ASS.max_fetched_at, 0)
+    END AS episodeFetchedAt,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(HS.lastSeen, 0)
+        WHEN 0 THEN coalesce(ASS.max_last_seen, 0)
+    END AS lastSeen,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarks, 0)
+    END AS bookmarkCount,
+    -- KMK -->
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkSeenCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarksSeenCount, 0)
+    END AS bookmarkedSeenCount,
+    -- KMK <--
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fillermarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_fillermarks, 0)
+    END AS fillermarkCount
+FROM animes AS A
+LEFT JOIN episodestatsView AS ES
+ON A._id = ES.anime_id
+LEFT JOIN historystatsView AS HS
+ON A._id = HS.anime_id
+LEFT JOIN animeseasonstatsView AS ASS
+ON A._id = ASS.parent_id
+WHERE A.parent_id IS NOT NULL;
+
+getAnimeSeasonsById:
+SELECT *
+FROM animeseasonsView
+WHERE parent_id = :parentId;
+-- <-- AY

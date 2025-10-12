@@ -1,6 +1,7 @@
 package exh.source
 
 import eu.kanade.tachiyomi.animesource.model.Hoster
+import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -113,6 +114,18 @@ class EnhancedHttpSource(
      */
     override fun videoUrlParse(response: Response) =
         throw UnsupportedOperationException("Should never be called!")
+
+    // ANK -->
+    /**
+     * Parses the response from the site and returns a list of episodes.
+     *
+     * @since extensions-lib 16
+     * @param response the response from the site.
+     * @return the list of seasons.
+     */
+    override fun seasonListParse(response: Response) =
+        throw UnsupportedOperationException("Should never be called!")
+    // ANK <--
 
     /**
      * Base url of the website without the trailing slash, like: http://mysite.com
@@ -253,6 +266,18 @@ class EnhancedHttpSource(
     override fun fetchVideoUrl(video: Video) = source().fetchVideoUrl(video)
 
     override suspend fun getVideoUrl(video: Video) = source().getVideoUrl(video)
+
+    // ANK -->
+    /**
+     * Get all the available seasons for an anime.
+     * Normally it's not needed to override this method.
+     *
+     * @since extensions-lib 16
+     * @param anime the anime to look for seasons.
+     * @return the seasons for the anime.
+     */
+    override suspend fun getSeasonList(anime: SAnime) = source().getSeasonList(anime)
+    // ANK <--
 
     /**
      * Returns the url of the provided anime

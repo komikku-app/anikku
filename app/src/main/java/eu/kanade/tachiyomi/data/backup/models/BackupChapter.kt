@@ -13,9 +13,9 @@ data class BackupChapter(
     @ProtoNumber(3) var scanlator: String? = null,
     @ProtoNumber(4) var seen: Boolean = false,
     @ProtoNumber(5) var bookmark: Boolean = false,
-    // AY -->
-    @ProtoNumber(15) var fillermark: Boolean = false,
-    // <-- AY
+    // ANK -->
+    @ProtoNumber(15) var fillermarkLegacy: Boolean = false,
+    // ANK <--
     // lastPageRead is called progress in 1.x
     @ProtoNumber(6) var lastSecondSeen: Long = 0,
     @ProtoNumber(16) var totalSeconds: Long = 0,
@@ -26,6 +26,13 @@ data class BackupChapter(
     @ProtoNumber(10) var sourceOrder: Long = 0,
     @ProtoNumber(11) var lastModifiedAt: Long = 0,
     @ProtoNumber(12) var version: Long = 0,
+
+    // AY -->
+    // Aniyomi specific values
+    @ProtoNumber(501) var fillermark: Boolean /* ANK --> */ = fillermarkLegacy, /* ANK <-- */
+    @ProtoNumber(502) var summary: String? = null,
+    @ProtoNumber(503) var previewUrl: String? = null,
+    // <-- AY
 ) {
     fun toChapterImpl(): Chapter {
         return Chapter.create().copy(
@@ -33,6 +40,10 @@ data class BackupChapter(
             name = this@BackupChapter.name,
             chapterNumber = this@BackupChapter.episodeNumber.toDouble(),
             scanlator = this@BackupChapter.scanlator,
+            // AY -->
+            summary = this@BackupChapter.summary,
+            previewUrl = this@BackupChapter.previewUrl,
+            // <-- AY
             read = this@BackupChapter.seen,
             bookmark = this@BackupChapter.bookmark,
             // AY -->
@@ -69,12 +80,20 @@ val backupChapterMapper = {
         lastModifiedAt: Long,
         version: Long,
         _: Long,
+        // AY -->
+        summary: String?,
+        previewUrl: String?,
+    // <-- AY
     ->
     BackupChapter(
         url = url,
         name = name,
         episodeNumber = episodeNumber.toFloat(),
         scanlator = scanlator,
+        // AY -->
+        summary = summary,
+        previewUrl = previewUrl,
+        // <-- AY
         seen = seen,
         bookmark = bookmark,
         // AY -->

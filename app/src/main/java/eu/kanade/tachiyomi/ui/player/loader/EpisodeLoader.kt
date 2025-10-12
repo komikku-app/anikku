@@ -98,7 +98,11 @@ class EpisodeLoader {
          */
         private suspend fun getHostersOnHttp(episode: Episode, source: HttpSource): List<Hoster> {
             // TODO(1.6): Remove else block when dropping support for ext lib <1.6
-            return if (source.javaClass.declaredMethods.any { it.name == "getHosterList" }) {
+            return if (source.javaClass.declaredMethods.any {
+                    it.name in
+                        listOf("getHosterList", "hosterListRequest", "hosterListParse")
+                }
+            ) {
                 source.getHosterList(episode.toSEpisode())
                     .let { source.run { it.sortHosters() } }
             } else {
@@ -124,7 +128,7 @@ class EpisodeLoader {
             return try {
                 val video = downloadManager.buildVideo(source, anime, episode)
                 listOf(video).toHosterList()
-            } catch (e: Throwable) {
+            } catch (_: Throwable) {
                 emptyList()
             }
         }
@@ -150,7 +154,7 @@ class EpisodeLoader {
                     "Local source: ${episode.url}",
                 )
                 listOf(video).toHosterList()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 emptyList()
             }
         }
@@ -164,11 +168,17 @@ class EpisodeLoader {
          * @param hoster the hoster.
          */
         private suspend fun getVideos(source: AnimeSource, hoster: Hoster): List<Video> {
-            return when {
+            val videos = when {
                 hoster.videoList != null && source is AnimeHttpSource -> hoster.videoList!!.parseVideoUrls(source)
                 hoster.videoList != null -> hoster.videoList!!
                 source is AnimeHttpSource -> getVideosOnHttp(source, hoster)
                 else -> error("source not supported")
+            }
+
+            return if (source is AnimeHttpSource) {
+                source.run { videos.sortVideos() }
+            } else {
+                videos
             }
         }
 
@@ -180,7 +190,6 @@ class EpisodeLoader {
          */
         private suspend fun getVideosOnHttp(source: AnimeHttpSource, hoster: Hoster): List<Video> {
             return source.getVideoList(hoster)
-                .let { source.run { it.sortVideos() } }
                 .parseVideoUrls(source)
         }
 
@@ -194,7 +203,11 @@ class EpisodeLoader {
             }
         }
 
-        suspend fun loadHosterVideos(source: AnimeSource, hoster: Hoster): HosterState {
+        suspend fun loadHosterVideos(source: AnimeSource, hoster: Hoster, force: Boolean = false): HosterState {
+            if (!force && hoster.lazy) {
+                return HosterState.Idle(hoster.hosterName)
+            }
+
             return try {
                 val videos = getVideos(source, hoster)
                 HosterState.Ready(hoster.hosterName, videos, List(videos.size) { Video.State.Queue })

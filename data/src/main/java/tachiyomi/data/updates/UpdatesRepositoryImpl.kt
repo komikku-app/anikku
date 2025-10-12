@@ -82,7 +82,7 @@ class UpdatesRepositoryImpl(
         coverLastModified: Long,
         @Suppress("UNUSED_PARAMETER") dateUpload: Long,
         dateFetch: Long,
-        excludedScanlator: String?,
+        @Suppress("UNUSED_PARAMETER") excludedScanlator: String?,
     ): UpdatesWithRelations = UpdatesWithRelations(
         mangaId = mangaId,
         // SY -->

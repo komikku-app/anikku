@@ -208,8 +208,11 @@ class BackupRestorer(
             .forEach {
                 ensureActive()
 
+                // AY -->
+                val seasons = backupMangas.filter { s -> s.parentId == it.id }
+                // <-- AY
                 try {
-                    mangaRestorer.restore(it, backupCategories)
+                    mangaRestorer.restore(it, backupCategories, seasons)
                 } catch (e: Exception) {
                     val sourceName = sourceMapping[it.source] ?: it.source.toString()
                     errors.add(Date() to "${it.title} [$sourceName]: ${e.message}")

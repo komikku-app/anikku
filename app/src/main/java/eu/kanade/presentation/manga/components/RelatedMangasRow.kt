@@ -59,7 +59,7 @@ fun RelatedMangaCardRow(
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
 ) {
-    val mangas = relatedMangas.filterIsInstance<RelatedManga.Success>().map { it.mangaList }.flatten()
+    val mangas = relatedMangas.filterIsInstance<RelatedManga.Success>().flatMap { it.mangaList }
     val loading = relatedMangas.filterIsInstance<RelatedManga.Loading>().firstOrNull()
 
     LazyRow(

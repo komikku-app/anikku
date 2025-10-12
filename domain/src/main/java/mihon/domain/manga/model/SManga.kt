@@ -15,7 +15,14 @@ fun SManga.toDomainManga(sourceId: Long): Manga {
         ogStatus = status.toLong(),
         ogThumbnailUrl = thumbnail_url,
         // SY <--
+        // AY -->
+        backgroundUrl = background_url,
+        // <-- AY
         updateStrategy = update_strategy,
+        // AY -->
+        fetchType = fetch_type,
+        seasonNumber = season_number,
+        // <-- AY
         initialized = initialized,
         source = sourceId,
     )

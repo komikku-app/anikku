@@ -62,6 +62,7 @@ android {
 
             applicationIdSuffix = ".rt"
             isMinifyEnabled = false
+            //noinspection NotShrinkingResources
             isShrinkResources = false
 
             matchingFallbacks.addAll(commonMatchingFallbacks)
@@ -139,6 +140,7 @@ android {
                 "libswscale",
                 "libxml2",
             )
+                //noinspection WrongGradleMethod
                 .map { "**/$it.so" }
         }
         resources {
@@ -209,6 +211,9 @@ dependencies {
     // SY -->
     implementation(projects.i18nSy)
     // SY <--
+    // AM -->
+    implementation(projects.i18nAnimiru)
+    // <-- AM
     implementation(projects.core.archive)
     implementation(projects.core.common)
     implementation(projects.coreMetadata)
@@ -350,7 +355,7 @@ dependencies {
     implementation(sylibs.ratingbar)
     implementation(sylibs.composeRatingbar)
 
-    // Google drive
+    // Google Drive
     implementation(sylibs.google.api.services.drive)
 
     // ZXing Android Embedded

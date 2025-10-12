@@ -33,10 +33,12 @@ import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.preference.TriState
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
+import tachiyomi.presentation.core.components.CheckboxItem
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.RadioItem
 import tachiyomi.presentation.core.components.SortItem
@@ -60,6 +62,10 @@ fun ChapterSettingsDialog(
     // <-- AY
     onSortModeChanged: (Long) -> Unit,
     onDisplayModeChanged: (Long) -> Unit,
+    // AY -->
+    onShowPreviewsEnabled: (Long) -> Unit,
+    onShowSummariesEnabled: (Long) -> Unit,
+    // <-- AY
     onSetAsDefault: (applyToExistingManga: Boolean) -> Unit,
     onResetToDefault: () -> Unit,
 ) {
@@ -130,7 +136,13 @@ fun ChapterSettingsDialog(
                 2 -> {
                     DisplayPage(
                         displayMode = manga?.displayMode ?: 0,
-                        onItemSelected = onDisplayModeChanged,
+                        // AY -->
+                        onDisplayModeChanged = onDisplayModeChanged,
+                        showPreviews = manga?.showPreviews() ?: true,
+                        onShowPreviewsEnabled = onShowPreviewsEnabled,
+                        showSummaries = manga?.showSummaries() ?: true,
+                        onShowSummariesEnabled = onShowSummariesEnabled,
+                        // <-- AY
                     )
                 }
             }
@@ -221,7 +233,7 @@ private fun ColumnScope.SortPage(
         AYMR.strings.sort_by_episode_number to Manga.EPISODE_SORTING_NUMBER,
         MR.strings.sort_by_upload_date to Manga.EPISODE_SORTING_UPLOAD_DATE,
         MR.strings.action_sort_alpha to Manga.EPISODE_SORTING_ALPHABET,
-    ).map { (titleRes, mode) ->
+    ).forEach { (titleRes, mode) ->
         SortItem(
             label = stringResource(titleRes),
             sortDescending = sortDescending.takeIf { sortingMode == mode },
@@ -233,22 +245,45 @@ private fun ColumnScope.SortPage(
 @Composable
 private fun ColumnScope.DisplayPage(
     displayMode: Long,
-    onItemSelected: (Long) -> Unit,
+    // AY -->
+    onDisplayModeChanged: (Long) -> Unit,
+    showPreviews: Boolean,
+    onShowPreviewsEnabled: (Long) -> Unit,
+    showSummaries: Boolean,
+    onShowSummariesEnabled: (Long) -> Unit,
+    // <-- AY
 ) {
     listOf(
         MR.strings.show_title to Manga.EPISODE_DISPLAY_NAME,
         AYMR.strings.show_episode_number to Manga.EPISODE_DISPLAY_NUMBER,
-    ).map { (titleRes, mode) ->
+    ).forEach { (titleRes, mode) ->
         RadioItem(
             label = stringResource(titleRes),
             selected = displayMode == mode,
-            onClick = { onItemSelected(mode) },
+            onClick = { onDisplayModeChanged(mode) },
         )
     }
+    // AY -->
+    val showPreviewsFlag = if (showPreviews) Anime.EPISODE_SHOW_NOT_PREVIEWS else Anime.EPISODE_SHOW_PREVIEWS
+    CheckboxItem(
+        label = stringResource(AYMR.strings.show_episode_previews),
+        checked = showPreviews,
+        onClick = { onShowPreviewsEnabled(showPreviewsFlag) },
+    )
+    val showSummariesFlag = if (showSummaries) Anime.EPISODE_SHOW_NOT_SUMMARIES else Anime.EPISODE_SHOW_SUMMARIES
+    CheckboxItem(
+        label = stringResource(AYMR.strings.show_episode_summaries),
+        checked = showSummaries,
+        onClick = { onShowSummariesEnabled(showSummariesFlag) },
+    )
+    // <-- AY
 }
 
 @Composable
-private fun SetAsDefaultDialog(
+internal fun SetAsDefaultDialog(
+    // AY -->
+    isEpisode: Boolean = true,
+    // <-- AY
     onDismissRequest: () -> Unit,
     onConfirmed: (optionalChecked: Boolean) -> Unit,
 ) {
@@ -256,7 +291,17 @@ private fun SetAsDefaultDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = stringResource(AYMR.strings.episode_settings)) },
+        title = {
+            Text(
+                // AY -->
+                text = if (isEpisode) {
+                    stringResource(AYMR.strings.episode_settings)
+                } else {
+                    stringResource(AYMR.strings.season_settings)
+                },
+                // <-- AY
+            )
+        },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -1,0 +1,22 @@
+-- AY -->
+CREATE VIEW historystatsView AS
+SELECT
+    episodes.anime_id,
+    max(history.last_seen) AS lastSeen
+FROM episodes
+LEFT JOIN history ON episodes._id = history.episode_id
+GROUP BY episodes.anime_id;
+-- <-- AY
+
+-- ANK -->
+CREATE VIEW historymergestatsView AS
+SELECT
+    merged.merge_id,
+    max(history.last_seen) AS lastSeen
+FROM episodes
+LEFT JOIN history ON episodes._id = history.episode_id
+-- KMK -->
+LEFT JOIN merged ON merged.anime_id = episodes.anime_id
+GROUP BY merged.merge_id;
+-- KMK <--
+-- ANK <--

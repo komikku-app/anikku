@@ -1,10 +1,14 @@
 package mihon.domain.migration.usecases
 
+import eu.kanade.domain.anime.interactor.SyncSeasonsWithSource
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
+import eu.kanade.domain.manga.model.hasCustomBackground
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.animesource.model.FetchType
+import eu.kanade.tachiyomi.data.cache.BackgroundCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
@@ -35,12 +39,18 @@ class MigrateMangaUseCase(
     private val updateManga: UpdateManga,
     private val getChaptersByMangaId: GetChaptersByMangaId,
     private val syncChaptersWithSource: SyncChaptersWithSource,
+    // AY -->
+    private val syncSeasonsWithSource: SyncSeasonsWithSource,
+    // <-- AY
     private val updateChapter: UpdateChapter,
     private val getCategories: GetCategories,
     private val setMangaCategories: SetMangaCategories,
     private val getTracks: GetTracks,
     private val insertTrack: InsertTrack,
     private val coverCache: CoverCache,
+    // AY -->
+    private val backgroundCache: BackgroundCache,
+    // <-- AY
     // KMK -->
     private val getHistory: GetHistory,
     private val upsertHistory: UpsertHistory,
@@ -61,16 +71,33 @@ class MigrateMangaUseCase(
         val flags = /* KMK --> */ presetFlags ?: /* KMK <-- */ sourcePreferences.migrationFlags().get()
 
         try {
-            val chapters = targetSource.getChapterList(target.toSManga())
+            // AY -->
+            when (target.fetchType) {
+                FetchType.Seasons -> {
+                    val seasons = targetSource.getSeasonList(target.toSManga())
 
-            try {
-                syncChaptersWithSource.await(chapters, target, targetSource)
-            } catch (_: Exception) {
-                // Worst case, chapters won't be synced
+                    try {
+                        syncSeasonsWithSource.await(seasons, target, targetSource)
+                    } catch (_: Exception) {
+                        // Worst case, seasons won't be synced
+                    }
+                }
+                FetchType.Episodes -> {
+                    // <-- AY
+                    val chapters = targetSource.getChapterList(target.toSManga())
+
+                    try {
+                        syncChaptersWithSource.await(chapters, target, targetSource)
+                    } catch (_: Exception) {
+                        // Worst case, chapters won't be synced
+                    }
+                }
             }
 
             // Update chapters read, bookmark and dateFetch
-            if (MigrationFlag.CHAPTER in flags) {
+            // AY -->
+            if (MigrationFlag.CHAPTER in flags && target.fetchType == FetchType.Episodes) {
+                // <-- AY
                 val prevMangaChapters = getChaptersByMangaId.await(current.id)
                 val mangaChapters = getChaptersByMangaId.await(target.id)
 
@@ -157,7 +184,11 @@ class MigrateMangaUseCase(
             }
 
             // Delete downloaded
-            if (MigrationFlag.REMOVE_DOWNLOAD in flags && currentSource != null) {
+            if (MigrationFlag.REMOVE_DOWNLOAD in flags && currentSource != null &&
+                // AY -->
+                current.fetchType == FetchType.Episodes
+                // <-- AY
+            ) {
                 downloadManager.deleteManga(current, currentSource)
             }
 
@@ -165,6 +196,16 @@ class MigrateMangaUseCase(
             if (MigrationFlag.CUSTOM_COVER in flags && current.hasCustomCover()) {
                 coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
             }
+
+            // AY -->
+            // Update custom background (recheck if custom background exists)
+            if (MigrationFlag.CUSTOM_BACKGROUND in flags && current.hasCustomBackground()) {
+                backgroundCache.setCustomBackgroundToCache(
+                    target,
+                    backgroundCache.getCustomBackgroundFile(current.id).inputStream(),
+                )
+            }
+            // <-- AY
 
             val currentMangaUpdate = MangaUpdate(
                 id = current.id,

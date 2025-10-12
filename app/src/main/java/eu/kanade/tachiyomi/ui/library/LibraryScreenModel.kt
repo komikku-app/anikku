@@ -22,6 +22,7 @@ import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
 import eu.kanade.presentation.manga.DownloadAction
+import eu.kanade.tachiyomi.data.cache.BackgroundCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
@@ -33,6 +34,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
+import eu.kanade.tachiyomi.util.removeBackgrounds
 import eu.kanade.tachiyomi.util.removeCovers
 import exh.recs.batch.RecommendationSearchHelper
 import exh.search.Namespace
@@ -120,6 +122,9 @@ class LibraryScreenModel(
     private val preferences: BasePreferences = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val coverCache: CoverCache = Injekt.get(),
+    // AY -->
+    private val backgroundCache: BackgroundCache = Injekt.get(),
+    // <-- AY
     private val sourceManager: SourceManager = Injekt.get(),
     private val downloadManager: DownloadManager = Injekt.get(),
     private val downloadCache: DownloadCache = Injekt.get(),
@@ -311,9 +316,6 @@ class LibraryScreenModel(
                 prefs.filterUnread,
                 prefs.filterStarted,
                 prefs.filterBookmarked,
-                // AY -->
-                prefs.filterFillermarked,
-                // <-- AY
                 prefs.filterCompleted,
                 prefs.filterIntervalCustom,
                 // SY -->
@@ -392,9 +394,6 @@ class LibraryScreenModel(
         val filterUnread = preferences.filterUnread
         val filterStarted = preferences.filterStarted
         val filterBookmarked = preferences.filterBookmarked
-        // AY -->
-        val filterFillermarked = preferences.filterFillermarked
-        // <-- AY
         val filterCompleted = preferences.filterCompleted
         val filterIntervalCustom = preferences.filterIntervalCustom
         val filterCategories = preferences.filterCategories
@@ -446,12 +445,6 @@ class LibraryScreenModel(
         val filterFnBookmarked: (LibraryItem) -> Boolean = {
             applyFilter(filterBookmarked) { it.libraryManga.hasBookmarks }
         }
-
-        // AY -->
-        val filterFnFillermarked: (LibraryItem) -> Boolean = {
-            applyFilter(filterFillermarked) { it.libraryManga.hasFillermarks }
-        }
-        // <-- AY
 
         val filterFnCompleted: (LibraryItem) -> Boolean = {
             applyFilter(filterCompleted) { it.libraryManga.manga.status.toInt() == SManga.COMPLETED }
@@ -510,9 +503,6 @@ class LibraryScreenModel(
                 filterFnUnread(it) &&
                 filterFnStarted(it) &&
                 filterFnBookmarked(it) &&
-                // AY -->
-                filterFnFillermarked(it) &&
-                // <-- AY
                 filterFnCompleted(it) &&
                 filterFnIntervalCustom(it) &&
                 filterFnTracking(it) &&
@@ -730,9 +720,6 @@ class LibraryScreenModel(
             libraryPreferences.filterUnread().changes(),
             libraryPreferences.filterStarted().changes(),
             libraryPreferences.filterBookmarked().changes(),
-            // AY -->
-            libraryPreferences.filterFillermarked().changes(),
-            // <-- AY
             libraryPreferences.filterCompleted().changes(),
             libraryPreferences.filterIntervalCustom().changes(),
             // SY -->
@@ -755,18 +742,15 @@ class LibraryScreenModel(
                 filterUnread = it[7] as TriState,
                 filterStarted = it[8] as TriState,
                 filterBookmarked = it[9] as TriState,
-                // AY -->
-                filterFillermarked = it[10] as TriState,
-                // <-- AY
-                filterCompleted = it[11] as TriState,
-                filterIntervalCustom = it[12] as TriState,
+                filterCompleted = it[10] as TriState,
+                filterIntervalCustom = it[11] as TriState,
                 // SY -->
-                filterLewd = it[13] as TriState,
+                filterLewd = it[12] as TriState,
                 // SY <--
                 // KMK -->
-                sourceBadge = it[14] as Boolean,
-                useLangIcon = it[15] as Boolean,
-                filterCategories = it[16] as Boolean,
+                sourceBadge = it[13] as Boolean,
+                useLangIcon = it[14] as Boolean,
+                filterCategories = it[15] as Boolean,
                 // KMK <--
             )
         }
@@ -1009,6 +993,9 @@ class LibraryScreenModel(
                     .distinctBy { it.id }
                     .map {
                         it.removeCovers(coverCache)
+                        // AY -->
+                        it.removeBackgrounds(backgroundCache)
+                        // <-- AY
                         MangaUpdate(
                             favorite = false,
                             id = it.id,
@@ -1540,9 +1527,6 @@ class LibraryScreenModel(
         val filterUnread: TriState,
         val filterStarted: TriState,
         val filterBookmarked: TriState,
-        // AY -->
-        val filterFillermarked: TriState,
-        // <-- AY
         val filterCompleted: TriState,
         val filterIntervalCustom: TriState,
         // SY -->

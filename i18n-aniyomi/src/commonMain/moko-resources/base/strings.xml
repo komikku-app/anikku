@@ -393,6 +393,11 @@
     <string name="trackers_updated_summary_manga">Trackers updated to chapter %d</string>
     <string name="trackers_updated_summary_anime">Trackers updated to episode %d</string>
 
+    <!-- Migrate dialog -->
+    <string name="label_cant_migrate_episode">Unable to migrate episode to season, select season to continue</string>
+    <string name="label_cant_migrate_season">Unable to migrate season to episode</string>
+    <string name="label_show_seasons">Show seasons</string>
+
     <!-- Other -->
     <string name="download_notifier_download_finish">Download completed</string>
     <string name="action_hide">Hide</string>
@@ -449,6 +454,8 @@
     <string name="action_screen_fit">Screen fit mode</string>
     <string name="action_show_anime">Show anime</string>
     <string name="action_display_download_badge_anime">Downloaded episodes</string>
+    <string name="action_display_show_continue_watching_button">Continue watching button</string>
+    <string name="action_display_grid_mode">Grid display mode</string>
     <string name="action_display_local_badge_manga">Local manga</string>
     <string name="action_display_local_badge_anime">Local anime</string>
     <string name="pref_search_pinned_manga_sources_only">Only search pinned manga sources in global search</string>
@@ -498,15 +505,19 @@
     <string name="snack_add_to_manga_library">Add manga to library?</string>
     <string name="snack_add_to_anime_library">Add anime to library?</string>
     <string name="display_mode_episode">Episode %1$s</string>
+    <string name="display_mode_season">Season %1$s</string>
     <string name="episode_downloading_progress">Downloading (%d%%)</string>
     <string name="download_error">Error</string>
     <string name="download_paused">Paused</string>
     <string name="show_episode_number">Episode number</string>
+    <string name="show_season_number">Season number</string>
     <string name="sort_by_episode_number">By episode number</string>
+    <string name="sort_by_season_number">By season number</string>
     <string name="download_unseen">Unseen</string>
     <string name="confirm_delete_episodes">Are you sure you want to delete the selected episodes?</string>
     <string name="also_set_episode_settings_for_library">Also apply to all anime in my library</string>
     <string name="no_episodes_error">No episodes found</string>
+    <string name="no_seasons_error">No seasons found</string>
     <string name="watching">Watching</string>
     <string name="currently_reading">Currently reading</string>
     <string name="currently_watching">Currently watching</string>
@@ -518,13 +529,14 @@
     <string name="dialog_with_checkbox_remove_description_anime">This will remove the watch date of this episode. Are you sure?</string>
     <string name="dialog_with_checkbox_reset_anime">Reset all episodes for this anime</string>
     <string name="share_screenshot_info">%1$s: %2$s, %3$s</string>
-    <string name="episode_progress">Progress: %1$s/%2$s</string>
-    <string name="episode_progress_no_total">Progress: %1$s</string>
+    <string name="episode_progress">%1$s/%2$s</string>
+    <string name="episode_progress_no_total">%1$s</string>
     <string name="recent_anime_time">Ep. %1$s - %2$s</string>
     <string name="video_list_empty_error">No video found</string>
     <string name="notification_new_episodes">New episodes found</string>
     <string name="information_no_recent_anime">Nothing watched recently</string>
     <string name="episode_settings_updated">Updated default episode settings</string>
+    <string name="season_settings_updated">Updated default season settings</string>
     <string name="download_notifier_download_paused_chapters">Chapter download paused</string>
     <string name="download_notifier_download_paused_episodes">Episode download paused</string>
     <string name="channel_new_chapters_episodes">Chapter/Episode updates</string>
@@ -538,6 +550,7 @@
     <string name="notification_episodes_single_and_more">Episode %1$s and %2$d more</string>
     <string name="notification_episodes_multiple">Episodes %1$s</string>
     <string name="episode_settings">Episode settings</string>
+    <string name="season_settings">Season settings</string>
     <string name="pref_backup_flags">Backup options</string>
     <string name="label_manga_extensions">Manga Extensions</string>
     <string name="label_anime_extensions">Anime Extensions</string>
@@ -555,6 +568,9 @@
     <string name="pref_mark_duplicate_seen_episode_seen">Mark duplicate seen episode as seen</string>
     <string name="pref_mark_duplicate_seen_episode_seen_existing">After watching an episode</string>
     <string name="pref_mark_duplicate_seen_episode_seen_new">After fetching new episode</string>
+    <string name="pref_library_season">Season</string>
+    <string name="pref_update_seasons_refresh">Update seasons with episodes on refresh</string>
+    <string name="pref_update_seasons_update">Update seasons with episodes on library update</string>
     <string name="pref_category_hide_hidden">Hide hidden categories from categories and storage screen</string>
     <string name="pref_update_anime_release_grace_period">Expected anime release grace period</string>
     <string name="data_saver_exclude">Exclude from data saver</string>
@@ -582,4 +598,21 @@
     <string name="onboarding_storage_action_create_folder">Create default Anikku folder</string>
     <string name="download_speed_limit">Chapter download speed limit</string>
     <string name="download_speed_limit_hint">Set to 0 to disable the speed limit.</string>
+    <string name="filler">Filler</string>
+    <string name="action_filter_fillermarked">Fillermarked</string>
+    <string name="action_edit_background">Edit background</string>
+    <string name="custom_background">Custom background</string>
+    <string name="background_saved">Background saved</string>
+    <string name="error_saving_background">Error saving background</string>
+    <string name="error_sharing_background">Error sharing background</string>
+    <string name="set_as_background">Set as background</string>
+    <string name="set_as_thumbnail">Set as thumbnail</string>
+    <string name="background_updated">Background updated</string>
+    <string name="thumbnail_updated">Thumbnail updated</string>
+    <string name="notification_background_update_failed">Failed to update background</string>
+    <string name="action_fillermark_episode">Fillermark episode</string>
+    <string name="action_remove_fillermark_episode">Unfillermark episode</string>
+    <string name="pref_download_fillermarked_items">Allow downloading of fillermarked episodes</string>
+    <string name="show_episode_previews">Episode thumbnails</string>
+    <string name="show_episode_summaries">Episode summaries</string>
 </resources>

@@ -1,9 +1,11 @@
 package tachiyomi.domain.library.service
 
+import aniyomi.domain.anime.SeasonDisplayMode
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.preference.getEnum
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.model.GroupLibraryMode
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.model.LibraryGroup
@@ -105,11 +107,6 @@ class LibraryPreferences(
         TriState.DISABLED,
     )
 
-    // AY -->
-    fun filterFillermarked() =
-        preferenceStore.getEnum("pref_filter_animelib_fillermarked_v2", TriState.DISABLED)
-    // <-- AY
-
     fun filterCompleted() = preferenceStore.getEnum(
         "pref_filter_animelib_completed_v2",
         TriState.DISABLED,
@@ -163,7 +160,6 @@ class LibraryPreferences(
 
     fun newShowUpdatesCount() = preferenceStore.getBoolean("library_show_updates_count", true)
 
-    fun newMangaUpdatesCount() = preferenceStore.getInt("library_unread_updates_count", 0)
     fun newUpdatesCount() = preferenceStore.getInt(Preference.appStateKey("library_unseen_updates_count"), 0)
 
     // endregion
@@ -226,6 +222,18 @@ class LibraryPreferences(
         Manga.EPISODE_SORT_DESC,
     )
 
+    // AY -->
+    fun showEpisodeThumbnailPreviews() = preferenceStore.getLong(
+        "default_episode_show_thumbnail_previews",
+        Anime.EPISODE_SHOW_PREVIEWS,
+    )
+
+    fun showEpisodeSummaries() = preferenceStore.getLong(
+        "default_episode_show_summaries",
+        Anime.EPISODE_SHOW_SUMMARIES,
+    )
+    // <-- AY
+
     fun setChapterSettingsDefault(manga: Manga) {
         filterChapterByRead().set(manga.unreadFilterRaw)
         filterChapterByDownloaded().set(manga.downloadedFilterRaw)
@@ -238,6 +246,10 @@ class LibraryPreferences(
         sortChapterByAscendingOrDescending().set(
             if (manga.sortDescending()) Manga.EPISODE_SORT_DESC else Manga.EPISODE_SORT_ASC,
         )
+        // AY -->
+        showEpisodeThumbnailPreviews().set(manga.showPreviewsRaw)
+        showEpisodeSummaries().set(manga.showSummariesRaw)
+        // <-- AY
     }
 
     fun hideMissingChapters() = preferenceStore.getBoolean("pref_hide_missing_chapter_indicators", false)
@@ -246,6 +258,107 @@ class LibraryPreferences(
     fun showEmptyCategoriesSearch() = preferenceStore.getBoolean("show_empty_categories_search", false)
     // KMK <--
     // endregion
+
+    // AY -->
+    // Seasons
+
+    fun filterSeasonByDownload() =
+        preferenceStore.getLong("default_season_filter_by_downloaded", Anime.SHOW_ALL)
+
+    fun filterSeasonByUnseen() =
+        preferenceStore.getLong("default_season_filter_by_unseen", Anime.SHOW_ALL)
+
+    fun filterSeasonByStarted() =
+        preferenceStore.getLong("default_season_filter_by_started", Anime.SHOW_ALL)
+
+    fun filterSeasonByCompleted() =
+        preferenceStore.getLong("default_season_filter_by_completed", Anime.SHOW_ALL)
+
+    fun filterSeasonByBookmarked() =
+        preferenceStore.getLong("default_season_filter_by_bookmarked", Anime.SHOW_ALL)
+
+    fun filterSeasonByFillermarked() =
+        preferenceStore.getLong("default_season_filter_by_fillermarked", Anime.SHOW_ALL)
+
+    fun sortSeasonBySourceOrNumber() = preferenceStore.getLong(
+        "default_season_sort_by_source_or_number",
+        Anime.SEASON_SORT_SOURCE,
+    )
+
+    fun sortSeasonByAscendingOrDescending() = preferenceStore.getLong(
+        "default_season_sort_by_ascending_or_descending",
+        Anime.SEASON_SORT_DESC,
+    )
+
+    fun seasonDisplayGridMode() = preferenceStore.getLong(
+        "default_season_grid_display_mode",
+        SeasonDisplayMode.toLong(SeasonDisplayMode.CompactGrid),
+    )
+
+    fun seasonDisplayGridSize() = preferenceStore.getInt(
+        "default_season_grid_display_size",
+        0,
+    )
+
+    fun seasonDownloadOverlay() = preferenceStore.getBoolean(
+        "default_season_download_overlay",
+        false,
+    )
+
+    fun seasonUnseenOverlay() = preferenceStore.getBoolean(
+        "default_season_unseen_overlay",
+        true,
+    )
+
+    fun seasonLocalOverlay() = preferenceStore.getBoolean(
+        "default_season_local_overlay",
+        true,
+    )
+
+    fun seasonLangOverlay() = preferenceStore.getBoolean(
+        "default_season_lang_overlay",
+        false,
+    )
+
+    fun seasonContinueOverlay() = preferenceStore.getBoolean(
+        "default_season_continue_overlay",
+        true,
+    )
+
+    fun seasonDisplayMode() = preferenceStore.getLong(
+        "default_season_display_mode",
+        Anime.SEASON_DISPLAY_MODE_SOURCE,
+    )
+
+    fun setSeasonSettingsDefault(anime: Anime) {
+        filterSeasonByDownload().set(anime.seasonDownloadedFilterRaw)
+        filterSeasonByUnseen().set(anime.seasonUnseenFilterRaw)
+        filterSeasonByStarted().set(anime.seasonStartedFilterRaw)
+        filterSeasonByCompleted().set(anime.seasonCompletedFilterRaw)
+        filterSeasonByBookmarked().set(anime.seasonBookmarkedFilterRaw)
+        filterSeasonByFillermarked().set(anime.seasonFillermarkedFilterRaw)
+        sortSeasonBySourceOrNumber().set(anime.seasonSorting)
+        sortSeasonByAscendingOrDescending().set(
+            if (anime.seasonSortDescending()) Anime.SEASON_SORT_DESC else Anime.SEASON_SORT_ASC,
+        )
+        seasonDisplayGridMode().set(SeasonDisplayMode.toLong(anime.seasonDisplayGridMode))
+        seasonDisplayGridSize().set(anime.seasonDisplayGridSize)
+        seasonDownloadOverlay().set(anime.seasonDownloadedOverlay)
+        seasonUnseenOverlay().set(anime.seasonUnseenOverlay)
+        seasonLocalOverlay().set(anime.seasonLocalOverlay)
+        seasonLangOverlay().set(anime.seasonLangOverlay)
+        seasonContinueOverlay().set(anime.seasonContinueOverlay)
+        seasonDisplayMode().set(anime.seasonDisplayMode)
+    }
+
+    // Season behavior
+
+    fun updateSeasonOnRefresh() =
+        preferenceStore.getBoolean("pref_update_season_on_refresh", false)
+
+    fun updateSeasonOnLibraryUpdate() =
+        preferenceStore.getBoolean("pref_update_season_on_library_update", false)
+    // <-- AY
 
     // region Swipe Actions
 

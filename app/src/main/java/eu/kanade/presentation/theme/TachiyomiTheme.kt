@@ -139,14 +139,15 @@ private fun getThemeColorScheme(
     )
 }
 
-private const val RIPPLE_DRAGGED_ALPHA = .5f
-private const val RIPPLE_FOCUSED_ALPHA = .6f
-private const val RIPPLE_HOVERED_ALPHA = .4f
-private const val RIPPLE_PRESSED_ALPHA = .6f
+// AY -->
+private const val RIPPLE_DRAGGED_ALPHA = .1f
+private const val RIPPLE_FOCUSED_ALPHA = .1f
+private const val RIPPLE_HOVERED_ALPHA = .1f
+private const val RIPPLE_PRESSED_ALPHA = .1f
 
 val playerRippleConfiguration
     @Composable get() = RippleConfiguration(
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = if (isSystemInDarkTheme()) Color.White else Color.Black,
         rippleAlpha = RippleAlpha(
             draggedAlpha = RIPPLE_DRAGGED_ALPHA,
             focusedAlpha = RIPPLE_FOCUSED_ALPHA,
@@ -154,6 +155,7 @@ val playerRippleConfiguration
             pressedAlpha = RIPPLE_PRESSED_ALPHA,
         ),
     )
+// <-- AY
 
 private val colorSchemes: Map<AppTheme, BaseColorScheme> = mapOf(
     AppTheme.DEFAULT to TachiyomiColorScheme,

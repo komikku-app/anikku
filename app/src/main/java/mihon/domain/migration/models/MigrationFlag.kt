@@ -10,6 +10,11 @@ enum class MigrationFlag(val flag: Int) {
 
     // 0b00100 was used for manga trackers
     CUSTOM_COVER(0b01000),
+
+    // AY -->
+    CUSTOM_BACKGROUND(0b10000000),
+    // <-- AY
+
     NOTES(0b100000),
     REMOVE_DOWNLOAD(0b10000),
 

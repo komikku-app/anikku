@@ -27,7 +27,7 @@ object ChapterRecognition {
 
     /**
      * Regex used to remove unwanted tags
-     * Example kaguya-sama wa kokurasetai - s01e01v2 1080p ->
+     * Example kaguya-sama wa kokurasetai - s01e01v2 1080p -R> kaguya-sama wa kokurasetai - e01v2
      */
     private val unwanted = Regex("""\b(?:v|ver|version|season|s)[^a-z]?[0-9]+|\b\d+p\b|hi10""")
 
@@ -36,6 +36,12 @@ object ChapterRecognition {
      * Example One Piece 12 special -R> One Piece 12special
      */
     private val unwantedWhiteSpace = Regex("""\s(?=extra|special|omake)""")
+
+    fun parseEpisodeNumber(
+        animeTitle: String,
+        episodeName: String,
+        episodeNumber: Double? = null,
+    ) = parseChapterNumber(animeTitle, episodeName, episodeNumber)
 
     fun parseChapterNumber(
         mangaTitle: String,

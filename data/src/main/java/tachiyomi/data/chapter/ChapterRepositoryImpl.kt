@@ -35,6 +35,10 @@ class ChapterRepositoryImpl(
                         chapter.dateFetch,
                         chapter.dateUpload,
                         chapter.version,
+                        // AY -->
+                        chapter.summary,
+                        chapter.previewUrl,
+                        // <-- AY
                     )
                     val lastInsertId = episodesQueries.selectLastInsertedRowId().executeAsOne()
                     chapter.copy(id = lastInsertId)
@@ -76,6 +80,10 @@ class ChapterRepositoryImpl(
                     episodeId = chapterUpdate.id,
                     version = chapterUpdate.version,
                     isSyncing = 0,
+                    // AY -->
+                    summary = chapterUpdate.summary,
+                    previewUrl = chapterUpdate.previewUrl,
+                    // <-- AY
                 )
             }
         }
@@ -123,12 +131,6 @@ class ChapterRepositoryImpl(
             )
         }
     }
-
-    // AY -->
-    override suspend fun getFillermarkedChaptersByMangaId(mangaId: Long): List<Chapter> {
-        return handler.awaitList { episodesQueries.getFillermarkedEpisodesByAnimeId(mangaId, ChapterMapper::mapChapter) }
-    }
-    // <-- AY
 
     override suspend fun getChapterById(id: Long): Chapter? {
         return handler.awaitOneOrNull { episodesQueries.getEpisodeById(id, ChapterMapper::mapChapter) }

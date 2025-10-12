@@ -33,10 +33,5 @@ data class LibraryManga(
     val hasBookmarks
         get() = bookmarkCount > 0
 
-    // AY -->
-    val hasFillermarks
-        get() = fillermarkCount > 0
-    // <-- AY
-
     val hasStarted = readCount > 0
 }

@@ -1,6 +1,7 @@
 package tachiyomi.presentation.core.util
 
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -110,3 +111,17 @@ fun LazyListState.isItemScrollingDown(initiallyVisible: Boolean = false): Boolea
     return isItemScrolling(initialValue = initiallyVisible) { previous, current -> previous < current }
 }
 // KMK <--
+
+// AY -->
+@Composable
+fun LazyGridState.shouldExpandFAB(): Boolean {
+    return remember {
+        derivedStateOf {
+            (firstVisibleItemIndex == 0 && firstVisibleItemScrollOffset == 0) ||
+                lastScrolledBackward ||
+                !canScrollForward
+        }
+    }
+        .value
+}
+// <-- AY

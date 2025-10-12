@@ -14,14 +14,31 @@ interface SEpisode : Serializable {
 
     var episode_number: Float
 
+    // AY -->
+    var fillermark: Boolean
+    // <-- AY
+
     var scanlator: String?
+
+    // AY -->
+    var summary: String?
+
+    var preview_url: String?
+    // <-- AY
 
     fun copyFrom(other: SEpisode) {
         name = other.name
         url = other.url
         date_upload = other.date_upload
         episode_number = other.episode_number
+        // AY -->
+        fillermark = other.fillermark
+        // <-- AY
         scanlator = other.scanlator
+        // AY -->
+        summary = other.summary
+        preview_url = other.preview_url
+        // <-- AY
     }
 
     companion object {

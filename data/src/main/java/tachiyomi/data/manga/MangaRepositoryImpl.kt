@@ -1,9 +1,11 @@
 package tachiyomi.data.manga
 
+import aniyomi.domain.anime.SeasonAnime
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.DatabaseHandler
+import tachiyomi.data.FetchTypeColumnAdapter
 import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.UpdateStrategyColumnAdapter
 import tachiyomi.domain.library.model.LibraryManga
@@ -11,6 +13,7 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
 import tachiyomi.domain.manga.repository.MangaRepository
+import tachiyomi.domain.source.model.DeletableAnime
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -133,6 +136,9 @@ class MangaRepositoryImpl(
                     genre = it.ogGenre,
                     status = it.ogStatus,
                     // SY <--
+                    // AY -->
+                    backgroundUrl = it.backgroundUrl,
+                    // <-- AY
                     favorite = it.favorite,
                     lastUpdate = it.lastUpdate,
                     nextUpdate = it.nextUpdate,
@@ -141,9 +147,19 @@ class MangaRepositoryImpl(
                     viewerFlags = it.viewerFlags,
                     chapterFlags = it.chapterFlags,
                     coverLastModified = it.coverLastModified,
+                    // AY -->
+                    backgroundLastModified = it.backgroundLastModified,
+                    // <-- AY
                     dateAdded = it.dateAdded,
                     updateStrategy = it.updateStrategy,
                     version = it.version,
+                    // AY -->
+                    fetchType = it.fetchType,
+                    parentId = it.parentId,
+                    seasonFlags = it.seasonFlags,
+                    seasonNumber = it.seasonNumber,
+                    seasonSourceOrder = it.seasonSourceOrder,
+                    // <-- AY
                     // SY -->
                     updateTitle = it.ogTitle.isNotBlank(),
                     updateCover = !it.ogThumbnailUrl.isNullOrBlank(),
@@ -159,6 +175,36 @@ class MangaRepositoryImpl(
         }
     }
 
+    // AY -->
+    override suspend fun getAnimeSeasonsById(parentId: Long): List<SeasonAnime> {
+        return handler.awaitList { animeseasonsViewQueries.getAnimeSeasonsById(parentId, MangaMapper::mapSeasonAnime) }
+    }
+
+    override fun getAnimeSeasonsByIdAsFlow(parentId: Long): Flow<List<SeasonAnime>> {
+        return handler.subscribeToList {
+            animeseasonsViewQueries.getAnimeSeasonsById(parentId, MangaMapper::mapSeasonAnime)
+        }
+    }
+
+    override suspend fun removeParentIdByIds(animeIds: List<Long>) {
+        try {
+            handler.await { animesQueries.removeParentIdByIds(animeIds) }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+        }
+    }
+
+    override fun getDeletableParentAnime(): Flow<List<DeletableAnime>> {
+        return handler.subscribeToList {
+            animedeletableViewQueries.getDeletableParentAnime(MangaMapper::mapDeletableAnime)
+        }
+    }
+
+    override suspend fun getChildrenByParentId(parentId: Long): List<Manga> {
+        return handler.awaitList { animesQueries.getChildrenByParentId(parentId, MangaMapper::mapManga) }
+    }
+    // <-- AY
+
     private suspend fun partialUpdate(vararg mangaUpdates: MangaUpdate) {
         handler.await(inTransaction = true) {
             mangaUpdates.forEach { value ->
@@ -172,6 +218,9 @@ class MangaRepositoryImpl(
                     title = value.title,
                     status = value.status,
                     thumbnailUrl = value.thumbnailUrl,
+                    // AY -->
+                    backgroundUrl = value.backgroundUrl,
+                    // <-- AY
                     favorite = value.favorite,
                     lastUpdate = value.lastUpdate,
                     nextUpdate = value.nextUpdate,
@@ -180,12 +229,22 @@ class MangaRepositoryImpl(
                     viewer = value.viewerFlags,
                     episodeFlags = value.chapterFlags,
                     coverLastModified = value.coverLastModified,
+                    // AY -->
+                    backgroundLastModified = value.backgroundLastModified,
+                    // <-- AY
                     dateAdded = value.dateAdded,
                     animeId = value.id,
                     updateStrategy = value.updateStrategy?.let(UpdateStrategyColumnAdapter::encode),
                     version = value.version,
                     isSyncing = 0,
                     notes = value.notes,
+                    // AY -->
+                    fetchType = value.fetchType?.let(FetchTypeColumnAdapter::encode),
+                    parentId = value.parentId,
+                    seasonFlags = value.seasonFlags,
+                    seasonNumber = value.seasonNumber,
+                    seasonSourceOrder = value.seasonSourceOrder,
+                    // <-- AY
                 )
             }
         }

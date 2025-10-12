@@ -149,8 +149,6 @@ fun PlaybackSpeedSheet(
                         )
                     }
                 },
-                modifier = Modifier
-                    .padding(MaterialTheme.padding.medium),
             )
             Row(
                 modifier = Modifier

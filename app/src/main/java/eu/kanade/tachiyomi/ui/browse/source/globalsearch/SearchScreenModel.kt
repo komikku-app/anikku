@@ -29,6 +29,7 @@ import mihon.domain.manga.model.toDomainManga
 import tachiyomi.core.common.preference.toggle
 import tachiyomi.core.common.util.QuerySanitizer.sanitize
 import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.model.Manga
@@ -232,6 +233,12 @@ abstract class SearchScreenModel(
         }
     }
 
+    // AY -->
+    fun setSelectDialog(selected: Anime) {
+        mutableState.update { it.copy(dialog = Dialog.Select(selected)) }
+    }
+    // <-- AY
+
     fun clearDialog() {
         mutableState.update { it.copy(dialog = null) }
     }
@@ -252,6 +259,10 @@ abstract class SearchScreenModel(
     }
 
     sealed interface Dialog {
+        // AY -->
+        data class Select(val anime: Anime) : Dialog
+        // <-- AY
+
         data class Migrate(val target: Manga, val current: Manga) : Dialog
     }
 }

@@ -24,6 +24,21 @@ Before you start, please note that the ability to use following technologies is 
 - [Android Studio](https://developer.android.com/studio)
 - Emulator or phone with developer options enabled to test changes.
 
+## Keep In Mind
+
+Do remember to mark each line of code that is either added or edited (excluding imports).
+Surround the new code with:
+
+```
+// ANK -->
+...
+// ANK <--
+```
+
+## Linting
+
+To auto-fix some linting errors, run the `spotlessApply` Gradle task.
+
 ## Getting help
 
 - Join [the Discord server](https://discord.gg/85jB7V5AJR) for online help and to ask questions while developing.

@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import mihon.feature.migration.list.MigrationListScreenModel.ChapterInfo
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.manga.model.Manga
 import kotlin.coroutines.CoroutineContext
 
@@ -27,6 +28,15 @@ class MigratingManga(
     sealed interface SearchResult {
         data object Searching : SearchResult
         data object NotFound : SearchResult
+
+        // AY -->
+        data class MismatchedFetchType(
+            val anime: Anime,
+            val episodeCount: Int,
+            val source: String,
+        ) : SearchResult
+        // <-- AY
+
         data class Success(
             val manga: Manga,
             val chapterCount: Int,

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Changed from aniyomi/mihon -->
+    <plurals name="missing_episodes">
+        <item quantity="one">Missing %1$s episode</item>
+        <item quantity="other">Missing %1$s episodes</item>
+    </plurals>
+    <plurals name="notification_episodes_generic">
+        <item quantity="one">%1$d new episode</item>
+        <item quantity="other">%1$d new episodes</item>
+    </plurals>
+    <plurals name="notification_episodes_multiple_and_more">
+        <item quantity="one">Episodes %1$s and 1 more</item>
+        <item quantity="other">Episodes %1$s and %2$d more</item>
+    </plurals>
+
+    <plurals name="missing_seasons">
+        <item quantity="one">Missing %1$s season</item>
+        <item quantity="other">Missing %1$s seasons</item>
+    </plurals>
+</resources>

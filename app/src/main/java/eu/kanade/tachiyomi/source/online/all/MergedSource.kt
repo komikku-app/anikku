@@ -65,6 +65,10 @@ class MergedSource : HttpSource() {
     override fun videoListParse(response: Response) = throw UnsupportedOperationException()
     override fun videoUrlParse(response: Response) = throw UnsupportedOperationException()
 
+    // ANK -->
+    override fun seasonListParse(response: Response) = throw UnsupportedOperationException()
+    // ANK <--
+
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getEpisodeList(anime)"))
     override fun fetchEpisodeList(anime: SAnime) = throw UnsupportedOperationException()
     override suspend fun getEpisodeList(anime: SAnime) = throw UnsupportedOperationException()

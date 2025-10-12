@@ -17,6 +17,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel.Dialog
+import eu.kanade.tachiyomi.ui.browse.migration.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import mihon.feature.migration.dialog.MigrateMangaDialog
@@ -114,6 +115,9 @@ private fun Screen.ShowMigrateDialog(
         target = dialog.target,
         // Initiated from the context of [dialog.target] so we show [dialog.current].
         onClickTitle = { navigator?.push(MangaScreen(dialog.current.id)) },
+        // ANK -->
+        onClickSeasons = { navigator?.push(MigrateSeasonSelectScreen(dialog.current, dialog.target)) },
+        // ANK <--
         onDismissRequest = onDismiss,
         onComplete = {
             toggleSelection(dialog.target, false)

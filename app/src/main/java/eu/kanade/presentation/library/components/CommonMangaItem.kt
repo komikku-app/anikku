@@ -435,9 +435,14 @@ fun MangaListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     badge: @Composable (RowScope.() -> Unit),
+    // AY -->
+    modifier: Modifier = Modifier,
+    // <-- AY
     onClickContinueReading: (() -> Unit)? = null,
+    // AY -->
     entries: Int = 0,
     containerHeight: Int = 0,
+    // <-- AY
     // KMK -->
     isSelected: Boolean = false,
     coverAlpha: Float = 1f,
@@ -449,9 +454,10 @@ fun MangaListItem(
     val onBgColor = coverData.dominantCoverColors?.second.takeIf { libraryColored }
     // KMK <--
     Row(
-        modifier = Modifier
+        modifier = modifier
             .selectedBackground(isSelected)
             .height(
+                // AY -->
                 when (entries) {
                     0 -> 76.dp
                     else -> {
@@ -459,6 +465,7 @@ fun MangaListItem(
                         with(density) { (containerHeight / entries).toDp() } - (3 / entries).dp
                     }
                 },
+                // <-- AY
             )
             .combinedClickable(
                 onClick = onClick,

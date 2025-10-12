@@ -1,0 +1,347 @@
+-- AY -->
+-- Add fetch type column, all current entries are episodes
+ALTER TABLE animes ADD COLUMN fetch_type INTEGER NOT NULL DEFAULT 1;
+
+-- Add parent id column
+ALTER TABLE animes ADD COLUMN parent_id INTEGER;
+
+-- Add season flags column
+ALTER TABLE animes ADD COLUMN season_flags INTEGER NOT NULL DEFAULT 0;
+
+-- Add season number column
+ALTER TABLE animes ADD COLUMN season_number REAL NOT NULL DEFAULT -1.0;
+
+-- Add source order for seasons
+ALTER TABLE animes ADD COLUMN season_source_order INTEGER NOT NULL DEFAULT 0;
+
+-- Create indexes
+DROP INDEX IF EXISTS animes_parent_id;
+DROP INDEX IF EXISTS animes_fetch_type;
+CREATE INDEX animes_parent_id ON animes(parent_id);
+CREATE INDEX animes_fetch_type ON animes(fetch_type);
+
+-- Modify episodes table
+ALTER TABLE episodes ADD COLUMN summary TEXT;
+ALTER TABLE episodes ADD COLUMN preview_url TEXT;
+
+-- Modify animes table
+ALTER TABLE animes ADD COLUMN background_url TEXT;
+ALTER TABLE animes ADD COLUMN background_last_modified INTEGER DEFAULT 0 NOT NULL;
+
+-- Create views
+DROP VIEW IF EXISTS episodestatsView;
+CREATE VIEW episodestatsView AS
+SELECT
+    episodes.anime_id,
+    count(*) AS total,
+    sum(seen) AS seenCount,
+    max(episodes.date_upload) AS latestUpload,
+    max(episodes.date_fetch) AS fetchedAt,
+    sum(episodes.bookmark) AS bookmarkCount,
+    -- KMK -->
+    sum(CASE WHEN episodes.bookmark = 1 AND episodes.seen = 1 THEN 1 ELSE 0 END) AS bookmarkSeenCount,
+    excluded_scanlators.scanlator AS ex_scanlator,
+    -- KMK <--
+    sum(episodes.fillermark) AS fillermarkCount
+FROM episodes
+LEFT JOIN excluded_scanlators
+    ON episodes.anime_id = excluded_scanlators.anime_id
+    AND episodes.scanlator = excluded_scanlators.scanlator
+WHERE ex_scanlator IS NULL
+GROUP BY episodes.anime_id;
+-- <-- AY
+
+-- ANK -->
+DROP VIEW IF EXISTS episodemergestatsView;
+CREATE VIEW episodemergestatsView AS
+SELECT
+    -- KMK -->
+    merged.merge_id,
+    -- KMK <--
+    count(*) AS total,
+    sum(seen) AS seenCount,
+    max(episodes.date_upload) AS latestUpload,
+    max(episodes.date_fetch) AS fetchedAt,
+    sum(episodes.bookmark) AS bookmarkCount,
+    -- KMK -->
+    sum(CASE WHEN episodes.bookmark = 1 AND episodes.seen = 1 THEN 1 ELSE 0 END) AS bookmarkSeenCount,
+    excluded_scanlators.scanlator AS ex_scanlator,
+    -- KMK <--
+    sum(episodes.fillermark) AS fillermarkCount
+FROM episodes
+LEFT JOIN excluded_scanlators
+    ON episodes.anime_id = excluded_scanlators.anime_id
+    AND episodes.scanlator = excluded_scanlators.scanlator
+-- KMK -->
+LEFT JOIN merged
+ON merged.anime_id = episodes.anime_id
+-- KMK <--
+WHERE ex_scanlator IS NULL
+-- KMK -->
+GROUP BY merged.merge_id;
+-- KMK <--
+-- ANK <--
+
+-- AY -->
+DROP VIEW IF EXISTS historystatsView;
+CREATE VIEW historystatsView AS
+SELECT
+    episodes.anime_id,
+    max(history.last_seen) AS lastSeen
+FROM episodes
+LEFT JOIN history ON episodes._id = history.episode_id
+GROUP BY episodes.anime_id;
+-- <-- AY
+
+-- ANK -->
+DROP VIEW IF EXISTS historymergestatsView;
+CREATE VIEW historymergestatsView AS
+SELECT
+    merged.merge_id,
+    max(history.last_seen) AS lastSeen
+FROM episodes
+LEFT JOIN history ON episodes._id = history.episode_id
+-- KMK -->
+LEFT JOIN merged ON merged.anime_id = episodes.anime_id
+GROUP BY merged.merge_id;
+-- KMK <--
+-- ANK <--
+
+-- AY -->
+-- Create view for getting deletable anime
+DROP VIEW IF EXISTS animedeletableView;
+CREATE VIEW animedeletableView AS
+SELECT
+    A._id,
+    A.source,
+    A.fetch_type
+FROM animes AS A
+WHERE A.favorite = 0
+AND A.parent_id IS NULL;
+
+-- Create season stats view
+DROP VIEW IF EXISTS animeseasonstatsView;
+CREATE VIEW animeseasonstatsView AS
+SELECT
+    season.parent_id,
+    count(*) AS child_count,
+    sum(CASE WHEN season.fetch_type = 1 AND
+                 coalesce(ES.total, 0) = coalesce(ES.seenCount, 0)
+            THEN 1 ELSE 0 END) AS fully_seen_seasons,
+    max(coalesce(ES.latestUpload, 0)) AS max_latest_upload,
+    max(coalesce(ES.fetchedAt, 0)) AS max_fetched_at,
+    max(coalesce(HS.lastSeen, 0)) AS max_last_seen,
+    sum(coalesce(ES.bookmarkCount, 0)) AS total_bookmarks,
+    -- KMK -->
+    sum(coalesce(ES.bookmarkSeenCount, 0)) AS total_bookmarksSeenCount,
+    -- KMK <--
+    sum(coalesce(ES.fillermarkCount, 0)) AS total_fillermarks
+FROM animes season
+LEFT JOIN episodestatsView ES ON season._id = ES.anime_id
+LEFT JOIN historystatsView HS ON season._id = HS.anime_id
+WHERE season.parent_id IS NOT NULL
+GROUP BY season.parent_id;
+-- <-- AY
+
+-- ANK -->
+DROP VIEW IF EXISTS animeseasonmergestatsView;
+CREATE VIEW animeseasonmergestatsView AS
+SELECT
+    season.parent_id,
+    count(*) AS child_count,
+    sum(CASE WHEN season.fetch_type = 1 AND
+                 coalesce(ES.total, 0) = coalesce(ES.seenCount, 0)
+            THEN 1 ELSE 0 END) AS fully_seen_seasons,
+    max(coalesce(ES.latestUpload, 0)) AS max_latest_upload,
+    max(coalesce(ES.fetchedAt, 0)) AS max_fetched_at,
+    max(coalesce(HS.lastSeen, 0)) AS max_last_seen,
+    sum(coalesce(ES.bookmarkCount, 0)) AS total_bookmarks,
+    -- KMK -->
+    sum(coalesce(ES.bookmarkSeenCount, 0)) AS total_bookmarksSeenCount,
+    -- KMK <--
+    sum(coalesce(ES.fillermarkCount, 0)) AS total_fillermarks
+FROM animes season
+LEFT JOIN episodemergestatsView ES ON season._id = ES.merge_id
+LEFT JOIN historymergestatsView HS ON season._id = HS.merge_id
+WHERE season.parent_id IS NOT NULL
+GROUP BY season.parent_id;
+-- ANK <--
+
+-- AY -->
+-- Change seasons view
+DROP VIEW IF EXISTS animeseasonsView;
+CREATE VIEW animeseasonsView AS
+SELECT
+    A.*,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.total, 0)
+        WHEN 0 THEN coalesce(ASS.child_count, 0)
+    END AS totalCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.seenCount, 0)
+        WHEN 0 THEN coalesce(ASS.fully_seen_seasons, 0)
+    END AS seenCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.latestUpload, 0)
+        WHEN 0 THEN coalesce(ASS.max_latest_upload, 0)
+    END AS latestUpload,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fetchedAt, 0)
+        WHEN 0 THEN coalesce(ASS.max_fetched_at, 0)
+    END AS episodeFetchedAt,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(HS.lastSeen, 0)
+        WHEN 0 THEN coalesce(ASS.max_last_seen, 0)
+    END AS lastSeen,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarks, 0)
+    END AS bookmarkCount,
+    -- KMK -->
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkSeenCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarksSeenCount, 0)
+    END AS bookmarkedSeenCount,
+    -- KMK <--
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fillermarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_fillermarks, 0)
+    END AS fillermarkCount
+FROM animes AS A
+LEFT JOIN episodestatsView AS ES
+ON A._id = ES.anime_id
+LEFT JOIN historystatsView AS HS
+ON A._id = HS.anime_id
+LEFT JOIN animeseasonstatsView AS ASS
+ON A._id = ASS.parent_id
+WHERE A.parent_id IS NOT NULL;
+
+-- Change libraryView
+DROP VIEW IF EXISTS libraryView;
+CREATE VIEW libraryView AS
+SELECT
+    A.*,
+    -- AY -->
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.total, 0)
+        WHEN 0 THEN coalesce(ASS.child_count, 0)
+    END AS totalCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.seenCount, 0)
+        WHEN 0 THEN coalesce(ASS.fully_seen_seasons, 0)
+    END AS seenCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.latestUpload, 0)
+        WHEN 0 THEN coalesce(ASS.max_latest_upload, 0)
+    END AS latestUpload,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fetchedAt, 0)
+        WHEN 0 THEN coalesce(ASS.max_fetched_at, 0)
+    END AS episodeFetchedAt,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(HS.lastSeen, 0)
+        WHEN 0 THEN coalesce(ASS.max_last_seen, 0)
+    END AS lastSeen,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarks, 0)
+    END AS bookmarkCount,
+    -- KMK -->
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkSeenCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarksSeenCount, 0)
+    END AS bookmarkedSeenCount,
+    -- KMK <--
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fillermarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_fillermarks, 0)
+    END AS fillermarkCount,
+    -- <-- AY
+    coalesce(AC.categories, '0') AS categories
+FROM animes A
+-- AY -->
+LEFT JOIN episodestatsView AS ES
+ON A._id = ES.anime_id
+LEFT JOIN historystatsView AS HS
+ON A._id = HS.anime_id
+-- <-- AY
+LEFT JOIN (
+         SELECT anime_id, group_concat(category_id) AS categories
+         FROM animes_categories
+         GROUP BY anime_id
+     ) AS AC
+ON AC.anime_id = A._id
+-- AY -->
+LEFT JOIN animeseasonstatsView AS ASS ON A._id = ASS.parent_id
+-- <-- AY
+-- KMK -->
+WHERE A.source <> 6969
+-- KMK <--
+UNION
+SELECT
+    A.*,
+    -- AY -->
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.total, 0)
+        WHEN 0 THEN coalesce(ASS.child_count, 0)
+    END AS totalCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.seenCount, 0)
+        WHEN 0 THEN coalesce(ASS.fully_seen_seasons, 0)
+    END AS seenCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.latestUpload, 0)
+        WHEN 0 THEN coalesce(ASS.max_latest_upload, 0)
+    END AS latestUpload,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fetchedAt, 0)
+        WHEN 0 THEN coalesce(ASS.max_fetched_at, 0)
+    END AS episodeFetchedAt,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(HS.lastSeen, 0)
+        WHEN 0 THEN coalesce(ASS.max_last_seen, 0)
+    END AS lastSeen,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarks, 0)
+    END AS bookmarkCount,
+    -- KMK -->
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.bookmarkSeenCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_bookmarksSeenCount, 0)
+    END AS bookmarkedSeenCount,
+    -- KMK <--
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(ES.fillermarkCount, 0)
+        WHEN 0 THEN coalesce(ASS.total_fillermarks, 0)
+    END AS fillermarkCount,
+    -- <-- AY
+    coalesce(AC.categories, '0') AS categories
+FROM animes A
+-- KMK -->
+LEFT JOIN (
+    SELECT merged.anime_id,merged.merge_id
+    FROM merged
+    GROUP BY merged.merge_id
+) AS ME
+ON ME.merge_id = A._id
+-- KMK <--
+-- AY -->
+LEFT JOIN episodemergestatsView AS ES
+ON A._id = ES.merge_id
+LEFT JOIN historymergestatsView AS HS
+ON A._id = HS.merge_id
+-- <-- AY
+LEFT JOIN (
+         SELECT anime_id, group_concat(category_id) AS categories
+         FROM animes_categories
+         GROUP BY anime_id
+     ) AS AC
+ON AC.anime_id = A._id
+-- AY -->
+LEFT JOIN animeseasonmergestatsView AS ASS ON A._id = ASS.parent_id
+-- <-- AY
+-- KMK -->
+WHERE A.source = 6969;
+-- KMK <--
+-- <-- AY

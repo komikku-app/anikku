@@ -1,0 +1,51 @@
+-- AY -->
+CREATE VIEW episodestatsView AS
+SELECT
+    episodes.anime_id,
+    count(*) AS total,
+    sum(seen) AS seenCount,
+    max(episodes.date_upload) AS latestUpload,
+    max(episodes.date_fetch) AS fetchedAt,
+    sum(episodes.bookmark) AS bookmarkCount,
+    -- KMK -->
+    sum(CASE WHEN episodes.bookmark = 1 AND episodes.seen = 1 THEN 1 ELSE 0 END) AS bookmarkSeenCount,
+    excluded_scanlators.scanlator AS ex_scanlator,
+    -- KMK <--
+    sum(episodes.fillermark) AS fillermarkCount
+FROM episodes
+LEFT JOIN excluded_scanlators
+    ON episodes.anime_id = excluded_scanlators.anime_id
+    AND episodes.scanlator = excluded_scanlators.scanlator
+WHERE ex_scanlator IS NULL
+GROUP BY episodes.anime_id;
+-- <-- AY
+
+-- ANK -->
+CREATE VIEW episodemergestatsView AS
+SELECT
+    -- KMK -->
+    merged.merge_id,
+    -- KMK <--
+    count(*) AS total,
+    sum(seen) AS seenCount,
+    max(episodes.date_upload) AS latestUpload,
+    max(episodes.date_fetch) AS fetchedAt,
+    sum(episodes.bookmark) AS bookmarkCount,
+    -- KMK -->
+    sum(CASE WHEN episodes.bookmark = 1 AND episodes.seen = 1 THEN 1 ELSE 0 END) AS bookmarkSeenCount,
+    excluded_scanlators.scanlator AS ex_scanlator,
+    -- KMK <--
+    sum(episodes.fillermark) AS fillermarkCount
+FROM episodes
+LEFT JOIN excluded_scanlators
+    ON episodes.anime_id = excluded_scanlators.anime_id
+    AND episodes.scanlator = excluded_scanlators.scanlator
+-- KMK -->
+LEFT JOIN merged
+ON merged.anime_id = episodes.anime_id
+-- KMK <--
+WHERE ex_scanlator IS NULL
+-- KMK -->
+GROUP BY merged.merge_id;
+-- KMK <--
+-- ANK <--

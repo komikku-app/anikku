@@ -22,7 +22,17 @@ interface SAnime : Serializable {
 
     var thumbnail_url: String?
 
+    // AY -->
+    var background_url: String?
+    // <-- AY
+
     var update_strategy: AnimeUpdateStrategy
+
+    // AY -->
+    var fetch_type: FetchType
+
+    var season_number: Double
+    // <-- AY
 
     var initialized: Boolean
 
@@ -52,7 +62,14 @@ interface SAnime : Serializable {
         it.genre = originalGenre
         it.status = originalStatus
         // SY <--
+        // AY -->
+        it.background_url = background_url
+        // <-- AY
         it.update_strategy = update_strategy
+        // AY -->
+        it.fetch_type = fetch_type
+        it.season_number = season_number
+        // <-- AY
         it.initialized = initialized
     }
 
@@ -107,6 +124,10 @@ fun SAnime.copy(
     genre: String? = this.originalGenre,
     status: Int = this.status,
     thumbnail_url: String? = this.originalThumbnailUrl,
+    // AY -->
+    fetch_type: FetchType = this.fetch_type,
+    season_number: Double = this.season_number,
+    // <-- AY
     initialized: Boolean = this.initialized,
 ) = SAnime.create().also {
     it.url = url
@@ -117,6 +138,10 @@ fun SAnime.copy(
     it.genre = genre
     it.status = status
     it.thumbnail_url = thumbnail_url
+    // AY -->
+    it.fetch_type = fetch_type
+    it.season_number = season_number
+    // <-- AY
     it.initialized = initialized
 }
 // SY <--

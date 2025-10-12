@@ -22,10 +22,6 @@ interface ChapterRepository {
 
     suspend fun getBookmarkedChaptersByMangaId(mangaId: Long): List<Chapter>
 
-    // AY -->
-    suspend fun getFillermarkedChaptersByMangaId(mangaId: Long): List<Chapter>
-    // <-- AY
-
     suspend fun getChapterById(id: Long): Chapter?
 
     suspend fun getChapterByMangaIdAsFlow(mangaId: Long, applyFilter: Boolean = false): Flow<List<Chapter>>

@@ -14,6 +14,12 @@ class ChapterImpl : Chapter {
 
     override var scanlator: String? = null
 
+    // AY -->
+    override var summary: String? = null
+
+    override var preview_url: String? = null
+    // <-- AY
+
     override var read: Boolean = false
 
     override var bookmark: Boolean = false

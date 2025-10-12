@@ -83,9 +83,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                     MPVLib.setPropertyString("sub-ass-override", if (it) "force" else "scale")
                 },
                 content = { Text(stringResource(AYMR.strings.player_sheets_sub_override_ass)) },
-                modifier = Modifier
-                    .padding(MaterialTheme.padding.medium)
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
             )
             var subScale by remember {
                 mutableFloatStateOf(MPVLib.getPropertyDouble("sub-scale").toFloat())

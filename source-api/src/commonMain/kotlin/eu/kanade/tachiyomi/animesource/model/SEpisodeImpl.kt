@@ -12,5 +12,15 @@ class SEpisodeImpl : SEpisode {
 
     override var episode_number: Float = -1f
 
+    // AY -->
+    override var fillermark: Boolean = false
+    // <-- AY
+
     override var scanlator: String? = null
+
+    // AY -->
+    override var summary: String? = null
+
+    override var preview_url: String? = null
+    // <-- AY
 }

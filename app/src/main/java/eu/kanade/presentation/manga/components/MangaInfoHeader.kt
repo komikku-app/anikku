@@ -92,6 +92,7 @@ import com.mikepenz.markdown.utils.getUnescapedTextInNode
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.data.coil.useBackground
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import org.intellij.markdown.MarkdownElementTypes
@@ -152,6 +153,9 @@ fun MangaInfoBox(
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(manga)
+                // AY -->
+                .useBackground(true)
+                // <-- AY
                 .crossfade(true)
                 .build(),
             contentDescription = null,

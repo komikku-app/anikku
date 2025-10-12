@@ -17,6 +17,10 @@ data class Chapter(
     val dateUpload: Long,
     val chapterNumber: Double,
     val scanlator: String?,
+    // AY -->
+    val summary: String?,
+    val previewUrl: String?,
+    // <-- AY
     val lastModifiedAt: Long,
     val version: Long,
 ) {
@@ -29,7 +33,14 @@ data class Chapter(
             url = other.url,
             dateUpload = other.dateUpload,
             chapterNumber = other.chapterNumber,
+            // AY -->
+            fillermark = other.fillermark,
+            // <-- AY
             scanlator = other.scanlator?.ifBlank { null },
+            // AY -->
+            summary = other.summary?.ifBlank { null },
+            previewUrl = other.previewUrl?.ifBlank { null },
+            // <-- AY
         )
     }
 
@@ -51,6 +62,10 @@ data class Chapter(
             dateUpload = -1,
             chapterNumber = -1.0,
             scanlator = null,
+            // AY -->
+            summary = null,
+            previewUrl = null,
+            // <-- AY
             lastModifiedAt = 0,
             version = 1,
         )

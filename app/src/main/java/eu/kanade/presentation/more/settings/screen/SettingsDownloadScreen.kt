@@ -103,6 +103,12 @@ object SettingsDownloadScreen : SearchableSettings {
                     preference = downloadPreferences.removeBookmarkedChapters(),
                     title = stringResource(AMR.strings.pref_remove_bookmarked_episodes),
                 ),
+                // AY -->
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = downloadPreferences.downloadFillermarkedEpisodes(),
+                    title = stringResource(AYMR.strings.pref_download_fillermarked_items),
+                ),
+                // <-- AY
                 getExcludedCategoriesPreference(
                     downloadPreferences = downloadPreferences,
                     categories = { categories },

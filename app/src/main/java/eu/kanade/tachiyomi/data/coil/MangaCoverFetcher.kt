@@ -13,6 +13,7 @@ import coil3.getOrDefault
 import coil3.request.Options
 import com.hippo.unifile.UniFile
 import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.tachiyomi.data.cache.BackgroundCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher.Companion.USE_CUSTOM_COVER_KEY
 import eu.kanade.tachiyomi.network.await
@@ -309,7 +310,7 @@ class MangaCoverFetcher(
         } catch (e: Exception) {
             try {
                 editor.abort()
-            } catch (ignored: Exception) {
+            } catch (_: Exception) {
             }
             throw e
         }
@@ -368,9 +369,31 @@ class MangaCoverFetcher(
     ) : Fetcher.Factory<Manga> {
 
         private val coverCache: CoverCache by injectLazy()
+
+        // AY -->
+        private val backgroundCache: BackgroundCache by injectLazy()
+        // <-- AY
+
         private val sourceManager: SourceManager by injectLazy()
 
         override fun create(data: Manga, options: Options, imageLoader: ImageLoader): Fetcher {
+            // AY -->
+            val isBackground = options.useBackground
+            val url = if (isBackground) data.backgroundUrl else data.thumbnailUrl
+
+            val coverCacheLazy = if (isBackground) {
+                lazy { backgroundCache.getBackgroundFile(url) }
+            } else {
+                lazy { coverCache.getCoverFile(url) }
+            }
+
+            val customCoverCacheLazy = if (isBackground) {
+                lazy { backgroundCache.getCustomBackgroundFile(data.id) }
+            } else {
+                lazy { coverCache.getCustomCoverFile(data.id) }
+            }
+            // <-- AY
+
             return MangaCoverFetcher(
                 // KMK -->
                 // url = data.thumbnailUrl,
@@ -378,8 +401,10 @@ class MangaCoverFetcher(
                 // KMK <--
                 isLibraryManga = data.favorite,
                 options = options,
-                coverFileLazy = lazy { coverCache.getCoverFile(data.thumbnailUrl) },
-                customCoverFileLazy = lazy { coverCache.getCustomCoverFile(data.id) },
+                // AY -->
+                coverFileLazy = coverCacheLazy,
+                customCoverFileLazy = customCoverCacheLazy,
+                // <-- AY
                 diskCacheKeyLazy = lazy { imageLoader.components.key(data, options)!! },
                 sourceLazy = lazy { sourceManager.get(data.source) as? HttpSource },
                 callFactoryLazy = callFactoryLazy,

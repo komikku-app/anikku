@@ -14,6 +14,9 @@ fun MigrationFlag.getLabel(): StringResource {
         MigrationFlag.TRACK -> MR.strings.track
         // KMK <--
         MigrationFlag.CUSTOM_COVER -> MR.strings.custom_cover
+        // AY -->
+        MigrationFlag.CUSTOM_BACKGROUND -> AYMR.strings.custom_background
+        // <-- AY
         MigrationFlag.NOTES -> MR.strings.action_notes
         MigrationFlag.REMOVE_DOWNLOAD -> MR.strings.delete_downloaded
         // KMK -->

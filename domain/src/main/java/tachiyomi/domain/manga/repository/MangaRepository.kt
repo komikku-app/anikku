@@ -1,10 +1,13 @@
 package tachiyomi.domain.manga.repository
 
+import aniyomi.domain.anime.SeasonAnime
 import kotlinx.coroutines.flow.Flow
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
+import tachiyomi.domain.source.model.DeletableAnime
 
 interface MangaRepository {
 
@@ -49,4 +52,16 @@ interface MangaRepository {
 
     suspend fun getReadMangaNotInLibraryView(): List<LibraryManga>
     // SY <--
+
+    // AY -->
+    suspend fun getAnimeSeasonsById(parentId: Long): List<SeasonAnime>
+
+    fun getAnimeSeasonsByIdAsFlow(parentId: Long): Flow<List<SeasonAnime>>
+
+    suspend fun removeParentIdByIds(animeIds: List<Long>)
+
+    fun getDeletableParentAnime(): Flow<List<DeletableAnime>>
+
+    suspend fun getChildrenByParentId(parentId: Long): List<Anime>
+    // <-- AY
 }

@@ -26,6 +26,10 @@ class SetMangaDefaultChapterFlags(
                     sortingMode = sortChapterBySourceOrNumber().get(),
                     sortingDirection = sortChapterByAscendingOrDescending().get(),
                     displayMode = displayChapterByNameOrNumber().get(),
+                    // AY -->
+                    showPreviews = showEpisodeThumbnailPreviews().get(),
+                    showSummaries = showEpisodeSummaries().get(),
+                    // <-- AY
                 )
             }
         }

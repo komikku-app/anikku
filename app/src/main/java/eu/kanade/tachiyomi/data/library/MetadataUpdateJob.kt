@@ -13,9 +13,11 @@ import androidx.work.WorkerParameters
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.copyFrom
 import eu.kanade.domain.manga.model.toSManga
+import eu.kanade.tachiyomi.data.cache.BackgroundCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.source.getMangaDetails
+import eu.kanade.tachiyomi.util.prepUpdateBackground
 import eu.kanade.tachiyomi.util.prepUpdateCover
 import eu.kanade.tachiyomi.util.system.isRunning
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
@@ -48,6 +50,11 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
 
     private val sourceManager: SourceManager = Injekt.get()
     private val coverCache: CoverCache = Injekt.get()
+
+    // AY -->
+    private val backgroundCache: BackgroundCache = Injekt.get()
+    // <-- AY
+
     private val getLibraryManga: GetLibraryManga = Injekt.get()
     private val updateManga: UpdateManga = Injekt.get()
 
@@ -124,10 +131,13 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
                                     try {
                                         val networkManga = source.getMangaDetails(manga.toSManga())
                                         val updatedManga = manga.prepUpdateCover(coverCache, networkManga, true)
+                                            // AY -->
+                                            .prepUpdateBackground(backgroundCache, networkManga, true)
+                                            // <-- AY
                                             .copyFrom(networkManga)
                                         try {
                                             updateManga.await(updatedManga.toMangaUpdate())
-                                        } catch (e: Exception) {
+                                        } catch (_: Exception) {
                                             logcat(LogPriority.ERROR) { "Anime doesn't exist anymore" }
                                         }
                                     } catch (e: Throwable) {
@@ -176,8 +186,6 @@ class MetadataUpdateJob(private val context: Context, workerParams: WorkerParame
     companion object {
         private const val TAG = "MetadataUpdate"
         private const val WORK_NAME_MANUAL = "MetadataUpdate"
-
-        private const val MANGA_PER_SOURCE_QUEUE_WARNING_THRESHOLD = 60
 
         fun startNow(context: Context): Boolean {
             val wm = context.workManager
