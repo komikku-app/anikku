@@ -10,7 +10,6 @@ import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.Level
 import com.arthenica.ffmpegkit.LogCallback
-import com.arthenica.ffmpegkit.LogRedirectionStrategy
 import com.arthenica.ffmpegkit.StatisticsCallback
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
@@ -28,6 +27,7 @@ import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import eu.kanade.tachiyomi.util.system.createFileInCacheDir
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -66,6 +66,7 @@ import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
+import java.io.BufferedReader
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -571,16 +572,8 @@ class Downloader(
             "${it.first}: ${it.second}\r\n"
         }
 
-        FFmpegKitConfig.setLogRedirectionStrategy(LogRedirectionStrategy.ALWAYS_PRINT_LOGS)
         val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename())
-        val ffprobeCommand = { file: String, ffprobeHeaders: String? ->
-            FFmpegKitConfig.parseArguments(
-                "${ffprobeHeaders?.plus(" ") ?: ""}-v quiet -show_entries " +
-                    "format=duration -of default=noprint_wrappers=1:nokey=1 \"$file\"",
-            )
-        }
-
-        var duration = 0L
+        val duration = getDuration(video.videoUrl, headerOptions)?.toLong() ?: 0L
 
         val logCallback = LogCallback { log ->
             if (log.level <= Level.AV_LOG_WARNING) {
@@ -597,8 +590,6 @@ class Downloader(
                 download.progress = (100 * outTime / duration).toInt()
             }
         }
-
-        duration = getDuration(ffprobeCommand(video.videoUrl, headerOptions))?.toLong() ?: 0L
 
         suspendCancellableCoroutine { continuation ->
             val session = FFmpegKit.executeWithArgumentsAsync(
@@ -690,8 +681,20 @@ class Downloader(
         return FFmpegKitConfig.parseArguments(command)
     }
 
-    private suspend fun getDuration(ffprobeCommand: Array<String>): Float? {
-        return suspendCancellableCoroutine { continuation ->
+    private suspend fun getDuration(videoUrl: String, headerOptions: String): Float? {
+        val durationFile = context.createFileInCacheDir("ffprobe_duration.txt")
+        val durationFilePath = durationFile.toUri().toFFmpegString(context)
+
+        val ffprobeCommand = FFmpegKitConfig.parseArguments(
+            listOf(
+                headerOptions,
+                "-v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1",
+                "-o \"$durationFilePath\"",
+                "\"$videoUrl\"",
+            ).joinToString(" "),
+        )
+
+        suspendCancellableCoroutine { continuation ->
             val session = FFprobeKit.executeWithArgumentsAsync(ffprobeCommand) {
                 if (it.returnCode.isValueSuccess) {
                     continuation.resume(it)
@@ -700,7 +703,9 @@ class Downloader(
                 }
             }
             continuation.invokeOnCancellation { session.cancel() }
-        }.output.toFloatOrNull()
+        }
+
+        return durationFile.bufferedReader().use(BufferedReader::readText).trim().toFloatOrNull()
     }
 
     /**
@@ -830,39 +835,6 @@ class Downloader(
     ): Boolean {
         val downloadedVideo = tmpDir.listFiles().orEmpty().filterNot { it.extension == "tmp" }
         return downloadedVideo.size == 1
-    }
-
-    /**
-     * Checks if the download was successful.
-     *
-     * @param download the download to check.
-     * @param animeDir the anime directory of the download.
-     * @param tmpDir the directory where the download is currently stored.
-     * @param dirname the real (non temporary) directory name of the download.
-     */
-    private suspend fun ensureSuccessfulAnimeDownload(
-        download: Download,
-        animeDir: UniFile,
-        tmpDir: UniFile,
-        dirname: String,
-    ) {
-        // Ensure that the episode folder has the full video
-        val downloadedVideo = tmpDir.listFiles().orEmpty().filterNot { it.extension == "tmp" }
-
-        download.status = if (downloadedVideo.size == 1) {
-            // Only rename the directory if it's downloaded
-            val filename = DiskUtil.buildValidFilename("${/* SY --> */ download.anime.ogTitle /* SY <-- */} - ${download.episode.name}")
-            tmpDir.findFile("$filename.tmp")?.delete()
-            tmpDir.findFile("${filename}_tmp.mkv")?.delete()
-            tmpDir.renameTo(dirname)
-
-            cache.addChapter(dirname, animeDir, download.anime)
-
-            DiskUtil.createNoMediaFile(tmpDir, context)
-            Download.State.DOWNLOADED
-        } else {
-            throw Exception("Unable to finalize download")
-        }
     }
 
     /**
