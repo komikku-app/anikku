@@ -53,6 +53,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Fix reader not saving read duration when changing chapter ([@AntsyLich](https://github.com/AntsyLich), [@KotlinHero](https://github.com/KotlinHero)) ([#2784](https://github.com/mihonapp/mihon/pull/2784))
 - Fix pre-1970 upload date display in chapter list ([@MajorTanya](https://github.com/MajorTanya)) ([#2779](https://github.com/mihonapp/mihon/pull/2779))
 - Fix crash when trying to install/update extensions while shizuku is not running ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#2837](https://github.com/mihonapp/mihon/pull/2837))
+- Fix formatting of file size ([@Quickdev](https://github.com/quickdesh)) ([`958e245`](https://github.com/quickdesh/Animiru/commit/958e245))
+- Don't overwrite episodes.json with anime details for localanime ([@Secozzi](https://github.com/Secozzi)) ([#96](https://github.com/quickdesh/Animiru/pull/96))
+- Fix jellyfin enhanced tracker for newer versions of the extension ([@Secozzi](https://github.com/Secozzi)) ([#107](https://github.com/quickdesh/Animiru/pull/107))
 
 ### Other
 - Enable logcat logging on stable and debug builds without enabling verbose logging ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#2836](https://github.com/mihonapp/mihon/pull/2836))

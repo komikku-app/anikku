@@ -42,7 +42,7 @@ class JellyfinInterceptor : Interceptor {
     }
 
     private fun getId(suffix: Int): Long {
-        val key = "jellyfin" + (if (suffix == 1) "" else " ($suffix)") + "/all/$JELLYFIN_VERSION_ID"
+        val key = "jellyfin ($suffix)/all/$JELLYFIN_VERSION_ID"
         val bytes = MessageDigest.getInstance("MD5").digest(key.toByteArray())
         return (0..7).map { bytes[it].toLong() and 0xff shl 8 * (7 - it) }
             .reduce(Long::or) and Long.MAX_VALUE
@@ -67,7 +67,7 @@ class JellyfinInterceptor : Interceptor {
     }
 
     companion object {
-        private const val JELLYFIN_VERSION_ID = 1
+        private const val JELLYFIN_VERSION_ID = 2
         private const val MAX_JELLYFIN_SOURCES = 10
     }
 }
