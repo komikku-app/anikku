@@ -260,8 +260,6 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _pos = MutableStateFlow(0f)
     val pos = _pos.asStateFlow()
 
-    private var castProgressJob: Job? = null
-
     val duration = MutableStateFlow(0f)
 
     private val _readAhead = MutableStateFlow(0f)
@@ -328,7 +326,15 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val unfilteredEpisodeList by lazy {
         val anime = anime!!
-        runBlocking { getEpisodesByAnimeId.await(anime.id, applyFilter = false) }
+        runBlocking {
+            // KMK -->
+            if (anime.source == MERGED_SOURCE_ID) {
+                getMergedChaptersByMangaId.await(anime.id, dedupe = false, applyFilter = false)
+            } else {
+                getEpisodesByAnimeId.await(anime.id, applyFilter = false)
+            }
+            // KMK <--
+        }
     }
 
     init {
@@ -441,7 +447,7 @@ class PlayerViewModel @JvmOverloads constructor(
                         else -> error("Unrecognized track type")
                     }
                 }
-            } catch (e: NullPointerException) {
+            } catch (_: NullPointerException) {
                 logcat(LogPriority.ERROR) { "Couldn't load tracks, probably cause mpv was destroyed" }
                 return@launch
             }
@@ -768,7 +774,7 @@ class PlayerViewModel @JvmOverloads constructor(
     @Suppress("DEPRECATION")
     fun changeVideoAspect(aspect: VideoAspect) {
         var ratio = -1.0
-        var pan = 1.0
+        var pan: Double
         when (aspect) {
             VideoAspect.Crop -> {
                 pan = 1.0
@@ -1946,7 +1952,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 } else {
                     SetAsCover.AddToLibraryFirst
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 SetAsCover.Error
             }
             eventChannel.send(Event.SetCoverResult(result))
