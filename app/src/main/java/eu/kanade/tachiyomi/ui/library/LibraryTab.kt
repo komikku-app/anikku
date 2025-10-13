@@ -300,6 +300,9 @@ data object LibraryTab : Tab {
                 else -> {
                     LibraryContent(
                         categories = state.displayedCategories,
+                        // KMK -->
+                        activeCategoryIndex = state.coercedActiveCategoryIndex,
+                        // KMK <--
                         searchQuery = state.searchQuery,
                         selection = state.selection,
                         contentPadding = contentPadding,
