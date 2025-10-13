@@ -244,8 +244,8 @@ sealed class Preference {
             override val title: String,
             val login: () -> Unit,
             val openSettings: () -> Unit,
+            override val subtitle: String? = null,
         ) : PreferenceItem<String>() {
-            override val subtitle: String? = null
             override val enabled: Boolean = true
             override val icon: ImageVector? = null
             override val onValueChanged: suspend (value: String) -> Boolean = { true }
