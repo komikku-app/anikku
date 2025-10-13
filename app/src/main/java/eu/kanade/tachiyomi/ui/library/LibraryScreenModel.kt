@@ -76,6 +76,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.category.model.Category.Companion.UNCATEGORIZED_ID
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
@@ -164,7 +165,6 @@ class LibraryScreenModel(
                 // KMK <--
                 getLibraryItemPreferencesFlow(),
             ) { (searchQuery, categories, favorites), (tracksMap, trackingFilters), (includedCategories, excludedCategories), itemPreferences ->
-                val showSystemCategory = favorites.fastAny { it.libraryManga.categories.contains(0) }
                 val filteredFavorites = favorites
                     .applyFilters(
                         tracksMap,
@@ -191,7 +191,6 @@ class LibraryScreenModel(
 
                 LibraryData(
                     isInitialized = true,
-                    showSystemCategory = showSystemCategory,
                     categories = categories,
                     favorites = filteredFavorites,
                     tracksMap = tracksMap,
@@ -239,7 +238,6 @@ class LibraryScreenModel(
                 data.favorites
                     .applyGrouping(
                         data.categories,
-                        data.showSystemCategory,
                         // KMK -->
                         if (filterCategory && includedCategories.isNotEmpty()) {
                             LibraryGroup.UNGROUPED
@@ -259,7 +257,7 @@ class LibraryScreenModel(
                     )
                     // KMK -->
                     .filter {
-                        // Hide empty categories if no active filter or search
+                        // Hide empty categories unless the setting is enabled or there are no active filters/search
                         showEmptyCategoriesSearch || noActiveFilterOrSearch || it.value.isNotEmpty()
                     }
                     .let {
@@ -529,7 +527,6 @@ class LibraryScreenModel(
 
     private fun List<LibraryItem>.applyGrouping(
         categories: List<Category>,
-        showSystemCategory: Boolean,
         // KMK -->
         groupType: Int,
         showHiddenCategories: Boolean,
@@ -538,17 +535,25 @@ class LibraryScreenModel(
         // KMK -->
         when (groupType) {
             LibraryGroup.BY_DEFAULT -> {
+                var showSystemCategory = false
                 // KMK <--
                 val groupCache = mutableMapOf</* Category.id */ Long, MutableList</* LibraryItem */ Long>>()
                 forEach { item ->
                     item.libraryManga.categories.forEach { categoryId ->
+                        // KMK -->
+                        if (categoryId == UNCATEGORIZED_ID) {
+                            showSystemCategory = true
+                        }
+                        // KMK <--
                         groupCache.getOrPut(categoryId) { mutableListOf() }.add(item.id)
                     }
                 }
-                return categories.fastFilter { showSystemCategory || !it.isSystemCategory }
-                    // KMK -->
-                    .fastFilterNot { !showHiddenCategories && it.hidden }
+                return categories.fastFilter {
+                    (showSystemCategory || !it.isSystemCategory) &&
+                        // KMK -->
+                        (showHiddenCategories || !it.hidden)
                     // KMK <--
+                }
                     .associateWith {
                         groupCache[it.id]?.toList()
                             // KMK -->
@@ -1499,7 +1504,7 @@ class LibraryScreenModel(
     suspend fun smartSearchMerge(selectedMangas: PersistentList<Manga>): Long? {
         val mergedManga = selectedMangas.firstOrNull { it.source == MERGED_SOURCE_ID }?.let { listOf(it) }
             ?: emptyList()
-        val mergingMangas = selectedMangas.filterNot { it.source == MERGED_SOURCE_ID }
+        val mergingMangas = selectedMangas.fastFilterNot { it.source == MERGED_SOURCE_ID }
         val toMergeMangas = mergedManga + mergingMangas
         if (toMergeMangas.size <= 1) return null
 
@@ -1544,7 +1549,6 @@ class LibraryScreenModel(
     @Immutable
     data class LibraryData(
         val isInitialized: Boolean = false,
-        val showSystemCategory: Boolean = false,
         val categories: List<Category> = emptyList(),
         val favorites: List<LibraryItem> = emptyList(),
         val tracksMap: Map</* Manga */ Long, List<Track>> = emptyMap(),
