@@ -438,19 +438,8 @@ class MangaScreenModel(
 
         screenModelScope.launchIO {
             // AY -->
-            val oldManga = getMangaAndChaptersAndSeasons.awaitManga(mangaId)
-
-            // TODO(16): Remove checks
-            val source = sourceManager.getOrStub(oldManga.source)
-            val manga = if (source.javaClass.declaredMethods.any {
-                    it.name in
-                        listOf("getSeasonList", "seasonListRequest", "seasonListParse")
-                }
-            ) {
-                oldManga
-            } else {
-                oldManga.copy(fetchType = FetchType.Episodes)
-            }
+            val manga = getMangaAndChaptersAndSeasons.awaitManga(mangaId)
+            val source = sourceManager.getOrStub(manga.source)
             // <-- AY
 
             // SY -->
