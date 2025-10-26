@@ -54,7 +54,7 @@
     <string name="unseen">Onbekeken</string>
     <string name="label_manga_extension_repos">Bronnen voor Manga extensies</string>
     <string name="label_anime_extension_repos">Bronnen voor Anime extensies</string>
-    <string name="onboarding_storage_action_create_folder">Maak standaard Anikku-map</string>
+    <string name="onboarding_storage_action_create_folder">Maak standaard Aniyomi-map</string>
     <string name="download_speed_limit">Beperk downloadsnelheid</string>
     <string name="download_speed_limit_hint">Zet op 0 voor onbeperkte downloadsnelheid.</string>
 </resources>
