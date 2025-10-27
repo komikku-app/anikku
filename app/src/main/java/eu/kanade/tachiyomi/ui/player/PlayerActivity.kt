@@ -103,6 +103,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withUIContext
+import tachiyomi.core.common.util.system.UrlUtils
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.storage.service.StorageManager
@@ -1483,7 +1484,7 @@ class PlayerActivity : BaseActivity() {
                             incognitoMode = viewModel.currentSource.value?.isNsfw() == true || viewModel.incognitoMode,
                             animeId = anime.id,
                             animeTitle = anime.ogTitle,
-                            thumbnailUrl = anime.thumbnailUrl ?: "",
+                            thumbnailUrl = anime.thumbnailUrl.takeIf { UrlUtils.isOnlineUrl(it) } ?: anime.ogThumbnailUrl,
                             episodeNumber = if (connectionsPreferences.useChapterTitles().get()) {
                                 episode.name
                             } else {
