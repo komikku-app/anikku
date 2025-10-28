@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
@@ -93,7 +94,10 @@ class EpisodeLoader {
         private fun checkHasHosters(source: AnimeHttpSource): Boolean {
             var current: Class<in AnimeHttpSource> = source.javaClass
             while (true) {
-                if (current == AnimeHttpSource::class.java) {
+                if (current == ParsedAnimeHttpSource::class.java ||
+                    current == AnimeHttpSource::class.java ||
+                    current == AnimeSource::class.java
+                ) {
                     return false
                 }
                 if (current.declaredMethods.any {
