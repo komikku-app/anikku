@@ -40,6 +40,7 @@ import eu.kanade.tachiyomi.util.system.isRunning
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
 import exh.source.MERGED_SOURCE_ID
+import exh.util.WorkerUtil
 import exh.util.nullIfBlank
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -747,5 +748,17 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                     }
                 }
         }
+
+        // KMK -->
+        /**
+         * Returns true if a periodic job is currently scheduled.
+         * @param context The application context.
+         * @return True if a periodic job is scheduled, false otherwise.
+         * @throws Exception If there is an error retrieving the work info.
+         */
+        suspend fun isPeriodicUpdateScheduled(context: Context): Boolean {
+            return WorkerUtil.isPeriodicJobScheduled(context, WORK_NAME_AUTO)
+        }
+        // KMK <--
     }
 }

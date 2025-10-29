@@ -83,6 +83,7 @@ import eu.kanade.tachiyomi.data.backup.create.BackupCreateJob
 import eu.kanade.tachiyomi.data.coil.MangaCoverMetadata
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.download.DownloadCache
+import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.AppUpdateJob
@@ -465,6 +466,20 @@ class MainActivity : BaseActivity() {
         LaunchedEffect(Unit) {
             launchIO {
                 try {
+                    if (!LibraryUpdateJob.isPeriodicUpdateScheduled(context)) {
+                        LibraryUpdateJob.setupTask(context)
+                    }
+                } catch (e: Exception) {
+                    logcat(LogPriority.ERROR, e)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            stringResource(KMR.strings.job_failed_schedule_update_check, stringResource(MR.strings.unknown_error)),
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                }
+                try {
                     if (!BackupCreateJob.isPeriodicBackupScheduled(context)) {
                         BackupCreateJob.setupTask(context)
                     }
@@ -473,7 +488,7 @@ class MainActivity : BaseActivity() {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(
                             context,
-                            stringResource(KMR.strings.job_failed_schedule_update_check, stringResource(MR.strings.unknown_error)),
+                            stringResource(KMR.strings.job_failed_schedule_backup_check, stringResource(MR.strings.unknown_error)),
                             Toast.LENGTH_LONG,
                         ).show()
                     }
