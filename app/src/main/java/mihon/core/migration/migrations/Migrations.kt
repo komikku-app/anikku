@@ -9,6 +9,7 @@ val migrations: List<Migration>
         SetupSyncDataMigration(),
         // KMK -->
         SetupAppUpdateMigration(),
+        MergedMangaDedupeModeMigration(),
         // KMK <--
         PrefLangMigration(),
     )
