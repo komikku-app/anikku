@@ -98,6 +98,7 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     preference = enableHorizontalSeekGesture,
                     title = stringResource(AYMR.strings.enable_horizontal_seek_gesture),
+                    subtitle = stringResource(AYMR.strings.enable_horizontal_seek_gesture_summary),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = showSeekbar,
