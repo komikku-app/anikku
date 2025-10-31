@@ -21,7 +21,8 @@ data class KitsuListSearchResult(
         val anime = included[0].attributes
 
         return TrackSearch.create(TrackerManager.KITSU).apply {
-            remote_id = userData.id
+            remote_id = included[0].id
+            library_id = userData.id
             title = anime.canonicalTitle
             total_episodes = anime.episodeCount ?: 0
             cover_url = anime.posterImage?.original ?: ""
