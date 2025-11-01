@@ -44,6 +44,8 @@ class DownloadPreferences(
 
     fun downloadNewUnreadChaptersOnly() = preferenceStore.getBoolean("download_new_unread_episodes_only", false)
 
+    fun parallelSourceLimit() = preferenceStore.getInt("download_parallel_source_limit", 5)
+
     // KMK -->
     fun downloadCacheRenewInterval() = preferenceStore.getInt("download_cache_renew_interval", 1)
     // KMK <--
