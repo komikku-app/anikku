@@ -76,7 +76,7 @@ fun PlaybackSpeedSheet(
             SliderItem(
                 label = stringResource(AYMR.strings.player_sheets_speed_slider_label),
                 value = speed,
-                valueText = stringResource(AYMR.strings.player_speed, speed),
+                valueString = stringResource(AYMR.strings.player_speed, speed),
                 onChange = onSpeedChange,
                 valueRange = 0.01f..6f,
             )

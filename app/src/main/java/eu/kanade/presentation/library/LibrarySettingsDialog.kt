@@ -349,7 +349,7 @@ private fun ColumnScope.DisplayPage(
             value = columns,
             valueRange = 0..10,
             label = stringResource(AMR.strings.pref_library_items_per_screen),
-            valueText = if (columns > 0) {
+            valueString = if (columns > 0) {
                 columns.toString()
             } else {
                 stringResource(MR.strings.label_default)
@@ -362,7 +362,7 @@ private fun ColumnScope.DisplayPage(
             value = columns,
             valueRange = 0..10,
             label = stringResource(AMR.strings.pref_library_items_per_row),
-            valueText = if (columns > 0) {
+            valueString = if (columns > 0) {
                 columns.toString()
             } else {
                 stringResource(AMR.strings.label_auto)

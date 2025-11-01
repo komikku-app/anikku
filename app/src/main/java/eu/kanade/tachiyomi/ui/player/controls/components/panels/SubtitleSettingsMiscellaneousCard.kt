@@ -96,7 +96,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
             SliderItem(
                 label = stringResource(AYMR.strings.player_sheets_sub_scale),
                 value = subScale,
-                valueText = subScale.toFixed(2).toString(),
+                valueString = subScale.toFixed(2).toString(),
                 onChange = {
                     subScale = it
                     preferences.subtitleFontScale().set(it)
