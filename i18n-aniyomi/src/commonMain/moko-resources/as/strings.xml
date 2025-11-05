@@ -146,7 +146,7 @@
     <string name="enable_auto_play">স্বয়ংক্ৰিয় চলন সক্ৰিয়</string>
     <string name="disable_auto_play">স্বয়ংক্ৰিয় চলন অক্ষম</string>
     <string name="player_aniskip_dontskip">এৰি নিদিব</string>
-    <string name="player_aniskip_dontskip_toast">%d ছেকেণ্ডত %s এৰি দিয়া হ’ব</string>
+    <string name="player_aniskip_dontskip_toast">%s ৰ %d ছেকেণ্ডত এৰি দিয়া হ’ব</string>
     <string name="player_aniskip_skip">%s এৰি দিয়া হৈছে</string>
     <string name="no_next_episode">পৰৱৰ্তী পৰ্ব পোৱা নগ’ল!</string>
     <string name="no_prev_episode">আগৰ পৰ্ব পোৱা নগ’ল!</string>
@@ -411,7 +411,7 @@
     <string name="unseen">নদেখা</string>
     <string name="label_manga_extension_repos">মাঙ্গাৰ এক্সটেনশ্যন ৰেপ’</string>
     <string name="label_anime_extension_repos">এনিমেৰ এক্সটেনশ্যন ৰেপ’</string>
-    <string name="onboarding_storage_action_create_folder">ডিফল্ট Aniyomi ফ’ল্ডাৰ সৃষ্টি কৰক</string>
+    <string name="onboarding_storage_action_create_folder">ডিফল্ট Anikku ফ’ল্ডাৰ সৃষ্টি কৰক</string>
     <string name="download_speed_limit">অধ্যায় ডাউনলোডৰ গতি সীমা</string>
     <string name="download_speed_limit_hint">গতিৰ সীমা অক্ষম কৰিবলৈ ০ ত স্থাপন কৰক।</string>
     <string name="action_display_unseen_badge">নদেখা এপিচোড</string>
@@ -440,7 +440,7 @@
     <string name="also_set_chapter_settings_for_library">মোৰ পুথিভঁৰালৰ সকলো মাঙ্গাৰ বাবেো প্ৰযোজ্য কৰক</string>
     <string name="dialog_with_checkbox_reset">এই মাংগাৰ সকলো অধ্যায় ৰিছেট কৰক</string>
     <string name="download_insufficient_space">নিৰ্ধাৰিত স্থলাভাবে ডাউনলোড কৰিব পৰা নগ\'ল</string>
-    <string name="download_queue_size_warning">সতর্কতা: বৃহৎ মাচৰ ডাউনলোডে উৎসবোৰ ধীৰ আৰু/অথবা Aniyomi বন্ধ কৰিব পাৰে। অধিক জানিবলৈ টেপ কৰক।</string>
+    <string name="download_queue_size_warning">সতর্কতা: বৃহৎ মাচৰ ডাউনলোডে উৎসবোৰ ধীৰ আৰু/অথবা Anikku বন্ধ কৰিব পাৰে। অধিক জানিবলৈ টেপ কৰক।</string>
     <string name="pref_invalidate_download_cache_summary">এপ্লিকেচনক ডাউনলোড কৰা অধ্যায় আৰু এপিচ\'ড পুনৰ পৰীক্ষা কৰিবলৈ মন্না কৰক</string>
     <string name="label_player">খেলোৱা</string>
     <string name="pref_player_settings_summary">অভ্যন্তৰীণ প্লেয়াৰ, অঙ্গভঙ্গি, ডিক’ডাৰ, ছাবটাইটেল</string>

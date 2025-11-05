@@ -284,7 +284,7 @@
     <string name="unseen">Non-vu</string>
     <string name="label_manga_extension_repos">Repos d\'extensions de manga</string>
     <string name="label_anime_extension_repos">Repos d\'extensions d\'anime</string>
-    <string name="onboarding_storage_action_create_folder">Créer le dossier par défaut d\'Aniyomi</string>
+    <string name="onboarding_storage_action_create_folder">Créer le dossier par défaut d\'Anikku</string>
     <string name="download_speed_limit">Limite de vitesse de téléchargement</string>
     <string name="download_speed_limit_hint">Mettre à 0 pour désactiver la limite.</string>
     <string name="action_display_unseen_badge">Épisodes non vus</string>
@@ -311,7 +311,7 @@
     <string name="also_set_chapter_settings_for_library">S\'applique également à toutes les manga de ma bibliothèque</string>
     <string name="dialog_with_checkbox_reset">Réinitialiser tous les chapitres de ce manga</string>
     <string name="download_insufficient_space">Impossible de télécharger les chapitres, l\'espace de stockage est insuffisant</string>
-    <string name="download_queue_size_warning">Attention : les téléchargements massifs peuvent entraîner un ralentissement des sources ou le blocage de Aniyomi. Appuyez pour en savoir plus.</string>
+    <string name="download_queue_size_warning">Attention : les téléchargements massifs peuvent entraîner un ralentissement des sources ou le blocage de Anikku. Appuyez pour en savoir plus.</string>
     <string name="pref_invalidate_download_cache_summary">Forcer l\'application à revérifier les chapitres et épisodes téléchargés</string>
     <string name="label_player">Lecteur</string>
     <string name="pref_player_settings_summary">Lecteur interne, gestes, décodeurs, sous-titres</string>

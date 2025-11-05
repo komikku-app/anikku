@@ -40,6 +40,6 @@
     <string name="also_set_chapter_settings_for_library">Juga digunakan untuk semua komik di perpustakaan saya</string>
     <string name="dialog_with_checkbox_reset">Tetapkan semula semua bab untuk komik ini</string>
     <string name="download_insufficient_space">Tidak dapat memuat turun kerana ruang storan yang rendah</string>
-    <string name="download_queue_size_warning">Amaran: muat turun pukal yang besar boleh menyebabkan sumber menjadi lebih perlahan dan/atau menyekat Aniyomi. Ketik untuk mengetahui lebih lanjut.</string>
+    <string name="download_queue_size_warning">Amaran: muat turun pukal yang besar boleh menyebabkan sumber menjadi lebih perlahan dan/atau menyekat Anikku. Ketik untuk mengetahui lebih lanjut.</string>
     <string name="pref_invalidate_download_cache_summary">Paksa apl menyemak semula bab dan episod yang dimuat turun</string>
 </resources>

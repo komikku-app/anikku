@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="confirm_exit">Натисніть \"назад\" ще раз, аби вийти</string>
+    <string name="confirm_exit">Увімкнути горизонтальний пошук</string>
     <string name="action_filter_started">Розпочато</string>
     <string name="action_sort_airing_time">Час виходу</string>
     <string name="action_reorganize_by">Змінити порядок</string>
@@ -422,7 +422,7 @@
     <string name="unseen">Небачений</string>
     <string name="label_manga_extension_repos">Сховища розширення манґи</string>
     <string name="label_anime_extension_repos">Repos розширення аніме</string>
-    <string name="onboarding_storage_action_create_folder">Створіть папку Aniyomi за замовчуванням</string>
+    <string name="onboarding_storage_action_create_folder">Створіть папку Anikku за замовчуванням</string>
     <string name="download_speed_limit">Обмеження швидкості завантаження розділу</string>
     <string name="download_speed_limit_hint">Встановіть значення 0, щоб вимкнути обмеження швидкості.</string>
     <string name="action_display_unseen_badge">Непереглянуті епізоди</string>
@@ -449,7 +449,7 @@
     <string name="also_set_chapter_settings_for_library">Також застосовувати до всієї манґи в моїй бібліотеці</string>
     <string name="dialog_with_checkbox_reset">Скинути всі розділи цієї манґи</string>
     <string name="download_insufficient_space">Не вдалося завантажити через брак місця</string>
-    <string name="download_queue_size_warning">Попередження: великі масові завантаження можуть призвести до уповільнення роботи джерел та/або блокування Aniyomi. Натисніть, щоб дізнатися більше.</string>
+    <string name="download_queue_size_warning">Попередження: великі масові завантаження можуть призвести до уповільнення роботи джерел та/або блокування Anikku. Натисніть, щоб дізнатися більше.</string>
     <string name="pref_invalidate_download_cache_summary">Примусово перевіряти завантажені розділи та епізоди за допомогою програми</string>
     <string name="pref_category_intro_skip">Пропустити вступ</string>
     <string name="pref_enable_intro_skip">Увімкнути пропуск вступу</string>
@@ -527,4 +527,5 @@
     <string name="pref_download_fillermarked_items">Дозволити завантаження епізодів із позначкою «філлер»</string>
     <string name="show_episode_previews">Мініатюри епізодів</string>
     <string name="show_episode_summaries">Короткий зміст епізодів</string>
+    <string name="enable_horizontal_seek_gesture_summary">Проведіть пальцем ліворуч або праворуч, щоб перемотати назад або вперед</string>
 </resources>

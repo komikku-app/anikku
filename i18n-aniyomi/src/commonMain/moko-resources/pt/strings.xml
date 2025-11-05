@@ -255,7 +255,7 @@
     <string name="unseen">Não visto</string>
     <string name="label_manga_extension_repos">Repositórios de extensão da manga</string>
     <string name="label_anime_extension_repos">Repositórios de extensão de anime</string>
-    <string name="onboarding_storage_action_create_folder">Criar a pasta padrão para Aniyomi</string>
+    <string name="onboarding_storage_action_create_folder">Criar a pasta padrão para Anikku</string>
     <string name="download_speed_limit">Limite da velocidade de transferência do capítulo</string>
     <string name="download_speed_limit_hint">Defina para 0 para desativar o limite de velocidade.</string>
     <string name="action_display_show_continue_reading_button">Botão de continuar a ver/ler</string>
@@ -422,7 +422,7 @@
     <string name="download_ahead_info">Só funciona se o capítulo/episódio atual + o próximo já tiverem sido baixados.</string>
     <string name="pref_update_only_completely_read">Pular entradas com episódios não vistos/capítulos não lidos</string>
     <string name="clear_database_confirmation">Tem certeza? Episódios completos, capítulos e progresso de entradas fora da biblioteca serão perdidos</string>
-    <string name="download_queue_size_warning">Aviso: downloads em massa podem fazer com que as fontes fiquem mais lentas e/ou bloqueiem o Aniyomi. Toque para saber mais.</string>
+    <string name="download_queue_size_warning">Aviso: downloads em massa podem fazer com que as fontes fiquem mais lentas e/ou bloqueiem o Anikku. Toque para saber mais.</string>
     <string name="pref_invalidate_download_cache_summary">Forçar o aplicativo a verificar novamente os capítulos e episódios baixados</string>
     <string name="pref_hosters_show_failure">Exibir hosters com falha</string>
     <string name="pref_player_time_to_disappear">Tempo até ocultar controle do player</string>

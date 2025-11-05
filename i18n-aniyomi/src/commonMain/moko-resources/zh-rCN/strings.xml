@@ -146,7 +146,7 @@
     <string name="enable_auto_play">自动连播已开启</string>
     <string name="disable_auto_play">自动连播已关闭</string>
     <string name="player_aniskip_dontskip">不跳过</string>
-    <string name="player_aniskip_dontskip_toast">将在 %d 秒内跳过 %s</string>
+    <string name="player_aniskip_dontskip_toast">%s 将在 %d 秒内跳过</string>
     <string name="player_aniskip_skip">已跳过 %s</string>
     <string name="no_next_episode">没有下一集！</string>
     <string name="no_prev_episode">未找到上一集！</string>
@@ -413,7 +413,7 @@
     <string name="unseen">未看</string>
     <string name="label_manga_extension_repos">漫画插件仓库</string>
     <string name="label_anime_extension_repos">动画插件仓库</string>
-    <string name="onboarding_storage_action_create_folder">创建默认 Aniyomi 文件夹</string>
+    <string name="onboarding_storage_action_create_folder">创建默认 Anikku 文件夹</string>
     <string name="download_speed_limit">限速下载</string>
     <string name="download_speed_limit_hint">归零则取消限速。</string>
     <string name="action_display_unseen_badge">未观看剧集</string>
@@ -442,7 +442,7 @@
     <string name="also_set_chapter_settings_for_library">同时应用到库中的所有漫画</string>
     <string name="dialog_with_checkbox_reset">重置此漫画的所有章节</string>
     <string name="download_insufficient_space">存储空间不足，无法下载</string>
-    <string name="download_queue_size_warning">警告：批量下载可能导致插件变慢，甚至会使站点屏蔽 Aniyomi。点击了解详情。</string>
+    <string name="download_queue_size_warning">警告：批量下载可能导致插件变慢，甚至会使站点屏蔽 Anikku。点击了解详情。</string>
     <string name="pref_invalidate_download_cache_summary">强制重新扫描已下载的章节和剧集</string>
     <string name="label_player">播放器</string>
     <string name="pref_player_settings_summary">内置播放器，手势，解码器，字幕</string>

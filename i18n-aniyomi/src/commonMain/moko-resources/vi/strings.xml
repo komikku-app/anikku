@@ -67,7 +67,7 @@
     <string name="enable_auto_play">Tự động phát đang bật</string>
     <string name="disable_auto_play">Tự động phát đang tắt</string>
     <string name="player_aniskip_dontskip">Không skip</string>
-    <string name="player_aniskip_dontskip_toast">Skip sau %d giây</string>
+    <string name="player_aniskip_dontskip_toast">Skip %s sau %d giây</string>
     <string name="player_aniskip_skip">bỏ qua %s giây</string>
     <string name="no_next_episode">Không tìm thấy tập tiếp theo!</string>
     <string name="player_hwdec_mode">Chế độ giải mã phần cứng</string>
@@ -264,7 +264,7 @@
     <string name="unseen">Bỏ đã xem</string>
     <string name="label_manga_extension_repos">Repo Manga Extension</string>
     <string name="label_anime_extension_repos">Repo Anime Extension</string>
-    <string name="onboarding_storage_action_create_folder">Tạo thư mục Aniyomi mặc định</string>
+    <string name="onboarding_storage_action_create_folder">Tạo thư mục Anikku mặc định</string>
     <string name="download_speed_limit">Giới hạn tốc độ tải xuống</string>
     <string name="download_speed_limit_hint">Đặt thành 0 để tắt giới hạn tốc độ.</string>
     <string name="action_display_unseen_badge">Tập chưa xem</string>

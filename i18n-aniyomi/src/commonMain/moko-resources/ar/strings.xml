@@ -409,7 +409,7 @@
     <string name="unseen">إزالة المشاهدة</string>
     <string name="label_manga_extension_repos">مخزن إضافة المانغا</string>
     <string name="label_anime_extension_repos">مخزن إضافة الأنمي</string>
-    <string name="onboarding_storage_action_create_folder">إنشاء مجلد Aniyomi افتراضي</string>
+    <string name="onboarding_storage_action_create_folder">إنشاء مجلد Anikku افتراضي</string>
     <string name="download_speed_limit">حد سرعة التنزيل</string>
     <string name="download_speed_limit_hint">اضبطه على 0 لتعطيل حد السرعة.</string>
     <string name="manga">مانغا</string>

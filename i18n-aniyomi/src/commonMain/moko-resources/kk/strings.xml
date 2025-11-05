@@ -48,7 +48,7 @@
     <string name="also_set_chapter_settings_for_library">Сонымен қоса кітапханадағы мангаларға қолдану</string>
     <string name="dialog_with_checkbox_reset">Бұл манга үшін түгел тарауларды қалпына келтіру</string>
     <string name="download_insufficient_space">Жадта орын аз болған соң жүктелмеді</string>
-    <string name="download_queue_size_warning">Ескерту: Көп жүктеулер саны дереккөздер жұмысын баяулата алады және/немесе Aniyomi бұғатталына алады. Толығырақ оқу үшін басыңыз</string>
+    <string name="download_queue_size_warning">Ескерту: Көп жүктеулер саны дереккөздер жұмысын баяулата алады және/немесе Anikku бұғатталына алады. Толығырақ оқу үшін басыңыз</string>
     <string name="pref_invalidate_download_cache_summary">Қолданбаны жүктеп алынған тарауларды/бөлімдерді қайта тексеруге мәжбүрлеу</string>
     <string name="label_player">Ойнатқыш</string>
     <string name="pref_player_settings_summary">Қолданба ойнатқышы, ымдар, декодерлер, субтитр</string>

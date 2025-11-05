@@ -413,7 +413,7 @@
     <string name="unseen">Tak terlihat</string>
     <string name="label_manga_extension_repos">Repo ekstensi manga</string>
     <string name="label_anime_extension_repos">Repo ekstensi anime</string>
-    <string name="onboarding_storage_action_create_folder">Buat folder Aniyomi bawaan</string>
+    <string name="onboarding_storage_action_create_folder">Buat folder Anikku bawaan</string>
     <string name="download_speed_limit">Batas kecepatan unduh</string>
     <string name="download_speed_limit_hint">Setel ke 0 untuk menonaktifkan batas kecepatan.</string>
     <string name="action_display_unseen_badge">Episode yang tidak terlihat</string>
@@ -443,7 +443,7 @@
     <string name="also_set_chapter_settings_for_library">Juga berlaku untuk semua manga di perpustakaan saya</string>
     <string name="dialog_with_checkbox_reset">Reset semua bab untuk komik ini</string>
     <string name="download_insufficient_space">Tidak dapat mengunduh dengan ruang penyimpanan yang hampir habis</string>
-    <string name="download_queue_size_warning">Peringatan: Unduhan massal dalam jumlah besar dapat menyebabkan sumber menjadi lebih lambat dan/atau memblokir Aniyomi. Ketuk untuk mengetahui lebih lanjut.</string>
+    <string name="download_queue_size_warning">Peringatan: Unduhan massal dalam jumlah besar dapat menyebabkan sumber menjadi lebih lambat dan/atau memblokir Anikku. Ketuk untuk mengetahui lebih lanjut.</string>
     <string name="pref_player_settings_summary">bawahan player, gestur, dekoder, teks terjemahan</string>
     <string name="pref_hosters_show_failure">Tampilan host gagal</string>
     <string name="pref_hosters_show_empty">Tampilan host kosong</string>

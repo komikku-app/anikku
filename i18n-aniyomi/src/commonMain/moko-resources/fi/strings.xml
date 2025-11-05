@@ -159,7 +159,7 @@
     <string name="also_set_chapter_settings_for_library">Koskee myös kaikkia kirjastossani olevia mangoja</string>
     <string name="dialog_with_checkbox_reset">Nollaa kaikki luvut tälle mangalle</string>
     <string name="download_insufficient_space">Lataaminen epäonnistui tallennustilan puutteen vuoksi</string>
-    <string name="download_queue_size_warning">Varoitus: Suuret joukkolataukset voivat hidastaa lähteitä ja/tai estää Aniyomin toiminnan. Napauta saadaksesi lisätietoja.</string>
+    <string name="download_queue_size_warning">Varoitus: Suuret joukkolataukset voivat hidastaa lähteitä ja/tai estää Anikku toiminnan. Napauta saadaksesi lisätietoja.</string>
     <string name="pref_invalidate_download_cache_summary">Pakota sovellus tarkistamaan ladatut luvut ja jaksot uudelleen</string>
     <string name="label_player">Soitin</string>
     <string name="pref_player_settings_summary">Sisäinen soitin, eleet, dekooderit, tekstitykset</string>

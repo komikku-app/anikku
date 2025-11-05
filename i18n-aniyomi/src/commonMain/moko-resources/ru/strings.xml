@@ -411,7 +411,7 @@
     <string name="unseen">Не просмотрено</string>
     <string name="label_manga_extension_repos">Репозитории расширений манги</string>
     <string name="label_anime_extension_repos">Репозитории расширений аниме</string>
-    <string name="onboarding_storage_action_create_folder">Создать папку Aniyomi по умолчанию</string>
+    <string name="onboarding_storage_action_create_folder">Создать папку Anikku по умолчанию</string>
     <string name="download_speed_limit">Ограничение скорости загрузки</string>
     <string name="download_speed_limit_hint">Установите значение 0, чтобы отключить ограничение скорости.</string>
     <string name="action_stop">Стоп</string>
@@ -506,7 +506,7 @@
     <string name="also_set_chapter_settings_for_library">Также применить ко всем сериям в моей библиотеке</string>
     <string name="dialog_with_checkbox_reset">Сбросить все главы для этого тайтла</string>
     <string name="download_insufficient_space">Не удалось загрузить из-за малого объема хранилища</string>
-    <string name="download_queue_size_warning">Предупреждение: Большое количество загрузок может привести к замедлению работы источников и/или блокировке Aniyomi. Нажмите для подробностей.</string>
+    <string name="download_queue_size_warning">Предупреждение: Большое количество загрузок может привести к замедлению работы источников и/или блокировке Anikku. Нажмите для подробностей.</string>
     <string name="pref_invalidate_download_cache_summary">Принуждает приложение перепроверить загруженные главы и серии</string>
     <string name="pref_player_settings_summary">Внутренний плеер, жесты, декодировщики, субтитры</string>
     <string name="pref_hosters">Хосты</string>

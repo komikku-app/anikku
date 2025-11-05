@@ -422,7 +422,7 @@
     <string name="unseen">Non visto</string>
     <string name="label_manga_extension_repos">Repo delle estensioni manga</string>
     <string name="label_anime_extension_repos">Repo delle estensioni anime</string>
-    <string name="onboarding_storage_action_create_folder">Crea una cartella default per Aniyomi</string>
+    <string name="onboarding_storage_action_create_folder">Crea una cartella default per Anikku</string>
     <string name="download_speed_limit">Limite velocità di download dei capitoli</string>
     <string name="download_speed_limit_hint">Imposta a 0 per disattivare il limite di velocità.</string>
     <string name="action_display_unseen_badge">Episodi non visti</string>
@@ -449,7 +449,7 @@
     <string name="also_set_chapter_settings_for_library">Applica anche a tutti i manga nella mia libreria</string>
     <string name="dialog_with_checkbox_reset">Reimposta tutti i capitoli di questo manga</string>
     <string name="download_insufficient_space">Impossibile scaricare a causa dello spazio di archiviazione insufficiente</string>
-    <string name="download_queue_size_warning">Attenzione: download massivi di grandi dimensioni possono rallentare le fonti e/o portare al blocco di Aniyomi. Tocca per saperne di più.</string>
+    <string name="download_queue_size_warning">Attenzione: download massivi di grandi dimensioni possono rallentare le fonti e/o portare al blocco di Anikku. Tocca per saperne di più.</string>
     <string name="pref_invalidate_download_cache_summary">Forza l\'app a ricontrollare i capitoli e gli episodi scaricati</string>
     <string name="label_player">Lettore</string>
     <string name="pref_player_settings_summary">Lettore interno, gesti, decoder, sottotitoli</string>

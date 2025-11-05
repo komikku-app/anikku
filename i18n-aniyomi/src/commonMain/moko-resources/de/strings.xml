@@ -110,7 +110,7 @@
     <string name="enable_auto_play">Automatische Wiedergabe ist an</string>
     <string name="disable_auto_play">Automatische Wiedergabe ist aus</string>
     <string name="player_aniskip_dontskip">Nicht überspringen</string>
-    <string name="player_aniskip_dontskip_toast">Wird in %d Sekunden übersprungen</string>
+    <string name="player_aniskip_dontskip_toast">%s wird in %d Sekunden übersprungen</string>
     <string name="player_aniskip_skip">%s übersprungen</string>
     <string name="no_next_episode">Nächste Folge nicht gefunden!</string>
     <string name="player_hwdec_mode">Standard Hardware-Dekodierung wählen</string>
@@ -311,7 +311,7 @@
     <string name="unseen">Ungesehen</string>
     <string name="label_manga_extension_repos">Manga-Erweiterungs-Bibliotheken</string>
     <string name="label_anime_extension_repos">Anime-Erweiterungs-Bibliotheken</string>
-    <string name="onboarding_storage_action_create_folder">Standard-Aniyomi-Ordner erstellen</string>
+    <string name="onboarding_storage_action_create_folder">Standard-Anikku-Ordner erstellen</string>
     <string name="download_speed_limit">Download-Geschwindigkeitsbegrenzung</string>
     <string name="download_speed_limit_hint">Auf 0 setzen, um Geschwindigkeitsbegrenzung zu deaktivieren.</string>
     <string name="action_display_unseen_badge">Ungesehene Folgen</string>
@@ -338,7 +338,7 @@
     <string name="also_set_chapter_settings_for_library">Auch für alle Mangas in meiner Bibliothek anwenden</string>
     <string name="dialog_with_checkbox_reset">Alle Kapitel dieses Mangas zurücksetzen</string>
     <string name="download_insufficient_space">Herunterladen aufgrund von zu wenig Speicherplatz nicht möglich</string>
-    <string name="download_queue_size_warning">Achtung: Große Downloads könnten dazu führen, dass Quellen langsamer werden und/oder Aniyomi blockieren. Tippe, um mehr zu erfahren.</string>
+    <string name="download_queue_size_warning">Achtung: Große Downloads könnten dazu führen, dass Quellen langsamer werden und/oder Anikku blockieren. Tippe, um mehr zu erfahren.</string>
     <string name="pref_invalidate_download_cache_summary">App zwingen, heruntergeladene Kapitel und Folgen erneut zu überprüfen</string>
     <string name="rotation_video">Video</string>
     <string name="pref_category_controls">Bedienelemente</string>

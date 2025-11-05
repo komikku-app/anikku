@@ -395,7 +395,7 @@
     <string name="unseen">Невидљиво</string>
     <string name="label_manga_extension_repos">Репозиторијуми манга екстензија</string>
     <string name="label_anime_extension_repos">Репозиторијуми аниме екстензија</string>
-    <string name="onboarding_storage_action_create_folder">Креирај подразумевану Aniyomi фасциклу</string>
+    <string name="onboarding_storage_action_create_folder">Креирај подразумевану Anikku фасциклу</string>
     <string name="download_speed_limit">Ограничење брзине преузимања</string>
     <string name="download_speed_limit_hint">Поставите на 0 да бисте онемогућили ограничење брзине.</string>
 </resources>
