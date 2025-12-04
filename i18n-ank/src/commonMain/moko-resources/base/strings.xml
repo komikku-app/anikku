@@ -156,6 +156,10 @@
     <string name="pref_update_library_anime_titles_summary">Warning: if an anime is renamed, it will be removed from the download queue (if present).</string>
     <string name="pref_hide_missing_episode_indicators">Hide missing episode indicators</string>
 
+    <string name="migrationConfigScreen.hideWithoutUpdatesTitle.Episodes">Hide entries without newer episodes</string>
+    <string name="migrationConfigScreen.hideWithoutUpdatesSubtitle.Episodes">Only show entry if the match has additional episodes</string>
+    <string name="migrationConfigScreen.prioritizeByChaptersTitle.Episodes">Match based on episode number</string>
+
         <!-- SY -->
     <string name="sync_on_episode_seen">Sync on Episode Seen</string>
     <string name="sync_on_episode_open">Sync on Episode Open</string>

@@ -39,6 +39,7 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.preference.toggle
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.Button
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -51,6 +52,9 @@ fun MigrationConfigScreenSheet(
     preferences: SourcePreferences,
     onDismissRequest: () -> Unit,
     onStartMigration: (extraSearchQuery: String?) -> Unit,
+    // KMK -->
+    fullSettings: Boolean = true,
+    // KMK <--
 ) {
     var extraSearchQuery by rememberSaveable { mutableStateOf("") }
     val migrationFlags by preferences.migrationFlags().collectAsState()
@@ -124,43 +128,51 @@ fun MigrationConfigScreenSheet(
                     },
                 )
                 MigrationSheetDividerItem()
-                OutlinedTextField(
-                    value = extraSearchQuery,
-                    onValueChange = { extraSearchQuery = it },
-                    label = { Text(stringResource(MR.strings.migrationConfigScreen_additionalSearchQueryLabel)) },
-                    supportingText = {
-                        Text(stringResource(MR.strings.migrationConfigScreen_additionalSearchQuerySupportingText))
-                    },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = MaterialTheme.padding.medium,
-                            vertical = MaterialTheme.padding.extraSmall,
-                        ),
-                )
+                // KMK -->
+                if (fullSettings) {
+                    // KMK <--
+                    OutlinedTextField(
+                        value = extraSearchQuery,
+                        onValueChange = { extraSearchQuery = it },
+                        label = { Text(stringResource(MR.strings.migrationConfigScreen_additionalSearchQueryLabel)) },
+                        supportingText = {
+                            Text(stringResource(MR.strings.migrationConfigScreen_additionalSearchQuerySupportingText))
+                        },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = MaterialTheme.padding.medium,
+                                vertical = MaterialTheme.padding.extraSmall,
+                            ),
+                    )
+                }
                 MigrationSheetSwitchItem(
                     title = stringResource(MR.strings.migrationConfigScreen_hideUnmatchedTitle),
                     subtitle = null,
                     preference = preferences.migrationHideUnmatched(),
                 )
                 MigrationSheetSwitchItem(
-                    title = stringResource(MR.strings.migrationConfigScreen_hideWithoutUpdatesTitle),
-                    subtitle = stringResource(MR.strings.migrationConfigScreen_hideWithoutUpdatesSubtitle),
+                    title = stringResource(AMR.strings.migrationConfigScreen_hideWithoutUpdatesTitle_Episodes),
+                    subtitle = stringResource(AMR.strings.migrationConfigScreen_hideWithoutUpdatesSubtitle_Episodes),
                     preference = preferences.migrationHideWithoutUpdates(),
                 )
-                MigrationSheetDividerItem()
-                MigrationSheetWarningItem(stringResource(MR.strings.migrationConfigScreen_enhancedOptionsWarning))
-                MigrationSheetSwitchItem(
-                    title = stringResource(MR.strings.migrationConfigScreen_deepSearchModeTitle),
-                    subtitle = stringResource(MR.strings.migrationConfigScreen_deepSearchModeSubtitle),
-                    preference = preferences.migrationDeepSearchMode(),
-                )
-                MigrationSheetSwitchItem(
-                    title = stringResource(MR.strings.migrationConfigScreen_prioritizeByChaptersTitle),
-                    subtitle = stringResource(MR.strings.migrationConfigScreen_prioritizeByChaptersSubtitle),
-                    preference = preferences.migrationPrioritizeByChapters(),
-                )
+                // KMK -->
+                if (fullSettings) {
+                    // KMK <--
+                    MigrationSheetDividerItem()
+                    MigrationSheetWarningItem(stringResource(MR.strings.migrationConfigScreen_enhancedOptionsWarning))
+                    MigrationSheetSwitchItem(
+                        title = stringResource(MR.strings.migrationConfigScreen_deepSearchModeTitle),
+                        subtitle = stringResource(MR.strings.migrationConfigScreen_deepSearchModeSubtitle),
+                        preference = preferences.migrationDeepSearchMode(),
+                    )
+                    MigrationSheetSwitchItem(
+                        title = stringResource(AMR.strings.migrationConfigScreen_prioritizeByChaptersTitle_Episodes),
+                        subtitle = stringResource(MR.strings.migrationConfigScreen_prioritizeByChaptersSubtitle),
+                        preference = preferences.migrationPrioritizeByChapters(),
+                    )
+                }
             }
             HorizontalDivider()
             Button(
@@ -175,7 +187,17 @@ fun MigrationConfigScreenSheet(
                         vertical = MaterialTheme.padding.small,
                     ),
             ) {
-                Text(text = stringResource(MR.strings.migrationConfigScreen_continueButtonText))
+                Text(
+                    text = stringResource(
+                        // KMK -->
+                        if (!fullSettings) {
+                            MR.strings.action_save
+                        } else {
+                            // KMK <--
+                            MR.strings.migrationConfigScreen_continueButtonText
+                        },
+                    ),
+                )
             }
         }
     }
