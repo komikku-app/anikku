@@ -24,18 +24,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.presentation.browse.components.BaseSourceItem
 import eu.kanade.presentation.browse.components.SourceIcon
 import eu.kanade.presentation.components.AnimatedFloatingSearchBox
+import eu.kanade.presentation.components.SOURCE_SEARCH_BOX_HEIGHT
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.migration.sources.MigrateSourceScreenModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
@@ -173,9 +175,12 @@ private fun MigrateSourceList(
 
         // KMK -->
         Box {
+            val density = LocalDensity.current
+            var searchBoxHeight by remember { mutableStateOf(SOURCE_SEARCH_BOX_HEIGHT) }
+
             FastScrollLazyColumn(
                 state = lazyListState,
-                contentPadding = PaddingValues(top = 65.dp),
+                contentPadding = PaddingValues(top = searchBoxHeight),
                 // KMK <--
             ) {
                 items(
@@ -188,7 +193,8 @@ private fun MigrateSourceList(
                     MigrateSourceItem(
                         // KMK -->
                         // modifier = Modifier.animateItem(),
-                        modifier = Modifier.animateItemFastScroll(),
+                        modifier = Modifier.animateItemFastScroll()
+                            .padding(end = MaterialTheme.padding.small),
                         // KMK <--
                         source = source,
                         count = count,
@@ -208,9 +214,11 @@ private fun MigrateSourceList(
                     .background(MaterialTheme.colorScheme.background)
                     .padding(
                         horizontal = MaterialTheme.padding.medium,
-                        vertical = MaterialTheme.padding.small,
                     )
                     .align(Alignment.TopCenter),
+                onGloballyPositioned = { layoutCoordinates ->
+                    searchBoxHeight = with(density) { layoutCoordinates.size.height.toDp() }
+                },
             )
             // KMK <--
         }
