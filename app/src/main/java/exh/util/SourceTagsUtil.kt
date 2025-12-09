@@ -12,21 +12,21 @@ import java.util.Locale
 @Composable
 private fun LanguageFlagPreview() {
     val locales = listOf(
-        Locale("en"),
-        Locale("ja"),
-        Locale("zh"),
-        Locale("es"),
-        Locale("ko"),
-        Locale("ru"),
-        Locale("fr"),
-        Locale("pt"),
-        Locale("th"),
-        Locale("de"),
-        Locale("it"),
-        Locale("vi"),
-        Locale("pl"),
-        Locale("hu"),
-        Locale("nl"),
+        Locale.forLanguageTag("en"),
+        Locale.forLanguageTag("ja"),
+        Locale.forLanguageTag("zh"),
+        Locale.forLanguageTag("es"),
+        Locale.forLanguageTag("ko"),
+        Locale.forLanguageTag("ru"),
+        Locale.forLanguageTag("fr"),
+        Locale.forLanguageTag("pt"),
+        Locale.forLanguageTag("th"),
+        Locale.forLanguageTag("de"),
+        Locale.forLanguageTag("it"),
+        Locale.forLanguageTag("vi"),
+        Locale.forLanguageTag("pl"),
+        Locale.forLanguageTag("hu"),
+        Locale.forLanguageTag("nl"),
     )
     Column {
         FlowRow {
