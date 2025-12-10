@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.data.track.myanimelist
 
-import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
@@ -42,9 +41,7 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
 
     override val supportsReadingDates: Boolean = true
 
-    override fun getLogo() = R.drawable.ic_tracker_mal
-
-    override fun getLogoColor() = Color.rgb(46, 81, 162)
+    override fun getLogo() = R.drawable.brand_myanimelist
 
     override fun getStatusList(): List<Long> {
         return listOf(WATCHING, COMPLETED, ON_HOLD, DROPPED, PLAN_TO_WATCH, REWATCHING)
@@ -146,7 +143,7 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
             interceptor.setAuth(oauth)
             val username = api.getCurrentUser()
             saveCredentials(username, oauth.accessToken)
-        } catch (e: Throwable) {
+        } catch (_: Throwable) {
             logout()
         }
     }
@@ -176,7 +173,7 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
     fun loadOAuth(): MALOAuth? {
         return try {
             json.decodeFromString<MALOAuth>(trackPreferences.trackToken(this).get())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
