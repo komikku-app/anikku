@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.migration.advanced.process
+package mihon.feature.migration.list
 
 import android.content.Context
 import android.widget.Toast
@@ -12,9 +12,7 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.getChapterList
 import eu.kanade.tachiyomi.source.getMangaDetails
 import eu.kanade.tachiyomi.source.getNameForMangaInfo
-import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingManga.SearchResult
 import eu.kanade.tachiyomi.util.system.toast
-import exh.smartsearch.SmartSourceSearchEngine
 import exh.source.MERGED_SOURCE_ID
 import exh.util.ThrottleManager
 import kotlinx.collections.immutable.ImmutableList
@@ -33,6 +31,9 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
 import mihon.domain.migration.usecases.MigrateMangaUseCase
+import mihon.feature.migration.list.models.MigratingManga
+import mihon.feature.migration.list.models.MigratingManga.SearchResult
+import mihon.feature.migration.list.search.SmartSourceSearchEngine
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
