@@ -252,16 +252,16 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 add(MangaKeyer())
             }
 
-            memoryCache(
-                MemoryCache.Builder()
-                    .maxSizePercent(context, 0.25)
-                    .build(),
-            )
-
             diskCache(
                 DiskCache.Builder()
                     .directory(context.cacheDir.resolve("image_cache"))
                     .maxSizePercent(0.02)
+                    .build(),
+            )
+
+            memoryCache(
+                MemoryCache.Builder()
+                    .maxSizePercent(context)
                     .build(),
             )
 
