@@ -160,6 +160,7 @@ private class MigrateDialogScreenModel(
                 target = target,
                 applicableFlags = applicableFlags,
                 selectedFlags = selectedFlags,
+                isMigrated = false,
             )
         }
     }
@@ -181,8 +182,14 @@ private class MigrateDialogScreenModel(
         // sourcePreference.migrationFlags().set(state.selectedFlags)
         // KMK <--
         mutableState.update { it.copy(isMigrating = true) }
-        migrateManga(current, target, replace, /* KMK --> */ state.selectedFlags /* KMK <-- */)
-        mutableState.update { it.copy(isMigrating = false, isMigrated = true) }
+        try {
+            migrateManga(current, target, replace, /* KMK --> */ state.selectedFlags /* KMK <-- */)
+            mutableState.update { it.copy(isMigrating = false, isMigrated = true) }
+            // KMK -->
+        } catch (_: Throwable) {
+            mutableState.update { it.copy(isMigrating = false, isMigrated = false) }
+            // KMK <--
+        }
     }
 
     data class State(
