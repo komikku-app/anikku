@@ -54,7 +54,7 @@ fun ChapterSettingsDialog(
     onUnreadFilterChanged: (TriState) -> Unit,
     onBookmarkedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
-    onScanlatorFilterClicked: (() -> Unit),
+    onScanlatorFilterClicked: () -> Unit,
     // AM (FILLERMARK) -->
     onFillermarkedFilterChanged: (TriState) -> Unit,
     // <-- AM (FILLERMARK)
@@ -147,7 +147,7 @@ private fun ColumnScope.FilterPage(
     bookmarkedFilter: TriState,
     onBookmarkedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
-    onScanlatorFilterClicked: (() -> Unit),
+    onScanlatorFilterClicked: () -> Unit,
     // AM (FILLERMARK) -->
     fillermarkedFilter: TriState,
     onFillermarkedFilterChanged: (TriState) -> Unit,

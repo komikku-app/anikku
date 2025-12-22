@@ -114,12 +114,11 @@ fun MangaBottomActionMenu(
             val haptic = LocalHapticFeedback.current
             // AM (FILLERMARK) -->
             val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false, false, false, false, false) }
-            val confirmRange = 0..<11
             // <-- AM (FILLERMARK)
             var resetJob: Job? = remember { null }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                (confirmRange).forEach { i -> confirm[i] = i == toConfirmIndex }
+                confirm.indices.forEach { i -> confirm[i] = i == toConfirmIndex }
                 resetJob?.cancel()
                 resetJob = scope.launch {
                     delay(1.seconds)
@@ -368,11 +367,11 @@ fun LibraryBottomActionMenu(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             val haptic = LocalHapticFeedback.current
-            val confirm = remember { mutableStateListOf(false, false, false, false, false, false /* SY --> */, false /* SY <-- */) }
+            val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false) }
             var resetJob: Job? = remember { null }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                (0..<confirm.size).forEach { i -> confirm[i] = i == toConfirmIndex }
+                confirm.indices.forEach { i -> confirm[i] = i == toConfirmIndex }
                 resetJob?.cancel()
                 resetJob = scope.launch {
                     delay(1.seconds)
