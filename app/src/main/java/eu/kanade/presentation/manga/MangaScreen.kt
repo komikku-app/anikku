@@ -116,7 +116,8 @@ import tachiyomi.domain.source.model.StubSource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.kmk.KMR
-import tachiyomi.presentation.core.components.FastScrollLazyVerticalGrid
+import tachiyomi.presentation.core.components.FastScrollIrregularLazyVerticalGrid
+import tachiyomi.presentation.core.components.Scroller.EXACT_HEIGHT_KEY_PREFIX
 import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -651,7 +652,9 @@ private fun MangaScreenSmallImpl(
             ) {
                 val layoutDirection = LocalLayoutDirection.current
                 // AY -->
-                FastScrollLazyVerticalGrid(
+                // AM -->
+                FastScrollIrregularLazyVerticalGrid(
+                    // <-- AM
                     modifier = Modifier.fillMaxHeight(),
                     state = chapterListState,
                     columns = if (gridSize == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(gridSize),
@@ -661,9 +664,14 @@ private fun MangaScreenSmallImpl(
                         // <-- AY
                         bottom = contentPadding.calculateBottomPadding(),
                     ),
+                    // ANK -->
+                    topContentPadding = topPadding,
+                    // ANK <--
                 ) {
                     item(
-                        key = MangaScreenItem.INFO_BOX,
+                        // AM -->
+                        key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.INFO_BOX,
+                        // <-- AM
                         contentType = MangaScreenItem.INFO_BOX,
                         // AY -->
                         span = { GridItemSpan(maxLineSpan) },
@@ -693,7 +701,9 @@ private fun MangaScreenSmallImpl(
                     }
 
                     item(
-                        key = MangaScreenItem.ACTION_ROW,
+                        // AM -->
+                        key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.ACTION_ROW,
+                        // <-- AM
                         contentType = MangaScreenItem.ACTION_ROW,
                         // AY -->
                         span = { GridItemSpan(maxLineSpan) },
@@ -724,7 +734,9 @@ private fun MangaScreenSmallImpl(
                     }
 
                     item(
-                        key = MangaScreenItem.DESCRIPTION_WITH_TAG,
+                        // AM -->
+                        key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.DESCRIPTION_WITH_TAG,
+                        // <-- AM
                         contentType = MangaScreenItem.DESCRIPTION_WITH_TAG,
                         // AY -->
                         span = { GridItemSpan(maxLineSpan) },
@@ -760,7 +772,9 @@ private fun MangaScreenSmallImpl(
                                     // ANK <--
                                 ) { HorizontalDivider() }
                                 item(
-                                    key = MangaScreenItem.RELATED_MANGAS,
+                                    // ANK -->
+                                    key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.RELATED_MANGAS,
+                                    // ANK <--
                                     contentType = MangaScreenItem.RELATED_MANGAS,
                                     // ANK -->
                                     span = { GridItemSpan(maxLineSpan) },
@@ -794,7 +808,9 @@ private fun MangaScreenSmallImpl(
                             }
                         } else if (!showRelatedMangasInOverflow) {
                             item(
-                                key = MangaScreenItem.RELATED_MANGAS,
+                                // ANK -->
+                                key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.RELATED_MANGAS,
+                                // ANK <--
                                 contentType = MangaScreenItem.RELATED_MANGAS,
                                 // ANK -->
                                 span = { GridItemSpan(maxLineSpan) },
@@ -816,7 +832,9 @@ private fun MangaScreenSmallImpl(
                     // SY -->
                     if (!state.showRecommendationsInOverflow || state.showMergeWithAnother) {
                         item(
-                            key = MangaScreenItem.INFO_BUTTONS,
+                            // ANK -->
+                            key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.INFO_BUTTONS,
+                            // ANK <--
                             contentType = MangaScreenItem.INFO_BUTTONS,
                             // ANK -->
                             span = { GridItemSpan(maxLineSpan) },
@@ -836,7 +854,9 @@ private fun MangaScreenSmallImpl(
                     // SY <--
 
                     item(
-                        key = MangaScreenItem.CHAPTER_HEADER,
+                        // AM -->
+                        key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.CHAPTER_HEADER,
+                        // <-- AM
                         contentType = MangaScreenItem.CHAPTER_HEADER,
                         // AY -->
                         span = { GridItemSpan(maxLineSpan) },
@@ -881,7 +901,9 @@ private fun MangaScreenSmallImpl(
                         FetchType.Episodes -> {
                             if (state.airingTime > 0L) {
                                 item(
-                                    key = MangaScreenItem.AIRING_TIME,
+                                    // AM -->
+                                    key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.AIRING_TIME,
+                                    // <-- AM
                                     contentType = MangaScreenItem.AIRING_TIME,
                                     span = { GridItemSpan(maxLineSpan) },
                                 ) {
@@ -1292,7 +1314,9 @@ private fun MangaScreenLargeImpl(
                     },
                     endContent = {
                         // AY -->
-                        FastScrollLazyVerticalGrid(
+                        // AM -->
+                        FastScrollIrregularLazyVerticalGrid(
+                            // <-- AM
                             modifier = Modifier.fillMaxHeight(),
                             state = chapterListState,
                             columns = if (gridSize == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(gridSize),
@@ -1303,6 +1327,10 @@ private fun MangaScreenLargeImpl(
                                 top = contentPadding.calculateTopPadding(),
                                 bottom = contentPadding.calculateBottomPadding(),
                             ),
+                            // AM -->
+                            topContentPadding = contentPadding.calculateTopPadding(),
+                            // <-- AM
+                            // <-- AY
                         ) {
                             // KMK -->
                             if (state.source !is StubSource &&
@@ -1312,7 +1340,9 @@ private fun MangaScreenLargeImpl(
                                 if (expandRelatedMangas) {
                                     if (state.relatedMangasSorted?.isNotEmpty() != false) {
                                         item(
-                                            key = MangaScreenItem.RELATED_MANGAS,
+                                            // ANK -->
+                                            key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.RELATED_MANGAS,
+                                            // ANK <--
                                             contentType = MangaScreenItem.RELATED_MANGAS,
                                             // ANK -->
                                             span = { GridItemSpan(maxLineSpan) },
@@ -1347,7 +1377,9 @@ private fun MangaScreenLargeImpl(
                                     }
                                 } else if (!showRelatedMangasInOverflow) {
                                     item(
-                                        key = MangaScreenItem.RELATED_MANGAS,
+                                        // ANK -->
+                                        key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.RELATED_MANGAS,
+                                        // ANK <--
                                         contentType = MangaScreenItem.RELATED_MANGAS,
                                         // ANK -->
                                         span = { GridItemSpan(maxLineSpan) },
@@ -1366,7 +1398,9 @@ private fun MangaScreenLargeImpl(
                             // KMK <--
 
                             item(
-                                key = MangaScreenItem.CHAPTER_HEADER,
+                                // AM -->
+                                key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.CHAPTER_HEADER,
+                                // <-- AM
                                 contentType = MangaScreenItem.CHAPTER_HEADER,
                                 // AY -->
                                 span = { GridItemSpan(maxLineSpan) },
@@ -1412,9 +1446,13 @@ private fun MangaScreenLargeImpl(
                                 FetchType.Episodes -> {
                                     if (state.airingTime > 0L) {
                                         item(
-                                            key = MangaScreenItem.AIRING_TIME,
+                                            // AM -->
+                                            key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.AIRING_TIME,
+                                            // <-- AM
                                             contentType = MangaScreenItem.AIRING_TIME,
+                                            // ANK -->
                                             span = { GridItemSpan(maxLineSpan) },
+                                            // ANK <--
                                         ) {
                                             // Handles the second by second countdown
                                             var timer by remember { mutableLongStateOf(state.airingTime) }
