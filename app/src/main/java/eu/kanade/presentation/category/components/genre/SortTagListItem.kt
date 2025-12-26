@@ -43,7 +43,7 @@ fun SortTagListItem(
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(imageVector = Icons.AutoMirrored.Outlined.Label, contentDescription = "")
+            Icon(imageVector = Icons.AutoMirrored.Outlined.Label, contentDescription = null)
             Text(text = tag, modifier = Modifier.padding(start = MaterialTheme.padding.medium))
         }
         Row {
@@ -51,17 +51,17 @@ fun SortTagListItem(
                 onClick = onMoveUp,
                 enabled = canMoveUp,
             ) {
-                Icon(imageVector = Icons.Outlined.ArrowDropUp, contentDescription = "")
+                Icon(imageVector = Icons.Outlined.ArrowDropUp, contentDescription = null)
             }
             IconButton(
                 onClick = onMoveDown,
                 enabled = canMoveDown,
             ) {
-                Icon(imageVector = Icons.Outlined.ArrowDropDown, contentDescription = "")
+                Icon(imageVector = Icons.Outlined.ArrowDropDown, contentDescription = null)
             }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = onDelete) {
-                Icon(imageVector = Icons.Outlined.Delete, contentDescription = "")
+                Icon(imageVector = Icons.Outlined.Delete, contentDescription = null)
             }
         }
     }

@@ -9,15 +9,18 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallExtendedFloatingActionButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import eu.kanade.presentation.components.AppBar
-import eu.kanade.presentation.components.FloatingActionAddButton
 import eu.kanade.presentation.more.settings.screen.player.custombutton.CustomButtonScreenState
 import tachiyomi.domain.custombuttons.model.CustomButton
+import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
@@ -25,6 +28,7 @@ import tachiyomi.presentation.core.components.material.topSmallPaddingValues
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.util.plus
+import tachiyomi.presentation.core.util.shouldExpandFAB
 
 @Composable
 fun CustomButtonScreen(
@@ -56,9 +60,11 @@ fun CustomButtonScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionAddButton(
-                lazyListState = lazyListState,
+            SmallExtendedFloatingActionButton(
+                text = { Text(text = stringResource(MR.strings.action_add)) },
+                icon = { Icon(imageVector = Icons.Outlined.Add, contentDescription = null) },
                 onClick = onClickCreate,
+                expanded = lazyListState.shouldExpandFAB(),
             )
         },
     ) { paddingValues ->

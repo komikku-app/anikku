@@ -1,9 +1,6 @@
 package eu.kanade.tachiyomi.ui.download
 
 import android.view.LayoutInflater
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -14,11 +11,12 @@ import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -65,6 +63,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import kotlin.math.roundToInt
 
 object DownloadQueueScreen : Screen() {
+    @Suppress("unused")
     private fun readResolve(): Any = DownloadQueueScreen
 
     @Composable
@@ -210,39 +209,28 @@ object DownloadQueueScreen : Screen() {
                 )
             },
             floatingActionButton = {
-                AnimatedVisibility(
-                    visible = downloadList.isNotEmpty(),
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                ) {
-                    val isRunning by screenModel.isDownloaderRunning.collectAsState()
-                    ExtendedFloatingActionButton(
-                        text = {
-                            val id = if (isRunning) {
-                                AYMR.strings.action_stop
-                            } else {
-                                AYMR.strings.action_continue
-                            }
-                            Text(text = stringResource(id))
-                        },
-                        icon = {
-                            val icon = if (isRunning) {
-                                Icons.Filled.Stop
-                            } else {
-                                Icons.Filled.PlayArrow
-                            }
-                            Icon(imageVector = icon, contentDescription = null)
-                        },
-                        onClick = {
-                            if (isRunning) {
-                                screenModel.pauseDownloads()
-                            } else {
-                                screenModel.startDownloads()
-                            }
-                        },
-                        expanded = fabExpanded,
-                    )
+                val isRunning by screenModel.isDownloaderRunning.collectAsState()
+                val (textRes, iconVector) = if (isRunning) {
+                    AYMR.strings.action_stop to Icons.Filled.Stop
+                } else {
+                    AYMR.strings.action_continue to Icons.Filled.PlayArrow
                 }
+                SmallExtendedFloatingActionButton(
+                    text = { Text(text = stringResource(textRes)) },
+                    icon = { Icon(imageVector = iconVector, contentDescription = null) },
+                    onClick = {
+                        if (isRunning) {
+                            screenModel.pauseDownloads()
+                        } else {
+                            screenModel.startDownloads()
+                        }
+                    },
+                    expanded = fabExpanded,
+                    modifier = Modifier.animateFloatingActionButton(
+                        visible = downloadList.isNotEmpty(),
+                        alignment = Alignment.BottomEnd,
+                    ),
+                )
             },
         ) { contentPadding ->
             if (downloadList.isEmpty()) {

@@ -821,7 +821,7 @@ private fun ExpandedControllerQueueItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowUpward,
-                        contentDescription = "",
+                        contentDescription = null,
                         tint = if (currentIndex > 0) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -836,7 +836,7 @@ private fun ExpandedControllerQueueItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowDownward,
-                        contentDescription = "",
+                        contentDescription = null,
                         tint = if (currentIndex < totalItems - 1) {
                             MaterialTheme.colorScheme.primary
                         } else {

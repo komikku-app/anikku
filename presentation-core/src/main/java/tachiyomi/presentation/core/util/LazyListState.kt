@@ -16,12 +16,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun LazyListState.shouldExpandFAB(): Boolean {
     return remember {
         derivedStateOf {
-            (firstVisibleItemIndex == 0 && firstVisibleItemScrollOffset == 0) ||
-                lastScrolledBackward ||
-                !canScrollForward
+            lastScrolledBackward || !canScrollForward || !canScrollBackward
         }
-    }
-        .value
+    }.value
 }
 
 @Composable
