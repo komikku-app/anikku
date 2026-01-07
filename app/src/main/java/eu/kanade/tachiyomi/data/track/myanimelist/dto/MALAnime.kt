@@ -18,6 +18,13 @@ data class MALAnime(
     val mediaType: String,
     @SerialName("start_date")
     val startDate: String?,
+    val studios: List<MALStudio> = emptyList(),
+)
+
+@Serializable
+data class MALStudio(
+    val id: Long,
+    val name: String,
 )
 
 @Serializable
@@ -34,10 +41,4 @@ data class MALAnimeMetadata(
     @SerialName("main_picture")
     val covers: MALAnimeCovers,
     val studios: List<MALStudio> = emptyList(),
-)
-
-@Serializable
-data class MALStudio(
-    val id: Long,
-    val name: String,
 )

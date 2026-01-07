@@ -187,13 +187,13 @@ class MyAnimeListApi(
                 authClient.newCall(GET(url.toString()))
                     .awaitSuccess()
                     .parseAs<MALAnimeMetadata>()
-                    .let { anime ->
+                    .let { metadata ->
                         TrackMangaMetadata(
-                            remoteId = anime.id,
-                            title = anime.title,
-                            thumbnailUrl = anime.covers.large?.ifEmpty { null } ?: anime.covers.medium,
-                            description = anime.synopsis,
-                            authors = anime.studios
+                            remoteId = metadata.id,
+                            title = metadata.title,
+                            thumbnailUrl = metadata.covers.large?.ifEmpty { null } ?: metadata.covers.medium,
+                            description = metadata.synopsis,
+                            authors = metadata.studios
                                 .joinToString { it.name }
                                 .ifEmpty { null },
                         )
@@ -246,6 +246,8 @@ class MyAnimeListApi(
             publishing_status = searchItem.status.replace("_", " ")
             publishing_type = searchItem.mediaType.replace("_", " ")
             start_date = searchItem.startDate ?: ""
+            authors = searchItem.studios
+                .map { it.name }
         }
     }
 
@@ -272,7 +274,7 @@ class MyAnimeListApi(
         private const val BASE_API_URL = "https://api.myanimelist.net/v2"
 
         private const val SEARCH_FIELDS =
-            "id,title,synopsis,num_episodes,mean,main_picture,status,media_type,start_date"
+            "id,title,synopsis,num_episodes,mean,main_picture,status,media_type,start_date,studios{name}"
 
         private const val LIST_PAGINATION_AMOUNT = 250
 
