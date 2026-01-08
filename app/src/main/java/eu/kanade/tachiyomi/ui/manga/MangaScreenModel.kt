@@ -427,10 +427,12 @@ class MangaScreenModel(
                 val source = sourceManager.getOrStub(manga.source)
                 // SY <--
                 // --> (Torrent)
-                if (source is MergedSource &&
-                    source.getMergedReferenceSources(manga).any {
-                        it.isSourceForTorrents()
-                    } ||
+                if ((
+                        source is MergedSource &&
+                            source.getMergedReferenceSources(manga).any {
+                                it.isSourceForTorrents()
+                            }
+                        ) ||
                     source.isSourceForTorrents()
                 ) {
                     TorrentServerService.start()
@@ -1138,7 +1140,7 @@ class MangaScreenModel(
      */
     internal suspend fun fetchRelatedMangasFromSource(onDemand: Boolean = false, onFinish: (() -> Unit)? = null) {
         val expandRelatedMangas = uiPreferences.expandRelatedMangas().get()
-        if (!onDemand && !expandRelatedMangas || manga?.source == MERGED_SOURCE_ID) return
+        if ((!onDemand && !expandRelatedMangas) || manga?.source == MERGED_SOURCE_ID) return
 
         // start fetching related mangas
         setRelatedMangasFetchedStatus(false)

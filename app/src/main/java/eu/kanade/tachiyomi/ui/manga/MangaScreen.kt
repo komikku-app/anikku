@@ -270,10 +270,12 @@ class MangaScreen(
             navigateUp = navigator::pop,
             onChapterClicked = { chapter, alt ->
                 scope.launchIO {
-                    if (successState.source is MergedSource &&
-                        successState.source.getMergedReferenceSources(screenModel.manga).any {
-                            it.isSourceForTorrents()
-                        } ||
+                    if ((
+                            successState.source is MergedSource &&
+                                successState.source.getMergedReferenceSources(screenModel.manga).any {
+                                    it.isSourceForTorrents()
+                                }
+                            ) ||
                         successState.source.isSourceForTorrents()
                     ) {
                         TorrentServerService.start()
@@ -786,8 +788,7 @@ class MangaScreen(
         // KMK -->
         navigator.popUntil { screen ->
             screen is HomeScreen ||
-                !library &&
-                (screen is BrowseSourceScreen || screen is SourceFeedScreen)
+                (!library && (screen is BrowseSourceScreen || screen is SourceFeedScreen))
         }
         // KMK <--
 

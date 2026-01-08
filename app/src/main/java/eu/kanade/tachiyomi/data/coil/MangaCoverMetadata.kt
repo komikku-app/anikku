@@ -89,14 +89,13 @@ object MangaCoverMetadata {
 
         val options = BitmapFactory.Options()
 
-        val updateColors = mangaCover.isMangaFavorite &&
-            mangaCover.dominantCoverColors == null ||
-            !onlyDominantColor &&
-            mangaCover.vibrantCoverColor == null ||
-            force
+        val updateColors =
+            (mangaCover.isMangaFavorite && mangaCover.dominantCoverColors == null) ||
+                (!onlyDominantColor && mangaCover.vibrantCoverColor == null) ||
+                force
 
         if (updateColors) {
-            /**
+            /*
              * + Manga is Favorite & doesn't have dominant color
              *   For non-favorite, it doesn't care if dominant is there or not, if it has vibrant color then it will
              *   already be returned from beginning.
@@ -105,7 +104,7 @@ object MangaCoverMetadata {
              */
             options.inSampleSize = SUB_SAMPLE
         } else {
-            /**
+            /*
              * + [onlyDominantColor] = true
              *   - Manga is Favorite & already have dominant color
              * + [onlyDominantColor] = false

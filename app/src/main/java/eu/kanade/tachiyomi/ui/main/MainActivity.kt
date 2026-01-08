@@ -361,10 +361,8 @@ class MainActivity : BaseActivity() {
             var showChangelog by remember {
                 mutableStateOf(
                     // KMK -->
-                    isReleaseBuildType &&
-                        didMigration ||
-                        isPreviewBuildType &&
-                        previewCurrentVersion > previewLastVersion.get(),
+                    (isReleaseBuildType && didMigration) ||
+                        (isPreviewBuildType && previewCurrentVersion > previewLastVersion.get()),
                     // KMK <--
                 )
             }
@@ -407,7 +405,7 @@ class MainActivity : BaseActivity() {
         val startTime = System.currentTimeMillis()
         splashScreen?.setKeepOnScreenCondition {
             val elapsed = System.currentTimeMillis() - startTime
-            elapsed <= SPLASH_MIN_DURATION || !ready && elapsed <= SPLASH_MAX_DURATION
+            elapsed <= SPLASH_MIN_DURATION || (!ready && elapsed <= SPLASH_MAX_DURATION)
         }
         setSplashScreenExitAnimation(splashScreen)
 
