@@ -116,14 +116,14 @@ object SettingsAppearanceScreen : SearchableSettings {
                     entries = PaletteStyle.entries
                         .associateWith {
                             when (it) {
-                                PaletteStyle.Expressive ->
-                                    stringResource(KMR.strings.pref_theme_cover_based_style_expressive)
                                 PaletteStyle.TonalSpot ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_tonalspot)
                                 PaletteStyle.Neutral ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_neutral)
                                 PaletteStyle.Vibrant ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_vibrant)
+                                PaletteStyle.Expressive ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_expressive)
                                 PaletteStyle.Rainbow ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_rainbow)
                                 PaletteStyle.FruitSalad ->
@@ -179,14 +179,14 @@ object SettingsAppearanceScreen : SearchableSettings {
                     entries = PaletteStyle.entries
                         .associateWith {
                             when (it) {
-                                PaletteStyle.Expressive ->
-                                    stringResource(KMR.strings.pref_theme_cover_based_style_expressive)
                                 PaletteStyle.TonalSpot ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_tonalspot)
                                 PaletteStyle.Neutral ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_neutral)
                                 PaletteStyle.Vibrant ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_vibrant)
+                                PaletteStyle.Expressive ->
+                                    stringResource(KMR.strings.pref_theme_cover_based_style_expressive)
                                 PaletteStyle.Rainbow ->
                                     stringResource(KMR.strings.pref_theme_cover_based_style_rainbow)
                                 PaletteStyle.FruitSalad ->
