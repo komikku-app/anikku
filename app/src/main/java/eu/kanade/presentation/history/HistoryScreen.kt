@@ -10,8 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -25,8 +24,10 @@ import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.updates.formatProgress
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.history.HistoryScreenModel
+import eu.kanade.tachiyomi.ui.updates.UpdatesSettingsScreenModel
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.history.model.HistoryWithRelations
+import tachiyomi.domain.updates.service.UpdatesPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
@@ -37,6 +38,7 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
+import tachiyomi.presentation.core.util.collectAsState
 import java.time.LocalDate
 
 @Composable
@@ -48,10 +50,14 @@ fun HistoryScreen(
     onClickResume: (mangaId: Long, chapterId: Long) -> Unit,
     onClickFavorite: (mangaId: Long) -> Unit,
     onDialogChange: (HistoryScreenModel.Dialog?) -> Unit,
+    // KMK -->
+    settingsScreenModel: UpdatesSettingsScreenModel,
+    // KMK <--
 ) {
     // KMK -->
-    val usePanoramaCover = remember { mutableStateOf(false) }
+    val usePanoramaCover by settingsScreenModel.updatesPreferences.usePanoramaCover().collectAsState()
     // KMK <--
+
     Scaffold(
         topBar = { scrollBehavior ->
             SearchToolbar(
@@ -68,10 +74,8 @@ fun HistoryScreen(
                                         AppBar.Action(
                                             title = stringResource(KMR.strings.action_panorama_cover),
                                             icon = Icons.Outlined.Panorama,
-                                            iconTint = MaterialTheme.colorScheme.primary.takeIf { usePanoramaCover.value },
-                                            onClick = {
-                                                usePanoramaCover.value = !usePanoramaCover.value
-                                            },
+                                            iconTint = MaterialTheme.colorScheme.primary.takeIf { usePanoramaCover },
+                                            onClick = { settingsScreenModel.toggleSwitch(UpdatesPreferences::usePanoramaCover) },
                                         ),
                                     )
                                 }
@@ -118,7 +122,7 @@ fun HistoryScreen(
                     onClickDelete = { item -> onDialogChange(HistoryScreenModel.Dialog.Delete(item)) },
                     onClickFavorite = { history -> onClickFavorite(history.mangaId) },
                     // KMK -->
-                    usePanoramaCover = usePanoramaCover.value,
+                    usePanoramaCover = usePanoramaCover,
                     // KMK <--
                 )
             }
@@ -198,6 +202,7 @@ internal fun HistoryScreenPreviews(
     @PreviewParameter(HistoryScreenModelStateProvider::class)
     historyState: HistoryScreenModel.State,
 ) {
+    val settingsScreenModel = UpdatesSettingsScreenModel()
     TachiyomiPreviewTheme {
         HistoryScreen(
             state = historyState,
@@ -207,6 +212,7 @@ internal fun HistoryScreenPreviews(
             onClickResume = { _, _ -> run {} },
             onDialogChange = {},
             onClickFavorite = {},
+            settingsScreenModel = settingsScreenModel,
         )
     }
 }
