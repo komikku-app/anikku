@@ -1725,9 +1725,9 @@ class PlayerViewModel @JvmOverloads constructor(
                     episode.episodeNumber.toFloat() == currentEp.episode_number
                 ) {
                     EpisodeUpdate(id = episode.id, read = true)
-                        // SY -->
-                        .also { deleteEpisodeIfNeeded(episode.toDbEpisode()) }
-                    // SY <--
+                        // KMK -->
+                        .also { deleteDupChapterIfNeeded(episode.copy(read = true).toDbEpisode()) }
+                    // KMK <--
                 } else {
                     null
                 }
@@ -1772,7 +1772,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
     /**
      * Determines if deleting option is enabled and nth to last episode actually exists.
-     * If both conditions are satisfied enqueues episode for delete
+     * If both conditions are satisfied enqueues episode for delete.
+     *
+     * This deletes chapters from reading list (filtered, unduplicated if any set).
+     *
      * @param chosenEpisode current episode, which is going to be marked as seen.
      */
     private fun deleteEpisodeIfNeeded(chosenEpisode: Episode) {
@@ -1790,6 +1793,23 @@ class PlayerViewModel @JvmOverloads constructor(
             enqueueDeleteSeenEpisodes(episodeToDelete)
         }
     }
+
+    // KMK -->
+    /**
+     * Deletes duplicate chapters when `removeAfterReadSlots` = "Last read chapter" (0).
+     *
+     * Ignore the case where `removeAfterReadSlots` > 0 while `skipDupe` = true as we don't know
+     * where the chapters to be deleted are in the filtered [filterEpisodeList].
+     *
+     * For the case where `skipDupe` = false, chapters at should be deleted normally by [deleteEpisodeIfNeeded]
+     * based on the `removeAfterReadSlots` offset while the user is reading sequentially.
+     */
+    private fun deleteDupChapterIfNeeded(chosenEpisode: Episode) {
+        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots().get()
+        if (removeAfterSeenSlots != 0) return
+        enqueueDeleteSeenEpisodes(chosenEpisode)
+    }
+    // KMK <--
 
     fun saveCurrentEpisodeWatchingProgress() {
         currentEpisode.value?.let { saveWatchingProgress(it) }
