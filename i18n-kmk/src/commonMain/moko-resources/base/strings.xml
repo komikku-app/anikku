@@ -17,7 +17,6 @@
     <string name="action_open_folder">Open folder</string>
     <string name="action_clear_manga">Clear manga</string>
     <string name="action_update">Update</string>
-
     <!-- Reader -->
       <!-- Reader Actions -->
     <string name="action_copy_to_clipboard_first_page">Copy first page to clipboard</string>
@@ -187,7 +186,6 @@
     <string name="active_account">Active Account</string>
     <string name="no_accounts_found">No accounts found</string>
     <string name="login_failed">Failed to login</string>
-
     <!-- Discord section -->
     <string name="discord_status_description">%1$s %2$s</string>
     <string name="discord_status_using">Using</string>
@@ -196,7 +194,6 @@
     <string name="discord_status_messing">Messing around with</string>
     <string name="discord_download_button">Read on %s</string>
     <string name="discord_app_description">Komikku - a manga reader app</string>
-
     <!-- Discord RPC Customization -->
     <string name="pref_category_discord_customization">Discord Customization</string>
     <string name="pref_discord_custom_message">Custom Message</string>
