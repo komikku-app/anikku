@@ -73,17 +73,26 @@ CASE
     WHEN (episodeFlags & :bookmarkUnmask) != 0 THEN totalCount - bookmarkCount
     WHEN (episodeFlags & :bookmarkMask) != 0 THEN bookmarkCount
     ELSE totalCount
-END AS totalCount,
+END AS totalCountCalculated,
 CASE
     WHEN (episodeFlags & :bookmarkUnmask) != 0 THEN seenCount - bookmarkSeenCount
     WHEN (episodeFlags & :bookmarkMask) != 0 THEN bookmarkSeenCount
     ELSE seenCount
-END AS seenCount,
+END AS seenCountCalculated,
 -- KMK <--
 seenAt,
 watchDuration
 FROM historyView
 WHERE historyView.seenAt > 0
+-- KMK -->
+AND (
+    :unfinishedManga IS NULL
+    OR (:unfinishedManga = 1 AND totalCountCalculated > seenCountCalculated)
+    OR (:unfinishedManga = 0 AND totalCountCalculated <= seenCountCalculated)
+)
+AND (:unfinishedChapter IS NULL OR seen != :unfinishedChapter)
+AND (:nonLibraryEntries IS NULL OR favorite != :nonLibraryEntries)
+-- KMK <--
 AND maxSeenAtEpisodeId = historyView.episodeId
 AND lower(historyView.title) LIKE ('%' || :query || '%')
 ORDER BY seenAt DESC;

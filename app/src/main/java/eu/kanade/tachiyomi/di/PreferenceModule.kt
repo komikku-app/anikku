@@ -25,6 +25,7 @@ import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
 import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.history.service.HistoryPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.updates.service.UpdatesPreferences
@@ -60,6 +61,11 @@ class PreferenceModule(val app: Application) : InjektModule {
         addSingletonFactory {
             UpdatesPreferences(get())
         }
+        // KMK -->
+        addSingletonFactory {
+            HistoryPreferences(get())
+        }
+        // KMK <--
         addSingletonFactory {
             PlayerPreferences(get())
         }

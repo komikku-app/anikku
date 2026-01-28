@@ -181,6 +181,9 @@
     <string name="download_cache_renew_interval_info_anime">If set to "manual", either refresh each anime or using the "Reindex downloads" action in "Advanced"</string>
     <string name="pref_top_align_cover_summary_anime">Show the cover aligned to the top alongside anime info</string>
     <string name="pref_anime_info">Anime Info</string>
+        <!-- History section -->
+    <string name="action_filter_unfinished_anime">Unfinished anime</string>
+    <string name="action_filter_unfinished_episode">Unfinished episode</string>
 
         <!-- Discord section -->
     <string name="discord_download_button_anime">Watch on %s</string>

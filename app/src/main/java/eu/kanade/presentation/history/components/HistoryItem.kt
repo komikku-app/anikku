@@ -39,6 +39,7 @@ import exh.debug.DebugToggles
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -140,7 +141,7 @@ fun HistoryItem(
                 if (hasUnread) {
                     Icon(
                         imageVector = Icons.Filled.Circle,
-                        contentDescription = stringResource(AYMR.strings.unseen),
+                        contentDescription = stringResource(AMR.strings.action_filter_unfinished_anime),
                         modifier = Modifier
                             .height(8.dp)
                             .padding(end = 4.dp),

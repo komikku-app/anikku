@@ -102,8 +102,8 @@ class HistoryScreenModelStateProvider : PreviewParameterProvider<HistoryScreenMo
                         read = Random.nextBoolean(),
                         lastPageRead = Random.nextLong(1, 10),
                         totalPages = Random.nextLong(1, 100),
-                        totalChapters = Random.nextLong(1, 100),
-                        readCount = 1,
+                        totalCountCalculated = Random.nextLong(1, 100),
+                        readCountCalculated = 1,
                         // KMK <--
                         readAt = Date.from(Instant.now()),
                         readDuration = Random.nextLong(),
