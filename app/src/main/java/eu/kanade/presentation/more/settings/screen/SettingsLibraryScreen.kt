@@ -304,6 +304,11 @@ object SettingsLibraryScreen : SearchableSettings {
                     preference = libraryPreferences.showEmptyCategoriesSearch(),
                     title = stringResource(KMR.strings.pref_show_empty_categories_search),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.syncOnAdd(),
+                    title = stringResource(AMR.strings.pref_sync_anime_on_add),
+                    subtitle = stringResource(AMR.strings.pref_sync_anime_on_add_description),
+                ),
                 // KMK <--
             ),
         )
