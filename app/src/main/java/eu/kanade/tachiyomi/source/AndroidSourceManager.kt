@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.repository.StubSourceRepository
 import tachiyomi.domain.source.service.SourceManager
@@ -54,6 +55,9 @@ class AndroidSourceManager(
     // SY -->
     private val sourcePreferences: SourcePreferences by injectLazy()
     // SY <--
+    // KMK -->
+    private val getMergedReferencesById: GetMergedReferencesById by injectLazy()
+    // KMK <--
 
     init {
         scope.launch {
@@ -129,6 +133,14 @@ class AndroidSourceManager(
             it.id !in BlacklistedSources.HIDDEN_SOURCES
         }
     // SY <--
+
+    // KMK -->
+    override suspend fun getMergedSources(mangaId: Long): List<Source> {
+        val sources = getMergedReferencesById.await(mangaId)
+        return sources.distinctBy { it.mangaSourceId }
+            .map { getOrStub(it.mangaSourceId) }
+    }
+    // KMK <--
 
     private fun registerStubSource(source: StubSource) {
         scope.launch {

@@ -53,11 +53,13 @@ import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
+import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.util.lang.convertEpochMillisZone
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
+import exh.source.MERGED_SOURCE_ID
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
@@ -73,6 +75,8 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.interactor.GetMergedReferencesById
+import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.DeleteTrack
 import tachiyomi.domain.track.interactor.GetTracks
@@ -84,6 +88,7 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -198,7 +203,17 @@ data class TrackInfoDialogHomeScreen(
         private val mangaId: Long,
         private val sourceId: Long,
         private val getTracks: GetTracks = Injekt.get(),
+        // SY -->
+        private val trackerManager: TrackerManager = Injekt.get(),
+        // SY <--
+        // KMK -->
+        private val sourceManager: SourceManager = Injekt.get(),
+        // KMK <--
     ) : StateScreenModel<Model.State>(State()) {
+        // KMK -->
+        private val getMangaById: GetManga by injectLazy()
+        private val getMergedReferencesById: GetMergedReferencesById by injectLazy()
+        // KMK <--
 
         init {
             screenModelScope.launch {
@@ -214,10 +229,25 @@ data class TrackInfoDialogHomeScreen(
             }
         }
 
+        // KMK -->
+        private suspend fun getMangaForTracking(item: TrackItem): Manga? {
+            if (sourceId != MERGED_SOURCE_ID) {
+                return getMangaById.await(mangaId)
+            }
+            item.tracker as EnhancedTracker
+            val references = getMergedReferencesById.await(mangaId)
+            return references.distinctBy { it.mangaSourceId }.firstNotNullOfOrNull { ref ->
+                sourceManager.get(ref.mangaSourceId)
+                    ?.takeIf(item.tracker::accept)
+                    ?.let { ref.mangaId?.let { mangaId -> getMangaById.await(mangaId) } }
+            }
+        }
+        // KMK <--
+
         fun registerEnhancedTracking(item: TrackItem) {
             item.tracker as EnhancedTracker
             screenModelScope.launchNonCancellable {
-                val manga = Injekt.get<GetManga>().await(mangaId) ?: return@launchNonCancellable
+                val manga = getMangaForTracking(item) ?: return@launchNonCancellable
                 try {
                     val matchResult = item.tracker.match(manga) ?: throw Exception()
                     item.tracker.register(matchResult, mangaId)
@@ -255,14 +285,23 @@ data class TrackInfoDialogHomeScreen(
             }
         }
 
-        private fun List<Track>.mapToTrackItem(): List<TrackItem> {
-            val loggedInTrackers = Injekt.get<TrackerManager>().loggedInTrackers()
-            val source = Injekt.get<SourceManager>().getOrStub(sourceId)
+        private suspend fun List<Track>.mapToTrackItem(): List<TrackItem> {
+            val loggedInTrackers = trackerManager.loggedInTrackers()
+            val source = sourceManager.getOrStub(sourceId)
             return loggedInTrackers
                 // Map to TrackItem
                 .map { service -> TrackItem(find { it.trackerId == service.id }, service) }
                 // Show only if the service supports this manga's source
-                .filter { (it.tracker as? EnhancedTracker)?.accept(source) ?: true }
+                // KMK -->
+                .let { trackers ->
+                    val sources = if (source is MergedSource) {
+                        sourceManager.getMergedSources(mangaId)
+                    } else {
+                        listOf(source)
+                    }
+                    trackers.filter { (it.tracker as? EnhancedTracker)?.accept(sources) ?: true }
+                }
+            // KMK <--
         }
 
         @Immutable
