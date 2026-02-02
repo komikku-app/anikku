@@ -103,6 +103,10 @@ data object HistoryTab : Tab {
             onDialogChange = screenModel::setDialog,
             onClickFavorite = screenModel::addFavorite,
             // KMK -->
+            toggleSelectionMode = screenModel::toggleSelectionMode,
+            onSelectAll = screenModel::toggleAllSelection,
+            onInvertSelection = screenModel::invertSelection,
+            onHistorySelected = screenModel::toggleSelection,
             onFilterClicked = screenModel::showFilterDialog,
             hasActiveFilters = state.hasActiveFilters,
             usePanoramaCover = usePanoramaCover,
@@ -115,11 +119,13 @@ data object HistoryTab : Tab {
                 HistoryDeleteDialog(
                     onDismissRequest = onDismissRequest,
                     onDelete = { all ->
+                        // KMK -->
                         if (all) {
-                            screenModel.removeAllFromHistory(dialog.history.mangaId)
+                            screenModel.removeAllFromHistory(dialog.histories)
                         } else {
-                            screenModel.removeFromHistory(dialog.history)
+                            screenModel.removeFromHistory(dialog.histories)
                         }
+                        // KMK <--
                     },
                 )
             }
@@ -171,8 +177,10 @@ data object HistoryTab : Tab {
             null -> {}
         }
 
-        LaunchedEffect(state.list) {
-            if (state.list != null) {
+        // KMK -->
+        LaunchedEffect(state.isLoading) {
+            if (!state.isLoading) {
+                // KMK <--
                 (context as? MainActivity)?.ready = true
 
                 // AM (DISCORD) -->

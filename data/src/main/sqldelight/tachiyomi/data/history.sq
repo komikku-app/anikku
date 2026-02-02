@@ -33,12 +33,16 @@ JOIN episodes EP
 ON H.episode_id = EP._id
 WHERE EP.anime_id = :animeId AND EP.url = :episodeUrl AND EP._id = H.episode_id;
 
-resetHistoryById:
+-- KMK -->
+resetHistoryByIds:
+-- KMK <--
 UPDATE history
 SET last_seen = 0
-WHERE _id = :historyId;
+-- KMK -->
+WHERE _id IN :historyIds;
 
-resetHistoryByAnimeId:
+resetHistoryByAnimeIds:
+-- KMK <--
 UPDATE history
 SET last_seen = 0
 WHERE _id IN (
@@ -48,7 +52,9 @@ WHERE _id IN (
     ON A._id = EP.anime_id
     INNER JOIN history H
     ON EP._id = H.episode_id
-    WHERE A._id = :animeId
+    -- KMK -->
+    WHERE A._id IN :animeIds
+-- KMK <--
 );
 
 removeAllHistory:

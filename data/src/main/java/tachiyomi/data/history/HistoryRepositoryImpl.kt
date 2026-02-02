@@ -56,17 +56,21 @@ class HistoryRepositoryImpl(
         return handler.awaitList { historyQueries.getHistoryByAnimeId(mangaId, HistoryMapper::mapHistory) }
     }
 
-    override suspend fun resetHistory(historyId: Long) {
+    // KMK -->
+    override suspend fun resetHistory(historyIds: List<Long>) {
         try {
-            handler.await { historyQueries.resetHistoryById(historyId) }
+            handler.await { historyQueries.resetHistoryByIds(historyIds) }
+            // KMK <--
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, throwable = e)
         }
     }
 
-    override suspend fun resetHistoryByMangaId(mangaId: Long) {
+    // KMK -->
+    override suspend fun resetHistoryByMangaIds(mangaIds: List<Long>) {
         try {
-            handler.await { historyQueries.resetHistoryByAnimeId(mangaId) }
+            handler.await { historyQueries.resetHistoryByAnimeIds(mangaIds) }
+            // KMK <--
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, throwable = e)
         }
