@@ -1101,10 +1101,12 @@ class LibraryScreenModel(
             unfiltered.asFlow().cancellable().filter { item ->
                 val mangaId = item.libraryManga.manga.id
                 if (query.startsWith("id:", true)) {
-                    val id = query.substringAfter("id:").toLongOrNull()
-                    return@filter mangaId == id
+                    return@filter mangaId == query.substringAfter("id:").toLongOrNull()
                 }
                 val sourceId = item.libraryManga.manga.source
+                if (query.startsWith("src:", true)) {
+                    return@filter sourceId == query.substringAfter("src:").toLongOrNull()
+                }
                 filterManga(
                     queries = parsedQuery,
                     libraryManga = item.libraryManga,
