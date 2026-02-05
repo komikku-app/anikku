@@ -245,11 +245,12 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
         }
     }
 
+    // KMK: Got CloudFlare blocked, possible reason is using old API
     suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         return withIOContext {
-            val query = """
-            |query(${'$'}libraryId: ID!, ${'$'}staffCount: Int) {
-                |findLibraryEntryById(id: ${'$'}libraryId) {
+            val query = $$"""
+            |query($libraryId: ID!, $staffCount: Int) {
+                |findLibraryEntryById(id: $libraryId) {
                     |media {
                         |id
                         |titles {
@@ -261,7 +262,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                             |}
                         |}
                         |description
-                        |staff(first: ${'$'}staffCount) {
+                        |staff(first: $staffCount) {
                             |nodes {
                                 |role
                                 |person {

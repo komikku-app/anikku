@@ -153,9 +153,9 @@ class BackupRestorer(
         }
     }
 
-    context(CoroutineScope)
+    context(scope: CoroutineScope)
     private /* KMK --> */suspend /* KMK <-- */ fun restoreCategories(backupCategories: List<BackupCategory>) {
-        ensureActive()
+        scope.ensureActive()
         categoriesRestorer(backupCategories)
 
         restoreProgress += 1
@@ -334,7 +334,7 @@ class BackupRestorer(
                 }
                 return file
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Empty
         }
         return File("")

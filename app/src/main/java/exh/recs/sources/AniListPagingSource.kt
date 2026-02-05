@@ -109,10 +109,10 @@ class AniListPagingSource(manga: Manga) : TrackerRecommendationPagingSource(
 
     override suspend fun getRecsById(id: String): List<SManga> {
         val query =
-            """
-            |query Recommendations(${'$'}id: Int!) {
+            $$"""
+            |query Recommendations($id: Int!) {
                 |Page {
-                    |media(id: ${'$'}id, type: ANIME) {
+                    |media(id: $id, type: ANIME) {
                         |recommendations {
                             |edges {
                                 |node {
@@ -149,10 +149,10 @@ class AniListPagingSource(manga: Manga) : TrackerRecommendationPagingSource(
 
     override suspend fun getRecsBySearch(search: String): List<SManga> {
         val query =
-            """
-            |query Recommendations(${'$'}search: String!) {
+            $$"""
+            |query Recommendations($search: String!) {
                 |Page {
-                    |media(search: ${'$'}search, type: ANIME) {
+                    |media(search: $search, type: ANIME) {
                         |title {
                             |romaji
                             |english

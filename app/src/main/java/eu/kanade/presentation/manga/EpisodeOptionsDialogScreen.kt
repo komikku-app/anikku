@@ -1,5 +1,6 @@
 package eu.kanade.presentation.manga
 
+import android.content.ClipData
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -40,10 +41,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -500,7 +502,7 @@ private fun VideoList(
     getHosterList: () -> List<Hoster>?,
 ) {
     val downloadManager = Injekt.get<DownloadManager>()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard: Clipboard = LocalClipboard.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val copiedString = stringResource(AYMR.strings.copied_video_link_to_clipboard)
@@ -533,8 +535,14 @@ private fun VideoList(
                     onDownloadClicked = { downloadEpisode(useExternalDownloader) },
                     onExtDownloadClicked = { downloadEpisode(!useExternalDownloader) },
                     onCopyClicked = {
-                        clipboardManager.setText(AnnotatedString(currentVideo.videoUrl))
-                        scope.launch { context.toast(copiedString) }
+                        scope.launch {
+                            val clipEntry = ClipData.newPlainText(
+                                currentVideo.videoUrl,
+                                currentVideo.videoUrl,
+                            ).toClipEntry()
+                            clipboard.setClipEntry(clipEntry)
+                            context.toast(copiedString)
+                        }
                     },
                     onExtPlayerClicked = {
                         scope.launch {

@@ -95,7 +95,7 @@ private suspend fun Call.await(callStack: Array<StackTraceElement>): Response {
         continuation.invokeOnCancellation {
             try {
                 cancel()
-            } catch (ex: Throwable) {
+            } catch (_: Throwable) {
                 // Ignore cancel exception
             }
         }
@@ -135,18 +135,18 @@ fun OkHttpClient.newCachelessCallWithProgress(request: Request, listener: Progre
     return progressClient.newCall(request)
 }
 
-context(Json)
+context(_: Json)
 inline fun <reified T> Response.parseAs(): T {
     return decodeFromJsonResponse(serializer(), this)
 }
 
-context(Json)
+context(json: Json)
 fun <T> decodeFromJsonResponse(
     deserializer: DeserializationStrategy<T>,
     response: Response,
 ): T {
     return response.body.source().use {
-        decodeFromBufferedSource(deserializer, it)
+        json.decodeFromBufferedSource(deserializer, it)
     }
 }
 

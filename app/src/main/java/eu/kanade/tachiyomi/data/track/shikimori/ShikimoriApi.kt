@@ -137,9 +137,9 @@ class ShikimoriApi(
 
     suspend fun getAnimeMetadata(track: DomainTrack): TrackMangaMetadata {
         return withIOContext {
-            val query = """
-                |query(${'$'}ids: String!) {
-                    |animes(ids: ${'$'}ids) {
+            val query = $$"""
+                |query($ids: String!) {
+                    |animes(ids: $ids) {
                         |id
                         |name
                         |description
