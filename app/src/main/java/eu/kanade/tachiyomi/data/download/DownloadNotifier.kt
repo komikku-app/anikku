@@ -12,8 +12,8 @@ import eu.kanade.tachiyomi.data.notification.NotificationHandler
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.lang.chop
+import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.notificationBuilder
-import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.notify
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
@@ -62,11 +62,21 @@ internal class DownloadNotifier(private val context: Context) {
     }
 
     /**
-     * Dismiss the downloader's notification. Downloader error notifications use a different id, so
-     * those can only be dismissed by the user.
+     * Dismiss the downloader's progress and paused notifications. Error notifications use a
+     * different id, so those can only be dismissed by the user.
      */
     fun dismissProgress() {
-        context.notificationManager.cancel(Notifications.ID_DOWNLOAD_EPISODE_PROGRESS)
+        context.cancelNotification(Notifications.ID_DOWNLOAD_EPISODE_PROGRESS)
+        // KMK -->
+        context.cancelNotification(Notifications.ID_DOWNLOAD_EPISODE_PAUSED)
+    }
+
+    /**
+     * Dismiss the pause notification. Called when resuming downloads.
+     */
+    fun dismissPaused() {
+        context.cancelNotification(Notifications.ID_DOWNLOAD_EPISODE_PAUSED)
+        // KMK <--
     }
 
     /**
@@ -151,7 +161,9 @@ internal class DownloadNotifier(private val context: Context) {
                 NotificationReceiver.clearDownloadsPendingBroadcast(context),
             )
 
-            show(Notifications.ID_DOWNLOAD_EPISODE_PROGRESS)
+            // KMK -->
+            show(Notifications.ID_DOWNLOAD_EPISODE_PAUSED)
+            // KMK <--
         }
 
         // Reset initial values
