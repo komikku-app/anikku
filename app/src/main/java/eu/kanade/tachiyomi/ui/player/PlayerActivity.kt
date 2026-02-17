@@ -1377,6 +1377,15 @@ class PlayerActivity : BaseActivity() {
                 }
             }
         }
+
+        // ANK -->
+        if (
+            viewModel.subtitlePreferences.jimakuEnabled().get() &&
+            viewModel.subtitlePreferences.jimakuAutoFetch().get()
+        ) {
+            viewModel.fetchAndAutoSelectJimaku()
+        }
+        // ANK <--
     }
 
     private fun setMpvOptions() {
