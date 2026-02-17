@@ -229,4 +229,9 @@
     <string name="episodes_from_database"></string>
     <string name="discord_download_button_anime"></string>
     <string name="action_clear_anime"></string>
+    <string name="show_episodes_titles_title"></string>
+    <string name="show_episodes_titles_subtitle"></string>
+    <string name="discord_app_description_anime"></string>
+    <string name="fetch_episode_updates"></string>
+    <string name="pref_anime_info"></string>
 </resources>
