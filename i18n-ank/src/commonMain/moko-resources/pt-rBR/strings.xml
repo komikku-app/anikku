@@ -221,4 +221,12 @@
     <string name="episode_updates_merged_entry">Ativar/desativar atualização de capítulos</string>
     <string name="episode_updates_merged_entry_desc">Ativar isto irá desativar ou ativar atualizações de episódios para esta entrada mesclada</string>
     <string name="merged_episode_updates_error">Erro ao alterar atualização de episódios</string>
+    <string name="pref_discord_show_timestamp_summary_episode"></string>
+    <string name="pref_discord_show_progress_summary_episode"></string>
+    <string name="download_merged_anime_entry"></string>
+    <string name="merged_toggle_download_episodes_error"></string>
+    <string name="download_merged_anime_entry_desc"></string>
+    <string name="episodes_from_database"></string>
+    <string name="discord_download_button_anime"></string>
+    <string name="action_clear_anime"></string>
 </resources>
