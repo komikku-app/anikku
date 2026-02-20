@@ -40,6 +40,7 @@ import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.preference.toggle
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.ank.AMR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.Button
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -54,6 +55,7 @@ fun MigrationConfigScreenSheet(
     onStartMigration: (extraSearchQuery: String?) -> Unit,
     // KMK -->
     fullSettings: Boolean = true,
+    isSingleEntry: Boolean = false,
     // KMK <--
 ) {
     var extraSearchQuery by rememberSaveable { mutableStateOf("") }
@@ -161,17 +163,30 @@ fun MigrationConfigScreenSheet(
                 if (fullSettings) {
                     // KMK <--
                     MigrationSheetDividerItem()
-                    MigrationSheetWarningItem(stringResource(MR.strings.migrationConfigScreen_enhancedOptionsWarning))
-                    MigrationSheetSwitchItem(
-                        title = stringResource(MR.strings.migrationConfigScreen_deepSearchModeTitle),
-                        subtitle = stringResource(MR.strings.migrationConfigScreen_deepSearchModeSubtitle),
-                        preference = preferences.migrationDeepSearchMode(),
-                    )
-                    MigrationSheetSwitchItem(
-                        title = stringResource(AMR.strings.migrationConfigScreen_prioritizeByChaptersTitle_Episodes),
-                        subtitle = stringResource(MR.strings.migrationConfigScreen_prioritizeByChaptersSubtitle),
-                        preference = preferences.migrationPrioritizeByChapters(),
-                    )
+                    // KMK -->
+                    val migrationSmartSearchSingleEntryPref = preferences.migrationSmartSearchSingleEntry()
+                    val isSmartSearchSingleEntry by migrationSmartSearchSingleEntryPref.collectAsState()
+                    if (isSingleEntry) {
+                        MigrationSheetSwitchItem(
+                            title = stringResource(KMR.strings.migrationConfigScreen_smartSearchSingleEntryTitle),
+                            subtitle = stringResource(KMR.strings.migrationConfigScreen_smartSearchSingleEntrySubtitle),
+                            preference = migrationSmartSearchSingleEntryPref,
+                        )
+                    }
+                    if (!isSingleEntry || isSmartSearchSingleEntry) {
+                        // KMK <--
+                        MigrationSheetWarningItem(stringResource(MR.strings.migrationConfigScreen_enhancedOptionsWarning))
+                        MigrationSheetSwitchItem(
+                            title = stringResource(MR.strings.migrationConfigScreen_deepSearchModeTitle),
+                            subtitle = stringResource(MR.strings.migrationConfigScreen_deepSearchModeSubtitle),
+                            preference = preferences.migrationDeepSearchMode(),
+                        )
+                        MigrationSheetSwitchItem(
+                            title = stringResource(AMR.strings.migrationConfigScreen_prioritizeByChaptersTitle_Episodes),
+                            subtitle = stringResource(MR.strings.migrationConfigScreen_prioritizeByChaptersSubtitle),
+                            preference = preferences.migrationPrioritizeByChapters(),
+                        )
+                    }
                 }
             }
             HorizontalDivider()
