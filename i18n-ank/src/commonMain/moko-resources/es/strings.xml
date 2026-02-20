@@ -140,7 +140,7 @@
     <string name="pref_skip_seen_episodes">Saltar episodios marcados como vistos</string>
     <string name="pref_skip_filtered_episodes">Omitir episodios filtrados</string>
     <string name="pref_skip_dupe_episodes">Omitir episodios duplicados</string>
-    <string name="action_display_show_continue_watching_button">Continúe viendo el botón</string>
+    <string name="action_display_show_continue_watching_button">Botón “Continuar viendo”</string>
     <string name="non_library_watched_settings">Todas las entradas vistas</string>
     <string name="sync_on_episode_seen">Sincronizar en Episodio</string>
     <string name="sync_on_episode_open">Sincronizar al abrir episodio</string>
@@ -217,4 +217,20 @@
     <string name="use_most_episodes">Usar la fuente con más episodios (más lento)</string>
     <string name="dedupe_most_episodes">Mostrar la fuente con más episodios</string>
     <string name="dedupe_highest_episode">Mostrar la fuente con el número de episodio más alto</string>
+    <string name="episode_updates_merged_entry">Alternar actualizaciones de episodios</string>
+    <string name="episode_updates_merged_entry_desc">Al alternar esta opción, se habilitarán o deshabilitarán las actualizaciones de episodios para esta entrada combinada.</string>
+    <string name="merged_episode_updates_error">Error al alternar las actualizaciones de episodios</string>
+    <string name="fetch_episode_updates">Obtener actualizaciones de episodios</string>
+    <string name="merged_toggle_download_episodes_error">Error al alternar la descarga de episodios</string>
+    <string name="download_merged_anime_entry">Alternar descarga de nuevos episodios</string>
+    <string name="download_merged_anime_entry_desc">Al alternar esta opción, se habilitará o deshabilitará la descarga de episodios para esta entrada combinada.</string>
+    <string name="pref_anime_info">Información del anime</string>
+    <string name="discord_download_button_anime">Ver en %s</string>
+    <string name="discord_app_description_anime">Anikku - una aplicación para ver anime</string>
+    <string name="show_episodes_titles_title">Mostrar títulos de los episodios</string>
+    <string name="show_episodes_titles_subtitle">Mostrar el título del episodio que se está viendo</string>
+    <string name="pref_discord_show_progress_summary_episode">Mostrar el progreso actual del episodio</string>
+    <string name="pref_discord_show_timestamp_summary_episode">Mostrar el tiempo transcurrido/restante</string>
+    <string name="action_clear_anime">Limpiar anime</string>
+    <string name="episodes_from_database">Episodios e historial de la base de datos</string>
 </resources>
