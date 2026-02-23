@@ -26,6 +26,8 @@ import eu.kanade.tachiyomi.network.JavaScriptEngine
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.AndroidSourceManager
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
+import eu.kanade.tachiyomi.ui.player.domain.AudioManager
+import eu.kanade.tachiyomi.ui.player.domain.BrightnessManager
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory
 import kotlinx.serialization.json.Json
@@ -190,6 +192,11 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { SyncStatus() }
         addSingletonFactory { LibraryUpdateStatus() }
         // KMK <--
+
+        // AM -->
+        addSingletonFactory { AudioManager(app) }
+        addSingletonFactory { BrightnessManager(app) }
+        // <-- AM
 
         // Asynchronously init expensive components for a faster cold start
         ContextCompat.getMainExecutor(app).execute {

@@ -35,6 +35,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.animiru.AMMR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -44,6 +45,7 @@ import uy.kohesive.injekt.api.get
 import java.text.NumberFormat
 
 object PlayerSettingsPlayerScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = PlayerSettingsPlayerScreen
 
     @ReadOnlyComposable
@@ -54,8 +56,8 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
     override fun getPreferences(): List<Preference> {
         val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
         val basePreferences = remember { Injekt.get<BasePreferences>() }
-        val torrentServerPreferences = remember { Injekt.get<TorrentServerPreferences>() }
         val deviceSupportsPip = basePreferences.deviceHasPip()
+        val torrentServerPreferences = remember { Injekt.get<TorrentServerPreferences>() }
         val localHttpServerHolder = remember { Injekt.get<LocalHttpServerHolder>() }
 
         return listOfNotNull(
@@ -75,6 +77,10 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
             Preference.PreferenceItem.SwitchPreference(
                 preference = playerPreferences.preserveWatchingPosition(),
                 title = stringResource(AYMR.strings.pref_preserve_watching_position),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = playerPreferences.switchOnFailure(),
+                title = stringResource(AMMR.strings.player_pref_switch_on_failure),
             ),
             getCastGroup(playerPreferences = playerPreferences),
             Preference.PreferenceItem.ListPreference(
@@ -398,7 +404,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                             Integer.parseInt(it)
                             TorrentServerService.stop()
                             true
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             false
                         }
                     },
@@ -444,7 +450,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                             Integer.parseInt(it)
                             LocalHttpServerService.stop()
                             true
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             false
                         }
                     },

@@ -49,7 +49,9 @@ class HosterLoader {
 
             // Check for first video with non-empty url
             val firstValid: (Pair<Video, Video.State>) -> Boolean = { (v, s) ->
+                // AY -->
                 v.videoUrl.isNotEmpty() && (s == Video.State.Ready || s == Video.State.Queue)
+                // <-- AY
             }
             val firstAvailableHosterIdx = availableHosters.indexOfFirst {
                 (it.value as HosterState.Ready).let { hoster ->

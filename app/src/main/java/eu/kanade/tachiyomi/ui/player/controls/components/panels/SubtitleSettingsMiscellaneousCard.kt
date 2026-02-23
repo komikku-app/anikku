@@ -34,7 +34,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,19 +44,22 @@ import eu.kanade.presentation.player.components.SwitchPreference
 import eu.kanade.tachiyomi.ui.player.controls.CARDS_MAX_WIDTH
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
 import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
-import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import `is`.xyz.mpv.MPVLib
-import tachiyomi.core.common.preference.deleteAndGet
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
-fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
-    val preferences = remember { Injekt.get<SubtitlePreferences>() }
+fun SubtitlesMiscellaneousCard(
+    overrideAssSubs: Boolean,
+    subScale: Float,
+    subPos: Int,
+    onOverrideAssSubsChange: (Boolean) -> Unit,
+    onSubScaleChange: (Float) -> Unit,
+    onSubPosChange: (Int) -> Unit,
+    onReset: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var isExpanded by remember { mutableStateOf(true) }
     ExpandableCard(
         isExpanded,
@@ -72,34 +74,17 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
         colors = panelCardsColors(),
     ) {
         Column {
-            var overrideAssSubs by remember {
-                mutableStateOf(MPVLib.getPropertyString("sub-ass-override").also { println(it) } == "force")
-            }
             SwitchPreference(
-                overrideAssSubs,
-                onValueChange = {
-                    overrideAssSubs = it
-                    preferences.overrideSubsASS().set(it)
-                    MPVLib.setPropertyString("sub-ass-override", if (it) "force" else "scale")
-                },
+                value = overrideAssSubs,
+                onValueChange = onOverrideAssSubsChange,
                 content = { Text(stringResource(AYMR.strings.player_sheets_sub_override_ass)) },
                 modifier = Modifier.fillMaxWidth(),
             )
-            var subScale by remember {
-                mutableFloatStateOf(MPVLib.getPropertyDouble("sub-scale").toFloat())
-            }
-            var subPos by remember {
-                mutableStateOf(MPVLib.getPropertyInt("sub-pos"))
-            }
             SliderItem(
                 label = stringResource(AYMR.strings.player_sheets_sub_scale),
                 value = subScale,
                 valueString = subScale.toFixed(2).toString(),
-                onChange = {
-                    subScale = it
-                    preferences.subtitleFontScale().set(it)
-                    MPVLib.setPropertyDouble("sub-scale", it.toDouble())
-                },
+                onChange = onSubScaleChange,
                 valueRange = 0f..5f,
                 icon = {
                     Icon(
@@ -111,11 +96,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
             SliderItem(
                 label = stringResource(AYMR.strings.player_sheets_sub_position),
                 value = subPos,
-                onChange = {
-                    subPos = it
-                    preferences.subtitlePos().set(it)
-                    MPVLib.setPropertyInt("sub-pos", it)
-                },
+                onChange = onSubPosChange,
                 valueRange = 0..150,
                 steps = 0,
                 icon = {
@@ -131,20 +112,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                     .padding(end = MaterialTheme.padding.medium, bottom = MaterialTheme.padding.medium),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(
-                    onClick = {
-                        preferences.subtitlePos().deleteAndGet().let {
-                            subPos = it
-                            MPVLib.setPropertyInt("sub-pos", it)
-                        }
-                        preferences.subtitleFontScale().deleteAndGet().let {
-                            subScale = it
-                            MPVLib.setPropertyDouble("sub-scale", it.toDouble())
-                        }
-                        preferences.overrideSubsASS().deleteAndGet().let { overrideAssSubs = it }
-                        MPVLib.setPropertyString("sub-ass-override", "scale") // mpv's default is 'scale'
-                    },
-                ) {
+                TextButton(onClick = onReset) {
                     Row {
                         Icon(Icons.Default.EditOff, null)
                         Text(stringResource(MR.strings.action_reset))

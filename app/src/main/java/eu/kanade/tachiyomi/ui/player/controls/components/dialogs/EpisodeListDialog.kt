@@ -34,9 +34,11 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.manga.components.DotSeparatorText
 import eu.kanade.tachiyomi.data.database.models.Episode
 import eu.kanade.tachiyomi.util.lang.toRelativeString
+import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.VerticalFastScroller
@@ -46,16 +48,15 @@ import tachiyomi.presentation.core.i18n.stringResource
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import eu.kanade.presentation.util.formatChapterNumber as formatEpisodeNumber
 
 @Composable
 fun EpisodeListDialog(
     displayMode: Long?,
     currentEpisodeIndex: Int,
-    episodeList: List<Episode>,
+    episodeList: ImmutableList<Episode>,
     dateRelativeTime: Boolean,
-    dateFormat: DateTimeFormatter,
+    dateFormat: String,
     onBookmarkClicked: (Long?, Boolean) -> Unit,
     onFillermarkClicked: (Long?, Boolean) -> Unit,
     onEpisodeClicked: (Long?) -> Unit,
@@ -64,6 +65,7 @@ fun EpisodeListDialog(
     val context = LocalContext.current
     val itemScrollIndex = (episodeList.size - currentEpisodeIndex) - 1
     val episodeListState = rememberLazyListState(initialFirstVisibleItemIndex = itemScrollIndex)
+    val dateFormatter = remember(dateFormat) { UiPreferences.dateFormat(dateFormat) }
 
     PlayerDialog(
         title = stringResource(AYMR.strings.episodes),
@@ -103,7 +105,7 @@ fun EpisodeListDialog(
                             ).toRelativeString(
                                 context = context,
                                 relative = dateRelativeTime,
-                                dateFormat = dateFormat,
+                                dateFormat = dateFormatter,
                             )
                         } ?: ""
 

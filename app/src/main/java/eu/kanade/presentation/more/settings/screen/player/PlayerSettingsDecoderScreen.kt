@@ -14,6 +14,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsDecoderScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = PlayerSettingsDecoderScreen
 
     @ReadOnlyComposable
@@ -26,7 +27,7 @@ object PlayerSettingsDecoderScreen : SearchableSettings {
 
         val tryHw = decoderPreferences.tryHWDecoding()
         val useGpuNext = decoderPreferences.gpuNext()
-        val debanding = decoderPreferences.videoDebanding()
+        val debanding = decoderPreferences.debanding()
         val yuv420p = decoderPreferences.useYUV420P()
 
         return listOf(

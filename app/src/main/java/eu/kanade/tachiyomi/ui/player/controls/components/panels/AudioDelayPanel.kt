@@ -30,30 +30,23 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
-import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
-import `is`.xyz.mpv.MPVLib
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun AudioDelayPanel(
+    delayMs: Int,
+    onDelayChange: (Int) -> Unit,
+    onApply: () -> Unit,
+    onReset: () -> Unit,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val preferences = remember { Injekt.get<AudioPreferences>() }
-
     ConstraintLayout(
         modifier = modifier
             .fillMaxSize()
@@ -61,15 +54,11 @@ fun AudioDelayPanel(
     ) {
         val delayControlCard = createRef()
 
-        var delay by remember { mutableIntStateOf((MPVLib.getPropertyDouble("audio-delay") * 1000).toInt()) }
-        LaunchedEffect(delay) {
-            MPVLib.setPropertyDouble("audio-delay", delay / 1000.0)
-        }
         DelayCard(
-            delay = delay,
-            onDelayChange = { delay = it },
-            onApply = { preferences.audioDelay().set(delay) },
-            onReset = { delay = 0 },
+            delayMs = delayMs,
+            onDelayChange = onDelayChange,
+            onApply = onApply,
+            onReset = onReset,
             title = { AudioDelayCardTitle(onClose = onDismissRequest) },
             delayType = DelayType.Audio,
             modifier = Modifier.constrainAs(delayControlCard) {

@@ -255,6 +255,8 @@
     <string name="player_sheets_track_title_w_lang" translatable="false">#%d: %s (%s)</string>
     <string name="player_sheets_track_title_wo_lang" translatable="false">#%d: %s</string>
     <string name="player_sheets_track_lang_wo_title" translatable="false">#%d: %s</string>
+    <string name="player_sheets_chapter_title_substitute_audio">Audio #%d</string>
+    <string name="player_sheets_chapter_title_substitute_subtitle">Subtitle #%d</string>
     <string name="player_sheets_track_delay">Delay</string>
     <string name="player_sheets_track_palette">Palette</string>
     <!-- Sheets - Audio delay -->

@@ -199,4 +199,18 @@
     <string name="sync_on_app_start">Sync on App Start</string>
     <string name="sync_on_app_resume">Sync on App Resume</string>
     <string name="sync_library">Sync library</string>
+
+    <!-- Player prefs - internal player -->
+    <string name="player_pref_switch_on_failure">Switch video on loading failure</string>
+
+    <!-- Player - deband -->
+    <string name="player_sheets_video_settings_title">Video settings</string>
+    <string name="player_sheets_deband_title">Deband</string>
+    <string name="player_sheets_deband_none">None</string>
+    <string name="player_sheets_deband_cpu">CPU</string>
+    <string name="player_sheets_deband_gpu">GPU</string>
+    <string name="player_sheets_deband_iterations">Iterations</string>
+    <string name="player_sheets_deband_threshold">Threshold</string>
+    <string name="player_sheets_deband_range">Range</string>
+    <string name="player_sheets_deband_grain">Grain</string>
 </resources>

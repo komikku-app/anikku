@@ -362,7 +362,8 @@ dependencies {
     implementation(sylibs.zxing.android.embedded)
 
     // mpv-android
-    implementation(aniyomilibs.aniyomi.mpv)
+    implementation(aniyomilibs.mpv.lib)
+
     // FFmpeg-kit
     implementation(aniyomilibs.ffmpeg.kit)
     implementation(aniyomilibs.arthenica.smartexceptions)

@@ -1,5 +1,5 @@
 [versions]
-aniyomi-mpv-lib = "1.18.n"
+mpv-lib = "0.1.12"
 arthenica-smartexceptions = "0.2.1"
 constraint-layout = "1.1.1"
 ffmpeg-kit = "1.18"
@@ -9,14 +9,14 @@ truetypeparser = "2.1.4"
 nanohttpd-version = "2.3.1"
 
 [libraries]
-nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd-version" }
-aniyomi-mpv = { module = "com.github.aniyomiorg:aniyomi-mpv-lib", version.ref = "aniyomi-mpv-lib" }
+mpv-lib = { module = "io.github.secozzi:mpv-android-lib", version.ref = "mpv-lib" }
 arthenica-smartexceptions = { module = "com.arthenica:smart-exception-java", version.ref = "arthenica-smartexceptions" }
 compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraint-layout" }
 ffmpeg-kit = { module = "com.github.jmir1:ffmpeg-kit", version.ref = "ffmpeg-kit" }
 mediasession = { module = "androidx.media:media", version.ref = "media" }
 seeker = { module = "io.github.2307vivek:seeker", version.ref = "seeker" }
 truetypeparser = { module = "io.github.yubyf:truetypeparser-light", version.ref = "truetypeparser" }
+nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd-version" }
 
 torrentserver = "com.github.Diegopyl1209:torrentserver-aniyomi:c18f58e51b"
 media-router = "androidx.mediarouter:mediarouter:1.8.1"

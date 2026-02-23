@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -42,12 +43,14 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.player.components.PlayerSheet
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
+@Stable
 sealed class HosterState(open val name: String) {
     data class Idle(override val name: String) : HosterState(name)
     data class Loading(override val name: String) : HosterState(name)
@@ -74,8 +77,8 @@ fun HosterState.Ready.getChangedAt(index: Int, newVideo: Video, newState: Video.
 @Composable
 fun QualitySheet(
     isLoadingHosters: Boolean,
-    hosterState: List<HosterState>,
-    expandedState: List<Boolean>,
+    hosterState: ImmutableList<HosterState>,
+    expandedState: ImmutableList<Boolean>,
     selectedVideoIndex: Pair<Int, Int>,
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,

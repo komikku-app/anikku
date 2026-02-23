@@ -288,7 +288,7 @@ class MangaScreen(
                 }
             },
             onDownloadChapter = screenModel::runChapterDownloadActions.takeIf {
-                !successState.source.isLocalOrStub() /* AY --> */ && successState.manga.fetchType == FetchType.Episodes /* AY <-- */
+                !successState.source.isLocalOrStub() /* AY --> */ && successState.manga.fetchType == FetchType.Episodes /* <-- AY */
             },
             onAddToLibraryClicked = {
                 screenModel.toggleFavorite()
@@ -377,7 +377,7 @@ class MangaScreen(
                 }
             }.takeIf { isHttpSource },
             onDownloadActionClicked = screenModel::runDownloadAction.takeIf {
-                !successState.source.isLocalOrStub() /* AY --> */ && successState.manga.fetchType == FetchType.Episodes /* AY <-- */
+                !successState.source.isLocalOrStub() /* AY --> */ && successState.manga.fetchType == FetchType.Episodes /* <-- AY */
             },
             onEditCategoryClicked = screenModel::showChangeCategoryDialog.takeIf { successState.manga.favorite },
             onEditFetchIntervalClicked = screenModel::showSetFetchIntervalDialog.takeIf {
@@ -387,7 +387,7 @@ class MangaScreen(
                 navigator.push(MigrationConfigScreen(successState.manga.id))
             }.takeIf { successState.manga.favorite },
             onSkipIntroClicked = screenModel::showAnimeSkipIntroDialog.takeIf {
-                successState.manga.favorite /* AY --> */ && successState.manga.fetchType == FetchType.Episodes /* AY <-- */
+                successState.manga.favorite /* AY --> */ && successState.manga.fetchType == FetchType.Episodes /* <-- AY */
             },
             // SY -->
             onEditInfoClicked = screenModel::showEditMangaInfoDialog,

@@ -21,9 +21,16 @@ import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
+import `is`.xyz.mpv.MPVNode
 import `is`.xyz.mpv.Utils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import logcat.logcat
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
 internal fun Uri.openContentFd(context: Context): String? {
     return context.contentResolver.openFileDescriptor(this, "r")?.detachFd()?.let {
@@ -53,3 +60,14 @@ internal fun Uri.getFileName(context: Context): String? {
         cursor.getString(nameIndex)
     }
 }
+
+inline fun <reified T> MPVNode.toObject(json: Json): T = json.decodeFromString<T>(toJson())
+
+fun <T> Flow<T>.collectAsState(scope: CoroutineScope, initialValue: T? = null) =
+    object : ReadOnlyProperty<Any?, T?> {
+        private var value: T? = initialValue
+        init {
+            scope.launch { collect { value = it } }
+        }
+        override fun getValue(thisRef: Any?, property: KProperty<*>) = value
+    }

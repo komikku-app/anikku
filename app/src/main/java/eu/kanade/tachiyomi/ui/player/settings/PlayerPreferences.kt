@@ -12,6 +12,10 @@ class PlayerPreferences(
         "pref_preserve_watching_position",
         false,
     )
+    fun switchOnFailure() = preferenceStore.getBoolean(
+        "pref_player_switch_on_failure",
+        true,
+    )
     fun progressPreference() = preferenceStore.getFloat("pref_progress_preference", 0.85F)
     fun defaultPlayerOrientationType() = preferenceStore.getEnum(
         "pref_default_player_orientation_type_key",

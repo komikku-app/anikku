@@ -1,5 +1,8 @@
 package tachiyomi.domain.custombuttons.model
 
+import androidx.compose.runtime.Stable
+
+@Stable
 data class CustomButton(
     val id: Long,
     val name: String,

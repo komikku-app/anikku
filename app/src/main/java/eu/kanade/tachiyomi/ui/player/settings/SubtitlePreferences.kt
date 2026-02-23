@@ -61,4 +61,16 @@ enum class SubtitleJustification(
     Center("center", Icons.Default.FormatAlignCenter),
     Right("right", Icons.AutoMirrored.Default.FormatAlignRight),
     Auto("auto", Icons.Default.FormatAlignJustify),
+    ;
+
+    companion object {
+        fun byValue(value: String): SubtitleJustification {
+            return when (value) {
+                "left" -> Left
+                "center" -> Center
+                "right" -> Right
+                else -> Auto
+            }
+        }
+    }
 }

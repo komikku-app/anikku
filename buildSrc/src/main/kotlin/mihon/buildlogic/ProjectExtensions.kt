@@ -41,6 +41,9 @@ internal fun Project.configureAndroid(commonExtension: CommonExtension<*, *, *, 
         compilerOptions {
             jvmTarget.set(AndroidConfig.JvmTarget)
             freeCompilerArgs.addAll(
+                // AM -->
+                "-Xwhen-guards",
+                // <-- AM
                 "-Xcontext-parameters",
                 "-opt-in=kotlin.RequiresOptIn",
             )
@@ -49,7 +52,6 @@ internal fun Project.configureAndroid(commonExtension: CommonExtension<*, *, *, 
             // Override by setting warningsAsErrors=true in your ~/.gradle/gradle.properties
             val warningsAsErrors: String? by project
             allWarningsAsErrors.set(warningsAsErrors.toBoolean())
-
         }
     }
 
@@ -86,7 +88,6 @@ internal fun Project.configureCompose(commonExtension: CommonExtension<*, *, *, 
             rootBuildDir.resolve("compose-reports").resolve(relativePath).let(reportsDestination::set)
         }
     }
-
 }
 
 internal fun Project.configureTest() {

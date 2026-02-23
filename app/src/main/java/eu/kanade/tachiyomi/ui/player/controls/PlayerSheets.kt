@@ -25,8 +25,8 @@ import dev.vivvvek.seeker.Segment
 import eu.kanade.tachiyomi.ui.player.ArtType
 import eu.kanade.tachiyomi.ui.player.Decoder
 import eu.kanade.tachiyomi.ui.player.Panels
-import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
 import eu.kanade.tachiyomi.ui.player.Sheets
+import eu.kanade.tachiyomi.ui.player.VideoTrack
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.AudioTracksSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ChaptersSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
@@ -35,6 +35,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.PlaybackSpeedShe
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
+import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
@@ -46,20 +47,18 @@ fun PlayerSheets(
 
     // subtitles sheet
     subtitles: ImmutableList<VideoTrack>,
-    selectedSubtitles: ImmutableList<Int>,
     onAddSubtitle: (Uri) -> Unit,
-    onSelectSubtitle: (Int) -> Unit,
+    onSelectSubtitle: (VideoTrack) -> Unit,
 
     // audio sheet
     audioTracks: ImmutableList<VideoTrack>,
-    selectedAudio: Int,
     onAddAudio: (Uri) -> Unit,
-    onSelectAudio: (Int) -> Unit,
+    onSelectAudio: (VideoTrack) -> Unit,
 
     // video sheet
     isLoadingHosters: Boolean,
-    hosterState: List<HosterState>,
-    expandedState: List<Boolean>,
+    hosterState: ImmutableList<HosterState>,
+    expandedState: ImmutableList<Boolean>,
     selectedVideoIndex: Pair<Int, Int>,
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
@@ -75,12 +74,26 @@ fun PlayerSheets(
     onUpdateDecoder: (Decoder) -> Unit,
 
     // Speed sheet
+    pitchCorrection: Boolean,
+    onPitchCorrectionChange: (Boolean) -> Unit,
     speed: Float,
+    speedPresets: ImmutableList<Float>,
     onSpeedChange: (Float) -> Unit,
+    onAddSpeedPreset: (Float) -> Unit,
+    onRemoveSpeedPreset: (Float) -> Unit,
+    onResetSpeedPresets: () -> Unit,
+    onMakeDefaultSpeed: (Float) -> Unit,
+    onResetDefaultSpeed: () -> Unit,
 
     // More sheet
+    statisticsPage: Int,
+    audioChannels: AudioChannels,
     sleepTimerTimeRemaining: Int,
     onStartSleepTimer: (Int) -> Unit,
+    onStatisticsPageChange: (Int) -> Unit,
+    onAudioChannelsChange: (AudioChannels) -> Unit,
+    onCustomButtonClick: (CustomButton) -> Unit,
+    onCustomButtonLongClick: (CustomButton) -> Unit,
     buttons: ImmutableList<CustomButton>,
 
     // Screenshot sheet
@@ -109,7 +122,6 @@ fun PlayerSheets(
             }
             SubtitlesSheet(
                 tracks = subtitles.toImmutableList(),
-                selectedTracks = selectedSubtitles,
                 onSelect = onSelectSubtitle,
                 onAddSubtitle = { subtitlesPicker.launch(arrayOf("*/*")) },
                 onOpenSubtitleSettings = { onOpenPanel(Panels.SubtitleSettings) },
@@ -127,7 +139,6 @@ fun PlayerSheets(
             }
             AudioTracksSheet(
                 tracks = audioTracks,
-                selectedId = selectedAudio,
                 onSelect = onSelectAudio,
                 onAddAudioTrack = { audioPicker.launch(arrayOf("*/*")) },
                 onOpenDelayPanel = { onOpenPanel(Panels.AudioDelay) },
@@ -162,10 +173,16 @@ fun PlayerSheets(
 
         Sheets.More -> {
             MoreSheet(
+                statisticsPage = statisticsPage,
+                audioChannels = audioChannels,
                 selectedDecoder = decoder,
                 onSelectDecoder = onUpdateDecoder,
                 remainingTime = sleepTimerTimeRemaining,
                 onStartTimer = onStartSleepTimer,
+                onStatisticsPageChange = onStatisticsPageChange,
+                onCustomButtonClick = onCustomButtonClick,
+                onCustomButtonLongClick = onCustomButtonLongClick,
+                onAudioChannelsChange = onAudioChannelsChange,
                 onDismissRequest = onDismissRequest,
                 onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
                 customButtons = buttons,
@@ -174,8 +191,16 @@ fun PlayerSheets(
 
         Sheets.PlaybackSpeed -> {
             PlaybackSpeedSheet(
-                speed,
+                pitchCorrection = pitchCorrection,
+                onPitchCorrectionChange = onPitchCorrectionChange,
+                speed = speed,
                 onSpeedChange = onSpeedChange,
+                speedPresets = speedPresets,
+                onAddSpeedPreset = onAddSpeedPreset,
+                onRemoveSpeedPreset = onRemoveSpeedPreset,
+                onResetPresets = onResetSpeedPresets,
+                onMakeDefault = onMakeDefaultSpeed,
+                onResetDefault = onResetDefaultSpeed,
                 onDismissRequest = onDismissRequest,
             )
         }

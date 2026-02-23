@@ -66,6 +66,7 @@ data class IndexedSegment(
 fun SeekbarWithTimers(
     position: Float,
     duration: Float,
+    remaining: Float,
     readAheadValue: Float,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
@@ -115,7 +116,7 @@ fun SeekbarWithTimers(
             ),
         )
         VideoTimer(
-            value = if (timersInverted.second) position - duration else duration,
+            value = if (timersInverted.second) -remaining else duration,
             isInverted = timersInverted.second,
             onClick = {
                 clickEvent()
@@ -155,6 +156,7 @@ private fun PreviewSeekBar() {
     SeekbarWithTimers(
         5f,
         20f,
+        15f,
         4f,
         {},
         {},

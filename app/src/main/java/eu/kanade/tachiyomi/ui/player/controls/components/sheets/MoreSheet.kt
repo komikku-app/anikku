@@ -65,37 +65,31 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import eu.kanade.presentation.player.components.PlayerSheet
 import eu.kanade.tachiyomi.ui.player.Decoder
-import eu.kanade.tachiyomi.ui.player.execute
-import eu.kanade.tachiyomi.ui.player.executeLongPress
-import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
-import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
-import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun MoreSheet(
+    statisticsPage: Int,
+    audioChannels: AudioChannels,
     selectedDecoder: Decoder,
     onSelectDecoder: (Decoder) -> Unit,
     remainingTime: Int,
     onStartTimer: (Int) -> Unit,
+    onStatisticsPageChange: (Int) -> Unit,
+    onCustomButtonClick: (CustomButton) -> Unit,
+    onCustomButtonLongClick: (CustomButton) -> Unit,
+    onAudioChannelsChange: (AudioChannels) -> Unit,
     onDismissRequest: () -> Unit,
     onEnterFiltersPanel: () -> Unit,
     customButtons: ImmutableList<CustomButton>,
     modifier: Modifier = Modifier,
 ) {
-    val advancedPreferences = remember { Injekt.get<AdvancedPlayerPreferences>() }
-    val audioPreferences = remember { Injekt.get<AudioPreferences>() }
-    val statisticsPage by advancedPreferences.playerStatisticsPage().collectAsState()
-
     PlayerSheet(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
@@ -192,15 +186,7 @@ fun MoreSheet(
                                 ),
                             )
                         },
-                        onClick = {
-                            if ((page == 0) xor (statisticsPage == 0)) {
-                                MPVLib.command(arrayOf("script-binding", "stats/display-stats-toggle"))
-                            }
-                            if (page != 0) {
-                                MPVLib.command(arrayOf("script-binding", "stats/display-page-$page"))
-                            }
-                            advancedPreferences.playerStatisticsPage().set(page)
-                        },
+                        onClick = { onStatisticsPageChange(page) },
                         selected = statisticsPage == page,
                     )
                 }
@@ -228,8 +214,8 @@ fun MoreSheet(
                                 modifier = Modifier
                                     .matchParentSize()
                                     .combinedClickable(
-                                        onClick = { button.execute() },
-                                        onLongClick = { button.executeLongPress() },
+                                        onClick = { onCustomButtonClick(button) },
+                                        onLongClick = { onCustomButtonLongClick(button) },
                                         interactionSource = inputChipInteractionSource,
                                         indication = null,
                                     ),
@@ -239,22 +225,13 @@ fun MoreSheet(
                 }
             }
             Text(text = stringResource(AYMR.strings.pref_audio_channels))
-            val audioChannels by audioPreferences.audioChannels().collectAsState()
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             ) {
                 items(AudioChannels.entries) {
                     FilterChip(
                         selected = audioChannels == it,
-                        onClick = {
-                            audioPreferences.audioChannels().set(it)
-                            if (it == AudioChannels.ReverseStereo) {
-                                MPVLib.setPropertyString(AudioChannels.AutoSafe.property, AudioChannels.AutoSafe.value)
-                            } else {
-                                MPVLib.setPropertyString(AudioChannels.ReverseStereo.property, "")
-                            }
-                            MPVLib.setPropertyString(it.property, it.value)
-                        },
+                        onClick = { onAudioChannelsChange(it) },
                         label = { Text(text = stringResource(it.titleRes)) },
                     )
                 }

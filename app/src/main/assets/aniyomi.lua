@@ -80,6 +80,9 @@ end
 function aniyomi.int_picker(title, name_format, start, stop, step, property)
     mp.set_property("user-data/aniyomi/launch_int_picker", title .. "|" .. name_format ..  "|" .. start .. "|" .. stop .. "|" .. step .. "|" .. property)
 end
+function aniyomi.show_seek_text(value, text)
+    mp.set_property("user-data/aniyomi/show_seek_text", tostring(value) .. "|" .. text)
+end
 -- Legacy
 function aniyomi.left_seek_by(value)
     aniyomi.seek_by(-value)

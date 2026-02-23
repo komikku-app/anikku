@@ -71,14 +71,12 @@ class CastManager(
     private val context = activity.applicationContext
     private val viewModel by lazy {
         when (activity) {
-            is PlayerActivity -> {
-                val factory = PlayerViewModelProviderFactory(activity)
-                activity.viewModels<PlayerViewModel> { factory }.value
-            }
+            // ANK -->
+            is PlayerActivity -> activity.viewModels<PlayerViewModel>().value
+            // ANK <--
             else -> null
         }
     }
-    private val player by lazy { (activity as? PlayerActivity)?.player }
     private val playerPreferences: PlayerPreferences by lazy {
         viewModel?.playerPreferences ?: PlayerPreferences(preferenceStore)
     }
@@ -201,7 +199,11 @@ class CastManager(
 
     fun updateCastState(state: CastState) {
         _castState.value = state
-        if (state == CastState.CONNECTED) player?.paused = true
+        if (state == CastState.CONNECTED) {
+            // ANK -->
+            viewModel?.pause()
+            // ANK <--
+        }
         activity.invalidateOptionsMenu()
     }
 
@@ -253,7 +255,9 @@ class CastManager(
                 val video = hosterState?.videoList?.getOrNull(selectedVideoIndex) ?: return@launch
 
                 val mediaInfo = mediaBuilder!!.buildMediaInfo(video) // Now the `Video` object passes directly
-                val currentLocalPosition = (player?.timePos ?: 0).toLong()
+                // ANK -->
+                val currentLocalPosition = (viewModel?.pos ?: 0).toLong()
+                // ANK <--
 
                 // Update queue before and after loading new medium
                 updateQueueItems()
@@ -693,7 +697,6 @@ class CastManager(
                             BorderStyle.DROP_SHADOW -> TextTrackStyle.EDGE_TYPE_DROP_SHADOW
                             BorderStyle.RAISED -> TextTrackStyle.EDGE_TYPE_RAISED
                             BorderStyle.DEPRESSED -> TextTrackStyle.EDGE_TYPE_DEPRESSED
-                            else -> TextTrackStyle.EDGE_TYPE_NONE
                         }
                     }
                 }

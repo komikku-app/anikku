@@ -97,25 +97,25 @@ fun CurrentChapter(
                     overflow = TextOverflow.Clip,
                     color = MaterialTheme.colorScheme.tertiary,
                 )
-                currentChapter.name.let {
-                    Text(
-                        text = Typography.bullet.toString(),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        overflow = TextOverflow.Clip,
-                    )
-                    Text(
-                        text = it,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
+                Text(
+                    text = Typography.bullet.toString(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    overflow = TextOverflow.Clip,
+                )
+                Text(
+                    // ANK -->
+                    text = currentChapter.name,
+                    // ANK <--
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
             }
         }
     }
