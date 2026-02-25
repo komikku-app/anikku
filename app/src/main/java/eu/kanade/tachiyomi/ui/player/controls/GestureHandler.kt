@@ -120,7 +120,7 @@ fun GestureHandler(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeGestures)
             .pointerInput(Unit) {
-                val originalSpeed = viewModel.mpv.getPropertyFloat("speed") ?: 1f
+                var originalSpeed = viewModel.mpv.getPropertyFloat("speed") ?: 1f
                 detectTapGestures(
                     onTap = {
                         if (controlsShown) viewModel.hideControls() else viewModel.showControls()
@@ -173,8 +173,14 @@ fun GestureHandler(
                         if (!isLongPressing) {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             isLongPressing = true
-                            viewModel.pause()
-                            viewModel.sheetShown.update { Sheets.Screenshot }
+                            if (viewModel.paused.value) {
+                                viewModel.pause()
+                                viewModel.sheetShown.update { Sheets.Screenshot }
+                            } else {
+                                originalSpeed = MPVLib.getPropertyDouble("speed").toFloat()
+                                MPVLib.setPropertyDouble("speed", 2.0)
+                                viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed }
+                            }
                         }
                     },
                 )
