@@ -23,7 +23,7 @@ object ChapterRecognition {
      * Example: [flugel] kaguya-sama wa kokurasetai - s01e01v2 (bd 1080p hevc) [multi audio] [80ac7b2e]
      * -> kaguya-sama wa kokurasetai - s01e01v2
      */
-    private val tagRegex = Regex("""^\[[^]]+]|\[[^]]+]\s*${'$'}|^\([^)]+\)|\([^)]+\)\s*${'$'}""")
+    internal val tagRegex = Regex("""^\s*(\[[^]]+]\s*|\([^)]+\)\s*)+|\s*(\[[^]]+]\s*|\([^)]+\)\s*)+$""")
 
     /**
      * Regex used to remove unwanted tags
@@ -48,7 +48,7 @@ object ChapterRecognition {
         }
 
         // Get chapter title with lower case
-        var cleanChapterName = chapterName.lowercase()
+        val cleanChapterName = chapterName.lowercase()
             // Remove manga title from chapter title.
             .replace(mangaTitle.lowercase(), "").trim()
             // Remove comma's or hyphens.
@@ -56,11 +56,7 @@ object ChapterRecognition {
             .replace('-', '.')
             // Remove unwanted white spaces.
             .replace(unwantedWhiteSpace, "")
-
-        // Remove all tags while they exist
-        while (tagRegex.containsMatchIn(cleanChapterName)) {
-            cleanChapterName = tagRegex.replace(cleanChapterName, "").trim()
-        }
+            .replace(tagRegex, "").trim()
 
         val numberMatch = number.findAll(cleanChapterName)
 
