@@ -28,7 +28,7 @@ fun luaHighlight(syntaxColors: SyntaxColors) = Highlight(
     rules = listOf(
         // Operators
         HighlightType.Full(
-            regex = Regex("""(?<![=<>~:/])(?:==|~=|<=|>=|\/\/|\.\.|[=+\-*/%^#<>])"""),
+            regex = Regex("""(?<![=<>~:/])(?:==|~=|<=|>=|//|\.\.|[=+\-*/%^#<>])"""),
             color = syntaxColors.keyword,
         ),
 
@@ -68,7 +68,7 @@ fun luaHighlight(syntaxColors: SyntaxColors) = Highlight(
         // scientific notation.
         HighlightType.Full(
             regex = Regex(
-                """(?<!\w)[+-]?(?:0x[\da-f]+|(?:(?:\.\d+|\d+(?:\.\d*)?)(?:e[+\-]?\d+)?))""",
+                """(?<!\w)[+-]?(?:0x[\da-f]+|(?:\.\d+|\d+(?:\.\d*)?)(?:e[+\-]?\d+)?)""",
                 RegexOption.IGNORE_CASE,
             ),
             color = syntaxColors.literal,
@@ -76,20 +76,20 @@ fun luaHighlight(syntaxColors: SyntaxColors) = Highlight(
 
         // A double or single quoted, possibly multi-line, string.
         HighlightType.Full(
-            regex = Regex("""(?<!--[^\n]{0,120})("(?:[^"\\]|\\[\s\S])*"|\'(?:[^'\\]|\\[\s\S])*\')"""),
+            regex = Regex("""(?<!--[^\n]{0,120})("(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*')"""),
             color = syntaxColors.string,
             isString = true,
         ),
 
         // Single line comment
         HighlightType.Full(
-            regex = Regex("""--.*${'$'}""", RegexOption.MULTILINE),
+            regex = Regex("""--.*$""", RegexOption.MULTILINE),
             color = syntaxColors.comment,
         ),
 
         // Multi-line comment
         HighlightType.Full(
-            regex = Regex("""--\[(=*)\[.*?--\]\1\]""", RegexOption.DOT_MATCHES_ALL),
+            regex = Regex("""--\[(=*)\[.*?--]\1]""", RegexOption.DOT_MATCHES_ALL),
             color = syntaxColors.comment,
         ),
     ),

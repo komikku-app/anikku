@@ -350,7 +350,7 @@ fun SubtitleSettingsTypographyCard(
     }
 }
 
-private val FONT_EXTENSION_REGEX = Regex(""".*\.[ot]tf${'$'}""")
+private val FONT_EXTENSION_REGEX = Regex(""".*\.[ot]tf$""")
 
 fun resetTypography(preferences: SubtitlePreferences) {
     MPVLib.setPropertyBoolean("sub-bold", preferences.boldSubtitles().deleteAndGet())
