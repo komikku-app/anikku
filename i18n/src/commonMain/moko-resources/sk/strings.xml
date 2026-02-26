@@ -103,7 +103,7 @@
     <string name="untrusted_extension">Nedôveryhodné rozšírenie</string>
     <string name="untrusted_extension_message">Toto rozšírenie bolo podpísané nedôveryhodným certifikátom a nebolo aktivované.
 \n
-\nŠkodlivé rozšírenie môže čítať všetky prihlasovacie údaje uložené v Komikku alebo spúšťať ľubovoľný kód.
+\nŠkodlivé rozšírenie môže čítať všetky prihlasovacie údaje uložené v Anikku alebo spúšťať ľubovoľný kód.
 \n
 \nDôverovaním tohto certifikátu akceptujete tieto riziká.</string>
     <string name="pref_fullscreen">Na celú obrazovku</string>
@@ -416,7 +416,7 @@
     <string name="error_sharing_cover">Chyba pri zdieľaní obalu</string>
     <string name="loader_not_implemented_error">Zdroj sa nenašiel</string>
     <string name="empty_screen">No, toto je trápne</string>
-    <string name="information_webview_required">WebView je potrebné pre Komikku</string>
+    <string name="information_webview_required">WebView je potrebné pre Anikku</string>
     <string name="popular">Populárne</string>
     <string name="reading_list">Zoznam čítania</string>
     <string name="track_finished_reading_date">Dátum ukončenia</string>

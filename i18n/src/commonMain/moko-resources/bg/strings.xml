@@ -246,7 +246,7 @@
     <string name="untrusted_extension">Непотвърдено разширение</string>
     <string name="untrusted_extension_message">Следното разширение имаше непотвърден сертификат и не беше активирано.
 \n
-\nЗлонамереното разширение може да види всичката информация за вход в системата на Komikku или да компилира неблагонадежден код.
+\nЗлонамереното разширение може да види всичката информация за вход в системата на Anikku или да компилира неблагонадежден код.
 \n
 \nПотвърждавайки този сертификат, вие приемате тези рискове.</string>
     <string name="pref_double_tap_anim_speed">Скорост на анимацията</string>
@@ -301,7 +301,7 @@
     <string name="channel_ext_updates">Ъпдейти на разширенията</string>
     <string name="channel_new_chapters">Нови глави</string>
     <string name="information_webview_outdated">Моля, обновете WebView за по-добра съвместимост</string>
-    <string name="information_webview_required">WebView е необходим за Komikku</string>
+    <string name="information_webview_required">WebView е необходим за Anikku</string>
     <string name="information_cloudflare_bypass_failure">Грешка при минаването през Cloudflare</string>
     <string name="notification_chapters_multiple">Глави %1$s</string>
     <string name="notification_chapters_single_and_more">Глава %1$s и %2$d още</string>
