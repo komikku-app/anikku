@@ -287,6 +287,10 @@
     <string name="pref_media_next">Next</string>
     <string name="pref_media_info">When a media control is set to "Custom", it can be bound through input.conf. The key codes are 0x10004 for previous, 0x10005 for play/pause, and 0x10006 for next.</string>
 
+    <string name="paused_long_press_do_nothing">Do nothing</string>
+    <string name="paused_long_press_screenshot">Screenshot</string>
+    <string name="paused_long_press_play_2x">Play at 2x</string>
+
     <!-- Player Settings - Decoder -->
     <string name="pref_player_decoder">Decoder</string>
     <string name="pref_player_decoder_summary">Hardware decoding, pixel format, debanding</string>
