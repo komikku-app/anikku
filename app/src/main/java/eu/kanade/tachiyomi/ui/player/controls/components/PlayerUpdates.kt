@@ -190,21 +190,14 @@ fun DoubleSpeedIndicator(
         } else {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.FastForward,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(modifier = Modifier.height(2.dp))
                 val speedText = String.format("%.2fx", speed)
                 Text(
                     text = speedText,
                     color = Color.White,
-                    fontSize = 10.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }
