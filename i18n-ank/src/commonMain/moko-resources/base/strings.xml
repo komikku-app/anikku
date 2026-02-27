@@ -104,9 +104,12 @@
     <!-- Seasons -->
     <string name="seasons">Seasons</string>
 
-    <string name="paused_long_press_do_nothing">Do nothing</string>
-    <string name="paused_long_press_screenshot">Screenshot</string>
-    <string name="paused_long_press_play_2x">Play at 2x</string>
+    <string name="paused_long_press_action">Paused long press action</string>
+    <string name="paused_long_press_action_do_nothing">Do nothing</string>
+    <string name="paused_long_press_action_screenshot">Screenshot</string>
+    <string name="paused_long_press_action_play2x">Play at 2x</string>
+    <string name="pref_adjust_speed_on_drag">Adjust speed on drag</string>
+    <string name="pref_adjust_speed_on_drag_summary">Adjust playback speed by dragging left or right during long press</string>
 
     <!-- Animiru -->
     <string name="tag">Tags</string>

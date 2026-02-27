@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.player.settings
 
 import eu.kanade.tachiyomi.ui.player.SingleActionGesture
+import eu.kanade.tachiyomi.ui.player.PausedLongPressAction
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 
@@ -33,4 +34,7 @@ class GesturePreferences(
     fun mediaPreviousGesture() = preferenceStore.getEnum("pref_media_previous", SingleActionGesture.Switch)
     fun mediaPlayPauseGesture() = preferenceStore.getEnum("pref_media_playpause", SingleActionGesture.PlayPause)
     fun mediaNextGesture() = preferenceStore.getEnum("pref_media_next", SingleActionGesture.Switch)
+
+    // Long press
+    fun pausedLongPressGesture() = preferenceStore.getEnum("pref_paused_long_press", PausedLongPressAction.Screenshot)
 }

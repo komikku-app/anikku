@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.core.graphics.toColorInt
@@ -76,6 +77,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.SeekbarWithTimers
+import eu.kanade.tachiyomi.ui.player.controls.components.DoubleSpeedIndicator
 import eu.kanade.tachiyomi.ui.player.controls.components.TextPlayerUpdate
 import eu.kanade.tachiyomi.ui.player.controls.components.VolumeSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubColorType
@@ -326,7 +328,7 @@ fun PlayerControls(
                     viewModel.playerUpdate.update { PlayerUpdates.None }
                 }
                 AnimatedVisibility(
-                    currentPlayerUpdate !is PlayerUpdates.None,
+                    currentPlayerUpdate !is PlayerUpdates.None && currentPlayerUpdate !is PlayerUpdates.DoubleSpeed,
                     enter = fadeIn(playerControlsEnterAnimationSpec()),
                     exit = fadeOut(playerControlsExitAnimationSpec()),
                     modifier = Modifier.constrainAs(playerUpdates) {
@@ -335,7 +337,6 @@ fun PlayerControls(
                     },
                 ) {
                     when (currentPlayerUpdate) {
-                        is PlayerUpdates.DoubleSpeed -> TextPlayerUpdate("2x")
                         is PlayerUpdates.AspectRatio -> TextPlayerUpdate(stringResource(aspectRatio.titleRes))
                         is PlayerUpdates.ShowText -> TextPlayerUpdate(
                             (currentPlayerUpdate as PlayerUpdates.ShowText).value,
@@ -344,6 +345,26 @@ fun PlayerControls(
                             stringResource((currentPlayerUpdate as PlayerUpdates.ShowTextResource).textResource),
                         )
                         else -> {}
+                    }
+                }
+
+                val doubleSpeedIndicatorAnchor = createRef()
+                AnimatedVisibility(
+                    visible = currentPlayerUpdate is PlayerUpdates.DoubleSpeed,
+                    enter = fadeIn(playerControlsEnterAnimationSpec()),
+                    exit = fadeOut(playerControlsExitAnimationSpec()),
+                    modifier = Modifier.constrainAs(doubleSpeedIndicatorAnchor) {
+                        top.linkTo(parent.top, margin = 48.dp)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    },
+                ) {
+                    if (currentPlayerUpdate is PlayerUpdates.DoubleSpeed) {
+                        val playerUpdate = currentPlayerUpdate as PlayerUpdates.DoubleSpeed
+                        DoubleSpeedIndicator(
+                            speed = playerUpdate.speed,
+                            isDragging = playerUpdate.isDragging,
+                        )
                     }
                 }
 
