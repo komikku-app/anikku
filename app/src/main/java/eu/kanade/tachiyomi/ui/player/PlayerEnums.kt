@@ -100,6 +100,12 @@ enum class Sheets {
     Screenshot,
 }
 
+enum class PausedLongPressAction(val stringRes: StringResource) {
+    DoNothing(MR.strings.paused_long_press_action_do_nothing),
+    Screenshot(MR.strings.paused_long_press_action_screenshot),
+    Play2x(MR.strings.paused_long_press_action_play2x),
+}
+
 enum class Panels {
     None,
     SubtitleSettings,
@@ -125,7 +131,7 @@ sealed class Dialogs {
 
 sealed class PlayerUpdates {
     data object None : PlayerUpdates()
-    data object DoubleSpeed : PlayerUpdates()
+    data class DoubleSpeed(val speed: Float, val isDragging: Boolean) : PlayerUpdates()
     data object AspectRatio : PlayerUpdates()
     data class ShowText(val value: String) : PlayerUpdates()
     data class ShowTextResource(val textResource: StringResource) : PlayerUpdates()

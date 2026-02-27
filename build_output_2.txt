@@ -1,0 +1,637 @@
+Configuration on demand is an incubating feature.
+Type-safe project accessors is an incubating feature.
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:generateExternalPluginSpecBuilders UP-TO-DATE
+> Task :buildSrc:extractPrecompiledScriptPluginPlugins UP-TO-DATE
+> Task :buildSrc:compilePluginsBlocks UP-TO-DATE
+> Task :buildSrc:generatePrecompiledScriptPluginAccessors UP-TO-DATE
+> Task :buildSrc:generateScriptPluginAdapters UP-TO-DATE
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :presentation-core:preBuild UP-TO-DATE
+> Task :core-metadata:preBuild UP-TO-DATE
+> Task :data:preBuild UP-TO-DATE
+> Task :presentation-widget:preBuild UP-TO-DATE
+> Task :core-metadata:preDebugBuild UP-TO-DATE
+> Task :presentation-core:preDebugBuild UP-TO-DATE
+> Task :i18n:generateLocalesConfig UP-TO-DATE
+> Task :source-api:preBuild UP-TO-DATE
+> Task :domain:preBuild UP-TO-DATE
+> Task :flagkit:preBuild UP-TO-DATE
+> Task :presentation-widget:preDebugBuild UP-TO-DATE
+> Task :domain:preDebugBuild UP-TO-DATE
+> Task :flagkit:preDebugBuild UP-TO-DATE
+> Task :source-api:preDebugBuild UP-TO-DATE
+> Task :presentation-core:generateDebugResValues UP-TO-DATE
+> Task :data:preDebugBuild UP-TO-DATE
+> Task :domain:generateDebugResValues UP-TO-DATE
+> Task :flagkit:generateDebugResValues UP-TO-DATE
+> Task :core-metadata:generateDebugResValues UP-TO-DATE
+> Task :i18n:generateMRcommonMain UP-TO-DATE
+> Task :i18n-ank:generateMRcommonMain UP-TO-DATE
+> Task :i18n-sy:generateMRcommonMain UP-TO-DATE
+> Task :i18n-kmk:generateMRcommonMain UP-TO-DATE
+> Task :i18n:generateMRandroidDebug SKIPPED
+> Task :presentation-core:generateDebugResources UP-TO-DATE
+> Task :i18n-sy:generateMRandroidDebug SKIPPED
+> Task :presentation-widget:generateDebugResValues UP-TO-DATE
+> Task :source-api:generateDebugResValues UP-TO-DATE
+> Task :data:generateDebugResValues UP-TO-DATE
+> Task :i18n-ank:generateMRandroidDebug SKIPPED
+> Task :domain:generateDebugResources UP-TO-DATE
+> Task :flagkit:generateDebugResources UP-TO-DATE
+> Task :core-metadata:generateDebugResources UP-TO-DATE
+> Task :i18n-kmk:generateMRandroidDebug SKIPPED
+> Task :presentation-widget:generateDebugResources UP-TO-DATE
+> Task :source-api:generateDebugResources UP-TO-DATE
+> Task :data:generateDebugResources UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :i18n:generateMRandroidInstrumentedTest UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :i18n:generateMRandroidInstrumentedTestDebug SKIPPED
+> Task :i18n-ank:generateMRandroidInstrumentedTest UP-TO-DATE
+> Task :i18n-kmk:generateMRandroidInstrumentedTest UP-TO-DATE
+> Task :i18n-ank:generateMRandroidInstrumentedTestDebug SKIPPED
+> Task :i18n-kmk:generateMRandroidInstrumentedTestDebug SKIPPED
+> Task :i18n-sy:generateMRandroidInstrumentedTest UP-TO-DATE
+> Task :i18n-sy:generateMRandroidInstrumentedTestDebug SKIPPED
+> Task :flagkit:packageDebugResources UP-TO-DATE
+> Task :presentation-core:packageDebugResources UP-TO-DATE
+> Task :domain:packageDebugResources UP-TO-DATE
+> Task :i18n:generateMRandroidMain UP-TO-DATE
+> Task :i18n:generateMRandroidRelease SKIPPED
+> Task :source-local:preBuild UP-TO-DATE
+> Task :telemetry:preBuild UP-TO-DATE
+> Task :source-local:preDebugBuild UP-TO-DATE
+> Task :telemetry:preDebugBuild UP-TO-DATE
+> Task :presentation-widget:packageDebugResources UP-TO-DATE
+> Task :core-metadata:packageDebugResources UP-TO-DATE
+> Task :core:archive:preBuild UP-TO-DATE
+> Task :i18n-kmk:generateMRandroidMain UP-TO-DATE
+> Task :i18n-ank:generateMRandroidMain UP-TO-DATE
+> Task :core:archive:preDebugBuild UP-TO-DATE
+> Task :core:common:preBuild UP-TO-DATE
+> Task :i18n-kmk:generateMRandroidRelease SKIPPED
+> Task :i18n-ank:generateMRandroidRelease SKIPPED
+> Task :data:packageDebugResources UP-TO-DATE
+> Task :i18n-sy:generateMRandroidMain UP-TO-DATE
+> Task :telemetry:generateDebugResValues UP-TO-DATE
+> Task :i18n-sy:generateMRandroidRelease SKIPPED
+> Task :core:common:preDebugBuild UP-TO-DATE
+> Task :source-local:generateDebugResValues UP-TO-DATE
+> Task :core:archive:generateDebugResValues UP-TO-DATE
+> Task :telemetry:generateDebugResources UP-TO-DATE
+> Task :core:common:generateDebugResValues UP-TO-DATE
+> Task :i18n:generateMRcommonTest UP-TO-DATE
+> Task :source-api:packageDebugResources UP-TO-DATE
+> Task :source-local:generateDebugResources UP-TO-DATE
+> Task :core:archive:generateDebugResources UP-TO-DATE
+> Task :core:common:generateDebugResources UP-TO-DATE
+> Task :i18n-sy:generateMRcommonTest UP-TO-DATE
+> Task :i18n-kmk:generateMRcommonTest UP-TO-DATE
+> Task :i18n-ank:generateMRcommonTest UP-TO-DATE
+> Task :i18n:generateMRandroidUnitTest UP-TO-DATE
+> Task :i18n:generateMRandroidUnitTestDebug SKIPPED
+> Task :i18n:generateMRandroidUnitTestRelease SKIPPED
+> Task :i18n:preBuild UP-TO-DATE
+> Task :i18n:preDebugBuild UP-TO-DATE
+> Task :i18n-sy:generateMRandroidUnitTest UP-TO-DATE
+> Task :i18n-kmk:generateMRandroidUnitTest UP-TO-DATE
+> Task :i18n:generateDebugResValues UP-TO-DATE
+> Task :core:archive:packageDebugResources UP-TO-DATE
+> Task :i18n-sy:generateMRandroidUnitTestDebug SKIPPED
+> Task :i18n-sy:generateMRandroidUnitTestRelease SKIPPED
+> Task :i18n-sy:preBuild UP-TO-DATE
+> Task :i18n-kmk:generateMRandroidUnitTestDebug SKIPPED
+> Task :i18n-sy:preDebugBuild UP-TO-DATE
+> Task :i18n-kmk:generateMRandroidUnitTestRelease SKIPPED
+> Task :core-metadata:writeDebugAarMetadata UP-TO-DATE
+> Task :i18n-kmk:preBuild UP-TO-DATE
+> Task :i18n-kmk:preDebugBuild UP-TO-DATE
+> Task :i18n-ank:generateMRandroidUnitTest UP-TO-DATE
+> Task :i18n-sy:generateDebugResValues UP-TO-DATE
+> Task :i18n-ank:generateMRandroidUnitTestDebug SKIPPED
+> Task :i18n-ank:generateMRandroidUnitTestRelease SKIPPED
+> Task :i18n-kmk:generateDebugResValues UP-TO-DATE
+> Task :core:common:packageDebugResources UP-TO-DATE
+> Task :i18n-ank:preBuild UP-TO-DATE
+> Task :i18n-ank:preDebugBuild UP-TO-DATE
+> Task :telemetry:packageDebugResources UP-TO-DATE
+> Task :data:writeDebugAarMetadata UP-TO-DATE
+> Task :i18n:generateDebugResources UP-TO-DATE
+> Task :i18n-sy:generateDebugResources UP-TO-DATE
+> Task :source-local:packageDebugResources UP-TO-DATE
+> Task :i18n-ank:generateDebugResValues UP-TO-DATE
+> Task :i18n-kmk:generateDebugResources UP-TO-DATE
+> Task :i18n-ank:generateDebugResources UP-TO-DATE
+> Task :flagkit:writeDebugAarMetadata UP-TO-DATE
+> Task :source-api:writeDebugAarMetadata UP-TO-DATE
+> Task :domain:writeDebugAarMetadata UP-TO-DATE
+> Task :i18n:packageDebugResources UP-TO-DATE
+> Task :i18n-sy:packageDebugResources UP-TO-DATE
+> Task :i18n-kmk:packageDebugResources UP-TO-DATE
+> Task :i18n-ank:packageDebugResources UP-TO-DATE
+> Task :source-local:writeDebugAarMetadata UP-TO-DATE
+> Task :core-metadata:extractDeepLinksDebug UP-TO-DATE
+> Task :presentation-widget:writeDebugAarMetadata UP-TO-DATE
+> Task :i18n-ank:writeDebugAarMetadata UP-TO-DATE
+> Task :core-metadata:processDebugManifest UP-TO-DATE
+> Task :data:extractDeepLinksDebug UP-TO-DATE
+> Task :domain:extractDeepLinksDebug UP-TO-DATE
+> Task :flagkit:extractDeepLinksDebug UP-TO-DATE
+> Task :i18n-kmk:writeDebugAarMetadata UP-TO-DATE
+> Task :domain:processDebugManifest UP-TO-DATE
+> Task :data:processDebugManifest UP-TO-DATE
+> Task :i18n-ank:extractDeepLinksDebug UP-TO-DATE
+> Task :flagkit:processDebugManifest UP-TO-DATE
+> Task :i18n-kmk:extractDeepLinksDebug UP-TO-DATE
+> Task :presentation-widget:extractDeepLinksDebug UP-TO-DATE
+> Task :source-api:extractDeepLinksDebug UP-TO-DATE
+> Task :i18n-sy:writeDebugAarMetadata UP-TO-DATE
+> Task :i18n-ank:processDebugManifest UP-TO-DATE
+> Task :i18n-kmk:processDebugManifest UP-TO-DATE
+> Task :presentation-widget:processDebugManifest UP-TO-DATE
+> Task :source-local:extractDeepLinksDebug UP-TO-DATE
+> Task :i18n-sy:extractDeepLinksDebug UP-TO-DATE
+> Task :source-api:processDebugManifest UP-TO-DATE
+> Task :core-metadata:compileDebugLibraryResources UP-TO-DATE
+> Task :data:compileDebugLibraryResources UP-TO-DATE
+> Task :source-local:processDebugManifest UP-TO-DATE
+> Task :i18n-sy:processDebugManifest UP-TO-DATE
+> Task :i18n:writeDebugAarMetadata UP-TO-DATE
+> Task :core:common:writeDebugAarMetadata UP-TO-DATE
+> Task :core:common:extractDeepLinksDebug UP-TO-DATE
+> Task :i18n:extractDeepLinksDebug UP-TO-DATE
+> Task :core:archive:writeDebugAarMetadata UP-TO-DATE
+> Task :core:common:processDebugManifest UP-TO-DATE
+> Task :telemetry:writeDebugAarMetadata UP-TO-DATE
+> Task :i18n:processDebugManifest UP-TO-DATE
+> Task :core:archive:extractDeepLinksDebug UP-TO-DATE
+> Task :telemetry:extractDeepLinksDebug UP-TO-DATE
+> Task :core-metadata:parseDebugLocalResources UP-TO-DATE
+> Task :presentation-core:writeDebugAarMetadata UP-TO-DATE
+> Task :data:parseDebugLocalResources UP-TO-DATE
+> Task :source-api:parseDebugLocalResources UP-TO-DATE
+> Task :flagkit:compileDebugLibraryResources UP-TO-DATE
+> Task :presentation-core:extractDeepLinksDebug UP-TO-DATE
+> Task :core:archive:processDebugManifest UP-TO-DATE
+> Task :telemetry:processDebugManifest UP-TO-DATE
+> Task :i18n-kmk:compileDebugLibraryResources UP-TO-DATE
+> Task :source-api:compileDebugLibraryResources UP-TO-DATE
+> Task :presentation-widget:compileDebugLibraryResources UP-TO-DATE
+> Task :i18n-sy:parseDebugLocalResources UP-TO-DATE
+> Task :domain:parseDebugLocalResources UP-TO-DATE
+> Task :source-local:compileDebugLibraryResources UP-TO-DATE
+> Task :presentation-core:processDebugManifest UP-TO-DATE
+> Task :domain:compileDebugLibraryResources UP-TO-DATE
+> Task :presentation-core:compileDebugLibraryResources UP-TO-DATE
+> Task :core:common:parseDebugLocalResources UP-TO-DATE
+> Task :telemetry:compileDebugLibraryResources UP-TO-DATE
+> Task :i18n:parseDebugLocalResources UP-TO-DATE
+> Task :i18n-ank:parseDebugLocalResources UP-TO-DATE
+> Task :flagkit:parseDebugLocalResources UP-TO-DATE
+> Task :i18n-kmk:parseDebugLocalResources UP-TO-DATE
+> Task :presentation-widget:parseDebugLocalResources UP-TO-DATE
+> Task :source-local:parseDebugLocalResources UP-TO-DATE
+> Task :core-metadata:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:common:compileDebugLibraryResources UP-TO-DATE
+> Task :core:archive:parseDebugLocalResources UP-TO-DATE
+> Task :core:common:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :source-api:kmpPartiallyResolvedDependenciesChecker
+> Task :presentation-core:parseDebugLocalResources UP-TO-DATE
+> Task :source-api:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core-metadata:javaPreCompileDebug UP-TO-DATE
+> Task :data:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :telemetry:parseDebugLocalResources UP-TO-DATE
+> Task :core:archive:compileDebugLibraryResources UP-TO-DATE
+> Task :domain:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:common:javaPreCompileDebug UP-TO-DATE
+> Task :flagkit:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :presentation-core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :source-api:javaPreCompileDebug UP-TO-DATE
+> Task :presentation-widget:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :domain:javaPreCompileDebug UP-TO-DATE
+> Task :flagkit:javaPreCompileDebug UP-TO-DATE
+> Task :presentation-core:javaPreCompileDebug UP-TO-DATE
+> Task :core:archive:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :source-local:kmpPartiallyResolvedDependenciesChecker
+> Task :source-local:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :presentation-widget:javaPreCompileDebug UP-TO-DATE
+> Task :core-metadata:mergeDebugShaders UP-TO-DATE
+> Task :core:archive:javaPreCompileDebug UP-TO-DATE
+> Task :source-local:javaPreCompileDebug UP-TO-DATE
+> Task :core-metadata:compileDebugShaders NO-SOURCE
+> Task :core-metadata:generateDebugAssets UP-TO-DATE
+> Task :flagkit:mergeDebugShaders UP-TO-DATE
+> Task :presentation-core:mergeDebugShaders UP-TO-DATE
+> Task :domain:mergeDebugShaders UP-TO-DATE
+> Task :core-metadata:mergeDebugAssets UP-TO-DATE
+> Task :flagkit:compileDebugShaders NO-SOURCE
+> Task :domain:compileDebugShaders NO-SOURCE
+> Task :presentation-core:compileDebugShaders NO-SOURCE
+> Task :flagkit:generateDebugAssets UP-TO-DATE
+> Task :presentation-core:generateDebugAssets UP-TO-DATE
+> Task :domain:generateDebugAssets UP-TO-DATE
+> Task :presentation-widget:mergeDebugShaders UP-TO-DATE
+> Task :flagkit:mergeDebugAssets UP-TO-DATE
+> Task :presentation-core:mergeDebugAssets UP-TO-DATE
+> Task :domain:mergeDebugAssets UP-TO-DATE
+> Task :presentation-widget:compileDebugShaders NO-SOURCE
+> Task :presentation-widget:generateDebugAssets UP-TO-DATE
+> Task :source-api:mergeDebugShaders UP-TO-DATE
+> Task :source-local:mergeDebugShaders UP-TO-DATE
+> Task :core:archive:mergeDebugShaders UP-TO-DATE
+> Task :source-api:compileDebugShaders NO-SOURCE
+> Task :source-local:compileDebugShaders NO-SOURCE
+> Task :source-api:debugAssetsCopyForAGP NO-SOURCE
+> Task :source-api:generateDebugAssets UP-TO-DATE
+> Task :presentation-widget:mergeDebugAssets UP-TO-DATE
+> Task :source-local:debugAssetsCopyForAGP NO-SOURCE
+> Task :core:archive:compileDebugShaders NO-SOURCE
+> Task :source-local:generateDebugAssets UP-TO-DATE
+> Task :core:archive:generateDebugAssets UP-TO-DATE
+> Task :source-api:mergeDebugAssets UP-TO-DATE
+> Task :core:common:mergeDebugShaders UP-TO-DATE
+> Task :source-local:mergeDebugAssets UP-TO-DATE
+> Task :core:archive:mergeDebugAssets UP-TO-DATE
+> Task :core:common:compileDebugShaders NO-SOURCE
+> Task :core-metadata:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:common:generateDebugAssets UP-TO-DATE
+> Task :domain:mergeDebugJniLibFolders UP-TO-DATE
+> Task :flagkit:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core-metadata:mergeDebugNativeLibs NO-SOURCE
+> Task :core:common:mergeDebugAssets UP-TO-DATE
+> Task :domain:mergeDebugNativeLibs NO-SOURCE
+> Task :flagkit:mergeDebugNativeLibs NO-SOURCE
+> Task :core-metadata:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :domain:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :flagkit:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :presentation-core:mergeDebugJniLibFolders UP-TO-DATE
+> Task :presentation-widget:mergeDebugJniLibFolders UP-TO-DATE
+> Task :source-api:mergeDebugJniLibFolders UP-TO-DATE
+> Task :presentation-core:mergeDebugNativeLibs NO-SOURCE
+> Task :source-local:mergeDebugJniLibFolders UP-TO-DATE
+> Task :telemetry:generateDebugRFile UP-TO-DATE
+> Task :telemetry:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :presentation-widget:mergeDebugNativeLibs NO-SOURCE
+> Task :source-api:mergeDebugNativeLibs NO-SOURCE
+> Task :presentation-core:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :source-local:mergeDebugNativeLibs NO-SOURCE
+> Task :presentation-widget:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :source-api:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :source-local:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :core:archive:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:common:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:archive:mergeDebugNativeLibs NO-SOURCE
+> Task :core:common:mergeDebugNativeLibs NO-SOURCE
+> Task :core:archive:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :core:common:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :i18n:generateDebugRFile UP-TO-DATE
+> Task :i18n-ank:generateDebugRFile UP-TO-DATE
+> Task :i18n-kmk:generateDebugRFile UP-TO-DATE
+> Task :i18n-sy:generateDebugRFile UP-TO-DATE
+> Task :i18n-kmk:kmpPartiallyResolvedDependenciesChecker
+> Task :i18n-kmk:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :i18n:compileDebugLibraryResources UP-TO-DATE
+> Task :i18n-ank:compileDebugLibraryResources UP-TO-DATE
+> Task :i18n-sy:compileDebugLibraryResources UP-TO-DATE
+> Task :i18n-ank:kmpPartiallyResolvedDependenciesChecker
+> Task :i18n:kmpPartiallyResolvedDependenciesChecker
+> Task :i18n:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :i18n-ank:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :i18n-sy:kmpPartiallyResolvedDependenciesChecker
+> Task :i18n-sy:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :data:generateDebugDatabaseInterface UP-TO-DATE
+> Task :data:javaPreCompileDebug UP-TO-DATE
+> Task :data:mergeDebugShaders UP-TO-DATE
+> Task :data:compileDebugShaders NO-SOURCE
+> Task :data:generateDebugAssets UP-TO-DATE
+> Task :data:mergeDebugAssets UP-TO-DATE
+> Task :data:mergeDebugJniLibFolders UP-TO-DATE
+> Task :data:mergeDebugNativeLibs NO-SOURCE
+> Task :data:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :telemetry:compileDebugKotlin UP-TO-DATE
+> Task :telemetry:javaPreCompileDebug UP-TO-DATE
+> Task :i18n-ank:compileDebugKotlinAndroid UP-TO-DATE
+> Task :i18n-sy:compileDebugKotlinAndroid UP-TO-DATE
+> Task :telemetry:compileDebugJavaWithJavac NO-SOURCE
+> Task :i18n:compileDebugKotlinAndroid UP-TO-DATE
+> Task :i18n-kmk:compileDebugKotlinAndroid UP-TO-DATE
+> Task :i18n-ank:javaPreCompileDebug UP-TO-DATE
+> Task :i18n-sy:javaPreCompileDebug UP-TO-DATE
+> Task :telemetry:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :i18n:javaPreCompileDebug UP-TO-DATE
+> Task :i18n-kmk:javaPreCompileDebug UP-TO-DATE
+> Task :i18n-ank:compileDebugJavaWithJavac NO-SOURCE
+> Task :telemetry:mergeDebugShaders UP-TO-DATE
+> Task :i18n-sy:compileDebugJavaWithJavac NO-SOURCE
+> Task :i18n-ank:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :i18n:compileDebugJavaWithJavac NO-SOURCE
+> Task :i18n-kmk:compileDebugJavaWithJavac NO-SOURCE
+> Task :telemetry:compileDebugShaders NO-SOURCE
+> Task :telemetry:generateDebugAssets UP-TO-DATE
+> Task :i18n-sy:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :i18n:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :i18n-kmk:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :i18n-ank:mergeDebugShaders UP-TO-DATE
+> Task :i18n-sy:mergeDebugShaders UP-TO-DATE
+> Task :telemetry:mergeDebugAssets UP-TO-DATE
+> Task :i18n:mergeDebugShaders UP-TO-DATE
+> Task :i18n-kmk:mergeDebugShaders UP-TO-DATE
+> Task :i18n-ank:compileDebugShaders NO-SOURCE
+> Task :i18n-sy:compileDebugShaders NO-SOURCE
+> Task :i18n:compileDebugShaders NO-SOURCE
+> Task :i18n-kmk:compileDebugShaders NO-SOURCE
+> Task :i18n-sy:debugAssetsCopyForAGP NO-SOURCE
+> Task :i18n-ank:debugAssetsCopyForAGP NO-SOURCE
+> Task :telemetry:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :i18n-ank:generateDebugAssets UP-TO-DATE
+> Task :i18n-sy:generateDebugAssets UP-TO-DATE
+> Task :i18n:debugAssetsCopyForAGP NO-SOURCE
+> Task :i18n-kmk:debugAssetsCopyForAGP NO-SOURCE
+> Task :i18n:generateDebugAssets UP-TO-DATE
+> Task :i18n-kmk:generateDebugAssets UP-TO-DATE
+> Task :i18n-sy:mergeDebugAssets UP-TO-DATE
+> Task :i18n-ank:mergeDebugAssets UP-TO-DATE
+> Task :i18n:mergeDebugAssets UP-TO-DATE
+> Task :i18n-kmk:mergeDebugAssets UP-TO-DATE
+> Task :i18n:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :i18n-ank:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :i18n-sy:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :i18n-kmk:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :telemetry:processDebugJavaRes UP-TO-DATE
+> Task :telemetry:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :telemetry:mergeDebugJniLibFolders UP-TO-DATE
+> Task :i18n:processDebugJavaRes UP-TO-DATE
+> Task :i18n-kmk:processDebugJavaRes UP-TO-DATE
+> Task :telemetry:mergeDebugNativeLibs NO-SOURCE
+> Task :i18n-sy:processDebugJavaRes UP-TO-DATE
+> Task :i18n-ank:processDebugJavaRes UP-TO-DATE
+> Task :i18n:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :telemetry:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :i18n-sy:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :i18n-kmk:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :i18n-ank:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :i18n:mergeDebugJniLibFolders UP-TO-DATE
+> Task :i18n-sy:mergeDebugJniLibFolders UP-TO-DATE
+> Task :i18n-ank:mergeDebugJniLibFolders UP-TO-DATE
+> Task :i18n:mergeDebugNativeLibs NO-SOURCE
+> Task :i18n-sy:mergeDebugNativeLibs NO-SOURCE
+> Task :i18n-kmk:mergeDebugJniLibFolders UP-TO-DATE
+> Task :i18n-ank:mergeDebugNativeLibs NO-SOURCE
+> Task :i18n:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :i18n-sy:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :i18n-kmk:mergeDebugNativeLibs NO-SOURCE
+> Task :i18n-ank:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :i18n-kmk:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :core:common:generateDebugRFile UP-TO-DATE
+> Task :flagkit:generateDebugRFile UP-TO-DATE
+> Task :core:archive:generateDebugRFile UP-TO-DATE
+> Task :core:common:compileDebugKotlin UP-TO-DATE
+> Task :core:common:compileDebugJavaWithJavac NO-SOURCE
+> Task :core:common:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core:common:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core:common:processDebugJavaRes UP-TO-DATE
+> Task :core:common:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :source-api:generateDebugRFile UP-TO-DATE
+> Task :core-metadata:generateDebugRFile UP-TO-DATE
+> Task :flagkit:compileDebugKotlin UP-TO-DATE
+> Task :core:archive:compileDebugKotlin UP-TO-DATE
+> Task :core:archive:compileDebugJavaWithJavac NO-SOURCE
+> Task :flagkit:compileDebugJavaWithJavac NO-SOURCE
+> Task :core:archive:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :flagkit:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :flagkit:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core:archive:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :flagkit:processDebugJavaRes UP-TO-DATE
+> Task :core:archive:processDebugJavaRes UP-TO-DATE
+> Task :flagkit:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :core:archive:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :domain:generateDebugRFile UP-TO-DATE
+> Task :source-api:compileDebugKotlinAndroid UP-TO-DATE
+> Task :source-api:compileDebugJavaWithJavac NO-SOURCE
+> Task :source-api:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :source-api:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :source-api:processDebugJavaRes UP-TO-DATE
+> Task :source-api:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :source-local:generateDebugRFile UP-TO-DATE
+> Task :core-metadata:compileDebugKotlin UP-TO-DATE
+> Task :data:generateDebugRFile UP-TO-DATE
+> Task :core-metadata:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-metadata:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-metadata:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-metadata:processDebugJavaRes UP-TO-DATE
+> Task :core-metadata:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :domain:compileDebugKotlin UP-TO-DATE
+> Task :domain:compileDebugJavaWithJavac NO-SOURCE
+> Task :domain:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :domain:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :domain:processDebugJavaRes UP-TO-DATE
+> Task :domain:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :source-local:compileDebugKotlinAndroid UP-TO-DATE
+> Task :data:compileDebugKotlin UP-TO-DATE
+> Task :source-local:compileDebugJavaWithJavac NO-SOURCE
+> Task :data:compileDebugJavaWithJavac NO-SOURCE
+> Task :data:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :source-local:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :source-local:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :data:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :data:processDebugJavaRes UP-TO-DATE
+> Task :source-local:processDebugJavaRes UP-TO-DATE
+> Task :data:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :source-local:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :presentation-core:generateDebugRFile UP-TO-DATE
+> Task :presentation-core:compileDebugKotlin UP-TO-DATE
+> Task :presentation-core:compileDebugJavaWithJavac NO-SOURCE
+> Task :presentation-core:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :presentation-core:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :presentation-core:processDebugJavaRes UP-TO-DATE
+> Task :presentation-core:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :presentation-widget:generateDebugRFile UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDebug UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:prepareDebugShortcutXML UP-TO-DATE
+> Task :app:prepareLibraryDefinitionsDebug UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDebug UP-TO-DATE
+> Task :presentation-widget:compileDebugKotlin UP-TO-DATE
+> Task :presentation-widget:compileDebugJavaWithJavac NO-SOURCE
+> Task :presentation-widget:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :presentation-widget:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :presentation-widget:processDebugJavaRes UP-TO-DATE
+> Task :presentation-widget:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :app:generateDebugBuildConfig
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:l8DexDesugarLibDebug UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:compileDebugKotlin
+w: The feature plugin:androidx.compose.compiler.plugins.kotlin:featureFlag=OptimizeNonSkippingGroups is enabled by default and specifying this option explicitly is not necessary.
+w: Experimental context receivers are superseded by context parameters.
+Replace the '-Xcontext-receivers' compiler argument with '-Xcontext-parameters' and migrate to the new syntax.
+
+See the context parameters proposal for more details: https://kotl.in/context-parameters
+This warning will become an error in future releases.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/anime/EpisodeOptionsDialogScreen.kt:501:28 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/anime/EpisodeOptionsDialogScreen.kt:661:35 'val Icons.Outlined.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.OpenInNew.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/anime/EpisodeOptionsDialogScreen.kt:670:35 'val Icons.Outlined.Input: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Input.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/anime/EpisodeOptionsDialogScreen.kt:724:46 'val Icons.Outlined.NavigateNext: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.NavigateNext.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsConnectionsScreen.kt:277:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsDiscordScreen.kt:57:46 'val Icons.Outlined.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.HelpOutline.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsTrackingScreen.kt:79:46 'val Icons.Outlined.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.HelpOutline.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/more/settings/screen/about/OpenSourceLicensesScreen.kt:29:13 'fun LibrariesContainer(modifier: Modifier = ..., libraryModifier: Modifier = ..., librariesBlock: (Context) -> Libs = ..., lazyListState: LazyListState = ..., contentPadding: PaddingValues = ..., showAuthor: Boolean = ..., showDescription: Boolean = ..., showVersion: Boolean = ..., showLicenseBadges: Boolean = ..., showFundingBadges: Boolean = ..., colors: LibraryColors = ..., padding: LibraryPadding = ..., dimensions: LibraryDimensions = ..., textStyles: LibraryTextStyles = ..., header: (LazyListScope.() -> Unit)? = ..., divider: ComposableFunction1<LazyItemScope, Unit>? = ..., footer: (LazyListScope.() -> Unit)? = ..., onLibraryClick: ((Library) -> Unit)? = ..., onFundingClick: ((Funding) -> Unit)? = ...): Unit' is deprecated. Use `LibrariesContainer` variant with `Libs` instead. Use `rememberLibraries` to load the libraries.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/player/components/PlayerSheet.kt:103:9 'fun <T> AnchoredDraggableState(initialValue: T, positionalThreshold: (Float) -> Float, velocityThreshold: () -> Float, snapAnimationSpec: AnimationSpec<Float>, decayAnimationSpec: DecayAnimationSpec<Float>, confirmValueChange: (T) -> Boolean = ...): AnchoredDraggableState<T>' is deprecated. This constructor of AnchoredDraggableState has been deprecated. Please pass thresholds and animation specs to AnchoredDraggableDefaults.flingBehavior(..) instead, which can be passed to Modifier.anchoredDraggable.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/player/components/PlayerSheet.kt:227:13 'suspend fun settle(velocity: Float): Float' is deprecated. settle does not accept a velocity anymore. Please use FlingBehavior#performFling instead. See AnchoredDraggableSample.kt for example usages.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/player/components/PlayerSheet.kt:237:13 'suspend fun settle(velocity: Float): Float' is deprecated. settle does not accept a velocity anymore. Please use FlingBehavior#performFling instead. See AnchoredDraggableSample.kt for example usages.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/track/TrackerSearch.kt:58:8 'interface ClipboardManager : Any' is deprecated. Use Clipboard instead, which supports suspend functions.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/track/TrackerSearch.kt:226:27 'interface ClipboardManager : Any' is deprecated. Use Clipboard instead, which supports suspend functions.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/track/TrackerSearch.kt:226:46 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/util/ExceptionFormatter.kt:12:1 Experimental context receivers are superseded by context parameters.
+Replace the '-Xcontext-receivers' compiler argument with '-Xcontext-parameters' and migrate to the new syntax.
+
+See the context parameters proposal for more details: https://kotl.in/context-parameters
+This warning will become an error in future releases.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/util/FastScrollAnimateItem.kt:7:1 Experimental context receivers are superseded by context parameters.
+Replace the '-Xcontext-receivers' compiler argument with '-Xcontext-parameters' and migrate to the new syntax.
+
+See the context parameters proposal for more details: https://kotl.in/context-parameters
+This warning will become an error in future releases.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/webview/WebViewScreenContent.kt:134:63 'val Icons.Outlined.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowBack.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/presentation/webview/WebViewScreenContent.kt:144:63 'val Icons.Outlined.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowForward.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/App.kt:141:22 'fun install(logger: LogcatLogger): Unit' is deprecated. LogcatLogger.install() does not take a LogcatLogger instance anymore.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/connections/discord/DiscordRPCModels.kt:175:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/connections/discord/DiscordRPCModels.kt:176:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/download/DownloadManager.kt:273:9 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/download/DownloadManager.kt:303:9 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/download/Downloader.kt:513:80 'val quality: String' is deprecated. Use videoTitle instead.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/library/LibraryUpdateNotifier.kt:233:13 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/notification/NotificationReceiver.kt:226:9 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/notification/NotificationReceiver.kt:252:9 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/sync/service/GoogleDriveSyncService.kt:11:8 'class GoogleCredential : Credential' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/sync/service/GoogleDriveSyncService.kt:322:26 'class GoogleCredential : Credential' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/sync/service/GoogleDriveSyncService.kt:373:26 'class GoogleCredential : Credential' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/track/TrackStatus.kt:13:39 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/track/bangumi/Bangumi.kt:58:20 Condition is always 'true'.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/data/updater/AppUpdateDownloadJob.kt:235:13 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/extension/util/ExtensionInstallActivity.kt:28:43 'static field ACTION_INSTALL_PACKAGE: String' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/AniyomiMPVView.kt:171:38 'static field ACTION_MULTIPLE: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/CastManager.kt:575:20 'fun seek(p0: Long): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:376:13 'fun enterPictureInPictureMode(): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:388:17 'fun enterPictureInPictureMode(): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:391:19 'fun onBackPressed(): Unit' is deprecated. This method has been deprecated in favor of using the
+      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.
+      The OnBackPressedDispatcher controls how back button events are dispatched
+      to one or more {@link OnBackPressedCallback} objects.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:404:22 'var systemUiVisibility: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:405:18 'static field SYSTEM_UI_FLAG_IMMERSIVE_STICKY: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:406:18 'static field SYSTEM_UI_FLAG_LAYOUT_STABLE: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:407:18 'static field SYSTEM_UI_FLAG_HIDE_NAVIGATION: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:408:18 'static field SYSTEM_UI_FLAG_LOW_PROFILE: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:1135:13 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:1138:58 'val quality: String' is deprecated. Use videoTitle instead.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:139:75 Unchecked cast of 'PlayerViewModel' to 'T (of fun <T : ViewModel> create)'.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:892:28 'fun toggleSoftInput(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:892:63 'static field SHOW_FORCED: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:896:28 'fun toggleSoftInput(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/CastMediaBuilder.kt:43:85 'val quality: String' is deprecated. Use videoTitle instead.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/CastMiniController.kt:99:58 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/ExpandedControlsActivity.kt:39:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/ExpandedControlsActivity.kt:68:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/CastDialogs.kt:57:45 'val quality: String' is deprecated. Use videoTitle instead.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:100:26 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is deprecated. Moved to lifecycle-runtime-compose library in androidx.lifecycle.compose package.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:302:59 'fun seek(p0: Long): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:369:49 'fun seek(p0: Long): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:401:49 'fun seek(p0: Long): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/setting/connections/DiscordLoginActivity.kt:35:22 'var databaseEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/util/view/EditTextPreferenceExtensions.kt:8:24 This extension is shadowed by a member: 'fun getOnBindEditTextListener(): EditTextPreference.OnBindEditTextListener?' defined in 'androidx.preference.EditTextPreference'.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/exh/log/XLogLogcatLogger.kt:21:13 'when' is exhaustive so 'else' is redundant here.
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+The message received from the daemon indicates that the daemon has disappeared.
+Build request sent: Build{id=8ffda40f-84ab-406c-8027-0ddc9e8bdefd, currentDir=C:\Users\Administrator\Desktop\Android Studio\Antigravity\Anikku\anikku}
+Attempting to read last messages from the daemon log...
+Daemon pid: 21424
+  log file: C:\Users\Administrator\.gradle\daemon\8.14.3\daemon-21424.out.log
+----- Last 20 lines from daemon log file - daemon-21424.out.log -----
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:407:18 'static field SYSTEM_UI_FLAG_HIDE_NAVIGATION: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:408:18 'static field SYSTEM_UI_FLAG_LOW_PROFILE: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:1135:13 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerActivity.kt:1138:58 'val quality: String' is deprecated. Use videoTitle instead.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:139:75 Unchecked cast of 'PlayerViewModel' to 'T (of fun <T : ViewModel> create)'.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:892:28 'fun toggleSoftInput(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:892:63 'static field SHOW_FORCED: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/PlayerViewModel.kt:896:28 'fun toggleSoftInput(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/CastMediaBuilder.kt:43:85 'val quality: String' is deprecated. Use videoTitle instead.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/CastMiniController.kt:99:58 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/ExpandedControlsActivity.kt:39:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/ExpandedControlsActivity.kt:68:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/CastDialogs.kt:57:45 'val quality: String' is deprecated. Use videoTitle instead.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:100:26 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is deprecated. Moved to lifecycle-runtime-compose library in androidx.lifecycle.compose package.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:302:59 'fun seek(p0: Long): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:369:49 'fun seek(p0: Long): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/player/cast/components/ExpandedControllerScreen.kt:401:49 'fun seek(p0: Long): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/ui/setting/connections/DiscordLoginActivity.kt:35:22 'var databaseEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/eu/kanade/tachiyomi/util/view/EditTextPreferenceExtensions.kt:8:24 This extension is shadowed by a member: 'fun getOnBindEditTextListener(): EditTextPreference.OnBindEditTextListener?' defined in 'androidx.preference.EditTextPreference'.
+w: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/app/src/main/java/exh/log/XLogLogcatLogger.kt:21:13 'when' is exhaustive so 'else' is redundant here.----- End of the daemon log -----
+
+JVM crash log found: file:///C:/Users/Administrator/Desktop/Android%20Studio/Antigravity/Anikku/anikku/hs_err_pid21424.log
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Gradle build daemon disappeared unexpectedly (it may have been killed or may have crashed)
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+> Task :app:packageDebug

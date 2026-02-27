@@ -1,0 +1,4054 @@
+commit 1f0d812bd764ebcf0be3e8f300ba5b96e1c9e5a2
+Merge: 8d35e274c baeda2eac
+Author: Cuong-Tran <cuongtran.tm@gmail.com>
+Date:   Tue Apr 29 03:04:13 2025 +0700
+
+    Merge upstream
+
+commit 66d87df5cbc09ba67a349cc6bb416f6be1a03874
+Author: Cuong-Tran <cuongtran.tm@gmail.com>
+Date:   Sat Apr 19 01:46:38 2025 +0700
+
+    Remove manga & Add new features:
+    
+    - Support Cast (Animetail)
+    - Support AndroidTV (Animetail)
+    - Discord Rich Presence (Animiru, Animetail)
+    - Support Torrent (Kuukiyomi)
+    - Custom theme (Kuukiyomi)
+    - Library group by Tag (Kuukiyomi)
+    - Edit info (TachiyomiSY)
+    - Library grouping (TachiyomiSY)
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 99fc61eb2..20b128012 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -11,19 +11,20 @@ import androidx.core.app.ActivityCompat
+ import cafe.adriel.voyager.navigator.LocalNavigator
+ import cafe.adriel.voyager.navigator.currentOrThrow
+ import eu.kanade.domain.ui.UiPreferences
++import eu.kanade.domain.ui.model.AppTheme
+ import eu.kanade.domain.ui.model.NavStyle
+ import eu.kanade.domain.ui.model.StartScreen
+ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
++import eu.kanade.presentation.more.settings.screen.appearance.AppCustomThemeColorPickerScreen
+ import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
+ import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
+ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.toImmutableMap
+-import tachiyomi.core.common.i18n.stringResource
+ import tachiyomi.i18n.MR
+ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+@@ -48,10 +49,12 @@ object SettingsAppearanceScreen : SearchableSettings {
+     }
+ 
+     @Composable
++    @Suppress("SpreadOperator")
+     private fun getThemeGroup(
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+         val context = LocalContext.current
++        val navigator = LocalNavigator.currentOrThrow
+ 
+         val themeModePref = uiPreferences.themeMode()
+         val themeMode by themeModePref.collectAsState()
+@@ -62,6 +65,18 @@ object SettingsAppearanceScreen : SearchableSettings {
+         val amoledPref = uiPreferences.themeDarkAmoled()
+         val amoled by amoledPref.collectAsState()
+ 
++        val customPreferenceItem = if (appTheme == AppTheme.CUSTOM) {
++            listOf(
++                Preference.PreferenceItem.TextPreference(
++                    title = stringResource(MR.strings.pref_custom_color),
++                    subtitle = stringResource(MR.strings.custom_color_description),
++                    onClick = { navigator.push(AppCustomThemeColorPickerScreen()) },
++                ),
++            )
++        } else {
++            emptyList()
++        }
++
+         return Preference.PreferenceGroup(
+             title = stringResource(MR.strings.pref_category_theme),
+             preferenceItems = persistentListOf(
+@@ -84,6 +99,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         )
+                     }
+                 },
++                *customPreferenceItem.toTypedArray(),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+                     title = stringResource(MR.strings.pref_dark_theme_pure_black),
+
+commit fbb8ad19a5dc18db0805b138fbcb6c63d08e44b7
+Author: Dark25 <nadiecaca2000@gmail.com>
+Date:   Sun Mar 30 21:15:00 2025 +0200
+
+    feat: implement Source Feed screen & Saved Search
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 36d94d77c..6b97b77f4 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
+ import androidx.core.app.ActivityCompat
+ import cafe.adriel.voyager.navigator.LocalNavigator
+ import cafe.adriel.voyager.navigator.currentOrThrow
++import eu.kanade.domain.source.service.SourcePreferences
+ import eu.kanade.domain.ui.UiPreferences
+ import eu.kanade.domain.ui.model.AppTheme
+ import eu.kanade.domain.ui.model.NavStyle
+@@ -48,6 +49,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+             getDisplayGroup(uiPreferences = uiPreferences),
+             // SY -->
+             getNavbarGroup(uiPreferences = uiPreferences),
++            getForkGroup(uiPreferences = uiPreferences),
+             // SY <--
+         )
+     }
+@@ -191,6 +193,82 @@ object SettingsAppearanceScreen : SearchableSettings {
+         )
+     }
+ 
++    // SY -->
++    @Composable
++    fun getForkGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
++//        val previewsRowCount by uiPreferences.previewsRowCount().collectAsState()
++        // KMK -->
++        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
++        val relatedMangasInOverflow by uiPreferences.expandRelatedAnimes().collectAsState()
++        // KMK <--
++
++        return Preference.PreferenceGroup(
++            stringResource(TLMR.strings.pref_category_fork),
++            preferenceItems = persistentListOf(
++                // KMK -->
++//                Preference.PreferenceItem.SwitchPreference(
++//                    pref = uiPreferences.usePanoramaCoverFlow(),
++//                    title = stringResource(KMR.strings.pref_panorama_cover_flow),
++//                    subtitle = stringResource(KMR.strings.pref_panorama_cover_flow_summary),
++//                ),
++                // KMK <--
++//                Preference.PreferenceItem.SwitchPreference(
++//                    pref = uiPreferences.expandFilters(),
++//                    title = stringResource(SYMR.strings.toggle_expand_search_filters),
++//                ),
++//                // KMK -->
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.expandRelatedAnimes(),
++                    title = stringResource(TLMR.strings.pref_expand_related_animes),
++                    subtitle = stringResource(TLMR.strings.pref_expand_related_animes_summary),
++                    enabled = sourcePreferences.relatedAnimes().get(),
++                ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.relatedAnimesInOverflow(),
++                    enabled = !relatedMangasInOverflow,
++                    title = stringResource(TLMR.strings.put_related_animes_in_overflow),
++                    subtitle = stringResource(TLMR.strings.put_related_animes_in_overflow_summary),
++                ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.showHomeOnRelatedAnimes(),
++                    title = stringResource(TLMR.strings.pref_show_home_on_related_animes),
++                    subtitle = stringResource(TLMR.strings.pref_show_home_on_related_animes_summary),
++                    enabled = sourcePreferences.relatedAnimes().get(),
++                ),
++                // KMK <--
++//                Preference.PreferenceItem.SwitchPreference(
++//                    pref = uiPreferences.recommendsInOverflow(),
++//                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
++//                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
++//                ),
++//                Preference.PreferenceItem.SwitchPreference(
++//                    pref = uiPreferences.mergeInOverflow(),
++//                    title = stringResource(SYMR.strings.put_merge_in_overflow),
++//                    subtitle = stringResource(SYMR.strings.put_merge_in_overflow_summary),
++//                ),
++//                Preference.PreferenceItem.SliderPreference(
++//                    value = previewsRowCount,
++//                    title = stringResource(SYMR.strings.pref_previews_row_count),
++//                    subtitle = if (previewsRowCount > 0) {
++//                        pluralStringResource(
++//                            SYMR.plurals.row_count,
++//                            previewsRowCount,
++//                            previewsRowCount,
++//                        )
++//                    } else {
++//                        stringResource(MR.strings.disabled)
++//                    },
++//                    min = 0,
++//                    max = 10,
++//                    onValueChanged = {
++//                        uiPreferences.previewsRowCount().set(it)
++//                        true
++//                    },
++//                ),
++            ),
++        )
++    }
++
+     @Composable
+     fun getNavbarGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
+         return Preference.PreferenceGroup(
+
+commit 986869ff6858d8468b43d76d4e4fb6323332cb0c
+Author: Dark25 <nadiecaca2000@gmail.com>
+Date:   Mon Jan 13 03:27:28 2025 +0100
+
+    Implement i18nTail for improved string handling (#190)
+    
+    * Implement i18nTail for improved string handling
+    
+    * formatt
+    
+    * Translations update from Crowdin
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index a03fdbe47..36d94d77c 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -25,8 +25,8 @@ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.toImmutableMap
+-import tachiyomi.core.common.i18n.stringResource
+ import tachiyomi.i18n.MR
++import tachiyomi.i18n.tail.TLMR
+ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+@@ -72,8 +72,8 @@ object SettingsAppearanceScreen : SearchableSettings {
+         val customPreferenceItem = if (appTheme == AppTheme.CUSTOM) {
+             listOf(
+                 Preference.PreferenceItem.TextPreference(
+-                    title = stringResource(MR.strings.pref_custom_color),
+-                    subtitle = stringResource(MR.strings.custom_color_description),
++                    title = stringResource(TLMR.strings.pref_custom_color),
++                    subtitle = stringResource(TLMR.strings.custom_color_description),
+                     onClick = { navigator.push(AppCustomThemeColorPickerScreen()) },
+                 ),
+             )
+@@ -194,19 +194,19 @@ object SettingsAppearanceScreen : SearchableSettings {
+     @Composable
+     fun getNavbarGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
+         return Preference.PreferenceGroup(
+-            stringResource(MR.strings.pref_category_navbar),
++            stringResource(TLMR.strings.pref_category_navbar),
+             preferenceItems = persistentListOf(
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = uiPreferences.showNavUpdates(),
+-                    title = stringResource(MR.strings.pref_hide_updates_button),
++                    title = stringResource(TLMR.strings.pref_hide_updates_button),
+                 ),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = uiPreferences.showNavHistory(),
+-                    title = stringResource(MR.strings.pref_hide_history_button),
++                    title = stringResource(TLMR.strings.pref_hide_history_button),
+                 ),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = uiPreferences.bottomBarLabels(),
+-                    title = stringResource(MR.strings.pref_show_bottom_bar_labels),
++                    title = stringResource(TLMR.strings.pref_show_bottom_bar_labels),
+                 ),
+             ),
+         )
+
+commit f5f9760f8eb213e97aeaa79ef3bdb8e9a48e3733
+Author: Dark25 <nadiecaca2000@gmail.com>
+Date:   Sat Jan 11 23:51:55 2025 +0100
+
+    feat: add navbar preferences for updates, history, and label visibility (#189)
+    
+    * feat: add navbar preferences for updates, history, and label visibility
+    
+    * Fix spotless
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 7cf8da46f..a03fdbe47 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -46,6 +46,9 @@ object SettingsAppearanceScreen : SearchableSettings {
+         return listOf(
+             getThemeGroup(uiPreferences = uiPreferences),
+             getDisplayGroup(uiPreferences = uiPreferences),
++            // SY -->
++            getNavbarGroup(uiPreferences = uiPreferences),
++            // SY <--
+         )
+     }
+ 
+@@ -187,6 +190,28 @@ object SettingsAppearanceScreen : SearchableSettings {
+             ),
+         )
+     }
++
++    @Composable
++    fun getNavbarGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
++        return Preference.PreferenceGroup(
++            stringResource(MR.strings.pref_category_navbar),
++            preferenceItems = persistentListOf(
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.showNavUpdates(),
++                    title = stringResource(MR.strings.pref_hide_updates_button),
++                ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.showNavHistory(),
++                    title = stringResource(MR.strings.pref_hide_history_button),
++                ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.bottomBarLabels(),
++                    title = stringResource(MR.strings.pref_show_bottom_bar_labels),
++                ),
++            ),
++        )
++    }
++// SY <--
+ }
+ 
+ private val DateFormats = listOf(
+
+commit 3ae4d11e21826e5d0339268bcbfcdbb699bc8643
+Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+Date:   Wed Jul 17 11:48:48 2024 +0200
+
+    fuck detekt
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 091fc9b24..7cf8da46f 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -50,6 +50,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+     }
+ 
+     @Composable
++    @Suppress("SpreadOperator")
+     private fun getThemeGroup(
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+
+commit 86b923570f04d49535d67b71f7bf2e1f2e71a971
+Merge: 4862fd953 69b9db4e8
+Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+Date:   Tue Jul 9 14:13:31 2024 +0200
+
+    Merge branch 'master' into kuukiyomi
+
+commit f72df3f620da649542bcc2974aaeba551047c2eb
+Author: Secozzi <folke.steen85@gmail.com>
+Date:   Thu Jun 6 00:17:28 2024 +0200
+
+    Refactor use of Java.util.date to Java.time.*, to fix localized date …
+    
+    …issues. (#402)
+    
+    * Add support for localdate based relative times
+    
+    * Update History Screen to use new localdate based relative times
+    
+    * Update Updates Screen to use new localdate based relative times
+    
+    * Cleaned up date util classes
+    
+    * Updated build time display
+    
+    * Code cleanup
+    
+    * Fixed crash in settings
+    
+    * Updated Preferences item
+    
+    * Worker Info works
+    
+    * Fixed Tracker date display
+    
+    * Code changes to pass detekt
+    
+    Co-authored-by: Maddie Witman <1882979+sirlag@users.noreply.github.com>
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index ea7efef39..99fc61eb2 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -29,7 +29,7 @@ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+-import java.time.Instant
++import java.time.LocalDate
+ 
+ object SettingsAppearanceScreen : SearchableSettings {
+ 
+@@ -104,7 +104,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         val context = LocalContext.current
+         val navigator = LocalNavigator.currentOrThrow
+ 
+-        val now = remember { Instant.now().toEpochMilli() }
++        val now = remember { LocalDate.now() }
+ 
+         val dateFormat by uiPreferences.dateFormat().collectAsState()
+         val formattedNow = remember(dateFormat) {
+
+commit ccc29527dde429a125b32a41cd4f70b3d92c3f9a
+Author: Secozzi <folke.steen85@gmail.com>
+Date:   Wed Jun 5 11:20:50 2024 +0200
+
+    Move `:core` to `:core:common`
+    
+    Co-authored-by: AntsyLich <59261191+AntsyLich@users.noreply.github.com>
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 90899dac7..ea7efef39 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -23,7 +23,7 @@ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.toImmutableMap
+-import tachiyomi.core.i18n.stringResource
++import tachiyomi.core.common.i18n.stringResource
+ import tachiyomi.i18n.MR
+ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+
+commit 83c86a02849cc83bce60fa4a8ac2b1bc4f9a9d6d
+Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+Date:   Sat Apr 20 21:38:06 2024 +0200
+
+    It's showtime
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 100a1ff7a..f6b0f5ba9 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -2,23 +2,14 @@ package eu.kanade.presentation.more.settings.screen
+ 
+ import android.app.Activity
+ import androidx.compose.foundation.layout.Column
+-import androidx.compose.foundation.layout.fillMaxHeight
+-import androidx.compose.foundation.layout.fillMaxWidth
+-import androidx.compose.foundation.layout.height
+-import androidx.compose.foundation.layout.padding
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.ReadOnlyComposable
+ import androidx.compose.runtime.getValue
+ import androidx.compose.runtime.remember
+-import androidx.compose.ui.Modifier
+ import androidx.compose.ui.platform.LocalContext
+-import androidx.compose.ui.unit.dp
+ import androidx.core.app.ActivityCompat
+ import cafe.adriel.voyager.navigator.LocalNavigator
+ import cafe.adriel.voyager.navigator.currentOrThrow
+-import com.github.skydoves.colorpicker.compose.ColorEnvelope
+-import com.github.skydoves.colorpicker.compose.HsvColorPicker
+-import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+ import eu.kanade.domain.ui.UiPreferences
+ import eu.kanade.domain.ui.model.AppTheme
+ import eu.kanade.domain.ui.model.NavStyle
+@@ -27,12 +18,11 @@ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
++import eu.kanade.presentation.more.settings.screen.appearance.AppCustomThemeColorPickerScreen
+ import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
+ import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
+ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+-import eu.kanade.presentation.more.settings.widget.ThemeColorPickerWidget
+ import eu.kanade.tachiyomi.util.system.toast
+-import kotlinx.collections.immutable.ImmutableList
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.toImmutableMap
+ import tachiyomi.core.i18n.stringResource
+@@ -64,7 +54,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+         val context = LocalContext.current
+-        val controller = rememberColorPickerController()
++        val navigator = LocalNavigator.currentOrThrow
+ 
+         val themeModePref = uiPreferences.themeMode()
+         val themeMode by themeModePref.collectAsState()
+@@ -72,26 +62,17 @@ object SettingsAppearanceScreen : SearchableSettings {
+         val appThemePref = uiPreferences.appTheme()
+         val appTheme by appThemePref.collectAsState()
+ 
+-        val customColorPref = uiPreferences.colorTheme()
+-        val customColor by customColorPref.collectAsState()
+-
+         val amoledPref = uiPreferences.themeDarkAmoled()
+         val amoled by amoledPref.collectAsState()
+ 
+         val customPreferenceItem = if (appTheme == AppTheme.CUSTOM) {
+-            listOf(Preference.PreferenceItem.CustomPreference(
+-                title = stringResource(MR.strings.pref_custom_color),
+-            ) {
+-                Column {
+-                    ThemeColorPickerWidget(
+-                        value = controller.selectedPoint.value,
+-                        controller = controller,
+-                        onItemClick = { color ->
+-                            customColorPref.set(color)
+-                        }
+-                    )
+-                }
+-            })
++            listOf(
++                Preference.PreferenceItem.TextPreference(
++                    title = stringResource(MR.strings.pref_custom_color),
++                    subtitle = stringResource(MR.strings.custom_color_description),
++                    onClick = { navigator.push(AppCustomThemeColorPickerScreen()) },
++                ),
++            )
+         } else {
+             emptyList()
+         }
+
+commit 5effa813716c2f119c010f2ba4f4a1244e879ed2
+Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+Date:   Sat Apr 20 13:36:02 2024 +0200
+
+    First step to abomination
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 90899dac7..100a1ff7a 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -2,15 +2,25 @@ package eu.kanade.presentation.more.settings.screen
+ 
+ import android.app.Activity
+ import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.fillMaxHeight
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.ReadOnlyComposable
+ import androidx.compose.runtime.getValue
+ import androidx.compose.runtime.remember
++import androidx.compose.ui.Modifier
+ import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.unit.dp
+ import androidx.core.app.ActivityCompat
+ import cafe.adriel.voyager.navigator.LocalNavigator
+ import cafe.adriel.voyager.navigator.currentOrThrow
++import com.github.skydoves.colorpicker.compose.ColorEnvelope
++import com.github.skydoves.colorpicker.compose.HsvColorPicker
++import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+ import eu.kanade.domain.ui.UiPreferences
++import eu.kanade.domain.ui.model.AppTheme
+ import eu.kanade.domain.ui.model.NavStyle
+ import eu.kanade.domain.ui.model.StartScreen
+ import eu.kanade.domain.ui.model.TabletUiMode
+@@ -20,7 +30,9 @@ import eu.kanade.presentation.more.settings.Preference
+ import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
+ import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
+ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
++import eu.kanade.presentation.more.settings.widget.ThemeColorPickerWidget
+ import eu.kanade.tachiyomi.util.system.toast
++import kotlinx.collections.immutable.ImmutableList
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.toImmutableMap
+ import tachiyomi.core.i18n.stringResource
+@@ -52,6 +64,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+         val context = LocalContext.current
++        val controller = rememberColorPickerController()
+ 
+         val themeModePref = uiPreferences.themeMode()
+         val themeMode by themeModePref.collectAsState()
+@@ -59,9 +72,30 @@ object SettingsAppearanceScreen : SearchableSettings {
+         val appThemePref = uiPreferences.appTheme()
+         val appTheme by appThemePref.collectAsState()
+ 
++        val customColorPref = uiPreferences.colorTheme()
++        val customColor by customColorPref.collectAsState()
++
+         val amoledPref = uiPreferences.themeDarkAmoled()
+         val amoled by amoledPref.collectAsState()
+ 
++        val customPreferenceItem = if (appTheme == AppTheme.CUSTOM) {
++            listOf(Preference.PreferenceItem.CustomPreference(
++                title = stringResource(MR.strings.pref_custom_color),
++            ) {
++                Column {
++                    ThemeColorPickerWidget(
++                        value = controller.selectedPoint.value,
++                        controller = controller,
++                        onItemClick = { color ->
++                            customColorPref.set(color)
++                        }
++                    )
++                }
++            })
++        } else {
++            emptyList()
++        }
++
+         return Preference.PreferenceGroup(
+             title = stringResource(MR.strings.pref_category_theme),
+             preferenceItems = persistentListOf(
+@@ -84,6 +118,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         )
+                     }
+                 },
++                *customPreferenceItem.toTypedArray(),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+                     title = stringResource(MR.strings.pref_dark_theme_pure_black),
+
+commit cbb690688b7c3323c0b657989bcfc5b613616476
+Author: Quickdesh <devesh.ratra@gmail.com>
+Date:   Sat Feb 10 23:41:09 2024 -0500
+
+    fix(toasts): bring back missing toasts
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index ee268d9fd..90899dac7 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -20,6 +20,7 @@ import eu.kanade.presentation.more.settings.Preference
+ import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
+ import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
+ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
++import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.toImmutableMap
+ import tachiyomi.core.i18n.stringResource
+@@ -124,7 +125,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         .associateWith { stringResource(it.titleRes) }
+                         .toImmutableMap(),
+                     onValueChanged = {
+-                        context.stringResource(MR.strings.requires_app_restart)
++                        context.toast(MR.strings.requires_app_restart)
+                         true
+                     },
+                 ),
+@@ -135,7 +136,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         .associateWith { stringResource(it.titleRes) }
+                         .toImmutableMap(),
+                     onValueChanged = {
+-                        context.stringResource(MR.strings.requires_app_restart)
++                        context.toast(MR.strings.requires_app_restart)
+                         true
+                     },
+                 ),
+
+commit 7e2406642080188c9bce11b8a1cda7c4124b9dfe
+Author: Quickdev <devesh.ratra@gmail.com>
+Date:   Mon Jan 15 18:10:23 2024 -0500
+
+    fix(navigation): Bring back navigation options (#1300)
+    
+    Co-authored-by: AbdallahMehiz <abdallahmehiz0@gmail.com>
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index ee1627b82..ee268d9fd 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -11,6 +11,8 @@ import androidx.core.app.ActivityCompat
+ import cafe.adriel.voyager.navigator.LocalNavigator
+ import cafe.adriel.voyager.navigator.currentOrThrow
+ import eu.kanade.domain.ui.UiPreferences
++import eu.kanade.domain.ui.model.NavStyle
++import eu.kanade.domain.ui.model.StartScreen
+ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+@@ -126,6 +128,25 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         true
+                     },
+                 ),
++                Preference.PreferenceItem.ListPreference(
++                    pref = uiPreferences.startScreen(),
++                    title = stringResource(MR.strings.pref_start_screen),
++                    entries = StartScreen.entries
++                        .associateWith { stringResource(it.titleRes) }
++                        .toImmutableMap(),
++                    onValueChanged = {
++                        context.stringResource(MR.strings.requires_app_restart)
++                        true
++                    },
++                ),
++                Preference.PreferenceItem.ListPreference(
++                    pref = uiPreferences.navStyle(),
++                    title = "Navigation Style",
++                    entries = NavStyle.entries
++                        .associateWith { stringResource(it.titleRes) }
++                        .toImmutableMap(),
++                    onValueChanged = { true },
++                ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+                     title = stringResource(MR.strings.pref_date_format),
+
+commit 778c0681a70c74a7d5825725b6f5f7e257a7555d
+Merge: 6749e3209 c6601c1f9
+Author: jmir1 <jhmiramon@gmail.com>
+Date:   Thu Jan 11 19:58:15 2024 +0100
+
+    Merge branch 'upstream/master'
+
+commit 3baa3ead3a8432c543ad152b5c19308325fa8c0f
+Author: jmir1 <jhmiramon@gmail.com>
+Date:   Wed Jan 10 14:10:50 2024 +0100
+
+    fix: Lint errors
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 446f8fc7c..e5a7f6b6e 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -24,13 +24,12 @@ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.ui.home.HomeScreen
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+-import kotlinx.coroutines.flow.collectLatest
+-import kotlinx.coroutines.flow.drop
+-import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.collections.immutable.ImmutableMap
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.persistentMapOf
+ import kotlinx.collections.immutable.toImmutableMap
++import kotlinx.coroutines.flow.collectLatest
++import kotlinx.coroutines.flow.drop
+ import org.xmlpull.v1.XmlPullParser
+ import tachiyomi.core.i18n.stringResource
+ import tachiyomi.domain.library.service.LibraryPreferences
+
+commit acaf5bd43e4c675076d4c9c19e44354494c49cd8
+Merge: 4697f5b9d a3ef3604e
+Author: jmir1 <jhmiramon@gmail.com>
+Date:   Wed Jan 10 04:10:35 2024 +0100
+
+    Merge branch 'upstream/master'
+
+commit 89678ebb17ad62b3b0118e13d7ab431f5ead8c46
+Author: arkon <arkon@users.noreply.github.com>
+Date:   Sat Jan 6 17:53:31 2024 -0500
+
+    Show non-localized language names too in app language selection
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 365e86b6f..d1474bf6a 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -1,34 +1,26 @@
+ package eu.kanade.presentation.more.settings.screen
+ 
+ import android.app.Activity
+-import android.content.Context
+-import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.foundation.layout.Column
+ import androidx.compose.runtime.Composable
+-import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+ import androidx.compose.runtime.getValue
+-import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.remember
+-import androidx.compose.runtime.setValue
+ import androidx.compose.ui.platform.LocalContext
+ import androidx.core.app.ActivityCompat
+-import androidx.core.os.LocaleListCompat
++import cafe.adriel.voyager.navigator.LocalNavigator
++import cafe.adriel.voyager.navigator.currentOrThrow
+ import eu.kanade.domain.ui.UiPreferences
+ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
++import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
+ import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
+ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+-import eu.kanade.tachiyomi.R
+-import eu.kanade.tachiyomi.util.system.LocaleHelper
+ import eu.kanade.tachiyomi.util.system.toast
+-import kotlinx.collections.immutable.ImmutableMap
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.toImmutableMap
+-import org.xmlpull.v1.XmlPullParser
+-import tachiyomi.core.i18n.stringResource
+ import tachiyomi.i18n.MR
+ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+@@ -107,11 +99,8 @@ object SettingsAppearanceScreen : SearchableSettings {
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+         val context = LocalContext.current
++        val navigator = LocalNavigator.currentOrThrow
+ 
+-        val langs = remember { getLangs(context) }
+-        var currentLanguage by remember {
+-            mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "")
+-        }
+         val now = remember { Instant.now().toEpochMilli() }
+ 
+         val dateFormat by uiPreferences.dateFormat().collectAsState()
+@@ -119,26 +108,12 @@ object SettingsAppearanceScreen : SearchableSettings {
+             UiPreferences.dateFormat(dateFormat).format(now)
+         }
+ 
+-        LaunchedEffect(currentLanguage) {
+-            val locale = if (currentLanguage.isEmpty()) {
+-                LocaleListCompat.getEmptyLocaleList()
+-            } else {
+-                LocaleListCompat.forLanguageTags(currentLanguage)
+-            }
+-            AppCompatDelegate.setApplicationLocales(locale)
+-        }
+-
+         return Preference.PreferenceGroup(
+             title = stringResource(MR.strings.pref_category_display),
+             preferenceItems = persistentListOf(
+-                Preference.PreferenceItem.BasicListPreference(
+-                    value = currentLanguage,
++                Preference.PreferenceItem.TextPreference(
+                     title = stringResource(MR.strings.pref_app_language),
+-                    entries = langs,
+-                    onValueChanged = { newValue ->
+-                        currentLanguage = newValue
+-                        true
+-                    },
++                    onClick = { navigator.push(AppLanguageScreen()) },
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+@@ -173,30 +148,6 @@ object SettingsAppearanceScreen : SearchableSettings {
+             ),
+         )
+     }
+-    private fun getLangs(context: Context): ImmutableMap<String, String> {
+-        val langs = mutableListOf<Pair<String, String>>()
+-        val parser = context.resources.getXml(R.xml.locales_config)
+-        var eventType = parser.eventType
+-        while (eventType != XmlPullParser.END_DOCUMENT) {
+-            if (eventType == XmlPullParser.START_TAG && parser.name == "locale") {
+-                for (i in 0..<parser.attributeCount) {
+-                    if (parser.getAttributeName(i) == "name") {
+-                        val langTag = parser.getAttributeValue(i)
+-                        val displayName = LocaleHelper.getDisplayName(langTag)
+-                        if (displayName.isNotEmpty()) {
+-                            langs.add(Pair(langTag, displayName))
+-                        }
+-                    }
+-                }
+-            }
+-            eventType = parser.next()
+-        }
+-
+-        langs.sortBy { it.second }
+-        langs.add(0, Pair("", context.stringResource(MR.strings.label_default)))
+-
+-        return langs.toMap().toImmutableMap()
+-    }
+ }
+ 
+ private val DateFormats = listOf(
+
+commit f31bc47757b3792f92c2c8721739b5e2d91b825d
+Author: arkon <eugcheung94@gmail.com>
+Date:   Mon Dec 25 18:11:22 2023 -0500
+
+    Clean up storage usage info
+    
+    - Show bar representation of used/total space
+    - Handle all mounted storages
+    - Also included a bunch of unrelated immutables changes, sorry
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 8523de930..365e86b6f 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -24,6 +24,9 @@ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+ import eu.kanade.tachiyomi.util.system.toast
++import kotlinx.collections.immutable.ImmutableMap
++import kotlinx.collections.immutable.persistentListOf
++import kotlinx.collections.immutable.toImmutableMap
+ import org.xmlpull.v1.XmlPullParser
+ import tachiyomi.core.i18n.stringResource
+ import tachiyomi.i18n.MR
+@@ -66,7 +69,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+         return Preference.PreferenceGroup(
+             title = stringResource(MR.strings.pref_category_theme),
+-            preferenceItems = listOf(
++            preferenceItems = persistentListOf(
+                 Preference.PreferenceItem.CustomPreference(
+                     title = stringResource(MR.strings.pref_app_theme),
+                 ) {
+@@ -127,7 +130,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+         return Preference.PreferenceGroup(
+             title = stringResource(MR.strings.pref_category_display),
+-            preferenceItems = listOf(
++            preferenceItems = persistentListOf(
+                 Preference.PreferenceItem.BasicListPreference(
+                     value = currentLanguage,
+                     title = stringResource(MR.strings.pref_app_language),
+@@ -140,7 +143,9 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+                     title = stringResource(MR.strings.pref_tablet_ui_mode),
+-                    entries = TabletUiMode.entries.associateWith { stringResource(it.titleRes) },
++                    entries = TabletUiMode.entries
++                        .associateWith { stringResource(it.titleRes) }
++                        .toImmutableMap(),
+                     onValueChanged = {
+                         context.toast(MR.strings.requires_app_restart)
+                         true
+@@ -153,7 +158,8 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         .associateWith {
+                             val formattedDate = UiPreferences.dateFormat(it).format(now)
+                             "${it.ifEmpty { stringResource(MR.strings.label_default) }} ($formattedDate)"
+-                        },
++                        }
++                        .toImmutableMap(),
+                 ),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = uiPreferences.relativeTime(),
+@@ -167,7 +173,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+             ),
+         )
+     }
+-    private fun getLangs(context: Context): Map<String, String> {
++    private fun getLangs(context: Context): ImmutableMap<String, String> {
+         val langs = mutableListOf<Pair<String, String>>()
+         val parser = context.resources.getXml(R.xml.locales_config)
+         var eventType = parser.eventType
+@@ -189,7 +195,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         langs.sortBy { it.second }
+         langs.add(0, Pair("", context.stringResource(MR.strings.label_default)))
+ 
+-        return langs.toMap()
++        return langs.toMap().toImmutableMap()
+     }
+ }
+ 
+
+commit 4703276a44d54f448bce821fa2dfb3d6d39e29a0
+Author: Claudemirovsky <63046606+Claudemirovsky@users.noreply.github.com>
+Date:   Sun Dec 17 12:08:56 2023 -0300
+
+    refactor: run ktlintFormat task
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index ea8e6e476..053695a97 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -24,13 +24,12 @@ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.ui.home.HomeScreen
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+-import eu.kanade.tachiyomi.util.system.toast
++import kotlinx.coroutines.flow.collectLatest
++import kotlinx.coroutines.flow.drop
+ import org.xmlpull.v1.XmlPullParser
+ import tachiyomi.core.i18n.stringResource
+ import tachiyomi.domain.library.service.LibraryPreferences
+ import tachiyomi.i18n.MR
+-import kotlinx.coroutines.flow.drop
+-import kotlinx.coroutines.flow.collectLatest
+ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+
+commit a3c6da2dac3fbc0901e462396d9a08a82158ecdb
+Author: arkon <arkon@users.noreply.github.com>
+Date:   Sat Dec 9 16:50:02 2023 -0500
+
+    feat: Add basic onboarding screen (#10199)
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index a019421bb..ea8e6e476 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -2,8 +2,8 @@ package eu.kanade.presentation.more.settings.screen
+ 
+ import android.app.Activity
+ import android.content.Context
+-import android.os.Build
+ import androidx.appcompat.app.AppCompatDelegate
++import androidx.compose.foundation.layout.Column
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+@@ -19,17 +19,18 @@ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
++import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
+ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.ui.home.HomeScreen
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+-import kotlinx.coroutines.flow.collectLatest
+-import kotlinx.coroutines.flow.drop
+-import kotlinx.coroutines.flow.merge
++import eu.kanade.tachiyomi.util.system.toast
+ import org.xmlpull.v1.XmlPullParser
+ import tachiyomi.core.i18n.stringResource
+ import tachiyomi.domain.library.service.LibraryPreferences
+ import tachiyomi.i18n.MR
++import kotlinx.coroutines.flow.drop
++import kotlinx.coroutines.flow.collectLatest
+ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+@@ -44,72 +45,59 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+     @Composable
+     override fun getPreferences(): List<Preference> {
+-        val context = LocalContext.current
+         val uiPreferences = remember { Injekt.get<UiPreferences>() }
+ 
+         return listOf(
+-            getThemeGroup(context = context, uiPreferences = uiPreferences),
+-            getDisplayGroup(context = context, uiPreferences = uiPreferences),
++            getThemeGroup(uiPreferences = uiPreferences),
++            getDisplayGroup(uiPreferences = uiPreferences),
+         )
+     }
+ 
+     @Composable
+     private fun getThemeGroup(
+-        context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
++        val context = LocalContext.current
++
+         val themeModePref = uiPreferences.themeMode()
+         val themeMode by themeModePref.collectAsState()
+ 
+         val appThemePref = uiPreferences.appTheme()
++        val appTheme by appThemePref.collectAsState()
+ 
+         val amoledPref = uiPreferences.themeDarkAmoled()
+         val amoled by amoledPref.collectAsState()
+ 
+-        LaunchedEffect(themeMode) {
+-            setAppCompatDelegateThemeMode(themeMode)
+-        }
+-
+-        LaunchedEffect(Unit) {
+-            merge(appThemePref.changes(), amoledPref.changes())
+-                .drop(2)
+-                .collectLatest { (context as? Activity)?.let { ActivityCompat.recreate(it) } }
+-        }
+-
+         return Preference.PreferenceGroup(
+             title = stringResource(MR.strings.pref_category_theme),
+             preferenceItems = listOf(
+-                Preference.PreferenceItem.ListPreference(
+-                    pref = themeModePref,
+-                    title = stringResource(MR.strings.pref_theme_mode),
+-                    entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+-                        mapOf(
+-                            ThemeMode.SYSTEM to stringResource(MR.strings.theme_system),
+-                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
+-                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+-                        )
+-                    } else {
+-                        mapOf(
+-                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
+-                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+-                        )
+-                    },
+-                ),
+                 Preference.PreferenceItem.CustomPreference(
+                     title = stringResource(MR.strings.pref_app_theme),
+-                ) { item ->
+-                    val value by appThemePref.collectAsState()
+-                    AppThemePreferenceWidget(
+-                        title = item.title,
+-                        value = value,
+-                        amoled = amoled,
+-                        onItemClick = { appThemePref.set(it) },
+-                    )
++                ) {
++                    Column {
++                        AppThemeModePreferenceWidget(
++                            value = themeMode,
++                            onItemClick = {
++                                themeModePref.set(it)
++                                setAppCompatDelegateThemeMode(it)
++                            },
++                        )
++
++                        AppThemePreferenceWidget(
++                            value = appTheme,
++                            amoled = amoled,
++                            onItemClick = { appThemePref.set(it) },
++                        )
++                    }
+                 },
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+                     title = stringResource(MR.strings.pref_dark_theme_pure_black),
+                     enabled = themeMode != ThemeMode.LIGHT,
++                    onValueChanged = {
++                        (context as? Activity)?.let { ActivityCompat.recreate(it) }
++                        true
++                    },
+                 ),
+             ),
+         )
+@@ -117,9 +105,10 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+     @Composable
+     private fun getDisplayGroup(
+-        context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
++        val context = LocalContext.current
++
+         val langs = remember { getLangs(context) }
+         var currentLanguage by remember {
+             mutableStateOf(
+
+commit 1a8b2811b87a58e9da42a38c7b93e6f83e10b7f8
+Author: arkon <eugcheung94@gmail.com>
+Date:   Fri Dec 8 23:11:53 2023 -0500
+
+    refactor: Migrate to some newer date/time APIs
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index a5d36fcab..a019421bb 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -34,7 +34,7 @@ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+-import java.util.Date
++import java.time.Instant
+ 
+ object SettingsAppearanceScreen : SearchableSettings {
+ 
+@@ -126,7 +126,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "",
+             )
+         }
+-        val now = remember { Date().time }
++        val now = remember { Instant.now().toEpochMilli() }
+ 
+         val dateFormat by uiPreferences.dateFormat().collectAsState()
+         val formattedNow = remember(dateFormat) {
+
+commit 8b57169e924aa75a7cb9b49bb3bbce5e83a087da
+Author: arkon <arkon@users.noreply.github.com>
+Date:   Sat Dec 9 16:50:02 2023 -0500
+
+    Add basic onboarding screen (#10199)
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 292169175..8523de930 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -2,8 +2,8 @@ package eu.kanade.presentation.more.settings.screen
+ 
+ import android.app.Activity
+ import android.content.Context
+-import android.os.Build
+ import androidx.appcompat.app.AppCompatDelegate
++import androidx.compose.foundation.layout.Column
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+@@ -19,13 +19,11 @@ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
++import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
+ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+ import eu.kanade.tachiyomi.util.system.toast
+-import kotlinx.coroutines.flow.collectLatest
+-import kotlinx.coroutines.flow.drop
+-import kotlinx.coroutines.flow.merge
+ import org.xmlpull.v1.XmlPullParser
+ import tachiyomi.core.i18n.stringResource
+ import tachiyomi.i18n.MR
+@@ -43,72 +41,59 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+     @Composable
+     override fun getPreferences(): List<Preference> {
+-        val context = LocalContext.current
+         val uiPreferences = remember { Injekt.get<UiPreferences>() }
+ 
+         return listOf(
+-            getThemeGroup(context = context, uiPreferences = uiPreferences),
+-            getDisplayGroup(context = context, uiPreferences = uiPreferences),
++            getThemeGroup(uiPreferences = uiPreferences),
++            getDisplayGroup(uiPreferences = uiPreferences),
+         )
+     }
+ 
+     @Composable
+     private fun getThemeGroup(
+-        context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
++        val context = LocalContext.current
++
+         val themeModePref = uiPreferences.themeMode()
+         val themeMode by themeModePref.collectAsState()
+ 
+         val appThemePref = uiPreferences.appTheme()
++        val appTheme by appThemePref.collectAsState()
+ 
+         val amoledPref = uiPreferences.themeDarkAmoled()
+         val amoled by amoledPref.collectAsState()
+ 
+-        LaunchedEffect(themeMode) {
+-            setAppCompatDelegateThemeMode(themeMode)
+-        }
+-
+-        LaunchedEffect(Unit) {
+-            merge(appThemePref.changes(), amoledPref.changes())
+-                .drop(2)
+-                .collectLatest { (context as? Activity)?.let { ActivityCompat.recreate(it) } }
+-        }
+-
+         return Preference.PreferenceGroup(
+             title = stringResource(MR.strings.pref_category_theme),
+             preferenceItems = listOf(
+-                Preference.PreferenceItem.ListPreference(
+-                    pref = themeModePref,
+-                    title = stringResource(MR.strings.pref_theme_mode),
+-                    entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+-                        mapOf(
+-                            ThemeMode.SYSTEM to stringResource(MR.strings.theme_system),
+-                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
+-                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+-                        )
+-                    } else {
+-                        mapOf(
+-                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
+-                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+-                        )
+-                    },
+-                ),
+                 Preference.PreferenceItem.CustomPreference(
+                     title = stringResource(MR.strings.pref_app_theme),
+-                ) { item ->
+-                    val value by appThemePref.collectAsState()
+-                    AppThemePreferenceWidget(
+-                        title = item.title,
+-                        value = value,
+-                        amoled = amoled,
+-                        onItemClick = { appThemePref.set(it) },
+-                    )
++                ) {
++                    Column {
++                        AppThemeModePreferenceWidget(
++                            value = themeMode,
++                            onItemClick = {
++                                themeModePref.set(it)
++                                setAppCompatDelegateThemeMode(it)
++                            },
++                        )
++
++                        AppThemePreferenceWidget(
++                            value = appTheme,
++                            amoled = amoled,
++                            onItemClick = { appThemePref.set(it) },
++                        )
++                    }
+                 },
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+                     title = stringResource(MR.strings.pref_dark_theme_pure_black),
+                     enabled = themeMode != ThemeMode.LIGHT,
++                    onValueChanged = {
++                        (context as? Activity)?.let { ActivityCompat.recreate(it) }
++                        true
++                    },
+                 ),
+             ),
+         )
+@@ -116,9 +101,10 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+     @Composable
+     private fun getDisplayGroup(
+-        context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
++        val context = LocalContext.current
++
+         val langs = remember { getLangs(context) }
+         var currentLanguage by remember {
+             mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "")
+
+commit ab9a26f6bd2855d13ff663cf52dfe4ecb01fda1d
+Author: arkon <eugcheung94@gmail.com>
+Date:   Fri Dec 8 23:11:53 2023 -0500
+
+    Migrate to some newer date/time APIs
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 667afa505..292169175 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -33,7 +33,7 @@ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+-import java.util.Date
++import java.time.Instant
+ 
+ object SettingsAppearanceScreen : SearchableSettings {
+ 
+@@ -123,7 +123,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         var currentLanguage by remember {
+             mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "")
+         }
+-        val now = remember { Date().time }
++        val now = remember { Instant.now().toEpochMilli() }
+ 
+         val dateFormat by uiPreferences.dateFormat().collectAsState()
+         val formattedNow = remember(dateFormat) {
+
+commit 671b9f91d2b8f59806a67ec70b087b50d6a302a4
+Author: Abdallah <54363735+abdallahmehiz@users.noreply.github.com>
+Date:   Sat Dec 2 11:31:48 2023 +0100
+
+    chore: Weblates merge (#1227)
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 85dd14956..a5d36fcab 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -3,7 +3,6 @@ package eu.kanade.presentation.more.settings.screen
+ import android.app.Activity
+ import android.content.Context
+ import android.os.Build
+-import androidx.annotation.StringRes
+ import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+@@ -13,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.remember
+ import androidx.compose.runtime.setValue
+ import androidx.compose.ui.platform.LocalContext
+-import androidx.compose.ui.res.stringResource
+ import androidx.core.app.ActivityCompat
+ import androidx.core.os.LocaleListCompat
+ import eu.kanade.domain.ui.UiPreferences
+@@ -25,12 +23,14 @@ import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.ui.home.HomeScreen
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+-import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
+ import org.xmlpull.v1.XmlPullParser
++import tachiyomi.core.i18n.stringResource
+ import tachiyomi.domain.library.service.LibraryPreferences
++import tachiyomi.i18n.MR
++import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+@@ -40,8 +40,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+     @ReadOnlyComposable
+     @Composable
+-    @StringRes
+-    override fun getTitleRes() = R.string.pref_category_appearance
++    override fun getTitleRes() = MR.strings.pref_category_appearance
+ 
+     @Composable
+     override fun getPreferences(): List<Preference> {
+@@ -78,26 +77,26 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         return Preference.PreferenceGroup(
+-            title = stringResource(R.string.pref_category_theme),
++            title = stringResource(MR.strings.pref_category_theme),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.ListPreference(
+                     pref = themeModePref,
+-                    title = stringResource(R.string.pref_theme_mode),
++                    title = stringResource(MR.strings.pref_theme_mode),
+                     entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                         mapOf(
+-                            ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+-                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
+-                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                            ThemeMode.SYSTEM to stringResource(MR.strings.theme_system),
++                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
++                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+                         )
+                     } else {
+                         mapOf(
+-                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
+-                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
++                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+                         )
+                     },
+                 ),
+                 Preference.PreferenceItem.CustomPreference(
+-                    title = stringResource(R.string.pref_app_theme),
++                    title = stringResource(MR.strings.pref_app_theme),
+                 ) { item ->
+                     val value by appThemePref.collectAsState()
+                     AppThemePreferenceWidget(
+@@ -109,7 +108,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 },
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+-                    title = stringResource(R.string.pref_dark_theme_pure_black),
++                    title = stringResource(MR.strings.pref_dark_theme_pure_black),
+                     enabled = themeMode != ThemeMode.LIGHT,
+                 ),
+             ),
+@@ -161,25 +160,25 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         return Preference.PreferenceGroup(
+-            title = stringResource(R.string.pref_category_display),
++            title = stringResource(MR.strings.pref_category_display),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.ListPreference(
+                     pref = libraryPrefs.bottomNavStyle(),
+-                    title = stringResource(R.string.pref_bottom_nav_style),
++                    title = stringResource(MR.strings.pref_bottom_nav_style),
+                     entries = mapOf(
+-                        0 to stringResource(R.string.pref_bottom_nav_no_history),
+-                        1 to stringResource(R.string.pref_bottom_nav_no_updates),
+-                        2 to stringResource(R.string.pref_bottom_nav_no_manga),
++                        0 to stringResource(MR.strings.pref_bottom_nav_no_history),
++                        1 to stringResource(MR.strings.pref_bottom_nav_no_updates),
++                        2 to stringResource(MR.strings.pref_bottom_nav_no_manga),
+                     ),
+                 ),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = libraryPrefs.isDefaultHomeTabLibraryManga(),
+-                    title = stringResource(R.string.pref_default_home_tab_library),
++                    title = stringResource(MR.strings.pref_default_home_tab_library),
+                     enabled = libraryPrefs.bottomNavStyle().get() != 2,
+                 ),
+                 Preference.PreferenceItem.BasicListPreference(
+                     value = currentLanguage,
+-                    title = stringResource(R.string.pref_app_language),
++                    title = stringResource(MR.strings.pref_app_language),
+                     entries = langs,
+                     onValueChanged = { newValue ->
+                         currentLanguage = newValue
+@@ -188,28 +187,28 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+-                    title = stringResource(R.string.pref_tablet_ui_mode),
+-                    entries = TabletUiMode.entries.associateWith { stringResource(it.titleResId) },
++                    title = stringResource(MR.strings.pref_tablet_ui_mode),
++                    entries = TabletUiMode.entries.associateWith { stringResource(it.titleRes) },
+                     onValueChanged = {
+-                        context.toast(R.string.requires_app_restart)
++                        context.stringResource(MR.strings.requires_app_restart)
+                         true
+                     },
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+-                    title = stringResource(R.string.pref_date_format),
++                    title = stringResource(MR.strings.pref_date_format),
+                     entries = DateFormats
+                         .associateWith {
+                             val formattedDate = UiPreferences.dateFormat(it).format(now)
+-                            "${it.ifEmpty { stringResource(R.string.label_default) }} ($formattedDate)"
++                            "${it.ifEmpty { stringResource(MR.strings.label_default) }} ($formattedDate)"
+                         },
+                 ),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = uiPreferences.relativeTime(),
+-                    title = stringResource(R.string.pref_relative_format),
++                    title = stringResource(MR.strings.pref_relative_format),
+                     subtitle = stringResource(
+-                        R.string.pref_relative_format_summary,
+-                        stringResource(R.string.relative_time_today),
++                        MR.strings.pref_relative_format_summary,
++                        stringResource(MR.strings.relative_time_today),
+                         formattedNow,
+                     ),
+                 ),
+@@ -236,7 +235,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         langs.sortBy { it.second }
+-        langs.add(0, Pair("", context.getString(R.string.label_default)))
++        langs.add(0, Pair("", context.stringResource(MR.strings.label_default)))
+ 
+         return langs.toMap()
+     }
+
+commit fd830ea2d02c5784ff48c56fbb74267c28279fb0
+Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+Date:   Mon Nov 27 23:08:16 2023 +0100
+
+    Merge upstream up to d4dfa9a2c2a6e627256e99efb08e150a6d234964
+    
+    Squashed commit of the following:
+    
+    commit 49c30b336d897cac64d1ce0aa6f51aa85702d304
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 19:28:32 2023 +0100
+    
+        fuck lint
+    
+    commit 06f3f7e6b478fb3b28879a285a56d7293f97c751
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 19:26:41 2023 +0100
+    
+        cleanup
+    
+    commit 807ea3d1a51b87d5b96e0d8297e3d329c5201bdb
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 18:51:04 2023 +0100
+    
+        merge41
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/d4dfa9a2c2a6e627256e99efb08e150a6d234964
+    
+    commit 2b9fe5c38984a758abe61a645fb2cfae3694dfa7
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 15:18:03 2023 +0100
+    
+        fix anime tracker & airing sort
+    
+    commit eafc64aed08377f4e28d15a7ab5c6ec37d493c38
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 14:40:45 2023 +0100
+    
+        fuck lint
+    
+    commit eef4ef7ef27d644640deaa3040477679330b2478
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 14:20:10 2023 +0100
+    
+        fix weird "explore tabs" behaviour
+    
+    commit 4baf786d57fdbd08bf46ec5d2fed7ad7e6ae8875
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 13:43:13 2023 +0100
+    
+        use formatTime function
+    
+    commit df6a85a9443061aef1c08f93c8457762a422012e
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 13:38:39 2023 +0100
+    
+        fix AnimeScreen crash
+    
+    commit 91de0ed82e3f5a4d79e6b24016c27ec42f05b9a1
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 26 01:44:41 2023 +0100
+    
+        merge40
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/69aa13bc5655813f1366b2020343091c8d2da009
+    
+    commit 375a252a69bb2bc8213490d8a4eb66222cbf417e
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 25 21:09:34 2023 +0100
+    
+        merge39
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/634ceeec50b09da25726d74c5dea6657133e1de5
+    
+    commit d7aee03688019b0ecda0bef96b7e40c21f69910b
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 25 19:42:37 2023 +0100
+    
+        merge38
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/1d144e67678a99ec7198e5efcb1410b5da4bc42e
+    
+    commit 89777e98b0e2b74d02745326a31ce8d92f83560b
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 25 17:54:17 2023 +0100
+    
+        merge37
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/aca36f962516f04bbbac67c9bf54723a13076c1c
+    
+    commit 3fba4cbc2b8f76ab38383145e9c5b42d92ac985d
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 25 15:09:18 2023 +0100
+    
+        merge36
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/64ad25d1b5cd68457d36fda67d96f99812a53528
+    
+    commit a60268e61c148df9820febbd5059fd31a3186ade
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 25 13:39:08 2023 +0100
+    
+        lint cleanup
+    
+    commit c6f81b7fdadfe7f1d9af557a615c172f9ae1f203
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 25 13:38:22 2023 +0100
+    
+        merge35
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/eed57b80be077a9f73c36d8dc572f34f59c1ba8d
+    
+    commit 5f782440c62eeec9826f741b32210b04dd57dfe7
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 25 00:22:45 2023 +0100
+    
+        merge34.5
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/8e4cedf1735f80c604f971b0a03bf72b040cdade
+    
+    commit e4283fe41694dfde18595705b2b9416fe446c547
+    Merge: e4d31057f adb571fcb
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 24 23:21:58 2023 +0100
+    
+        Merge branch 'master' into merge_upstream
+    
+    commit e4d31057fd18abf498df7cc86c6ef42f536c59ae
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 24 23:07:20 2023 +0100
+    
+        cleanup
+    
+    commit 150d43e325d8172bd2e6272214ac3121c2916570
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 24 23:06:00 2023 +0100
+    
+        merge34
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/489d22720a4343f198c81fe10f69d5b212bfc41a
+    
+    commit 76df725cabe2514a9e763e231fed9257743f9b98
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 24 20:16:18 2023 +0100
+    
+        merge33
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/b7d282235dd233aac3bbdba3c9cfe7cac877b2e1
+    
+    commit c07cc8dc21780f19cca4bd7e4035e3ef1faec43d
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 24 16:59:50 2023 +0100
+    
+        merge32
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/8a8afa46e91bfb156c58f9008ba871156bf353f9
+    
+    commit a654a54b744225d4033a0d50cdf74b196bceb4bb
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Nov 23 23:01:52 2023 +0100
+    
+        Update build_push.yml
+    
+    commit 325e625aefc75aa4c2658a7fcbad1d3931ef9042
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Nov 23 22:44:56 2023 +0100
+    
+        merge31
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/86edce0d8705beb4f7f750a0c6f5fa4b353ec3c0
+    
+    commit b8cdb9d55e268d5fd9f232b2ad148e412503e668
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Mon Nov 20 21:47:46 2023 +0100
+    
+        small Episode Tracker change
+    
+    commit f6d430df6c136f08da9fa456f0addd17c3b8d45f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Mon Nov 20 21:18:01 2023 +0100
+    
+        fuck lint
+    
+    commit 99eea595c015e3ba98a772f30cc71372b6629abf
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Mon Nov 20 21:15:15 2023 +0100
+    
+        crash fix & add forgotten commit
+    
+        No idea how I didn't add it yet. Commit: https://github.com/tachiyomiorg/tachiyomi/commit/efabe801be56476bf9ee536747f39ab8d486ca12
+    
+    commit 18e04b75dfe7317f2cb8719c83c1bd89051ab199
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 19:38:42 2023 +0100
+    
+        merge30
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/1668be85875522721ee971afac4b46aa7da343c6
+    
+    commit 3a3115304efef1c2679f2bb794de2663bbf2c8f4
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 16:45:34 2023 +0100
+    
+        ktlint formt
+    
+    commit ea2b7fe7c02b9df3744f371aea71ce1bfb3e0a5a
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 16:05:25 2023 +0100
+    
+        ktlint format again
+    
+    commit 05f91245ace6e251f41c77633e7f760fa9f55621
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 15:47:42 2023 +0100
+    
+        klint format again
+    
+    commit 6215528c9d60d63b5d4a4b48e96bf54278aa7e46
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 15:37:56 2023 +0100
+    
+        ktlint format
+    
+    commit b1f728e54a543751d40da541ab5f5bfa25af850a
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 15:24:35 2023 +0100
+    
+        fix ConcurrentHashMap crash
+    
+    commit a34bc764b4e4f1310ae408722f5eb8c281de05fd
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 15:04:24 2023 +0100
+    
+        renaming & ktlintCheck
+    
+    commit f1cd8f69d378d299fd9442d5efbcbcae0f431050
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 14:39:59 2023 +0100
+    
+        merge29
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/772db515934b79ef407b4213087c15035588d9ad
+    
+    commit 2c4230376c09c80969b48dc9dee9b78b9b7ddb2b
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 13:18:41 2023 +0100
+    
+        merge28
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/6922792ad110ce9194aa963674bbf2c5c1351ea1
+    
+    commit fa7b8427a21971b5a1e41a54be0110878cd62918
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 19 00:36:58 2023 +0100
+    
+        merge27
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/7146913c7184819417d86e6cd83aaab85bd6a798
+    
+    commit e29dc62837b542ab90e49d0f78174d871b98dce6
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 18 17:28:12 2023 +0100
+    
+        lint cleanup
+    
+    commit 85d0e49fd4724ef7179e66a5204ea3caff9de9a4
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 18 17:26:35 2023 +0100
+    
+        little fix
+    
+    commit eeddf176912086a113fc1a5643d1dd945b146dd8
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 18 17:20:36 2023 +0100
+    
+        merge26
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/c9a1bd86b58ce4a41bfc0eeb527cac9d30802353
+    
+    commit a2a445fdc5bab555c55a7488b47e35bdfdc0d7db
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 18 16:01:50 2023 +0100
+    
+        merge25
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/6a558ad119ff35336c2141deefc5da4b49cf4553
+    
+    commit 1b6301cc958f5c1e1ca585f1605daaae611a29f9
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 18 00:21:17 2023 +0100
+    
+        merge24
+    
+        Also a little test to see how this whole github team works.
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/fe90546821092ce8916445ce515ba51404617d62
+    
+    commit 4cbf9a813e697eb22dc3fdb8ce65ebebb32cf7cc
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 17 20:12:49 2023 +0100
+    
+        merge23.5
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/6d69caf59e277a2185c1a851ffad8a00a4a93a30
+    
+    commit 72a54cbb6e8738134dd05f20be1a2930b05af848
+    Merge: a43904531 00fb0a740
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 17 19:52:08 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit a439045319eb2288475eb189dfe22421945f96f6
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 17 19:47:18 2023 +0100
+    
+        merge23
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/8ff0c9d61a1d5b1cc08a3615ef4bfa3d1f04a5d2
+    
+    commit 370212c6772067a23a4070b497d80c17a9c32ec3
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 17 17:00:32 2023 +0100
+    
+        merge22
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/2556e9f08c768c02a581b5c147d7ea476ff42889
+    
+    commit 717479961cf24ff3de744565b2475c5a78f1a12f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Nov 15 21:25:52 2023 +0100
+    
+        Update StreamsCatalogSheet.kt
+    
+    commit 563efef3c969d3a227be76901a2d1ece077283b7
+    Merge: 645746aa4 2b8000b81
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Nov 15 21:11:51 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit 645746aa431ed0cb5b718b81ce4f4b844e71c82f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 12 15:57:35 2023 +0100
+    
+        merge21
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/7a4680603db7d80cd8a52ce83e7a8e2eef317d29
+    
+    commit 4709cbedba330bb68331e52b6d22b90f6481ab68
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Nov 12 14:40:35 2023 +0100
+    
+        merge20
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/ef7b285151f83b8ef679786417b82ca3227dab35
+    
+    commit 096276cd6817f56ace9a89039b9ff3961e8a0b11
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 19:09:44 2023 +0100
+    
+        merge19.5
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/34f7caa0fc4a0d9b4fcc4dfd69dc9cb52f11bf38
+    
+    commit 82eb36b628286c098150b21fd27e38f4c1eca7b4
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 18:55:20 2023 +0100
+    
+        fuck lint
+    
+    commit 02717061ba94df02501637217301b35e841c8093
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 18:49:20 2023 +0100
+    
+        merge19
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/ec08ba05fcc6cb2c77ae64016b9eafc2125733ba
+    
+    commit e7b1066e3ca2a71b88031cbc81de5ca7e2dfe12c
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 17:58:02 2023 +0100
+    
+        merge18
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/12e7ee9d0caaa56d551908d179788fa637768397
+    
+    commit 61256a22fdc42580b42d866666be8a66d7a78f23
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 15:55:09 2023 +0100
+    
+        again repositioning
+    
+    commit b9d42c97d6e3e6dc7309e98e8101c4990c6af58a
+    Merge: 4732c3893 236849b6e
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 15:44:21 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit 4732c3893c72629db7293f877f13387c63e687fe
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 15:43:57 2023 +0100
+    
+        repositioning
+    
+    commit 83dcd5ea3174345717d720fe2af15b3faf55b571
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 11 15:42:22 2023 +0100
+    
+        merge17
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/9a817e49bed34e11e6b24b48d738d14583440fae
+    
+    commit 338b54a39c2438229a55e140bb9909cbdf249bf5
+    Merge: 748d6101c 8b1934fc3
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Nov 9 19:28:19 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit 748d6101c02897bda93240dfa651e27cb355cca4
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Nov 9 19:24:17 2023 +0100
+    
+        small changes
+    
+    commit 872fc749e96e60b507305a906be70715ac74f817
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Nov 9 18:49:35 2023 +0100
+    
+        fix downloader pause
+    
+    commit bb9617452009f8ebf7ab55a3132e72607129b749
+    Merge: 59b4404c1 fd83a7e14
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Tue Nov 7 19:08:04 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit 59b4404c118e3b2185f5023f99d788c08c12dba7
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Nov 4 22:10:05 2023 +0100
+    
+        merge16
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/16cbcecd99c24f87b087dc7d02b8ccc93f1f1251
+    
+    commit 184804f62ed04c53ecbd408814b0b54907539a4c
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 3 23:19:24 2023 +0100
+    
+        merge15.5
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/d32409bd6e68a3d5e32a69eb1b3afbb407741a00
+    
+    commit 6bab100f78425f591d155958044de2e3f7063fda
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 3 22:42:04 2023 +0100
+    
+        Update ReaderActivity.kt
+    
+    commit 264b0e6127ccb9fa270c7db6a66cc38bcc9989bf
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 3 22:30:37 2023 +0100
+    
+        merge15
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/cf3f2d0380e5ab70211e6aab3f45bc81da43fcf4
+    
+    commit dd69ce5a12c59de82556ce01162ee41cf8c6e361
+    Merge: d2ccb75c6 5fd00d4a1
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Nov 3 20:14:10 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit d2ccb75c605e9865f580ee63b4f2236ce1812dde
+    Merge: 8f08a246a 5567be64f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Nov 2 22:04:53 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit 8f08a246a2e86bf13bd8b47de531929a55d4678c
+    Merge: 9509d098a 082d9e339
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Nov 2 20:58:42 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit 9509d098a0734311b757e95d57a2ae4c092bbe63
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Nov 1 18:51:57 2023 +0100
+    
+        Update AnimeDownloader.kt
+    
+    commit 5415cbbdefef1a403132358cfa4038926119dd4e
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Nov 1 18:47:21 2023 +0100
+    
+        Update AnimeDownloader.kt
+    
+    commit f0180e0d15e6e3d648f858f49c5932bbc22f5e00
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Nov 1 15:48:14 2023 +0100
+    
+        rework anime downloader
+    
+    commit f3ec9da2da2b867f6b955b4fc1152c8d804230a4
+    Merge: fd1c6437a 67a5bccec
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Tue Oct 31 18:37:41 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit fd1c6437a6fc80048d102b30789e15f0ab7556cf
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Oct 29 15:12:39 2023 +0100
+    
+        merge14
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/f344831d5877d1d0a7772b00f498ddfb6e86da04
+    
+    commit 9bb1a5da027a90ec95678e96479db5899a5e7ec4
+    Merge: 03ee4bc5f d8327e872
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Oct 29 13:58:41 2023 +0100
+    
+        Merge branch 'master' into MR
+    
+    commit 03ee4bc5f498e34cf3c79b9713e47099d3f4ea4b
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Oct 28 23:05:13 2023 +0200
+    
+        merge13
+    
+        Last commit merged:  https://github.com/tachiyomiorg/tachiyomi/commit/7f0ed58b5401251c93b7edd9569a44ca044118db
+    
+    commit 6dd16ca07d8074ddd00810a5eea9bf95df16b72c
+    Merge: f0783f534 509ecedb3
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Oct 28 12:03:04 2023 +0200
+    
+        Merge branch 'master' into MR
+    
+    commit f0783f534d9878fe3650e25a7b1b591d71e81a50
+    Author: Quickdev <devesh.ratra@gmail.com>
+    Date:   Fri Oct 27 15:03:11 2023 -0400
+    
+        feat(player): Subtitle settings + refactor + crash fixes (#1152)
+    
+        Co-authored-by: jmir1 <jhmiramon@gmail.com>
+        Co-authored-by: Abdallah <54363735+abdallahmehiz@users.noreply.github.com>
+    
+    commit 2431d8a858ad6866141a361565e9750653ffda29
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Oct 28 00:04:20 2023 +0200
+    
+        merge12
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/0d9f8e8743b1a03f30a8a3050b9a896f337ba25f
+    
+    commit c6317e9589498f98c5b74f57624dd2f1a6dac9f9
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 27 23:50:37 2023 +0200
+    
+        Update AdaptiveSheet.kt
+    
+    commit 692b566f77af5ca551c999e16d9f45b19b0197b4
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 27 23:26:45 2023 +0200
+    
+        revert subs commit
+    
+    commit 5b1099da9d4880d2797cd55714b82545fb49bff8
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 27 21:39:46 2023 +0200
+    
+        Update AdaptiveSheet.kt
+    
+    commit 7e14b6d2ab51fd4685ff3393355b2a13f5e6caed
+    Merge: f51b36a75 7f9255b51
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 27 21:36:43 2023 +0200
+    
+        Merge remote-tracking branch 'upstream/master' into MR
+    
+    commit f51b36a759d1ee0a7de27377aa7b2f45cf0f6411
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 27 20:27:23 2023 +0200
+    
+        merge11
+    
+        Last commit merged: https://github.com/tachiyomiorg/tachiyomi/commit/34b9c82cd0ca07ded2cd079a9cc18229a02a9a81
+    
+    commit 564a959bab7c775a0c442bd16fecc0b543f91a67
+    Merge: b9333bedd 928a62c5a
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 27 18:50:18 2023 +0200
+    
+        Merge remote-tracking branch 'origin/master' into MR
+    
+    commit b9333bedd75e308cf617f0a0e09009365647762f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Oct 26 19:39:29 2023 +0200
+    
+        fix download button not shown
+    
+    commit 5d575f1e9023161a999a6d5a7fe170578032b16c
+    Merge: e282528e6 afb921a5a
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Oct 26 18:56:43 2023 +0200
+    
+        Merge remote-tracking branch 'upstream/master' into MR
+    
+    commit e282528e6ed0767404f41189487eae048cf72e41
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Mon Oct 23 18:27:42 2023 +0200
+    
+        Revert "Translations update from Hosted Weblate (#9531)"
+    
+        This reverts commit 3a8e7d04fc7b72fdbd2af45ef79defec0030552a.
+    
+    commit 3a8e7d04fc7b72fdbd2af45ef79defec0030552a
+    Author: Weblate (bot) <hosted@weblate.org>
+    Date:   Sat Jun 3 19:10:13 2023 +0200
+    
+        Translations update from Hosted Weblate (#9531)
+    
+        Weblate translations
+    
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ar/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ca/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/cs/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/de/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/el/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/es/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/fil/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/hi/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/hr/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/id/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/it/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ja/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/jv/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ko/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ne/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/pl/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/pt/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/pt_BR/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ru/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/th/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/uk/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/vi/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/zh_Hans/
+        Translation: Tachiyomi/Tachiyomi 0.x
+    
+        Co-authored-by: Alessandro Jean <alessandrojean@gmail.com>
+        Co-authored-by: Ali Aljishi <ahj696@hotmail.com>
+        Co-authored-by: AntonP <tony.pug.stark@gmail.com>
+        Co-authored-by: Christian Elbrianno <crse@protonmail.ch>
+        Co-authored-by: Clxff H3r4ld0 <123844876+clxf12@users.noreply.github.com>
+        Co-authored-by: Dan <denqwerta@gmail.com>
+        Co-authored-by: Danel Dave Barbuco <barbucodanel@gmail.com>
+        Co-authored-by: DatTran MLL <tranthanhdat1142003@gmail.com>
+        Co-authored-by: Dexroneum <Rozhenkov69@gmail.com>
+        Co-authored-by: Eduard Ereza Martínez <eduard@ereza.cat>
+        Co-authored-by: FateXBlood <zecrofelix@gmail.com>
+        Co-authored-by: Ferran <ferrancette@gmail.com>
+        Co-authored-by: Giorgio Sanna <sannagiorgio1997@gmail.com>
+        Co-authored-by: ID-86 <id86dev@gmail.com>
+        Co-authored-by: Igor <zerrxs@gmail.com>
+        Co-authored-by: Izxmi <heltherrivas05@gmail.com>
+        Co-authored-by: Leonardo Falcoski <leonardo.falcoski@gmail.com>
+        Co-authored-by: Lyfja <yassinelaoud@gmail.com>
+        Co-authored-by: Milo Ivir <mail@milotype.de>
+        Co-authored-by: Pitpe11 <giorgos2550@gmail.com>
+        Co-authored-by: Rostyslav Haitkulov <info@ubilling.net.ua>
+        Co-authored-by: Swyter <swyterzone@gmail.com>
+        Co-authored-by: TheKingTermux <achmadmaulana0233@gmail.com>
+        Co-authored-by: Uzuki Shimamura <hzy980512@126.com>
+        Co-authored-by: altinat <altinat@duck.com>
+        Co-authored-by: stevenlele <stevenlele@outlook.com>
+    
+    commit 974d3b56f7ab84dbf39e882ebe12951478fda6a5
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Mon Oct 23 17:51:27 2023 +0200
+    
+        Revert "Translations update from Hosted Weblate (#9531)"
+    
+        This reverts commit d78159bda875adf20168506ee7fc12d112a1b0d3.
+    
+    commit d78159bda875adf20168506ee7fc12d112a1b0d3
+    Author: Weblate (bot) <hosted@weblate.org>
+    Date:   Sat Jun 3 19:10:13 2023 +0200
+    
+        Translations update from Hosted Weblate (#9531)
+    
+        Weblate translations
+    
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ar/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ca/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/cs/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/de/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/el/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/es/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/fil/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/hi/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/hr/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/id/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/it/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ja/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/jv/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ko/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ne/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/pl/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/pt/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/pt_BR/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/ru/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/th/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/uk/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/vi/
+        Translate-URL: https://hosted.weblate.org/projects/tachiyomi/strings/zh_Hans/
+        Translation: Tachiyomi/Tachiyomi 0.x
+    
+        Co-authored-by: Alessandro Jean <alessandrojean@gmail.com>
+        Co-authored-by: Ali Aljishi <ahj696@hotmail.com>
+        Co-authored-by: AntonP <tony.pug.stark@gmail.com>
+        Co-authored-by: Christian Elbrianno <crse@protonmail.ch>
+        Co-authored-by: Clxff H3r4ld0 <123844876+clxf12@users.noreply.github.com>
+        Co-authored-by: Dan <denqwerta@gmail.com>
+        Co-authored-by: Danel Dave Barbuco <barbucodanel@gmail.com>
+        Co-authored-by: DatTran MLL <tranthanhdat1142003@gmail.com>
+        Co-authored-by: Dexroneum <Rozhenkov69@gmail.com>
+        Co-authored-by: Eduard Ereza Martínez <eduard@ereza.cat>
+        Co-authored-by: FateXBlood <zecrofelix@gmail.com>
+        Co-authored-by: Ferran <ferrancette@gmail.com>
+        Co-authored-by: Giorgio Sanna <sannagiorgio1997@gmail.com>
+        Co-authored-by: ID-86 <id86dev@gmail.com>
+        Co-authored-by: Igor <zerrxs@gmail.com>
+        Co-authored-by: Izxmi <heltherrivas05@gmail.com>
+        Co-authored-by: Leonardo Falcoski <leonardo.falcoski@gmail.com>
+        Co-authored-by: Lyfja <yassinelaoud@gmail.com>
+        Co-authored-by: Milo Ivir <mail@milotype.de>
+        Co-authored-by: Pitpe11 <giorgos2550@gmail.com>
+        Co-authored-by: Rostyslav Haitkulov <info@ubilling.net.ua>
+        Co-authored-by: Swyter <swyterzone@gmail.com>
+        Co-authored-by: TheKingTermux <achmadmaulana0233@gmail.com>
+        Co-authored-by: Uzuki Shimamura <hzy980512@126.com>
+        Co-authored-by: altinat <altinat@duck.com>
+        Co-authored-by: stevenlele <stevenlele@outlook.com>
+    
+    commit dfb5ca4f8e6ad27f9767d731b2a413a9a9bfd583
+    Merge: c19b4b5cf 92f9ab276
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Mon Oct 23 17:11:37 2023 +0200
+    
+        Merge remote-tracking branch 'upstream/master' into MR
+    
+    commit c19b4b5cff254d16de547ce06e8adee8ee881c14
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Oct 22 18:25:03 2023 +0200
+    
+        fuck lint (again)
+    
+    commit febf0460c0bf80a252d510ee4ceb32f0ecc393e5
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Oct 22 18:16:03 2023 +0200
+    
+        fuck lint
+    
+    commit da3265fb7a20fd1a53261f83620feef40d988323
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Oct 22 18:08:27 2023 +0200
+    
+        merge10
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/531e1c62bb8ba62f3fe84efce60210b5b5560368
+    
+    commit c85576e06bc21987bc14121db2abf664f3152349
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sun Oct 22 14:11:21 2023 +0200
+    
+        merge9
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/4c65c2311e09bf5dcb77327c415a6fddd12123c5
+    
+    commit 67d30435333e2c81a3b3e347adec4c693cb3df7e
+    Merge: c62f86f6c 63e95d9cb
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Oct 21 14:54:03 2023 +0200
+    
+        Merge branch 'aniyomiorg:master' into MR
+    
+    commit c62f86f6ccd8851562aa6872b483cd84c20f4d4d
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Sat Oct 21 12:45:41 2023 +0200
+    
+        merge8
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/ed5a56be60d144c917b7b09bf183c688e6d54b06
+    
+    commit e99e4c2f41a3465b0806ff40bba7210bf951fe7d
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 6 18:47:44 2023 +0200
+    
+        merge7
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/152fdec855cccfb479af8f74f1d4099be0ac399c
+    
+    commit b3c911ea286f5d77f05d6418a9fd8ac18227ca6f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Fri Oct 6 16:51:34 2023 +0200
+    
+        merge6
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/22a43725833804805055e3460bb3a87f3983d533
+    
+    commit f705e1918221f964f9034a786e46069d0507e39f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Thu Oct 5 14:16:41 2023 +0200
+    
+        merge5
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/b4bb8556751353c06531b55f3b052217254314c0
+    
+    commit 2ebf477bd18435d1560558dd9231c257425accc7
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Oct 4 21:44:23 2023 +0200
+    
+        merge4
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/44383ff9500b5e5b50de53890e37aa69116168fb
+    
+    commit 14a8aebc60212ed78fd8eeddbf7b72d4795b7468
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Oct 4 21:33:37 2023 +0200
+    
+        merge3
+    
+        I hate Weblate commits!
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/e15b945e16aba1dcef5d52046cf08f9f5233cb59
+    
+    commit 5ceae3116bd7c184a470fe1e67a6ea615edd0487
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Oct 4 20:24:51 2023 +0200
+    
+        merge2
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/9a10656bf07a7dd35400fa6e42dd0e4889ddb177
+    
+    commit 5a2a3fd0804aa2e1c8068caa01ddd13eb5e1b872
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Oct 4 13:19:33 2023 +0200
+    
+        fuck lint
+    
+    commit c3062d2ed773dbfae6a2c9344b515fcb6f51c55b
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Wed Oct 4 13:08:36 2023 +0200
+    
+        merge1
+    
+        Last Commit Merged: https://github.com/tachiyomiorg/tachiyomi/commit/f63573f25fe5361c9c1a49a77b2c371e68072736
+    
+    commit 928a62c5a32c5b19ddd186a6158ea37d6e381dff
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Tue Jul 25 00:25:30 2023 +0200
+    
+        Update README.md
+    
+    commit a883c90cd6418122f2d0dc064f4d7d0440dfdf5f
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Tue Jul 25 00:24:31 2023 +0200
+    
+        Delete ic_launcher.png
+    
+    commit c1b7b89c635eb95d667fce4a63e28461e32ff0a0
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Tue Jul 25 00:23:44 2023 +0200
+    
+        Update README.md
+    
+    commit c18830714b17560c0d3cb17090f2fdd2e4f2558b
+    Author: LuftVerbot <97435834+LuftVerbot@users.noreply.github.com>
+    Date:   Tue Jul 25 00:22:16 2023 +0200
+    
+        Add files via upload
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 2235daed1..85dd14956 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -4,25 +4,34 @@ import android.app.Activity
+ import android.content.Context
+ import android.os.Build
+ import androidx.annotation.StringRes
++import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+ import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
+ import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.res.stringResource
+ import androidx.core.app.ActivityCompat
++import androidx.core.os.LocaleListCompat
+ import eu.kanade.domain.ui.UiPreferences
+ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
+-import eu.kanade.presentation.util.collectAsState
++import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
++import eu.kanade.tachiyomi.ui.home.HomeScreen
++import eu.kanade.tachiyomi.util.system.LocaleHelper
+ import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
++import org.xmlpull.v1.XmlPullParser
++import tachiyomi.domain.library.service.LibraryPreferences
++import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+ import java.util.Date
+@@ -42,7 +51,6 @@ object SettingsAppearanceScreen : SearchableSettings {
+         return listOf(
+             getThemeGroup(context = context, uiPreferences = uiPreferences),
+             getDisplayGroup(context = context, uiPreferences = uiPreferences),
+-            getTimestampGroup(uiPreferences = uiPreferences),
+         )
+     }
+ 
+@@ -53,8 +61,11 @@ object SettingsAppearanceScreen : SearchableSettings {
+     ): Preference.PreferenceGroup {
+         val themeModePref = uiPreferences.themeMode()
+         val themeMode by themeModePref.collectAsState()
++
+         val appThemePref = uiPreferences.appTheme()
++
+         val amoledPref = uiPreferences.themeDarkAmoled()
++        val amoled by amoledPref.collectAsState()
+ 
+         LaunchedEffect(themeMode) {
+             setAppCompatDelegateThemeMode(themeMode)
+@@ -85,10 +96,17 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         )
+                     },
+                 ),
+-                Preference.PreferenceItem.AppThemePreference(
++                Preference.PreferenceItem.CustomPreference(
+                     title = stringResource(R.string.pref_app_theme),
+-                    pref = appThemePref,
+-                ),
++                ) { item ->
++                    val value by appThemePref.collectAsState()
++                    AppThemePreferenceWidget(
++                        title = item.title,
++                        value = value,
++                        amoled = amoled,
++                        onItemClick = { appThemePref.set(it) },
++                    )
++                },
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+                     title = stringResource(R.string.pref_dark_theme_pure_black),
+@@ -103,37 +121,80 @@ object SettingsAppearanceScreen : SearchableSettings {
+         context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
++        val langs = remember { getLangs(context) }
++        var currentLanguage by remember {
++            mutableStateOf(
++                AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "",
++            )
++        }
++        val now = remember { Date().time }
++
++        val dateFormat by uiPreferences.dateFormat().collectAsState()
++        val formattedNow = remember(dateFormat) {
++            UiPreferences.dateFormat(dateFormat).format(now)
++        }
++
++        LaunchedEffect(currentLanguage) {
++            val locale = if (currentLanguage.isEmpty()) {
++                LocaleListCompat.getEmptyLocaleList()
++            } else {
++                LocaleListCompat.forLanguageTags(currentLanguage)
++            }
++            AppCompatDelegate.setApplicationLocales(locale)
++        }
++
++        val libraryPrefs = remember { Injekt.get<LibraryPreferences>() }
++
++        LaunchedEffect(Unit) {
++            libraryPrefs.bottomNavStyle().changes()
++                .drop(1)
++                .collectLatest { value ->
++                    HomeScreen.tabs = when (value) {
++                        0 -> HomeScreen.tabsNoHistory
++                        1 -> HomeScreen.tabsNoUpdates
++                        else -> HomeScreen.tabsNoManga
++                    }
++                    (context as? Activity)?.let {
++                        ActivityCompat.recreate(it)
++                    }
++                }
++        }
++
+         return Preference.PreferenceGroup(
+             title = stringResource(R.string.pref_category_display),
+             preferenceItems = listOf(
++                Preference.PreferenceItem.ListPreference(
++                    pref = libraryPrefs.bottomNavStyle(),
++                    title = stringResource(R.string.pref_bottom_nav_style),
++                    entries = mapOf(
++                        0 to stringResource(R.string.pref_bottom_nav_no_history),
++                        1 to stringResource(R.string.pref_bottom_nav_no_updates),
++                        2 to stringResource(R.string.pref_bottom_nav_no_manga),
++                    ),
++                ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = libraryPrefs.isDefaultHomeTabLibraryManga(),
++                    title = stringResource(R.string.pref_default_home_tab_library),
++                    enabled = libraryPrefs.bottomNavStyle().get() != 2,
++                ),
++                Preference.PreferenceItem.BasicListPreference(
++                    value = currentLanguage,
++                    title = stringResource(R.string.pref_app_language),
++                    entries = langs,
++                    onValueChanged = { newValue ->
++                        currentLanguage = newValue
++                        true
++                    },
++                ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+                     title = stringResource(R.string.pref_tablet_ui_mode),
+-                    entries = TabletUiMode.values().associateWith { stringResource(it.titleResId) },
++                    entries = TabletUiMode.entries.associateWith { stringResource(it.titleResId) },
+                     onValueChanged = {
+                         context.toast(R.string.requires_app_restart)
+                         true
+                     },
+                 ),
+-            ),
+-        )
+-    }
+-
+-    @Composable
+-    private fun getTimestampGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
+-        val now = remember { Date().time }
+-        return Preference.PreferenceGroup(
+-            title = stringResource(R.string.pref_category_timestamps),
+-            preferenceItems = listOf(
+-                Preference.PreferenceItem.ListPreference(
+-                    pref = uiPreferences.relativeTime(),
+-                    title = stringResource(R.string.pref_relative_format),
+-                    entries = mapOf(
+-                        0 to stringResource(R.string.off),
+-                        2 to stringResource(R.string.pref_relative_time_short),
+-                        7 to stringResource(R.string.pref_relative_time_long),
+-                    ),
+-                ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+                     title = stringResource(R.string.pref_date_format),
+@@ -143,9 +204,42 @@ object SettingsAppearanceScreen : SearchableSettings {
+                             "${it.ifEmpty { stringResource(R.string.label_default) }} ($formattedDate)"
+                         },
+                 ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.relativeTime(),
++                    title = stringResource(R.string.pref_relative_format),
++                    subtitle = stringResource(
++                        R.string.pref_relative_format_summary,
++                        stringResource(R.string.relative_time_today),
++                        formattedNow,
++                    ),
++                ),
+             ),
+         )
+     }
++    private fun getLangs(context: Context): Map<String, String> {
++        val langs = mutableListOf<Pair<String, String>>()
++        val parser = context.resources.getXml(R.xml.locales_config)
++        var eventType = parser.eventType
++        while (eventType != XmlPullParser.END_DOCUMENT) {
++            if (eventType == XmlPullParser.START_TAG && parser.name == "locale") {
++                for (i in 0..<parser.attributeCount) {
++                    if (parser.getAttributeName(i) == "name") {
++                        val langTag = parser.getAttributeValue(i)
++                        val displayName = LocaleHelper.getDisplayName(langTag)
++                        if (displayName.isNotEmpty()) {
++                            langs.add(Pair(langTag, displayName))
++                        }
++                    }
++                }
++            }
++            eventType = parser.next()
++        }
++
++        langs.sortBy { it.second }
++        langs.add(0, Pair("", context.getString(R.string.label_default)))
++
++        return langs.toMap()
++    }
+ }
+ 
+ private val DateFormats = listOf(
+
+commit 0d1bced1226878336f8156671ae0c224c02f2604
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sat Nov 18 19:41:33 2023 -0500
+
+    Replace remaining Android-specific strings
+    
+    Also renaming the helper composables so it's a bit easier to find/replace everything
+    in forks.
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 7875008ac..667afa505 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -27,9 +27,9 @@ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
+ import org.xmlpull.v1.XmlPullParser
+-import tachiyomi.core.i18n.localize
++import tachiyomi.core.i18n.stringResource
+ import tachiyomi.i18n.MR
+-import tachiyomi.presentation.core.i18n.localize
++import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+@@ -76,26 +76,26 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         return Preference.PreferenceGroup(
+-            title = localize(MR.strings.pref_category_theme),
++            title = stringResource(MR.strings.pref_category_theme),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.ListPreference(
+                     pref = themeModePref,
+-                    title = localize(MR.strings.pref_theme_mode),
++                    title = stringResource(MR.strings.pref_theme_mode),
+                     entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                         mapOf(
+-                            ThemeMode.SYSTEM to localize(MR.strings.theme_system),
+-                            ThemeMode.LIGHT to localize(MR.strings.theme_light),
+-                            ThemeMode.DARK to localize(MR.strings.theme_dark),
++                            ThemeMode.SYSTEM to stringResource(MR.strings.theme_system),
++                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
++                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+                         )
+                     } else {
+                         mapOf(
+-                            ThemeMode.LIGHT to localize(MR.strings.theme_light),
+-                            ThemeMode.DARK to localize(MR.strings.theme_dark),
++                            ThemeMode.LIGHT to stringResource(MR.strings.theme_light),
++                            ThemeMode.DARK to stringResource(MR.strings.theme_dark),
+                         )
+                     },
+                 ),
+                 Preference.PreferenceItem.CustomPreference(
+-                    title = localize(MR.strings.pref_app_theme),
++                    title = stringResource(MR.strings.pref_app_theme),
+                 ) { item ->
+                     val value by appThemePref.collectAsState()
+                     AppThemePreferenceWidget(
+@@ -107,7 +107,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 },
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+-                    title = localize(MR.strings.pref_dark_theme_pure_black),
++                    title = stringResource(MR.strings.pref_dark_theme_pure_black),
+                     enabled = themeMode != ThemeMode.LIGHT,
+                 ),
+             ),
+@@ -140,11 +140,11 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         return Preference.PreferenceGroup(
+-            title = localize(MR.strings.pref_category_display),
++            title = stringResource(MR.strings.pref_category_display),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.BasicListPreference(
+                     value = currentLanguage,
+-                    title = localize(MR.strings.pref_app_language),
++                    title = stringResource(MR.strings.pref_app_language),
+                     entries = langs,
+                     onValueChanged = { newValue ->
+                         currentLanguage = newValue
+@@ -153,8 +153,8 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+-                    title = localize(MR.strings.pref_tablet_ui_mode),
+-                    entries = TabletUiMode.entries.associateWith { localize(it.titleRes) },
++                    title = stringResource(MR.strings.pref_tablet_ui_mode),
++                    entries = TabletUiMode.entries.associateWith { stringResource(it.titleRes) },
+                     onValueChanged = {
+                         context.toast(MR.strings.requires_app_restart)
+                         true
+@@ -162,19 +162,19 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+-                    title = localize(MR.strings.pref_date_format),
++                    title = stringResource(MR.strings.pref_date_format),
+                     entries = DateFormats
+                         .associateWith {
+                             val formattedDate = UiPreferences.dateFormat(it).format(now)
+-                            "${it.ifEmpty { localize(MR.strings.label_default) }} ($formattedDate)"
++                            "${it.ifEmpty { stringResource(MR.strings.label_default) }} ($formattedDate)"
+                         },
+                 ),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = uiPreferences.relativeTime(),
+-                    title = localize(MR.strings.pref_relative_format),
+-                    subtitle = localize(
++                    title = stringResource(MR.strings.pref_relative_format),
++                    subtitle = stringResource(
+                         MR.strings.pref_relative_format_summary,
+-                        localize(MR.strings.relative_time_today),
++                        stringResource(MR.strings.relative_time_today),
+                         formattedNow,
+                     ),
+                 ),
+@@ -201,7 +201,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         langs.sortBy { it.second }
+-        langs.add(0, Pair("", context.localize(MR.strings.label_default)))
++        langs.add(0, Pair("", context.stringResource(MR.strings.label_default)))
+ 
+         return langs.toMap()
+     }
+
+commit 46e734fc8eefb8c06a880194e702559ca3fa769d
+Author: arkon <arkon@users.noreply.github.com>
+Date:   Sat Nov 18 13:54:56 2023 -0500
+
+    Migrate to multiplatform string resources (#10147)
+    
+    * Migrate to multiplatform string resources
+    
+    * Move plurals translations into separate files
+    
+    * Fix lint check on generated files
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 4c7243a5c..7875008ac 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -3,7 +3,6 @@ package eu.kanade.presentation.more.settings.screen
+ import android.app.Activity
+ import android.content.Context
+ import android.os.Build
+-import androidx.annotation.StringRes
+ import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+@@ -13,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.remember
+ import androidx.compose.runtime.setValue
+ import androidx.compose.ui.platform.LocalContext
+-import androidx.compose.ui.res.stringResource
+ import androidx.core.app.ActivityCompat
+ import androidx.core.os.LocaleListCompat
+ import eu.kanade.domain.ui.UiPreferences
+@@ -29,6 +27,9 @@ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
+ import org.xmlpull.v1.XmlPullParser
++import tachiyomi.core.i18n.localize
++import tachiyomi.i18n.MR
++import tachiyomi.presentation.core.i18n.localize
+ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+@@ -38,8 +39,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+ 
+     @ReadOnlyComposable
+     @Composable
+-    @StringRes
+-    override fun getTitleRes() = R.string.pref_category_appearance
++    override fun getTitleRes() = MR.strings.pref_category_appearance
+ 
+     @Composable
+     override fun getPreferences(): List<Preference> {
+@@ -76,26 +76,26 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         return Preference.PreferenceGroup(
+-            title = stringResource(R.string.pref_category_theme),
++            title = localize(MR.strings.pref_category_theme),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.ListPreference(
+                     pref = themeModePref,
+-                    title = stringResource(R.string.pref_theme_mode),
++                    title = localize(MR.strings.pref_theme_mode),
+                     entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                         mapOf(
+-                            ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+-                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
+-                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                            ThemeMode.SYSTEM to localize(MR.strings.theme_system),
++                            ThemeMode.LIGHT to localize(MR.strings.theme_light),
++                            ThemeMode.DARK to localize(MR.strings.theme_dark),
+                         )
+                     } else {
+                         mapOf(
+-                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
+-                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                            ThemeMode.LIGHT to localize(MR.strings.theme_light),
++                            ThemeMode.DARK to localize(MR.strings.theme_dark),
+                         )
+                     },
+                 ),
+                 Preference.PreferenceItem.CustomPreference(
+-                    title = stringResource(R.string.pref_app_theme),
++                    title = localize(MR.strings.pref_app_theme),
+                 ) { item ->
+                     val value by appThemePref.collectAsState()
+                     AppThemePreferenceWidget(
+@@ -107,7 +107,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 },
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+-                    title = stringResource(R.string.pref_dark_theme_pure_black),
++                    title = localize(MR.strings.pref_dark_theme_pure_black),
+                     enabled = themeMode != ThemeMode.LIGHT,
+                 ),
+             ),
+@@ -140,11 +140,11 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         return Preference.PreferenceGroup(
+-            title = stringResource(R.string.pref_category_display),
++            title = localize(MR.strings.pref_category_display),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.BasicListPreference(
+                     value = currentLanguage,
+-                    title = stringResource(R.string.pref_app_language),
++                    title = localize(MR.strings.pref_app_language),
+                     entries = langs,
+                     onValueChanged = { newValue ->
+                         currentLanguage = newValue
+@@ -153,28 +153,28 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+-                    title = stringResource(R.string.pref_tablet_ui_mode),
+-                    entries = TabletUiMode.entries.associateWith { stringResource(it.titleResId) },
++                    title = localize(MR.strings.pref_tablet_ui_mode),
++                    entries = TabletUiMode.entries.associateWith { localize(it.titleRes) },
+                     onValueChanged = {
+-                        context.toast(R.string.requires_app_restart)
++                        context.toast(MR.strings.requires_app_restart)
+                         true
+                     },
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+-                    title = stringResource(R.string.pref_date_format),
++                    title = localize(MR.strings.pref_date_format),
+                     entries = DateFormats
+                         .associateWith {
+                             val formattedDate = UiPreferences.dateFormat(it).format(now)
+-                            "${it.ifEmpty { stringResource(R.string.label_default) }} ($formattedDate)"
++                            "${it.ifEmpty { localize(MR.strings.label_default) }} ($formattedDate)"
+                         },
+                 ),
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = uiPreferences.relativeTime(),
+-                    title = stringResource(R.string.pref_relative_format),
+-                    subtitle = stringResource(
+-                        R.string.pref_relative_format_summary,
+-                        stringResource(R.string.relative_time_today),
++                    title = localize(MR.strings.pref_relative_format),
++                    subtitle = localize(
++                        MR.strings.pref_relative_format_summary,
++                        localize(MR.strings.relative_time_today),
+                         formattedNow,
+                     ),
+                 ),
+@@ -201,7 +201,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         }
+ 
+         langs.sortBy { it.second }
+-        langs.add(0, Pair("", context.getString(R.string.label_default)))
++        langs.add(0, Pair("", context.localize(MR.strings.label_default)))
+ 
+         return langs.toMap()
+     }
+
+commit 1d144e67678a99ec7198e5efcb1410b5da4bc42e
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sat Nov 4 23:28:41 2023 -0400
+
+    Restrict line length with ktlint
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 4540aee95..4c7243a5c 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -120,7 +120,9 @@ object SettingsAppearanceScreen : SearchableSettings {
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+         val langs = remember { getLangs(context) }
+-        var currentLanguage by remember { mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "") }
++        var currentLanguage by remember {
++            mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "")
++        }
+         val now = remember { Date().time }
+ 
+         val dateFormat by uiPreferences.dateFormat().collectAsState()
+
+commit c5e8c9f01fa6b54425675ee3ebdc6f735aee7ba9
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sat Nov 4 19:36:25 2023 -0400
+
+    Revert "Require Android 8+"
+    
+    This reverts commit 64c50c1283969dbc16c519f87cad3b5c9001b4cb.
+    
+    Forgot we need to manage app update checks manually...
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 0ee26274f..4540aee95 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -2,6 +2,7 @@ package eu.kanade.presentation.more.settings.screen
+ 
+ import android.app.Activity
+ import android.content.Context
++import android.os.Build
+ import androidx.annotation.StringRes
+ import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+@@ -80,11 +81,18 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 Preference.PreferenceItem.ListPreference(
+                     pref = themeModePref,
+                     title = stringResource(R.string.pref_theme_mode),
+-                    entries = mapOf(
+-                        ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+-                        ThemeMode.LIGHT to stringResource(R.string.theme_light),
+-                        ThemeMode.DARK to stringResource(R.string.theme_dark),
+-                    ),
++                    entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
++                        mapOf(
++                            ThemeMode.SYSTEM to stringResource(R.string.theme_system),
++                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
++                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                        )
++                    } else {
++                        mapOf(
++                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
++                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                        )
++                    },
+                 ),
+                 Preference.PreferenceItem.CustomPreference(
+                     title = stringResource(R.string.pref_app_theme),
+
+commit 64c50c1283969dbc16c519f87cad3b5c9001b4cb
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sat Nov 4 19:20:48 2023 -0400
+
+    Require Android 8+
+    
+    Given that the next stable version of Chrome (120) will require Android 8+, it's
+    inevitable that the WebView functionality will gradually break. As always, newer
+    OS versions are recommended for better support with evolving Internet technologies.
+    
+    According to https://apilevels.com/, Android 8+ still covers 93.7% of Android users.
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 4540aee95..0ee26274f 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -2,7 +2,6 @@ package eu.kanade.presentation.more.settings.screen
+ 
+ import android.app.Activity
+ import android.content.Context
+-import android.os.Build
+ import androidx.annotation.StringRes
+ import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+@@ -81,18 +80,11 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 Preference.PreferenceItem.ListPreference(
+                     pref = themeModePref,
+                     title = stringResource(R.string.pref_theme_mode),
+-                    entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+-                        mapOf(
+-                            ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+-                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
+-                            ThemeMode.DARK to stringResource(R.string.theme_dark),
+-                        )
+-                    } else {
+-                        mapOf(
+-                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
+-                            ThemeMode.DARK to stringResource(R.string.theme_dark),
+-                        )
+-                    },
++                    entries = mapOf(
++                        ThemeMode.SYSTEM to stringResource(R.string.theme_system),
++                        ThemeMode.LIGHT to stringResource(R.string.theme_light),
++                        ThemeMode.DARK to stringResource(R.string.theme_dark),
++                    ),
+                 ),
+                 Preference.PreferenceItem.CustomPreference(
+                     title = stringResource(R.string.pref_app_theme),
+
+commit 56d2464870cbd59f1e67dab7cf2a359bddfa0f41
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sun Sep 24 17:01:26 2023 -0400
+
+    Bring back simplified relative timestamp setting
+    
+    Except now it's just an on/off toggle for relative up to a week.
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index d98198155..4540aee95 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -123,6 +123,11 @@ object SettingsAppearanceScreen : SearchableSettings {
+         var currentLanguage by remember { mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "") }
+         val now = remember { Date().time }
+ 
++        val dateFormat by uiPreferences.dateFormat().collectAsState()
++        val formattedNow = remember(dateFormat) {
++            UiPreferences.dateFormat(dateFormat).format(now)
++        }
++
+         LaunchedEffect(currentLanguage) {
+             val locale = if (currentLanguage.isEmpty()) {
+                 LocaleListCompat.getEmptyLocaleList()
+@@ -162,6 +167,15 @@ object SettingsAppearanceScreen : SearchableSettings {
+                             "${it.ifEmpty { stringResource(R.string.label_default) }} ($formattedDate)"
+                         },
+                 ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = uiPreferences.relativeTime(),
++                    title = stringResource(R.string.pref_relative_format),
++                    subtitle = stringResource(
++                        R.string.pref_relative_format_summary,
++                        stringResource(R.string.relative_time_today),
++                        formattedNow,
++                    ),
++                ),
+             ),
+         )
+     }
+
+commit fe90546821092ce8916445ce515ba51404617d62
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sat Jul 29 10:03:16 2023 -0400
+
+    Remove relative timestamps setting
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index cd2a53904..d98198155 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -162,15 +162,6 @@ object SettingsAppearanceScreen : SearchableSettings {
+                             "${it.ifEmpty { stringResource(R.string.label_default) }} ($formattedDate)"
+                         },
+                 ),
+-                Preference.PreferenceItem.ListPreference(
+-                    pref = uiPreferences.relativeTime(),
+-                    title = stringResource(R.string.pref_relative_format),
+-                    entries = mapOf(
+-                        0 to stringResource(R.string.off),
+-                        2 to stringResource(R.string.pref_relative_time_short),
+-                        7 to stringResource(R.string.pref_relative_time_long),
+-                    ),
+-                ),
+             ),
+         )
+     }
+
+commit 3892c4caac18c0203a3906545bc4cdd1687f0919
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sat Jul 29 09:51:46 2023 -0400
+
+    Minor cleanup
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 14c54a2b4..cd2a53904 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -49,7 +49,6 @@ object SettingsAppearanceScreen : SearchableSettings {
+         return listOf(
+             getThemeGroup(context = context, uiPreferences = uiPreferences),
+             getDisplayGroup(context = context, uiPreferences = uiPreferences),
+-            getTimestampGroup(uiPreferences = uiPreferences),
+         )
+     }
+ 
+@@ -122,6 +121,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+     ): Preference.PreferenceGroup {
+         val langs = remember { getLangs(context) }
+         var currentLanguage by remember { mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "") }
++        val now = remember { Date().time }
+ 
+         LaunchedEffect(currentLanguage) {
+             val locale = if (currentLanguage.isEmpty()) {
+@@ -153,25 +153,6 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         true
+                     },
+                 ),
+-            ),
+-        )
+-    }
+-
+-    @Composable
+-    private fun getTimestampGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
+-        val now = remember { Date().time }
+-        return Preference.PreferenceGroup(
+-            title = stringResource(R.string.pref_category_timestamps),
+-            preferenceItems = listOf(
+-                Preference.PreferenceItem.ListPreference(
+-                    pref = uiPreferences.relativeTime(),
+-                    title = stringResource(R.string.pref_relative_format),
+-                    entries = mapOf(
+-                        0 to stringResource(R.string.off),
+-                        2 to stringResource(R.string.pref_relative_time_short),
+-                        7 to stringResource(R.string.pref_relative_time_long),
+-                    ),
+-                ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+                     title = stringResource(R.string.pref_date_format),
+@@ -181,10 +162,18 @@ object SettingsAppearanceScreen : SearchableSettings {
+                             "${it.ifEmpty { stringResource(R.string.label_default) }} ($formattedDate)"
+                         },
+                 ),
++                Preference.PreferenceItem.ListPreference(
++                    pref = uiPreferences.relativeTime(),
++                    title = stringResource(R.string.pref_relative_format),
++                    entries = mapOf(
++                        0 to stringResource(R.string.off),
++                        2 to stringResource(R.string.pref_relative_time_short),
++                        7 to stringResource(R.string.pref_relative_time_long),
++                    ),
++                ),
+             ),
+         )
+     }
+-
+     private fun getLangs(context: Context): Map<String, String> {
+         val langs = mutableListOf<Pair<String, String>>()
+         val parser = context.resources.getXml(R.xml.locales_config)
+
+commit 8ff0c9d61a1d5b1cc08a3615ef4bfa3d1f04a5d2
+Author: arkon <eugcheung94@gmail.com>
+Date:   Wed Jul 26 22:57:15 2023 -0400
+
+    Allow more flexible custom preference composables
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 9ae42cd5f..14c54a2b4 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -21,6 +21,7 @@ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
++import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+ import eu.kanade.tachiyomi.util.system.toast
+@@ -59,8 +60,11 @@ object SettingsAppearanceScreen : SearchableSettings {
+     ): Preference.PreferenceGroup {
+         val themeModePref = uiPreferences.themeMode()
+         val themeMode by themeModePref.collectAsState()
++
+         val appThemePref = uiPreferences.appTheme()
++
+         val amoledPref = uiPreferences.themeDarkAmoled()
++        val amoled by amoledPref.collectAsState()
+ 
+         LaunchedEffect(themeMode) {
+             setAppCompatDelegateThemeMode(themeMode)
+@@ -91,10 +95,17 @@ object SettingsAppearanceScreen : SearchableSettings {
+                         )
+                     },
+                 ),
+-                Preference.PreferenceItem.AppThemePreference(
++                Preference.PreferenceItem.CustomPreference(
+                     title = stringResource(R.string.pref_app_theme),
+-                    pref = appThemePref,
+-                ),
++                ) { item ->
++                    val value by appThemePref.collectAsState()
++                    AppThemePreferenceWidget(
++                        title = item.title,
++                        value = value,
++                        amoled = amoled,
++                        onItemClick = { appThemePref.set(it) },
++                    )
++                },
+                 Preference.PreferenceItem.SwitchPreference(
+                     pref = amoledPref,
+                     title = stringResource(R.string.pref_dark_theme_pure_black),
+
+commit cf14831fbe6d3b6b07d0fe185194d27d6ac6ae17
+Author: arkon <eugcheung94@gmail.com>
+Date:   Wed Jul 19 21:57:22 2023 -0400
+
+    Clean up preference extensions/items a bit
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 699304f75..9ae42cd5f 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -21,7 +21,6 @@ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
+-import eu.kanade.presentation.util.collectAsState
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.util.system.LocaleHelper
+ import eu.kanade.tachiyomi.util.system.toast
+@@ -29,6 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
+ import org.xmlpull.v1.XmlPullParser
++import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+ import java.util.Date
+
+commit ac306547a0ccd28f45882cba8e3b0138f6d6aedc
+Author: arkon <eugcheung94@gmail.com>
+Date:   Tue Jul 18 19:12:04 2023 -0400
+
+    Bump dependencies
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 7011bc500..699304f75 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -136,7 +136,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+                     title = stringResource(R.string.pref_tablet_ui_mode),
+-                    entries = TabletUiMode.values().associateWith { stringResource(it.titleResId) },
++                    entries = TabletUiMode.entries.associateWith { stringResource(it.titleResId) },
+                     onValueChanged = {
+                         context.toast(R.string.requires_app_restart)
+                         true
+@@ -180,7 +180,7 @@ object SettingsAppearanceScreen : SearchableSettings {
+         var eventType = parser.eventType
+         while (eventType != XmlPullParser.END_DOCUMENT) {
+             if (eventType == XmlPullParser.START_TAG && parser.name == "locale") {
+-                for (i in 0 until parser.attributeCount) {
++                for (i in 0..<parser.attributeCount) {
+                     if (parser.getAttributeName(i) == "name") {
+                         val langTag = parser.getAttributeValue(i)
+                         val displayName = LocaleHelper.getDisplayName(langTag)
+
+commit 34b9c82cd0ca07ded2cd079a9cc18229a02a9a81
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sun Jun 4 17:07:29 2023 -0400
+
+    Remove General settings section
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 2235daed1..7011bc500 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -4,14 +4,18 @@ import android.app.Activity
+ import android.content.Context
+ import android.os.Build
+ import androidx.annotation.StringRes
++import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+ import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
+ import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.res.stringResource
+ import androidx.core.app.ActivityCompat
++import androidx.core.os.LocaleListCompat
+ import eu.kanade.domain.ui.UiPreferences
+ import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+@@ -19,10 +23,12 @@ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
+ import eu.kanade.presentation.util.collectAsState
+ import eu.kanade.tachiyomi.R
++import eu.kanade.tachiyomi.util.system.LocaleHelper
+ import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
++import org.xmlpull.v1.XmlPullParser
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+ import java.util.Date
+@@ -103,9 +109,30 @@ object SettingsAppearanceScreen : SearchableSettings {
+         context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
++        val langs = remember { getLangs(context) }
++        var currentLanguage by remember { mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag() ?: "") }
++
++        LaunchedEffect(currentLanguage) {
++            val locale = if (currentLanguage.isEmpty()) {
++                LocaleListCompat.getEmptyLocaleList()
++            } else {
++                LocaleListCompat.forLanguageTags(currentLanguage)
++            }
++            AppCompatDelegate.setApplicationLocales(locale)
++        }
++
+         return Preference.PreferenceGroup(
+             title = stringResource(R.string.pref_category_display),
+             preferenceItems = listOf(
++                Preference.PreferenceItem.BasicListPreference(
++                    value = currentLanguage,
++                    title = stringResource(R.string.pref_app_language),
++                    entries = langs,
++                    onValueChanged = { newValue ->
++                        currentLanguage = newValue
++                        true
++                    },
++                ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.tabletUiMode(),
+                     title = stringResource(R.string.pref_tablet_ui_mode),
+@@ -146,6 +173,31 @@ object SettingsAppearanceScreen : SearchableSettings {
+             ),
+         )
+     }
++
++    private fun getLangs(context: Context): Map<String, String> {
++        val langs = mutableListOf<Pair<String, String>>()
++        val parser = context.resources.getXml(R.xml.locales_config)
++        var eventType = parser.eventType
++        while (eventType != XmlPullParser.END_DOCUMENT) {
++            if (eventType == XmlPullParser.START_TAG && parser.name == "locale") {
++                for (i in 0 until parser.attributeCount) {
++                    if (parser.getAttributeName(i) == "name") {
++                        val langTag = parser.getAttributeValue(i)
++                        val displayName = LocaleHelper.getDisplayName(langTag)
++                        if (displayName.isNotEmpty()) {
++                            langs.add(Pair(langTag, displayName))
++                        }
++                    }
++                }
++            }
++            eventType = parser.next()
++        }
++
++        langs.sortBy { it.second }
++        langs.add(0, Pair("", context.getString(R.string.label_default)))
++
++        return langs.toMap()
++    }
+ }
+ 
+ private val DateFormats = listOf(
+
+commit 7d34ff214cad896abc2a834300d632ddce0a732f
+Author: Ivan Iskandar <12537387+ivaniskandar@users.noreply.github.com>
+Date:   Wed Nov 23 21:14:55 2022 +0700
+
+    Change settings screen to object (#8604)
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index fa384feeb..2235daed1 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -27,7 +27,7 @@ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+ import java.util.Date
+ 
+-class SettingsAppearanceScreen : SearchableSettings {
++object SettingsAppearanceScreen : SearchableSettings {
+ 
+     @ReadOnlyComposable
+     @Composable
+
+commit 3e86cb094b90a29d5e4ddf7a4c72ccf96c66fee3
+Author: Ivan Iskandar <12537387+ivaniskandar@users.noreply.github.com>
+Date:   Sat Oct 29 20:44:12 2022 +0700
+
+    PreferenceModel: Add subtitle provider to ListPreference (#8322)
+    
+    * PreferenceModel: Add subtitle provider to ListPreference
+    
+    So that it's possible to avoid value formatting when needed
+    
+    * cleanups
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index e423712ce..fa384feeb 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -72,7 +72,6 @@ class SettingsAppearanceScreen : SearchableSettings {
+                 Preference.PreferenceItem.ListPreference(
+                     pref = themeModePref,
+                     title = stringResource(R.string.pref_theme_mode),
+-                    subtitle = "%s",
+                     entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                         mapOf(
+                             ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+@@ -129,7 +128,6 @@ class SettingsAppearanceScreen : SearchableSettings {
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.relativeTime(),
+                     title = stringResource(R.string.pref_relative_format),
+-                    subtitle = "%s",
+                     entries = mapOf(
+                         0 to stringResource(R.string.off),
+                         2 to stringResource(R.string.pref_relative_time_short),
+@@ -139,7 +137,6 @@ class SettingsAppearanceScreen : SearchableSettings {
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+                     title = stringResource(R.string.pref_date_format),
+-                    subtitle = "%s",
+                     entries = DateFormats
+                         .associateWith {
+                             val formattedDate = UiPreferences.dateFormat(it).format(now)
+
+commit ccc4144f3cc2264c3ae75d492983e9577f352af1
+Author: arkon <eugcheung94@gmail.com>
+Date:   Thu Oct 27 16:50:44 2022 -0400
+
+    Remove side nav icon alignment preference
+    
+    Simplifying it to just always be centered, which is what most Google apps seem to be doing anyway.
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index cb9cbec8b..e423712ce 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -19,7 +19,6 @@ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
+ import eu.kanade.presentation.util.collectAsState
+ import eu.kanade.tachiyomi.R
+-import eu.kanade.tachiyomi.util.system.isAutoTabletUiAvailable
+ import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+@@ -105,22 +104,11 @@ class SettingsAppearanceScreen : SearchableSettings {
+         context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+-        val tabletUiModePref = uiPreferences.tabletUiMode()
+-        val tabletUiMode by tabletUiModePref.collectAsState()
+-
+-        val isTabletUiAvailable = remember(tabletUiMode) { // won't survive config change
+-            when (tabletUiMode) {
+-                TabletUiMode.AUTOMATIC -> context.resources.configuration.isAutoTabletUiAvailable()
+-                TabletUiMode.NEVER -> false
+-                else -> true
+-            }
+-        }
+-
+         return Preference.PreferenceGroup(
+             title = stringResource(R.string.pref_category_display),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.ListPreference(
+-                    pref = tabletUiModePref,
++                    pref = uiPreferences.tabletUiMode(),
+                     title = stringResource(R.string.pref_tablet_ui_mode),
+                     entries = TabletUiMode.values().associateWith { stringResource(it.titleResId) },
+                     onValueChanged = {
+@@ -128,17 +116,6 @@ class SettingsAppearanceScreen : SearchableSettings {
+                         true
+                     },
+                 ),
+-                Preference.PreferenceItem.ListPreference(
+-                    pref = uiPreferences.sideNavIconAlignment(),
+-                    title = stringResource(R.string.pref_side_nav_icon_alignment),
+-                    subtitle = "%s",
+-                    enabled = isTabletUiAvailable,
+-                    entries = mapOf(
+-                        0 to stringResource(R.string.alignment_top),
+-                        1 to stringResource(R.string.alignment_center),
+-                        2 to stringResource(R.string.alignment_bottom),
+-                    ),
+-                ),
+             ),
+         )
+     }
+
+commit d558f9e1d6bcc8eb8f69359e6e7516f7ea24a408
+Author: stevenyomi <95685115+stevenyomi@users.noreply.github.com>
+Date:   Sat Oct 22 22:15:12 2022 +0800
+
+    Tweak tablet UI mode setting (#8262)
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 30749e011..cb9cbec8b 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -13,12 +13,14 @@ import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.res.stringResource
+ import androidx.core.app.ActivityCompat
+ import eu.kanade.domain.ui.UiPreferences
++import eu.kanade.domain.ui.model.TabletUiMode
+ import eu.kanade.domain.ui.model.ThemeMode
+ import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
+ import eu.kanade.presentation.util.collectAsState
+ import eu.kanade.tachiyomi.R
+-import eu.kanade.tachiyomi.util.system.isTablet
++import eu.kanade.tachiyomi.util.system.isAutoTabletUiAvailable
++import eu.kanade.tachiyomi.util.system.toast
+ import kotlinx.coroutines.flow.collectLatest
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
+@@ -40,7 +42,7 @@ class SettingsAppearanceScreen : SearchableSettings {
+ 
+         return listOf(
+             getThemeGroup(context = context, uiPreferences = uiPreferences),
+-            getNavigationGroup(context = context, uiPreferences = uiPreferences),
++            getDisplayGroup(context = context, uiPreferences = uiPreferences),
+             getTimestampGroup(uiPreferences = uiPreferences),
+         )
+     }
+@@ -99,18 +101,38 @@ class SettingsAppearanceScreen : SearchableSettings {
+     }
+ 
+     @Composable
+-    private fun getNavigationGroup(
++    private fun getDisplayGroup(
+         context: Context,
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
++        val tabletUiModePref = uiPreferences.tabletUiMode()
++        val tabletUiMode by tabletUiModePref.collectAsState()
++
++        val isTabletUiAvailable = remember(tabletUiMode) { // won't survive config change
++            when (tabletUiMode) {
++                TabletUiMode.AUTOMATIC -> context.resources.configuration.isAutoTabletUiAvailable()
++                TabletUiMode.NEVER -> false
++                else -> true
++            }
++        }
++
+         return Preference.PreferenceGroup(
+-            title = stringResource(R.string.pref_category_navigation),
+-            enabled = remember(context) { context.isTablet() },
++            title = stringResource(R.string.pref_category_display),
+             preferenceItems = listOf(
++                Preference.PreferenceItem.ListPreference(
++                    pref = tabletUiModePref,
++                    title = stringResource(R.string.pref_tablet_ui_mode),
++                    entries = TabletUiMode.values().associateWith { stringResource(it.titleResId) },
++                    onValueChanged = {
++                        context.toast(R.string.requires_app_restart)
++                        true
++                    },
++                ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.sideNavIconAlignment(),
+                     title = stringResource(R.string.pref_side_nav_icon_alignment),
+                     subtitle = "%s",
++                    enabled = isTabletUiAvailable,
+                     entries = mapOf(
+                         0 to stringResource(R.string.alignment_top),
+                         1 to stringResource(R.string.alignment_center),
+
+commit d03cbbe0cdc699ad15618a326c91e811f5c2e385
+Author: stevenyomi <95685115+stevenyomi@users.noreply.github.com>
+Date:   Thu Oct 20 00:57:05 2022 +0800
+
+    Fix language/theme settings dialog and remove delay (#8244)
+    
+    * Fix language/theme settings dialog and remove delay
+    
+    * inline UI preferences
+    
+    * use `by remember`
+    
+    * remove unused variable
+    
+    * remove unused import
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index cc909933e..30749e011 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -4,7 +4,6 @@ import android.app.Activity
+ import android.content.Context
+ import android.os.Build
+ import androidx.annotation.StringRes
+-import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+@@ -15,12 +14,12 @@ import androidx.compose.ui.res.stringResource
+ import androidx.core.app.ActivityCompat
+ import eu.kanade.domain.ui.UiPreferences
+ import eu.kanade.domain.ui.model.ThemeMode
++import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
+ import eu.kanade.presentation.more.settings.Preference
+ import eu.kanade.presentation.util.collectAsState
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.util.system.isTablet
+ import kotlinx.coroutines.flow.collectLatest
+-import kotlinx.coroutines.flow.debounce
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
+ import uy.kohesive.injekt.Injekt
+@@ -56,25 +55,13 @@ class SettingsAppearanceScreen : SearchableSettings {
+         val appThemePref = uiPreferences.appTheme()
+         val amoledPref = uiPreferences.themeDarkAmoled()
+ 
+-        LaunchedEffect(Unit) {
+-            themeModePref.changes()
+-                .drop(1)
+-                .debounce(1000)
+-                .collectLatest {
+-                    AppCompatDelegate.setDefaultNightMode(
+-                        when (it) {
+-                            ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+-                            ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+-                            ThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+-                        },
+-                    )
+-                }
++        LaunchedEffect(themeMode) {
++            setAppCompatDelegateThemeMode(themeMode)
+         }
+ 
+         LaunchedEffect(Unit) {
+             merge(appThemePref.changes(), amoledPref.changes())
+                 .drop(2)
+-                .debounce(1000)
+                 .collectLatest { (context as? Activity)?.let { ActivityCompat.recreate(it) } }
+         }
+ 
+
+commit f5bde3726ad235587da59e484a0c82fbe48790da
+Author: Ivan Iskandar <12537387+ivaniskandar@users.noreply.github.com>
+Date:   Tue Oct 18 20:35:10 2022 +0700
+
+    More settings stuff (#8226)
+    
+    * title size
+    
+    * move about screen to settings
+    
+    keeping shortcut inside more screen
+    
+    * more
+    
+    * shrink texts
+    
+    * scrollable create backup dialog choices
+    
+    * search back button
+    
+    * cleanups
+    
+    * delay changes that require activity recreate
+    
+    * lessen horizontal padding
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index 3b59df0ee..cc909933e 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -4,6 +4,7 @@ import android.app.Activity
+ import android.content.Context
+ import android.os.Build
+ import androidx.annotation.StringRes
++import androidx.appcompat.app.AppCompatDelegate
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+@@ -19,6 +20,7 @@ import eu.kanade.presentation.util.collectAsState
+ import eu.kanade.tachiyomi.R
+ import eu.kanade.tachiyomi.util.system.isTablet
+ import kotlinx.coroutines.flow.collectLatest
++import kotlinx.coroutines.flow.debounce
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.merge
+ import uy.kohesive.injekt.Injekt
+@@ -54,9 +56,25 @@ class SettingsAppearanceScreen : SearchableSettings {
+         val appThemePref = uiPreferences.appTheme()
+         val amoledPref = uiPreferences.themeDarkAmoled()
+ 
++        LaunchedEffect(Unit) {
++            themeModePref.changes()
++                .drop(1)
++                .debounce(1000)
++                .collectLatest {
++                    AppCompatDelegate.setDefaultNightMode(
++                        when (it) {
++                            ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
++                            ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
++                            ThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
++                        },
++                    )
++                }
++        }
++
+         LaunchedEffect(Unit) {
+             merge(appThemePref.changes(), amoledPref.changes())
+                 .drop(2)
++                .debounce(1000)
+                 .collectLatest { (context as? Activity)?.let { ActivityCompat.recreate(it) } }
+         }
+ 
+
+commit c2eaf1c86bff1ab9072f79dc3ee7b80df1480805
+Author: arkon <eugcheung94@gmail.com>
+Date:   Sat Oct 15 11:58:24 2022 -0400
+
+    Minor settings cleanup
+    
+    - Fix dark mode setting title
+    - Enforce usages of translated strings for screen titles
+    - Use LocalUriHandler where applicable instead of Android context
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+index e66fb1b85..3b59df0ee 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -3,6 +3,7 @@ package eu.kanade.presentation.more.settings.screen
+ import android.app.Activity
+ import android.content.Context
+ import android.os.Build
++import androidx.annotation.StringRes
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.ReadOnlyComposable
+@@ -28,53 +29,67 @@ class SettingsAppearanceScreen : SearchableSettings {
+ 
+     @ReadOnlyComposable
+     @Composable
+-    override fun getTitle(): String = stringResource(id = R.string.pref_category_appearance)
++    @StringRes
++    override fun getTitleRes() = R.string.pref_category_appearance
+ 
+     @Composable
+     override fun getPreferences(): List<Preference> {
+         val context = LocalContext.current
+         val uiPreferences = remember { Injekt.get<UiPreferences>() }
++
++        return listOf(
++            getThemeGroup(context = context, uiPreferences = uiPreferences),
++            getNavigationGroup(context = context, uiPreferences = uiPreferences),
++            getTimestampGroup(uiPreferences = uiPreferences),
++        )
++    }
++
++    @Composable
++    private fun getThemeGroup(
++        context: Context,
++        uiPreferences: UiPreferences,
++    ): Preference.PreferenceGroup {
+         val themeModePref = uiPreferences.themeMode()
++        val themeMode by themeModePref.collectAsState()
+         val appThemePref = uiPreferences.appTheme()
+         val amoledPref = uiPreferences.themeDarkAmoled()
+ 
+-        val themeMode by themeModePref.collectAsState()
+-
+         LaunchedEffect(Unit) {
+             merge(appThemePref.changes(), amoledPref.changes())
+                 .drop(2)
+                 .collectLatest { (context as? Activity)?.let { ActivityCompat.recreate(it) } }
+         }
+ 
+-        return listOf(
+-            Preference.PreferenceItem.ListPreference(
+-                pref = themeModePref,
+-                title = stringResource(id = R.string.pref_category_theme),
+-                subtitle = "%s",
+-                entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+-                    mapOf(
+-                        ThemeMode.SYSTEM to stringResource(id = R.string.theme_system),
+-                        ThemeMode.LIGHT to stringResource(id = R.string.theme_light),
+-                        ThemeMode.DARK to stringResource(id = R.string.theme_dark),
+-                    )
+-                } else {
+-                    mapOf(
+-                        ThemeMode.LIGHT to stringResource(id = R.string.theme_light),
+-                        ThemeMode.DARK to stringResource(id = R.string.theme_dark),
+-                    )
+-                },
+-            ),
+-            Preference.PreferenceItem.AppThemePreference(
+-                title = stringResource(id = R.string.pref_app_theme),
+-                pref = appThemePref,
+-            ),
+-            Preference.PreferenceItem.SwitchPreference(
+-                pref = amoledPref,
+-                title = stringResource(id = R.string.pref_dark_theme_pure_black),
+-                enabled = themeMode != ThemeMode.LIGHT,
++        return Preference.PreferenceGroup(
++            title = stringResource(R.string.pref_category_theme),
++            preferenceItems = listOf(
++                Preference.PreferenceItem.ListPreference(
++                    pref = themeModePref,
++                    title = stringResource(R.string.pref_theme_mode),
++                    subtitle = "%s",
++                    entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
++                        mapOf(
++                            ThemeMode.SYSTEM to stringResource(R.string.theme_system),
++                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
++                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                        )
++                    } else {
++                        mapOf(
++                            ThemeMode.LIGHT to stringResource(R.string.theme_light),
++                            ThemeMode.DARK to stringResource(R.string.theme_dark),
++                        )
++                    },
++                ),
++                Preference.PreferenceItem.AppThemePreference(
++                    title = stringResource(R.string.pref_app_theme),
++                    pref = appThemePref,
++                ),
++                Preference.PreferenceItem.SwitchPreference(
++                    pref = amoledPref,
++                    title = stringResource(R.string.pref_dark_theme_pure_black),
++                    enabled = themeMode != ThemeMode.LIGHT,
++                ),
+             ),
+-            getNavigationGroup(context = context, uiPreferences = uiPreferences),
+-            getTimestampGroup(uiPreferences = uiPreferences),
+         )
+     }
+ 
+@@ -84,17 +99,17 @@ class SettingsAppearanceScreen : SearchableSettings {
+         uiPreferences: UiPreferences,
+     ): Preference.PreferenceGroup {
+         return Preference.PreferenceGroup(
+-            title = stringResource(id = R.string.pref_category_navigation),
++            title = stringResource(R.string.pref_category_navigation),
+             enabled = remember(context) { context.isTablet() },
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.sideNavIconAlignment(),
+-                    title = stringResource(id = R.string.pref_side_nav_icon_alignment),
++                    title = stringResource(R.string.pref_side_nav_icon_alignment),
+                     subtitle = "%s",
+                     entries = mapOf(
+-                        0 to stringResource(id = R.string.alignment_top),
+-                        1 to stringResource(id = R.string.alignment_center),
+-                        2 to stringResource(id = R.string.alignment_bottom),
++                        0 to stringResource(R.string.alignment_top),
++                        1 to stringResource(R.string.alignment_center),
++                        2 to stringResource(R.string.alignment_bottom),
+                     ),
+                 ),
+             ),
+@@ -105,26 +120,26 @@ class SettingsAppearanceScreen : SearchableSettings {
+     private fun getTimestampGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
+         val now = remember { Date().time }
+         return Preference.PreferenceGroup(
+-            title = stringResource(id = R.string.pref_category_timestamps),
++            title = stringResource(R.string.pref_category_timestamps),
+             preferenceItems = listOf(
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.relativeTime(),
+-                    title = stringResource(id = R.string.pref_relative_format),
++                    title = stringResource(R.string.pref_relative_format),
+                     subtitle = "%s",
+                     entries = mapOf(
+-                        0 to stringResource(id = R.string.off),
+-                        2 to stringResource(id = R.string.pref_relative_time_short),
+-                        7 to stringResource(id = R.string.pref_relative_time_long),
++                        0 to stringResource(R.string.off),
++                        2 to stringResource(R.string.pref_relative_time_short),
++                        7 to stringResource(R.string.pref_relative_time_long),
+                     ),
+                 ),
+                 Preference.PreferenceItem.ListPreference(
+                     pref = uiPreferences.dateFormat(),
+-                    title = stringResource(id = R.string.pref_date_format),
++                    title = stringResource(R.string.pref_date_format),
+                     subtitle = "%s",
+                     entries = DateFormats
+                         .associateWith {
+                             val formattedDate = UiPreferences.dateFormat(it).format(now)
+-                            "${it.ifEmpty { stringResource(id = R.string.label_default) }} ($formattedDate)"
++                            "${it.ifEmpty { stringResource(R.string.label_default) }} ($formattedDate)"
+                         },
+                 ),
+             ),
+
+commit 890f1a3c7b0f2ceefa86a77cb40c11567e2b5a46
+Author: Ivan Iskandar <12537387+ivaniskandar@users.noreply.github.com>
+Date:   Sat Oct 15 22:38:01 2022 +0700
+
+    Full Compose settings (#8201)
+    
+    * Uses Voyager for navigation.
+    * Replaces every screen inside settings except category editor screen since it's
+    called from several places.
+
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+new file mode 100644
+index 000000000..e66fb1b85
+--- /dev/null
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsAppearanceScreen.kt
+@@ -0,0 +1,142 @@
++package eu.kanade.presentation.more.settings.screen
++
++import android.app.Activity
++import android.content.Context
++import android.os.Build
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.ReadOnlyComposable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.remember
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.res.stringResource
++import androidx.core.app.ActivityCompat
++import eu.kanade.domain.ui.UiPreferences
++import eu.kanade.domain.ui.model.ThemeMode
++import eu.kanade.presentation.more.settings.Preference
++import eu.kanade.presentation.util.collectAsState
++import eu.kanade.tachiyomi.R
++import eu.kanade.tachiyomi.util.system.isTablet
++import kotlinx.coroutines.flow.collectLatest
++import kotlinx.coroutines.flow.drop
++import kotlinx.coroutines.flow.merge
++import uy.kohesive.injekt.Injekt
++import uy.kohesive.injekt.api.get
++import java.util.Date
++
++class SettingsAppearanceScreen : SearchableSettings {
++
++    @ReadOnlyComposable
++    @Composable
++    override fun getTitle(): String = stringResource(id = R.string.pref_category_appearance)
++
++    @Composable
++    override fun getPreferences(): List<Preference> {
++        val context = LocalContext.current
++        val uiPreferences = remember { Injekt.get<UiPreferences>() }
++        val themeModePref = uiPreferences.themeMode()
++        val appThemePref = uiPreferences.appTheme()
++        val amoledPref = uiPreferences.themeDarkAmoled()
++
++        val themeMode by themeModePref.collectAsState()
++
++        LaunchedEffect(Unit) {
++            merge(appThemePref.changes(), amoledPref.changes())
++                .drop(2)
++                .collectLatest { (context as? Activity)?.let { ActivityCompat.recreate(it) } }
++        }
++
++        return listOf(
++            Preference.PreferenceItem.ListPreference(
++                pref = themeModePref,
++                title = stringResource(id = R.string.pref_category_theme),
++                subtitle = "%s",
++                entries = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
++                    mapOf(
++                        ThemeMode.SYSTEM to stringResource(id = R.string.theme_system),
++                        ThemeMode.LIGHT to stringResource(id = R.string.theme_light),
++                        ThemeMode.DARK to stringResource(id = R.string.theme_dark),
++                    )
++                } else {
++                    mapOf(
++                        ThemeMode.LIGHT to stringResource(id = R.string.theme_light),
++                        ThemeMode.DARK to stringResource(id = R.string.theme_dark),
++                    )
++                },
++            ),
++            Preference.PreferenceItem.AppThemePreference(
++                title = stringResource(id = R.string.pref_app_theme),
++                pref = appThemePref,
++            ),
++            Preference.PreferenceItem.SwitchPreference(
++                pref = amoledPref,
++                title = stringResource(id = R.string.pref_dark_theme_pure_black),
++                enabled = themeMode != ThemeMode.LIGHT,
++            ),
++            getNavigationGroup(context = context, uiPreferences = uiPreferences),
++            getTimestampGroup(uiPreferences = uiPreferences),
++        )
++    }
++
++    @Composable
++    private fun getNavigationGroup(
++        context: Context,
++        uiPreferences: UiPreferences,
++    ): Preference.PreferenceGroup {
++        return Preference.PreferenceGroup(
++            title = stringResource(id = R.string.pref_category_navigation),
++            enabled = remember(context) { context.isTablet() },
++            preferenceItems = listOf(
++                Preference.PreferenceItem.ListPreference(
++                    pref = uiPreferences.sideNavIconAlignment(),
++                    title = stringResource(id = R.string.pref_side_nav_icon_alignment),
++                    subtitle = "%s",
++                    entries = mapOf(
++                        0 to stringResource(id = R.string.alignment_top),
++                        1 to stringResource(id = R.string.alignment_center),
++                        2 to stringResource(id = R.string.alignment_bottom),
++                    ),
++                ),
++            ),
++        )
++    }
++
++    @Composable
++    private fun getTimestampGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
++        val now = remember { Date().time }
++        return Preference.PreferenceGroup(
++            title = stringResource(id = R.string.pref_category_timestamps),
++            preferenceItems = listOf(
++                Preference.PreferenceItem.ListPreference(
++                    pref = uiPreferences.relativeTime(),
++                    title = stringResource(id = R.string.pref_relative_format),
++                    subtitle = "%s",
++                    entries = mapOf(
++                        0 to stringResource(id = R.string.off),
++                        2 to stringResource(id = R.string.pref_relative_time_short),
++                        7 to stringResource(id = R.string.pref_relative_time_long),
++                    ),
++                ),
++                Preference.PreferenceItem.ListPreference(
++                    pref = uiPreferences.dateFormat(),
++                    title = stringResource(id = R.string.pref_date_format),
++                    subtitle = "%s",
++                    entries = DateFormats
++                        .associateWith {
++                            val formattedDate = UiPreferences.dateFormat(it).format(now)
++                            "${it.ifEmpty { stringResource(id = R.string.label_default) }} ($formattedDate)"
++                        },
++                ),
++            ),
++        )
++    }
++}
++
++private val DateFormats = listOf(
++    "", // Default
++    "MM/dd/yy",
++    "dd/MM/yy",
++    "yyyy-MM-dd",
++    "dd MMM yyyy",
++    "MMM dd, yyyy",
++)

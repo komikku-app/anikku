@@ -287,9 +287,12 @@
     <string name="pref_media_next">Next</string>
     <string name="pref_media_info">When a media control is set to "Custom", it can be bound through input.conf. The key codes are 0x10004 for previous, 0x10005 for play/pause, and 0x10006 for next.</string>
 
-    <string name="paused_long_press_do_nothing">Do nothing</string>
-    <string name="paused_long_press_screenshot">Screenshot</string>
-    <string name="paused_long_press_play_2x">Play at 2x</string>
+    <string name="paused_long_press_action">Paused long press action</string>
+    <string name="paused_long_press_action_do_nothing">Do nothing</string>
+    <string name="paused_long_press_action_screenshot">Screenshot</string>
+    <string name="paused_long_press_action_play2x">Play at 2x</string>
+    <string name="pref_adjust_speed_on_drag">Adjust speed on drag</string>
+    <string name="pref_adjust_speed_on_drag_summary">Adjust playback speed by dragging left or right during long press</string>
 
     <!-- Player Settings - Decoder -->
     <string name="pref_player_decoder">Decoder</string>
@@ -1202,6 +1205,7 @@
     <string name="pref_start_screen">Start Screen</string>
     <string name="pref_library_manga_columns">Manga items per row</string>
     <string name="pref_library_anime_columns">Anime items per row</string>
+    <string name="pref_bottom_nav_show_all">Show all tabs</string>
     <string name="pref_bottom_nav_no_history">Move History to the More tab</string>
     <string name="pref_bottom_nav_no_updates">Move Updates to the More tab</string>
     <string name="pref_bottom_nav_no_manga">Move Manga to the More tab</string>
@@ -1387,4 +1391,12 @@
     <string name="onboarding_storage_action_create_folder">Create default Aniyomi folder</string>
     <string name="download_speed_limit">Chapter download speed limit</string>
     <string name="download_speed_limit_hint">Set to 0 to disable the speed limit.</string>
+
+    <string name="paused_long_press_action">Paused long press action</string>
+    <string name="paused_long_press_do_nothing">Do nothing</string>
+    <string name="paused_long_press_screenshot">Save screenshot</string>
+    <string name="paused_long_press_play_2x">Play at 2x speed</string>
+
+    <string name="pref_adjust_speed_on_drag">Adjust speed by dragging</string>
+    <string name="pref_adjust_speed_on_drag_summary">Sliding left/right while long-pressing changes the speed</string>
 </resources>
