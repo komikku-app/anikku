@@ -104,6 +104,10 @@
     <!-- Seasons -->
     <string name="seasons">Seasons</string>
 
+    <string name="paused_long_press_do_nothing">Do nothing</string>
+    <string name="paused_long_press_screenshot">Screenshot</string>
+    <string name="paused_long_press_play_2x">Play at 2x</string>
+
     <!-- Animiru -->
     <string name="tag">Tags</string>
     <string name="action_filter_fillermarked">Fillermarked</string>
