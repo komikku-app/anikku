@@ -286,10 +286,6 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         try {
             // Override the value passed as X-Requested-With in WebView requests
             val stackTrace = Looper.getMainLooper().thread.stackTrace
-            // KMK -->
-            val chromiumClasses = setOf("org.chromium.base.buildinfo", "org.chromium.base.apkinfo")
-            val chromiumMethods = setOf("getall", "getpackagename", "<init>")
-            // KMK <--
             val isChromiumCall = stackTrace.any { trace ->
                 trace.className.lowercase() in chromiumClasses &&
                     trace.methodName.lowercase() in chromiumMethods
@@ -397,6 +393,13 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 registered = false
             }
         }
+    }
+
+    companion object {
+        // KMK -->
+        private val chromiumClasses = setOf("org.chromium.base.buildinfo", "org.chromium.base.apkinfo")
+        private val chromiumMethods = setOf("getall", "getpackagename", "<init>")
+        // KMK <--
     }
 }
 
