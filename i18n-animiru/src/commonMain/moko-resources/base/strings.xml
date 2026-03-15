@@ -203,6 +203,10 @@
     <!-- Player prefs - internal player -->
     <string name="player_pref_switch_on_failure">Switch video on loading failure</string>
 
+    <!-- Player prefs - subtitles -->
+    <string name="player_pref_subtitle_black_bars">Render on black bars</string>
+    <string name="player_pref_subtitle_black_bars_summary">Display subtitles on black bars when available</string>
+
     <!-- Player - deband -->
     <string name="player_sheets_video_settings_title">Video settings</string>
     <string name="player_sheets_deband_title">Deband</string>

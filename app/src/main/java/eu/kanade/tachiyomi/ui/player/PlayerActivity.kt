@@ -88,6 +88,7 @@ import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
@@ -133,6 +134,7 @@ class PlayerActivity : BaseActivity() {
     private val playerPreferences: PlayerPreferences = Injekt.get()
     private val audioPreferences: AudioPreferences = Injekt.get()
     private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get()
+    private val subtitlePreferences: SubtitlePreferences = Injekt.get()
     private val storageManager: StorageManager = Injekt.get()
 
     // Cast -->
@@ -547,8 +549,9 @@ class PlayerActivity : BaseActivity() {
         // ANK <--
         copyFontsDirectory(mpvDir)
 
-        mpv.setOptionString("sub-ass-force-margins", "yes")
-        mpv.setOptionString("sub-use-margins", "yes")
+        val showBlackBars = if (subtitlePreferences.subtitleBlackBars().get()) "yes" else "no"
+        mpv.setOptionString("sub-ass-force-margins", showBlackBars)
+        mpv.setOptionString("sub-use-margins", showBlackBars)
         mpv.addLogObserver(playerObserver)
         mpv.addObserver(playerObserver)
     }

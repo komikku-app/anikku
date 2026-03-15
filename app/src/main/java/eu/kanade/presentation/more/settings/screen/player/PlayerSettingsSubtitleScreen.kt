@@ -8,12 +8,14 @@ import eu.kanade.presentation.more.settings.screen.SearchableSettings
 import eu.kanade.presentation.util.getInvalidLanguageError
 import eu.kanade.presentation.util.isLanguageListValid
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
+import tachiyomi.i18n.animiru.AMMR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsSubtitleScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = PlayerSettingsSubtitleScreen
 
     @ReadOnlyComposable
@@ -27,6 +29,7 @@ object PlayerSettingsSubtitleScreen : SearchableSettings {
         val langPref = subtitlePreferences.preferredSubLanguages()
         val whitelist = subtitlePreferences.subtitleWhitelist()
         val blacklist = subtitlePreferences.subtitleBlacklist()
+        val blackBars = subtitlePreferences.subtitleBlackBars()
 
         return listOf(
             Preference.PreferenceItem.EditTextInfoPreference(
@@ -54,6 +57,11 @@ object PlayerSettingsSubtitleScreen : SearchableSettings {
                 preference = blacklist,
                 title = stringResource(AYMR.strings.pref_player_subtitle_blacklist),
                 dialogSubtitle = stringResource(AYMR.strings.pref_player_subtitle_blacklist_info),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = blackBars,
+                title = stringResource(AMMR.strings.player_pref_subtitle_black_bars),
+                subtitle = stringResource(AMMR.strings.player_pref_subtitle_black_bars_summary),
             ),
         )
     }
