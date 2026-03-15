@@ -437,7 +437,6 @@ private fun VideoText(
         fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Normal,
         style = MaterialTheme.typography.bodyMedium,
         color = if (selected) MaterialTheme.colorScheme.primary else Color.Unspecified,
-        maxLines = 6,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
             .padding(
