@@ -2,4 +2,18 @@
 <resources>
     <string name="pref_app_icon">Ikon aplikasi</string>
     <string name="pref_app_icon_toast">Ikon aplikasi diganti ke %s</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
+    <string name="install_amnis">Amnis Player perlu diinstal</string>
+    <string name="pref_category_torrentserver">Preferensi TorrentServer</string>
+    <string name="pref_torrentserver_port">Port TorrentServer</string>
+    <string name="torrentserver_is_running">Server Torrent sedang berjalan</string>
+    <string name="pref_torrent_trackers">Pelacak Torrent</string>
+    <string name="pref_reset_torrent_trackers_string">Atur ulang string pelacak torrent default</string>
+    <string name="flare_solver_user_agent_update_success">FlareSolverr berfungsi. Agen pengguna telah diperbarui. Silakan mulai ulang aplikasi</string>
+    <string name="flare_solver_update_user_agent_failed">FlareSolverr tidak berfungsi. Agen pengguna belum diperbarui. Silakan periksa pengaturan Anda</string>
+    <string name="flare_solver_error">Terjadi kesalahan saat menghubungi FlareSolverr</string>
+    <string name="flare_solver_error_webview">Penyelesaian kesalahan dengan WebView</string>
+    <string name="pref_enable_flare_solverr">Aktifkan FlareSolverr</string>
+    <string name="pref_enable_flare_solverr_summary">Gunakan FlareSolverr untuk melewati perlindungan anti-bot Cloudflare</string>
+    <string name="pref_flare_solverr_url">URL FlareSolverr</string>
 </resources>
