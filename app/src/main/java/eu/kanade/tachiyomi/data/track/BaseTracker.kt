@@ -16,6 +16,7 @@ import okhttp3.OkHttpClient
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.track.interactor.InsertTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -75,10 +76,12 @@ abstract class BaseTracker(
         trackPreferences.setCredentials(this, username, password)
     }
 
-    override suspend fun register(item: Track, animeId: Long) {
-        item.anime_id = animeId
+    // AM -->
+    override suspend fun register(item: Track, anime: Anime) {
+        item.anime_id = anime.id
         try {
-            addTracks.bind(this, item, animeId)
+            addTracks.bind(this, item, anime)
+            // <-- AM
         } catch (e: Throwable) {
             withUIContext { Injekt.get<Application>().toast(e.message) }
         }

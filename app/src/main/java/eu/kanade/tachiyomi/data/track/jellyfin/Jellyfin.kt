@@ -14,6 +14,7 @@ import okhttp3.Dns
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.domain.manga.model.Manga as Anime
 import tachiyomi.domain.track.model.Track as DomainTrack
 
 class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
@@ -92,6 +93,16 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
         } catch (_: Exception) {
             null
         }
+
+    // AM -->
+    override suspend fun matchSeason(anime: Anime): TrackSearch? {
+        return try {
+            api.getTrackSearch(anime.url)
+        } catch (_: Exception) {
+            null
+        }
+    }
+    // <-- AM
 
     override fun isTrackFrom(track: DomainTrack, manga: Manga, source: Source?): Boolean =
         track.remoteUrl == manga.url && source?.let { accept(it) } == true

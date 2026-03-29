@@ -109,6 +109,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
 import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import mihon.domain.manga.model.toDomainManga
@@ -616,7 +617,25 @@ class MangaScreenModel(
 
     private suspend fun syncTrackers() {
         if (!trackPreferences.autoSyncProgressFromTrackers().get()) return
-        refreshTrackers(enhancedTrackersOnly = false)
+
+        // AM -->
+        val state = successState ?: return
+
+        when (state.manga.fetchType) {
+            FetchType.Seasons -> {
+                state.seasons.chunked(5).forEach { s ->
+                    supervisorScope {
+                        s.map { season ->
+                            async { refreshTrackers(mangaId = season.seasonAnime.id, enhancedTrackersOnly = true) }
+                        }.awaitAll()
+                    }
+                }
+            }
+            FetchType.Episodes -> {
+                // <-- AM
+                refreshTrackers(enhancedTrackersOnly = false)
+            }
+        }
     }
     // KMK <--
 
@@ -1567,6 +1586,9 @@ class MangaScreenModel(
         // KMK -->
         enhancedTrackersOnly: Boolean = true,
         // KMK <--
+        // ANK -->
+        mangaId: Long = this.mangaId,
+        // ANK <--
         refreshTracks: RefreshTracks = Injekt.get(),
     ) {
         // KMK -->
@@ -2250,6 +2272,11 @@ class MangaScreenModel(
                         listOf(source)
                     }
                     loggedInTrackers.filter { (it as? EnhancedTracker)?.accept(sources) ?: true }
+                        // AM -->
+                        // For now, only enhanced trackers supports season tracking to sync the seasons.
+                        // This could probably be fleshed out later.
+                        .filter { manga.fetchType == FetchType.Episodes || it is EnhancedTracker }
+                    // <-- AM
                 } ?: loggedInTrackers.filterNot { it is EnhancedTracker }
                 // KMK <--
                 val supportedTrackerIds = supportedTrackers.map { it.id }.toHashSet()

@@ -591,6 +591,9 @@ class MangaScreen(
                     screen = TrackInfoDialogHomeScreen(
                         mangaId = successState.manga.id,
                         mangaTitle = successState.manga.title,
+                        // AM -->
+                        isSeason = successState.manga.fetchType == FetchType.Seasons,
+                        // <-- AM
                         sourceId = successState.source.id,
                     ),
                     enableSwipeDismiss = { it.lastItem is TrackInfoDialogHomeScreen },

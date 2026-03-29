@@ -10,6 +10,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import okhttp3.OkHttpClient
+import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.track.model.Track
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -91,7 +92,9 @@ data class DummyTracker(
 
     override suspend fun register(
         item: eu.kanade.tachiyomi.data.database.models.Track,
-        animeId: Long,
+        // AM -->
+        anime: Anime,
+        // <-- AM
     ) = Unit
 
     override suspend fun setRemoteStatus(

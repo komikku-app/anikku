@@ -48,6 +48,7 @@ import eu.kanade.presentation.track.TrackScoreSelector
 import eu.kanade.presentation.track.TrackStatusSelector
 import eu.kanade.presentation.track.TrackerSearch
 import eu.kanade.presentation.util.Screen
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.data.track.DeletableTracker
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
@@ -96,6 +97,9 @@ import java.time.ZoneOffset
 data class TrackInfoDialogHomeScreen(
     private val mangaId: Long,
     private val mangaTitle: String,
+    // AM -->
+    private val isSeason: Boolean,
+    // <-- AM
     private val sourceId: Long,
 ) : Screen() {
 
@@ -111,6 +115,9 @@ data class TrackInfoDialogHomeScreen(
         TrackInfoDialogHome(
             trackItems = state.trackItems,
             dateFormat = dateFormat,
+            // AM -->
+            isSeason = isSeason,
+            // <-- AM
             onStatusClick = {
                 navigator.push(
                     TrackStatusSelectorScreen(
@@ -247,10 +254,15 @@ data class TrackInfoDialogHomeScreen(
         fun registerEnhancedTracking(item: TrackItem) {
             item.tracker as EnhancedTracker
             screenModelScope.launchNonCancellable {
-                val manga = getMangaForTracking(item) ?: return@launchNonCancellable
+                val anime = getMangaForTracking(item) ?: return@launchNonCancellable
                 try {
-                    val matchResult = item.tracker.match(manga) ?: throw Exception()
-                    item.tracker.register(matchResult, mangaId)
+                    // AM -->
+                    val matchResult = when (anime.fetchType) {
+                        FetchType.Episodes -> item.tracker.match(anime) ?: throw Exception()
+                        FetchType.Seasons -> item.tracker.matchSeason(anime) ?: throw Exception()
+                    }
+                    item.tracker.register(matchResult, anime)
+                    // <-- AM
                 } catch (_: Exception) {
                     withUIContext { Injekt.get<Application>().toast(MR.strings.error_no_match) }
                 }
@@ -760,7 +772,12 @@ data class TrackerSearchScreen(
         }
 
         fun registerTracking(item: TrackSearch) {
-            screenModelScope.launchNonCancellable { tracker.register(item, mangaId) }
+            screenModelScope.launchNonCancellable {
+                // AM -->
+                val anime = Injekt.get<GetManga>().await(mangaId) ?: return@launchNonCancellable
+                tracker.register(item, anime)
+                // <-- AM
+            }
         }
 
         fun updateSelection(selected: TrackSearch) {

@@ -66,6 +66,9 @@ import java.time.format.DateTimeFormatter
 fun TrackInfoDialogHome(
     trackItems: List<TrackItem>,
     dateFormat: DateTimeFormatter,
+    // AM -->
+    isSeason: Boolean,
+    // <-- AM
     onStatusClick: (TrackItem) -> Unit,
     onChapterClick: (TrackItem) -> Unit,
     onScoreClick: (TrackItem) -> Unit,
@@ -94,6 +97,9 @@ fun TrackInfoDialogHome(
                 TrackInfoItem(
                     title = item.track.title,
                     tracker = item.tracker,
+                    // AM -->
+                    isSeason = isSeason,
+                    // <-- AM
                     status = item.tracker.getStatus(item.track.status),
                     onStatusClick = { onStatusClick(item) },
                     chapters = "${item.track.lastChapterRead.toInt()}".let {
@@ -140,6 +146,9 @@ fun TrackInfoDialogHome(
 private fun TrackInfoItem(
     title: String,
     tracker: Tracker,
+    // AM -->
+    isSeason: Boolean,
+    // <-- AM
     status: StringResource?,
     onStatusClick: () -> Unit,
     chapters: String,
@@ -216,54 +225,58 @@ private fun TrackInfoItem(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .padding(top = 12.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .padding(8.dp)
-                .clip(RoundedCornerShape(6.dp)),
-        ) {
-            Column {
-                Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-                    TrackDetailsItem(
-                        modifier = Modifier.weight(1f),
-                        text = status?.let { stringResource(it) } ?: "",
-                        onClick = onStatusClick,
-                    )
-                    VerticalDivider()
-                    TrackDetailsItem(
-                        modifier = Modifier.weight(1f),
-                        text = chapters,
-                        onClick = onChaptersClick,
-                    )
-                    if (onScoreClick != null) {
+        // AM -->
+        if (!isSeason) {
+            // <-- AM
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(6.dp)),
+            ) {
+                Column {
+                    Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                        TrackDetailsItem(
+                            modifier = Modifier.weight(1f),
+                            text = status?.let { stringResource(it) } ?: "",
+                            onClick = onStatusClick,
+                        )
                         VerticalDivider()
                         TrackDetailsItem(
                             modifier = Modifier.weight(1f),
-                            text = score,
-                            placeholder = stringResource(MR.strings.score),
-                            onClick = onScoreClick,
+                            text = chapters,
+                            onClick = onChaptersClick,
                         )
+                        if (onScoreClick != null) {
+                            VerticalDivider()
+                            TrackDetailsItem(
+                                modifier = Modifier.weight(1f),
+                                text = score,
+                                placeholder = stringResource(MR.strings.score),
+                                onClick = onScoreClick,
+                            )
+                        }
                     }
-                }
 
-                if (onStartDateClick != null && onEndDateClick != null) {
-                    HorizontalDivider()
-                    Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-                        TrackDetailsItem(
-                            modifier = Modifier.weight(1F),
-                            text = startDate,
-                            placeholder = stringResource(MR.strings.track_started_reading_date),
-                            onClick = onStartDateClick,
-                        )
-                        VerticalDivider()
-                        TrackDetailsItem(
-                            modifier = Modifier.weight(1F),
-                            text = endDate,
-                            placeholder = stringResource(MR.strings.track_finished_reading_date),
-                            onClick = onEndDateClick,
-                        )
+                    if (onStartDateClick != null && onEndDateClick != null) {
+                        HorizontalDivider()
+                        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                            TrackDetailsItem(
+                                modifier = Modifier.weight(1F),
+                                text = startDate,
+                                placeholder = stringResource(MR.strings.track_started_reading_date),
+                                onClick = onStartDateClick,
+                            )
+                            VerticalDivider()
+                            TrackDetailsItem(
+                                modifier = Modifier.weight(1F),
+                                text = endDate,
+                                placeholder = stringResource(MR.strings.track_finished_reading_date),
+                                onClick = onEndDateClick,
+                            )
+                        }
                     }
                 }
             }
