@@ -1401,7 +1401,9 @@ class PlayerViewModel @JvmOverloads constructor(
                 _hasNextEpisode.update { _ -> getCurrentEpisodeIndex() != currentPlaylist.value.size - 1 }
 
                 // Write to mpv table
+                val parentTitle = anime.parentId?.let { getAnime.await(it)?.title } ?: ""
                 mpv.setPropertyString("user-data/current-anime/anime-title", anime.title)
+                mpv.setPropertyString("user-data/current-anime/parent-title", parentTitle)
                 mpv.setPropertyInt("user-data/current-anime/intro-length", getAnimeSkipIntroLength())
                 mpv.setPropertyString(
                     "user-data/current-anime/category",
