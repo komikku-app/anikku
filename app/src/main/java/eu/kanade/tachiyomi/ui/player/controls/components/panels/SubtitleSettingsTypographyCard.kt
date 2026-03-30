@@ -309,7 +309,6 @@ fun resetTypography(
 ) {
     mpv.setPropertyBoolean("sub-bold", preferences.boldSubtitles().deleteAndGet())
     mpv.setPropertyBoolean("sub-italic", preferences.italicSubtitles().deleteAndGet())
-    mpv.setPropertyBoolean("sub-ass-justify", preferences.overrideSubsASS().deleteAndGet())
     mpv.setPropertyString("sub-justify", preferences.subtitleJustification().deleteAndGet().value)
     mpv.setPropertyString("sub-font", preferences.subtitleFont().deleteAndGet())
     mpv.setPropertyInt("sub-font-size", preferences.subtitleFontSize().deleteAndGet())

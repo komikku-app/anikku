@@ -44,6 +44,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitleSettings
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitlesBorderStyle
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.VideoSettingsPanel
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleJustification
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -63,7 +64,7 @@ fun PlayerPanels(
     subShadowOffset: Int,
     subColor: SubColorType,
     currentSubtitleColor: Int,
-    overrideAssSubs: Boolean,
+    overrideAssSubs: SubtitleAssOverride,
     subScale: Float,
     subPos: Int,
     onSubBoldChange: (Boolean) -> Unit,
@@ -76,7 +77,7 @@ fun PlayerPanels(
     onSubShadowOffsetChange: (Int) -> Unit,
     onSubColorChange: (Int) -> Unit,
     onSubColorTypeChange: (SubColorType) -> Unit,
-    onOverrideAssSubsChange: (Boolean) -> Unit,
+    onOverrideAssSubsChange: (SubtitleAssOverride) -> Unit,
     onSubScaleChange: (Float) -> Unit,
     onSubPosChange: (Int) -> Unit,
     onSubtitleSettingsReset: () -> Unit,

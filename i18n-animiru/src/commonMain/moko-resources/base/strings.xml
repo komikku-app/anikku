@@ -220,6 +220,13 @@
     <string name="player_sheets_deband_range">Range</string>
     <string name="player_sheets_deband_grain">Grain</string>
 
+    <!-- Player - subtitles -->
+    <string name="player_sheets_subtitles_ass_no">No</string>
+    <string name="player_sheets_subtitles_ass_yes">Yes</string>
+    <string name="player_sheets_subtitles_ass_scale">Scale</string>
+    <string name="player_sheets_subtitles_ass_force">Force</string>
+    <string name="player_sheets_subtitles_ass_strip">Strip</string>
+
     <!-- Tracking -->
     <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
     <string name="pref_smart_sync_tracker">Smart sync seasons</string>

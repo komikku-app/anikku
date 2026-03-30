@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.DecoderPreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import `is`.xyz.mpv.BaseMPVView
 import `is`.xyz.mpv.KeyMapping
@@ -200,11 +201,11 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         )
 
         mpv?.setOptionString("sub-font", subtitlePreferences.subtitleFont().get())
-        if (subtitlePreferences.overrideSubsASS().get()) {
-            // ANK -->
-            mpv?.setOptionString("sub-ass-override", "yes")
-            // ANK <--
-            mpv?.setOptionString("sub-ass-justify", "yes")
+        subtitlePreferences.overrideSubsASS().get().let {
+            mpv?.setOptionString("sub-ass-override", it.value)
+            if (it != SubtitleAssOverride.No) {
+                mpv?.setOptionString("sub-ass-justify", "yes")
+            }
         }
         mpv?.setOptionString("sub-font-size", subtitlePreferences.subtitleFontSize().get().toString())
         mpv?.setOptionString("sub-bold", if (subtitlePreferences.boldSubtitles().get()) "yes" else "no")

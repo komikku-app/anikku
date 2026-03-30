@@ -92,6 +92,7 @@ import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.DecoderPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleJustification
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import kotlinx.collections.immutable.persistentListOf
@@ -735,7 +736,7 @@ fun PlayerControls(
         val subColor by viewModel.mpv.propFlow<String>("sub-color").collectAsState()
         val subBorderColor by viewModel.mpv.propFlow<String>("sub-outline-color").collectAsState()
         val subBackgroundColor by viewModel.mpv.propFlow<String>("sub-back-color").collectAsState()
-        val overrideAssSubs by viewModel.mpv.propFlow<Boolean>("sub-ass-override").collectAsState()
+        val overrideAssSubs by viewModel.mpv.propFlow<String>("sub-ass-override").collectAsState()
         val subScale by viewModel.mpv.propFlow<Float>("sub-scale").collectAsState()
         val subPos by viewModel.mpv.propFlow<Int>("sub-pos").collectAsState()
         val deband by decoderPreferences.debanding().collectAsState()
@@ -770,7 +771,8 @@ fun PlayerControls(
                 SubColorType.Background -> subBackgroundColor?.toColorInt()
                     ?: subtitlePreferences.backgroundColorSubtitles().get()
             },
-            overrideAssSubs = overrideAssSubs ?: subtitlePreferences.overrideSubsASS().get(),
+            overrideAssSubs = overrideAssSubs?.let { SubtitleAssOverride.byValue(it) }
+                ?: subtitlePreferences.overrideSubsASS().get(),
             subScale = subScale ?: subtitlePreferences.subtitleFontScale().get(),
             subPos = subPos ?: subtitlePreferences.subtitlePos().get(),
             onSubBoldChange = {
@@ -827,7 +829,7 @@ fun PlayerControls(
                 }
             },
             onOverrideAssSubsChange = {
-                viewModel.mpv.setPropertyBoolean("sub-ass-override", it)
+                viewModel.mpv.setPropertyString("sub-ass-override", it.value)
                 subtitlePreferences.overrideSubsASS().set(it)
             },
             onSubScaleChange = {
@@ -852,10 +854,9 @@ fun PlayerControls(
                 subtitlePreferences.subtitleFontScale().deleteAndGet().let {
                     viewModel.mpv.setPropertyFloat("sub-scale", it)
                 }
-                subtitlePreferences.overrideSubsASS().delete()
-                // ANK -->
-                viewModel.mpv.setPropertyBoolean("sub-ass-override", subtitlePreferences.overrideSubsASS().deleteAndGet())
-                // ANK <--
+                subtitlePreferences.overrideSubsASS().deleteAndGet().let {
+                    viewModel.mpv.setPropertyString("sub-ass-override", it.value)
+                }
             },
             subDelayMsPrimary = subDelay?.times(1000)?.roundToInt() ?: subDelayPref,
             subDelayMsSecondary = subDelaySecondary?.times(1000)?.roundToInt() ?: subDelaySecondaryPref,

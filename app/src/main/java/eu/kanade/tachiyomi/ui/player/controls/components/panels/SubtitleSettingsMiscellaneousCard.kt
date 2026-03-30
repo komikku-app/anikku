@@ -17,7 +17,9 @@
 
 package eu.kanade.tachiyomi.ui.player.controls.components.panels
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,9 +27,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AlignVerticalCenter
+import androidx.compose.material.icons.filled.BorderStyle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.EditOff
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,13 +42,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.player.components.ExpandableCard
 import eu.kanade.presentation.player.components.SliderItem
-import eu.kanade.presentation.player.components.SwitchPreference
 import eu.kanade.tachiyomi.ui.player.controls.CARDS_MAX_WIDTH
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
 import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
+import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
@@ -51,10 +58,10 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun SubtitlesMiscellaneousCard(
-    overrideAssSubs: Boolean,
+    overrideAssSubs: SubtitleAssOverride,
     subScale: Float,
     subPos: Int,
-    onOverrideAssSubsChange: (Boolean) -> Unit,
+    onOverrideAssSubsChange: (SubtitleAssOverride) -> Unit,
     onSubScaleChange: (Float) -> Unit,
     onSubPosChange: (Int) -> Unit,
     onReset: () -> Unit,
@@ -74,12 +81,52 @@ fun SubtitlesMiscellaneousCard(
         colors = panelCardsColors(),
     ) {
         Column {
-            SwitchPreference(
-                value = overrideAssSubs,
-                onValueChange = onOverrideAssSubsChange,
-                content = { Text(stringResource(AYMR.strings.player_sheets_sub_override_ass)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            var selectingOverrideAss by remember { mutableStateOf(false) }
+            Box {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            onClick = {
+                                selectingOverrideAss = !selectingOverrideAss
+                            },
+                        )
+                        .padding(
+                            horizontal = MaterialTheme.padding.medium,
+                            vertical = MaterialTheme.padding.small,
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.large),
+                ) {
+                    Icon(Icons.Default.BorderStyle, null)
+                    Column {
+                        Text(
+                            text = stringResource(AYMR.strings.player_sheets_sub_override_ass),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = stringResource(overrideAssSubs.titleRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+                DropdownMenu(expanded = selectingOverrideAss, onDismissRequest = { selectingOverrideAss = false }) {
+                    SubtitleAssOverride.entries.forEach {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(it.titleRes)) },
+                            onClick = { onOverrideAssSubsChange(it) },
+                            trailingIcon = {
+                                if (overrideAssSubs == it) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+            }
             SliderItem(
                 label = stringResource(AYMR.strings.player_sheets_sub_scale),
                 value = subScale,

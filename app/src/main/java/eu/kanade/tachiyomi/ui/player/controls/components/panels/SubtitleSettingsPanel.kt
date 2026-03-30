@@ -20,6 +20,7 @@ package eu.kanade.tachiyomi.ui.player.controls.components.panels
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.components.MultiCardPanel
+import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleJustification
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -52,10 +53,10 @@ fun SubtitleSettingsPanel(
     onColorReset: (SubColorType) -> Unit,
     onColorTypeChange: (SubColorType) -> Unit,
     // Misc card state
-    overrideAssSubs: Boolean,
+    overrideAssSubs: SubtitleAssOverride,
     subScale: Float,
     subPos: Int,
-    onOverrideAssSubsChange: (Boolean) -> Unit,
+    onOverrideAssSubsChange: (SubtitleAssOverride) -> Unit,
     onSubScaleChange: (Float) -> Unit,
     onSubPosChange: (Int) -> Unit,
     onMiscReset: () -> Unit,

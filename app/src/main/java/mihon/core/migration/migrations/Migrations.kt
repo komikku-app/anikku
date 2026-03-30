@@ -16,4 +16,7 @@ val migrations: List<Migration>
         EpisodeSortingFlagsMigration(),
         SyncPrefKeyMigration(),
         // ANK <--
+        // AM -->
+        SubtitleAssEnumMigration(),
+        // <-- AM
     )
