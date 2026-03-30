@@ -43,6 +43,7 @@ import eu.kanade.domain.manga.model.seasonsFiltered
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.interactor.AddTracks
+import eu.kanade.domain.track.interactor.RefreshResult
 import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.interactor.TrackChapter
 import eu.kanade.domain.track.model.AutoTrackState
@@ -623,11 +624,23 @@ class MangaScreenModel(
 
         when (state.manga.fetchType) {
             FetchType.Seasons -> {
-                state.seasons.chunked(5).forEach { s ->
-                    supervisorScope {
-                        s.map { season ->
-                            async { refreshTrackers(mangaId = season.seasonAnime.id, enhancedTrackersOnly = true) }
-                        }.awaitAll()
+                if (trackPreferences.smartTrackerSync().get()) {
+                    seasons@ for (s in state.seasons) {
+                        refreshTrackers(mangaId = s.seasonAnime.id, enhancedTrackersOnly = true, skipCompleted = true)
+                            .filterIsInstance<RefreshResult.Success>()
+                            .onEach {
+                                if (it.track.lastEpisodeSeen.toLong() != it.track.totalEpisodes) {
+                                    break@seasons
+                                }
+                            }
+                    }
+                } else {
+                    state.seasons.chunked(5).forEach { s ->
+                        supervisorScope {
+                            s.map { season ->
+                                async { refreshTrackers(mangaId = season.seasonAnime.id, enhancedTrackersOnly = true) }
+                            }.awaitAll()
+                        }
                     }
                 }
             }
@@ -1589,21 +1602,30 @@ class MangaScreenModel(
         // ANK -->
         mangaId: Long = this.mangaId,
         // ANK <--
+        // AM -->
+        skipCompleted: Boolean = false,
         refreshTracks: RefreshTracks = Injekt.get(),
-    ) {
-        // KMK -->
-        refreshTracks.await(mangaId, enhancedTrackersOnly = enhancedTrackersOnly)
+    ): List<RefreshResult> {
+        // <-- AM
+        return refreshTracks.await(
+            mangaId,
+            // KMK -->
+            enhancedTrackersOnly = enhancedTrackersOnly,
             // KMK <--
-            .filter { it.first != null }
-            .forEach { (track, e) ->
+            // AM -->
+            skipCompleted = skipCompleted,
+        )
+            .onEach {
+                val (track, e) = it as? RefreshResult.Failure ?: return@onEach
+                // <-- AM
                 logcat(LogPriority.ERROR, e) {
-                    "Failed to refresh track data mangaId=$mangaId for service ${track!!.id}"
+                    "Failed to refresh track data mangaId=$mangaId for service ${track.id}"
                 }
                 withUIContext {
                     context.toast(
                         context.stringResource(
                             MR.strings.track_error,
-                            track!!.name,
+                            track.name,
                             e.message ?: "",
                         ),
                     )

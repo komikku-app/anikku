@@ -38,6 +38,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.icerock.moko.resources.StringResource
+import eu.kanade.domain.track.interactor.RefreshResult
 import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.model.toDbTrack
 import eu.kanade.domain.ui.UiPreferences
@@ -107,7 +108,15 @@ data class TrackInfoDialogHomeScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
-        val screenModel = rememberScreenModel { Model(mangaId, sourceId) }
+        val screenModel = rememberScreenModel {
+            Model(
+                mangaId,
+                sourceId,
+                // AM -->
+                isSeason,
+                // <-- AM
+            )
+        }
 
         val dateFormat = remember { UiPreferences.dateFormat(Injekt.get<UiPreferences>().dateFormat().get()) }
         val state by screenModel.state.collectAsState()
@@ -209,6 +218,9 @@ data class TrackInfoDialogHomeScreen(
     private class Model(
         private val mangaId: Long,
         private val sourceId: Long,
+        // AM -->
+        private val isSeason: Boolean,
+        // <-- AM
         private val getTracks: GetTracks = Injekt.get(),
         // SY -->
         private val trackerManager: TrackerManager = Injekt.get(),
@@ -224,7 +236,11 @@ data class TrackInfoDialogHomeScreen(
 
         init {
             screenModelScope.launch {
-                refreshTrackers()
+                // AM -->
+                if (!isSeason) {
+                    // <-- AM
+                    refreshTrackers()
+                }
             }
 
             screenModelScope.launch {
@@ -274,16 +290,18 @@ data class TrackInfoDialogHomeScreen(
             val context = Injekt.get<Application>()
 
             refreshTracks.await(mangaId)
-                .filter { it.first != null }
+                // AM -->
+                .filterIsInstance<RefreshResult.Failure>()
+                // <-- AM
                 .forEach { (track, e) ->
                     logcat(LogPriority.ERROR, e) {
-                        "Failed to refresh track data animeId=$mangaId for service ${track!!.id}"
+                        "Failed to refresh track data animeId=$mangaId for service ${track.id}"
                     }
                     withUIContext {
                         context.toast(
                             context.stringResource(
                                 MR.strings.track_error,
-                                track!!.name,
+                                track.name,
                                 e.message ?: "",
                             ),
                         )

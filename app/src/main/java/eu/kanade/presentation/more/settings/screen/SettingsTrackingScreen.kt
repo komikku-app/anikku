@@ -63,6 +63,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.animiru.AMMR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
@@ -144,6 +145,13 @@ object SettingsTrackingScreen : SearchableSettings {
                 preference = trackPreferences.autoUpdateTrack(),
                 title = stringResource(AMR.strings.pref_auto_update_anime_sync),
             ),
+            // AM -->
+            Preference.PreferenceItem.SwitchPreference(
+                preference = trackPreferences.smartTrackerSync(),
+                title = stringResource(AMMR.strings.pref_smart_sync_tracker),
+                subtitle = stringResource(AMMR.strings.pref_smart_sync_tracker_summary),
+            ),
+            // <-- AM
             Preference.PreferenceItem.ListPreference(
                 preference = trackPreferences.autoUpdateTrackOnMarkRead(),
                 entries = AutoTrackState.entries

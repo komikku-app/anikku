@@ -50,6 +50,10 @@ class TrackPreferences(
         AutoTrackState.ALWAYS,
     )
 
+    // AM -->
+    fun smartTrackerSync() = preferenceStore.getBoolean("smart_sync_trackers", true)
+    // <-- AM
+
     // KMK -->
     fun autoSyncProgressFromTrackers() = preferenceStore.getBoolean("pref_auto_sync_progress_from_trackers_key", true)
     // KMK <--

@@ -95,11 +95,10 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedTracker {
         }
 
     // AM -->
-    override suspend fun matchSeason(anime: Anime): TrackSearch? {
-        return try {
-            api.getTrackSearch(anime.url)
-        } catch (_: Exception) {
-            null
+    override suspend fun matchSeason(anime: Anime): TrackSearch {
+        return TrackSearch.create(id).apply {
+            title = anime.title
+            tracking_url = anime.url
         }
     }
     // <-- AM

@@ -20,4 +20,5 @@ data class Track(
 ) : Serializable {
     val animeId = mangaId
     val lastEpisodeSeen = lastChapterRead
+    val totalEpisodes = totalChapters
 }

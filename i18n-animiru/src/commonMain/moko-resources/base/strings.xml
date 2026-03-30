@@ -57,6 +57,8 @@
     <string name="am.migrationConfigScreen.prioritizeByChaptersTitle">Match based on episode number</string>
     <string name="am.migrationListScreen.matchWithoutEpisodeToast">No episodes found, this entry cannot be used for migration</string>
     <string name="am.migrationListScreen.matchWithoutSeasonToast">No seasons found, this entry cannot be used for migration</string>
+    <string name="am.pref_disallow_non_ascii_filenames_details">Ensures compatibility with certain storage media that don't support Unicode. When this is enabled, you'll need to manually rename source and anime folders by replacing non-ASCII characters with their lowercase UTF-8 hexadecimal representations. Episode files don't need to be renamed.</string>
+    <string name="am.action_filter_unseen">Unseen</string>
 
     <!-- Migration -->
     <string name="migrationListScreen.mismatchedFetchType">Mismatched fetch type</string>
@@ -217,4 +219,9 @@
     <string name="player_sheets_deband_threshold">Threshold</string>
     <string name="player_sheets_deband_range">Range</string>
     <string name="player_sheets_deband_grain">Grain</string>
+
+    <!-- Tracking -->
+    <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
+    <string name="pref_smart_sync_tracker">Smart sync seasons</string>
+    <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
 </resources>
