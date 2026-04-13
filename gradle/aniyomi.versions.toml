@@ -1,5 +1,5 @@
 [versions]
-mpv-lib = "0.1.12"
+mpv-lib = "0.1.13"
 arthenica-smartexceptions = "0.2.1"
 constraint-layout = "1.1.1"
 ffmpeg-kit = "1.18"

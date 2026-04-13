@@ -54,13 +54,6 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 
 ### Fixed
 - Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
-
-## [v0.19.7.0] - 2026-03-30
-### Added
-- Add parent title to user-data in lua ([@Secozzi](https://github.com/Secozzi)) ([#142](https://github.com/quickdesh/Animiru/pull/142))
-
-### Fixed
-- Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
 - Fix being able to add unsupported trackers to entries with seasons ([@Secozzi](https://github.com/Secozzi)) ([#147](https://github.com/quickdesh/Animiru/pull/147))
 
 ## [v0.19.7.0] - 2026-03-30
@@ -99,6 +92,12 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
   - Add `src:local` as a way to search for Local Source entries ([@MajorTanya](https://github.com/MajorTanya)) ([#2928](https://github.com/mihonapp/mihon/pull/2928))
 - Add support for extension lib 16 ([@Secozzi](https://github.com/Secozzi)) ([#104](https://github.com/quickdesh/Animiru/pull/104))
 - Added a description for the horizontal seek gesture setting ([@kenkoro](https://github.com/kenkoro)) ([#2224](https://github.com/aniyomiorg/aniyomi/pull/2224))
+- Added option to automatically select another video on failure to load current one ([@Secozzi](https://github.com/Secozzi)) ([#132](https://github.com/quickdesh/Animiru/pull/132))
+- Added `show_seek_text` to lua bridge ([@Secozzi](https://github.com/Secozzi)) ([#132](https://github.com/quickdesh/Animiru/pull/132))
+
+### Improved
+- External subtitle tracks only load on selection ([@Secozzi](https://github.com/Secozzi)) ([#132](https://github.com/quickdesh/Animiru/pull/132))
+- Chapter skipping for intro skip actually seeks by chapter([@Secozzi](https://github.com/Secozzi)) ([#132](https://github.com/quickdesh/Animiru/pull/132))
 
 ### Fixed
 - Make the scrollbar on the anime screen less buggy ([@Secozzi](https://github.com/Secozzi)) ([#118](https://github.com/quickdesh/Animiru/pull/118))
