@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
+import animiru.feature.mpvfiles.MpvConfig
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import eu.kanade.domain.track.store.DelayedTrackingStore
@@ -194,6 +195,7 @@ class AppModule(val app: Application) : InjektModule {
         // KMK <--
 
         // AM -->
+        addSingletonFactory { MpvConfig(app, get(), get(), get()) }
         addSingletonFactory { AudioManager(app) }
         addSingletonFactory { BrightnessManager(app) }
         // <-- AM
