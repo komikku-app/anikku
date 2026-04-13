@@ -11,6 +11,29 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Fixed
+- Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
+- Fix being able to add unsupported trackers to entries with seasons ([@Secozzi](https://github.com/Secozzi)) ([#147](https://github.com/quickdesh/Animiru/pull/147))
+
+## [v0.19.7.0] - 2026-03-30
+### Added
+- Add parent title to user-data in lua ([@Secozzi](https://github.com/Secozzi)) ([#142](https://github.com/quickdesh/Animiru/pull/142))
+
+### Fixed
+- Fix "Override ASS/SSA subtitles" option ([@Secozzi](https://github.com/Secozzi)) ([#141](https://github.com/quickdesh/Animiru/pull/141))
+
+## [v0.19.4.2] - 2026-03-30
+### Added
+- Added season support for (enhanced) trackers ([@Secozzi](https://github.com/Secozzi)) ([#139](https://github.com/quickdesh/Animiru/pull/139))
+- Added smart sync option for seasons ([@Secozzi](https://github.com/Secozzi)) ([#140](https://github.com/quickdesh/Animiru/pull/140))
+
+### Improved
+- Improved two-way sync for enhanced trackers ([@Secozzi](https://github.com/Secozzi)) ([#138](https://github.com/quickdesh/Animiru/pull/138))
+
+### Fixed
+- Fixed Jellyfin tracking for movies and entries with no episodes ([@Secozzi](https://github.com/Secozzi)) ([#140](https://github.com/quickdesh/Animiru/pull/140))
+
+## [v0.19.4.1] - 2026-03-15
 ### Improved
 - Added option to toggle subtitle rendering on black bars ([@Secozzi](https://github.com/Secozzi)) ([#134](https://github.com/quickdesh/Animiru/pull/134))
 - Remove line limit for videos in quality sheet ([@Secozzi](https://github.com/Secozzi)) ([#135](https://github.com/quickdesh/Animiru/pull/135))

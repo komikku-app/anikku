@@ -331,7 +331,11 @@ data class TrackInfoDialogHomeScreen(
                     }
                     trackers.filter { (it.tracker as? EnhancedTracker)?.accept(sources) ?: true }
                 }
-            // KMK <--
+                // KMK <--
+                // AM -->
+                // Only show enhanced trackers for seasons for now
+                .filter { !isSeason || it.tracker is EnhancedTracker }
+            // <-- AM
         }
 
         @Immutable
