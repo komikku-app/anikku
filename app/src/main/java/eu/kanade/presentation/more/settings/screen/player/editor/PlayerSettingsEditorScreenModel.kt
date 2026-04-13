@@ -2,8 +2,10 @@ package eu.kanade.presentation.more.settings.screen.player.editor
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
+import animiru.feature.mpvfiles.MpvConfig.Companion.MPV_DIR
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.hippo.unifile.UniFile
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.util.size
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -60,6 +62,17 @@ class PlayerSettingsEditorScreenModel(
                 return
             }
 
+        // AM -->
+        UniFile.fromFile(context.filesDir)
+            ?.createDirectory(MPV_DIR)
+            ?.createDirectory(selectedType.value.directoryName)
+            ?.createFile(fileName)
+            ?: run {
+                context.toast(context.stringResource(AYMR.strings.editor_create_error))
+                return
+            }
+        // <-- AM
+
         updateItems(selectedType.value)
     }
 
@@ -68,7 +81,14 @@ class PlayerSettingsEditorScreenModel(
             ?.createDirectory(selectedType.value.directoryName)
             ?.createFile(originalFile)
 
-        if (file?.renameTo(fileName) == true) {
+        // AM -->
+        val internalFile = UniFile.fromFile(context.filesDir)
+            ?.createDirectory(MPV_DIR)
+            ?.createDirectory(selectedType.value.directoryName)
+            ?.createFile(originalFile)
+        // <-- AM
+
+        if (file?.renameTo(fileName) == true && internalFile?.renameTo(fileName) == true) {
             updateItems(selectedType.value)
         } else {
             context.toast(context.stringResource(AYMR.strings.editor_rename_error))
@@ -80,7 +100,14 @@ class PlayerSettingsEditorScreenModel(
             ?.createDirectory(selectedType.value.directoryName)
             ?.findFile(name)
 
-        if (file?.delete() == true) {
+        // AM -->
+        val internalFile = UniFile.fromFile(context.filesDir)
+            ?.createDirectory(MPV_DIR)
+            ?.createDirectory(selectedType.value.directoryName)
+            ?.createFile(name)
+        // <-- AM
+
+        if (file?.delete() == true && internalFile?.delete() == true) {
             updateItems(selectedType.value)
         } else {
             context.toast(context.stringResource(AYMR.strings.editor_delete_error))

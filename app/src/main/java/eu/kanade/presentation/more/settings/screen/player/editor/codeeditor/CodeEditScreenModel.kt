@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
+import animiru.feature.mpvfiles.MpvConfig.Companion.MPV_DIR
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.hippo.unifile.UniFile
@@ -110,6 +111,10 @@ class CodeEditScreenModel(
             context.toast(AYMR.strings.editor_save_error)
             return
         }
+        // AM -->
+        val internalFile = UniFile.fromFile(context.filesDir)!!.createDirectory(MPV_DIR)!!
+            .createFile(filePath)!!
+        // <-- AM
 
         val content = (mutableState.value as? CodeEditScreenState.Success)
             ?.content?.annotatedString?.text ?: kotlin.run {
@@ -121,6 +126,13 @@ class CodeEditScreenModel(
             file.openOutputStream()
                 .also { (it as? FileOutputStream)?.channel?.truncate(0) }
                 .use { it.write(content.toByteArray()) }
+
+            // AM -->
+            internalFile.openOutputStream()
+                .also { (it as? FileOutputStream)?.channel?.truncate(0) }
+                .use { it.write(content.toByteArray()) }
+            // <-- AM
+
             _hasModified.update { _ -> false }
             context.toast(context.stringResource(AYMR.strings.editor_save_success))
         } catch (e: Exception) {
