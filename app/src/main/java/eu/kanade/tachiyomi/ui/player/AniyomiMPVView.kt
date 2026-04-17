@@ -49,6 +49,17 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
 
     var isExiting = false
 
+    private val optionNameRegex = Regex("""^(?:--)?([\w-]+)(?:=|$)""", RegexOption.MULTILINE)
+    private val mpvOptionNames = optionNameRegex.findAll(advancedPreferences.mpvConf().get()).map {
+        it.groupValues[1].removePrefix("no-")
+    }.toSet()
+
+    // Set mpv option unless it's present in mpv.conf
+    private fun setSafeOptionString(name: String, value: String) {
+        if (name in mpvOptionNames) return
+        mpv?.setOptionString(name, value)
+    }
+
     /**
      * Returns the video aspect ratio. Rotation is taken into account.
      */
@@ -63,7 +74,7 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         this.mpv = mpvInst
         setVo(if (decoderPreferences.gpuNext().get()) "gpu-next" else "gpu")
         mpv?.setPropertyBoolean("pause", true)
-        mpv?.setOptionString("profile", "fast")
+        setSafeOptionString("profile", "fast")
         mpv?.setOptionString("hwdec", if (decoderPreferences.tryHWDecoding().get()) "auto" else "no")
 
         if (decoderPreferences.useYUV420P().get()) {
@@ -75,8 +86,8 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
 
         mpv?.setOptionString("idle", "yes")
         mpv?.setOptionString("ytdl", "no")
-        mpv?.setOptionString("tls-verify", "yes")
-        mpv?.setOptionString("tls-ca-file", "${context.filesDir.path}/${PlayerActivity.MPV_DIR}/cacert.pem")
+        setSafeOptionString("tls-verify", "yes")
+        setSafeOptionString("tls-ca-file", "${context.filesDir.path}/${PlayerActivity.MPV_DIR}/cacert.pem")
 
         // We handle selecting this in the viewmodel
         mpv?.setOptionString("sid", "no")
@@ -84,8 +95,8 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
 
         // Limit demuxer cache since the defaults are too high for mobile devices
         val cacheMegs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
-        mpv?.setOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
-        mpv?.setOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
+        setSafeOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
+        setSafeOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
 
         val screenshotDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         screenshotDir.mkdirs()
@@ -97,7 +108,7 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
 
         mpv?.setOptionString("speed", playerPreferences.playerSpeed().get().toString())
         // workaround for <https://github.com/mpv-player/mpv/issues/14651>
-        mpv?.setOptionString("vd-lavc-film-grain", "cpu")
+        setSafeOptionString("vd-lavc-film-grain", "cpu")
 
         postInitOptions()
         setupSubtitlesOptions()
