@@ -12,6 +12,17 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 ### Fixed
+- Fixed player crash when running out of available videos ([@Secozzi](https://github.com/Secozzi)) ([#150](https://github.com/quickdesh/Animiru/pull/150))
+
+## [v0.19.7.2] - 2026-04-13
+### Fixed
+- Fixed app crash ([@Secozzi](https://github.com/Secozzi)) ([#148](https://github.com/quickdesh/Animiru/pull/148))
+
+## [v0.19.7.1] - 2026-04-13
+### Improved
+- Copy over mpv files on app resume ([@Secozzi](https://github.com/Secozzi)) ([#143](https://github.com/quickdesh/Animiru/pull/143))
+
+### Fixed
 - Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
 - Fix being able to add unsupported trackers to entries with seasons ([@Secozzi](https://github.com/Secozzi)) ([#147](https://github.com/quickdesh/Animiru/pull/147))
 

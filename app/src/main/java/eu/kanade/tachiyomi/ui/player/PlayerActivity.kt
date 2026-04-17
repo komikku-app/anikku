@@ -868,7 +868,9 @@ class PlayerActivity : BaseActivity() {
                 viewModel.setCurrentVideoError()
 
                 if (playerPreferences.switchOnFailure().get()) {
-                    viewModel.loadBestVideo()
+                    if (!viewModel.loadBestVideo()) {
+                        finish()
+                    }
                 } else {
                     viewModel.setIsStopped(true)
                 }
