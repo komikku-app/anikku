@@ -16,4 +16,10 @@
     <string name="pref_enable_flare_solverr">Aktifkan FlareSolverr</string>
     <string name="pref_enable_flare_solverr_summary">Gunakan FlareSolverr untuk melewati perlindungan anti-bot Cloudflare</string>
     <string name="pref_flare_solverr_url">URL FlareSolverr</string>
+    <string name="pref_flare_solverr_url_summary">URL dari perumpamaan FlareSolver untuk digunakan sebagai contoh http://192.168.1.202:8191/v1</string>
+    <string name="pref_test_flare_solverr_and_update_user_agent">Uji coba FlareSolverr dan pembaruan agen pengguna</string>
+    <string name="pref_test_flare_solverr_and_update_user_agent_summary">Uji coba FlareSolverr untuk memperbarui agen pengguna. Hanya diperlukan sekali; lalu beralih sesuai yang diperlukan.</string>
+    <string name="media_route_menu_title">PERPANJANG</string>
+    <string name="pref_category_cast">Pengaturan Pemeran</string>
+    <string name="pref_enable_cast">Aktifkan atau nonaktifkan Pemeran</string>
 </resources>
