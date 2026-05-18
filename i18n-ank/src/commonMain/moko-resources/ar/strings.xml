@@ -226,4 +226,5 @@
     <string name="episode_updates_merged_entry_desc">سيؤدي تبديل هذا الخيار إلى الغاء أو تفعيل تحديثات الحلقة لهذا العنصر المدمج</string>
     <string name="merged_episode_updates_error">إظهار/إخفاء خطأ تحديث الحلقة</string>
     <string name="fetch_episode_updates">تحديث الحلقة</string>
+    <string name="merged_toggle_download_episodes_error">مرحبا</string>
 </resources>
