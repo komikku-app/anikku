@@ -46,6 +46,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.panels.VideoSettingsPan
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleJustification
+import kotlinx.collections.immutable.ImmutableList
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -58,6 +59,7 @@ fun PlayerPanels(
     isItalic: Boolean,
     subJustify: SubtitleJustification,
     subFont: String,
+    subFontList: ImmutableList<String>,
     subFontSize: Int,
     subBorderStyle: SubtitlesBorderStyle,
     subBorderSize: Int,
@@ -129,6 +131,7 @@ fun PlayerPanels(
                     isItalic = isItalic,
                     justify = subJustify,
                     font = subFont,
+                    fontList = subFontList,
                     fontSize = subFontSize,
                     borderStyle = subBorderStyle,
                     borderSize = subBorderSize,

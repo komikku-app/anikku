@@ -208,6 +208,7 @@
     <!-- Player prefs - subtitles -->
     <string name="player_pref_subtitle_black_bars">Render on black bars</string>
     <string name="player_pref_subtitle_black_bars_summary">Display subtitles on black bars when available</string>
+    <string name="player_pref_subtitle_system_fonts">Include system fonts</string>
 
     <!-- Player - deband -->
     <string name="player_sheets_video_settings_title">Video settings</string>

@@ -46,7 +46,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,7 +54,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.yubyf.truetypeparser.TTFFile
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.player.components.ExpandableCard
@@ -67,17 +65,12 @@ import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleJustification
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import `is`.xyz.mpv.MPV
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.core.common.preference.deleteAndGet
-import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun SubtitleSettingsTypographyCard(
@@ -85,6 +78,7 @@ fun SubtitleSettingsTypographyCard(
     isItalic: Boolean,
     justify: SubtitleJustification,
     font: String,
+    fontList: ImmutableList<String>,
     fontSize: Int,
     borderStyle: SubtitlesBorderStyle,
     borderSize: Int,
@@ -100,35 +94,13 @@ fun SubtitleSettingsTypographyCard(
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val preferences = remember { Injekt.get<SubtitlePreferences>() }
-    val storageManager = remember { Injekt.get<StorageManager>() }
     var isExpanded by remember { mutableStateOf(true) }
 
-    val fontsDir = storageManager.getFontsDirectory()
-    val fonts by remember { mutableStateOf(mutableListOf(preferences.subtitleFont().defaultValue())) }
     var fontsLoadingIndicator: (@Composable () -> Unit)? by remember {
         val indicator: (@Composable () -> Unit) = {
             CircularProgressIndicator(Modifier.size(32.dp))
         }
         mutableStateOf(indicator)
-    }
-    LaunchedEffect(Unit) {
-        if (fontsDir == null) {
-            fontsLoadingIndicator = null
-            return@LaunchedEffect
-        }
-        withContext(Dispatchers.IO) {
-            fontsDir.listFiles()?.filter { file ->
-                file.name?.lowercase()?.matches(FONT_EXTENSION_REGEX) == true
-            }?.mapNotNull {
-                runCatching { TTFFile.open(it.openInputStream()).families.values.first() }.getOrNull()
-            }?.let {
-                fonts.addAll(
-                    it.distinct(),
-                )
-            }
-            fontsLoadingIndicator = null
-        }
     }
 
     ExpandableCard(
@@ -214,10 +186,10 @@ fun SubtitleSettingsTypographyCard(
                 )
                 ExposedTextDropDownMenu(
                     selectedValue = font,
-                    options = fonts.toImmutableList(),
+                    options = fontList,
                     label = stringResource(AYMR.strings.player_sheets_sub_typography_font),
                     onValueChangedEvent = onFontChange,
-                    leadingIcon = fontsLoadingIndicator,
+                    leadingIcon = if (fontList.isEmpty()) fontsLoadingIndicator else null,
                 )
             }
             SliderItem(
@@ -300,8 +272,6 @@ fun SubtitleSettingsTypographyCard(
         }
     }
 }
-
-private val FONT_EXTENSION_REGEX = Regex(""".*\.[ot]tf$""")
 
 fun resetTypography(
     mpv: MPV,

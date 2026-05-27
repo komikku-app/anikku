@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitlesBorderStyle
+import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 import tachiyomi.i18n.animiru.AMMR
@@ -21,6 +22,7 @@ class SubtitlePreferences(
     fun subtitleWhitelist() = preferenceStore.getString("pref_subtitle_whitelist", "")
     fun subtitleBlacklist() = preferenceStore.getString("pref_subtitle_blacklist", "")
     fun subtitleBlackBars() = preferenceStore.getBoolean("pref_subtitle_black_bars", false)
+    val subtitleSystemFonts: Preference<Boolean> = preferenceStore.getBoolean("pref_subtitle_system_fonts", false)
 
     // Non-preferences
 
