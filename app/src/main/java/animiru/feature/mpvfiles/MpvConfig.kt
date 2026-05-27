@@ -71,6 +71,7 @@ class MpvConfig(
                     copyUserFiles(mpvDir)
                     copyFontsDirectory(mpvDir)
                     copyAssets(mpvDir)
+                    writeFontsConf(context, mpvDir)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -180,7 +181,7 @@ class MpvConfig(
 
     private fun copyAssets(mpvDir: UniFile) {
         val assetManager = context.assets
-        val files = arrayOf("subfont.ttf", "cacert.pem")
+        val files = arrayOf("cacert.pem")
         for (filename in files) {
             var ins: InputStream? = null
             var out: OutputStream? = null
@@ -202,6 +203,45 @@ class MpvConfig(
                 ins?.close()
                 out?.close()
             }
+        }
+    }
+
+    private fun writeFontsConf(context: Context, mpvDir: UniFile) {
+        val parts = listOfNotNull(
+            "<fontconfig>",
+            // Android system fonts reside here
+            "<dir>/system/fonts/</dir>",
+            "<dir>/product/fonts/</dir>",
+            // User provided fonts
+            // ANK -->
+            mpvDir.createDirectory(MPV_FONTS_DIR)?.filePath?.let { filePath -> "<dir>$filePath</dir>" },
+            // ANK <--
+            // Point fontconfig to the right cache path so that caching works
+            "<cachedir>${context.cacheDir.path}</cachedir>",
+            // Conveniently there is *no* Java API to query the system default fonts, but we can
+            // manually specify the font families we know Android uses and provides by default.
+            // (compare to 60-latin.conf shipped with fontconfig)
+            "<alias><family>serif</family>",
+            "<prefer><family>Noto Serif</family></prefer>",
+            "</alias>",
+            "<alias><family>Sans Serif</family>",
+            "<prefer>",
+            "<family>Roboto</family>",
+            "<family>Noto Sans</family>", // other languages
+            "</prefer>",
+            "</alias>",
+            "<alias><family>monospace</family>",
+            "<prefer><family>Droid Sans Mono</family></prefer>",
+            "</alias>",
+            "</fontconfig>",
+        ).toMutableList()
+        try {
+            val file = mpvDir.createFile("fonts.conf")
+            file?.openOutputStream()?.bufferedWriter()?.use {
+                it.write(parts.joinToString("\n"))
+            }
+        } catch (e: IOException) {
+            logcat(LogPriority.ERROR, e) { "Failed to write fonts.conf" }
         }
     }
 

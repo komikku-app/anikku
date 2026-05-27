@@ -65,7 +65,6 @@ import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
 import animiru.feature.mpvfiles.MpvConfig
 import animiru.feature.mpvfiles.MpvConfig.Companion.MPV_DIR
-import animiru.feature.mpvfiles.MpvConfig.Companion.MPV_FONTS_DIR
 import com.hippo.unifile.UniFile
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
@@ -558,7 +557,6 @@ class PlayerActivity : BaseActivity() {
                 logcat(LogPriority.ERROR) { "Failed to create MPV directory: $MPV_DIR in ${applicationContext.filesDir}" }
                 return
             }
-        val fontsDirectory = mpvDir.createDirectory(MPV_FONTS_DIR)!!
 
         val mpvConfFile = mpvDir.createFile("mpv.conf")!!
         advancedPlayerPreferences.mpvConf().get().let { mpvConfFile.writeText(it) }
@@ -578,8 +576,6 @@ class PlayerActivity : BaseActivity() {
 
         player.init(mpv)
 
-        mpv.setPropertyString("sub-fonts-dir", fontsDirectory.filePath!!)
-        mpv.setPropertyString("osd-fonts-dir", fontsDirectory.filePath!!)
         val showBlackBars = if (subtitlePreferences.subtitleBlackBars().get()) "yes" else "no"
         mpv.setOptionString("sub-ass-force-margins", showBlackBars)
         mpv.setOptionString("sub-use-margins", showBlackBars)

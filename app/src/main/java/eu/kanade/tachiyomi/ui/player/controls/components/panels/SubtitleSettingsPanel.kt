@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.components.MultiCardPanel
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleJustification
+import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -33,6 +34,7 @@ fun SubtitleSettingsPanel(
     isItalic: Boolean,
     justify: SubtitleJustification,
     font: String,
+    fontList: ImmutableList<String>,
     fontSize: Int,
     borderStyle: SubtitlesBorderStyle,
     borderSize: Int,
@@ -74,6 +76,7 @@ fun SubtitleSettingsPanel(
                 isItalic = isItalic,
                 justify = justify,
                 font = font,
+                fontList = fontList,
                 fontSize = fontSize,
                 borderStyle = borderStyle,
                 borderSize = borderSize,

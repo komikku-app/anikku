@@ -729,6 +729,7 @@ fun PlayerControls(
         val isItalic by viewModel.mpv.propFlow<Boolean>("sub-italic").collectAsState()
         val subJustify by viewModel.mpv.propFlow<String>("sub-justify").collectAsState()
         val subFont by viewModel.mpv.propFlow<String>("sub-font").collectAsState()
+        val subFontList by viewModel.fontList.collectAsState()
         val subFontSize by viewModel.mpv.propFlow<Int>("sub-font-size").collectAsState()
         val subBorderStyle by viewModel.mpv.propFlow<String>("sub-border-style").collectAsState()
         val subBorderSize by viewModel.mpv.propFlow<Int>("sub-outline-size").collectAsState()
@@ -759,6 +760,7 @@ fun PlayerControls(
             subJustify?.let { SubtitleJustification.byValue(it) }
                 ?: subtitlePreferences.subtitleJustification().get(),
             subFont = subFont ?: subtitlePreferences.subtitleFont().get(),
+            subFontList = subFontList,
             subFontSize = subFontSize ?: subtitlePreferences.subtitleFontSize().get(),
             subBorderStyle = subBorderStyle?.let { SubtitlesBorderStyle.byValue(it) }
                 ?: subtitlePreferences.borderStyleSubtitles().get(),
