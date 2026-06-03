@@ -176,7 +176,7 @@
     <string name="artist">画师</string>
     <string name="action_notes">备注</string>
     <string name="action_edit_notes">编辑备注</string>
-    <string name="notes_placeholder">享受 … 的部分</string>
+    <string name="notes_placeholder">标注你喜欢的部分…</string>
     <string name="possible_duplicates_title">可能的重复</string>
     <string name="possible_duplicates_summary">您的库中有类似名称的作品。\n\n选择要迁移或添加的作品。</string>
     <string name="clear_database_text">您将要从数据库中删除作品</string>
