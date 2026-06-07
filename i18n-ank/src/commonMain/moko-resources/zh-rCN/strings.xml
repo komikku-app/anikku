@@ -165,7 +165,7 @@
     <string name="label_auto">自动操作</string>
     <string name="pref_library_items_per_row">每一行的作品</string>
     <string name="pref_library_items_per_screen">每个屏幕上的作品</string>
-    <string name="theme_monochrome">Monochrome</string>
+    <string name="theme_monochrome">黑白</string>
     <string name="tracked_privately">已私密追踪</string>
     <string name="action_toggle_private_on">私密追踪</string>
     <string name="action_toggle_private_off">公开追踪</string>
