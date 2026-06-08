@@ -201,4 +201,6 @@
     <string name="tracking_info_anime">外部トラッカーサービスのエピソードの進行状況を更新するワンウェイ同期。トラッキングボタンから個々のエントリの追跡を設定。</string>
     <string name="pref_create_folder_per_anime">スクリーンショットを別々のフォルダに保存する</string>
     <string name="episode_progress_short">%1$s/%2$s</string>
+    <string name="pref_app_icon">アプリアイコン</string>
+    <string name="pref_app_icon_toast">アプリアイコンが %s に変更されました</string>
 </resources>
