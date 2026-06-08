@@ -359,11 +359,11 @@ class PlayerViewModel @JvmOverloads constructor(
             .onEach(::onChapterChanged)
             .launchIn(viewModelScope)
 
-        mpv.propFlow<Int>("sid")
+        mpv.propFlow<MPVNode>("sid")
             .onEach { onSubtitleTrackSelectChange() }
             .launchIn(viewModelScope)
 
-        mpv.propFlow<Int>("secondary-sid")
+        mpv.propFlow<MPVNode>("secondary-sid")
             .onEach { onSubtitleTrackSelectChange() }
             .launchIn(viewModelScope)
 
@@ -418,6 +418,12 @@ class PlayerViewModel @JvmOverloads constructor(
                 episode.toDomainEpisode()!!,
                 anime,
             )
+    }
+
+    fun clearTracks() {
+        hasLoadedTracks.update { _ -> false }
+        _externalAudioTracks.update { _ -> emptyList() }
+        _externalSubtitleTracks.update { _ -> emptyList() }
     }
 
     fun updateIsLoadingEpisode(value: Boolean) {
@@ -487,7 +493,7 @@ class PlayerViewModel @JvmOverloads constructor(
             updateAudioTrackAt(idx) {
                 it.copy(id = track.id, state = TrackState.Loaded)
             }
-            selectAudioById(track.id)
+            selectAudioById(track.id, false)
         }
     }
 
@@ -518,7 +524,7 @@ class PlayerViewModel @JvmOverloads constructor(
             subtitle = false,
         )
         preferredAudio?.let {
-            selectAudio(it)
+            selectAudio(it, true)
         }
     }
 
@@ -573,7 +579,7 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    fun selectAudio(track: VideoTrack) {
+    fun selectAudio(track: VideoTrack, force: Boolean = false) {
         when (track) {
             is VideoTrack.External -> {
                 if (track.id == null) {
@@ -589,11 +595,11 @@ class PlayerViewModel @JvmOverloads constructor(
                         )
                     }
                 } else {
-                    selectAudioById(track.id)
+                    selectAudioById(track.id, force)
                 }
             }
             is VideoTrack.Internal -> {
-                selectAudioById(track.data.id)
+                selectAudioById(track.data.id, force)
             }
         }
     }
@@ -648,8 +654,8 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    private fun selectAudioById(id: Int) {
-        if (id == mpv.getPropertyInt("aid")) {
+    private fun selectAudioById(id: Int, force: Boolean) {
+        if (!force && id == mpv.getPropertyInt("aid")) {
             mpv.setPropertyBoolean("aid", false)
         } else {
             mpv.setPropertyInt("aid", id)
@@ -1067,12 +1073,6 @@ class PlayerViewModel @JvmOverloads constructor(
         _hosterList.update { _ -> emptyList() }
         _hosterExpandedList.update { _ -> emptyList() }
         _selectedHosterVideoIndex.update { _ -> Pair(-1, -1) }
-        // ANK -->
-        // Reset the per-file track-loading state before each `loadfile`
-        hasLoadedTracks.update { _ -> false }
-        _externalSubtitleTracks.update { _ -> emptyList() }
-        _externalAudioTracks.update { _ -> emptyList() }
-        // ANK <--
     }
 
     fun changeEpisode(previous: Boolean, autoPlay: Boolean = false) {

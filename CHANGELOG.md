@@ -11,6 +11,24 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Improved
+- Add order priority for whitelist in track select ([@Secozzi](https://github.com/Secozzi)) ([#159](https://github.com/quickdesh/Animiru/pull/159))
+
+### Fixed
+- Fix subtitle list not updating when selecting ([@Secozzi](https://github.com/Secozzi)) ([#159](https://github.com/quickdesh/Animiru/pull/159))
+- Fix subtitle & audio track list not updating properly when changing episodes ([@Secozzi](https://github.com/Secozzi)) ([#159](https://github.com/quickdesh/Animiru/pull/159))
+
+## [v0.19.7.4] - 2026-05-27
+### Added
+- Added system font fallback ([@Secozzi](https://github.com/Secozzi)) ([#156](https://github.com/quickdesh/Animiru/pull/156))
+
+### Other
+- Merge from Mihon ([@Secozzi](https://github.com/Secozzi)) ([#155](https://github.com/quickdesh/Animiru/pull/155))
+
+## [v0.19.7.3] - 2026-04-17
+### Improved
+- Allow options in mpv.conf to override options set by `AniyomiMPVView` ([@Secozzi](https://github.com/Secozzi)) ([#151](https://github.com/quickdesh/Animiru/pull/151))
+
 ### Fixed
 - Fixed player crash when running out of available videos ([@Secozzi](https://github.com/Secozzi)) ([#150](https://github.com/quickdesh/Animiru/pull/150))
 
@@ -21,6 +39,13 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 ## [v0.19.7.1] - 2026-04-13
 ### Improved
 - Copy over mpv files on app resume ([@Secozzi](https://github.com/Secozzi)) ([#143](https://github.com/quickdesh/Animiru/pull/143))
+
+### Fixed
+- Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
+
+## [v0.19.7.0] - 2026-03-30
+### Added
+- Add parent title to user-data in lua ([@Secozzi](https://github.com/Secozzi)) ([#142](https://github.com/quickdesh/Animiru/pull/142))
 
 ### Fixed
 - Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))

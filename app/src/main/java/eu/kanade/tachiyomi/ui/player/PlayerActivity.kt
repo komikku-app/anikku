@@ -1132,6 +1132,7 @@ class PlayerActivity : BaseActivity() {
         viewModel.sheetShown.update { _ -> Sheets.None }
         viewModel.panelShown.update { _ -> Panels.None }
         viewModel.pause()
+        viewModel.clearTracks()
         viewModel.isLoading.update { _ -> true }
         viewModel.resetHosterState()
 

@@ -50,9 +50,13 @@ class TrackSelect(
                 chosenLocale?.let { containsLang(track, it) } ?: true
             }
 
-        return filtered.firstOrNull { track ->
-            whitelist.any { track.title.contains(it, true) }
-        } ?: filtered.firstOrNull()
+        whitelist.forEach { w ->
+            filtered.firstOrNull { track ->
+                track.title.contains(w, true)
+            }?.let { return it }
+        }
+
+        return filtered.firstOrNull()
         // ANK <--
     }
 
@@ -62,7 +66,12 @@ class TrackSelect(
             // ANK <--
             val localName = locale.getDisplayName(locale)
             val englishName = locale.getDisplayName(Locale.ENGLISH).substringBefore(" (")
-            val langRegex = Regex("""\b${locale.isO3Language}|${locale.language}\b""", RegexOption.IGNORE_CASE)
+            // ANK -->
+            // The ISO-639-2 code is matched as a prefix, since sources commonly glue it to
+            // another word ("engsub"), while the two-letter code needs both boundaries so it
+            // doesn't match inside an unrelated one.
+            val langRegex = Regex("""\b${locale.isO3Language}|\b${locale.language}\b""", RegexOption.IGNORE_CASE)
+            // ANK <--
             val trackTitle = track.title
 
             return trackTitle.contains(localName, true) ||
