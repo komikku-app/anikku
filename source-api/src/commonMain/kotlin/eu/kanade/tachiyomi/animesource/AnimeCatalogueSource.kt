@@ -206,11 +206,10 @@ interface AnimeCatalogueSource : AnimeSource {
         if (words.isEmpty()) return
 
         coroutineScope {
-            val filterList = getFilterList()
             words.map { keyword ->
                 launch {
                     runCatching {
-                        getRelatedAnimePage(1, keyword.sanitize(), filterList).animes
+                        getRelatedAnimePage(1, keyword.sanitize()).animes
                     }
                         .onSuccess { if (it.isNotEmpty()) pushResults(Pair(keyword, it), false) }
                         .onFailure { e ->
@@ -225,8 +224,8 @@ interface AnimeCatalogueSource : AnimeSource {
      * TODO: This should become a similar catalog as getPopular, which support pages and group into different category.
      *  Clicking each category should allow open more page.
      */
-    suspend fun getRelatedAnimePage(page: Int, query: String, filterList: AnimeFilterList): AnimesPage {
-        return getSearchAnime(page, query, filterList)
+    suspend fun getRelatedAnimePage(page: Int, query: String): AnimesPage {
+        return getSearchAnime(page, query, getFilterList())
     }
     // KMK <--
 }
