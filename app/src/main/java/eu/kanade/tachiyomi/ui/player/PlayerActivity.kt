@@ -43,6 +43,7 @@ import android.util.Rational
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.ui.Modifier
@@ -312,6 +313,16 @@ class PlayerActivity : BaseActivity() {
             }
         }
 
+        // KMK -->
+        // Migrate system back gesture handling to OnBackPressedDispatcher
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() = backPressed()
+            },
+        )
+        // KMK <--
+
         onNewIntent(this.intent)
     }
 
@@ -385,7 +396,6 @@ class PlayerActivity : BaseActivity() {
         super.onStop()
     }
 
-    @SuppressLint("MissingSuperCall")
     override fun onUserLeaveHint() {
         if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
             enterPictureInPictureMode()
@@ -393,8 +403,7 @@ class PlayerActivity : BaseActivity() {
         super.onUserLeaveHint()
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
+    private fun backPressed() {
         if (isPipSupportedAndEnabled && player.paused == false && playerPreferences.pipOnExit().get()) {
             if (viewModel.sheetShown.value == Sheets.None &&
                 viewModel.panelShown.value == Panels.None &&
@@ -402,9 +411,13 @@ class PlayerActivity : BaseActivity() {
             ) {
                 enterPictureInPictureMode()
             }
-        } else {
-            super.onBackPressed()
+            return
         }
+
+        // KMK -->
+        // Default behavior: finish the activity
+        finish()
+        // KMK <--
     }
 
     override fun onStart() {
@@ -1218,7 +1231,7 @@ class PlayerActivity : BaseActivity() {
             if (videoUrl.contains("index=")) {
                 index = try {
                     videoUrl.substringAfter("index=").toInt()
-                } catch (e: NumberFormatException) {
+                } catch (_: NumberFormatException) {
                     0
                 }
             }
