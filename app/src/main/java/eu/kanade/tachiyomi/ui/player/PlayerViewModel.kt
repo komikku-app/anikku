@@ -230,6 +230,8 @@ class PlayerViewModel @JvmOverloads constructor(
 
     val isLoading = MutableStateFlow(true)
     val hasLoadedTracks = MutableStateFlow(false)
+    val hasLoadedSubs = MutableStateFlow(false)
+    val hasLoadedAudio = MutableStateFlow(false)
 
     private val _externalSubtitleTracks = MutableStateFlow<List<VideoTrack.External>>(emptyList())
     val externalSubtitleTracks = _externalSubtitleTracks.asStateFlow()
@@ -477,6 +479,8 @@ class PlayerViewModel @JvmOverloads constructor(
             updateSubtitleTrackAt(idx) {
                 it.copy(id = track.id, state = TrackState.Loaded)
             }
+            hasLoadedSubs.update { _ -> true }
+            checkFileLoaded()
             selectSubById(track.id)
         }
 
@@ -495,6 +499,8 @@ class PlayerViewModel @JvmOverloads constructor(
             updateAudioTrackAt(idx) {
                 it.copy(id = track.id, state = TrackState.Loaded)
             }
+            hasLoadedAudio.update { _ -> true }
+            checkFileLoaded()
             selectAudioById(track.id)
         }
     }
@@ -534,16 +540,20 @@ class PlayerViewModel @JvmOverloads constructor(
             tracks = embeddedSubs.map { VideoTrack.Internal(it) } + externalSubs,
             subtitle = true,
         )
-        preferredSubtitle?.let {
-            selectSub(it)
+        if (preferredSubtitle == null) {
+            hasLoadedSubs.update { _ -> true }
+        } else {
+            selectSub(preferredSubtitle)
         }
 
         val preferredAudio = trackSelect.getPreferredTrackIndex(
             tracks = embeddedAudio.map { VideoTrack.Internal(it) } + externalAudio,
             subtitle = false,
         )
-        preferredAudio?.let {
-            selectAudio(it)
+        if (preferredAudio == null) {
+            hasLoadedAudio.update { _ -> true }
+        } else {
+            selectAudio(preferredAudio)
         }
     }
 
@@ -589,10 +599,14 @@ class PlayerViewModel @JvmOverloads constructor(
                         )
                     }
                 } else {
+                    hasLoadedSubs.update { _ -> true }
+                    checkFileLoaded()
                     selectSubById(track.id)
                 }
             }
             is VideoTrack.Internal -> {
+                hasLoadedSubs.update { _ -> true }
+                checkFileLoaded()
                 selectSubById(track.data.id)
             }
         }
@@ -614,10 +628,14 @@ class PlayerViewModel @JvmOverloads constructor(
                         )
                     }
                 } else {
+                    hasLoadedAudio.update { _ -> true }
+                    checkFileLoaded()
                     selectAudioById(track.id)
                 }
             }
             is VideoTrack.Internal -> {
+                hasLoadedAudio.update { _ -> true }
+                checkFileLoaded()
                 selectAudioById(track.data.id)
             }
         }
@@ -631,6 +649,8 @@ class PlayerViewModel @JvmOverloads constructor(
             updateSubtitleTrackAt(subtitleIdx) {
                 it.copy(state = TrackState.Error)
             }
+            hasLoadedSubs.update { _ -> true }
+            checkFileLoaded()
         }
         val audioIdx = externalAudioTracks.value.indexOfFirst {
             it.data.url == url
@@ -639,6 +659,8 @@ class PlayerViewModel @JvmOverloads constructor(
             updateAudioTrackAt(audioIdx) {
                 it.copy(state = TrackState.Error)
             }
+            hasLoadedAudio.update { _ -> true }
+            checkFileLoaded()
         }
     }
 
@@ -739,14 +761,22 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    fun setPausedState() {
-        pausedState.value?.let {
-            if (it) {
-                pause()
-            } else {
-                unpause()
+    /**
+     * Check when file has loaded and see if the player can be (un)paused.
+     *
+     * If external subs/audio tracks was selected, wait until mpv has fetched them.
+     */
+    fun checkFileLoaded() {
+        if (isLoadingEpisode.value && hasLoadedSubs.value && hasLoadedAudio.value) {
+            _isLoadingEpisode.update { _ -> false }
+            pausedState.value?.let {
+                if (it) {
+                    pause()
+                } else {
+                    unpause()
+                }
+                _pausedState.update { _ -> null }
             }
-            _pausedState.update { _ -> null }
         }
     }
 

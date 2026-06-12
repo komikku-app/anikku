@@ -1219,6 +1219,7 @@ class PlayerActivity : BaseActivity() {
                 mpv.command("set", "start", "$it")
             }
         }
+
         if (video.videoUrl.startsWith(TorrentServerUtils.hostUrl) ||
             video.videoUrl.startsWith("magnet") ||
             video.videoUrl.endsWith(".torrent")
@@ -1229,7 +1230,12 @@ class PlayerActivity : BaseActivity() {
                 torrentLinkHandler(video.videoUrl, video.videoTitle)
             }
         } else {
-            val videoOptions = video.mpvArgs.joinToString(",") { (option, value) ->
+            // We handle selecting these in the viewmodel
+            val mpvOpts = listOf(
+                Pair("sid", "no"),
+                Pair("aid", "no"),
+            )
+            val videoOptions = (video.mpvArgs + mpvOpts).joinToString(",") { (option, value) ->
                 val sanitizedOption = sanitizeFFmpegKey(option)
                 val sanitizedValue = sanitizeFFmpegValue(value)
                 "$sanitizedOption=\"${sanitizedValue.replace("\"", "\\\"")}\""
@@ -1433,8 +1439,7 @@ class PlayerActivity : BaseActivity() {
         setMpvMediaTitle()
         setupPlayerOrientation()
         setupChapters()
-        viewModel.setPausedState()
-        viewModel.updateIsLoadingEpisode(false)
+        viewModel.checkFileLoaded()
 
         // aniSkip stuff
         viewModel.viewModelScope.launchIO {
