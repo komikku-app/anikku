@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.util.awaitSingle
 import rx.Observable
+import eu.kanade.tachiyomi.animesource.model.SAnime as SManga
 
 /**
  * A basic interface for creating a source. It could be an online source, a local source, etc.
@@ -115,5 +116,10 @@ interface AnimeSource {
         exceptionHandler: (Throwable) -> Unit,
         pushResults: suspend (relatedAnime: Pair<String, List<SAnime>>, completed: Boolean) -> Unit,
     ): Unit = throw UnsupportedOperationException()
+    suspend fun getRelatedMangaList(
+        manga: SManga,
+        exceptionHandler: (Throwable) -> Unit,
+        pushResults: suspend (relatedManga: Pair<String, List<SManga>>, completed: Boolean) -> Unit,
+    ) = getRelatedAnimeList(manga, exceptionHandler, pushResults)
     // KMK <--
 }

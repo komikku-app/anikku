@@ -158,6 +158,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
         return response.asJsoup()
             .select(relatedAnimeListSelector()).map { relatedAnimeFromElement(it) }
     }
+    override fun relatedMangaListParse(response: Response) = relatedAnimeListParse(response)
 
     /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each related animes.
@@ -165,6 +166,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      * @since komikku/extensions-lib 1.6
      */
     protected open fun relatedAnimeListSelector(): String = popularAnimeSelector()
+    protected open fun relatedMangaListSelector() = relatedAnimeListSelector()
 
     /**
      * Returns a anime from the given element.
@@ -173,6 +175,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      * @param element an element obtained from [relatedAnimeListSelector].
      */
     protected open fun relatedAnimeFromElement(element: Element): SAnime = popularAnimeFromElement(element)
+    protected open fun relatedMangaFromElement(element: Element) = relatedAnimeFromElement(element)
     // KMK <--
 
     /**
