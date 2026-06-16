@@ -25,9 +25,9 @@ class ChapterRepositoryImpl(
                         chapter.scanlator,
                         chapter.read,
                         chapter.bookmark,
-                        // AM (FILLERMARK) -->
+                        // AY -->
                         chapter.fillermark,
-                        // <-- AM (FILLERMARK)
+                        // <-- AY
                         chapter.lastPageRead,
                         chapter.totalPages,
                         chapter.chapterNumber,
@@ -64,9 +64,9 @@ class ChapterRepositoryImpl(
                     scanlator = chapterUpdate.scanlator,
                     seen = chapterUpdate.read,
                     bookmark = chapterUpdate.bookmark,
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     fillermark = chapterUpdate.fillermark,
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     lastSecondSeen = chapterUpdate.lastPageRead,
                     totalSeconds = chapterUpdate.totalPages,
                     episodeNumber = chapterUpdate.chapterNumber,
@@ -124,11 +124,11 @@ class ChapterRepositoryImpl(
         }
     }
 
-    // AM (FILLERMARK) -->
+    // AY -->
     override suspend fun getFillermarkedChaptersByMangaId(mangaId: Long): List<Chapter> {
         return handler.awaitList { episodesQueries.getFillermarkedEpisodesByAnimeId(mangaId, ChapterMapper::mapChapter) }
     }
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     override suspend fun getChapterById(id: Long): Chapter? {
         return handler.awaitOneOrNull { episodesQueries.getEpisodeById(id, ChapterMapper::mapChapter) }

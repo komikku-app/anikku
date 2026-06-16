@@ -14,9 +14,9 @@ data class UpdatesWithRelations(
     val scanlator: String?,
     val read: Boolean,
     val bookmark: Boolean,
-    // AM (FILLERMARK) -->
+    // AY -->
     val fillermark: Boolean,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     val lastPageRead: Long,
     val totalPages: Long,
     val sourceId: Long,

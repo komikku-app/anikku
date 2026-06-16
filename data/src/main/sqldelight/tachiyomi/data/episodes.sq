@@ -8,9 +8,9 @@ CREATE TABLE episodes(
     scanlator TEXT,
     seen INTEGER AS Boolean NOT NULL,
     bookmark INTEGER AS Boolean NOT NULL,
-    -- AM (FILLERMARK) -->
+    -- AY -->
     fillermark INTEGER AS Boolean NOT NULL,
-    -- <-- AM (FILLERMARK)
+    -- <-- AY
     last_second_seen INTEGER NOT NULL,
     total_seconds INTEGER NOT NULL,
     episode_number REAL NOT NULL,
@@ -89,13 +89,13 @@ FROM episodes
 WHERE bookmark
 AND anime_id = :animeId;
 
--- AM (FILLERMARK) -->
+-- AY -->
 getFillermarkedEpisodesByAnimeId:
 SELECT *
 FROM episodes
 WHERE fillermark
 AND anime_id = :animeId;
--- <-- AM (FILLERMARK)
+-- <-- AY
 
 getEpisodeByUrl:
 SELECT *
@@ -162,9 +162,9 @@ SET anime_id = coalesce(:animeId, anime_id),
     scanlator = coalesce(:scanlator, scanlator),
     seen = coalesce(:seen, seen),
     bookmark = coalesce(:bookmark, bookmark),
-    -- AM (FILLERMARK) -->
+    -- AY -->
     fillermark = coalesce(:fillermark, fillermark),
-    -- <-- AM (FILLERMARK)
+    -- <-- AY
     last_second_seen = coalesce(:lastSecondSeen, last_second_seen),
     total_seconds = coalesce(:totalSeconds, total_seconds),
     episode_number = coalesce(:episodeNumber, episode_number),

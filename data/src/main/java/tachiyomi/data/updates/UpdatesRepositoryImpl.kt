@@ -71,9 +71,9 @@ class UpdatesRepositoryImpl(
         scanlator: String?,
         read: Boolean,
         bookmark: Boolean,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermark: Boolean,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         lastPageRead: Long,
         totalPages: Long,
         sourceId: Long,
@@ -93,9 +93,9 @@ class UpdatesRepositoryImpl(
         scanlator = scanlator,
         read = read,
         bookmark = bookmark,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermark = fillermark,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         lastPageRead = lastPageRead,
         totalPages = totalPages,
         sourceId = sourceId,

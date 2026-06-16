@@ -13,9 +13,9 @@ data class BackupChapter(
     @ProtoNumber(3) var scanlator: String? = null,
     @ProtoNumber(4) var seen: Boolean = false,
     @ProtoNumber(5) var bookmark: Boolean = false,
-    // AM (FILLERMARK) -->
+    // AY -->
     @ProtoNumber(15) var fillermark: Boolean = false,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     // lastPageRead is called progress in 1.x
     @ProtoNumber(6) var lastSecondSeen: Long = 0,
     @ProtoNumber(16) var totalSeconds: Long = 0,
@@ -35,9 +35,9 @@ data class BackupChapter(
             scanlator = this@BackupChapter.scanlator,
             read = this@BackupChapter.seen,
             bookmark = this@BackupChapter.bookmark,
-            // AM (FILLERMARK) -->
+            // AY -->
             fillermark = this@BackupChapter.fillermark,
-            // <-- AM (FILLERMARK)
+            // <-- AY
             lastPageRead = this@BackupChapter.lastSecondSeen,
             totalPages = this@BackupChapter.totalSeconds,
             dateFetch = this@BackupChapter.dateFetch,
@@ -57,9 +57,9 @@ val backupChapterMapper = {
         scanlator: String?,
         seen: Boolean,
         bookmark: Boolean,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermark: Boolean,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         lastSecondSeen: Long,
         totalSeconds: Long,
         episodeNumber: Double,
@@ -77,9 +77,9 @@ val backupChapterMapper = {
         scanlator = scanlator,
         seen = seen,
         bookmark = bookmark,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermark = fillermark,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         lastSecondSeen = lastSecondSeen,
         totalSeconds = totalSeconds,
         dateFetch = dateFetch,

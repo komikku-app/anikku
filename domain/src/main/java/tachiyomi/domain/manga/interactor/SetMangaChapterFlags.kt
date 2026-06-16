@@ -35,7 +35,7 @@ class SetMangaChapterFlags(
         )
     }
 
-    // AM (FILLERMARK) -->
+    // AY -->
     suspend fun awaitSetFillermarkFilter(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
             MangaUpdate(
@@ -44,7 +44,7 @@ class SetMangaChapterFlags(
             ),
         )
     }
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     suspend fun awaitSetDisplayMode(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
@@ -85,9 +85,9 @@ class SetMangaChapterFlags(
         unreadFilter: Long,
         downloadedFilter: Long,
         bookmarkedFilter: Long,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermarkedFilter: Long,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         sortingMode: Long,
         sortingDirection: Long,
         displayMode: Long,
@@ -98,9 +98,9 @@ class SetMangaChapterFlags(
                 chapterFlags = 0L.setFlag(unreadFilter, Manga.EPISODE_UNSEEN_MASK)
                     .setFlag(downloadedFilter, Manga.EPISODE_DOWNLOADED_MASK)
                     .setFlag(bookmarkedFilter, Manga.EPISODE_BOOKMARKED_MASK)
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     .setFlag(fillermarkedFilter, Manga.EPISODE_FILLERMARKED_MASK)
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     .setFlag(sortingMode, Manga.EPISODE_SORTING_MASK)
                     .setFlag(sortingDirection, Manga.EPISODE_SORT_DIR_MASK)
                     .setFlag(displayMode, Manga.EPISODE_DISPLAY_MASK),

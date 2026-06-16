@@ -34,9 +34,9 @@ fun Chapter.toDbChapter(): DbChapter = ChapterImpl().also {
     it.scanlator = scanlator
     it.read = read
     it.bookmark = bookmark
-    // AM (FILLERMARK) -->
+    // AY -->
     it.fillermark = fillermark
-    // <-- AM (FILLERMARK)
+    // <-- AY
     it.last_page_read = lastPageRead
     it.total_pages = totalPages
     it.date_fetch = dateFetch

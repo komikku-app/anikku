@@ -199,9 +199,9 @@ class MangaRestorer(
             chapter.copy(
                 id = dbChapter.id,
                 bookmark = chapter.bookmark || dbChapter.bookmark,
-                // AM (FILLERMARK) -->
+                // AY -->
                 fillermark = chapter.fillermark || dbChapter.fillermark,
-                // <-- AM (FILLERMARK)
+                // <-- AY
                 read = chapter.read,
                 lastPageRead = chapter.lastPageRead,
                 // KMK -->
@@ -217,9 +217,9 @@ class MangaRestorer(
                     bookmark = chapter.bookmark || dbChapter.bookmark,
                     sourceOrder = max(chapter.sourceOrder, dbChapter.sourceOrder),
                     dateUpload = min(chapter.dateUpload, dbChapter.dateUpload),
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     fillermark = chapter.fillermark || dbChapter.fillermark,
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                 )
                 // KMK <--
                 .let {
@@ -257,9 +257,9 @@ class MangaRestorer(
                     chapter.scanlator,
                     chapter.read,
                     chapter.bookmark,
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     chapter.fillermark,
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     chapter.lastPageRead,
                     chapter.totalPages,
                     chapter.chapterNumber,
@@ -282,9 +282,9 @@ class MangaRestorer(
                     scanlator = null,
                     seen = chapter.read,
                     bookmark = chapter.bookmark,
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     fillermark = chapter.fillermark,
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     lastSecondSeen = chapter.lastPageRead,
                     totalSeconds = chapter.totalPages,
                     episodeNumber = null,

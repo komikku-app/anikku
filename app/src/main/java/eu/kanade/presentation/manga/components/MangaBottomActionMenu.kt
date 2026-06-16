@@ -87,10 +87,10 @@ fun MangaBottomActionMenu(
     modifier: Modifier = Modifier,
     onBookmarkClicked: (() -> Unit)? = null,
     onRemoveBookmarkClicked: (() -> Unit)? = null,
-    // AM (FILLERMARK) -->
+    // AY -->
     onFillermarkClicked: (() -> Unit)? = null,
     onRemoveFillermarkClicked: (() -> Unit)? = null,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     onMarkAsReadClicked: (() -> Unit)? = null,
     onMarkAsUnreadClicked: (() -> Unit)? = null,
     onMarkPreviousAsReadClicked: (() -> Unit)? = null,
@@ -150,7 +150,7 @@ fun MangaBottomActionMenu(
                         onClick = onRemoveBookmarkClicked,
                     )
                 }
-                // AM (FILLERMARK) -->
+                // AY -->
                 if (onFillermarkClicked != null) {
                     Button(
                         title = stringResource(AMR.strings.action_fillermark_episode),
@@ -169,7 +169,7 @@ fun MangaBottomActionMenu(
                         onClick = onRemoveFillermarkClicked,
                     )
                 }
-                // <-- AM (FILLERMARK)
+                // <-- AY
                 if (onMarkAsReadClicked != null) {
                     Button(
                         title = stringResource(AYMR.strings.action_mark_as_seen),

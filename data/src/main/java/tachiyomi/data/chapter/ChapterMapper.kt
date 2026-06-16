@@ -11,9 +11,9 @@ object ChapterMapper {
         scanlator: String?,
         read: Boolean,
         bookmark: Boolean,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermark: Boolean,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         lastPageRead: Long,
         totalSeconds: Long,
         chapterNumber: Double,
@@ -29,9 +29,9 @@ object ChapterMapper {
         mangaId = mangaId,
         read = read,
         bookmark = bookmark,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermark = fillermark,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         lastPageRead = lastPageRead,
         totalPages = totalSeconds,
         dateFetch = dateFetch,

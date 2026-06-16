@@ -24,15 +24,15 @@ fun List<Chapter>.applyFilters(
     val unreadFilter = manga.unreadFilter
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
-    // AM (FILLERMARK) -->
+    // AY -->
     val fillermarkedFilter = manga.fillermarkedFilter
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     return asSequence().filter { chapter -> applyFilter(unreadFilter) { !chapter.read } }
         .filter { chapter -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
-        // AM (FILLERMARK) -->
+        // AY -->
         .filter { chapter -> applyFilter(fillermarkedFilter) { chapter.fillermark } }
-        // <-- AM (FILLERMARK)
+        // <-- AY
         .filter { chapter ->
             // SY -->
             val manga = mergedManga.getOrElse(chapter.mangaId) { manga }
@@ -61,15 +61,15 @@ fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item
     val unreadFilter = manga.unreadFilter
     val downloadedFilter = manga.downloadedFilter
     val bookmarkedFilter = manga.bookmarkedFilter
-    // AM (FILLERMARK) -->
+    // AY -->
     val fillermarkedFilter = manga.fillermarkedFilter
-    // <-- AM (FILLERMARK)
+    // <-- AY
     return asSequence()
         .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }
         .filter { (chapter) -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
-        // AM (FILLERMARK) -->
+        // AY -->
         .filter { (chapter) -> applyFilter(fillermarkedFilter) { chapter.fillermark } }
-        // <-- AM (FILLERMARK)
+        // <-- AY
         .filter { applyFilter(downloadedFilter) { it.isDownloaded || isLocalManga } }
         .sortedWith { (chapter1), (chapter2) -> getChapterSort(manga).invoke(chapter1, chapter2) }
 }

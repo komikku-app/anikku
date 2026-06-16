@@ -5,9 +5,9 @@ data class Chapter(
     val mangaId: Long,
     val read: Boolean,
     val bookmark: Boolean,
-    // AM (FILLERMARK) -->
+    // AY -->
     val fillermark: Boolean,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     val lastPageRead: Long,
     val totalPages: Long,
     val dateFetch: Long,
@@ -39,9 +39,9 @@ data class Chapter(
             mangaId = -1,
             read = false,
             bookmark = false,
-            // AM (FILLERMARK) -->
+            // AY -->
             fillermark = false,
-            // <-- AM (FILLERMARK)
+            // <-- AY
             lastPageRead = 0,
             totalPages = 0,
             dateFetch = 0,

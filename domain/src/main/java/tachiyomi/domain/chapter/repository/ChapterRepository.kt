@@ -22,9 +22,9 @@ interface ChapterRepository {
 
     suspend fun getBookmarkedChaptersByMangaId(mangaId: Long): List<Chapter>
 
-    // AM (FILLERMARK) -->
+    // AY -->
     suspend fun getFillermarkedChaptersByMangaId(mangaId: Long): List<Chapter>
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     suspend fun getChapterById(id: Long): Chapter?
 

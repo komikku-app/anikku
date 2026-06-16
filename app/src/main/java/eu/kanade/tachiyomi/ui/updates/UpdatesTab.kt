@@ -100,9 +100,9 @@ data object UpdatesTab : Tab {
             onUpdateLibrary = screenModel::updateLibrary,
             onDownloadChapter = screenModel::downloadChapters,
             onMultiBookmarkClicked = screenModel::bookmarkUpdates,
-            // AM (FILLERMARK) -->
+            // AY -->
             onMultiFillermarkClicked = screenModel::fillermarkUpdates,
-            // <-- AM (FILLERMARK)
+            // <-- AY
             onMultiMarkAsReadClicked = screenModel::markUpdatesRead,
             onMultiDeleteClicked = screenModel::showConfirmDeleteChapters,
             // KMK -->

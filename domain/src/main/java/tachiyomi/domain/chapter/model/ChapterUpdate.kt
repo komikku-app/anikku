@@ -5,9 +5,9 @@ data class ChapterUpdate(
     val mangaId: Long? = null,
     val read: Boolean? = null,
     val bookmark: Boolean? = null,
-    // AM (FILLERMARK) -->
+    // AY -->
     val fillermark: Boolean? = null,
-    // AM (FILLERMARK) <--
+    // <-- AY
     val lastPageRead: Long? = null,
     val totalPages: Long? = null,
     val dateFetch: Long? = null,
@@ -26,9 +26,9 @@ fun Chapter.toChapterUpdate(): ChapterUpdate {
         mangaId,
         read,
         bookmark,
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermark,
-        // AM (FILLERMARK) <--
+        // <-- AY
         lastPageRead,
         totalPages,
         dateFetch,

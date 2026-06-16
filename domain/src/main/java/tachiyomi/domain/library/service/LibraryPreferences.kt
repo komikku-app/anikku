@@ -105,10 +105,10 @@ class LibraryPreferences(
         TriState.DISABLED,
     )
 
-    // AM (FILLERMARK) -->
+    // AY -->
     fun filterFillermarked() =
         preferenceStore.getEnum("pref_filter_animelib_fillermarked_v2", TriState.DISABLED)
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     fun filterCompleted() = preferenceStore.getEnum(
         "pref_filter_animelib_completed_v2",
@@ -205,10 +205,10 @@ class LibraryPreferences(
         Manga.SHOW_ALL,
     )
 
-    // AM (FILLERMARK) -->
+    // AY -->
     fun filterChapterByFillermarked() =
         preferenceStore.getLong("default_episode_filter_by_fillermarked", Manga.SHOW_ALL)
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     // and upload date
     fun sortChapterBySourceOrNumber() = preferenceStore.getLong(
@@ -230,9 +230,9 @@ class LibraryPreferences(
         filterChapterByRead().set(manga.unreadFilterRaw)
         filterChapterByDownloaded().set(manga.downloadedFilterRaw)
         filterChapterByBookmarked().set(manga.bookmarkedFilterRaw)
-        // AM (FILLERMARK) -->
+        // AY -->
         filterChapterByFillermarked().set(manga.fillermarkedFilterRaw)
-        // <-- AM (FILLERMARK)
+        // <-- AY
         sortChapterBySourceOrNumber().set(manga.sorting)
         displayChapterByNameOrNumber().set(manga.displayMode)
         sortChapterByAscendingOrDescending().set(
@@ -267,9 +267,9 @@ class LibraryPreferences(
         ToggleRead,
         ToggleBookmark,
 
-        // AM (FILLERMARK) -->
+        // AY -->
         ToggleFillermark,
-        // <-- AM (FILLERMARK)
+        // <-- AY
 
         Download,
         Disabled,

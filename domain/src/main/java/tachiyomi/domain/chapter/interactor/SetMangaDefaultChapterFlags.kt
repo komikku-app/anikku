@@ -20,9 +20,9 @@ class SetMangaDefaultChapterFlags(
                     unreadFilter = filterChapterByRead().get(),
                     downloadedFilter = filterChapterByDownloaded().get(),
                     bookmarkedFilter = filterChapterByBookmarked().get(),
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     fillermarkedFilter = filterChapterByFillermarked().get(),
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     sortingMode = sortChapterBySourceOrNumber().get(),
                     sortingDirection = sortChapterByAscendingOrDescending().get(),
                     displayMode = displayChapterByNameOrNumber().get(),

@@ -419,7 +419,7 @@ private fun UpdatesUiItem(
                         )
                         Spacer(modifier = Modifier.width(2.dp))
                     }
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     if (update.fillermark) {
                         Icon(
                             painter = rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)),
@@ -430,7 +430,7 @@ private fun UpdatesUiItem(
                         )
                         Spacer(modifier = Modifier.width(2.dp))
                     }
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     Text(
                         text = update.chapterName,
                         maxLines = 1,

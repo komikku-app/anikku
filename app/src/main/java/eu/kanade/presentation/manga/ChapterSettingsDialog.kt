@@ -55,9 +55,9 @@ fun ChapterSettingsDialog(
     onBookmarkedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: () -> Unit,
-    // AM (FILLERMARK) -->
+    // AY -->
     onFillermarkedFilterChanged: (TriState) -> Unit,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     onSortModeChanged: (Long) -> Unit,
     onDisplayModeChanged: (Long) -> Unit,
     onSetAsDefault: (applyToExistingManga: Boolean) -> Unit,
@@ -114,10 +114,10 @@ fun ChapterSettingsDialog(
                         onBookmarkedFilterChanged = onBookmarkedFilterChanged,
                         scanlatorFilterActive = scanlatorFilterActive,
                         onScanlatorFilterClicked = onScanlatorFilterClicked,
-                        // AM (FILLERMARK) -->
+                        // AY -->
                         fillermarkedFilter = manga?.fillermarkedFilter ?: TriState.DISABLED,
                         onFillermarkedFilterChanged = onFillermarkedFilterChanged,
-                        // <-- AM (FILLERMARK)
+                        // <-- AY
                     )
                 }
                 1 -> {
@@ -148,10 +148,10 @@ private fun ColumnScope.FilterPage(
     onBookmarkedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: () -> Unit,
-    // AM (FILLERMARK) -->
+    // AY -->
     fillermarkedFilter: TriState,
     onFillermarkedFilterChanged: (TriState) -> Unit,
-    // <-- AM (FILLERMARK)
+    // <-- AY
 ) {
     TriStateItem(
         label = stringResource(MR.strings.label_downloaded),
@@ -168,13 +168,13 @@ private fun ColumnScope.FilterPage(
         state = bookmarkedFilter,
         onClick = onBookmarkedFilterChanged,
     )
-    // AM (FILLERMARK) -->
+    // AY -->
     TriStateItem(
         label = stringResource(AMR.strings.action_filter_fillermarked),
         state = fillermarkedFilter,
         onClick = onFillermarkedFilterChanged,
     )
-    // <-- AM (FILLERMARK)
+    // <-- AY
     ScanlatorFilterItem(
         active = scanlatorFilterActive,
         onClick = onScanlatorFilterClicked,

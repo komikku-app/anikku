@@ -392,9 +392,9 @@ class MangaScreen(
             // SY <--
             onEditNotesClicked = { navigator.push(MangaNotesScreen(manga = successState.manga)) },
             onMultiBookmarkClicked = screenModel::bookmarkChapters,
-            // AM (FILLERMARK) -->
+            // AY -->
             onMultiFillermarkClicked = screenModel::fillermarkChapters,
-            // <-- AM (FILLERMARK)
+            // <-- AY
             onMultiMarkAsReadClicked = screenModel::markChaptersRead,
             onMarkPreviousAsReadClicked = screenModel::markPreviousChapterRead,
             onMultiDeleteClicked = screenModel::showDeleteChapterDialog,
@@ -520,9 +520,9 @@ class MangaScreen(
                 onDownloadFilterChanged = screenModel::setDownloadedFilter,
                 onUnreadFilterChanged = screenModel::setUnreadFilter,
                 onBookmarkedFilterChanged = screenModel::setBookmarkedFilter,
-                // AM (FILLERMARK) -->
+                // AY -->
                 onFillermarkedFilterChanged = screenModel::setFillermarkedFilter,
-                // <-- AM (FILLERMARK)
+                // <-- AY
                 onSortModeChanged = screenModel::setSorting,
                 onDisplayModeChanged = screenModel::setDisplayMode,
                 onSetAsDefault = screenModel::setCurrentSettingsAsDefault,

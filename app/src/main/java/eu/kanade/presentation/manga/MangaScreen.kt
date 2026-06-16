@@ -171,9 +171,9 @@ fun MangaScreen(
 
     // For bottom action menu
     onMultiBookmarkClicked: (List<Chapter>, bookmarked: Boolean) -> Unit,
-    // AM (FILLERMARK) -->
+    // AY -->
     onMultiFillermarkClicked: (List<Chapter>, fillermarked: Boolean) -> Unit,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     onMultiMarkAsReadClicked: (List<Chapter>, markAsRead: Boolean) -> Unit,
     onMarkPreviousAsReadClicked: (Chapter) -> Unit,
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
@@ -249,9 +249,9 @@ fun MangaScreen(
             onMergeWithAnotherClicked = onMergeWithAnotherClicked,
             // SY <--
             onMultiBookmarkClicked = onMultiBookmarkClicked,
-            // AM (FILLERMARK) -->
+            // AY -->
             onMultiFillermarkClicked = onMultiFillermarkClicked,
-            // <-- AM (FILLERMARK)
+            // <-- AY
             onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
             onMarkPreviousAsReadClicked = onMarkPreviousAsReadClicked,
             onMultiDeleteClicked = onMultiDeleteClicked,
@@ -315,9 +315,9 @@ fun MangaScreen(
             onMergeWithAnotherClicked = onMergeWithAnotherClicked,
             // SY <--
             onMultiBookmarkClicked = onMultiBookmarkClicked,
-            // AM (FILLERMARK) -->
+            // AY -->
             onMultiFillermarkClicked = onMultiFillermarkClicked,
-            // <-- AM (FILLERMARK)
+            // <-- AY
             onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
             onMarkPreviousAsReadClicked = onMarkPreviousAsReadClicked,
             onMultiDeleteClicked = onMultiDeleteClicked,
@@ -393,9 +393,9 @@ private fun MangaScreenSmallImpl(
 
     // For bottom action menu
     onMultiBookmarkClicked: (List<Chapter>, bookmarked: Boolean) -> Unit,
-    // AM (FILLERMARK) -->
+    // AY -->
     onMultiFillermarkClicked: (List<Chapter>, fillermarked: Boolean) -> Unit,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     onMultiMarkAsReadClicked: (List<Chapter>, markAsRead: Boolean) -> Unit,
     onMarkPreviousAsReadClicked: (Chapter) -> Unit,
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
@@ -519,9 +519,9 @@ private fun MangaScreenSmallImpl(
                 selected = selectedChapters,
                 onEpisodeClicked = onChapterClicked,
                 onMultiBookmarkClicked = onMultiBookmarkClicked,
-                // AM (FILLERMARK) -->
+                // AY -->
                 onMultiFillermarkClicked = onMultiFillermarkClicked,
-                // <-- AM (FILLERMARK)
+                // <-- AY
                 onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
                 onMarkPreviousAsReadClicked = onMarkPreviousAsReadClicked,
                 onDownloadChapter = onDownloadChapter,
@@ -860,9 +860,9 @@ private fun MangaScreenLargeImpl(
 
     // For bottom action menu
     onMultiBookmarkClicked: (List<Chapter>, bookmarked: Boolean) -> Unit,
-    // AM (FILLERMARK) -->
+    // AY -->
     onMultiFillermarkClicked: (List<Chapter>, fillermarked: Boolean) -> Unit,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     onMultiMarkAsReadClicked: (List<Chapter>, markAsRead: Boolean) -> Unit,
     onMarkPreviousAsReadClicked: (Chapter) -> Unit,
     onMultiDeleteClicked: (List<Chapter>) -> Unit,
@@ -984,9 +984,9 @@ private fun MangaScreenLargeImpl(
                     selected = selectedChapters,
                     onEpisodeClicked = onChapterClicked,
                     onMultiBookmarkClicked = onMultiBookmarkClicked,
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     onMultiFillermarkClicked = onMultiFillermarkClicked,
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
                     onMarkPreviousAsReadClicked = onMarkPreviousAsReadClicked,
                     onDownloadChapter = onDownloadChapter,
@@ -1271,9 +1271,9 @@ private fun SharedMangaBottomActionMenu(
     selected: List<ChapterList.Item>,
     onEpisodeClicked: (Chapter, Boolean) -> Unit,
     onMultiBookmarkClicked: (List<Chapter>, bookmarked: Boolean) -> Unit,
-    // AM (FILLERMARK) -->
+    // AY -->
     onMultiFillermarkClicked: (List<Chapter>, fillermarked: Boolean) -> Unit,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     onMultiMarkAsReadClicked: (List<Chapter>, markAsRead: Boolean) -> Unit,
     onMarkPreviousAsReadClicked: (Chapter) -> Unit,
     onDownloadChapter: ((List<ChapterList.Item>, ChapterDownloadAction) -> Unit)?,
@@ -1291,14 +1291,14 @@ private fun SharedMangaBottomActionMenu(
         onRemoveBookmarkClicked = {
             onMultiBookmarkClicked.invoke(selected.fastMap { it.chapter }, false)
         }.takeIf { selected.fastAll { it.chapter.bookmark } },
-        // AM (FILLERMARK) -->
+        // AY -->
         onFillermarkClicked = {
             onMultiFillermarkClicked.invoke(selected.fastMap { it.chapter }, true)
         }.takeIf { selected.fastAny { !it.chapter.fillermark } },
         onRemoveFillermarkClicked = {
             onMultiFillermarkClicked.invoke(selected.fastMap { it.chapter }, false)
         }.takeIf { selected.fastAll { it.chapter.fillermark } },
-        // <-- AM (FILLERMARK)
+        // <-- AY
         onMarkAsReadClicked = {
             onMultiMarkAsReadClicked(selected.fastMap { it.chapter }, true)
         }.takeIf { selected.fastAny { !it.chapter.read } },
@@ -1415,9 +1415,9 @@ private fun LazyListScope.sharedChapterItems(
                     // SY <--
                     read = item.chapter.read,
                     bookmark = item.chapter.bookmark,
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     fillermark = item.chapter.fillermark,
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     selected = item.selected,
                     downloadIndicatorEnabled =
                     !isAnyChapterSelected && !(mergedData?.manga?.get(item.chapter.mangaId) ?: manga).isLocal(),

@@ -1150,10 +1150,10 @@ class PlayerViewModel @JvmOverloads constructor(
                                 // SY <--
                                 (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED && !it.bookmark) ||
                                 (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED && it.bookmark) ||
-                                // AM (FILLERMARK) -->
+                                // AY -->
                                 (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED && !it.fillermark) ||
                                 (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED && it.fillermark)
-                            // <-- AM (FILLERMARK)
+                            // <-- AY
                             // ANK -->
                         }
                         else -> false

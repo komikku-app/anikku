@@ -309,7 +309,7 @@ class UpdatesScreenModel(
         toggleAllSelection(false)
     }
 
-    // AM (FILLERMARK) -->
+    // AY -->
     /**
      * Fillermarks the given list of chapters.
      * @param updates the list of chapters to fillermark.
@@ -323,7 +323,7 @@ class UpdatesScreenModel(
         }
         toggleAllSelection(false)
     }
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     /**
      * Downloads the given list of chapters with the manager.
@@ -553,11 +553,11 @@ class UpdatesScreenModel(
             LibraryPreferences.ChapterSwipeAction.ToggleBookmark -> {
                 bookmarkUpdates(listOf(updateItem), !update.bookmark)
             }
-            // AM (FILLERMARK) -->
+            // AY -->
             LibraryPreferences.ChapterSwipeAction.ToggleFillermark -> {
                 fillermarkUpdates(listOf(updateItem), !update.fillermark)
             }
-            // <-- AM (FILLERMARK)
+            // <-- AY
             LibraryPreferences.ChapterSwipeAction.Download -> {
                 val downloadAction = when (updateItem.downloadStateProvider()) {
                     Download.State.ERROR,

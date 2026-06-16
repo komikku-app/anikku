@@ -311,9 +311,9 @@ class LibraryScreenModel(
                 prefs.filterUnread,
                 prefs.filterStarted,
                 prefs.filterBookmarked,
-                // AM (FILLERMARK) -->
+                // AY -->
                 prefs.filterFillermarked,
-                // <-- AM (FILLERMARK)
+                // <-- AY
                 prefs.filterCompleted,
                 prefs.filterIntervalCustom,
                 // SY -->
@@ -392,9 +392,9 @@ class LibraryScreenModel(
         val filterUnread = preferences.filterUnread
         val filterStarted = preferences.filterStarted
         val filterBookmarked = preferences.filterBookmarked
-        // AM (FILLERMARK) -->
+        // AY -->
         val filterFillermarked = preferences.filterFillermarked
-        // <-- AM (FILLERMARK)
+        // <-- AY
         val filterCompleted = preferences.filterCompleted
         val filterIntervalCustom = preferences.filterIntervalCustom
         val filterCategories = preferences.filterCategories
@@ -447,11 +447,11 @@ class LibraryScreenModel(
             applyFilter(filterBookmarked) { it.libraryManga.hasBookmarks }
         }
 
-        // AM (FILLERMARK) -->
+        // AY -->
         val filterFnFillermarked: (LibraryItem) -> Boolean = {
             applyFilter(filterFillermarked) { it.libraryManga.hasFillermarks }
         }
-        // <-- AM (FILLERMARK)
+        // <-- AY
 
         val filterFnCompleted: (LibraryItem) -> Boolean = {
             applyFilter(filterCompleted) { it.libraryManga.manga.status.toInt() == SManga.COMPLETED }
@@ -510,9 +510,9 @@ class LibraryScreenModel(
                 filterFnUnread(it) &&
                 filterFnStarted(it) &&
                 filterFnBookmarked(it) &&
-                // AM (FILLERMARK) -->
+                // AY -->
                 filterFnFillermarked(it) &&
-                // <-- AM (FILLERMARK)
+                // <-- AY
                 filterFnCompleted(it) &&
                 filterFnIntervalCustom(it) &&
                 filterFnTracking(it) &&
@@ -730,9 +730,9 @@ class LibraryScreenModel(
             libraryPreferences.filterUnread().changes(),
             libraryPreferences.filterStarted().changes(),
             libraryPreferences.filterBookmarked().changes(),
-            // AM (FILLERMARK) -->
+            // AY -->
             libraryPreferences.filterFillermarked().changes(),
-            // <-- AM (FILLERMARK)
+            // <-- AY
             libraryPreferences.filterCompleted().changes(),
             libraryPreferences.filterIntervalCustom().changes(),
             // SY -->
@@ -755,9 +755,9 @@ class LibraryScreenModel(
                 filterUnread = it[7] as TriState,
                 filterStarted = it[8] as TriState,
                 filterBookmarked = it[9] as TriState,
-                // AM (FILLERMARK) -->
+                // AY -->
                 filterFillermarked = it[10] as TriState,
-                // <-- AM (FILLERMARK)
+                // <-- AY
                 filterCompleted = it[11] as TriState,
                 filterIntervalCustom = it[12] as TriState,
                 // SY -->
@@ -1540,9 +1540,9 @@ class LibraryScreenModel(
         val filterUnread: TriState,
         val filterStarted: TriState,
         val filterBookmarked: TriState,
-        // AM (FILLERMARK) -->
+        // AY -->
         val filterFillermarked: TriState,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         val filterCompleted: TriState,
         val filterIntervalCustom: TriState,
         // SY -->

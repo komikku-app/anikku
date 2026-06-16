@@ -67,9 +67,9 @@ fun MangaChapterListItem(
     // SY <--
     read: Boolean,
     bookmark: Boolean,
-    // AM (FILLERMARK) -->
+    // AY -->
     fillermark: Boolean,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     selected: Boolean,
     downloadIndicatorEnabled: Boolean,
     downloadStateProvider: () -> Download.State,
@@ -164,7 +164,7 @@ fun MangaChapterListItem(
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    // AM (FILLERMARK) -->
+                    // AY -->
                     if (fillermark) {
                         Icon(
                             painter = rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_fillermark_24dp)),
@@ -175,7 +175,7 @@ fun MangaChapterListItem(
                         )
                         Spacer(modifier = Modifier.width(2.dp))
                     }
-                    // <-- AM (FILLERMARK)
+                    // <-- AY
                     Text(
                         text = title,
                         style = MaterialTheme.typography.bodyMedium,
@@ -272,7 +272,7 @@ internal fun getSwipeAction(
             isUndo = bookmark,
             onSwipe = onSwipe,
         )
-        // AM (FILLERMARK) -->
+        // AY -->
         LibraryPreferences.ChapterSwipeAction.ToggleFillermark -> {
             swipeAction(
                 painter = fillermarkPainter,
@@ -281,7 +281,7 @@ internal fun getSwipeAction(
                 onSwipe = onSwipe,
             )
         }
-        // <-- AM (FILLERMARK)
+        // <-- AY
         LibraryPreferences.ChapterSwipeAction.Download -> swipeAction(
             icon = when (downloadState) {
                 Download.State.NOT_DOWNLOADED, Download.State.ERROR -> Icons.Outlined.Download

@@ -104,9 +104,9 @@ object MangaMapper {
         // KMK -->
         bookmarkedReadCount: Long,
         // KMK <--
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermarkCount: Double,
-        // <-- AM (FILLERMARK)
+        // <-- AY
         categories: String,
     ): LibraryManga = LibraryManga(
         manga = mapManga(
@@ -147,9 +147,9 @@ object MangaMapper {
         bookmarkReadCount = bookmarkedReadCount,
         chapterFlags = chapterFlags,
         // KMK <--
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermarkCount = fillermarkCount.toLong(),
-        // <-- AM (FILLERMARK)
+        // <-- AY
         latestUpload = latestUpload,
         chapterFetchedAt = chapterFetchedAt,
         lastRead = lastRead,

@@ -22,9 +22,9 @@ fun Manga.chaptersFiltered(): Boolean {
     return unreadFilter != TriState.DISABLED ||
         downloadedFilter != TriState.DISABLED ||
         bookmarkedFilter != TriState.DISABLED ||
-        // AM (FILLERMARK) -->
+        // AY -->
         fillermarkedFilter != TriState.DISABLED
-    // <-- AM (FILLERMARK)
+    // <-- AY
 }
 
 fun Manga.toSManga(): SManga = SManga.create().also {

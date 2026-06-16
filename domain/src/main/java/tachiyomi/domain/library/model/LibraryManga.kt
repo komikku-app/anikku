@@ -12,9 +12,9 @@ data class LibraryManga(
     val bookmarkReadCount: Long,
     val chapterFlags: Long,
     // KMK <--
-    // AM (FILLERMARK) -->
+    // AY -->
     val fillermarkCount: Long,
-    // <-- AM (FILLERMARK)
+    // <-- AY
     val latestUpload: Long,
     val chapterFetchedAt: Long,
     val lastRead: Long,
@@ -33,10 +33,10 @@ data class LibraryManga(
     val hasBookmarks
         get() = bookmarkCount > 0
 
-    // AM (FILLERMARK) -->
+    // AY -->
     val hasFillermarks
         get() = fillermarkCount > 0
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     val hasStarted = readCount > 0
 }

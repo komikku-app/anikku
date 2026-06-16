@@ -18,9 +18,9 @@ class ChapterImpl : Chapter {
 
     override var bookmark: Boolean = false
 
-    // AM (FILLERMARK) -->
+    // AY -->
     override var fillermark: Boolean = false
-    // <-- AM (FILLERMARK)
+    // <-- AY
 
     override var last_page_read: Long = 0
 
