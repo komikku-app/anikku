@@ -115,6 +115,7 @@ jobs:
           mv app/build/outputs/apk/preview/app-universal-preview${{ steps.signed_filename.outputs.SIGNED_TRAIL }}.apk Anikku-$version_tag-r$commit_count.apk
 
       - name: Upload APK
+        if: github.repository == 'komikku-app/anikku'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: Anikku-${{ steps.current_commit.outputs.VERSION_TAG }}-r${{ steps.current_commit.outputs.COMMIT_COUNT }}.apk
@@ -122,6 +123,7 @@ jobs:
           retention-days: 1
 
       - name: Upload mapping
+        if: github.repository == 'komikku-app/anikku'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: mapping-${{ github.sha }}
