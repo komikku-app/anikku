@@ -46,6 +46,7 @@ actual class LocalSource(
     private val context: Context,
     private val fileSystem: LocalSourceFileSystem,
     private val coverManager: LocalCoverManager,
+    private val fetchTypeManager: LocalFetchTypeManager,
 ) : CatalogueSource, UnmeteredSource {
 
     private val json: Json by injectLazy()
@@ -126,20 +127,25 @@ actual class LocalSource(
         val animes = animeDirs
             .map { animeDir ->
                 async {
-                    SAnime.create().apply {
-                        title = animeDir.name.orEmpty()
-                        url = animeDir.name.orEmpty()
-
-                        // Try to find the cover
-                        coverManager.find(animeDir.name.orEmpty())?.let {
-                            thumbnail_url = it.uri.toString()
-                        }
-                    }
+                    getSAnime(animeDir.name)
                 }
             }
             .awaitAll()
 
         AnimesPage(animes.toList(), false)
+    }
+
+    private fun getSAnime(animeDir: String?): SAnime {
+        return SAnime.create().apply {
+            title = animeDir.orEmpty().substringAfterLast(File.separator)
+            url = animeDir.orEmpty()
+            fetch_type = fetchTypeManager.find(animeDir.orEmpty())
+
+            // Try to find the cover
+            coverManager.find(animeDir.orEmpty())?.let {
+                thumbnail_url = it.uri.toString()
+            }
+        }
     }
 
     // Old fetch functions
@@ -198,6 +204,30 @@ actual class LocalSource(
             }
 
         return@withIOContext anime
+    }
+
+    // Seasons
+    override suspend fun getSeasonList(anime: SAnime): List<SAnime> = withIOContext {
+        val animeDirs = fileSystem.getFilesInAnimeDirectory(anime.url)
+            // Filter out files that are hidden and is not a folder
+            .filter { it.isDirectory && !it.name.orEmpty().startsWith('.') }
+            .distinctBy { it.name }
+
+        animeDirs
+            .map { animeDir ->
+                async {
+                    val url = animeDir.name?.let { season ->
+                        buildString {
+                            append(anime.url)
+                            append(File.separator)
+                            append(season)
+                        }
+                    }
+                    getSAnime(url)
+                }
+            }
+            .awaitAll()
+            .toList()
     }
 
     // Episodes

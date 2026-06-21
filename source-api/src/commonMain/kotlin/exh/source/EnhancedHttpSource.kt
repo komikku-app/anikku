@@ -77,6 +77,14 @@ class EnhancedHttpSource(
         throw UnsupportedOperationException("Should never be called!")
 
     /**
+     * Parses the response from the site and returns a list of seasons/anime entries.
+     *
+     * @param response the response from the site.
+     */
+    override fun seasonListParse(response: Response): List<SAnime> =
+        throw UnsupportedOperationException("Should never be called!")
+
+    /**
      * Parses the response from the site and returns a list of episodes.
      *
      * @param response the response from the site.
@@ -234,6 +242,11 @@ class EnhancedHttpSource(
      */
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getVideoList(episode)"))
     override fun fetchVideoList(episode: SEpisode) = source().fetchVideoList(episode)
+
+    /**
+     * [1.x API] Get all the available seasons for an anime entry.
+     */
+    override suspend fun getSeasonList(anime: SAnime): List<SAnime> = source().getSeasonList(anime)
 
     /**
      * [1.x API] Get the list of videos a episode has.
