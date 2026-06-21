@@ -213,19 +213,19 @@ data class Anime(
         get() = ((seasonFlags and SEASON_GRID_DISPLAY_SIZE_MASK) shr SEASON_GRID_DISPLAY_SIZE_BIT_OFFSET).toInt()
 
     val seasonDownloadedOverlay: Boolean
-        get() = (seasonFlags and SEASON_OVERLAY_DOWNLOADED_MASK) == SEASON_OVERLAY_DOWNLOADED_MASK
+        get() = seasonFlags and SEASON_OVERLAY_DOWNLOADED_MASK == SEASON_OVERLAY_DOWNLOADED_MASK
 
     val seasonUnseenOverlay: Boolean
-        get() = (seasonFlags and SEASON_OVERLAY_UNSEEN_MASK) == SEASON_OVERLAY_UNSEEN_MASK
+        get() = seasonFlags and SEASON_OVERLAY_UNSEEN_MASK == SEASON_OVERLAY_UNSEEN_MASK
 
     val seasonLocalOverlay: Boolean
-        get() = (seasonFlags and SEASON_OVERLAY_LOCAL_MASK) == SEASON_OVERLAY_LOCAL_MASK
+        get() = seasonFlags and SEASON_OVERLAY_LOCAL_MASK == SEASON_OVERLAY_LOCAL_MASK
 
     val seasonLangOverlay: Boolean
-        get() = (seasonFlags and SEASON_OVERLAY_LANG_MASK) == SEASON_OVERLAY_LANG_MASK
+        get() = seasonFlags and SEASON_OVERLAY_LANG_MASK == SEASON_OVERLAY_LANG_MASK
 
     val seasonContinueOverlay: Boolean
-        get() = (seasonFlags and SEASON_OVERLAY_CONT_MASK) == SEASON_OVERLAY_CONT_MASK
+        get() = seasonFlags and SEASON_OVERLAY_CONT_MASK == SEASON_OVERLAY_CONT_MASK
 
     val seasonDisplayMode: Long
         get() = seasonFlags and SEASON_DISPLAY_MODE_MASK

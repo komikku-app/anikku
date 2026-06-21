@@ -1,6 +1,8 @@
 package tachiyomi.data.anime
 
+import aniyomi.domain.anime.SeasonAnime
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import eu.kanade.tachiyomi.source.model.FetchType
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.model.LibraryAnime
 
@@ -35,6 +37,11 @@ object AnimeMapper {
         version: Long,
         @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
+        fetchType: FetchType,
+        parentId: Long?,
+        seasonFlags: Long,
+        seasonNumber: Double,
+        seasonSourceOrder: Long,
     ): Anime = Anime(
         id = id,
         source = source,
@@ -61,6 +68,11 @@ object AnimeMapper {
         lastModifiedAt = lastModifiedAt,
         favoriteModifiedAt = favoriteModifiedAt,
         version = version,
+        fetchType = fetchType,
+        parentId = parentId,
+        seasonFlags = seasonFlags,
+        seasonNumber = seasonNumber,
+        seasonSourceOrder = seasonSourceOrder,
     )
 
     fun mapLibraryAnime(
@@ -92,6 +104,11 @@ object AnimeMapper {
         favoriteModifiedAt: Long?,
         version: Long,
         isSyncing: Long,
+        fetchType: FetchType,
+        parentId: Long?,
+        seasonFlags: Long,
+        seasonNumber: Double,
+        seasonSourceOrder: Long,
         totalCount: Long,
         seenCount: Double,
         latestUpload: Long,
@@ -131,6 +148,11 @@ object AnimeMapper {
             favoriteModifiedAt,
             version,
             isSyncing,
+            fetchType,
+            parentId,
+            seasonFlags,
+            seasonNumber,
+            seasonSourceOrder,
         ),
         category = category,
         totalEpisodes = totalCount,
@@ -141,6 +163,91 @@ object AnimeMapper {
         // <-- AM (FILLERMARK)
         latestUpload = latestUpload,
         episodeFetchedAt = episodeFetchedAt,
+        lastSeen = lastSeen,
+    )
+
+    fun mapSeasonAnime(
+        id: Long,
+        source: Long,
+        url: String,
+        artist: String?,
+        author: String?,
+        description: String?,
+        genre: List<String>?,
+        title: String,
+        status: Long,
+        thumbnailUrl: String?,
+        favorite: Boolean,
+        lastUpdate: Long?,
+        nextUpdate: Long?,
+        initialized: Boolean,
+        viewerFlags: Long,
+        episodeFlags: Long,
+        coverLastModified: Long,
+        dateAdded: Long,
+        // SY -->
+        @Suppress("UNUSED_PARAMETER")
+        filteredScanlators: String?,
+        // SY <--
+        updateStrategy: UpdateStrategy,
+        calculateInterval: Long,
+        lastModifiedAt: Long,
+        favoriteModifiedAt: Long?,
+        version: Long,
+        isSyncing: Long,
+        fetchType: FetchType,
+        parentId: Long?,
+        seasonFlags: Long,
+        seasonNumber: Double,
+        seasonSourceOrder: Long,
+        totalCount: Long,
+        seenCount: Double,
+        latestUpload: Long,
+        fetchedAt: Long,
+        lastSeen: Long,
+        bookmarkCount: Double,
+        fillermarkCount: Double,
+    ): SeasonAnime = SeasonAnime(
+        anime = mapAnime(
+            id,
+            source,
+            url,
+            artist,
+            author,
+            description,
+            genre,
+            title,
+            status,
+            thumbnailUrl,
+            favorite,
+            lastUpdate,
+            nextUpdate,
+            initialized,
+            viewerFlags,
+            episodeFlags,
+            coverLastModified,
+            dateAdded,
+            // SY -->
+            null,
+            // SY <--
+            updateStrategy,
+            calculateInterval,
+            lastModifiedAt,
+            favoriteModifiedAt,
+            version,
+            isSyncing,
+            fetchType,
+            parentId,
+            seasonFlags,
+            seasonNumber,
+            seasonSourceOrder,
+        ),
+        totalEpisodes = totalCount,
+        seenCount = seenCount.toLong(),
+        bookmarkCount = bookmarkCount.toLong(),
+        fillermarkCount = fillermarkCount.toLong(),
+        latestUpload = latestUpload,
+        fetchedAt = fetchedAt,
         lastSeen = lastSeen,
     )
 }

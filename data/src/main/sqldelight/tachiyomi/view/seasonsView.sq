@@ -1,0 +1,40 @@
+CREATE VIEW seasonsView AS
+SELECT
+    A.*,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(EP.total, 0)
+        WHEN 0 THEN coalesce(SS.child_count, 0)
+    END AS totalCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(EP.seenCount, 0)
+        WHEN 0 THEN coalesce(SS.fully_seen_seasons, 0)
+    END AS seenCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(EP.latestUpload, 0)
+        WHEN 0 THEN coalesce(SS.max_latest_upload, 0)
+    END AS latestUpload,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(EP.fetchedAt, 0)
+        WHEN 0 THEN coalesce(SS.max_fetched_at, 0)
+    END AS fetchedAt,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(EP.lastSeen, 0)
+        WHEN 0 THEN coalesce(SS.max_last_seen, 0)
+    END AS lastSeen,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(EP.bookmarkCount, 0)
+        WHEN 0 THEN coalesce(SS.total_bookmarks, 0)
+    END AS bookmarkCount,
+    CASE A.fetch_type
+        WHEN 1 THEN coalesce(EP.fillermarkCount, 0)
+        WHEN 0 THEN coalesce(SS.total_fillermarks, 0)
+    END AS fillermarkCount
+FROM animes AS A
+LEFT JOIN episodestatsView AS EP ON A._id = EP.anime_id
+LEFT JOIN seasonstatsView AS SS ON A._id = SS.parent_id
+WHERE A.parent_id IS NOT NULL;
+
+getAnimeSeasonsById:
+SELECT *
+FROM seasonsView
+WHERE parent_id = :parentId;

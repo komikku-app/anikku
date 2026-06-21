@@ -132,7 +132,7 @@ actual class LocalSource(
             }
             .awaitAll()
 
-        AnimesPage(animes.toList(), false)
+        AnimesPage(animes, false)
     }
 
     private fun getSAnime(animeDir: String?): SAnime {
@@ -210,24 +210,19 @@ actual class LocalSource(
     override suspend fun getSeasonList(anime: SAnime): List<SAnime> = withIOContext {
         val animeDirs = fileSystem.getFilesInAnimeDirectory(anime.url)
             // Filter out files that are hidden and is not a folder
-            .filter { it.isDirectory && !it.name.orEmpty().startsWith('.') }
+            .filter { it.isDirectory && !it.name.isNullOrEmpty().startsWith('.') }
             .distinctBy { it.name }
 
         animeDirs
             .map { animeDir ->
                 async {
-                    val url = animeDir.name?.let { season ->
-                        buildString {
-                            append(anime.url)
-                            append(File.separator)
-                            append(season)
-                        }
-                    }
+                    val season = animeDir.name.orEmpty()
+                    val url = "${anime.url}${File.separator}$season"
                     getSAnime(url)
+                    }
                 }
             }
             .awaitAll()
-            .toList()
     }
 
     // Episodes

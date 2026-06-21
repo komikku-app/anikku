@@ -1,0 +1,23 @@
+CREATE VIEW mergedepisodestatsView AS
+SELECT
+    ME.merge_id,
+    count(*) AS total,
+    sum(seen) AS seenCount,
+    coalesce(max(episodes.date_upload), 0) AS latestUpload,
+    coalesce(max(history.last_seen), 0) AS lastSeen,
+    coalesce(max(episodes.date_fetch), 0) AS fetchedAt,
+    sum(episodes.bookmark) AS bookmarkCount,
+    excluded_scanlators.scanlator AS ex_scanlator,
+    -- AM (FILLERMARK) -->
+    sum(episodes.fillermark) AS fillermarkCount
+    -- <-- AM (FILLERMARK)
+FROM episodes
+LEFT JOIN excluded_scanlators
+ON episodes.anime_id = excluded_scanlators.anime_id
+AND episodes.scanlator = excluded_scanlators.scanlator
+LEFT JOIN history
+ON episodes._id = history.episode_id
+LEFT JOIN merged ME
+ON ME.anime_id = episodes.anime_id
+WHERE ex_scanlator IS NULL
+GROUP BY ME.merge_id;

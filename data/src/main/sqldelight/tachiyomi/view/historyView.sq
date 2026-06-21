@@ -28,17 +28,17 @@ ON episodes.anime_id = max_last_seen.anime_id;
 
 history:
 SELECT
-id,
-animeId,
-episodeId,
-title,
-thumbnailUrl,
-source,
-favorite,
-cover_last_modified,
-episodeNumber,
-seenAt,
-watchDuration
+    id,
+    animeId,
+    episodeId,
+    title,
+    thumbnailUrl,
+    source,
+    favorite,
+    cover_last_modified,
+    episodeNumber,
+    seenAt,
+    watchDuration
 FROM historyView
 WHERE historyView.seenAt > 0
 AND maxSeenAtEpisodeId = historyView.episodeId
@@ -47,17 +47,17 @@ ORDER BY seenAt DESC;
 
 getLatestHistory:
 SELECT
-id,
-animeId,
-episodeId,
-title,
-thumbnailUrl,
-source,
-favorite,
-cover_last_modified,
-episodeNumber,
-seenAt,
-watchDuration
+    id,
+    animeId,
+    episodeId,
+    title,
+    thumbnailUrl,
+    source,
+    favorite,
+    cover_last_modified,
+    episodeNumber,
+    seenAt,
+    watchDuration
 FROM historyView
 WHERE historyView.seenAt > 0
 ORDER BY seenAt DESC

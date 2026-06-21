@@ -292,7 +292,7 @@ class LibraryPreferences(
     )
 
     fun setSeasonSettingsDefault(anime: Anime) {
-        filterSeasonByDownload().set(anime.seasonUnseenFilterRaw)
+        filterSeasonByDownload().set(anime.seasonDownloadedFilterRaw)
         filterSeasonByUnseen().set(anime.seasonUnseenFilterRaw)
         filterSeasonByStarted().set(anime.seasonStartedFilterRaw)
         filterSeasonByCompleted().set(anime.seasonCompletedFilterRaw)

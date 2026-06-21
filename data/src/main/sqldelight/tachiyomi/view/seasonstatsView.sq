@@ -1,0 +1,18 @@
+CREATE VIEW seasonstatsView AS
+SELECT
+    season.parent_id,
+    count(*) AS child_count,
+    sum(CASE WHEN season.fetch_type = 1 AND
+                 coalesce(ES.total, 0) = coalesce(ES.seenCount, 0)
+            THEN 1 ELSE 0 END) AS fully_seen_seasons,
+    max(coalesce(ES.latestUpload, 0)) AS max_latest_upload,
+    max(coalesce(ES.fetchedAt, 0)) AS max_fetched_at,
+    coalesce(max(history.last_seen), 0) AS max_last_seen,
+    sum(coalesce(ES.bookmarkCount, 0)) AS total_bookmarks,
+    sum(coalesce(ES.fillermarkCount, 0)) AS total_fillermarks
+FROM animes season
+LEFT JOIN episodestatsView ES ON season._id = ES.anime_id
+LEFT JOIN episodes EP ON season._id = EP.anime_id
+LEFT JOIN history ON EP._id = history.episode_id
+WHERE season.parent_id IS NOT NULL
+GROUP BY season.parent_id;
