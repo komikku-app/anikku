@@ -11,6 +11,11 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Fixed
+- Fix custom buttons not being added ([@Secozzi](https://github.com/Secozzi)) ([#164](https://github.com/quickdesh/Animiru/pull/164))
+- Fix tracks not loading after changing quality ([@Secozzi](https://github.com/Secozzi)) ([#165](https://github.com/quickdesh/Animiru/pull/165))
+
+## [v0.19.7.6] - 2026-06-12
 ### Improved
 - Add order priority for whitelist in track select ([@Secozzi](https://github.com/Secozzi)) ([#159](https://github.com/quickdesh/Animiru/pull/159))
 
