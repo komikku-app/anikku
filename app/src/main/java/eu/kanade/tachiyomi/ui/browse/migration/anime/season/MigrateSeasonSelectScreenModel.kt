@@ -71,13 +71,11 @@ class MigrateSeasonSelectScreenModel(
             ).flow.map { pagingData ->
                 pagingData.map {
                     networkToLocalAnime.await(it.toDomainAnime(anime.source))
-                        .let { localAnime -> getAnime.subscribe(localAnime.url, localAnime.source) }
-                        .filterNotNull()
-                        .stateIn(ioCoroutineScope)
                 }
-                    .filter { !hideInLibraryItems || !it.value.favorite }
+                    .filter { !hideInLibraryItems || !it.favorite }
+                    .map { kotlinx.coroutines.flow.MutableStateFlow(it) }
             }
-                .cachedIn(ioCoroutineScope)
+            .cachedIn(ioCoroutineScope)
         }
         .stateIn(ioCoroutineScope, SharingStarted.Lazily, emptyFlow())
 

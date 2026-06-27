@@ -45,9 +45,9 @@ class SyncSeasonsWithSource(
 
         val newSeasons = mutableListOf<Anime>()
         val updatedSeasons = mutableListOf<Anime>()
-        val removedSeasons = dbSeasons.filterNot { dbSeasons ->
+        val removedSeasons = dbSeasons.filterNot { dbSeason ->
             sourceSeasons.any { sourceSeason ->
-                dbSeasons.anime.url == sourceSeason.url
+                dbSeason.anime.url == sourceSeason.url
             }
         }
 

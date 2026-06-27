@@ -1239,7 +1239,7 @@ private fun Modifier.ignorePadding(gridPadding: Int) = layout { measurable, cons
     val looseConstraints = constraints.offset(gridPadding * 2, 0)
     val placeable = measurable.measure(looseConstraints)
 
-    layout(placeable.width, placeable.height) {
-        placeable.placeRelative(0, 0)
+    layout(placeable.width - gridPadding * 2, placeable.height) {
+        placeable.placeRelative(-gridPadding, 0)
     }
 }

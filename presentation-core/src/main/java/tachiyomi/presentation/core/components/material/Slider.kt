@@ -18,7 +18,7 @@ fun Slider(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     valueRange: IntProgression = 0..1,
-    @IntRange(from = 0) steps: Int = with(valueRange) { (last - first) - 1 },
+    @IntRange(from = 0) steps: Int = with(valueRange) { last - first - 1 },
     onValueChangeFinished: (() -> Unit)? = null,
     colors: SliderColors = SliderDefaults.colors(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },

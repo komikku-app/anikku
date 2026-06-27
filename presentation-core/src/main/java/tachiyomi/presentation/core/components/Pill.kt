@@ -51,7 +51,6 @@ fun Pill(
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     fontSize: TextUnit = LocalTextStyle.current.fontSize,
 ) {
-    val style = LocalTextStyle.current
     Pill(
         text = text,
         modifier = modifier,
