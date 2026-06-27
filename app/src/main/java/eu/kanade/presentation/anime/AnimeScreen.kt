@@ -1055,7 +1055,7 @@ private fun LazyGridScope.sharedSeasons(
 ) {
     items(
         items = seasons,
-        key = { season -> season.seasonAnime.anime },
+        key = { season -> season.seasonAnime.anime.id },
         span = { GridItemSpan(if (anime.seasonDisplayGridMode == SeasonDisplayMode.List) maxLineSpan else 1) },
     ) { item ->
         AnimeSeasonListItem(

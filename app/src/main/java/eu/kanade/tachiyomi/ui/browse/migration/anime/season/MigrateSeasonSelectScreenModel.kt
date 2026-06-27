@@ -73,7 +73,7 @@ class MigrateSeasonSelectScreenModel(
                     networkToLocalAnime.await(it.toDomainAnime(anime.source))
                 }
                     .filter { !hideInLibraryItems || !it.favorite }
-                    .map { kotlinx.coroutines.flow.MutableStateFlow(it) }
+                    .map { kotlinx.coroutines.flow.MutableStateFlow(it) as kotlinx.coroutines.flow.StateFlow<Anime>}
             }
             .cachedIn(screenModelScope)
         }

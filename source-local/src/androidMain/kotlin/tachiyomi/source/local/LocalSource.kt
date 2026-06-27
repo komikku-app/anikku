@@ -137,7 +137,7 @@ actual class LocalSource(
 
     private fun getSAnime(animeDir: String?): SAnime {
         return SAnime.create().apply {
-            title = animeDir.orEmpty().substringAfterLast(File.separator)
+            title = java.io.File(animeDir.orEmpty()).name
             url = animeDir.orEmpty()
             fetch_type = fetchTypeManager.find(animeDir.orEmpty())
 
@@ -217,7 +217,7 @@ actual class LocalSource(
             .map { animeDir ->
                 async {
                     val season = animeDir.name.orEmpty()
-                    val url = "${anime.url}${File.separator}$season"
+                    val url = java.io.File(anime.url, season).path
                     getSAnime(url)
                     }
                 }

@@ -1021,19 +1021,20 @@ class AnimeScreenModel(
         refreshTracks: RefreshTracks = Injekt.get(),
     ) {
         refreshTracks.await(animeId)
-            .filter { it.first != null }
             .forEach { (track, e) ->
-                logcat(LogPriority.ERROR, e) {
-                    "Failed to refresh track data animeId=$animeId for service ${track!!.id}"
-                }
-                withUIContext {
-                    context.toast(
-                        context.stringResource(
-                            MR.strings.track_error,
-                            track!!.name,
-                            e.message ?: "",
-                        ),
-                    )
+                if (track != null) {
+                    logcat(LogPriority.ERROR, e) {
+                        "Failed to refresh track data animeId=$animeId for service ${track!!.id}"
+                    }
+                    withUIContext {
+                        context.toast(
+                            context.stringResource(
+                                MR.strings.track_error,
+                                track!!.name,
+                                e.message ?: "",
+                            ),
+                        )
+                    }
                 }
             }
     }
