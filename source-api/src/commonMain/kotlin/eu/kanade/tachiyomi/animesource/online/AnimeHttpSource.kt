@@ -331,7 +331,9 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param response the response from the site.
      * @return the list of seasons.
      */
-    protected abstract fun seasonListParse(response: Response): List<SAnime>
+    protected open fun seasonListParse(response: Response): List<SAnime> {
+        throw UnsupportedOperationException("Seasons not supported")
+    }
 
     /**
      * Get the list of hoster for an episode. The first hoster in the list should

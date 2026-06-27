@@ -12,6 +12,7 @@ import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.anime.model.AnimeUpdate
 import tachiyomi.domain.anime.repository.AnimeRepository
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.source.model.DeletableAnime
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -172,6 +173,12 @@ class AnimeRepositoryImpl(
             handler.await { animesQueries.removeParentIdByIds(animeIds) }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
+        }
+    }
+
+    override fun getDeletableParentAnime(): Flow<List<DeletableAnime>> {
+        return handler.subscribeToList {
+            deletableViewQueries.getDeletableParentAnime(AnimeMapper::mapDeletableAnime)
         }
     }
 

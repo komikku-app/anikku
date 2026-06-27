@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.model.FetchType
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.library.model.LibraryAnime
+import tachiyomi.domain.source.model.DeletableAnime
 
 object AnimeMapper {
     fun mapAnime(
@@ -249,5 +250,15 @@ object AnimeMapper {
         latestUpload = latestUpload,
         fetchedAt = fetchedAt,
         lastSeen = lastSeen,
+    )
+
+    fun mapDeletableAnime(
+        id: Long,
+        source: Long,
+        fetchType: FetchType,
+    ): DeletableAnime = DeletableAnime(
+        animeId = id,
+        sourceId = source,
+        fetchType = fetchType,
     )
 }

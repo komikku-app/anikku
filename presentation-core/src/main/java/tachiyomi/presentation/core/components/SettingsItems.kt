@@ -47,10 +47,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.StringResource
@@ -176,6 +178,80 @@ fun RadioItem(label: String, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
+@Composable
+fun SliderItem(
+    value: Int,
+    valueRange: IntProgression,
+    label: String,
+    onChange: (Int) -> Unit,
+    steps: Int = with(valueRange) { (last - first) - 1 },
+    valueText: String = value.toString(),
+    labelStyle: TextStyle = MaterialTheme.typography.bodyMedium,
+    pillColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+) {
+    BaseSliderItem(
+        value = value,
+        valueRange = valueRange,
+        steps = steps,
+        label = label,
+        valueText = valueText,
+        onChange = onChange,
+        labelStyle = labelStyle,
+        pillColor = pillColor,
+        modifier = Modifier.padding(
+            horizontal = SettingsItemsPaddings.Horizontal,
+            vertical = SettingsItemsPaddings.Vertical,
+        ),
+    )
+}
+
+@Composable
+fun BaseSliderItem(
+    value: Int,
+    valueRange: IntProgression,
+    label: String,
+    onChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    steps: Int = with(valueRange) { (last - first) - 1 },
+    valueText: String = value.toString(),
+    labelStyle: TextStyle = MaterialTheme.typography.bodyMedium,
+    pillColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+) {
+    val haptic = LocalHapticFeedback.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(modifier),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+        ) {
+            Text(
+                text = label,
+                style = labelStyle,
+                modifier = Modifier.weight(1f),
+            )
+            Pill(
+                text = valueText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = pillColor,
+            )
+        }
+
+        Slider(
+            value = value,
+            onValueChange = f@{
+                if (it == value) return@f
+                onChange(it)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            },
+            valueRange = valueRange,
+            steps = steps,
+        )
+    }
+}
 @Composable
 fun SliderItem(
     label: String,
@@ -345,7 +421,7 @@ fun <T> SelectItem(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor()
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
                 .padding(
                     horizontal = SettingsItemsPaddings.Horizontal,

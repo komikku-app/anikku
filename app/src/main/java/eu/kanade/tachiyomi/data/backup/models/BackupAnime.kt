@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.data.backup.models
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import eu.kanade.tachiyomi.source.model.FetchType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import tachiyomi.domain.anime.model.Anime
@@ -49,6 +50,13 @@ data class BackupAnime(
     // skipping 803 due to using duplicate value in previous builds
     @ProtoNumber(804) var customDescription: String? = null,
     @ProtoNumber(805) var customGenre: List<String>? = null,
+    // Aniyomi specific values
+    @ProtoNumber(502) var parentId: Long? = null,
+    @ProtoNumber(503) var id: Long? = null, // Used to associate seasons with parents. Do not use for anything else.
+    @ProtoNumber(504) var seasonFlags: Long = 0,
+    @ProtoNumber(505) var seasonNumber: Double = -1.0,
+    @ProtoNumber(506) var seasonSourceOrder: Long = 0,
+    @ProtoNumber(507) var fetchType: FetchType = FetchType.Episodes,
 ) {
     fun getAnimeImpl(): Anime {
         return Anime.create().copy(
@@ -71,6 +79,11 @@ data class BackupAnime(
             lastModifiedAt = this@BackupAnime.lastModifiedAt,
             favoriteModifiedAt = this@BackupAnime.favoriteModifiedAt,
             version = this@BackupAnime.version,
+            fetchType = this@BackupAnime.fetchType,
+            parentId = this@BackupAnime.parentId,
+            seasonFlags = this@BackupAnime.seasonFlags,
+            seasonNumber = this@BackupAnime.seasonNumber,
+            seasonSourceOrder = this@BackupAnime.seasonSourceOrder,
         )
     }
 

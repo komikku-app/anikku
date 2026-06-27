@@ -184,7 +184,9 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      *
      * @since extensions-lib 16
      */
-    protected abstract fun seasonListSelector(): String
+    protected open fun seasonListSelector(): String {
+        throw UnsupportedOperationException("Seasons not supported")
+    }
 
     /**
      * Returns a season from the given element.
@@ -192,7 +194,9 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      * @since extensions-lib 16
      * @param element an element obtained from [seasonListSelector].
      */
-    protected abstract fun seasonFromElement(element: Element): SAnime
+    protected open fun seasonFromElement(element: Element): SAnime {
+        throw UnsupportedOperationException("Seasons not supported")
+    }
 
     /**
      * Parses the response from the site and returns the hoster list.

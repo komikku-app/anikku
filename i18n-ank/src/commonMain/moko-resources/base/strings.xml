@@ -144,6 +144,7 @@
         <!-- Mihon -->
     <string name="action_sort_last_update_check">Last update check</string>
     <string name="action_display_show_continue_watching_button">Continue watching button</string>
+    <string name="action_display_grid_mode">Grid display mode</string>
     <string name="non_library_watched_settings">All watched entries</string>
     <string name="channel_new_episodes">Episode updates</string>
     <string name="pref_incognito_watching_mode_extension_summary">Pause watching history for extension</string>

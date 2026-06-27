@@ -1,17 +1,10 @@
-package eu.kanade.tachiyomi.ui.browse.migration.search
+package eu.kanade.tachiyomi.ui.browse.migration.anime.season
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material3.Icon
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -19,32 +12,24 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.presentation.browse.BrowseSourceContent
-import eu.kanade.presentation.components.SearchToolbar
+import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.online.HttpSource
 import tachiyomi.core.common.Constants
-import eu.kanade.tachiyomi.ui.browse.migration.anime.season.MigrateSeasonSelectScreen
-import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel
-import eu.kanade.tachiyomi.ui.browse.source.browse.SourceFilterDialog
+import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialog
+import eu.kanade.tachiyomi.ui.browse.migration.search.MigrateDialogScreenModel
 import eu.kanade.tachiyomi.ui.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
-import kotlinx.coroutines.launch
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.domain.anime.model.Anime
-import tachiyomi.i18n.MR
-import tachiyomi.presentation.core.components.material.ExtendedFloatingActionButton
 import tachiyomi.presentation.core.components.material.Scaffold
-import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.LocalSource
 
-data class SourceSearchScreen(
+data class MigrateSeasonSelectScreen(
     private val oldAnime: Anime,
-    private val sourceId: Long,
-    private val query: String?,
+    private val anime: Anime,
 ) : Screen() {
-
     @Composable
     override fun Content() {
         if (!ifSourcesLoaded()) {
@@ -54,40 +39,27 @@ data class SourceSearchScreen(
 
         val uriHandler = LocalUriHandler.current
         val navigator = LocalNavigator.currentOrThrow
-        val scope = rememberCoroutineScope()
 
-        val screenModel = rememberScreenModel { BrowseSourceScreenModel(sourceId, query) }
+        val screenModel = rememberScreenModel { MigrateSeasonSelectScreenModel(anime) }
         val state by screenModel.state.collectAsState()
 
         val snackbarHostState = remember { SnackbarHostState() }
 
         Scaffold(
             topBar = { scrollBehavior ->
-                SearchToolbar(
-                    searchQuery = state.toolbarQuery ?: "",
-                    onChangeSearchQuery = screenModel::setToolbarQuery,
-                    onClickCloseSearch = navigator::pop,
-                    onSearch = screenModel::search,
+                AppBar(
+                    title = anime.title,
+                    navigateUp = navigator::pop,
                     scrollBehavior = scrollBehavior,
                 )
             },
-            floatingActionButton = {
-                AnimatedVisibility(visible = state.filters.isNotEmpty()) {
-                    ExtendedFloatingActionButton(
-                        text = { Text(text = stringResource(MR.strings.action_filter)) },
-                        icon = { Icon(Icons.Outlined.FilterList, contentDescription = "") },
-                        onClick = screenModel::openFilterSheet,
-                    )
-                }
-            },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
             val openMigrateDialog: (Anime) -> Unit = {
-                screenModel.setDialog(BrowseSourceScreenModel.Dialog.Migrate(newAnime = it, oldAnime = oldAnime))
+                screenModel.setDialog(MigrateSeasonSelectScreenModel.Dialog.Migrate(newAnime = it, oldAnime = oldAnime))
             }
             BrowseSourceContent(
                 source = screenModel.source,
-                animeList = screenModel.animePagerFlowFlow.collectAsLazyPagingItems(),
+                animeList = screenModel.seasonPagerFlowFlow.collectAsLazyPagingItems(),
                 columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 displayMode = screenModel.displayMode,
                 snackbarHostState = snackbarHostState,
@@ -111,29 +83,16 @@ data class SourceSearchScreen(
 
         val onDismissRequest = { screenModel.setDialog(null) }
         when (val dialog = state.dialog) {
-            is BrowseSourceScreenModel.Dialog.Filter -> {
-                SourceFilterDialog(
-                    onDismissRequest = onDismissRequest,
-                    filters = state.filters,
-                    onReset = screenModel::resetFilters,
-                    onFilter = { screenModel.search(filters = state.filters) },
-                    onUpdate = screenModel::setFilters,
-                )
-            }
-            is BrowseSourceScreenModel.Dialog.Migrate -> {
+            is MigrateSeasonSelectScreenModel.Dialog.Migrate -> {
                 MigrateDialog(
-                    oldAnime = oldAnime,
+                    oldAnime = dialog.oldAnime,
                     newAnime = dialog.newAnime,
                     screenModel = rememberScreenModel { MigrateDialogScreenModel() },
                     onDismissRequest = onDismissRequest,
                     onClickTitle = { navigator.push(AnimeScreen(dialog.newAnime.id)) },
                     onClickSeasons = { navigator.push(MigrateSeasonSelectScreen(oldAnime, dialog.newAnime)) },
                     onPopScreen = {
-                        scope.launch {
-                            navigator.popUntilRoot()
-                            HomeScreen.openTab(HomeScreen.Tab.Browse())
-                            navigator.push(AnimeScreen(dialog.newAnime.id))
-                        }
+                        onDismissRequest()
                     },
                 )
             }

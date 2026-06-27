@@ -38,6 +38,7 @@ import eu.kanade.presentation.browse.components.SourceIcon
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.util.Screen
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
@@ -45,11 +46,14 @@ import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withNonCancellableContext
-import tachiyomi.data.Database
+import tachiyomi.data.source.mapSourceToDomainSource
 import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryAnime
 import tachiyomi.domain.source.model.Source
-import tachiyomi.domain.source.model.SourceWithCount
+import tachiyomi.domain.source.model.SourceWithIds
+import tachiyomi.domain.source.model.StubSource
+import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.data.Database
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
@@ -215,13 +219,36 @@ private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenMod
 ) {
     private val getSourcesWithNonLibraryAnime: GetSourcesWithNonLibraryAnime = Injekt.get()
     private val database: Database = Injekt.get()
+    private val sourceManager: SourceManager = Injekt.get()
 
     init {
         screenModelScope.launchIO {
             getSourcesWithNonLibraryAnime.subscribe()
                 .collectLatest { list ->
+                    val items = list.groupBy { it.sourceId }
+                        .map { (sourceId, deletableAnime) ->
+                            val source = sourceManager.getOrStub(sourceId)
+                            val domainSource = mapSourceToDomainSource(source).copy(
+                                isStub = source is StubSource,
+                            )
+
+                            val ids = mutableListOf<Long>()
+                            val orphaned = mutableListOf<Long>()
+
+                            deletableAnime.forEach {
+                                ids.add(it.animeId)
+                                if (it.fetchType == FetchType.Seasons) {
+                                    val (childrenIds, orphanedIds) = getDeletableChildren(it.animeId)
+                                    ids.addAll(childrenIds)
+                                    orphaned.addAll(orphanedIds)
+                                }
+                            }
+
+                            SourceWithIds(domainSource, ids, orphaned)
+                        }
+
                     mutableState.update { old ->
-                        val items = list.sortedBy { it.name }
+                        val items = items.sortedBy { it.name }
                         when (old) {
                             State.Loading -> State.Ready(items)
                             is State.Ready -> old.copy(items = items)
@@ -231,9 +258,40 @@ private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenMod
         }
     }
 
+    /**
+     * Get all children of an anime that can be deleted, as well as any orphans.
+     * Children that are favorited needs their parentId removed or else they won't be
+     * able to be removed later.
+     */
+    private suspend fun getDeletableChildren(animeId: Long): Pair<List<Long>, List<Long>> {
+        val ids = mutableListOf<Long>()
+        val orphaned = mutableListOf<Long>()
+        val children = getSourcesWithNonLibraryAnime.getDeletableChildren(animeId)
+        children.forEach { c ->
+            if (c.favorite) {
+                orphaned.add(c.id)
+            } else {
+                ids.add(c.id)
+                if (c.fetchType == FetchType.Seasons) {
+                    val (childrenIds, orphanedIds) = getDeletableChildren(c.id)
+                    ids.addAll(childrenIds)
+                    orphaned.addAll(orphanedIds)
+                }
+            }
+        }
+        return Pair(ids, orphaned)
+    }
+
     suspend fun removeAnimeBySourceId() = withNonCancellableContext {
         val state = state.value as? State.Ready ?: return@withNonCancellableContext
+        val selected = state.items.filter { it.id in state.selection }
+
+        val animeIds = selected.flatMap { it.ids }
+        val orphaned = selected.flatMap { it.orphaned }
+            .filterNot { it in animeIds }
+
         database.animesQueries.deleteAnimesNotInLibraryBySourceIds(state.selection)
+        database.animesQueries.removeParentIdByIds(orphaned)
         database.historyQueries.removeResettedHistory()
     }
 
@@ -283,7 +341,7 @@ private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenMod
 
         @Immutable
         data class Ready(
-            val items: List<SourceWithCount>,
+            val items: List<SourceWithIds>,
             val selection: List<Long> = emptyList(),
             val showConfirmation: Boolean = false,
         ) : State

@@ -185,15 +185,26 @@ private fun ColumnScope.DisplayPage(
 }
 
 @Composable
-private fun SetAsDefaultDialog(
+internal fun SetAsDefaultDialog(
     onDismissRequest: () -> Unit,
+    isEpisode: Boolean = true,
     onConfirmed: (optionalChecked: Boolean) -> Unit,
 ) {
     var optionalChecked by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = stringResource(MR.strings.episode_settings)) },
+        title = {
+            Text(
+                text = if (isEpisode) {
+                    stringResource(
+                        MR.strings.episode_settings,
+                    )
+                } else {
+                    stringResource(MR.strings.season_settings)
+                },
+            )
+        },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import eu.kanade.tachiyomi.source.model.FetchType
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
 import tachiyomi.presentation.core.components.material.padding
@@ -18,12 +19,13 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun EpisodeHeader(
+fun ItemHeader(
     enabled: Boolean,
     episodeCount: Int?,
     missingEpisodeCount: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    fetchType: FetchType = FetchType.Episodes,
 ) {
     Column(
         modifier = modifier
@@ -39,7 +41,12 @@ fun EpisodeHeader(
             text = if (episodeCount == null) {
                 stringResource(MR.strings.episodes)
             } else {
-                pluralStringResource(MR.plurals.anime_num_episodes, count = episodeCount, episodeCount)
+                val pluralCount =
+                    when (fetchType) {
+                        FetchType.Seasons -> MR.plurals.anime_num_seasons
+                        FetchType.Episodes -> MR.plurals.anime_num_episodes
+                    }
+                pluralStringResource(pluralCount, count = episodeCount, episodeCount)
             },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,

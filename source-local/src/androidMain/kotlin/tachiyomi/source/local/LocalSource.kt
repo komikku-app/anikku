@@ -210,7 +210,7 @@ actual class LocalSource(
     override suspend fun getSeasonList(anime: SAnime): List<SAnime> = withIOContext {
         val animeDirs = fileSystem.getFilesInAnimeDirectory(anime.url)
             // Filter out files that are hidden and is not a folder
-            .filter { it.isDirectory && !it.name.isNullOrEmpty().startsWith('.') }
+            .filter { it.isDirectory && !it.name.orEmpty().startsWith('.') }
             .distinctBy { it.name }
 
         animeDirs
@@ -221,8 +221,7 @@ actual class LocalSource(
                     getSAnime(url)
                     }
                 }
-            }
-            .awaitAll()
+                .awaitAll()
     }
 
     // Episodes

@@ -1,0 +1,12 @@
+CREATE VIEW deletableView AS
+SELECT
+    A._id,
+    A.source,
+    A.fetch_type
+FROM animes AS A
+WHERE A.favorite = 0
+AND A.parent_id IS NULL;
+
+getDeletableParentAnime:
+SELECT *
+FROM deletableView;

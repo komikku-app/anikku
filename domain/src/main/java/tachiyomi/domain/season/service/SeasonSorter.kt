@@ -31,6 +31,7 @@ fun getSeasonSortComparator(anime: Anime): Comparator<SeasonAnime> = Comparator 
         Anime.SEASON_SORT_FETCHED -> {
             s1.fetchedAt.compareTo(s2.fetchedAt)
         }
-        else -> throw NotImplementedError("Invalid season sorting method: ${anime.seasonSorting}")
+        else ->
+            s1.anime.seasonSourceOrder.compareTo(s2.anime.seasonSourceOrder)
     }
 }

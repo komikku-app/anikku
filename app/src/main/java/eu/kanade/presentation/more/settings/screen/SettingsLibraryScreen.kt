@@ -64,6 +64,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 libraryPreferences,
             ),
             getGlobalUpdateGroup(allAnimeCategories, libraryPreferences),
+            getSeasonBehaviorGroup(libraryPreferences),
             getEpisodeSwipeActionsGroup(libraryPreferences),
         )
     }
@@ -239,6 +240,25 @@ object SettingsLibraryScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     pref = libraryPreferences.newShowUpdatesCount(),
                     title = stringResource(MR.strings.pref_library_update_show_tab_badge),
+                ),
+            ),
+        )
+    }
+
+    @Composable
+    private fun getSeasonBehaviorGroup(
+        libraryPreferences: LibraryPreferences,
+    ): Preference.PreferenceGroup {
+        return Preference.PreferenceGroup(
+            title = stringResource(MR.strings.pref_library_season),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = libraryPreferences.updateSeasonOnRefresh(),
+                    title = stringResource(MR.strings.pref_update_seasons_refresh),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    pref = libraryPreferences.updateSeasonOnLibraryUpdate(),
+                    title = stringResource(MR.strings.pref_update_seasons_update),
                 ),
             ),
         )

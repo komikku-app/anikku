@@ -22,8 +22,8 @@ sealed interface SeasonDisplayMode {
                 1L -> ComfortableGrid
                 2L -> CoverOnlyGrid
                 3L -> List
-                else -> throw IllegalArgumentException("Invalid display mode value")
-            }
+                else -> CompactGrid
+                }
         }
     }
 }
