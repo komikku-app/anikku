@@ -984,7 +984,9 @@ class AnimeScreenModel(
                 return@launchIO
             }
 
-            refreshTrackers()
+            launchIO {
+                refreshTrackers()
+            }
 
             val tracks = getTracks.await(animeId)
             val maxEpisodeNumber = episodes.maxOf { it.episodeNumber }

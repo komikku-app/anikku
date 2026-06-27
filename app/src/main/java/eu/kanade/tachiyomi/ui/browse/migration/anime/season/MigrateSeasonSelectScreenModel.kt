@@ -75,9 +75,9 @@ class MigrateSeasonSelectScreenModel(
                     .filter { !hideInLibraryItems || !it.favorite }
                     .map { kotlinx.coroutines.flow.MutableStateFlow(it) }
             }
-            .cachedIn(ioCoroutineScope)
+            .cachedIn(screenModelScope)
         }
-        .stateIn(ioCoroutineScope, SharingStarted.Lazily, emptyFlow())
+        .stateIn(screenModelScope, SharingStarted.Lazily, emptyFlow())
 
     private class SeasonListPagingSource(
         private val loadSeasonList: suspend () -> List<SAnime>,

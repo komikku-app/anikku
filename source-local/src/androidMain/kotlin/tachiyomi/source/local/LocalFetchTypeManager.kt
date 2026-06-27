@@ -14,7 +14,7 @@ actual class LocalFetchTypeManager(
 
         return when {
             files.any { Archive.isSupported(it) } -> FetchType.Episodes
-            files.any { it.isDirectory } -> FetchType.Seasons
+            files.any { it.isDirectory && !it.name.orEmpty().startsWith('.') } -> FetchType.Seasons
             else -> FetchType.Episodes
         }
     }

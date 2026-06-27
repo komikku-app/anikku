@@ -27,7 +27,7 @@ fun AnimeSeasonListItem(
     listItemModifier: Modifier = Modifier,
 ) {
     val itemAnime = item.seasonAnime.anime
-    val title = if (anime.seasonDisplayMode == Anime.SEASON_DISPLAY_MODE_NUMBER) {
+    val title = if (anime.seasonDisplayMode == Anime.SEASON_DISPLAY_MODE_NUMBER && itemAnime.seasonNumber >= 0.0) {
         stringResource(
             MR.strings.display_mode_season,
             formatEpisodeNumber(itemAnime.seasonNumber),

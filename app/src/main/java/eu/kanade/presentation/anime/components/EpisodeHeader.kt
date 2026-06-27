@@ -39,7 +39,10 @@ fun ItemHeader(
     ) {
         Text(
             text = if (episodeCount == null) {
-                stringResource(MR.strings.episodes)
+                when (fetchType) {
+                    FetchType.Seasons -> stringResource(MR.strings.pref_library_season)
+                    FetchType.Episodes -> stringResource(MR.strings.episodes)
+                }
             } else {
                 val pluralCount =
                     when (fetchType) {
