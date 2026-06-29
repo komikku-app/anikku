@@ -66,6 +66,9 @@ fun Manga.toSManga(): SManga = SManga.create().also {
     it.fetch_type = fetchType
     it.season_number = seasonNumber
     // <-- AY
+    // ANK -->
+    it.update_strategy = updateStrategy
+    // ANK <--
     it.initialized = initialized
 }
 
