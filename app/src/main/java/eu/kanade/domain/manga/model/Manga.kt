@@ -36,8 +36,8 @@ fun Manga.toSManga(): SManga = SManga.create().also {
     it.description = ogDescription
     it.genre = ogGenre.orEmpty().joinToString()
     it.status = ogStatus.toInt()
+    it.thumbnail_url = ogThumbnailUrl
     // SY <--
-    it.thumbnail_url = thumbnailUrl
     it.initialized = initialized
 }
 
@@ -60,8 +60,6 @@ fun Manga.copyFrom(other: SManga): Manga {
         ogThumbnailUrl = thumbnailUrl,
         ogDescription = description,
         ogGenre = genres,
-        // SY <--
-        // SY -->
         ogStatus = other.status.toLong(),
         // SY <--
         updateStrategy = other.update_strategy,
