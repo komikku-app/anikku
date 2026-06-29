@@ -209,7 +209,14 @@ class BackupRestorer(
                 ensureActive()
 
                 // AY -->
-                val seasons = backupMangas.filter { s -> s.parentId == it.id }
+                val seasons =
+                    // ANK -->
+                    if (it.id == null) {
+                        emptyList()
+                    } else {
+                        // ANK <--
+                        backupMangas.filter { s -> s.parentId == it.id }
+                    }
                 // <-- AY
                 try {
                     mangaRestorer.restore(it, backupCategories, seasons)
