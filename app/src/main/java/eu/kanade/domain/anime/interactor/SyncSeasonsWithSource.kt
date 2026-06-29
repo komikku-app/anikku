@@ -114,6 +114,10 @@ class SyncSeasonsWithSource(
             updateAnime.awaitAll(toUpdate)
         }
 
+        // ANK -->
+        updateAnime.awaitUpdateFetchInterval(anime, now, fetchWindow)
+        // ANK <--
+
         updateAnime.awaitUpdateLastUpdate(anime.id)
 
         return sourceSeasons
