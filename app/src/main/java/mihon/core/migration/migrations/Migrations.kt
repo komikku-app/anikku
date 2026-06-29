@@ -12,4 +12,5 @@ val migrations: List<Migration>
         MergedMangaDedupeModeMigration(),
         // KMK <--
         PrefLangMigration(),
+        EpisodeSortingFlagsMigration(),
     )

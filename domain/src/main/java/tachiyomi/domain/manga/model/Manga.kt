@@ -99,7 +99,8 @@ data class Manga(
 
     val unreadFilterRaw: Long
         get() = chapterFlags and EPISODE_UNSEEN_MASK
-    val unseenFilterRaw = unreadFilterRaw
+    val unseenFilterRaw: Long
+        get() = unreadFilterRaw
 
     val downloadedFilterRaw: Long
         get() = chapterFlags and EPISODE_DOWNLOADED_MASK
@@ -110,7 +111,6 @@ data class Manga(
     // AY -->
     val fillermarkedFilterRaw: Long
         get() = chapterFlags and EPISODE_FILLERMARKED_MASK
-    // <-- AY
 
     val skipIntroLength: Int
         get() = (viewerFlags and ANIME_INTRO_MASK).toInt()
@@ -123,6 +123,7 @@ data class Manga(
 
     val nextEpisodeAiringAt: Long
         get() = (viewerFlags and ANIME_AIRING_TIME_MASK).removeHexZeros(zeros = 6)
+    // <-- AY
 
     val unreadFilter: TriState
         get() = when (unreadFilterRaw) {
@@ -284,10 +285,10 @@ data class Manga(
         const val EPISODE_FILLERMARKED_MASK = 0x00000180L
 
         const val EPISODE_SORTING_SOURCE = 0x00000000L
-        const val EPISODE_SORTING_NUMBER = 0x00000100L
-        const val EPISODE_SORTING_UPLOAD_DATE = 0x00000200L
-        const val EPISODE_SORTING_ALPHABET = 0x00000300L
-        const val EPISODE_SORTING_MASK = 0x00000300L
+        const val EPISODE_SORTING_NUMBER = 0x00000200L
+        const val EPISODE_SORTING_UPLOAD_DATE = 0x00000400L
+        const val EPISODE_SORTING_ALPHABET = 0x00000600L
+        const val EPISODE_SORTING_MASK = 0x00000600L
 
         const val EPISODE_SHOW_PREVIEWS = 0x00000000L
         const val EPISODE_SHOW_NOT_PREVIEWS = 0x00000800L
