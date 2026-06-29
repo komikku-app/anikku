@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.data.backup.restore.restorers
 
 import android.content.Context
-import android.util.Log
+import logcat.LogPriority
 import eu.kanade.tachiyomi.data.backup.create.BackupCreateJob
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
@@ -77,7 +77,7 @@ class PreferenceRestorer(
                     }
                 }
             } catch (e: Exception) {
-                Log.e("PreferenceRestorer", "Failed to restore preference <$key>", e)
+                logcat(LogPriority.ERROR, e) { "Failed to restore preference <$key>" }
             }
         }
     }

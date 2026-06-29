@@ -11,7 +11,7 @@ import kotlinx.serialization.protobuf.ProtoNumber
  * Returns true if it's (probably) an old aniyomi backup, or false if it's a mihon backup
  * or a new aniyomi backup.
  */
-object BackupDetector {
+object LegacyDetector {
     @Serializable
     data class BackupDetector(
         @ProtoNumber(103) val backupAnimeSources: List<DetectAnimeSource> = emptyList(),
@@ -26,9 +26,9 @@ object BackupDetector {
 
     fun isLegacyBackup(bytes: ByteArray): Boolean {
         return try {
-            val detect = ProtoBuf.decodeFromByteArray(BackupDetector.serializer(), bytes)
+            val detect = ProtoBuf.decodeFromByteArray(LegacyDetector.serializer(), bytes)
             detect.isLegacy && detect.backupAnimeSources.isNotEmpty()
-        } catch (_: SerializationException) {
+        } catch (_: Exception) {
             false
         }
     }

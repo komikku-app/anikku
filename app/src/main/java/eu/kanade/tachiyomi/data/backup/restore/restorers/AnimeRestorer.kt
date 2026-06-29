@@ -79,11 +79,19 @@ class AnimeRestorer(
                 val anime = bs.getAnimeImpl().copy(
                     parentId = restoredAnime.id,
                 )
-                if (dbAnime == null) {
+                val restoredSeason = if (dbAnime == null) {
                     restoreNewAnime(anime)
                 } else {
                     restoreExistingAnime(anime, dbAnime)
                 }
+                restoreAnimeDetails(
+                    anime = restoredSeason,
+                    episodes = bs.episodes,
+                    categories = bs.categories,
+                    backupCategories = backupCategories,
+                    history = bs.history,
+                    tracks = bs.tracking,
+                )
             }
 
             restoreAnimeDetails(
@@ -108,9 +116,9 @@ class AnimeRestorer(
 
     private suspend fun restoreExistingAnime(anime: Anime, dbAnime: Anime): Anime {
         return if (anime.version > dbAnime.version) {
-            updateAnime(dbAnime.copyFrom(anime).copy(id = dbAnime.id, parentId = anime.parentId))
+            updateAnime(dbAnime.copyFrom(anime).copy(id = dbAnime.id))
         } else {
-            updateAnime(anime.copyFrom(dbAnime).copy(id = dbAnime.id, parentId = anime.parentId))
+            updateAnime(anime.copyFrom(dbAnime).copy(id = dbAnime.id))
         }
     }
 
@@ -128,7 +136,7 @@ class AnimeRestorer(
             initialized = this.initialized || newer.initialized,
             version = newer.version,
             fetchType = newer.fetchType,
-            parentId = newer.parentId,
+            parentId = newer.parentId ?: this.parentId,
         )
     }
 
