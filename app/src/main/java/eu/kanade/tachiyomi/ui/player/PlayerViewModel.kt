@@ -1113,46 +1113,62 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private var episodeToDownload: Download? = null
 
-    private fun filterEpisodeList(episodes: List<Episode>): List<Episode> {
-        val anime = anime ?: return episodes
-
-        val selectedEpisode = episodes.find { it.id == episodeId }
-            ?: error("Requested episode of id $episodeId not found in episode list")
-
-        val episodesForPlayer = episodes.filterNot {
-            (anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN && !it.seen) ||
-                (anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN && it.seen) ||
-                (
-                    anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED &&
-                        !downloadManager.isEpisodeDownloaded(
-                            it.name,
-                            it.scanlator,
-                            anime.title,
-                            anime.source,
-                        )
-                    ) ||
-                (
-                    anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED &&
-                        downloadManager.isEpisodeDownloaded(
-                            it.name,
-                            it.scanlator,
-                            anime.title,
-                            anime.source,
-                        )
-                    ) ||
-                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED && !it.bookmark) ||
-                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED && it.bookmark) ||
-                // AM (FILLERMARK) -->
-                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED && !it.fillermark) ||
-                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED && it.fillermark)
-            // <-- AM (FILLERMARK)
-        }.toMutableList()
-
-        if (episodesForPlayer.all { it.id != episodeId }) {
-            episodesForPlayer += listOf(selectedEpisode)
+    private fun filterEpisodeList(
+        // ANK -->
+        anime: Anime,
+        episodes: List<DomainEpisode>,
+        animeMap: Map<Long, Anime>?,
+        selectedEpisode: DomainEpisode,
+    ): List<DomainEpisode> {
+        fun isEpisodeDownloaded(episode: DomainEpisode): Boolean {
+            val episodeAnime = animeMap?.get(episode.animeId) ?: anime
+            return downloadManager.isEpisodeDownloaded(
+                episodeName = episode.name,
+                episodeScanlator = episode.scanlator,
+                animeTitle = episodeAnime.ogTitle,
+                sourceId = episodeAnime.source,
+            )
         }
 
-        return episodesForPlayer
+        val skipSeen = playerPreferences.skipSeen().get()
+        val skipFiltered = playerPreferences.skipFiltered().get()
+
+        return when {
+            (skipSeen || skipFiltered) -> {
+                // ANK <--
+                val filteredEpisodes = episodes.filterNot {
+                    // ANK -->
+                    when {
+                        skipSeen && it.seen -> true
+                        skipFiltered -> {
+                            // ANK <--
+                            (anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN && !it.seen) ||
+                                (anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN && it.seen) ||
+                                // SY -->
+                                (anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED && !isEpisodeDownloaded(it)) ||
+                                (anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED && isEpisodeDownloaded(it)) ||
+                                // SY <--
+                                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED && !it.bookmark) ||
+                                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED && it.bookmark) ||
+                                // AM (FILLERMARK) -->
+                                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED && !it.fillermark) ||
+                                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED && it.fillermark)
+                            // <-- AM (FILLERMARK)
+                            // ANK -->
+                        }
+                        else -> false
+                    }
+                }
+
+                if (filteredEpisodes.any { it.id == selectedEpisode.id }) {
+                    filteredEpisodes
+                } else {
+                    filteredEpisodes + listOf(selectedEpisode)
+                }
+            }
+            else -> episodes
+        }
+        // ANK <--
     }
 
     fun getCurrentEpisodeIndex(): Int {
@@ -1330,7 +1346,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * time in a background thread to avoid blocking the UI.
      */
     private fun initEpisodeList(anime: Anime): List<Episode> {
-        // SY -->
+        // ANK -->
         val (episodes, animeMap) = runBlocking {
             if (anime.source == MERGED_SOURCE_ID) {
                 getMergedChaptersByMangaId.await(anime.id, applyFilter = true) to
@@ -1341,54 +1357,15 @@ class PlayerViewModel @JvmOverloads constructor(
             }
         }
 
-        fun isEpisodeDownloaded(episode: DomainEpisode): Boolean {
-            val episodeAnime = animeMap?.get(episode.animeId) ?: anime
-            return downloadManager.isEpisodeDownloaded(
-                episodeName = episode.name,
-                episodeScanlator = episode.scanlator,
-                animeTitle = episodeAnime.ogTitle,
-                sourceId = episodeAnime.source,
-            )
-        }
-        // SY <--
-
         val selectedEpisode = episodes.find { it.id == episodeId }
             ?: error("Requested episode of id $episodeId not found in episode list")
 
-        val episodesForPlayer = when {
-            (playerPreferences.skipSeen().get() || playerPreferences.skipFiltered().get()) -> {
-                val filteredEpisodes = episodes.filterNot {
-                    when {
-                        playerPreferences.skipSeen().get() && it.seen -> true
-                        playerPreferences.skipFiltered().get() -> {
-                            (anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN && !it.seen) ||
-                                (anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN && it.seen) ||
-                                // SY -->
-                                (anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED && !isEpisodeDownloaded(it)) ||
-                                (anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED && isEpisodeDownloaded(it)) ||
-                                // SY <--
-                                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED && !it.bookmark) ||
-                                (anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED && it.bookmark) ||
-                                // AM (FILLERMARK) -->
-                                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED && !it.fillermark) ||
-                                (anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED && it.fillermark)
-                            // <-- AM (FILLERMARK)
-                        }
-                        else -> false
-                    }
-                }
-
-                if (filteredEpisodes.any { it.id == episodeId }) {
-                    filteredEpisodes
-                } else {
-                    filteredEpisodes + listOf(selectedEpisode)
-                }
-            }
-            else -> episodes
-        }
+        val episodesForPlayer = filterEpisodeList(anime, episodes, animeMap, selectedEpisode)
+        // ANK <--
 
         return episodesForPlayer
             .sortedWith(getEpisodeSort(anime, sortDescending = false))
+            // ANK -->
             .run {
                 if (playerPreferences.skipDupe().get()) {
                     removeDuplicates(selectedEpisode)
@@ -1396,6 +1373,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     this
                 }
             }
+            // ANK <--
             .run {
                 if (basePreferences.downloadedOnly().get()) {
                     filterDownloaded(anime, animeMap)
