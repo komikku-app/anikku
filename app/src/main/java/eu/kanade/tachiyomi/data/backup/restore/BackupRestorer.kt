@@ -11,10 +11,10 @@ import eu.kanade.tachiyomi.data.backup.models.BackupExtension
 import eu.kanade.tachiyomi.data.backup.models.BackupExtensionRepos
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
-import eu.kanade.tachiyomi.data.backup.restore.restorers.AnimeRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.CategoriesRestorer
-import eu.kanade.tachiyomi.data.backup.restore.restorers.CustomButtonRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionRepoRestorer
+import eu.kanade.tachiyomi.data.backup.restore.restorers.AnimeRestorer
+import eu.kanade.tachiyomi.data.backup.restore.restorers.CustomButtonRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionsRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.PreferenceRestorer
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
@@ -150,8 +150,9 @@ class BackupRestorer(
             .forEach {
                 ensureActive()
 
+                val seasons = backupAnimes.filter { s -> s.parentId == it.id }
                 try {
-                    animeRestorer.restore(it, backupAnimeCategories)
+                    animeRestorer.restore(it, backupAnimeCategories, seasons)
                 } catch (e: Exception) {
                     val sourceName = animeSourceMapping[it.source] ?: it.source.toString()
                     errors.add(Date() to "${it.title} [$sourceName]: ${e.message}")

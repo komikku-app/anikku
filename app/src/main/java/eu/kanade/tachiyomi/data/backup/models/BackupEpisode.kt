@@ -13,9 +13,9 @@ data class BackupEpisode(
     @ProtoNumber(3) var scanlator: String? = null,
     @ProtoNumber(4) var seen: Boolean = false,
     @ProtoNumber(5) var bookmark: Boolean = false,
-    // AM (FILLERMARK) -->
-    @ProtoNumber(15) var fillermark: Boolean = false,
-    // <-- AM (FILLERMARK)
+    // Legacy fillermark.
+    @ProtoNumber(15) var oldFillermark: Boolean = false,
+
     // lastPageRead is called progress in 1.x
     @ProtoNumber(6) var lastSecondSeen: Long = 0,
     @ProtoNumber(16) var totalSeconds: Long = 0,
@@ -26,6 +26,9 @@ data class BackupEpisode(
     @ProtoNumber(10) var sourceOrder: Long = 0,
     @ProtoNumber(11) var lastModifiedAt: Long = 0,
     @ProtoNumber(12) var version: Long = 0,
+
+    // Aniyomi specific values
+    @ProtoNumber(501) var fillermark: Boolean = false,
 ) {
     fun toEpisodeImpl(): Episode {
         return Episode.create().copy(
@@ -36,7 +39,7 @@ data class BackupEpisode(
             seen = this@BackupEpisode.seen,
             bookmark = this@BackupEpisode.bookmark,
             // AM (FILLERMARK) -->
-            fillermark = this@BackupEpisode.fillermark,
+            fillermark = this@BackupEpisode.fillermark || this@BackupEpisode.oldFillermark,
             // <-- AM (FILLERMARK)
             lastSecondSeen = this@BackupEpisode.lastSecondSeen,
             totalSeconds = this@BackupEpisode.totalSeconds,
@@ -77,6 +80,7 @@ val backupEpisodeMapper = {
         scanlator = scanlator,
         seen = seen,
         bookmark = bookmark,
+        oldFillermark = false,
         // AM (FILLERMARK) -->
         fillermark = fillermark,
         // <-- AM (FILLERMARK)
