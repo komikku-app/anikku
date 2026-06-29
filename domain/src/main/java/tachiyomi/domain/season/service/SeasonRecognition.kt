@@ -19,11 +19,13 @@ object SeasonRecognition {
      */
     private val number = Regex(NUMBER_PATTERN)
 
+    // ANK -->
     /**
      * Regex to remove tags
      * Example: [FLE] Boku no Hero Academia Season 2 (BD Remux 1080p H.264 FLAC) [Dual Audio]
      */
-    private val tagRegex = Regex("""^\[[^]]+]|\[[^]]+]\s*$|^\([^)]+\)|\([^)]+\)\s*$""")
+    private val tagRegex = Regex("""^\s*(\[[^]]+]\s*|\([^)]+\)\s*)+|\s*(\[[^]]+]\s*|\([^)]+\)\s*)+$""")
+    // ANK <--
 
     /**
      * Regex used to remove unwanted qualities and year
@@ -44,7 +46,7 @@ object SeasonRecognition {
         }
 
         // Get season title with lower case
-        var cleanSeasonName = seasonName.lowercase()
+        val cleanSeasonName = seasonName.lowercase()
             // Remove anime title from season title.
             .replace(animeTitle.lowercase(), "").trim()
             // Remove comma's or hyphens.
@@ -52,11 +54,9 @@ object SeasonRecognition {
             .replace('-', '.')
             // Remove unwanted white spaces.
             .replace(unwantedWhiteSpace, "")
-
-        // Remove all tags while they exist
-        while (tagRegex.containsMatchIn(cleanSeasonName)) {
-            cleanSeasonName = tagRegex.replace(cleanSeasonName, "")
-        }
+            // ANK -->
+            .replace(tagRegex, "").trim()
+        // ANK <--
 
         val numberMatch = number.findAll(cleanSeasonName)
 

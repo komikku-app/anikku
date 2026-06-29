@@ -18,12 +18,14 @@ object ChapterRecognition {
      */
     private val number = Regex(NUMBER_PATTERN)
 
+    // ANK -->
     /**
      * Regex to remove tags
      * Example: [flugel] kaguya-sama wa kokurasetai - s01e01v2 (bd 1080p hevc) [multi audio] [80ac7b2e]
      * -> kaguya-sama wa kokurasetai - s01e01v2
      */
     internal val tagRegex = Regex("""^\s*(\[[^]]+]\s*|\([^)]+\)\s*)+|\s*(\[[^]]+]\s*|\([^)]+\)\s*)+$""")
+    // ANK <--
 
     /**
      * Regex used to remove unwanted tags
@@ -62,7 +64,9 @@ object ChapterRecognition {
             .replace('-', '.')
             // Remove unwanted white spaces.
             .replace(unwantedWhiteSpace, "")
+            // ANK -->
             .replace(tagRegex, "").trim()
+        // ANK <--
 
         val numberMatch = number.findAll(cleanChapterName)
 
