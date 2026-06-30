@@ -7,14 +7,11 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import java.util.UUID
 
-/** Made by @kaiserbh. Huge thx for making this feature. **/
-
-@Suppress("TooManyFunctions")
 class SyncPreferences(
     private val preferenceStore: PreferenceStore,
 ) {
-    fun clientHost() = preferenceStore.getString("sync_client_host", "https://sync.tachiyomi.org")
-    fun clientAPIKey() = preferenceStore.getString("sync_client_api_key", "")
+    fun clientHost() = preferenceStore.getString("connection_sync_client_host", "https://sync.tachiyomi.org")
+    fun clientAPIKey() = preferenceStore.getString("connection_sync_client_api_key", "")
     fun lastSyncTimestamp() = preferenceStore.getLong(Preference.appStateKey("last_sync_timestamp"), 0L)
 
     fun lastSyncEtag() = preferenceStore.getString("sync_etag", "")
@@ -23,19 +20,19 @@ class SyncPreferences(
     fun syncService() = preferenceStore.getInt("sync_service", 0)
 
     // KMK -->
-    fun webDavUrl() = preferenceStore.getString("webdav_url", "")
-    fun webDavUsername() = preferenceStore.getString("webdav_username", "")
-    fun webDavPassword() = preferenceStore.getString("webdav_password", "")
-    fun webDavFolder() = preferenceStore.getString("webdav_folder", "komikku")
+    fun webDavUrl() = preferenceStore.getString("connection_webdav_url", "")
+    fun webDavUsername() = preferenceStore.getString("connection_webdav_username", "")
+    fun webDavPassword() = preferenceStore.getString("connection_webdav_password", "")
+    fun webDavFolder() = preferenceStore.getString("connection_webdav_folder", "anikku")
     // KMK <--
 
     fun googleDriveAccessToken() = preferenceStore.getString(
-        Preference.appStateKey("google_drive_access_token"),
+        Preference.appStateKey("connection_google_drive_access_token"),
         "",
     )
 
     fun googleDriveRefreshToken() = preferenceStore.getString(
-        Preference.appStateKey("google_drive_refresh_token"),
+        Preference.appStateKey("connection_google_drive_refresh_token"),
         "",
     )
 
@@ -58,40 +55,48 @@ class SyncPreferences(
 
     fun getSyncSettings(): SyncSettings {
         return SyncSettings(
-            libraryEntries = preferenceStore.getBoolean("anime_lib_entries", true).get(),
-            categories = preferenceStore.getBoolean("anime_categories", true).get(),
-            episodes = preferenceStore.getBoolean("episodes", true).get(),
-            tracking = preferenceStore.getBoolean("anime_tracking", true).get(),
-            history = preferenceStore.getBoolean("anime_history", true).get(),
-            appSettings = preferenceStore.getBoolean("appSettings", true).get(),
-            extensionRepoSettings = preferenceStore.getBoolean("extensionRepoSettings", true).get(),
-            sourceSettings = preferenceStore.getBoolean("sourceSettings", true).get(),
-            privateSettings = preferenceStore.getBoolean("privateSettings", true).get(),
+            libraryEntries = preferenceStore.getBoolean("sync_anime_lib_entries", true).get(),
+            categories = preferenceStore.getBoolean("sync_anime_categories", true).get(),
+            episodes = preferenceStore.getBoolean("sync_episodes", true).get(),
+            tracking = preferenceStore.getBoolean("sync_anime_tracking", true).get(),
+            history = preferenceStore.getBoolean("sync_anime_history", true).get(),
+            appSettings = preferenceStore.getBoolean("sync_appSettings", true).get(),
+            extensionRepoSettings = preferenceStore.getBoolean("sync_extensionRepoSettings", true).get(),
+            sourceSettings = preferenceStore.getBoolean("sync_sourceSettings", true).get(),
+            privateSettings = preferenceStore.getBoolean("sync_privateSettings", true).get(),
 
             // SY -->
-            customInfo = preferenceStore.getBoolean("customInfo", true).get(),
-            seenEntries = preferenceStore.getBoolean("seenEntries", true).get(),
-            savedSearchesFeeds = preferenceStore.getBoolean("savedSearchesFeeds", true).get(),
+            customInfo = preferenceStore.getBoolean("sync_customInfo", true).get(),
+            seenEntries = preferenceStore.getBoolean("sync_seenEntries", true).get(),
+            savedSearchesFeeds = preferenceStore.getBoolean("sync_savedSearchesFeeds", true).get(),
             // SY <--
+
+            // ANK -->
+            seasons = preferenceStore.getBoolean("sync_seasons", true).get(),
+            // ANK <--
         )
     }
 
     fun setSyncSettings(syncSettings: SyncSettings) {
-        preferenceStore.getBoolean("anime_lib_entries", true).set(syncSettings.libraryEntries)
-        preferenceStore.getBoolean("anime_categories", true).set(syncSettings.categories)
-        preferenceStore.getBoolean("episodes", true).set(syncSettings.episodes)
-        preferenceStore.getBoolean("anime_tracking", true).set(syncSettings.tracking)
-        preferenceStore.getBoolean("anime_history", true).set(syncSettings.history)
-        preferenceStore.getBoolean("appSettings", true).set(syncSettings.appSettings)
-        preferenceStore.getBoolean("extensionRepoSettings", true).set(syncSettings.extensionRepoSettings)
-        preferenceStore.getBoolean("sourceSettings", true).set(syncSettings.sourceSettings)
-        preferenceStore.getBoolean("privateSettings", true).set(syncSettings.privateSettings)
+        preferenceStore.getBoolean("sync_anime_lib_entries", true).set(syncSettings.libraryEntries)
+        preferenceStore.getBoolean("sync_anime_categories", true).set(syncSettings.categories)
+        preferenceStore.getBoolean("sync_episodes", true).set(syncSettings.episodes)
+        preferenceStore.getBoolean("sync_anime_tracking", true).set(syncSettings.tracking)
+        preferenceStore.getBoolean("sync_anime_history", true).set(syncSettings.history)
+        preferenceStore.getBoolean("sync_appSettings", true).set(syncSettings.appSettings)
+        preferenceStore.getBoolean("sync_extensionRepoSettings", true).set(syncSettings.extensionRepoSettings)
+        preferenceStore.getBoolean("sync_sourceSettings", true).set(syncSettings.sourceSettings)
+        preferenceStore.getBoolean("sync_privateSettings", true).set(syncSettings.privateSettings)
 
         // SY -->
-        preferenceStore.getBoolean("customInfo", true).set(syncSettings.customInfo)
-        preferenceStore.getBoolean("seenEntries", true).set(syncSettings.seenEntries)
-        preferenceStore.getBoolean("savedSearchesFeeds", true).set(syncSettings.savedSearchesFeeds)
+        preferenceStore.getBoolean("sync_customInfo", true).set(syncSettings.customInfo)
+        preferenceStore.getBoolean("sync_seenEntries", true).set(syncSettings.seenEntries)
+        preferenceStore.getBoolean("sync_savedSearchesFeeds", true).set(syncSettings.savedSearchesFeeds)
         // SY <--
+
+        // ANK -->
+        preferenceStore.getBoolean("sync_seasons", true).set(syncSettings.seasons)
+        // ANK <--
     }
 
     fun getSyncTriggerOptions(): SyncTriggerOptions {

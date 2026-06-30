@@ -98,6 +98,9 @@ class SyncManager(
             readEntries = syncOptions.seenEntries,
             savedSearchesFeeds = syncOptions.savedSearchesFeeds,
             // SY <--
+            // ANK -->
+            seasons = syncOptions.seasons,
+            // ANK <--
         )
 
         logcat(LogPriority.DEBUG) { "Begin create backup" }
