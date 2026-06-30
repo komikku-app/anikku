@@ -101,6 +101,9 @@
     <string name="cast_connection_error">Connection Error</string>
     <string name="login_failed">Failed to login</string>
 
+    <!-- Seasons -->
+    <string name="seasons">Seasons</string>
+
     <!-- Animiru -->
     <string name="tag">Tags</string>
     <string name="action_filter_fillermarked">Fillermarked</string>

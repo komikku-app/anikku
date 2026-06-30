@@ -64,4 +64,8 @@ interface MangaRepository {
 
     suspend fun getChildrenByParentId(parentId: Long): List<Anime>
     // <-- AY
+
+    // ANK -->
+    suspend fun getChildrenByParentIds(parentIds: List<Long>): List<Anime>
+    // ANK <--
 }

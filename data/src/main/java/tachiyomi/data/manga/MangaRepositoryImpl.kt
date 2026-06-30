@@ -205,6 +205,12 @@ class MangaRepositoryImpl(
     }
     // <-- AY
 
+    // ANK -->
+    override suspend fun getChildrenByParentIds(parentIds: List<Long>): List<Manga> {
+        return handler.awaitList { animesQueries.getChildrenByParentIds(parentIds, MangaMapper::mapManga) }
+    }
+    // ANK <--
+
     private suspend fun partialUpdate(vararg mangaUpdates: MangaUpdate) {
         handler.await(inTransaction = true) {
             mangaUpdates.forEach { value ->

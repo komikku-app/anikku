@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.data.backup.BackupFileValidator
 import eu.kanade.tachiyomi.data.backup.create.creators.CategoriesBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.CustomButtonBackupCreator
@@ -99,8 +100,23 @@ class BackupCreator(
             // SY -->
             val mergedManga = getMergedManga.await()
             // SY <--
-            val backupManga =
-                backupMangas(getFavorites.await() + nonFavoriteManga /* SY --> */ + mergedManga /* SY <-- */, options)
+            // ANK -->
+            val mainMangas = getFavorites.await() + nonFavoriteManga /* SY --> */ + mergedManga /* SY <-- */
+            val unfavoritedSeasons = if (options.seasons) {
+                val mainMangaIds = mainMangas.mapTo(mutableSetOf()) { it.id }
+                val seasonParentIds = mainMangas
+                    .filter { it.fetchType == FetchType.Seasons }
+                    .map { it.id }
+                if (seasonParentIds.isNotEmpty()) {
+                    mangaRepository.getChildrenByParentIds(seasonParentIds).filter { it.id !in mainMangaIds }
+                } else {
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+            val backupManga = backupMangas(mainMangas + unfavoritedSeasons, options)
+            // ANK <--
 
             val backup = Backup(
                 backupManga = backupManga,

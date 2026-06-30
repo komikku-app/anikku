@@ -187,6 +187,13 @@ SELECT *
 FROM animes
 WHERE parent_id = :parentId;
 
+-- ANK -->
+getChildrenByParentIds:
+SELECT *
+FROM animes
+WHERE parent_id IN :parentIds;
+-- ANK <--
+
 deleteAnimesNotInLibraryByAnimeIds:
 DELETE FROM animes
 WHERE favorite = 0
