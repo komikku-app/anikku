@@ -19,6 +19,8 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.library.LibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
+import eu.kanade.tachiyomi.network.NetworkHelper
+import eu.kanade.tachiyomi.network.await
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
@@ -35,7 +37,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -52,6 +58,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.LogPriority
+import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
@@ -122,6 +131,12 @@ class Downloader(
      */
     val isRunning: Boolean
         get() = downloaderJob?.isActive ?: false
+
+    // AM -->
+    val networkService: NetworkHelper by injectLazy()
+    val client: OkHttpClient
+        get() = networkService.client
+    // <-- AM
 
     init {
         scope.launch {
@@ -572,7 +587,7 @@ class Downloader(
             "${it.first}: ${it.second}\r\n"
         }
 
-        val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename())
+        val ffmpegOptions = getFFmpegOptions(video, headers, headerOptions, ffmpegFilename())
         val duration = getDuration(video.videoUrl, headerOptions)?.toLong() ?: 0L
 
         val logCallback = LogCallback { log ->
@@ -613,7 +628,14 @@ class Downloader(
         }
     }
 
-    private fun getFFmpegOptions(video: Video, headerOptions: String, ffmpegFilename: String): Array<String> {
+    private suspend fun getFFmpegOptions(
+        video: Video,
+        // AM -->
+        headers: Headers,
+        // <-- AM
+        headerOptions: String,
+        ffmpegFilename: String,
+    ): Array<String> {
         fun formatInputs(tracks: List<Track>) = tracks.joinToString(" ", postfix = " ") {
             buildList {
                 if (it.url.startsWith("http")) {
@@ -632,13 +654,19 @@ class Downloader(
             "-metadata:s:$type:$i \"title=${track.lang}\""
         }.joinToString(" ")
 
-        val subtitleInputs = formatInputs(video.subtitleTracks)
-        val subtitleMaps = formatMaps(video.subtitleTracks, "s")
-        val subtitleMetadata = formatMetadata(video.subtitleTracks, "s")
+        // AM -->
+        val subtitleTracks = filterTracks(video.subtitleTracks, headers)
+        // <-- AM
+        val subtitleInputs = formatInputs(subtitleTracks)
+        val subtitleMaps = formatMaps(subtitleTracks, "s")
+        val subtitleMetadata = formatMetadata(subtitleTracks, "s")
 
-        val audioInputs = formatInputs(video.audioTracks)
-        val audioMaps = formatMaps(video.audioTracks, "a", video.subtitleTracks.size)
-        val audioMetadata = formatMetadata(video.audioTracks, "a")
+        // AM -->
+        val audioTracks = filterTracks(video.audioTracks, headers)
+        // <-- AM
+        val audioInputs = formatInputs(audioTracks)
+        val audioMaps = formatMaps(audioTracks, "a", subtitleTracks.size)
+        val audioMetadata = formatMetadata(audioTracks, "a")
 
         val sourceStreamOptions = video.ffmpegStreamArgs.joinToString(" ") { (key, value) ->
             val sanitizedKey = sanitizeFFmpegKey(key)
@@ -680,6 +708,54 @@ class Downloader(
 
         return FFmpegKitConfig.parseArguments(command)
     }
+
+    // AM -->
+    private suspend fun filterTracks(tracks: List<Track>, headers: Headers): List<Track> {
+        if (!downloadPreferences.ignoreBrokenTracks.get()) return tracks
+
+        // ANK -->
+        return coroutineScope {
+            tracks.map { track ->
+                async {
+                    // Keep non-http URL tracks
+                    if (!track.url.startsWith("http")) return@async track
+                    // ANK <--
+                    try {
+                        val request = Request.Builder()
+                            .url(track.url)
+                            .headers(headers)
+                            .head()
+                            .build()
+
+                        // ANK -->
+                        // Same subtitle CDNs reject HEAD with 405/501; fall back to a ranged GET
+                        val headCode = client.newCall(request).await().use { it.code }
+                        if (headCode != 405 && headCode != 501) {
+                            return@async if (headCode in 200..299) track else null
+                        }
+
+                        val rangedRequest = Request.Builder()
+                            .url(track.url)
+                            .headers(headers)
+                            .header("Range", "bytes=0-0")
+                            .build()
+                        return@async client.newCall(rangedRequest).await().use {
+                            if (it.isSuccessful) track else null
+                        }
+                        // ANK <--
+                    } catch (_: Exception) {
+                        // ANK -->
+                        currentCoroutineContext().ensureActive()
+                        // ANK <--
+                        null
+                    }
+                }
+                // ANK -->
+            }.awaitAll().filterNotNull()
+            // ANK <--
+        }
+    }
+    // <-- AM
 
     private suspend fun getDuration(videoUrl: String, headerOptions: String): Float? {
         val durationFile = context.createFileInCacheDir("ffprobe_duration.txt")

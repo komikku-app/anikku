@@ -73,6 +73,9 @@
     <string name="action_edit_info">Edit info</string>
     <string name="custom_entry_info">Custom entry info</string>
 
+    <!-- Downloads -->
+    <string name="pref_download_ignore_broken_tracks">Skip broken external tracks</string>
+
     <!-- Storage overview -->
     <string name="pref_storage_overview">Storage overview</string>
     <string name="calculating_storage_overview">Calculating storage usage... (%1$s)</string>
