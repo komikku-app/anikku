@@ -1,5 +1,6 @@
 package tachiyomi.domain.download.service
 
+import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 
 class DownloadPreferences(
@@ -10,6 +11,13 @@ class DownloadPreferences(
         "pref_download_only_over_wifi_key",
         true,
     )
+
+    // AM -->
+    val ignoreBrokenTracks: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_download_ignore_broken_tracks",
+        false,
+    )
+    // <-- AM
 
     fun useExternalDownloader() = preferenceStore.getBoolean("use_external_downloader", false)
 

@@ -21,6 +21,7 @@ import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.animiru.AMMR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.ank.AMR
 import tachiyomi.i18n.kmk.KMR
@@ -50,6 +51,12 @@ object SettingsDownloadScreen : SearchableSettings {
                 preference = downloadPreferences.downloadOnlyOverWifi(),
                 title = stringResource(MR.strings.connected_to_wifi),
             ),
+            // AM -->
+            Preference.PreferenceItem.SwitchPreference(
+                preference = downloadPreferences.ignoreBrokenTracks,
+                title = stringResource(AMMR.strings.pref_download_ignore_broken_tracks),
+            ),
+            // <-- AM
             Preference.PreferenceItem.SliderPreference(
                 value = parallelSourceLimit,
                 valueRange = 1..10,
