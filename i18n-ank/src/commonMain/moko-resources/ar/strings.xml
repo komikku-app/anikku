@@ -227,4 +227,13 @@
     <string name="merged_episode_updates_error">إظهار/إخفاء خطأ تحديث الحلقة</string>
     <string name="fetch_episode_updates">تحديث الحلقة</string>
     <string name="merged_toggle_download_episodes_error">مرحبا</string>
+    <string name="download_merged_anime_entry">تبديل تنزيلات الحلقات الجديدة</string>
+    <string name="download_merged_anime_entry_desc">سيؤدي تبديل هذا إلى تعطيل أو تمكين \nتنزيلات الحلقات لهذا الإدخال المدمج</string>
+    <string name="pref_anime_info">معلومات الأنمي</string>
+    <string name="discord_app_description_anime">Anikku - تطبيق لمشاهدة الأنمي</string>
+    <string name="show_episodes_titles_title">عرض عناوين الحلقات</string>
+    <string name="show_episodes_titles_subtitle">عرض عنوان الحلقة التي تشاهدها</string>
+    <string name="pref_discord_show_progress_summary_episode">عرض تقدم الحلقة الحالية</string>
+    <string name="pref_discord_show_timestamp_summary_episode">عرض الوقت المنقضي/المتبقي</string>
+    <string name="discord_download_button_anime">المشاهدة على %s</string>
 </resources>
