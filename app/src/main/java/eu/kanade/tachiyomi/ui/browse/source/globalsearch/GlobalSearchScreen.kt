@@ -20,6 +20,7 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 class GlobalSearchScreen(
     val searchQuery: String = "",
     private val extensionFilter: String? = null,
+    private val initialSourceFilter: SourceFilter = SourceFilter.PinnedOnly,
 ) : Screen() {
 
     @Composable
@@ -35,6 +36,7 @@ class GlobalSearchScreen(
             GlobalSearchScreenModel(
                 initialQuery = searchQuery,
                 initialExtensionFilter = extensionFilter,
+                initialSourceFilter = initialSourceFilter,
             )
         }
         val state by screenModel.state.collectAsState()

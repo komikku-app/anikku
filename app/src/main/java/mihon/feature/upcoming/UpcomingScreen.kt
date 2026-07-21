@@ -28,6 +28,7 @@ class UpcomingScreen : Screen() {
             hideUpdatingMangas = screenModel::hideUpdatingMangas,
             isPredictReleaseDate = ANIME_OUTSIDE_RELEASE_PERIOD in screenModel.restriction,
             // KMK <--
+            useScaffold = true,
         )
     }
 }

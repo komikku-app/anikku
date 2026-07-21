@@ -30,6 +30,13 @@ class CloudflareInterceptor(
     private val executor = ContextCompat.getMainExecutor(context)
 
     override fun shouldIntercept(response: Response): Boolean {
+        // Never attempt a WebView-based bypass for known JSON/data APIs. These endpoints are
+        // never rendered in a browser, so a Cloudflare interactive challenge can't be solved by
+        // loading them in a WebView (the JS challenge redirects/POST bodies don't carry over).
+        // Doing so previously caused unrelated transient errors (e.g. rate limiting) from these
+        // APIs to be misreported as "Failed to bypass Cloudflare".
+        if (response.request.url.host in NON_INTERACTIVE_API_HOSTS) return false
+
         // Check if Cloudflare anti-bot is on
         return response.code in ERROR_CODES && response.header("Server") in SERVER_CHECK
     }
@@ -138,5 +145,9 @@ class CloudflareInterceptor(
 private val ERROR_CODES = listOf(403, 503)
 private val SERVER_CHECK = arrayOf("cloudflare-nginx", "cloudflare")
 private val COOKIE_NAMES = listOf("cf_clearance")
+
+// Data APIs that are consumed directly (never loaded in a browser) and therefore must not be
+// routed through the WebView-based Cloudflare bypass flow.
+private val NON_INTERACTIVE_API_HOSTS = setOf("graphql.anilist.co")
 
 private class CloudflareBypassException : Exception()

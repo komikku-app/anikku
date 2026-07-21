@@ -20,6 +20,8 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
+import mihon.feature.airingschedule.SchedulePreferences
+import mihon.feature.airingschedule.UploadDelayTracker
 import tachiyomi.core.common.preference.AndroidPreferenceStore
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
@@ -100,6 +102,9 @@ class PreferenceModule(val app: Application) : InjektModule {
         // AM (CONNECTIONS) -->
         addSingletonFactory { ConnectionsPreferences(get()) }
         // <-- AM (CONNECTIONS)
+
+        addSingletonFactory { SchedulePreferences(get()) }
+        addSingletonFactory { UploadDelayTracker() }
 
         addSingletonFactory {
             SyncPreferences(get())

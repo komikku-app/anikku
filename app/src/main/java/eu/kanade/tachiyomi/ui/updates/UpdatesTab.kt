@@ -32,7 +32,6 @@ import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import mihon.feature.upcoming.UpcomingScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
@@ -47,10 +46,8 @@ data object UpdatesTab : Tab {
             val isSelected = LocalTabNavigator.current.current.key == key
             val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_updates_enter)
             val index: UShort = when (currentNavigationStyle()) {
-                NavStyle.MOVE_UPDATES_TO_MORE -> 4u // 5
-                NavStyle.MOVE_HISTORY_TO_MORE -> 2u // 2
-                NavStyle.MOVE_BROWSE_TO_MORE -> 1u // 2
-                // NavStyle.MOVE_MANGA_TO_MORE -> 1u
+                NavStyle.MOVE_UPDATES_TO_MORE -> 5u
+                else -> 1u
             }
             return TabOptions(
                 index = index,
@@ -118,7 +115,7 @@ data object UpdatesTab : Tab {
                 }
                 Unit
             },
-            onCalendarClicked = { navigator.push(UpcomingScreen()) },
+            onCalendarClicked = { navigator.push(mihon.feature.airingschedule.AiringScheduleTab) },
             navigateUp = navigateUp,
         )
 

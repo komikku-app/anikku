@@ -1,5 +1,6 @@
 package mihon.feature.upcoming
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.AppBar
@@ -56,6 +58,9 @@ fun UpcomingScreenContent(
     isPredictReleaseDate: Boolean,
     // KMK <--
     modifier: Modifier = Modifier,
+    // Unified Hub -->
+    useScaffold: Boolean = false,
+    // <-- Unified Hub
 ) {
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -74,53 +79,63 @@ fun UpcomingScreenContent(
             }
         }
     }
-    Scaffold(
-        topBar = {
-            UpcomingToolbar(
-                // KMK -->
-                state.isShowingUpdatingMangas,
-                showUpdatingMangas = showUpdatingMangas,
-                hideUpdatingMangas = hideUpdatingMangas,
-                isPredictReleaseDate = isPredictReleaseDate,
-                // KMK <--
-            )
-        },
-        modifier = modifier,
-    ) { paddingValues ->
+
+    val content: @Composable (PaddingValues) -> Unit = { paddingValues ->
         // KMK -->
         if (isLoading) {
             LoadingScreen(modifier = Modifier.padding(paddingValues))
-            return@Scaffold
-        }
-        // KMK <--
-        if (isTabletUi()) {
-            UpcomingScreenLargeImpl(
-                listState = listState,
-                items = items,
-                events = events,
-                paddingValues = paddingValues,
-                selectedYearMonth = state.selectedYearMonth,
-                setSelectedYearMonth = setSelectedYearMonth,
-                onClickDay = { onClickDay(it, 0) },
-                onClickUpcoming = onClickUpcoming,
-                // KMK -->
-                state.isShowingUpdatingMangas,
-                // KMK <--
-            )
         } else {
-            UpcomingScreenSmallImpl(
-                listState = listState,
-                items = items,
-                events = events,
-                paddingValues = paddingValues,
-                selectedYearMonth = state.selectedYearMonth,
-                setSelectedYearMonth = setSelectedYearMonth,
-                onClickDay = { onClickDay(it, 1) },
-                onClickUpcoming = onClickUpcoming,
-                // KMK -->
-                state.isShowingUpdatingMangas,
-                // KMK <--
-            )
+            // KMK <--
+            if (isTabletUi()) {
+                UpcomingScreenLargeImpl(
+                    listState = listState,
+                    items = items,
+                    events = events,
+                    paddingValues = paddingValues,
+                    selectedYearMonth = state.selectedYearMonth,
+                    setSelectedYearMonth = setSelectedYearMonth,
+                    onClickDay = { onClickDay(it, 0) },
+                    onClickUpcoming = onClickUpcoming,
+                    // KMK -->
+                    state.isShowingUpdatingMangas,
+                    // KMK <--
+                )
+            } else {
+                UpcomingScreenSmallImpl(
+                    listState = listState,
+                    items = items,
+                    events = events,
+                    paddingValues = paddingValues,
+                    selectedYearMonth = state.selectedYearMonth,
+                    setSelectedYearMonth = setSelectedYearMonth,
+                    onClickDay = { onClickDay(it, 1) },
+                    onClickUpcoming = onClickUpcoming,
+                    // KMK -->
+                    state.isShowingUpdatingMangas,
+                    // KMK <--
+                )
+            }
+        }
+    }
+
+    if (useScaffold) {
+        Scaffold(
+            topBar = {
+                UpcomingToolbar(
+                    // KMK -->
+                    state.isShowingUpdatingMangas,
+                    showUpdatingMangas = showUpdatingMangas,
+                    hideUpdatingMangas = hideUpdatingMangas,
+                    isPredictReleaseDate = isPredictReleaseDate,
+                    // KMK <--
+                )
+            },
+            modifier = modifier,
+            content = content,
+        )
+    } else {
+        Box(modifier = modifier) {
+            content(PaddingValues(0.dp))
         }
     }
 }

@@ -5,9 +5,11 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 class GlobalSearchScreenModel(
     initialQuery: String = "",
     initialExtensionFilter: String? = null,
+    initialSourceFilter: SourceFilter = SourceFilter.PinnedOnly,
 ) : SearchScreenModel(
     State(
         searchQuery = initialQuery,
+        sourceFilter = initialSourceFilter,
     ),
 ) {
 

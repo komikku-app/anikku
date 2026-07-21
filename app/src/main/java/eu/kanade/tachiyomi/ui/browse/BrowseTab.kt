@@ -39,8 +39,12 @@ data object BrowseTab : Tab {
         get() {
             val isSelected = LocalTabNavigator.current.current is BrowseTab
             val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_browse_enter)
+            val index: UShort = when (currentNavigationStyle()) {
+                eu.kanade.domain.ui.model.NavStyle.MOVE_BROWSE_TO_MORE -> 5u
+                else -> 3u
+            }
             return TabOptions(
-                index = 3u,
+                index = index,
                 title = stringResource(MR.strings.browse),
                 icon = rememberAnimatedVectorPainter(image, isSelected),
             )
