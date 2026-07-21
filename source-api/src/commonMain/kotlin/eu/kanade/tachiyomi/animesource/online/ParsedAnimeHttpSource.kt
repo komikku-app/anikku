@@ -190,12 +190,14 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
     /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each hoster.
      */
-    protected abstract fun hosterListSelector(): String
+    protected open fun hosterListSelector(): String =
+        throw UnsupportedOperationException("hosterListSelector not implemented — extension uses custom video extraction")
 
     /**
      * Returns a hoster from the given element.
      */
-    protected abstract fun hosterFromElement(element: Element): Hoster
+    protected open fun hosterFromElement(element: Element): Hoster =
+        throw UnsupportedOperationException("hosterFromElement not implemented — extension uses custom video extraction")
 
     // ------------------------------------------------------------------
     // Video list

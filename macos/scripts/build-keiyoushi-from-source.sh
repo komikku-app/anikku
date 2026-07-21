@@ -181,10 +181,10 @@ git checkout 2>&1 | tail -2
 
 SRC_DIR="${GIT_CLONE_DIR}/src/${LANG}/${PKG_NAME}"
 SRC_COUNT=$(find "${SRC_DIR}" -name "*.kt" -o -name "*.java" 2>/dev/null | wc -l)
-SHARED_COUNT=$(ls -d "${GIT_CLONE_DIR}"/lib-*/ 2>/dev/null | wc -l)
+SHARED_COUNT=$(ls -d "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ 2>/dev/null | wc -l)
 
 log "Downloaded ${SRC_COUNT} source files, ${SHARED_COUNT} shared lib(s)"
-for lib in "${GIT_CLONE_DIR}/lib-"*/; do
+for lib in "${GIT_CLONE_DIR}/lib-"*/ "${GIT_CLONE_DIR}/lib-multisrc/"*/; do
     [ -d "$lib" ] && log "  lib: $(basename "$lib") ($(find "$lib" -name '*.kt' | wc -l) files)"
 done
 
@@ -209,10 +209,10 @@ for candidate in "${SRC_DIR}/build.gradle.kts" "${SRC_DIR}/build.gradle" "${GIT_
 done
 
 # Determine package name from source files
-ACTUAL_PKG=$(grep -r '^package ' "${SRC_DIR}/src" 2>/dev/null | head -1 | sed 's/[[:space:]]*package //' | sed 's/[[:space:]]*$//' || echo "")
+ACTUAL_PKG=$(grep -r '^package ' "${SRC_DIR}/src" 2>/dev/null | head -1 | sed 's/.*://' | sed 's/package //' | sed 's/[[:space:]]*$//' || echo "")
 if [ -z "$ACTUAL_PKG" ]; then
     # Try source files directly in extension directory
-    ACTUAL_PKG=$(find "${SRC_DIR}" -name "*.kt" -exec grep -l '^package ' {} \; 2>/dev/null | head -1 | xargs grep '^package ' | head -1 | sed 's/[[:space:]]*package //' | sed 's/[[:space:]]*$//' || echo "")
+    ACTUAL_PKG=$(find "${SRC_DIR}" -name "*.kt" -exec grep -l '^package ' {} \; 2>/dev/null | head -1 | xargs grep '^package ' | head -1 | sed 's/.*package //' | sed 's/[[:space:]]*$//' || echo "")
 fi
 if [ -z "$ACTUAL_PKG" ]; then
     ACTUAL_PKG="eu.kanade.tachiyomi.animeextension.${LANG}.${PKG_NAME}"
@@ -488,8 +488,8 @@ if [ -d "$EXTRACTORS_DIR" ]; then
     fi
 fi
 
-# Step 3b-iii: Compile shared library modules (lib-*, common, core) in dependency order
-for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_DIR}/core/"; do
+# Step 3b-iii: Compile shared library modules (lib-*, lib-multisrc/*, common, core) in dependency order
+for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_DIR}/core/"; do
     [ ! -d "$lib_dir" ] && continue
     lib_name=$(basename "$lib_dir")
     lib_classes="${SHARED_LIBS_DIR}/${lib_name}"
@@ -579,10 +579,54 @@ log ""
 log "Step 5: Packaging JAR..."
 
 JAR_PATH="${TEMP_DIR}/${JAR_NAME}"
+
+# Merge only extension-specific shared libraries (NOT keiyoushi-utils which
+# the app already provides). Only include successfully compiled modules.
+if [ -d "$SHARED_LIBS_DIR" ]; then
+    MERGED=0
+    for mod in "$SHARED_LIBS_DIR"/*/; do
+        [ ! -d "$mod" ] && continue
+        mod_name=$(basename "$mod")
+        # Skip app-provided modules (keiyoushi-utils) and failed/empty modules
+        case "$mod_name" in
+            "keiyoushi-utils"|"lib-extractors") continue ;;
+        esac
+        class_cnt=$(find "$mod" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$class_cnt" -gt 0 ]; then
+            cp -r "$mod"/* "$CLASSES_DIR/" 2>/dev/null || true
+            MERGED=$((MERGED + class_cnt))
+        fi
+    done
+    log "Merged shared libs: ${MERGED} classes"
+fi
+
 cd "$CLASSES_DIR"
 
-# Package META-INF/extension.json + all classes
-"${JAR_CMD}" cf "${JAR_PATH}" META-INF/extension.json $(find . -name '*.class' 2>/dev/null)
+# Verify extension.json exists
+if [ ! -f "META-INF/extension.json" ]; then
+    err "META-INF/extension.json missing!"
+    exit 1
+fi
+
+# Write class list to a file to avoid command-line length limits
+find . -name '*.class' > "${TEMP_DIR}/jar-classes.txt" 2>/dev/null
+CLASS_COUNT=$(wc -l < "${TEMP_DIR}/jar-classes.txt" 2>/dev/null | tr -d ' ')
+log "Packaging ${CLASS_COUNT} classes..."
+
+export JAVA_HOME="${JAVA_HOME}"
+set +e
+"${JAR_CMD}" cf "${JAR_PATH}" META-INF/extension.json @"${TEMP_DIR}/jar-classes.txt" 2>&1
+JAR_EXIT=$?
+set -e
+
+if [ "$JAR_EXIT" -ne 0 ]; then
+    err "jar command failed (exit ${JAR_EXIT})"
+    err "Trying manual jar with find..."
+    "${JAR_CMD}" cf "${JAR_PATH}" META-INF/extension.json $(find . -name '*.class' 2>/dev/null) 2>&1 || {
+        err "JAR packaging completely failed"
+        exit 1
+    }
+fi
 
 JAR_SIZE=$(stat -f%z "${JAR_PATH}" 2>/dev/null || echo "0")
 log "JAR: ${JAR_PATH} (${JAR_SIZE} bytes, ${CLASS_COUNT} classes)"

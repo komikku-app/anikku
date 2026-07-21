@@ -32,3 +32,4 @@ ed25519-key.pem
 *.mkv
 *.mp4
 *.webm
+macos/libs/*.bak
