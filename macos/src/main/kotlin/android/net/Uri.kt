@@ -36,10 +36,14 @@ open class Uri private constructor(
 
     fun getQueryParameter(key: String): String? {
         val q = query ?: return null
-        return q.split("&")
+        val value = q.split("&")
             .map { it.split("=", limit = 2) }
             .firstOrNull { it[0] == key }
             ?.getOrNull(1)
+            ?: return null
+        // Android's getQueryParameter URL-decodes the value automatically.
+        // Extensions expect decoded strings (e.g. Base64 data, JSON tokens).
+        return safeDecode(value)
     }
 
     fun getQueryParameterNames(): Set<String> {
@@ -153,11 +157,35 @@ open class Uri private constructor(
         }
 
         @JvmStatic
-        fun decode(value: String): String = java.net.URLDecoder.decode(value, "UTF-8")
+        fun decode(value: String): String = safeDecode(value)
 
         @JvmStatic
         fun withAppendedPath(baseUri: Uri, pathSegment: String): Uri {
             return baseUri.buildUpon().appendPath(pathSegment).build()
+        }
+
+        /**
+         * Lenient URL decoder that mimics Android's tolerant behavior.
+         * java.net.URLDecoder throws IllegalArgumentException on malformed
+         * percent escapes (e.g. stray "%" without 2 hex digits), but Android
+         * silently ignores them. Anime streaming sites frequently have
+         * malformed percent-encoding in their URLs.
+         */
+        private fun safeDecode(value: String): String {
+            return try {
+                java.net.URLDecoder.decode(value, "UTF-8")
+            } catch (_: IllegalArgumentException) {
+                // Fix malformed percent sequences by encoding stray % signs
+                // before retrying. Pattern: % not followed by 2 hex digits.
+                val fixed = value.replace(Regex("%(?![0-9a-fA-F]{2})"), "%25")
+                try {
+                    java.net.URLDecoder.decode(fixed, "UTF-8")
+                } catch (_: Exception) {
+                    value  // Last resort: return original
+                }
+            } catch (_: Exception) {
+                value
+            }
         }
     }
 }
