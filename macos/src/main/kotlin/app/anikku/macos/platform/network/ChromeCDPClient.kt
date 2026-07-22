@@ -133,7 +133,7 @@ object ChromeCDPClient {
                 }
 
                 // Navigate to URL and wait for Cloudflare challenge to resolve
-                val cookies = navigateAndWait(wsUrl, url, timeoutSeconds)
+                val cookies = navigateAndWait(wsUrl, url, timeoutSeconds, userAgent)
                 if (cookies.isNotEmpty()) {
                     logger.info { "✅ Cloudflare bypass succeeded on attempt $attempt/$MAX_BYPASS_RETRIES — got ${cookies.size} cookie(s)" }
                     return cookies
@@ -200,6 +200,7 @@ object ChromeCDPClient {
             "--disable-background-networking",
             "--disable-sync",
             "--no-sandbox",
+            "--disable-blink-features=AutomationControlled",
             "about:blank",
         )
         builder.environment()["DISPLAY"] = ""
@@ -272,6 +273,7 @@ object ChromeCDPClient {
         wsUrl: String,
         targetUrl: String,
         timeoutSeconds: Long,
+        userAgent: String,
     ): Map<String, String> {
         val latch = CountDownLatch(1)
         val cookies = ConcurrentHashMap<String, String>()
@@ -290,6 +292,18 @@ object ChromeCDPClient {
                     val enableNet = """{"id":$messageId,"method":"Network.enable"}"""
                     logDebug(">>> $enableNet")
                     webSocket.send(enableNet)
+                    // User-Agent override: Chrome CDP uses its own headless UA by default
+                    // which Cloudflare detects. Set the real desktop UA the extension uses.
+                    messageId++
+                    val escapedUA = userAgent.replace("\\", "\\\\").replace("\"", "\\\"")
+                    val setUA = """{"id":$messageId,"method":"Network.setUserAgentOverride","params":{"userAgent":"$escapedUA"}}"""
+                    logDebug(">>> $setUA")
+                    webSocket.send(setUA)
+                    // Hide navigator.webdriver flag — Cloudflare checks this to detect automation
+                    messageId++
+                    val hideWd = """{"id":$messageId,"method":"Page.addScriptToEvaluateOnNewDocument","params":{"source":"Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"}}"""
+                    logDebug(">>> $hideWd")
+                    webSocket.send(hideWd)
                     messageId++
                     val navigate = """{"id":$messageId,"method":"Page.navigate","params":{"url":"$targetUrl"}}"""
                     logDebug(">>> $navigate")
