@@ -128,6 +128,13 @@ if [ ! -f "$JAR_CMD" ]; then
     err "jar command not found at $JAR_CMD"
     exit 1
 fi
+# Verify jar actually runs (not just exists on disk)
+if ! "$JAR_CMD" --version >/dev/null 2>&1; then
+    err "jar command at $JAR_CMD fails to run. Check JDK installation."
+    err "  Try: brew reinstall openjdk@17"
+    exit 1
+fi
+log "jar: $("$JAR_CMD" --version 2>&1 | head -1)"
 if [ ! -f "$SOURCE_API_JAR" ] || [ ! -f "$COMMON_JVM_JAR" ]; then
     err "source-api JARs not found at ${PROJECT_DIR}/libs/"
     err "Build them first: cd ${PROJECT_DIR} && ./gradlew rebuildSourceApiJars"
@@ -140,7 +147,7 @@ fi
 
 log "JAVA_HOME: ${JAVA_HOME}"
 log "kotlinc: $(which kotlinc)"
-log "jar: ${JAR_CMD}"
+
 log "Repo: ${REPO_URL}"
 
 # ---------------------------------------------------------------------------
@@ -303,6 +310,13 @@ add_to_cp() {
     CLASSPATH="${CLASSPATH}:${item}"
 }
 
+# Prepend macOS Android stubs FIRST so they override any stale stubs in JARs
+MACOS_CLASSES_DIR="${PROJECT_DIR}/build/classes/kotlin/main"
+if [ -d "$MACOS_CLASSES_DIR" ]; then
+    CLASSPATH="${MACOS_CLASSES_DIR}:${CLASSPATH}"
+    log "  Android stubs (priority): ${MACOS_CLASSES_DIR} ✓"
+fi
+
 find_dep() {
     local group="$1"
     local artifact="$2"
@@ -323,10 +337,13 @@ if [ -d "${PROJECT_DIR}/libs" ]; then
 fi
 
 # Add compiled macOS module classes (Android stubs: android.*, androidx.*)
-MACOS_CLASSES_DIR="${PROJECT_DIR}/build/classes/kotlin/main"
+# Already prepended to CLASSPATH above for priority over JAR stubs.
+# This fallback exists for builds where the macOS module wasn't pre-compiled.
 if [ -d "$MACOS_CLASSES_DIR" ]; then
-    add_to_cp "$MACOS_CLASSES_DIR"
-    log "  Android stubs: ${MACOS_CLASSES_DIR} ✓"
+    if ! echo "$CLASSPATH" | tr ':' '\n' | grep -Fxq "$MACOS_CLASSES_DIR"; then
+        add_to_cp "$MACOS_CLASSES_DIR"
+        log "  Android stubs: ${MACOS_CLASSES_DIR} ✓"
+    fi
 fi
 
 # Kotlin stdlib from brew
@@ -608,32 +625,50 @@ if [ ! -f "META-INF/extension.json" ]; then
     exit 1
 fi
 
-# Write class list to a file to avoid command-line length limits
-find . -name '*.class' > "${TEMP_DIR}/jar-classes.txt" 2>/dev/null
-CLASS_COUNT=$(wc -l < "${TEMP_DIR}/jar-classes.txt" 2>/dev/null | tr -d ' ')
-log "Packaging ${CLASS_COUNT} classes..."
+# Count classes and package with $JAVA_HOME/bin/jar explicitly.
+# Primary: JDK 9+ @filelist (reads arguments from file -- no command-line limit).
+# Fallback: macOS xargs pipe (find -print0 | xargs -0) if @filelist somehow fails.
+CLASS_COUNT=$(find . -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+log "Packaging ${CLASS_COUNT} classes with ${JAR_CMD}..."
 
-export JAVA_HOME="${JAVA_HOME}"
+# Build file list: META-INF/extension.json first, then all .class files
+{
+    echo "META-INF/extension.json"
+    find . -name '*.class' -print
+} > "${TEMP_DIR}/jar-classes.txt"
+
 set +e
-"${JAR_CMD}" cf "${JAR_PATH}" META-INF/extension.json @"${TEMP_DIR}/jar-classes.txt" 2>&1
+# --- Primary: @filelist (JDK 9+). Handles unlimited files without shell limits. ---
+"${JAR_CMD}" cf "${JAR_PATH}" @"${TEMP_DIR}/jar-classes.txt" 2>"${TEMP_DIR}/jar-err.log"
 JAR_EXIT=$?
+
+# --- Fallback: macOS xargs pipe (if @filelist fails for any reason) ---
+if [ "$JAR_EXIT" -ne 0 ]; then
+    log "@filelist failed (exit ${JAR_EXIT}), retrying with xargs pipe..."
+    # ⚠ If xargs splits into multiple jar cf invocations, only the last batch
+    # survives (each cf overwrites the JAR). For <1000 files this won't trigger
+    # (~60KB paths vs 256KB ARG_MAX). Safe as fallback; @filelist always works on JDK 17+.
+    find . -name '*.class' -print0 | xargs -0 "${JAR_CMD}" cf "${JAR_PATH}" 2>>"${TEMP_DIR}/jar-err.log"
+    JAR_EXIT=$?
+fi
 set -e
 
 if [ "$JAR_EXIT" -ne 0 ]; then
-    err "jar command failed (exit ${JAR_EXIT})"
-    err "Trying manual jar with find..."
-    "${JAR_CMD}" cf "${JAR_PATH}" META-INF/extension.json $(find . -name '*.class' 2>/dev/null) 2>&1 || {
-        err "JAR packaging completely failed"
-        exit 1
-    }
+    err "jar packaging failed (exit ${JAR_EXIT}): $(cat "${TEMP_DIR}/jar-err.log" 2>/dev/null | head -5)"
+    err "  JAR_CMD=${JAR_CMD}"
+    err "  JAVA_HOME=${JAVA_HOME}"
+    err "  Classes: ${CLASS_COUNT}"
+    err "  File list: $(wc -l < "${TEMP_DIR}/jar-classes.txt") entries"
+    exit 1
 fi
 
 JAR_SIZE=$(stat -f%z "${JAR_PATH}" 2>/dev/null || echo "0")
 log "JAR: ${JAR_PATH} (${JAR_SIZE} bytes, ${CLASS_COUNT} classes)"
 
 # Verify JAR contains extension.json
-if ! "${JAR_CMD}" tf "${JAR_PATH}" | grep -q 'extension.json'; then
+if ! "${JAR_CMD}" tf "${JAR_PATH}" 2>/dev/null | grep -q 'extension.json'; then
     err "JAR is missing META-INF/extension.json!"
+    err "  JAR_CMD=${JAR_CMD}"
     exit 1
 fi
 

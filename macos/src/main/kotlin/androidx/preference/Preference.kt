@@ -17,10 +17,31 @@ open class Preference(
     attrs: kotlinx.collections.immutable.PersistentMap<String, String>? = null,
 ) {
 
-    var key: String? = null
+    var key: String = ""
     var title: String? = null
     var summary: String? = null
     var enabled: Boolean = true
+
+    /**
+     * Android [Preference.OnPreferenceChangeListener] interface.
+     * Declared as `fun interface` (Kotlin SAM) so lambda conversion works
+     * identically to how Android's Java interface supports SAM in Kotlin.
+     */
+    fun interface OnPreferenceChangeListener {
+        fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean
+    }
+
+    private var _onPreferenceChangeListener: OnPreferenceChangeListener? = null
+
+    /**
+     * Sets the listener for preference changes.
+     * No-op on JVM — preferences are managed through the filter system.
+     */
+    fun setOnPreferenceChangeListener(listener: OnPreferenceChangeListener?) {
+        _onPreferenceChangeListener = listener
+    }
+
+    fun getOnPreferenceChangeListener(): OnPreferenceChangeListener? = _onPreferenceChangeListener
 }
 
 /**
@@ -42,7 +63,14 @@ open class ListPreference(context: android.content.Context?) : Preference(contex
     var entryValues: Array<String> = emptyArray()
     var value: String? = null
 
-    fun findIndexOfValue(value: String): Int = 0
+    fun setDefaultValue(defaultValue: Any) {
+        value = defaultValue.toString()
+    }
+
+    fun findIndexOfValue(value: String?): Int {
+        if (value == null) return -1
+        return entryValues.indexOfFirst { it == value }
+    }
 }
 
 /**
