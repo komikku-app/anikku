@@ -540,6 +540,34 @@ for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${G
 done
 
 # ---------------------------------------------------------------------------
+# Step 3b-iv: Apply source patches for specific extensions
+# ---------------------------------------------------------------------------
+
+# Patch: anidb — fix extension function hiding supertype member
+ANIDB_SRC=$(find "${SRC_DIR}" -name "AniDB.kt" 2>/dev/null | head -1)
+if [ -n "$ANIDB_SRC" ] && [ -f "$ANIDB_SRC" ]; then
+    # 1. sortVideos extension function conflicts with supertype member.
+    #    Remove 'private' so it can be marked 'override' (private+override invalid)
+    sed -i '' 's/private fun List<Video>.sortVideos/override fun List<Video>.sortVideos/' "$ANIDB_SRC" 2>/dev/null || true
+    # 1b. Remove 'override' from disableRelatedAnimesBySearch (not in our JVM stubs)
+    sed -i '' 's/override val disableRelatedAnimesBySearch/val disableRelatedAnimesBySearch/' "$ANIDB_SRC" 2>/dev/null || true
+    # 2. Remove setDefaultValue() calls on SwitchPreferenceCompat (not in JVM stubs)
+    sed -i '' '/setDefaultValue(/d' "$ANIDB_SRC" 2>/dev/null || true
+    log "Patched: AniDB.kt — sortVideos override + setDefaultValue removal"
+fi
+
+# Patch: miruro — remove AniLib import only (don't delete whole lines)
+# The AniLib class is just for AniList tracking metadata enrichment.
+# Removing the import causes the compiler to skip the AniLib-dependent
+# code paths since they reference unresolvable types.
+MIRURO_SRC=$(find "${SRC_DIR}" -name "Miruro.kt" 2>/dev/null | head -1)
+if [ -n "$MIRURO_SRC" ] && [ -f "$MIRURO_SRC" ]; then
+    # Only delete the import line — let the compiler skip unreachable AniLib code
+    sed -i '' '/^import aniyomi\.lib\.anilib\.AniLib$/d' "$MIRURO_SRC" 2>/dev/null || true
+    log "Patched: Miruro.kt — removed AniLib import"
+fi
+
+# ---------------------------------------------------------------------------
 # Step 4: Compile the extension
 # ---------------------------------------------------------------------------
 log ""
