@@ -299,11 +299,15 @@ object ChromeCDPClient {
                     val setUA = """{"id":$messageId,"method":"Network.setUserAgentOverride","params":{"userAgent":"$escapedUA"}}"""
                     logDebug(">>> $setUA")
                     webSocket.send(setUA)
-                    // Hide navigator.webdriver flag — Cloudflare checks this to detect automation
+                    // Anti-detection scripts — Cloudflare/Turnstile check these for headless mode
+                    val antiDetectJS = """
+                        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                        Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
+                    """.trimIndent().replace("\n", " ").replace("\"", "\\\"")
                     messageId++
-                    val hideWd = """{"id":$messageId,"method":"Page.addScriptToEvaluateOnNewDocument","params":{"source":"Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"}}"""
-                    logDebug(">>> $hideWd")
-                    webSocket.send(hideWd)
+                    val antiDetect = """{"id":$messageId,"method":"Page.addScriptToEvaluateOnNewDocument","params":{"source":"$antiDetectJS"}}"""
+                    logDebug(">>> $antiDetect")
+                    webSocket.send(antiDetect)
                     messageId++
                     val navigate = """{"id":$messageId,"method":"Page.navigate","params":{"url":"$targetUrl"}}"""
                     logDebug(">>> $navigate")
