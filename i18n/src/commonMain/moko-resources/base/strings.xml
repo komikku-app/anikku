@@ -203,6 +203,7 @@
 
     <string name="pref_category_controls">Controls</string>
     <string name="pref_controls_allow_gestures_in_panels">Allow gesture in panels</string>
+    <string name="pref_hold_speed_forward">Hold-to-fast-forward speed</string>
     <string name="pref_controls_show_loading">Show loading circle</string>
     <string name="pref_controls_show_chapter_indicator">Show current chapter indicator</string>
     <string name="pref_controls_show_chapter_indicator_info">Only appears if the video has chapters</string>
