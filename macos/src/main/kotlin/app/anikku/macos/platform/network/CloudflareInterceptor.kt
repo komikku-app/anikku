@@ -3,6 +3,8 @@ package app.anikku.macos.platform.network
 import io.github.oshai.kotlinlogging.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.Response
+import java.time.Instant
+import java.util.concurrent.ConcurrentLinkedQueue
 
 private val logger = KotlinLogging.logger {}
 
@@ -47,7 +49,13 @@ class CloudflareInterceptor(
         }
 
         val url = request.url.toString()
-        logger.warn { "🛡 Cloudflare block detected: $url (HTTP ${response.code})" }
+        val host = request.url.host
+        val httpCode = response.code
+        logger.warn { "🛡 Cloudflare block detected: $url (HTTP $httpCode)" }
+
+        // Record ONE diagnostic entry per CF block (start with detection, update inline)
+        val diag = DiagnosticEntry(host = host, httpCode = httpCode, wasBlockDetected = true)
+        diagnostics.add(diag)
 
         // Close the blocked response body
         response.close()
@@ -57,6 +65,9 @@ class CloudflareInterceptor(
             logger.warn { "Chrome not installed — Cloudflare bypass unavailable, marking as attempted" }
             return chain.proceed(request.newBuilder().header(X_CF_BYPASS, "1").build())
         }
+
+        // Update diagnostic: bypass attempted
+        diag.bypassAttempted = true
 
         // Attempt bypass via headless Chrome
         val userAgent = userAgentProvider()
@@ -81,6 +92,7 @@ class CloudflareInterceptor(
             logger.warn { "Still blocked after bypass for ${request.url.host}" }
         } else {
             logger.info { "✅ Cloudflare bypass successful for ${request.url.host}" }
+            diag.bypassSucceeded = true
         }
 
         return retryResponse
@@ -221,11 +233,64 @@ class CloudflareInterceptor(
         }
     }
 
+    /**
+     * Per-request diagnostic entry for Cloudflare/CDP bypass tracking.
+     *
+     * This is NOT a data class — [bypassAttempted] and [bypassSucceeded]
+     * are mutable so the interceptor can update bypass results inline
+     * without creating duplicate entries per block event.
+     *
+     * Used by ExtensionCompatibilityTest to show which extensions are
+     * Cloudflare-blocked and whether the CDP bypass succeeded.
+     */
+    class DiagnosticEntry(
+        val host: String,
+        val httpCode: Int,
+        val wasBlockDetected: Boolean,
+        var bypassAttempted: Boolean = false,
+        var bypassSucceeded: Boolean = false,
+        val timestamp: Instant = Instant.now(),
+    ) {
+        override fun toString(): String =
+            "$host:$httpCode block=$wasBlockDetected bypass=$bypassSucceeded"
+
+        override fun equals(other: Any?): Boolean =
+            other is DiagnosticEntry && other.host == host && other.timestamp == timestamp
+
+        override fun hashCode(): Int = 31 * host.hashCode() + timestamp.hashCode()
+    }
+
     companion object {
         private const val X_CF_BYPASS = "X-CF-Bypass-Attempted"
         private const val BODY_PEEK_BYTES = 8192L
         private val CLOUDFLARE_CODES = setOf(403, 503)
         private val CLOUDFLARE_EXTENDED_CODES = setOf(400, 406, 429)
         private val CLOUDFLARE_SERVERS = setOf("cloudflare-nginx", "cloudflare")
+
+        private val diagnostics = ConcurrentLinkedQueue<DiagnosticEntry>()
+
+        fun getDiagnostics(): List<DiagnosticEntry> = diagnostics.toList()
+        fun clearDiagnostics() { diagnostics.clear() }
+
+        /**
+         * Summary of Cloudflare/CDP bypass activity for the current diagnostic window.
+         * Deduplicates entries by host so multiple blocks to the same domain count as one.
+         * Convenience for test reporting.
+         */
+        fun diagnosticSummary(): String {
+            val entries = diagnostics.toList()
+            if (entries.isEmpty()) return "—"
+            // Deduplicate by host — one diagnostic entry per CF block event
+            val uniqueByHost = entries.distinctBy { it.host }
+            val succeeded = uniqueByHost.count { it.bypassSucceeded }
+            val attempted = uniqueByHost.count { it.bypassAttempted }
+            val total = uniqueByHost.size
+            return when {
+                total == 0 -> "No WAF"
+                succeeded > 0 -> "CF:$total ✅$succeeded"
+                attempted > 0 -> "CF:$total ❌${attempted - succeeded}"
+                else -> "CF:$total ⚠"
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Timeout
 import org.koin.core.context.stopKoin
 import java.util.concurrent.TimeUnit
 import app.anikku.macos.platform.network.CloudflareInterceptor
+import app.anikku.macos.platform.network.CloudflareInterceptor.DiagnosticEntry
 import app.anikku.macos.platform.network.DiagnosticLoggingInterceptor
 import app.anikku.macos.platform.network.HttpRetryInterceptor
 import app.anikku.macos.platform.network.MacOSCookieJar
@@ -96,6 +97,10 @@ class ExtensionCompatibilityTest {
         val videoQualities: String = "",
         val videoSampleUrl: String = "",
         val errorDetail: String = "",
+        /** CDP/WAF diagnostic summary (e.g. "CF:3 ✅1" = 3 blocks, 1 bypassed) */
+        val wafStatus: String = "—",
+        /** Detailed CDP diagnostic entries for this extension */
+        val cfDiagnostics: List<DiagnosticEntry> = emptyList(),
     )
 
     private val results = mutableListOf<ExtensionResult>()
@@ -162,7 +167,11 @@ class ExtensionCompatibilityTest {
         // Install lenient SSL for extension requests
         app.anikku.macos.platform.network.InsecureSSLHelper.install()
 
+        // Enable CDP debug mode to capture detailed WebSocket traffic for diagnostics
+        app.anikku.macos.platform.network.ChromeCDPClient.debugMode = true
+
         println("  🌐 Cloudflare bypass: ${if (app.anikku.macos.platform.network.ChromeCDPClient.isChromeInstalled) "✅ Chrome detected" else "⚠ Chrome not found — bypass disabled"}")
+        println("  🔍 CDP debug mode: ${if (app.anikku.macos.platform.network.ChromeCDPClient.debugMode) "ON" else "OFF"}")
         println()
     }
 
@@ -249,6 +258,9 @@ class ExtensionCompatibilityTest {
         val name = metadata?.name ?: jarFile.nameWithoutExtension
         val pkgName = metadata?.pkgName ?: jarFile.nameWithoutExtension
 
+        // Clear CDP diagnostics at start to avoid cross-extension contamination
+        CloudflareInterceptor.clearDiagnostics()
+
         // Stage 1: Load
         val loadResult = loadExtension(jarFile, pkgName)
         if (loadResult == null) {
@@ -293,6 +305,10 @@ class ExtensionCompatibilityTest {
         // Close the classloader to prevent resource leaks across 45 iterations
         MacOSExtensionLoader.closeClassLoader(pkgName)
 
+        // Capture CDP diagnostics after ALL stages (browse, episodes, video)
+        val cfDiags = CloudflareInterceptor.getDiagnostics()
+        val wafStatus = if (cfDiags.isNotEmpty()) CloudflareInterceptor.diagnosticSummary() else "—"
+
         return ExtensionResult(
             name = name,
             pkgName = pkgName,
@@ -307,6 +323,8 @@ class ExtensionCompatibilityTest {
             firstEpisodeName = episodeResult.firstName,
             videoQualities = videoResult.qualities,
             videoSampleUrl = videoResult.sampleUrl,
+            wafStatus = wafStatus,
+            cfDiagnostics = cfDiags,
         )
     }
 
@@ -541,6 +559,7 @@ tr:hover { background: #16213e; }
   <th>#</th>
   <th>Video</th>
   <th>#</th>
+  <th>WAF</th>
   <th>First Anime</th>
   <th>Qualities</th>
 </tr>""")
@@ -563,6 +582,7 @@ tr:hover { background: #16213e; }
   <td>${r.episodeCount}</td>
   <td class="${if (r.videoStatus == "✅") "pass" else if (r.videoStatus == "⚠") "warn" else if (r.videoStatus == "⏱") "timeout" else "fail"}">${r.videoStatus}</td>
   <td>${r.videoCount}</td>
+  <td title="${r.cfDiagnostics.joinToString(", ") { "${it.host}:${it.httpCode} block=${it.wasBlockDetected} bypass=${it.bypassSucceeded}" }.take(200)}">${r.wafStatus}</td>
   <td title="${r.firstAnimeTitle}">${r.firstAnimeTitle.take(25)}</td>
   <td title="${r.videoSampleUrl}">${r.videoQualities.take(30)}</td>
 </tr>""")
@@ -595,6 +615,52 @@ tr:hover { background: #16213e; }
             }
 
             appendLine("""</ul>
+
+<h2>Browse Failure Categories</h2>
+<table>
+<tr><th>Category</th><th>Count</th><th>Extensions</th></tr>""")
+            val browseFailed = results.filter { it.browseStatus == "❌" || it.browseStatus == "⏱" }
+            // Combine both errorDetail (load errors) and firstAnimeTitle (browse errors) for matching
+            fun errText(r: ExtensionResult) = "${r.errorDetail} ${r.firstAnimeTitle}"
+            data class FailureCategory(val label: String, val cssClass: String, val match: (ExtensionResult) -> Boolean)
+            val categories = listOf(
+                FailureCategory("🛡 Cloudflare/WAF Block", "fail") { r ->
+                    r.wafStatus != "—" && r.wafStatus != "No WAF"
+                },
+                FailureCategory("🌐 DNS Failure", "timeout") { r ->
+                    errText(r).contains("UnknownHostException", ignoreCase = true)
+                },
+                FailureCategory("🔒 SSL Error", "fail") { r ->
+                    errText(r).contains("SSL", ignoreCase = true) ||
+                    errText(r).contains("certificate", ignoreCase = true)
+                },
+                FailureCategory("⏱ Timeout", "timeout") { r ->
+                    r.browseStatus == "⏱"
+                },
+                FailureCategory("📡 Network Error", "fail") { r ->
+                    errText(r).contains("IOException", ignoreCase = true) ||
+                    errText(r).contains("HttpException", ignoreCase = true) ||
+                    errText(r).contains("NoRouteToHost", ignoreCase = true) ||
+                    errText(r).contains("ConnectException", ignoreCase = true)
+                },
+                FailureCategory("🔄 Extension Bug", "warn") { r ->
+                    r.wafStatus == "—" || r.wafStatus == "No WAF"
+                },
+            )
+            val categorized = mutableSetOf<String>()
+            for (cat in categories) {
+                val matches = browseFailed.filter { cat.match(it) && it.name !in categorized }
+                if (matches.isNotEmpty()) {
+                    categorized.addAll(matches.map { it.name })
+                    appendLine("<tr><td>${cat.label}</td><td>${matches.size}</td><td>${matches.joinToString(", ") { it.name }.take(200)}</td></tr>")
+                }
+            }
+            val uncategorized = browseFailed.filter { it.name !in categorized }
+            if (uncategorized.isNotEmpty()) {
+                appendLine("<tr><td>❓ Other</td><td>${uncategorized.size}</td><td>${uncategorized.joinToString(", ") { it.name }.take(200)}</td></tr>")
+            }
+
+            appendLine("""</table>
 
 <h2>Failed to Load</h2>
 <ul>""")
