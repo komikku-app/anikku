@@ -517,6 +517,52 @@ if [ -n "$ANIDB_SRC" ] && [ -f "$ANIDB_SRC" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Patch superstream: add CloudflareInterceptor to custom OkHttpClient
+# ---------------------------------------------------------------------------
+#
+# superstream creates its own OkHttpClient via configureToIgnoreCertificate()
+# WITHOUT CloudflareInterceptor. Calls to showbox.shegu.net hit Cloudflare 403
+# blocks → JsonDecodingException. Adding CloudflareInterceptor with a temp
+# MacOSCookieJar lets the CDP bypass extract cookies and pass them through.
+#
+# CloudflareInterceptor/MacOSCookieJar are packaged into shared-libs.jar
+# (see Step 2c-v) so the extension classloader can resolve them. The extension
+# JAR references them via the source patch below, and the class files are
+# copied from MACOS_CLASSES_DIR into shared-libs.jar at packaging time.
+#
+# --- SuperStreamAPI.kt: CloudflareInterceptor injection ---
+SUPERSTREAM_API="${GIT_CLONE_DIR}/src/en/superstream/src/eu/kanade/tachiyomi/animeextension/en/superstream/SuperStreamAPI.kt"
+if [ -f "$SUPERSTREAM_API" ]; then
+    # Add imports after existing okhttp3.OkHttpClient import
+    sed -i '' '/^import okhttp3\.OkHttpClient$/a\
+import app.anikku.macos.platform.network.CloudflareInterceptor\
+import app.anikku.macos.platform.network.MacOSCookieJar\
+' "$SUPERSTREAM_API" 2>/dev/null || true
+
+    # Add CloudflareInterceptor to OkHttpClient.Builder chain
+    # Insert after .readTimeout(70, TimeUnit.SECONDS), before .build()
+    sed -i '' '/\.readTimeout(70, TimeUnit\.SECONDS)/a\
+            .addInterceptor(CloudflareInterceptor(MacOSCookieJar(java.io.File.createTempFile("cf", "jar"))) { "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" })\
+' "$SUPERSTREAM_API" 2>/dev/null || true
+
+    log "  Patched: SuperStreamAPI.kt — added CloudflareInterceptor to custom OkHttpClient"
+fi
+
+# --- SuperStream.kt: JVM compatibility (setDefaultValue + null-safe context) ---
+SUPERSTREAM_MAIN="${GIT_CLONE_DIR}/src/en/superstream/src/eu/kanade/tachiyomi/animeextension/en/superstream/SuperStream.kt"
+if [ -f "$SUPERSTREAM_MAIN" ]; then
+    # Remove setDefaultValue() calls (not available in JVM Preference stubs)
+    sed -i '' '/setDefaultValue(/d' "$SUPERSTREAM_MAIN" 2>/dev/null || true
+
+    # screen.context is Context? in JVM stubs but used as Context — add !!
+    sed -i '' 's/screen\.context)/screen.context!!)/g' "$SUPERSTREAM_MAIN" 2>/dev/null || true
+    # Also handle screen.context used directly (not as function arg)
+    sed -i '' 's/\.makeText(screen\.context,/.makeText(screen.context!!,/g' "$SUPERSTREAM_MAIN" 2>/dev/null || true
+
+    log "  Patched: SuperStream.kt — removed setDefaultValue, added context!! null-safety"
+fi
+
+# ---------------------------------------------------------------------------
 # Patch miruro: remove AniLib import only (don't delete whole lines)
 # ---------------------------------------------------------------------------
 MIRURO_EXT_SRC=$(find "${GIT_CLONE_DIR}" -path "*/en/miruro/*" -name "Miruro.kt" 2>/dev/null | head -1)
@@ -771,6 +817,22 @@ done
 if [ -d "${SHARED_LIBS_DIR}/lib-multisrc" ]; then
     cp -r "${SHARED_LIBS_DIR}/lib-multisrc"/* "$package_tmpdir/" 2>/dev/null || true
 fi
+
+# Also include CloudflareInterceptor and MacOSCookieJar from the macOS module.
+# These provide CDP-based Cloudflare bypass for extensions like superstream
+# that create their own OkHttpClient (bypassing the app's CloudflareInterceptor).
+# They must be in shared-libs.jar so the extension classloader can resolve them.
+if [ -d "$MACOS_CLASSES_DIR" ]; then
+    for macos_class in CloudflareInterceptor MacOSCookieJar; do
+        find "$MACOS_CLASSES_DIR" -path "*/app/anikku/macos/platform/network/${macos_class}*" -name '*.class' 2>/dev/null | while IFS= read -r f; do
+            rel="${f#$MACOS_CLASSES_DIR/}"
+            mkdir -p "$package_tmpdir/$(dirname "$rel")"
+            cp "$f" "$package_tmpdir/$rel"
+        done
+    done
+    log "  Included: CloudflareInterceptor + MacOSCookieJar from macOS module ✓"
+fi
+
 if [ -n "$(ls -A "$package_tmpdir" 2>/dev/null)" ]; then
     (cd "$package_tmpdir" && "${JAR_CMD}" cf "${SHARED_LIBS_JAR}" . 2>/dev/null || true)
     jar_size=$(stat -f%z "${SHARED_LIBS_JAR}" 2>/dev/null || echo "0")

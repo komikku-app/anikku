@@ -567,6 +567,32 @@ if [ -n "$MIRURO_SRC" ] && [ -f "$MIRURO_SRC" ]; then
     log "Patched: Miruro.kt — removed AniLib import"
 fi
 
+# Patch: superstream — add CloudflareInterceptor to custom OkHttpClient
+# The extension creates its own OkHttpClient (configureToIgnoreCertificate) without
+# CloudflareInterceptor, causing Cloudflare 403 blocks → JsonDecodingException.
+SUPERSTREAM_API_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStreamAPI.kt" 2>/dev/null | head -1)
+if [ -n "$SUPERSTREAM_API_SRC" ] && [ -f "$SUPERSTREAM_API_SRC" ]; then
+    sed -i '' '/^import okhttp3\.OkHttpClient$/a\
+import app.anikku.macos.platform.network.CloudflareInterceptor\
+import app.anikku.macos.platform.network.MacOSCookieJar\
+' "$SUPERSTREAM_API_SRC" 2>/dev/null || true
+    sed -i '' '/\.readTimeout(70, TimeUnit\.SECONDS)/a\
+            .addInterceptor(CloudflareInterceptor(MacOSCookieJar(java.io.File.createTempFile("cf", "jar"))) { "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" })\
+' "$SUPERSTREAM_API_SRC" 2>/dev/null || true
+    log "Patched: SuperStreamAPI.kt — added CloudflareInterceptor to custom OkHttpClient"
+fi
+
+# Patch: superstream — JVM compatibility (setDefaultValue + null-safe context)
+SUPERSTREAM_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStream.kt" 2>/dev/null | head -1)
+if [ -n "$SUPERSTREAM_SRC" ] && [ -f "$SUPERSTREAM_SRC" ]; then
+    # Remove setDefaultValue() calls (not available in JVM Preference stubs)
+    sed -i '' '/setDefaultValue(/d' "$SUPERSTREAM_SRC" 2>/dev/null || true
+    # screen.context is Context? in JVM stubs but used as Context — add !!
+    sed -i '' 's/screen\.context)/screen.context!!)/g' "$SUPERSTREAM_SRC" 2>/dev/null || true
+    sed -i '' 's/\.makeText(screen\.context,/.makeText(screen.context!!,/g' "$SUPERSTREAM_SRC" 2>/dev/null || true
+    log "Patched: SuperStream.kt — removed setDefaultValue, added context!! null-safety"
+fi
+
 # ---------------------------------------------------------------------------
 # Step 4: Compile the extension
 # ---------------------------------------------------------------------------
@@ -643,6 +669,20 @@ if [ -d "$SHARED_LIBS_DIR" ]; then
         fi
     done
     log "Merged shared libs: ${MERGED} classes"
+fi
+
+# Also include CloudflareInterceptor and MacOSCookieJar from the macOS module.
+# These provide CDP-based Cloudflare bypass for extensions like superstream
+# that create their own OkHttpClient (bypassing the app's CloudflareInterceptor).
+if [ -d "$MACOS_CLASSES_DIR" ]; then
+    for macos_class in CloudflareInterceptor MacOSCookieJar; do
+        find "$MACOS_CLASSES_DIR" -path "*/app/anikku/macos/platform/network/${macos_class}*" -name '*.class' 2>/dev/null | while IFS= read -r f; do
+            rel="${f#$MACOS_CLASSES_DIR/}"
+            mkdir -p "$CLASSES_DIR/$(dirname "$rel")"
+            cp "$f" "$CLASSES_DIR/$rel"
+        done
+    done
+    log "Included: CloudflareInterceptor + MacOSCookieJar from macOS module ✓"
 fi
 
 cd "$CLASSES_DIR"
