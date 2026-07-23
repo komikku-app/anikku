@@ -505,7 +505,77 @@ if [ -d "$EXTRACTORS_DIR" ]; then
     fi
 fi
 
-# Step 3b-iii: Compile shared library modules (lib-*, lib-multisrc/*, common, core) in dependency order
+# Step 3b-iii: Patch core module source files for JVM compatibility
+# ===================================================================
+# The cloned repo's core/ module has Preferences.kt with Android-specific
+# calls (setDefaultValue, setEnabled) and Coroutines.kt with overload
+# ambiguity that conflict with the macOS keiyoushi-utils.
+
+# Patch Coroutines.kt: fix parallelMapNotNull overload ambiguity
+# Kotlin compiler generates a synthetic non-inline overload for inline suspend
+# fns with generic params, causing ambiguity between macOS keiyoushi-utils
+# version and the cloned repo's version.
+CORE_COROUTINES="${GIT_CLONE_DIR}/core/src/main/kotlin/keiyoushi/utils/Coroutines.kt"
+if [ -f "$CORE_COROUTINES" ] && grep -q 'suspend inline fun.*parallelMapNotNull' "$CORE_COROUTINES" 2>/dev/null; then
+    # Remove inline+crossinline from parallelMapNotNull
+    sed -i '' '/parallelMapNotNull(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNull(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNull(f:/s/<A, B>/<A, B : Any>/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelMapNotNull — removed inline+crossinline, added B : Any"
+
+    # Patch parallelMapNotNullBlocking: remove inline+crossinline
+    sed -i '' '/parallelMapNotNullBlocking(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNullBlocking(crossinline/s/^inline //' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNullBlocking(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelMapNotNullBlocking — removed inline+crossinline"
+
+    # Patch parallelCatchingFlatMap: remove inline+crossinline
+    sed -i '' '/parallelCatchingFlatMap(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelCatchingFlatMap(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelCatchingFlatMap — removed inline+crossinline"
+
+    # Patch parallelCatchingFlatMapBlocking: remove inline+crossinline
+    sed -i '' '/parallelCatchingFlatMapBlocking(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelCatchingFlatMapBlocking(crossinline/s/^inline //' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelCatchingFlatMapBlocking(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelCatchingFlatMapBlocking — removed inline+crossinline"
+fi
+
+# Patch Preferences.kt: remove Android-specific calls and fix nullability
+CORE_PREFS="${GIT_CLONE_DIR}/core/src/main/kotlin/keiyoushi/utils/Preferences.kt"
+if [ -f "$CORE_PREFS" ]; then
+    # Remove setDefaultValue() calls (no-ops on JVM)
+    sed -i '' '/setDefaultValue(/d' "$CORE_PREFS" 2>/dev/null || true
+    # Remove setEnabled() calls (no-ops on JVM)
+    sed -i '' '/setEnabled(/d' "$CORE_PREFS" 2>/dev/null || true
+    # Fix Context? nullability in Toast.makeText
+    sed -i '' 's/Toast\.makeText(context,/Toast.makeText(context!!,/g' "$CORE_PREFS" 2>/dev/null || true
+    log "  Patched: Preferences.kt — removed setDefaultValue/setEnabled, fixed context!!"
+fi
+
+# Patch DataLifeEngine: fix entryValues null safety
+DATA_LIFE_ENGINE="${GIT_CLONE_DIR}/lib-multisrc/datalifeengine/src/eu/kanade/tachiyomi/multisrc/datalifeengine/DataLifeEngine.kt"
+if [ -f "$DATA_LIFE_ENGINE" ] && grep -q 'putString(key' "$DATA_LIFE_ENGINE" 2>/dev/null; then
+    sed -i '' 's/putString(key, entry)/putString(key!!, entry!!)/g' "$DATA_LIFE_ENGINE"
+    log "  Patched: DataLifeEngine.kt — key!! and entry!! in putString"
+fi
+
+# Patch DooPlay: fix entryValues null safety
+DOO_PLAY="${GIT_CLONE_DIR}/lib-multisrc/dooplay/src/eu/kanade/tachiyomi/multisrc/dooplay/DooPlay.kt"
+if [ -f "$DOO_PLAY" ] && grep -q 'putString(key' "$DOO_PLAY" 2>/dev/null; then
+    sed -i '' 's/putString(key, entry)/putString(key!!, entry!!)/g' "$DOO_PLAY"
+    log "  Patched: DooPlay.kt — key!! and entry!! in putString"
+fi
+
+# Patch DopeFlix: MutableSet property delegate type mismatch
+DOPE_FLIX="${GIT_CLONE_DIR}/lib-multisrc/dopeflix/src/eu/kanade/tachiyomi/multisrc/dopeflix/DopeFlix.kt"
+if [ -f "$DOPE_FLIX" ] && grep -q 'hosterNames.toSet())!!' "$DOPE_FLIX" 2>/dev/null; then
+    sed -i '' '/hosterNames.toSet())!!/s/!! }/!!.toMutableSet() }/' "$DOPE_FLIX"
+    log "  Patched: DopeFlix.kt — MutableSet<String> via .toMutableSet()"
+fi
+
+# ===================================================================
+# Step 3b-iv: Compile shared library modules (lib-*, lib-multisrc/*, common, core) in dependency order
 for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_DIR}/core/"; do
     [ ! -d "$lib_dir" ] && continue
     lib_name=$(basename "$lib_dir")
@@ -517,7 +587,9 @@ for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${G
         rm -rf "$lib_classes"
     fi
 
-    find "$lib_dir" -name "*.kt" > "${TEMP_DIR}/${lib_name}-sources.txt" 2>/dev/null || true
+    # Exclude test files AND Android-specific Activity files (UrlActivity) —
+    # UrlActivities subclass android.app.Activity and have no purpose on macOS/JVM.
+    find "$lib_dir" -name "*.kt" ! -path '*/test/*' ! -name '*UrlActivity*' > "${TEMP_DIR}/${lib_name}-sources.txt" 2>/dev/null || true
     src_count=$(wc -l < "${TEMP_DIR}/${lib_name}-sources.txt" 2>/dev/null || echo 0)
     [ "$src_count" -eq 0 ] && continue
 
@@ -540,7 +612,7 @@ for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${G
 done
 
 # ---------------------------------------------------------------------------
-# Step 3b-iv: Apply source patches for specific extensions
+# Step 3b-v: Apply source patches for specific extensions
 # ---------------------------------------------------------------------------
 
 # Patch: anidb — fix extension function hiding supertype member
@@ -577,7 +649,7 @@ import app.anikku.macos.platform.network.CloudflareInterceptor\
 import app.anikku.macos.platform.network.MacOSCookieJar\
 ' "$SUPERSTREAM_API_SRC" 2>/dev/null || true
     sed -i '' '/\.readTimeout(70, TimeUnit\.SECONDS)/a\
-            .addInterceptor(CloudflareInterceptor(MacOSCookieJar(java.io.File.createTempFile("cf", "jar"))) { "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" })\
+            .addInterceptor(CloudflareInterceptor(MacOSCookieJar(java.io.File.createTempFile("cf_", "jar"))) { "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" })\
 ' "$SUPERSTREAM_API_SRC" 2>/dev/null || true
     log "Patched: SuperStreamAPI.kt — added CloudflareInterceptor to custom OkHttpClient"
 fi

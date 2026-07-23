@@ -542,7 +542,7 @@ import app.anikku.macos.platform.network.MacOSCookieJar\
     # Add CloudflareInterceptor to OkHttpClient.Builder chain
     # Insert after .readTimeout(70, TimeUnit.SECONDS), before .build()
     sed -i '' '/\.readTimeout(70, TimeUnit\.SECONDS)/a\
-            .addInterceptor(CloudflareInterceptor(MacOSCookieJar(java.io.File.createTempFile("cf", "jar"))) { "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" })\
+            .addInterceptor(CloudflareInterceptor(MacOSCookieJar(java.io.File.createTempFile("cf_", "jar"))) { "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" })\
 ' "$SUPERSTREAM_API" 2>/dev/null || true
 
     log "  Patched: SuperStreamAPI.kt — added CloudflareInterceptor to custom OkHttpClient"
