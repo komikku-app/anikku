@@ -823,14 +823,14 @@ fi
 # that create their own OkHttpClient (bypassing the app's CloudflareInterceptor).
 # They must be in shared-libs.jar so the extension classloader can resolve them.
 if [ -d "$MACOS_CLASSES_DIR" ]; then
-    for macos_class in CloudflareInterceptor MacOSCookieJar; do
+    for macos_class in CloudflareInterceptor MacOSCookieJar ChromeCDPClient FallbackDns; do
         find "$MACOS_CLASSES_DIR" -path "*/app/anikku/macos/platform/network/${macos_class}*" -name '*.class' 2>/dev/null | while IFS= read -r f; do
             rel="${f#$MACOS_CLASSES_DIR/}"
             mkdir -p "$package_tmpdir/$(dirname "$rel")"
             cp "$f" "$package_tmpdir/$rel"
         done
     done
-    log "  Included: CloudflareInterceptor + MacOSCookieJar from macOS module ✓"
+    log "  Included: CloudflareInterceptor + MacOSCookieJar + ChromeCDPClient + FallbackDns from macOS module ✓"
 fi
 
 if [ -n "$(ls -A "$package_tmpdir" 2>/dev/null)" ]; then

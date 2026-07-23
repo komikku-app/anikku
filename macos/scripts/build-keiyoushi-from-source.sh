@@ -675,14 +675,14 @@ fi
 # These provide CDP-based Cloudflare bypass for extensions like superstream
 # that create their own OkHttpClient (bypassing the app's CloudflareInterceptor).
 if [ -d "$MACOS_CLASSES_DIR" ]; then
-    for macos_class in CloudflareInterceptor MacOSCookieJar; do
+    for macos_class in CloudflareInterceptor MacOSCookieJar ChromeCDPClient FallbackDns; do
         find "$MACOS_CLASSES_DIR" -path "*/app/anikku/macos/platform/network/${macos_class}*" -name '*.class' 2>/dev/null | while IFS= read -r f; do
             rel="${f#$MACOS_CLASSES_DIR/}"
             mkdir -p "$CLASSES_DIR/$(dirname "$rel")"
             cp "$f" "$CLASSES_DIR/$rel"
         done
     done
-    log "Included: CloudflareInterceptor + MacOSCookieJar from macOS module ✓"
+    log "Included: CloudflareInterceptor + MacOSCookieJar + ChromeCDPClient + FallbackDns from macOS module ✓"
 fi
 
 cd "$CLASSES_DIR"
