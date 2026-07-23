@@ -563,13 +563,18 @@ if [ -f "$SUPERSTREAM_MAIN" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Patch miruro: remove AniLib import only (don't delete whole lines)
+# Patch miruro: keep AniLib import — anilib extractor is compiled and on classpath
 # ---------------------------------------------------------------------------
+# The anilib extractor (lib/anilib in the cloned repo) compiles successfully
+# and provides AniLib class on the classpath. Miruro.kt imports AniLib
+# extensively (27 references) for GraphQL fallback data. Removing the import
+# causes unresolved reference errors. The import stays as-is.
+#
+# (The previous behavior removed the import, which broke the build because
+#  AniLib was used extensively throughout the source.)
 MIRURO_EXT_SRC=$(find "${GIT_CLONE_DIR}" -path "*/en/miruro/*" -name "Miruro.kt" 2>/dev/null | head -1)
 if [ -n "$MIRURO_EXT_SRC" ] && [ -f "$MIRURO_EXT_SRC" ]; then
-    # Only delete the import line — let the compiler skip unreachable AniLib code
-    sed -i '' '/^import aniyomi\.lib\.anilib\.AniLib$/d' "$MIRURO_EXT_SRC" 2>/dev/null || true
-    log "  Patched: Miruro.kt — removed AniLib import"
+    log "  NOTE: Miruro.kt uses AniLib via import — anilib extractor must be on classpath ✓"
 fi
 
 # ---------------------------------------------------------------------------

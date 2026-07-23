@@ -473,6 +473,8 @@ if [ -d "$EXTRACTORS_DIR" ]; then
             "streamwishextractor"
             "vidhideextractor"
             "vidmolyextractor"
+            "anilib"
+            "burstcloudextractor"
         )
         > "${TEMP_DIR}/lib-extractors-sources.txt"
         for ext_dir in "${EXTRACTOR_WHITELIST[@]}"; do
@@ -628,15 +630,13 @@ if [ -n "$ANIDB_SRC" ] && [ -f "$ANIDB_SRC" ]; then
     log "Patched: AniDB.kt — sortVideos override + setDefaultValue removal"
 fi
 
-# Patch: miruro — remove AniLib import only (don't delete whole lines)
-# The AniLib class is just for AniList tracking metadata enrichment.
-# Removing the import causes the compiler to skip the AniLib-dependent
-# code paths since they reference unresolvable types.
+# Patch: miruro — keep AniLib import (anilib extractor is on classpath)
+# The anilib extractor is compiled in Step 3b-ii and provides AniLib class
+# on the classpath. Removing the import causes unresolved reference errors
+# (27 AniLib references throughout Miruro.kt). The import stays intact.
 MIRURO_SRC=$(find "${SRC_DIR}" -name "Miruro.kt" 2>/dev/null | head -1)
 if [ -n "$MIRURO_SRC" ] && [ -f "$MIRURO_SRC" ]; then
-    # Only delete the import line — let the compiler skip unreachable AniLib code
-    sed -i '' '/^import aniyomi\.lib\.anilib\.AniLib$/d' "$MIRURO_SRC" 2>/dev/null || true
-    log "Patched: Miruro.kt — removed AniLib import"
+    log "  NOTE: Miruro.kt uses AniLib via import — anilib extractor is on classpath ✓"
 fi
 
 # Patch: superstream — add CloudflareInterceptor to custom OkHttpClient
