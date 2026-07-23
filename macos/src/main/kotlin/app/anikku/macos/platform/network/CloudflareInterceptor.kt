@@ -53,12 +53,34 @@ class CloudflareInterceptor(
         val httpCode = response.code
         logger.warn { "🛡 Cloudflare block detected: $url (HTTP $httpCode)" }
 
-        // Record ONE diagnostic entry per CF block (start with detection, update inline)
-        val diag = DiagnosticEntry(host = host, httpCode = httpCode, wasBlockDetected = true)
-        diagnostics.add(diag)
+        // Detect WAF blocks (hard blocks with no JS challenge to solve).
+        // WAF blocks contain cf-wrapper but NO jschl/turnstile JS challenge.
+        // Chrome CDP can't bypass these — there's no challenge to execute.
+        // The block is based on IP reputation or WAF rules, not a JS puzzle.
+        // Skip the Chrome launch entirely to avoid wasting 30s+ per attempt.
+        //
+        // ⚠ Must check BEFORE response.close() — peekBody() reads from the
+        //    response body source which becomes unavailable after close().
+        val isWafBlock = isHardWafBlock(response)
 
         // Close the blocked response body
         response.close()
+
+        val wafType = if (isWafBlock) "WAF" else "CF"
+
+        // Record ONE diagnostic entry per block (start with detection, update inline)
+        val diag = DiagnosticEntry(
+            host = host,
+            httpCode = httpCode,
+            wasBlockDetected = true,
+            isWafBlock = isWafBlock,
+        )
+        diagnostics.add(diag)
+
+        if (isWafBlock) {
+            logger.warn { "🛡 WAF block (not challenge) for ${host} — skipping Chrome CDP (no JS challenge to solve)" }
+            return chain.proceed(request.newBuilder().header(X_CF_BYPASS, "1").build())
+        }
 
         // Check if Chrome is available
         if (!ChromeCDPClient.isChromeInstalled) {
@@ -234,11 +256,46 @@ class CloudflareInterceptor(
     }
 
     /**
+     * Check if the response is a hard WAF block (not a JS challenge).
+     * WAF blocks have `cf-wrapper` but NO JS challenge (`jschl`) or
+     * Turnstile/captcha. Chrome CDP can't solve these — there's no
+     * JavaScript challenge to execute. The block is based on IP
+     * reputation or WAF rules, not a puzzle.
+     *
+     * Returns true even for ambiguous responses to avoid wasting
+     * 30+ seconds launching Chrome for unresolvable blocks.
+     */
+    private fun isHardWafBlock(response: Response): Boolean {
+        // Only consider 403/503 from Cloudflare
+        if (response.code !in CLOUDFLARE_CODES) return false
+        val server = response.header("Server") ?: ""
+        if (server !in CLOUDFLARE_SERVERS && response.header("cf-ray") == null) return false
+
+        return try {
+            val body = response.peekBody(BODY_PEEK_BYTES).string()
+            // Must have cf-wrapper (Cloudflare block page)
+            if (!body.contains("cf-wrapper")) return false
+            // Check for challenge indicators — if present, it's a solvable challenge
+            val hasChallenge = body.contains("jschl") ||
+                body.contains("cf_chl_opt") ||
+                body.contains("_cf_chl_ctx") ||
+                body.contains("cf-turnstile") ||
+                body.contains("turnstile") ||
+                body.contains("challenge-platform") ||
+                body.contains("cf-browser-verify")
+            !hasChallenge
+        } catch (_: Exception) {
+            // Can't read body — assume WAF to avoid wasted Chrome launches
+            true
+        }
+    }
+
+    /**
      * Per-request diagnostic entry for Cloudflare/CDP bypass tracking.
      *
-     * This is NOT a data class — [bypassAttempted] and [bypassSucceeded]
-     * are mutable so the interceptor can update bypass results inline
-     * without creating duplicate entries per block event.
+     * This is NOT a data class — [bypassAttempted], [bypassSucceeded],
+     * and [isWafBlock] are mutable so the interceptor can update bypass
+     * results inline without creating duplicate entries per block event.
      *
      * Used by ExtensionCompatibilityTest to show which extensions are
      * Cloudflare-blocked and whether the CDP bypass succeeded.
@@ -247,12 +304,13 @@ class CloudflareInterceptor(
         val host: String,
         val httpCode: Int,
         val wasBlockDetected: Boolean,
+        var isWafBlock: Boolean = false,
         var bypassAttempted: Boolean = false,
         var bypassSucceeded: Boolean = false,
         val timestamp: Instant = Instant.now(),
     ) {
         override fun toString(): String =
-            "$host:$httpCode block=$wasBlockDetected bypass=$bypassSucceeded"
+            "$host:$httpCode block=$wasBlockDetected waf=$isWafBlock bypass=$bypassSucceeded"
 
         override fun equals(other: Any?): Boolean =
             other is DiagnosticEntry && other.host == host && other.timestamp == timestamp
@@ -284,13 +342,15 @@ class CloudflareInterceptor(
             val uniqueByHost = entries.distinctBy { it.host }
             val succeeded = uniqueByHost.count { it.bypassSucceeded }
             val attempted = uniqueByHost.count { it.bypassAttempted }
+            val wafBlocks = uniqueByHost.count { it.isWafBlock }
             val total = uniqueByHost.size
-            return when {
+            val base = when {
                 total == 0 -> "No WAF"
                 succeeded > 0 -> "CF:$total ✅$succeeded"
                 attempted > 0 -> "CF:$total ❌${attempted - succeeded}"
                 else -> "CF:$total ⚠"
             }
+            return if (wafBlocks > 0) "$base WAF:$wafBlocks" else base
         }
     }
 }
