@@ -117,8 +117,23 @@ object ChromeCDPClient {
             return emptyMap()
         }
 
-        // Try up to MAX_BYPASS_RETRIES times with fresh Chrome instances
+        // Determine URLs to try. Primary URL first; if it's a resource URL (video, m3u8,
+        // image, etc.) that won't serve a Cloudflare challenge page, also queue the domain
+        // root URL as a fallback. The domain root WILL serve a proper challenge page that
+        // Chrome can solve, and the resulting cookies apply to all subdomains.
+        val urlsToTry = mutableListOf(url)
+        if (!isPageUrl(url)) {
+            val origin = extractOrigin(url)
+            if (origin != url) {
+                urlsToTry.add(origin)
+                logger.debug { "Added domain root fallback URL: $origin (primary $url is a resource URL)" }
+            }
+        }
+
         for (attempt in 1..MAX_BYPASS_RETRIES) {
+            // Cycle through URLs: attempt 1 → primary, attempt 2 → fallback (if any),
+            // attempt 3 → primary again
+            val targetUrl = urlsToTry[(attempt - 1) % urlsToTry.size]
             var process: Process? = null
             try {
                 // Launch Chrome with remote debugging, parse port from stderr
@@ -133,13 +148,15 @@ object ChromeCDPClient {
                 }
 
                 // Navigate to URL and wait for Cloudflare challenge to resolve
-                val cookies = navigateAndWait(wsUrl, url, timeoutSeconds, userAgent)
+                val cookies = navigateAndWait(wsUrl, targetUrl, timeoutSeconds, userAgent)
                 if (cookies.isNotEmpty()) {
-                    logger.info { "✅ Cloudflare bypass succeeded on attempt $attempt/$MAX_BYPASS_RETRIES — got ${cookies.size} cookie(s)" }
+                    val urlLabel = if (targetUrl == url) "primary" else "domain-root"
+                    logger.info { "✅ Cloudflare bypass succeeded on attempt $attempt/$MAX_BYPASS_RETRIES ($urlLabel) — got ${cookies.size} cookie(s)" }
                     return cookies
                 }
 
-                logger.warn { "No Cloudflare cookies found on attempt $attempt/$MAX_BYPASS_RETRIES — challenge may have failed" }
+                val urlLabel = if (targetUrl == url) "primary" else "fallback"
+                logger.warn { "No Cloudflare cookies found on attempt $attempt/$MAX_BYPASS_RETRIES ($urlLabel) — challenge may have failed" }
             } catch (e: Exception) {
                 logger.error(e) { "Cloudflare bypass failed on attempt $attempt/$MAX_BYPASS_RETRIES" }
             } finally {
@@ -394,6 +411,44 @@ object ChromeCDPClient {
         }
 
         return cookies.toMap()
+    }
+
+    /**
+     * Check if a URL looks like a navigable page (HTML) vs a direct resource.
+     * Resource URLs (videos, M3U8 playlists, API endpoints) don't trigger
+     * Cloudflare challenge pages. Domain root URLs do.
+     */
+    private fun isPageUrl(url: String): Boolean {
+        val path = url.substringAfter("://").substringAfter("/").substringBefore("?").substringBefore("#")
+        // Empty path or common page patterns → likely an HTML page
+        if (path.isEmpty() || path == "/") return true
+        // Check for CDN/resource path patterns first (overrides extension check).
+        // Many video CDNs use extensionless URLs like /stream/<hash> or /hls/<id>.
+        val lowerPath = path.lowercase()
+        val resourcePathPatterns = listOf(
+            "/stream/", "/api/", "/video/", "/hls/", "/manifest/",
+            "/ajax/", "/get/", "/source/", "/playlist/",
+        )
+        if (resourcePathPatterns.any { lowerPath.contains(it) }) return false
+        val extension = path.substringAfterLast(".")
+        // File extensions that indicate non-HTML resources
+        val nonPageExtensions = setOf(
+            "mp4", "mkv", "webm", "avi", "mov", "flv", "ts",  // video
+            "m3u8", "m3u", "mpd", // streaming playlists
+            "jpg", "jpeg", "png", "gif", "webp", // images
+            "zip", "rar", "7z", // archives
+            "pdf", "doc", "docx", // documents
+            "json", "xml", // data
+        )
+        return extension.lowercase() !in nonPageExtensions
+    }
+
+    /**
+     * Extract the origin (scheme + host) from a URL.
+     */
+    private fun extractOrigin(url: String): String {
+        val match = Regex("""^(https?://[^/]+)""").find(url)
+        return match?.groupValues?.get(1) ?: url
     }
 
     /**

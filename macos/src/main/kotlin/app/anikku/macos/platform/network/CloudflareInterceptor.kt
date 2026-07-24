@@ -161,17 +161,23 @@ class CloudflareInterceptor(
             } catch (_: Exception) { false }
         }
 
-        // Aggressive bypass: ANY HTTP 403 or 503 (even without recognizable WAF markers)
+        // Aggressive bypass: ANY HTTP 403 or 503 with Cloudflare response headers
         // triggers the Chrome CDP bypass. Many anime streaming sites use custom error
-        // pages or generic 503 responses when blocking bots. We skip genuine server
-        // errors (Apache/nginx default pages, JSON API errors, 500s) to avoid wasting
-        // Chrome CDP on real server problems.
+        // pages or generic 503 responses when blocking bots.
+        // IMPORTANT: Only trigger for responses with Cloudflare headers. Non-CF 403s
+        // are common on video CDNs for missing/wrong Referer or authorization.
+        // The aggressive bypass previously triggered on ALL 403s, but this caused
+        // false positives on video CDNs and led to isHardWafBlock returning true
+        // (skip CDP), making things worse. Now we only trigger when we see CF headers.
         if (response.code in CLOUDFLARE_CODES) {
+            val server = response.header("Server") ?: ""
+            val hasCfHeaders = server in CLOUDFLARE_SERVERS || response.header("cf-ray") != null
+            if (!hasCfHeaders) return false
             return try {
                 val bodyPeek = response.peekBody(BODY_PEEK_BYTES).string()
                 !isGenuineServerError(bodyPeek)
             } catch (_: Exception) {
-                // Can't read body — assume it could be a block and try bypass
+                // Can't read body — Cloudflare headers present, so assume block
                 true
             }
         }
@@ -269,7 +275,8 @@ class CloudflareInterceptor(
         // Only consider 403/503 from Cloudflare
         if (response.code !in CLOUDFLARE_CODES) return false
         val server = response.header("Server") ?: ""
-        if (server !in CLOUDFLARE_SERVERS && response.header("cf-ray") == null) return false
+        val hasCfHeaders = server in CLOUDFLARE_SERVERS || response.header("cf-ray") != null
+        if (!hasCfHeaders) return false
 
         return try {
             val body = response.peekBody(BODY_PEEK_BYTES).string()
@@ -285,8 +292,22 @@ class CloudflareInterceptor(
                 body.contains("cf-browser-verify")
             !hasChallenge
         } catch (_: Exception) {
-            // Can't read body — assume WAF to avoid wasted Chrome launches
-            true
+            // peekBody failed (empty body, streaming response, compressed response).
+            // We KNOW it's Cloudflare (cf-ray or Server header present), but can't
+            // examine the body. This is common for video CDN domains where the 403
+            // response has minimal headers or the body is compressed/gzipped in a way
+            // that OkHttp's peekBody can't handle.
+            //
+            // Returning false means Chrome CDP will be attempted. Even though the
+            // video CDN URL might not serve a JS challenge (it's a direct video/m3u8
+            // endpoint), Chrome navigating to the URL may trigger a challenge response
+            // from Cloudflare. If not, the request will fail fast rather than hang.
+            //
+            // Previous behavior: return true (assume WAF, skip CDP). Changed because:
+            // - Chrome handles compressed bodies natively (not affected by peekBody limits)
+            // - Video CDN domains consistently hit this path
+            // - Worst case: Chrome launches and times out quickly
+            false
         }
     }
 
