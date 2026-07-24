@@ -511,9 +511,8 @@ if [ -n "$ANIDB_SRC" ] && [ -f "$ANIDB_SRC" ]; then
     sed -i '' 's/private fun List<Video>.sortVideos/override fun List<Video>.sortVideos/' "$ANIDB_SRC" 2>/dev/null || true
     # 1b. Remove 'override' from disableRelatedAnimesBySearch (not in our JVM stubs)
     sed -i '' 's/override val disableRelatedAnimesBySearch/val disableRelatedAnimesBySearch/' "$ANIDB_SRC" 2>/dev/null || true
-    # 2. Remove setDefaultValue() calls on SwitchPreferenceCompat (not in JVM stubs)
-    sed -i '' '/setDefaultValue(/d' "$ANIDB_SRC" 2>/dev/null || true
-    log "  Patched: AniDB.kt — sortVideos override + setDefaultValue removal"
+    # 2. setDefaultValue() is now available via base Preference stub — no removal needed
+    log "  Patched: AniDB.kt — sortVideos override (setDefaultValue preserved)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -551,15 +550,14 @@ fi
 # --- SuperStream.kt: JVM compatibility (setDefaultValue + null-safe context) ---
 SUPERSTREAM_MAIN="${GIT_CLONE_DIR}/src/en/superstream/src/eu/kanade/tachiyomi/animeextension/en/superstream/SuperStream.kt"
 if [ -f "$SUPERSTREAM_MAIN" ]; then
-    # Remove setDefaultValue() calls (not available in JVM Preference stubs)
-    sed -i '' '/setDefaultValue(/d' "$SUPERSTREAM_MAIN" 2>/dev/null || true
+    # setDefaultValue() is now available via base Preference stub — no removal needed
 
     # screen.context is Context? in JVM stubs but used as Context — add !!
     sed -i '' 's/screen\.context)/screen.context!!)/g' "$SUPERSTREAM_MAIN" 2>/dev/null || true
     # Also handle screen.context used directly (not as function arg)
     sed -i '' 's/\.makeText(screen\.context,/.makeText(screen.context!!,/g' "$SUPERSTREAM_MAIN" 2>/dev/null || true
 
-    log "  Patched: SuperStream.kt — removed setDefaultValue, added context!! null-safety"
+    log "  Patched: SuperStream.kt — added context!! null-safety (setDefaultValue preserved)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -684,10 +682,13 @@ if [ -d "$EXTRACTORS_DIR" ]; then
             "gdriveplayerextractor"
             "gogostreamextractor"
             "googledriveextractor"
+            "megacloudextractor"
             "mixdropextractor"
             "mp4uploadextractor"
             "okruextractor"
+            "omniembedextractor"
             "playlistutils"
+            "rapidcloudextractor"
             "rumbleextractor"
             "seedrandom"
             "streamlareextractor"

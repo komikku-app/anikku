@@ -469,6 +469,9 @@ if [ -d "$EXTRACTORS_DIR" ]; then
             "mp4uploadextractor"
             "okruextractor"
             "playlistutils"
+            "megacloudextractor"
+            "omniembedextractor"
+            "rapidcloudextractor"
             "streamlareextractor"
             "streamwishextractor"
             "vidhideextractor"
@@ -543,16 +546,15 @@ if [ -f "$CORE_COROUTINES" ] && grep -q 'suspend inline fun.*parallelMapNotNull'
     log "  Patched: parallelCatchingFlatMapBlocking — removed inline+crossinline"
 fi
 
-# Patch Preferences.kt: remove Android-specific calls and fix nullability
+# Patch Preferences.kt: fix JVM compatibility
+# setDefaultValue() and setEnabled() are now both available in the base Preference
+# stub (inherited by all subclasses), so these calls compile without issues.
+# Only Context? nullability needs fixing (Context is nullable in our stubs).
 CORE_PREFS="${GIT_CLONE_DIR}/core/src/main/kotlin/keiyoushi/utils/Preferences.kt"
 if [ -f "$CORE_PREFS" ]; then
-    # Remove setDefaultValue() calls (no-ops on JVM)
-    sed -i '' '/setDefaultValue(/d' "$CORE_PREFS" 2>/dev/null || true
-    # Remove setEnabled() calls (no-ops on JVM)
-    sed -i '' '/setEnabled(/d' "$CORE_PREFS" 2>/dev/null || true
     # Fix Context? nullability in Toast.makeText
     sed -i '' 's/Toast\.makeText(context,/Toast.makeText(context!!,/g' "$CORE_PREFS" 2>/dev/null || true
-    log "  Patched: Preferences.kt — removed setDefaultValue/setEnabled, fixed context!!"
+    log "  Patched: Preferences.kt — fixed context!! nullability (stubs provide setDefaultValue + setEnabled)"
 fi
 
 # Patch DataLifeEngine: fix entryValues null safety
@@ -625,9 +627,8 @@ if [ -n "$ANIDB_SRC" ] && [ -f "$ANIDB_SRC" ]; then
     sed -i '' 's/private fun List<Video>.sortVideos/override fun List<Video>.sortVideos/' "$ANIDB_SRC" 2>/dev/null || true
     # 1b. Remove 'override' from disableRelatedAnimesBySearch (not in our JVM stubs)
     sed -i '' 's/override val disableRelatedAnimesBySearch/val disableRelatedAnimesBySearch/' "$ANIDB_SRC" 2>/dev/null || true
-    # 2. Remove setDefaultValue() calls on SwitchPreferenceCompat (not in JVM stubs)
-    sed -i '' '/setDefaultValue(/d' "$ANIDB_SRC" 2>/dev/null || true
-    log "Patched: AniDB.kt — sortVideos override + setDefaultValue removal"
+    # 2. setDefaultValue() is now available via base Preference stub — no removal needed
+    log "Patched: AniDB.kt — sortVideos override (setDefaultValue preserved)"
 fi
 
 # Patch: miruro — keep AniLib import (anilib extractor is on classpath)
@@ -657,12 +658,11 @@ fi
 # Patch: superstream — JVM compatibility (setDefaultValue + null-safe context)
 SUPERSTREAM_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStream.kt" 2>/dev/null | head -1)
 if [ -n "$SUPERSTREAM_SRC" ] && [ -f "$SUPERSTREAM_SRC" ]; then
-    # Remove setDefaultValue() calls (not available in JVM Preference stubs)
-    sed -i '' '/setDefaultValue(/d' "$SUPERSTREAM_SRC" 2>/dev/null || true
+    # setDefaultValue() is now available via base Preference stub — no removal needed
     # screen.context is Context? in JVM stubs but used as Context — add !!
     sed -i '' 's/screen\.context)/screen.context!!)/g' "$SUPERSTREAM_SRC" 2>/dev/null || true
     sed -i '' 's/\.makeText(screen\.context,/.makeText(screen.context!!,/g' "$SUPERSTREAM_SRC" 2>/dev/null || true
-    log "Patched: SuperStream.kt — removed setDefaultValue, added context!! null-safety"
+    log "Patched: SuperStream.kt — added context!! null-safety (setDefaultValue preserved)"
 fi
 
 # ---------------------------------------------------------------------------

@@ -21,6 +21,16 @@ open class Preference(
     var title: String? = null
     var summary: String? = null
     var enabled: Boolean = true
+        private set
+
+    /**
+     * Explicit [setEnabled] for Java interop. Kotlin `var enabled` generates a
+     * synthetic setter that the Kotlin compiler can resolve when calling
+     * `preference.setEnabled(true)` in Kotlin source. However, some compilation
+     * contexts (cross-module with synthetic accessors) fail to resolve it.
+     * Declaring the method explicitly avoids this issue entirely.
+     */
+    open fun setEnabled(enabled: Boolean) { this.enabled = enabled }
 
     /**
      * Android [Preference.OnPreferenceChangeListener] interface.
@@ -42,6 +52,12 @@ open class Preference(
     }
 
     fun getOnPreferenceChangeListener(): OnPreferenceChangeListener? = _onPreferenceChangeListener
+
+    /**
+     * Sets the default value for this preference.
+     * No-op on JVM — extension setup defaults are baked into prefs.
+     */
+    open fun setDefaultValue(value: Any?) {}
 }
 
 /**
@@ -63,8 +79,8 @@ open class ListPreference(context: android.content.Context?) : Preference(contex
     var entryValues: Array<String> = emptyArray()
     var value: String? = null
 
-    fun setDefaultValue(defaultValue: Any) {
-        value = defaultValue.toString()
+    override fun setDefaultValue(value: Any?) {
+        // No-op: JVM stub — values managed through MacOSPreferenceStore
     }
 
     fun findIndexOfValue(value: String?): Int {
@@ -87,6 +103,10 @@ open class MultiSelectListPreference(context: android.content.Context?) : Prefer
     var entries: Array<String> = emptyArray()
     var entryValues: Array<String> = emptyArray()
     var values: MutableSet<String> = mutableSetOf()
+
+    override fun setDefaultValue(value: Any?) {
+        // No-op: JVM stub — values managed through MacOSPreferenceStore
+    }
 }
 
 /**
