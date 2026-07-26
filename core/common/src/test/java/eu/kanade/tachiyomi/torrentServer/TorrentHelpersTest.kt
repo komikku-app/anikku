@@ -32,7 +32,7 @@ class TorrentHelpersTest {
                     this.file_stats = listOf<FileStat>(
                         FileStat(null, "test-torrent-file", 18),
                     )
-                }
+                },
             ),
             TestCase(
                 "test-torrent-directory.torrent",
@@ -55,7 +55,7 @@ class TorrentHelpersTest {
                         FileStat(4, "3/3.2", 4),
 
                     )
-                }
+                },
             ),
         )
 
