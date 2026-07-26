@@ -87,17 +87,17 @@ class BencodeParser private constructor(val input: InputStream) {
         do {
             val ok: Boolean = when {
                 // First character can be minus sign or digit
-                sb.isEmpty() -> b == BYTE_CHAR_HYPHEN || (b in BYTE_CHAR_0..BYTE_CHAR_9)
+                sb.isEmpty() -> b == BYTE_CHAR_HYPHEN || b in BYTE_CHAR_0..BYTE_CHAR_9
                 // Can't have any other characters if the number is zero
                 sb.contentEquals("0") -> false
                 // Can't have minus zero, so after hyphen only 1-9 are valid
-                sb.contentEquals("-") -> (b in BYTE_CHAR_1..BYTE_CHAR_9)
+                sb.contentEquals("-") -> b in BYTE_CHAR_1..BYTE_CHAR_9
                 // Remaining characters must be digits
-                else -> (b in BYTE_CHAR_0..BYTE_CHAR_9)
+                else -> b in BYTE_CHAR_0..BYTE_CHAR_9
             }
             require(ok) { "Unexpected integer character" }
             sb.append(Char(b.toUShort()))
-        } while ((readNextByte().also { b = it }) != terminatingCharacter)
+        } while (readNextByte().also { b = it } != terminatingCharacter)
 
         return sb.toString().toLong()
     }

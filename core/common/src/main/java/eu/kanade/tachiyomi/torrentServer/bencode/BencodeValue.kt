@@ -40,7 +40,7 @@ sealed interface BencodeValue {
         }
 
         override fun compareTo(other: ByteString): Int {
-            if ((this === other) || (this.value === other.value)) return 0
+            if (this === other || this.value === other.value) return 0
 
             this.value.zip(other.value).forEach { pair ->
                 val comp = pair.first - pair.second
