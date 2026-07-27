@@ -159,14 +159,17 @@ fun create(
     // natively through the Compose focus system. The action listeners below
     // dispatch to any focused AWT/Swing text component as a fallback for
     // non-Compose text fields (e.g., native dialogs, Swing interop).
+    //
+    // Action names use the well-known Swing action keys (strings, not fields)
+    // that all JTextComponent subclasses register in their ActionMap.
     // ---------------------------------------------------------------------------
     private fun editMenu(): Menu {
         return Menu("Edit").apply {
             add(MenuItem("Undo", MenuShortcut(KeyEvent.VK_Z, false)).also {
-                it.addActionListener { dispatchEditAction(DefaultEditorKit.undoAction) }
+                it.addActionListener { dispatchEditAction("undo") }
             })
             add(MenuItem("Redo", MenuShortcut(KeyEvent.VK_Z, true)).also {
-                it.addActionListener { dispatchEditAction(DefaultEditorKit.redoAction) }
+                it.addActionListener { dispatchEditAction("redo") }
             })
             addSeparator()
             add(MenuItem("Cut", MenuShortcut(KeyEvent.VK_X, false)).also {
