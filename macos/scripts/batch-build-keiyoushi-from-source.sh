@@ -44,6 +44,7 @@ REPO_URL="${REPO_URL:-https://github.com/yuzono/anime-extensions.git}"
 
 LANG="en"
 LIMIT=""
+ONLY_EXTS=""
 KEEP_TEMP=false
 SKIP_INDEX=false
 
@@ -59,6 +60,7 @@ Batch-build all yuzono/anime-extensions from source as JVM JARs.
 Options:
   --lang <code>     Build only extensions for this language (default: en)
   --limit <N>       Build at most N extensions (for testing)
+  --only <names>    Build only these extensions (comma-separated, e.g. "anikoto,aniwave")
   --repo <url>      Git repo URL
   --keep-temp       Keep temporary files for debugging
   --skip-index      Skip generating repo index
@@ -71,6 +73,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --lang) LANG="$2"; shift 2 ;;
         --limit) LIMIT="$2"; shift 2 ;;
+        --only) ONLY_EXTS="$2"; shift 2 ;;
         --repo) REPO_URL="$2"; shift 2 ;;
         --keep-temp) KEEP_TEMP=true; shift ;;
         --skip-index) SKIP_INDEX=true; shift ;;
@@ -321,19 +324,39 @@ while IFS= read -r dir; do
     [ -n "$dir" ] && EXT_DIRS+=("$dir")
 done < <(find "src/${LANG}" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort)
 
+log "  Found ${#EXT_DIRS[@]} extension(s) in src/${LANG}/"
+
+# Apply --only filter (comma-separated extension names)
+if [ -n "$ONLY_EXTS" ]; then
+    IFS=',' read -ra ONLY_ARRAY <<< "$ONLY_EXTS"
+    FILTERED_DIRS=()
+    for dir in "${EXT_DIRS[@]}"; do
+        dir_name=$(basename "$dir")
+        for only_name in "${ONLY_ARRAY[@]}"; do
+            only_name=$(echo "$only_name" | xargs)  # trim whitespace
+            if [ "$dir_name" = "$only_name" ]; then
+                FILTERED_DIRS+=("$dir")
+                break
+            fi
+        done
+    done
+    EXT_DIRS=("${FILTERED_DIRS[@]}")
+    log "  Filtered to: ${ONLY_EXTS}"
+    log "  Matched ${#EXT_DIRS[@]} extension(s)"
+fi
+
+# Apply limit (after --only filter)
+if [ -n "$LIMIT" ] && [ "$LIMIT" -gt 0 ] 2>/dev/null; then
+    EXT_DIRS=("${EXT_DIRS[@]:0:$LIMIT}")
+    log "  Limited to ${LIMIT} extension(s)"
+fi
+
 TOTAL_COUNT=${#EXT_DIRS[@]}
-log "  Found ${TOTAL_COUNT} extension(s) in src/${LANG}/"
 
 if [ "$TOTAL_COUNT" -eq 0 ]; then
     err "No extensions found in src/${LANG}/!"
     err "Available languages: $(ls src/ 2>/dev/null | tr '\n' ' ')"
     exit 1
-fi
-
-# Apply limit
-if [ -n "$LIMIT" ] && [ "$LIMIT" -gt 0 ] 2>/dev/null; then
-    EXT_DIRS=("${EXT_DIRS[@]:0:$LIMIT}")
-    log "  Limited to ${LIMIT} extension(s)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -687,10 +710,10 @@ if [ -d "$EXTRACTORS_DIR" ]; then
     fi
 fi
 
-# Step 2c-iii: Compile core/ FIRST (depends on keiyoushi-utils + lib/extractors)
+# Step 2c-iii: Compile core/ and common/ FIRST (depends on keiyoushi-utils + lib/extractors)
 # core provides parallelCatchingFlatMap, parallelMapNotNull, Preferences.kt, etc.
 # which lib-multisrc depends on. lib-multisrc must compile AFTER core is on the classpath.
-for lib_dir in "${GIT_CLONE_DIR}/core/" "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_DIR}"/lib-*/; do
+for lib_dir in "${GIT_CLONE_DIR}/core/" "${GIT_CLONE_DIR}/common/"; do
     [ ! -d "$lib_dir" ] && continue
     lib_name=$(basename "$lib_dir")
     lib_classes="${SHARED_LIBS_DIR}/${lib_name}"
@@ -705,14 +728,12 @@ for lib_dir in "${GIT_CLONE_DIR}/core/" "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_
         rm -rf "$lib_classes"
     fi
 
-    # Exclude test files AND Android-specific Activity files (UrlActivity) — 
-    # UrlActivities subclass android.app.Activity and import android.content.ActivityNotFoundException,
-    # which have no purpose on macOS/JVM. They handle Android-specific inter-app intents.
+    # Exclude test files AND Android-specific Activity files (UrlActivity)
     find "$lib_dir" -name "*.kt" ! -path '*/test/*' ! -name '*UrlActivity*' > "${TEMP_DIR}/${lib_name}-sources.txt" 2>/dev/null || true
     src_count=$(wc -l < "${TEMP_DIR}/${lib_name}-sources.txt" 2>/dev/null || echo 0)
     [ "$src_count" -eq 0 ] && continue
 
-    log "  Compiling: ${lib_name} (${src_count} files, excluding tests)..."
+    log "  Compiling: ${lib_name} (${src_count} files)..."
     mkdir -p "$lib_classes"
 
     set +e
@@ -730,6 +751,48 @@ for lib_dir in "${GIT_CLONE_DIR}/core/" "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_
     fi
 done
 
+# Step 2c-iii-b: Compile lib-multisrc/*/ themes INDIVIDUALLY
+# ===================================================================
+# Each multisrc theme (anikototheme, wcotheme, animestream, etc.) is compiled
+# separately. This avoids a single broken theme (e.g. pelisplus with missing
+# extractor deps) from blocking ALL themes — only that one theme is skipped.
+# Themes are compiled into shared-libs-classes/lib-multisrc/ as a merged output.
+MULTISRC_THEMES_DIR="${SHARED_LIBS_DIR}/lib-multisrc"
+mkdir -p "$MULTISRC_THEMES_DIR"
+THEME_COUNT=0
+THEME_FAILED=""
+for theme_dir in "${GIT_CLONE_DIR}"/lib-multisrc/*/; do
+    [ ! -d "$theme_dir" ] && continue
+    theme_name=$(basename "$theme_dir")
+    theme_srcs=$(mktemp)
+    find "$theme_dir" -name "*.kt" ! -path '*/test/*' ! -name '*UrlActivity*' 2>/dev/null > "$theme_srcs" || true
+    src_count=$(wc -l < "$theme_srcs" 2>/dev/null || echo 0)
+    if [ "$src_count" -eq 0 ]; then
+        rm -f "$theme_srcs"
+        continue
+    fi
+    set +e
+    kotlinc -cp "${CLASSPATH}" -d "$MULTISRC_THEMES_DIR" -jvm-target 17 ${KOTLINC_OPTS} @"$theme_srcs" 2>"${TEMP_DIR}/${theme_name}-theme-compile.log"
+    local_exit=$?
+    set -e
+    if [ "$local_exit" -eq 0 ]; then
+        THEME_COUNT=$((THEME_COUNT + 1))
+    else
+        THEME_FAILED="${THEME_FAILED} ${theme_name}"
+    fi
+    rm -f "$theme_srcs"
+done
+theme_class_count=$(find "$MULTISRC_THEMES_DIR" -name '*.class' 2>/dev/null | wc -l)
+if [ "$theme_class_count" -gt 0 ]; then
+    add_to_cp "$MULTISRC_THEMES_DIR"
+    log "  lib-multisrc: ${theme_class_count} classes from ${THEME_COUNT} themes ✓"
+    if [ -n "$THEME_FAILED" ]; then
+        log "    skipped (compile errors):${THEME_FAILED}"
+    fi
+else
+    log "  WARNING: no theme classes compiled — multisrc extensions will fail"
+fi
+
 # ---------------------------------------------------------------------------
 # Step 2c-iv: Reorder classpath — lib-multisrc before keiyoushi-utils
 # ---------------------------------------------------------------------------
@@ -743,7 +806,7 @@ done
 # Fix: after all shared libs are compiled, remove lib-multisrc from its
 # current position and prepend it so it's resolved FIRST.
 MULTISRC_DIR="${SHARED_LIBS_DIR}/lib-multisrc"
-if [ -d "$MULTISRC_DIR" ]; then
+if [ -d "$MULTISRC_DIR" ] && [ "$(find "$MULTISRC_DIR" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')" -gt 0 ]; then
     # Remove lib-multisrc from current position in classpath (if present)
     CLASSPATH=$(echo "$CLASSPATH" | tr ':' '\n' | grep -vFx "$MULTISRC_DIR" | tr '\n' ':' | sed 's/:$//')
     # Prepend to front
@@ -924,6 +987,25 @@ JSONEOF
     CLASS_COUNT=$(find "$EXT_CLASSES_DIR" -name "*.class" 2>/dev/null | wc -l)
 
     if [ "$CLASS_COUNT" -gt 0 ]; then
+        # Merge shared lib classes (themes, core, common) into the extension JAR.
+        # This bundles the multisrc theme classes each extension depends on directly
+        # into the JAR, making it self-contained. Skip keiyoushi-utils (provided by
+        # the macOS app) and lib-extractors (provided via shared-libs.jar).
+        MERGED=0
+        for mod in "${SHARED_LIBS_DIR}"/*/; do
+            [ ! -d "$mod" ] && continue
+            mod_name=$(basename "$mod")
+            case "$mod_name" in
+                "keiyoushi-utils"|"lib-extractors") continue ;;
+            esac
+            class_cnt=$(find "$mod" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+            if [ "$class_cnt" -gt 0 ]; then
+                cp -r "$mod"/* "$EXT_CLASSES_DIR/" 2>/dev/null || true
+                MERGED=$((MERGED + class_cnt))
+            fi
+        done
+        CLASS_COUNT=$(find "$EXT_CLASSES_DIR" -name "*.class" 2>/dev/null | wc -l)
+
         # Package JAR (in subshell to avoid changing CWD for next extension)
         JAR_PATH="${OUTPUT_DIR}/${JAR_NAME}"
         (cd "$EXT_CLASSES_DIR" && "${JAR_CMD}" cf "${JAR_PATH}" META-INF/extension.json $(find . -name '*.class' 2>/dev/null))
