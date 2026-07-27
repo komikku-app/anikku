@@ -140,7 +140,8 @@ fun main() = application {
         val onSettings = { TabSwitchHandler.switchTo(4) }
         val onOpenBackup = {
             // Open backup file picker for .tachibk files
-            val fileChooser = java.awt.FileDialog(frame as? Frame, "Restore Backup", java.awt.FileDialog.LOAD)
+            val parentFrame = window as? Frame
+            val fileChooser = java.awt.FileDialog(parentFrame, "Restore Backup", java.awt.FileDialog.LOAD)
             fileChooser.setFilenameFilter { _, name -> name.endsWith(".tachibk") || name.endsWith(".tachibk.gz") }
             fileChooser.isVisible = true
             if (fileChooser.file != null) {
