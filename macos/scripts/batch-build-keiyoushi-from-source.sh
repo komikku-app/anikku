@@ -525,6 +525,24 @@ if [ -f "$CF_INTERCEPTOR" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Patch okruextractor: fix extractFromDash overload ambiguity
+# ---------------------------------------------------------------------------
+#
+# extractFromDash has 3 overloads with videoNameGen: (String)->String and
+# (String,String)->String. The Kotlin compiler can't disambiguate which
+# overload to use when passing a lambda with implicit 'it', causing:
+#   error: argument type mismatch: actual type is '() -> String'
+# Fix: add explicit lambda params { quality, _ -> ... } to match (String,String)->String.
+OKRU_EXTRACTOR="${GIT_CLONE_DIR}/lib/okruextractor/src/aniyomi/lib/okruextractor/OkruExtractor.kt"
+if [ -f "$OKRU_EXTRACTOR" ]; then
+    # Only patch the extractFromDash line (line 42). The extractFromHls line (line 40)
+    # uses the same lambda pattern but needs only 1 param for (String)->String.
+    # Include the full function call context to avoid matching the HLS line.
+    sed -i '' 's/extractFromDash(playlistUrl, videoNameGen = { "Okru:$it".addPrefix(prefix) })/extractFromDash(playlistUrl, videoNameGen = { quality, _ -> "Okru:$quality".addPrefix(prefix) })/' "$OKRU_EXTRACTOR" 2>/dev/null || true
+    log "  Patched: OkruExtractor.kt — explicit lambda params for extractFromDash overload resolution"
+fi
+
+# ---------------------------------------------------------------------------
 # Patch anidb: fix extension function hiding supertype member
 # ---------------------------------------------------------------------------
 ANIDB_SRC=$(find "${GIT_CLONE_DIR}" -path "*/en/anidb/*" -name "AniDB.kt" 2>/dev/null | head -1)
@@ -666,40 +684,45 @@ if [ -d "$EXTRACTORS_DIR" ]; then
     fi
 
     if [ "${extractors_compiled:-false}" != true ]; then
-        # AUTO-DISCOVER: compile each extractor individually into shared output dir.
-        # This avoids a single problematic extractor (e.g. m3u8server needing nanohttpd,
-        # or cloudflareinterceptor with WebView stub mismatches) from blocking all others.
+        # MULTI-PASS: compile each extractor individually into shared output dir.
+        # Extractors may depend on each other (e.g. mixdropextractor → unpacker,
+        # okruextractor → playlistutils). Running 3 passes ensures dependent
+        # extractors resolve cross-extractor dependencies once the provider
+        # compiles in an earlier pass. Also avoids a single broken extractor
+        # (e.g. m3u8server needing nanohttpd) from blocking all others.
         mkdir -p "$EXTRACTORS_OUT"
-        prepend_to_cp "$EXTRACTORS_OUT"
-        EXTRACTOR_COUNT=0
-        FAILED_EXTRACTORS=""
-        for ext_dir in "$EXTRACTORS_DIR"/*/; do
-            [ ! -d "$ext_dir" ] && continue
-            ext_name=$(basename "$ext_dir")
-            ext_srcs=$(mktemp)
-            find "$ext_dir" -name '*.kt' -path '*/src/*' 2>/dev/null > "$ext_srcs" || true
-            src_count=$(wc -l < "$ext_srcs" 2>/dev/null || echo 0)
-            if [ "$src_count" -eq 0 ]; then
+        add_to_cp "$EXTRACTORS_OUT"
+        for pass in 1 2 3; do
+            PASS_COUNT=0
+            for ext_dir in "$EXTRACTORS_DIR"/*/; do
+                [ ! -d "$ext_dir" ] && continue
+                ext_name=$(basename "$ext_dir")
+                # Count already-compiled classes for this extractor
+                existing=$(find "$EXTRACTORS_OUT" -path "*/${ext_name}/*" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+                [ "$existing" -gt 0 ] && continue
+                ext_srcs=$(mktemp)
+                find "$ext_dir" -name '*.kt' -path '*/src/*' 2>/dev/null > "$ext_srcs" || true
+                src_count=$(wc -l < "$ext_srcs" 2>/dev/null || echo 0)
+                if [ "$src_count" -eq 0 ]; then
+                    rm -f "$ext_srcs"
+                    continue
+                fi
+                set +e
+                kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
+                local_exit=$?
+                set -e
+                if [ "$local_exit" -eq 0 ]; then
+                    PASS_COUNT=$((PASS_COUNT + 1))
+                fi
                 rm -f "$ext_srcs"
-                continue
-            fi
-            set +e
-            kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
-            local_exit=$?
-            set -e
-            if [ "$local_exit" -eq 0 ]; then
-                EXTRACTOR_COUNT=$((EXTRACTOR_COUNT + 1))
-            else
-                FAILED_EXTRACTORS="${FAILED_EXTRACTORS} ${ext_name}"
-            fi
-            rm -f "$ext_srcs"
+            done
+            total_after=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
+            log "    Pass ${pass}: ${PASS_COUNT} new extractors (${total_after} total classes)"
+            [ "$PASS_COUNT" -eq 0 ] && break
         done
         extractor_class_count=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
         if [ "$extractor_class_count" -gt 0 ]; then
-            log "    lib/extractors: ${extractor_class_count} classes from ${EXTRACTOR_COUNT} extractors ✓"
-            if [ -n "$FAILED_EXTRACTORS" ]; then
-                log "    skipped (compile errors):${FAILED_EXTRACTORS}"
-            fi
+            log "    lib/extractors: ${extractor_class_count} classes from multiple passes ✓"
         else
             log "    WARNING: no extractor classes compiled — check ${TEMP_DIR}/lib-extractors-compile.log for details"
         fi
