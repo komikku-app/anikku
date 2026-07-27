@@ -5,19 +5,22 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 /**
- * Extension function returning an application-level Context.
+ * Application-level Context accessor.
  *
- * On Android this returns android.app.Application registered in Injekt.
- * On JVM/macOS, returns a plain Context instance as fallback.
+ * On Android this returns android.app.Application from Injekt.
+ * On JVM/macOS, returns a Context from Injekt or a fallback.
  *
- * IMPORTANT: Must be an extension function/property, NOT a top-level
- * property, because compiled extension bytecode expects the JVM signature:
- *   static Context ContextKt.getApplicationContext(Context)
+ * IMPORTANT: This must be a top-level property (not an extension function)
+ * because compiled extension bytecode expects the JVM signature:
+ *   static Context ContextKt.getApplicationContext()
+ * An extension function would generate getApplicationContext(Context),
+ * which doesn't match the bytecode reference in pre-compiled extensions.
  */
-fun Context.getApplicationContext(): Context {
-    return try {
+val applicationContext: Context
+    get() = try {
         Injekt.get<Context>()
     } catch (_: Exception) {
-        this // Return the receiver context as fallback
+        // No Context registered in Injekt/Koin — return a plain instance.
+        // Extensions needing app-level state should use Injekt or Koin.
+        Context()
     }
-}

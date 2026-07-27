@@ -9,6 +9,16 @@ plugins {
 
 kotlin {
     jvmToolchain(17)
+    sourceSets {
+        main {
+            kotlin {
+                // Include keiyoushi-utils sources so extensions can resolve
+                // keiyoushi.utils.* classes (ContextKt, Network, Crypto, etc.)
+                // at runtime through the URLClassLoader parent delegation.
+                srcDir("keiyoushi-utils/src/main/kotlin")
+            }
+        }
+    }
 }
 
 dependencies {
