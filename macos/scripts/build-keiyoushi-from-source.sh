@@ -216,7 +216,22 @@ for candidate in "${SRC_DIR}/build.gradle.kts" "${SRC_DIR}/build.gradle" "${GIT_
 done
 
 # Determine package name from source files
-ACTUAL_PKG=$(grep -r '^package ' "${SRC_DIR}/src" 2>/dev/null | head -1 | sed 's/.*://' | sed 's/package //' | sed 's/[[:space:]]*$//' || echo "")
+# IMPORTANT: Sort alphabetically, then EXCLUDE subpackages (dto, data, model, extractors)
+# to avoid picking up ...animepahe.dto instead of ...animepahe (correct base package).
+# The longest matching prefix wins to handle nested packages like ...en.animepahe.subpackage.
+ACTUAL_PKG=$(
+    grep -rh '^package ' "${SRC_DIR}/src" 2>/dev/null | \
+    sed 's/package //' | \
+    sed 's/[[:space:]]*$//' | \
+    sort | \
+    while IFS= read -r pkg; do
+        # Count dots — base package has fewest
+        echo "${pkg}" | awk -F. '{print NF, $0}'
+    done | \
+    sort -n | \
+    head -1 | \
+    cut -d' ' -f2-
+)
 if [ -z "$ACTUAL_PKG" ]; then
     # Try source files directly in extension directory
     ACTUAL_PKG=$(find "${SRC_DIR}" -name "*.kt" -exec grep -l '^package ' {} \; 2>/dev/null | head -1 | xargs grep '^package ' | head -1 | sed 's/.*package //' | sed 's/[[:space:]]*$//' || echo "")
@@ -448,6 +463,30 @@ if [ -d "$KEIYOUSHI_UTILS_DIR" ]; then
     fi
 fi
 
+# Step 3b-i-b: Patch lib/extractor source files BEFORE compilation
+# ===================================================================
+# The cloned repo's extractors use nullable params (WebView?, String?) in
+# WebViewClient overrides (onPageFinished, shouldInterceptRequest), but our
+# macOS WebViewClient stub has non-null (WebView, String). We apply broad
+# sed patterns across ALL lib/ source files to strip nullability markers
+# from these overrides, fixing them all at once.
+
+# Fix: strip ? from onPageFinished(view: WebView?, url/pageUrl: String?) in all lib/ files
+while IFS= read -r f; do
+    sed -i '' 's/override fun onPageFinished(view: WebView?, url: String?)/override fun onPageFinished(view: WebView, url: String)/g' "$f" 2>/dev/null || true
+    sed -i '' 's/override fun onPageFinished(view: WebView?, pageUrl: String?)/override fun onPageFinished(view: WebView, pageUrl: String)/g' "$f" 2>/dev/null || true
+    log "  Patched: $(basename $f) — non-null onPageFinished"
+done < <(grep -rln 'override fun onPageFinished.*WebView?' "${GIT_CLONE_DIR}/lib/" 2>/dev/null || true)
+
+# Fix: strip ? from shouldInterceptRequest(view: WebView?, request: WebResourceRequest?) in all lib/ files
+while IFS= read -r f; do
+    sed -i '' 's/override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?)/override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest)/g' "$f" 2>/dev/null || true
+    # Also handle the url: String overload (Android has two shouldInterceptRequest signatures)
+    sed -i '' 's/override fun shouldInterceptRequest(view: WebView?, url: String?)/override fun shouldInterceptRequest(view: WebView, url: String)/g' "$f" 2>/dev/null || true
+    log "  Patched: $(basename $f) — non-null shouldInterceptRequest"
+done < <(grep -rln 'override fun shouldInterceptRequest.*WebView?' "${GIT_CLONE_DIR}/lib/" 2>/dev/null || true)
+
+# ===================================================================
 # Step 3b-ii: Compile lib/*/ extractor modules (aniyomi.lib.* package)
 # Must compile AFTER keiyoushi-utils since several extractors import keiyoushi.utils.*
 EXTRACTORS_DIR="${GIT_CLONE_DIR}/lib"
@@ -461,47 +500,49 @@ if [ -d "$EXTRACTORS_DIR" ]; then
     fi
 
     if [ "${extractors_compiled:-false}" != true ]; then
-        # WHITELIST: only compile extractors needed by target extensions.
-        EXTRACTOR_WHITELIST=(
-            "doodextractor"
-            "filemoonextractor"
-            "gogostreamextractor"
-            "mp4uploadextractor"
-            "okruextractor"
-            "playlistutils"
-            "megacloudextractor"
-            "omniembedextractor"
-            "rapidcloudextractor"
-            "streamlareextractor"
-            "streamwishextractor"
-            "vidhideextractor"
-            "vidmolyextractor"
-            "anilib"
-            "burstcloudextractor"
-        )
-        > "${TEMP_DIR}/lib-extractors-sources.txt"
-        for ext_dir in "${EXTRACTOR_WHITELIST[@]}"; do
-            find "$EXTRACTORS_DIR/$ext_dir" -name '*.kt' -path '*/src/*' 2>/dev/null >> "${TEMP_DIR}/lib-extractors-sources.txt" || true
+        # Compile each extractor individually into shared output dir.
+        # This avoids a single problematic extractor (e.g. m3u8server needing nanohttpd)
+        # from blocking all others. WebView override patches are applied in Step 3b-i-b
+        # BEFORE this step, so CloudflareInterceptor etc. compile correctly.
+        #
+        # MULTI-PASS: extractors may depend on each other (e.g. mixdropextractor → unpacker).
+        # Running 3 passes ensures dependent extractors can resolve their cross-extractor
+        # dependencies once the providing extractor compiles in an earlier pass.
+        mkdir -p "$EXTRACTORS_OUT"
+        add_to_cp "$EXTRACTORS_OUT"
+        for pass in 1 2 3; do
+            EXTRACTOR_COUNT=0
+            for ext_dir in "$EXTRACTORS_DIR"/*/; do
+                [ ! -d "$ext_dir" ] && continue
+                ext_name=$(basename "$ext_dir")
+                # Count already-compiled classes for this extractor
+                existing=$(find "$EXTRACTORS_OUT" -path "*/${ext_name}/*" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+                [ "$existing" -gt 0 ] && continue
+                ext_srcs=$(mktemp)
+                find "$ext_dir" -name '*.kt' -path '*/src/*' 2>/dev/null > "$ext_srcs" || true
+                src_count=$(wc -l < "$ext_srcs" 2>/dev/null || echo 0)
+                if [ "$src_count" -eq 0 ]; then
+                    rm -f "$ext_srcs"
+                    continue
+                fi
+                set +e
+                kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
+                local_exit=$?
+                set -e
+                if [ "$local_exit" -eq 0 ]; then
+                    EXTRACTOR_COUNT=$((EXTRACTOR_COUNT + 1))
+                fi
+                rm -f "$ext_srcs"
+            done
+            total_after=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
+            log "  Pass ${pass}: ${EXTRACTOR_COUNT} new extractors (${total_after} total classes)"
+            [ "$EXTRACTOR_COUNT" -eq 0 ] && break
         done
-        # Also include unpacker (jsunpacker) and synchrony (Deobfuscator) — needed by mp4upload and streamwish
-        for dir in unpacker synchrony; do
-            find "$EXTRACTORS_DIR/$dir" -name '*.kt' -path '*/src/*' 2>/dev/null >> "${TEMP_DIR}/lib-extractors-sources.txt" || true
-        done
-        extractor_count=$(wc -l < "${TEMP_DIR}/lib-extractors-sources.txt" 2>/dev/null || echo 0)
-        if [ "$extractor_count" -gt 0 ]; then
-            log "Compiling: lib/extractors (${extractor_count} files, aniyomi.lib.*)..."
-            mkdir -p "$EXTRACTORS_OUT"
-            set +e
-            kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"${TEMP_DIR}/lib-extractors-sources.txt" 2>"${TEMP_DIR}/lib-extractors-compile.log"
-            extractor_exit=$?
-            set -e
-            extractor_class_count=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
-            if [ "$extractor_class_count" -gt 0 ]; then
-                add_to_cp "$EXTRACTORS_OUT"
-                log "  -> ${extractor_class_count} classes ✓"
-            else
-                log "  -> FAILED: $(head -3 "${TEMP_DIR}/lib-extractors-compile.log" 2>/dev/null)"
-            fi
+        extractor_class_count=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
+        if [ "$extractor_class_count" -gt 0 ]; then
+            log "  lib/extractors: ${extractor_class_count} classes from multiple passes ✓"
+        else
+            log "  WARNING: no extractor classes compiled — check ${TEMP_DIR}/lib-extractors-compile.log for details"
         fi
     else
         add_to_cp "$EXTRACTORS_OUT"
@@ -579,8 +620,11 @@ if [ -f "$DOPE_FLIX" ] && grep -q 'hosterNames.toSet())!!' "$DOPE_FLIX" 2>/dev/n
 fi
 
 # ===================================================================
-# Step 3b-iv: Compile shared library modules (lib-*, lib-multisrc/*, common, core) in dependency order
-for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_DIR}/core/"; do
+# Step 3b-iv: Compile shared library modules (lib-multisrc/*, common, core) in dependency order
+# NOTE: lib-*/ is NOT used — it incorrectly matches lib-multisrc/ as a single blob.
+# lib/ extractors are compiled individually in Step 3b-ii.
+# lib-multisrc/*/ compiles each multisrc theme individually.
+for lib_dir in "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_DIR}/core/"; do
     [ ! -d "$lib_dir" ] && continue
     lib_name=$(basename "$lib_dir")
     lib_classes="${SHARED_LIBS_DIR}/${lib_name}"
@@ -615,6 +659,8 @@ for lib_dir in "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${G
     fi
 done
 
+log "Step 3b-iv shared libraries complete — applying extension-specific patches..."
+
 # ---------------------------------------------------------------------------
 # Step 3b-v: Apply source patches for specific extensions
 # ---------------------------------------------------------------------------
@@ -643,7 +689,9 @@ fi
 # Patch: superstream — add CloudflareInterceptor to custom OkHttpClient
 # The extension creates its own OkHttpClient (configureToIgnoreCertificate) without
 # CloudflareInterceptor, causing Cloudflare 403 blocks → JsonDecodingException.
-SUPERSTREAM_API_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStreamAPI.kt" 2>/dev/null | head -1)
+# NOTE: find can return exit 1 on non-existent paths (when building other extensions).
+# || true ensures set -e doesn't abort the script.
+SUPERSTREAM_API_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStreamAPI.kt" 2>/dev/null | head -1) || true
 if [ -n "$SUPERSTREAM_API_SRC" ] && [ -f "$SUPERSTREAM_API_SRC" ]; then
     sed -i '' '/^import okhttp3\.OkHttpClient$/a\
 import app.anikku.macos.platform.network.CloudflareInterceptor\
@@ -656,7 +704,7 @@ import app.anikku.macos.platform.network.MacOSCookieJar\
 fi
 
 # Patch: superstream — JVM compatibility (setDefaultValue + null-safe context)
-SUPERSTREAM_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStream.kt" 2>/dev/null | head -1)
+SUPERSTREAM_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStream.kt" 2>/dev/null | head -1) || true
 if [ -n "$SUPERSTREAM_SRC" ] && [ -f "$SUPERSTREAM_SRC" ]; then
     # setDefaultValue() is now available via base Preference stub — no removal needed
     # screen.context is Context? in JVM stubs but used as Context — add !!

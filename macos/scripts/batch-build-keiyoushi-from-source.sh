@@ -643,88 +643,42 @@ if [ -d "$EXTRACTORS_DIR" ]; then
     fi
 
     if [ "${extractors_compiled:-false}" != true ]; then
-        # WHITELIST approach: only compile extractors needed by our target extensions.
-        # This avoids whack-a-mole with dozens of unrelated extractors that have
-        # missing Android stubs (WebView, JSpecify, etc.).
-        #
-        # Extensions needed by the 4 blocked extensions (allanime, anikage, animekhor, animenosub):
-        #   doodextractor, filemoonextractor, gogostreamextractor, mp4uploadextractor,
-        #   okruextractor, playlistutils, streamwishextractor, vidhideextractor, vidmolyextractor
-        #
-        # Add more here as additional extensions are enabled.
-        # WHITELIST: extractors needed by target standalone extensions.
-        # Each entry maps to a directory under lib/ in the cloned repo.
-        #
-        # Core extractors (needed by allanime, animetake, anikage, etc.):
-        #   doodextractor, filemoonextractor, gogostreamextractor, mp4uploadextractor,
-        #   okruextractor, playlistutils
-        #
-        # Added for kissanime:
-        #   dailymotionextractor (kissanime)
-        #   youruploadextractor (kissanime)
-        # WHITELIST: extractors known to compile on JVM.
-        # Each entry maps to a directory under lib/ in the cloned repo.
-        # NOTE: gogostreamextractor has WebView/crypto deps but compiles.
-        # MixDrop, Dailymotion, Rumble, GoogleDrive, Chillx are new additions.
-        # Whenever a new extension type is enabled, add its extractors here.
-        # WHITELIST: extractors known to compile on JVM.
-        # NOTE: chillxextractor requires Android WebView, textinterceptor requires
-        # Android Layout/Html APIs — excluded from whitelist.
-        # Add new extractors incrementally and verify they compile independently.
-        EXTRACTOR_WHITELIST=(
-            "burstcloudextractor"
-            "chillxextractor"
-            "cloudflareinterceptor"
-            "cryptoaes"
-            "dailymotionextractor"
-            "doodextractor"
-            "filemoonextractor"
-            "gdriveplayerextractor"
-            "gogostreamextractor"
-            "googledriveextractor"
-            "megacloudextractor"
-            "mixdropextractor"
-            "mp4uploadextractor"
-            "okruextractor"
-            "omniembedextractor"
-            "playlistutils"
-            "rapidcloudextractor"
-            "rumbleextractor"
-            "seedrandom"
-            "streamlareextractor"
-            "streamplayextractor"
-            "streamwishextractor"
-            "vidhideextractor"
-            "anilib"
-            "vidmolyextractor"
-        )
-        > "${TEMP_DIR}/lib-extractors-sources.txt"
-        for ext_dir in "${EXTRACTOR_WHITELIST[@]}"; do
-            find "$EXTRACTORS_DIR/$ext_dir" -name '*.kt' -path '*/src/*' 2>/dev/null >> "${TEMP_DIR}/lib-extractors-sources.txt" || true
-        done
-        # Also include unpacker (jsunpacker) and synchrony (Deobfuscator) — needed by mp4upload and streamwish
-        for dir in unpacker synchrony; do
-            find "$EXTRACTORS_DIR/$dir" -name '*.kt' -path '*/src/*' 2>/dev/null >> "${TEMP_DIR}/lib-extractors-sources.txt" || true
-        done
-        extractor_count=$(wc -l < "${TEMP_DIR}/lib-extractors-sources.txt" 2>/dev/null || echo 0)
-        if [ "$extractor_count" -gt 0 ]; then
-            log "  Compiling: lib/extractors (${extractor_count} files, aniyomi.lib.*)..."
-            mkdir -p "$EXTRACTORS_OUT"
-            set +e
-            kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"${TEMP_DIR}/lib-extractors-sources.txt" 2>"${TEMP_DIR}/lib-extractors-compile.log"
-            extractor_exit=$?
-            set -e
-            extractor_class_count=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
-            if [ "$extractor_class_count" -gt 0 ]; then
-                # Prepend extractor classes so freshly compiled extractors (with
-                # up-to-date APIs like VidHideExtractor's 2-param constructor)
-                # take precedence over old versions in aniyomi-extensions-lib.jar
-                # or other dependency JARs.
-                prepend_to_cp "$EXTRACTORS_OUT"
-                log "    -> ${extractor_class_count} classes ✓"
-            else
-                log "    -> FAILED: $(head -3 "${TEMP_DIR}/lib-extractors-compile.log" 2>/dev/null)"
+        # AUTO-DISCOVER: compile each extractor individually into shared output dir.
+        # This avoids a single problematic extractor (e.g. m3u8server needing nanohttpd,
+        # or cloudflareinterceptor with WebView stub mismatches) from blocking all others.
+        mkdir -p "$EXTRACTORS_OUT"
+        prepend_to_cp "$EXTRACTORS_OUT"
+        EXTRACTOR_COUNT=0
+        FAILED_EXTRACTORS=""
+        for ext_dir in "$EXTRACTORS_DIR"/*/; do
+            [ ! -d "$ext_dir" ] && continue
+            ext_name=$(basename "$ext_dir")
+            ext_srcs=$(mktemp)
+            find "$ext_dir" -name '*.kt' -path '*/src/*' 2>/dev/null > "$ext_srcs" || true
+            src_count=$(wc -l < "$ext_srcs" 2>/dev/null || echo 0)
+            if [ "$src_count" -eq 0 ]; then
+                rm -f "$ext_srcs"
+                continue
             fi
+            set +e
+            kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
+            local_exit=$?
+            set -e
+            if [ "$local_exit" -eq 0 ]; then
+                EXTRACTOR_COUNT=$((EXTRACTOR_COUNT + 1))
+            else
+                FAILED_EXTRACTORS="${FAILED_EXTRACTORS} ${ext_name}"
+            fi
+            rm -f "$ext_srcs"
+        done
+        extractor_class_count=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
+        if [ "$extractor_class_count" -gt 0 ]; then
+            log "    lib/extractors: ${extractor_class_count} classes from ${EXTRACTOR_COUNT} extractors ✓"
+            if [ -n "$FAILED_EXTRACTORS" ]; then
+                log "    skipped (compile errors):${FAILED_EXTRACTORS}"
+            fi
+        else
+            log "    WARNING: no extractor classes compiled — check ${TEMP_DIR}/lib-extractors-compile.log for details"
         fi
     else
         add_to_cp "$EXTRACTORS_OUT"

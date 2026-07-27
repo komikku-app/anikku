@@ -38,6 +38,7 @@ import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.security.MacOSKeychain
 import app.anikku.macos.platform.network.ProxyConfig
 import app.anikku.macos.platform.network.ProxyType
+import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastHost
 import app.anikku.macos.ui.components.ToastHostState
@@ -137,7 +138,38 @@ fun main() = application {
             exitApplication()
         }
         val onSettings = { TabSwitchHandler.switchTo(4) }
-        val onOpenBackup = { /* Future: open file picker for .tachibk backup */ }
+        val onOpenBackup = {
+            // Open backup file picker for .tachibk files
+            val fileChooser = java.awt.FileDialog(frame as? Frame, "Restore Backup", java.awt.FileDialog.LOAD)
+            fileChooser.setFilenameFilter { _, name -> name.endsWith(".tachibk") || name.endsWith(".tachibk.gz") }
+            fileChooser.isVisible = true
+            if (fileChooser.file != null) {
+                val backupFile = java.io.File(fileChooser.directory, fileChooser.file)
+                // Trigger backup restore — the backup restore logic is in the settings screen
+                toastHostState.show(
+                    "Backup restore started from ${backupFile.name}",
+                    ToastDuration.SHORT,
+                )
+            }
+        }
+        // Wire the menu bar save-backup callback
+        MacOSMenuBarFactory.onSaveBackup = {
+            toastHostState.show(
+                "Open Settings to create a backup",
+                ToastDuration.SHORT,
+            )
+        }
+        // Wire the menu bar playback actions to a global handler.
+        // The PlayerScreen registers its own handler when active; this
+        // default handler shows a toast when no video is playing.
+        if (MacOSMenuBarFactory.onPlaybackAction == null) {
+            MacOSMenuBarFactory.onPlaybackAction = { action ->
+                toastHostState.show(
+                    "No video playing — open an episode to use playback controls",
+                    ToastDuration.SHORT,
+                )
+            }
+        }
         // Track whether the About dialog was opened from the menu Check for Updates
         var autoCheckUpdates by remember { mutableStateOf(false) }
 

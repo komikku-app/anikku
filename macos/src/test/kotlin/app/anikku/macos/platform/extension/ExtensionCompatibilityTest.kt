@@ -37,7 +37,7 @@ import java.time.Instant
 /**
  * Comprehensive extension compatibility test.
  *
- * Loads ALL 45 extension JARs and tests each one across four stages:
+ * Loads ALL 52 extension JARs and tests each one across four stages:
  * - **Load**: Can the JAR be loaded and trusted?
  * - **Browse**: Does getPopularAnime return actual results?
  * - **Episodes**: Does getEpisodeList return episodes for the first popular anime?
@@ -183,7 +183,7 @@ class ExtensionCompatibilityTest {
     }
 
     @Test
-    fun `test all 45 extensions`() = runBlocking {
+    fun `test all 52 extensions`() = runBlocking {
         val jarFiles = extensionsDir.listFiles()
             ?.filter { it.extension == "jar" }
             ?.sortedBy { it.name }

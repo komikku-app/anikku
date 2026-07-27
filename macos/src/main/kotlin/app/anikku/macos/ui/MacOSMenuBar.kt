@@ -3,11 +3,14 @@ package app.anikku.macos.ui
 import app.anikku.macos.platform.MacOSFullScreen
 import app.anikku.macos.platform.web.BrowserLauncher
 import java.awt.Frame
+import java.awt.KeyboardFocusManager
 import java.awt.Menu
 import java.awt.MenuBar
 import java.awt.MenuItem
 import java.awt.MenuShortcut
 import java.awt.event.KeyEvent
+import javax.swing.text.DefaultEditorKit
+import javax.swing.text.JTextComponent
 
 /**
  * macOS native menu bar per AD-04 (Phase 9.1).
@@ -34,6 +37,14 @@ import java.awt.event.KeyEvent
  * ```
  */
 object MacOSMenuBarFactory {
+
+    /** Callback for playback menu actions (set by AnikkuApp when player is active). */
+    var onPlaybackAction: ((PlaybackAction) -> Unit)? = null
+
+    /** Callback for save backup (set by AnikkuApp). */
+    var onSaveBackup: (() -> Unit)? = null
+
+    enum class PlaybackAction { PLAY_PAUSE, SKIP_FORWARD, SKIP_BACKWARD, VOLUME_UP, VOLUME_DOWN }
 
     /**
      * Creates the full macOS menu bar with all AD-04 menus.
@@ -130,7 +141,7 @@ fun create(
                 it.addActionListener { onOpenBackup() }
             })
             add(MenuItem("Save Backup...", MenuShortcut(KeyEvent.VK_S, true)).also {
-                it.addActionListener { /* TODO: Phase 7 */ }
+                it.addActionListener { onSaveBackup?.invoke() ?: openBackupHelp() }
                 // ⇧⌘S — AD-04 specifies ⌃⌘S but AWT cannot express ctrl+cmd;
                 // using ⇧⌘S (Save As convention) to avoid conflict with Sidebar ⌘S
             })
@@ -143,28 +154,54 @@ fun create(
 
     // ---------------------------------------------------------------------------
     // Edit Menu
+    //
+    // Compose Desktop TextField composables handle ⌘C/⌘V/⌘X/⌘A/⌘Z/⌘⇧Z
+    // natively through the Compose focus system. The action listeners below
+    // dispatch to any focused AWT/Swing text component as a fallback for
+    // non-Compose text fields (e.g., native dialogs, Swing interop).
     // ---------------------------------------------------------------------------
     private fun editMenu(): Menu {
         return Menu("Edit").apply {
             add(MenuItem("Undo", MenuShortcut(KeyEvent.VK_Z, false)).also {
-                it.addActionListener { /* TODO: Text field handling */ }
+                it.addActionListener { dispatchEditAction(DefaultEditorKit.undoAction) }
             })
             add(MenuItem("Redo", MenuShortcut(KeyEvent.VK_Z, true)).also {
-                it.addActionListener { /* TODO: Text field handling */ }
+                it.addActionListener { dispatchEditAction(DefaultEditorKit.redoAction) }
             })
             addSeparator()
             add(MenuItem("Cut", MenuShortcut(KeyEvent.VK_X, false)).also {
-                it.addActionListener { /* TODO: Text field handling */ }
+                it.addActionListener { dispatchEditAction(DefaultEditorKit.cutAction) }
             })
             add(MenuItem("Copy", MenuShortcut(KeyEvent.VK_C, false)).also {
-                it.addActionListener { /* TODO: Text field handling */ }
+                it.addActionListener { dispatchEditAction(DefaultEditorKit.copyAction) }
             })
             add(MenuItem("Paste", MenuShortcut(KeyEvent.VK_V, false)).also {
-                it.addActionListener { /* TODO: Text field handling */ }
+                it.addActionListener { dispatchEditAction(DefaultEditorKit.pasteAction) }
             })
             add(MenuItem("Select All", MenuShortcut(KeyEvent.VK_A, false)).also {
-                it.addActionListener { /* TODO: Text field handling */ }
+                it.addActionListener { dispatchEditAction(DefaultEditorKit.selectAllAction) }
             })
+        }
+    }
+
+    /**
+     * Dispatch an edit action to the currently focused AWT/Swing text component.
+     * Compose Desktop TextFields handle these shortcuts natively; this fallback
+     * covers non-Compose text components (Swing interop, native dialogs).
+     */
+    private fun dispatchEditAction(actionName: String) {
+        val focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
+        if (focusOwner is JTextComponent) {
+            val actionMap = focusOwner.actionMap
+            val action = actionMap.get(actionName)
+            if (action != null) {
+                val event = java.awt.event.ActionEvent(
+                    focusOwner,
+                    java.awt.event.ActionEvent.ACTION_PERFORMED,
+                    actionName,
+                )
+                action.actionPerformed(event)
+            }
         }
     }
 
@@ -201,20 +238,20 @@ fun create(
     private fun playbackMenu(): Menu {
         return Menu("Playback").apply {
             add(MenuItem("Play / Pause").also {
-                it.addActionListener { /* TODO: Phase 6 */ }
+                it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.PLAY_PAUSE) }
             })
             add(MenuItem("Skip Forward").also {
-                it.addActionListener { /* TODO: Phase 6 */ }
+                it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.SKIP_FORWARD) }
             })
             add(MenuItem("Skip Backward").also {
-                it.addActionListener { /* TODO: Phase 6 */ }
+                it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.SKIP_BACKWARD) }
             })
             addSeparator()
             add(MenuItem("Volume Up").also {
-                it.addActionListener { /* TODO: Phase 6 */ }
+                it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.VOLUME_UP) }
             })
             add(MenuItem("Volume Down").also {
-                it.addActionListener { /* TODO: Phase 6 */ }
+                it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.VOLUME_DOWN) }
             })
         }
     }
@@ -243,7 +280,7 @@ fun create(
     private fun helpMenu(): Menu {
         return Menu("Help").apply {
             add(MenuItem("Anikku Help").also {
-                it.addActionListener { /* TODO: Phase 12 — Open help documentation */ }
+                it.addActionListener { openHelpDocs() }
             })
             add(MenuItem("Report Issue...").also {
                 it.addActionListener { openGitHubIssues() }
@@ -258,6 +295,16 @@ fun create(
     /** Opens the Anikku GitHub issues page in the system browser. */
     private fun openGitHubIssues() {
         BrowserLauncher.openSafe("https://github.com/ErnestHysa/anikku/issues/new")
+    }
+
+    /** Opens the Anikku help documentation in the system browser. */
+    private fun openHelpDocs() {
+        BrowserLauncher.openSafe("https://github.com/ErnestHysa/anikku/blob/master/BUILDING.md")
+    }
+
+    /** Opens backup help info in the browser. */
+    private fun openBackupHelp() {
+        BrowserLauncher.openSafe("https://github.com/ErnestHysa/anikku/blob/master/macos/README.md")
     }
 
     /** Toggles the frame between maximized and normal state. */
