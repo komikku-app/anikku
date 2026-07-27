@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.auth.LocalTrackerManager
+import app.anikku.macos.platform.backup.LocalBackupManager
 import app.anikku.macos.platform.web.BrowserLauncher
 import app.anikku.macos.ui.components.CheckboxItem
 import app.anikku.macos.ui.components.HeadingItem
@@ -267,6 +268,41 @@ fun SettingsScreen() {
             subtitle = "Manage ongoing and completed downloads",
             onClick = { downloadNav.push(DownloadQueueScreen()) },
         )
+
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+
+        // =====================================================================
+        // Data & Storage
+        // =====================================================================
+        HeadingItem("Data & Storage")
+
+        // Backup & Restore
+        val backupManager = LocalBackupManager.current
+        if (backupManager != null) {
+            val backupNav = LocalNavigator.currentOrThrow
+            NavCard(
+                icon = {
+                    Icon(
+                        Icons.Outlined.CloudDownload,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
+                },
+                title = "Backup & Restore",
+                subtitle = "Create, restore, and manage data backups",
+                onClick = {
+                    backupNav.push(
+                        BackupRestoreScreen(
+                            backupManager = backupManager,
+                            backupsDir = java.io.File(
+                                System.getProperty("user.home"),
+                                "Library/Application Support/Anikku/backups",
+                            ),
+                        ),
+                    )
+                },
+            )
+        }
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 

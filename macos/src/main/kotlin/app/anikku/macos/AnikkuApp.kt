@@ -27,6 +27,8 @@ import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
+import app.anikku.macos.platform.backup.LocalBackupManager
+import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.platform.preference.BookmarkStore
 import app.anikku.macos.platform.preference.LocalBookmarkStore
@@ -49,6 +51,9 @@ import app.anikku.macos.ui.theme.AnikkuTheme
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.awt.Frame
 
 /**
@@ -139,26 +144,52 @@ fun main() = application {
         }
         val onSettings = { TabSwitchHandler.switchTo(4) }
         val onOpenBackup = {
-            // Open backup file picker for .tachibk files
             val parentFrame = window as? Frame
             val fileChooser = java.awt.FileDialog(parentFrame, "Restore Backup", java.awt.FileDialog.LOAD)
-            fileChooser.setFilenameFilter { _, name -> name.endsWith(".tachibk") || name.endsWith(".tachibk.gz") }
+            fileChooser.setFilenameFilter { _, name ->
+                name.endsWith(MacOSBackupManager.BACKUP_EXTENSION)
+            }
             fileChooser.isVisible = true
             if (fileChooser.file != null) {
                 val backupFile = java.io.File(fileChooser.directory, fileChooser.file)
-                // Trigger backup restore — the backup restore logic is in the settings screen
-                toastHostState.show(
-                    "Backup restore started from ${backupFile.name}",
-                    ToastDuration.SHORT,
-                )
+                app.applicationScope.launch(Dispatchers.IO) {
+                    val result = app.backupManager.importFrom(backupFile)
+                    withContext(Dispatchers.Main) {
+                        if (result.success) {
+                            toastHostState.show(
+                                "Restored: ${result.libraryCount} library, ${result.historyCount} history entries",
+                                ToastDuration.LONG,
+                            )
+                        } else {
+                            toastHostState.show(
+                                "Restore failed: ${result.error ?: "Unknown error"}",
+                                ToastDuration.LONG,
+                                true,
+                            )
+                        }
+                    }
+                }
             }
         }
         // Wire the menu bar save-backup callback
         MacOSMenuBarFactory.onSaveBackup = {
-            toastHostState.show(
-                "Open Settings to create a backup",
-                ToastDuration.SHORT,
-            )
+            app.applicationScope.launch(Dispatchers.IO) {
+                val result = app.backupManager.exportToDir(app.storageProvider.backupsDirectory)
+                withContext(Dispatchers.Main) {
+                    if (result != null) {
+                        toastHostState.show(
+                            "Backup created: ${result.name}",
+                            ToastDuration.LONG,
+                        )
+                    } else {
+                        toastHostState.show(
+                            "Backup creation failed",
+                            ToastDuration.LONG,
+                            true,
+                        )
+                    }
+                }
+            }
         }
         // Wire the menu bar playback actions to a global handler.
         // The PlayerScreen registers its own handler when active; this
@@ -223,6 +254,7 @@ fun main() = application {
             LocalHistoryRepository provides historyRepository,
             LocalDownloadManager provides downloadManager,
             LocalExtensionManager provides app.extensionManager,
+            LocalBackupManager provides app.backupManager,
             LocalToastHost provides toastHostState,
             LocalTrackerManager provides trackerManager,
         ) {

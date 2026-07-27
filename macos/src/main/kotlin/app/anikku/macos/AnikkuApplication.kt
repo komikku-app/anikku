@@ -4,8 +4,10 @@ import app.anikku.macos.di.appModule
 import app.anikku.macos.di.domainModule
 import app.anikku.macos.di.platformModule
 import app.anikku.macos.platform.BackgroundTaskScheduler
+import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.data.HistoryRepository
+import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
 import app.anikku.macos.platform.database.MacOSDatabaseDriver
 import app.anikku.macos.platform.discord.DiscordRPC
@@ -58,6 +60,8 @@ class AnikkuApplication {
     val customAnimeRepository: MacOSCustomAnimeRepository
     val libraryRepository: LibraryRepository
     val historyRepository: HistoryRepository
+    val downloadRepository: DownloadRepository
+    val backupManager: MacOSBackupManager
 
     // Phase 3: Networking
     val networkHelper: MacOSNetworkHelper
@@ -130,6 +134,17 @@ class AnikkuApplication {
         // 8b. Initialize library and history repos
         libraryRepository = LibraryRepository(storageProvider.dataDirectory)
         historyRepository = HistoryRepository(storageProvider.dataDirectory)
+
+        // 8c. Initialize download repository (Phase 5.10)
+        downloadRepository = DownloadRepository(storageProvider.dataDirectory)
+
+        // 8d. Initialize backup manager
+        backupManager = MacOSBackupManager(
+            libraryRepository = libraryRepository,
+            historyRepository = historyRepository,
+            downloadRepository = downloadRepository,
+            preferenceStore = preferenceStore,
+        )
 
         // 9. Initialize Phase 7: Advanced Features
         // 9a. Discord Rich Presence
