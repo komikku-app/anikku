@@ -30,6 +30,7 @@ private fun <T> extractValueNextJs(
     val children: Iterable<JsonElement> = when (payload) {
         is JsonObject -> payload.values
         is JsonArray -> payload
+        else -> emptyList()
     }
     for (child in children) {
         val result = extractValueNextJs(child, predicate, deserializer)

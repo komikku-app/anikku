@@ -2,14 +2,11 @@ package keiyoushi.utils
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.okio.decodeFromBufferedSource
 import kotlinx.serialization.serializer
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import okio.buffer
-import okio.source
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.InputStream
@@ -35,7 +32,7 @@ inline fun <reified T> String.parseAs(json: Json = jsonInstance, transform: (Str
  * Parses the response body into an object of type [T].
  */
 inline fun <reified T> Response.parseAs(json: Json = jsonInstance): T = use {
-    json.decodeFromBufferedSource(serializer(), it.body.source())
+    json.decodeFromString(serializer(), it.body.string())
 }
 
 /**
@@ -61,7 +58,7 @@ inline fun <reified T> JsonElement.parseAs(json: Json = jsonInstance): T = json.
  * @param json The [Json] instance to use for parsing. Defaults to the injected instance.
  */
 inline fun <reified T> InputStream.parseAs(json: Json = jsonInstance): T = use {
-    json.decodeFromBufferedSource(serializer(), it.source().buffer())
+    json.decodeFromString(serializer(), it.reader().readText())
 }
 
 /**
