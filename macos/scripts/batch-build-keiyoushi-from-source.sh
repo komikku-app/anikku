@@ -252,6 +252,15 @@ else
     log "  Core Coroutines.kt already patched or not found — skipping"
 fi
 
+# Patch 5b: Preferences.kt context null-safety in core/
+# The context property in Preferences.kt is Context? (nullable), but
+# Toast.makeText expects non-null Context. Add !! at all 4 call sites.
+PREFERENCES_FILE="${GIT_CLONE_DIR}/core/src/main/kotlin/keiyoushi/utils/Preferences.kt"
+if [ -f "$PREFERENCES_FILE" ] && grep -q 'Toast.makeText(context,' "$PREFERENCES_FILE" 2>/dev/null; then
+    sed -i '' 's/Toast\.makeText(context,/Toast.makeText(context!!,/g' "$PREFERENCES_FILE"
+    log "  Patched: Preferences.kt — added context!! null-safety for Toast.makeText"
+fi
+
 # ---------------------------------------------------------------------------
 # Patch hanime: remove Chicory/WASM/WebView signature providers
 # ---------------------------------------------------------------------------
