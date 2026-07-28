@@ -708,7 +708,7 @@ if [ -d "$EXTRACTORS_DIR" ]; then
                     continue
                 fi
                 set +e
-                kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
+                kotlinc -module-name "$ext_name" -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
                 local_exit=$?
                 set -e
                 if [ "$local_exit" -eq 0 ]; then

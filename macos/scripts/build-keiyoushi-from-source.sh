@@ -526,7 +526,7 @@ if [ -d "$EXTRACTORS_DIR" ]; then
                     continue
                 fi
                 set +e
-                kotlinc -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
+                kotlinc -module-name "$ext_name" -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
                 local_exit=$?
                 set -e
                 if [ "$local_exit" -eq 0 ]; then
@@ -681,9 +681,15 @@ fi
 # The anilib extractor is compiled in Step 3b-ii and provides AniLib class
 # on the classpath. Removing the import causes unresolved reference errors
 # (27 AniLib references throughout Miruro.kt). The import stays intact.
+# Also runs patch-miruro-sources.py to remove unavailable extractor deps.
 MIRURO_SRC=$(find "${SRC_DIR}" -name "Miruro.kt" 2>/dev/null | head -1)
 if [ -n "$MIRURO_SRC" ] && [ -f "$MIRURO_SRC" ]; then
     log "  NOTE: Miruro.kt uses AniLib via import — anilib extractor is on classpath ✓"
+    MIRURO_PATCH_SCRIPT="${SCRIPT_DIR}/patch-miruro-sources.py"
+    if [ -f "$MIRURO_PATCH_SCRIPT" ]; then
+        GIT_ROOT="$(cd "${SRC_DIR}/../../.." && pwd)"
+        python3 "$MIRURO_PATCH_SCRIPT" "$GIT_ROOT" 2>&1 | sed 's/^/  /'
+    fi
 fi
 
 # Patch: superstream — add CloudflareInterceptor to custom OkHttpClient
