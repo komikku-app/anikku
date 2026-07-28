@@ -16,47 +16,81 @@ import os
 import sys
 
 
-NEW_IFRAMEPARSE = '''    open suspend fun iframeParse(iframeLink: String): List<Video> {
+NEW_IFRAMEPARSE = r'''    open suspend fun iframeParse(iframeLink: String): List<Video> {
         // Domain-agnostic extraction: inspect response body instead of
         // whitelisting embed domains (WCO rotates them frequently).
         // The CloudflareInterceptor (via Chrome CDP) handles any WAF
         // challenges on the iframe page transparently.
         val iframeSoup = client.newCall(GET(iframeLink, headers))
             .awaitSuccess().asJsoup()
+        val body = iframeSoup.html()
 
-        // Path 1: getJSON-based extraction (formerly embed.wcostream)
-        val getVideoLinkScript =
-            iframeSoup.selectFirst("script:containsData(getJSON)")?.data()
-        if (getVideoLinkScript != null) {
-            val getVideoLink =
-                getVideoLinkScript.substringAfter("$.getJSON(\\"").substringBefore("\\"")
-
+        // Path 1: Relaxed getJSON/ajax API extraction.
+        // WCO changes quote styles (single/double/backtick) and sometimes
+        // uses $.ajax instead of $.getJSON. Match all variants.
+        val jsonRegex = Regex("""\$\.(?:getJSON|ajax)\s*\(\s*['"`]([^'"`]+)['"`]""")
+        val jsonMatch = jsonRegex.find(body)
+        if (jsonMatch != null) {
+            val apiPath = jsonMatch.groupValues[1]
             val iframeDomain = "https://" + iframeLink.toHttpUrl().host
-            val requestUrl = iframeDomain + getVideoLink
-
+            val requestUrl = if (apiPath.startsWith("http")) apiPath
+                else iframeDomain + (if (apiPath.startsWith("/")) "" else "/") + apiPath
             val requestHeaders = headersBuilder()
                 .add("X-Requested-With", "XMLHttpRequest")
                 .set("Referer", requestUrl)
                 .set("Origin", iframeDomain)
                 .build()
-
-            val videoData = client.newCall(GET(requestUrl, requestHeaders))
-                .awaitSuccess()
-                .parseAs<VideoResponseDto>()
-
-            return videoData.videos
+            try {
+                val videoData = client.newCall(GET(requestUrl, requestHeaders))
+                    .awaitSuccess()
+                    .parseAs<VideoResponseDto>()
+                if (videoData.videos.isNotEmpty()) return videoData.videos
+            } catch (_: Exception) { /* fall through to next path */ }
         }
 
-        // Path 2: m3u8 HLS extraction (formerly vhs.watchanimesub)
-        val body = iframeSoup.html()
-        val matchResult = Regex("""getRedirectedUrl\\("(https://[\\\\w-/.]+/index\\\\.m3u8)"""").find(body)
-        if (matchResult != null) {
-            val playlistUrl = matchResult.groupValues[1]
+        // Path 2: Universal m3u8 HLS extraction.
+        // Search for ANY .m3u8 URL in the page, not just inside getRedirectedUrl().
+        val m3u8Regex = Regex("""(https?://[^"'<>\s]+\.m3u8[^"'<>\s]*)""")
+        val m3u8Match = m3u8Regex.find(body)
+        if (m3u8Match != null) {
+            val playlistUrl = m3u8Match.groupValues[1]
             return playlistUtils.extractFromHls(
                 playlistUrl = playlistUrl,
                 referer = "$iframeLink/",
                 videoNameGen = { quality -> "Premium - $quality" },
             )
+        }
+
+        // Path 3: Base64/atob obfuscation fallback.
+        // WCO sometimes wraps the API URL or stream link in atob("...").
+        val atobRegex = Regex("""atob\s*\(\s*['"]([^'"]+)['"]\s*\)""")
+        val atobMatch = atobRegex.find(body)
+        if (atobMatch != null) {
+            try {
+                val decoded = java.util.Base64.getDecoder()
+                    .decode(atobMatch.groupValues[1])
+                    .toString(java.nio.charset.Charset.forName("UTF-8"))
+                // The decoded string might be an API URL or a direct m3u8 link
+                if (decoded.contains(".m3u8")) {
+                    return playlistUtils.extractFromHls(
+                        playlistUrl = decoded.trim(),
+                        referer = "$iframeLink/",
+                        videoNameGen = { quality -> "Premium - $quality" },
+                    )
+                }
+                // Try to use decoded string as API path
+                val iframeDomain = "https://" + iframeLink.toHttpUrl().host
+                val requestUrl = if (decoded.startsWith("http")) decoded.trim()
+                    else iframeDomain + (if (decoded.startsWith("/")) "" else "/") + decoded.trim()
+                val videoData = client.newCall(
+                    GET(requestUrl, headersBuilder()
+                        .add("X-Requested-With", "XMLHttpRequest")
+                        .set("Referer", requestUrl)
+                        .set("Origin", iframeDomain)
+                        .build())
+                ).awaitSuccess().parseAs<VideoResponseDto>()
+                if (videoData.videos.isNotEmpty()) return videoData.videos
+            } catch (_: Exception) { /* fall through */ }
         }
 
         return emptyList()
