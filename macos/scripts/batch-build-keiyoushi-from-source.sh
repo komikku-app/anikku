@@ -502,6 +502,18 @@ else
     log "  WARNING: patch-miruro-sources.py not found — cannot patch miruro"
 fi
 
+# Patch: wcotheme iframeParse — make content-based instead of domain-whitelisted
+# The WCO sites rotate embed domains frequently. The original code checks
+# iframeLink.contains("embed.wcostream") and "vhs.watchanimesub" which are
+# stale. This patch makes iframeParse inspect response body content (getJSON
+# script or .m3u8 URL) instead of the domain name.
+WCO_VIDEO_PATCH="${SCRIPT_DIR}/patch-wco-video-extraction.py"
+if [ -f "$WCO_VIDEO_PATCH" ]; then
+    python3 "$WCO_VIDEO_PATCH" "${GIT_CLONE_DIR}" 2>&1 | sed 's/^/  /'
+else
+    log "  WARNING: patch-wco-video-extraction.py not found — WCO video may return 0 results"
+fi
+
 # Patch: add import android.util.LruCache to CinebyExtractor.kt
 CINEBY_FILE="${GIT_CLONE_DIR}/src/en/cineby/src/eu/kanade/tachiyomi/animeextension/en/cineby/CinebyExtractor.kt"
 if [ -f "$CINEBY_FILE" ]; then

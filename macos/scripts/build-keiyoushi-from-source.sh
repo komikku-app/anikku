@@ -692,6 +692,15 @@ if [ -n "$MIRURO_SRC" ] && [ -f "$MIRURO_SRC" ]; then
     fi
 fi
 
+# Patch: wcotheme — make iframeParse content-based (not domain-whitelisted)
+# Runs unconditionally because wcotheme is a shared theme used by 6+ extensions.
+WCO_VIDEO_PATCH="${SCRIPT_DIR}/patch-wco-video-extraction.py"
+if [ -f "$WCO_VIDEO_PATCH" ]; then
+    GIT_ROOT="$(cd "${SRC_DIR}/../../.." && pwd)"
+    python3 "$WCO_VIDEO_PATCH" "$GIT_ROOT" 2>&1 | sed 's/^/  /'
+fi
+fi
+
 # Patch: superstream — add CloudflareInterceptor to custom OkHttpClient
 # The extension creates its own OkHttpClient (configureToIgnoreCertificate) without
 # CloudflareInterceptor, causing Cloudflare 403 blocks → JsonDecodingException.
