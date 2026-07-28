@@ -925,9 +925,34 @@ for ext_dir in "${EXT_DIRS[@]}"; do
     # NOTE: grep -r includes filename: prefix, so use -h to suppress it.
     # Otherwise the JAR name becomes "path/to/File.kt:com.example.pkg.jar"
     # which contains colons that break the JDK jar command on macOS (APFS).
-    PKG=$(grep -rh '^package ' "$ext_dir/src" 2>/dev/null | head -1 | sed 's/[[:space:]]*package //' | sed 's/[[:space:]]*$//' || echo "")
+    # IMPORTANT: Sort by fewest dots to prefer the base package over subpackages
+    # like .dto, .data, .model, .extractors. Extensions like animepahe have both
+    # ...animepahe and ...animepahe.dto — we want the base package (fewest dots).
+    PKG=$(
+        grep -rh '^package ' "$ext_dir/src" 2>/dev/null | \
+        sed 's/package //' | \
+        sed 's/[[:space:]]*$//' | \
+        sort | \
+        while IFS= read -r pkg; do
+            echo "${pkg}" | awk -F. '{print NF, $0}'
+        done | \
+        sort -n | \
+        head -1 | \
+        cut -d' ' -f2-
+    )
     if [ -z "$PKG" ]; then
-        PKG=$(grep -rh '^package ' "$ext_dir"/*.kt 2>/dev/null | head -1 | sed 's/[[:space:]]*package //' | sed 's/[[:space:]]*$//' || echo "")
+        PKG=$(
+            grep -rh '^package ' "$ext_dir"/*.kt 2>/dev/null | \
+            sed 's/package //' | \
+            sed 's/[[:space:]]*$//' | \
+            sort | \
+            while IFS= read -r pkg; do
+                echo "${pkg}" | awk -F. '{print NF, $0}'
+            done | \
+            sort -n | \
+            head -1 | \
+            cut -d' ' -f2-
+        )
     fi
     if [ -z "$PKG" ]; then
         PKG="eu.kanade.tachiyomi.animeextension.${LANG}.${EXT_NAME}"
