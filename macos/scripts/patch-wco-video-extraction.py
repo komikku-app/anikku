@@ -21,9 +21,43 @@ NEW_IFRAMEPARSE = r'''    open suspend fun iframeParse(iframeLink: String): List
         // whitelisting embed domains (WCO rotates them frequently).
         // The CloudflareInterceptor (via Chrome CDP) handles any WAF
         // challenges on the iframe page transparently.
-        val iframeSoup = client.newCall(GET(iframeLink, headers))
-            .awaitSuccess().asJsoup()
+        //
+        // Bypass the WCO announcement interstitial (10s countdown) by
+        // addressing video-js.php directly. If the URL doesn't contain
+        // "index.php", the replace is a no-op and we proceed normally.
+        val playerLink = iframeLink.replace("index.php", "video-js.php")
+        val iframeSoup = try {
+            client.newCall(GET(playerLink, headers)).awaitSuccess().asJsoup()
+        } catch (e: Exception) {
+            // DEBUG: dump error info when HTTP/CDP fails (e.g. Cloudflare timeout).
+            // Remove once CDP Cloudflare bypass is reliable.
+            try {
+                val errDump = java.io.File("/tmp/wco-iframe-dump-error-" +
+                    playerLink.toHttpUrl().host.replace('.', '-') + ".html")
+                errDump.parentFile?.mkdirs()
+                java.io.PrintWriter(errDump).use { pw ->
+                    pw.println("<!-- ERROR URL: $playerLink -->")
+                    pw.println("<!-- Exception: ${e.message} -->")
+                    pw.println("<!-- Type: ${e::class.simpleName} -->")
+                }
+                println("[WCO-DEBUG] Error dump → ${errDump.absolutePath} (${e::class.simpleName})")
+            } catch (_: Exception) {}
+            return emptyList()
+        }
         val body = iframeSoup.html()
+
+        // DEBUG: dump iframe HTML to file for pattern inspection.
+        // Remove this block once the correct extraction patterns are confirmed.
+        try {
+            val dumpFile = java.io.File("/tmp/wco-iframe-dump-" +
+                playerLink.toHttpUrl().host.replace('.', '-') + ".html")
+            dumpFile.parentFile?.mkdirs()
+            java.io.PrintWriter(dumpFile).use { pw ->
+                pw.println("<!-- URL: $playerLink -->")
+                pw.print(body)
+            }
+            println("[WCO-DEBUG] Dumped iframe HTML to ${dumpFile.absolutePath}")
+        } catch (_: Exception) { /* /tmp may not be writable */ }
 
         // Path 1: Relaxed getJSON/ajax API extraction.
         // WCO changes quote styles (single/double/backtick) and sometimes
