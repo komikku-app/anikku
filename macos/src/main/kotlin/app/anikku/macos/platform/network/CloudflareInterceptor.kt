@@ -93,7 +93,8 @@ class CloudflareInterceptor(
 
         // Attempt bypass via headless Chrome
         val userAgent = userAgentProvider()
-        val cookies = ChromeCDPClient.fetchCloudflareCookies(url, userAgent)
+        val referer = request.header("Referer")
+        val cookies = ChromeCDPClient.fetchCloudflareCookies(url, userAgent, referer = referer)
 
         if (cookies.isEmpty()) {
             logger.warn { "❌ Cloudflare bypass failed for ${request.url.host}" }

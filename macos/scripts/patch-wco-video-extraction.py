@@ -6,6 +6,10 @@ WCO sites frequently rotate their embed domains. The original code checks
 are stale. This patch removes the domain checks and instead inspects the
 response body: if it contains a `getJSON` script, use the VideoResponseDto
 path; if it contains `.m3u8`, use the HLS extraction path.
+
+Note: iframeExtractor is left unchanged (parallelCatchingFlatMapBlocking).
+The ChromeCDPClient referer pass-through and content-based iframeParse
+are sufficient to fix WCO video extraction.
 """
 
 import os

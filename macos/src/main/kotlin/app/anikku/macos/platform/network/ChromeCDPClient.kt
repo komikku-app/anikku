@@ -111,6 +111,7 @@ object ChromeCDPClient {
         url: String,
         userAgent: String,
         timeoutSeconds: Long = 30,
+        referer: String? = null,
     ): Map<String, String> {
         if (!isChromeInstalled) {
             logger.warn { "Chrome not found — Cloudflare bypass unavailable" }
@@ -148,7 +149,7 @@ object ChromeCDPClient {
                 }
 
                 // Navigate to URL and wait for Cloudflare challenge to resolve
-                val cookies = navigateAndWait(wsUrl, targetUrl, timeoutSeconds, userAgent)
+                val cookies = navigateAndWait(wsUrl, targetUrl, timeoutSeconds, userAgent, referer)
                 if (cookies.isNotEmpty()) {
                     val urlLabel = if (targetUrl == url) "primary" else "domain-root"
                     logger.info { "✅ Cloudflare bypass succeeded on attempt $attempt/$MAX_BYPASS_RETRIES ($urlLabel) — got ${cookies.size} cookie(s)" }
@@ -291,6 +292,7 @@ object ChromeCDPClient {
         targetUrl: String,
         timeoutSeconds: Long,
         userAgent: String,
+        referer: String? = null,
     ): Map<String, String> {
         val latch = CountDownLatch(1)
         val cookies = ConcurrentHashMap<String, String>()
@@ -326,7 +328,12 @@ object ChromeCDPClient {
                     logDebug(">>> $antiDetect")
                     webSocket.send(antiDetect)
                     messageId++
-                    val navigate = """{"id":$messageId,"method":"Page.navigate","params":{"url":"$targetUrl"}}"""
+                    val navigateParams = StringBuilder(""""url":"$targetUrl"""")
+                    if (!referer.isNullOrBlank()) {
+                        val escapedReferer = referer.replace("\\", "\\\\").replace("\"", "\\\"")
+                        navigateParams.append("""","referrer":"$escapedReferer"""")
+                    }
+                    val navigate = """{"id":$messageId,"method":"Page.navigate","params":{$navigateParams}}"""
                     logDebug(">>> $navigate")
                     webSocket.send(navigate)
                 }
