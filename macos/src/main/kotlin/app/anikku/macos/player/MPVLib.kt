@@ -545,10 +545,10 @@ object MPVLib {
     // Software render API constants (added in mpv 0.35.0+)
     // -------------------------------------------------------------------------
 
-    const val RENDER_PARAM_SW_SIZE = 17
-    const val RENDER_PARAM_SW_FORMAT = 18
-    const val RENDER_PARAM_SW_STRIDE = 19
-    const val RENDER_PARAM_SW_POINTER = 20
+    const val RENDER_PARAM_SW_SIZE = 20
+    const val RENDER_PARAM_SW_FORMAT = 21
+    const val RENDER_PARAM_SW_STRIDE = 22
+    const val RENDER_PARAM_SW_POINTER = 23
 
     // -------------------------------------------------------------------------
     // Render API type constants
