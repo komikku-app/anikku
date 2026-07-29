@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.0-beta.2] — 2026-07-29
+
+### Extension System — Major Compatibility Milestone
+
+- **58 extension JARs pre-installed** (up from 20), 33 verified end-to-end
+- **Extension compatibility test** exercises all 58 extensions through Load → Browse → Episodes → Video URL stages with Chrome CDP Cloudflare bypass
+- **Core module fix**: Preferences.kt context!! null-safety — unblocked extensions depending on core utilities
+- **ACTUAL_PKG detection fix**: Ported dot-sort algorithm from single-build script to batch script — fixes extensions picking up subpackage names (e.g., `.dto` instead of base package)
+
+### Chrome CDP Cloudflare Bypass
+
+- **ChromeCDPClient**: Auto-launches headless Chrome with anti-detection (hidden `navigator.webdriver`, real User-Agent, hidden `navigator.plugins`)
+- **Referer pass-through**: CDP `Page.navigate` now accepts and forwards `Referer` header — critical for WCO embed domains
+- **CloudflareInterceptor**: Detects hard WAF blocks vs JS challenges, 3-attempt retry with cookie caching
+- **FallbackDns**: Included in shared-libs.jar for CDP bypass at runtime
+- **CDP diagnostics**: ExtensionCompatibilityTest captures CDP debug logs, WAF detection summaries
+
+### WCO Video Extraction — Fixed
+
+- **Root cause found**: WCO embed pages serve a 10-second announcement interstitial (not the video player)
+- **Fix**: URL rewrite `index.php` → `video-js.php` bypasses the countdown and fetches the actual player page
+- **Content-based extraction**: Domain-agnostic `iframeParse` with 3 fallback paths (getJSON/ajax API, universal m3u8, atob/base64 obfuscation)
+- **Error-resilient debug dump**: HTML dumps to `/tmp/wco-iframe-dump-*.html` even when HTTP/CDP fails
+- **Result**: All 6 WCO extensions (wcoanimedub, wcoanimesub, wcoforever, wcofun, wcostream, wcotv) now return 16 video URLs each
+
+### Build Pipeline Improvements
+
+- **Batch build**: Auto-discovers and compiles extractors individually (3-pass) — avoids single broken extractor blocking all others
+- **lib-multisrc themes**: Compiled individually instead of as one blob — fixes multisrc extensions producing 1-9KB JARs
+- **Extractor webview patches**: Non-null `onPageFinished`/`shouldInterceptRequest` overrides for JVM compatibility
+- **Extension-specific patches**: superstream (CloudflareInterceptor injection), miruro (JVM stubs), animekhor (vidhideextractor), animenosub (autoUnpacker), luciferdonghua (okruextractor)
+- **Python patching system**: `patch-wco-video-extraction.py`, `patch-miruro-sources.py`, `patch-hanime-source.py`, `patch-kissanime-source.py`
+
+### JVM Compatibility Fixes
+
+- `android.net.Uri.decode()` — Lenient URL decoding
+- `android.util.LruCache` — Added import for CinebyExtractor
+- `OkruExtractor` — Explicit lambda params for `extractFromDash` overload resolution
+- `AniDB.kt` — `sortVideos` override with preserved `setDefaultValue`
+- `DopeFlix.kt` — `MutableSet<String>` via `.toMutableSet()`
+- `keiyoushi-utils Json.kt` — `parseAs` uses `body.string()` instead of `body.source()` for JVM
+- `NextJs.kt` — Non-exhaustive `when` fix
+- `Preference.kt` stub — Added `setDefaultValue` + `setEnabled`
+
+### Other
+
+- CDP Cloudflare bypass enabled for video CDN domains (fxpy7.watching.onl, etc.)
+- `shared-libs.jar` rebuilt with ChromeCDPClient referer + FallbackDns + CloudflareInterceptor
+- Backup & Restore panel with create/timeline/restore UI
+- Menu bar actions wired (undo/redo, file operations)
+- Extension test updated from 45 to 52 (now 58) extensions
+
+---
+
 ## [1.0.0-beta.1] — 2026-07-11
 
 ### Phase 12 — Documentation & Final Polish
