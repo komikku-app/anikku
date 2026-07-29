@@ -17,6 +17,7 @@ import app.anikku.macos.platform.logging.CrashReporter
 import app.anikku.macos.platform.logging.MacOSLogger
 import app.anikku.macos.platform.logging.TerminalErrorLogger
 import app.anikku.macos.platform.logging.UIActionLogger
+import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.network.InsecureSSLHelper
 import app.anikku.macos.platform.network.MacOSCookieJar
 import app.anikku.macos.platform.network.MacOSNetworkHelper
@@ -285,6 +286,9 @@ class AnikkuApplication {
     fun onShutdown() {
         backgroundScheduler.cancelAll()
         extensionManager.close()
+
+        // Phase 3: Shutdown persistent Chrome instance (CDP Cloudflare bypass)
+        ChromeCDPClient.shutdown()
 
         // Phase 7.3: Discord RPC
         discordRPC.stop()

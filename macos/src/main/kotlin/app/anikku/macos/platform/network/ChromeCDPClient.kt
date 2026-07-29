@@ -18,28 +18,32 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 private val logger = KotlinLogging.logger {}
 
 /**
  * Cloudflare bypass via Chrome DevTools Protocol (CDP).
  *
- * Launches the user's installed Chrome in headless mode, navigates to a
- * Cloudflare-protected URL, waits for the JavaScript challenge to resolve,
- * and extracts the `cf_clearance` and `__cf_bm` cookies.
+ * Maintains a **persistent headless Chrome instance** that stays alive across
+ * all bypass requests. This eliminates the 1-3s per-request Chrome launch
+ * overhead and allows the browser to maintain TLS session state, DNS cache,
+ * and cookie state between navigation cycles.
  *
- * ## Why CDP instead of Selenium/Playwright/FlareSolverr
+ * ## Why persistent instead of per-request launch
  *
- * - **Zero new dependencies** — uses the user's installed Chrome + OkHttp WebSocket
- * - **Lightweight** — no 100MB+ browser bundles, no Python, no Docker
- * - **Reliable** — real Chrome with native TLS + JS = passes all Cloudflare checks
- * - **Fast after first use** — cookies cached per domain in MacOSCookieJar
+ * - **No launch overhead** — Chrome starts once, stays running
+ * - **TLS session reuse** — Cloudflare sees a consistent browser fingerprint
+ * - **Faster challenges** — the browser already has warmed TLS + JS caches
+ * - **Automatic reconnection** — if Chrome crashes, the next request restarts it
+ * - **Graceful shutdown** — call [shutdown] when the app exits
  *
  * ## Thread safety
  *
- * Only one bypass attempt runs at a time (synchronized on the object).
- * Concurrent bypasses from multiple extensions queue up — only the first
- * actually launches Chrome, subsequent ones wait and reuse cached cookies.
+ * Only one bypass attempt runs at a time. Concurrent bypasses from multiple
+ * extensions queue up — only the first actually uses Chrome, subsequent ones
+ * wait and reuse cached cookies from [MacOSCookieJar].
  */
 object ChromeCDPClient {
 
@@ -49,8 +53,27 @@ object ChromeCDPClient {
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
+    private val lock = ReentrantLock()
+
+    // ── Persistent Chrome state ────────────────────────────────────────
+
+    /** Persistent Chrome process — launched once, kept alive across calls. */
+    @Volatile
+    private var chromeProcess: Process? = null
+
+    /** Debug port the persistent Chrome is listening on. */
+    @Volatile
+    private var chromePort: Int = -1
+
+    /** WebSocket URL for the persistent Chrome's browser-level debugger. */
+    @Volatile
+    private var chromeWsUrl: String? = null
+
+    /** Whether we've ever successfully started Chrome (to avoid re-logging startup messages). */
+    private var hasEverStartedChrome = false
+
     /**
-     * Custom Chrome/Chromium executable path. Set before calling [fetchCloudflareCookies].
+     * Custom Chrome/Chromium executable path. Set before any bypass call.
      * If empty, auto-detects from standard install locations:
      * 1. /Applications/Google Chrome.app (default)
      * 2. /opt/homebrew/bin/chromium (Homebrew Chromium)
@@ -91,14 +114,23 @@ object ChromeCDPClient {
     val isChromeInstalled: Boolean get() = chromeExecutable().isFile
 
     /**
-     * Fetch Cloudflare bypass cookies for a URL.
-     * Thread-safe — only one bypass runs at a time.
-     *
-     * @param url The Cloudflare-protected URL to visit
-     * @param userAgent The User-Agent to use
-     * @param timeoutSeconds Max time to wait for challenge resolution
-     * @return Map of cookie name → value, or empty map on failure
+     * Is the persistent Chrome instance currently running and responding?
+     * Used by diagnostics to show Chrome lifecycle status.
      */
+    val isRunning: Boolean get() {
+        val proc = chromeProcess
+        if (proc == null || !proc.isAlive) return false
+        val port = chromePort
+        if (port < 0) return false
+        // Quick check: try to hit the /json/version endpoint
+        return try {
+            val request = Request.Builder()
+                .url("http://127.0.0.1:$port/json/version")
+                .build()
+            httpClient.newCall(request).execute().use { it.isSuccessful }
+        } catch (_: Exception) { false }
+    }
+
     /**
      * Maximum number of retry attempts for a single Cloudflare bypass.
      * Some sites return intermediate challenge pages that require multiple
@@ -106,11 +138,23 @@ object ChromeCDPClient {
      */
     private const val MAX_BYPASS_RETRIES = 3
 
-    @Synchronized
+    /**
+     * Fetch Cloudflare bypass cookies for a URL.
+     * Thread-safe — only one bypass runs at a time.
+     *
+     * Uses the persistent Chrome instance. If Chrome has not been started yet,
+     * or has crashed since last use, it is (re)started automatically.
+     *
+     * @param url The Cloudflare-protected URL to visit
+     * @param userAgent The User-Agent to use
+     * @param timeoutSeconds Max time to wait for challenge resolution (default 60s)
+     * @param referer Optional Referer header to pass during navigation
+     * @return Map of cookie name → value, or empty map on failure
+     */
     fun fetchCloudflareCookies(
         url: String,
         userAgent: String,
-        timeoutSeconds: Long = 30,
+        timeoutSeconds: Long = 60,
         referer: String? = null,
     ): Map<String, String> {
         if (!isChromeInstalled) {
@@ -118,94 +162,196 @@ object ChromeCDPClient {
             return emptyMap()
         }
 
-        // Determine URLs to try. Primary URL first; if it's a resource URL (video, m3u8,
-        // image, etc.) that won't serve a Cloudflare challenge page, also queue the domain
-        // root URL as a fallback. The domain root WILL serve a proper challenge page that
-        // Chrome can solve, and the resulting cookies apply to all subdomains.
-        val urlsToTry = mutableListOf(url)
-        if (!isPageUrl(url)) {
-            val origin = extractOrigin(url)
-            if (origin != url) {
-                urlsToTry.add(origin)
-                logger.debug { "Added domain root fallback URL: $origin (primary $url is a resource URL)" }
+        lock.withLock {
+            // Determine URLs to try. Primary URL first; if it's a resource URL (video, m3u8,
+            // image, etc.) that won't serve a Cloudflare challenge page, also queue the domain
+            // root URL as a fallback. The domain root WILL serve a proper challenge page that
+            // Chrome can solve, and the resulting cookies apply to all subdomains.
+            val urlsToTry = mutableListOf(url)
+            if (!isPageUrl(url)) {
+                val origin = extractOrigin(url)
+                if (origin != url) {
+                    urlsToTry.add(origin)
+                    logger.debug { "Added domain root fallback URL: $origin (primary $url is a resource URL)" }
+                }
             }
+
+            for (attempt in 1..MAX_BYPASS_RETRIES) {
+                val targetUrl = urlsToTry[(attempt - 1) % urlsToTry.size]
+
+                try {
+                    // Ensure persistent Chrome is running. If it died, this restarts it.
+                    if (!ensureChromeRunning()) {
+                        logger.warn { "Failed to start persistent Chrome (attempt $attempt/$MAX_BYPASS_RETRIES)" }
+                        if (attempt < MAX_BYPASS_RETRIES) {
+                            try { Thread.sleep(2000L * attempt) } catch (_: Exception) {}
+                        }
+                        continue
+                    }
+
+                    val wsUrl = chromeWsUrl ?: run {
+                        logger.warn { "No WebSocket URL available for persistent Chrome (attempt $attempt/$MAX_BYPASS_RETRIES)" }
+                        // Try to recover — Chrome may have been restarted but WS URL not captured
+                        refreshWsUrl()
+                        if (chromeWsUrl == null) continue
+                        chromeWsUrl!!
+                    }
+
+                    // Navigate to URL and wait for Cloudflare challenge to resolve
+                    val cookies = navigateAndWait(wsUrl, targetUrl, timeoutSeconds, userAgent, referer)
+                    if (cookies.isNotEmpty()) {
+                        val urlLabel = if (targetUrl == url) "primary" else "domain-root"
+                        logger.info { "✅ Cloudflare bypass succeeded on attempt $attempt/$MAX_BYPASS_RETRIES ($urlLabel) — got ${cookies.size} cookie(s)" }
+                        return cookies
+                    }
+
+                    val urlLabel = if (targetUrl == url) "primary" else "fallback"
+                    logger.warn { "No Cloudflare cookies found on attempt $attempt/$MAX_BYPASS_RETRIES ($urlLabel) — challenge may have failed" }
+
+                    // If the WebSocket connection died, refresh the WS URL for next attempt
+                    refreshWsUrl()
+                } catch (e: Exception) {
+                    logger.error(e) { "Cloudflare bypass failed on attempt $attempt/$MAX_BYPASS_RETRIES" }
+                    // Any exception during CDP interaction means Chrome is in an
+                    // unknown state — reset for clean restart on next attempt.
+                    chromeProcess?.destroyForcibly()
+                    chromeProcess = null
+                    chromeWsUrl = null
+                    chromePort = -1
+                }
+
+                // Brief pause between retries
+                if (attempt < MAX_BYPASS_RETRIES) {
+                    try { Thread.sleep(2000L * attempt) } catch (_: Exception) {}
+                }
+            }
+
+            logger.warn { "❌ Cloudflare bypass failed after $MAX_BYPASS_RETRIES attempts" }
+            return emptyMap()
         }
-
-        for (attempt in 1..MAX_BYPASS_RETRIES) {
-            // Cycle through URLs: attempt 1 → primary, attempt 2 → fallback (if any),
-            // attempt 3 → primary again
-            val targetUrl = urlsToTry[(attempt - 1) % urlsToTry.size]
-            var process: Process? = null
-            try {
-                // Launch Chrome with remote debugging, parse port from stderr
-                val (chromeProcess, debugPort) = launchChromeWithPort()
-                process = chromeProcess
-
-                // Get the WebSocket debugger URL
-                val wsUrl = getDebuggerUrl(debugPort)
-                if (wsUrl == null) {
-                    logger.warn { "Failed to get Chrome DevTools URL on port $debugPort (attempt $attempt/$MAX_BYPASS_RETRIES)" }
-                    continue
-                }
-
-                // Navigate to URL and wait for Cloudflare challenge to resolve
-                val cookies = navigateAndWait(wsUrl, targetUrl, timeoutSeconds, userAgent, referer)
-                if (cookies.isNotEmpty()) {
-                    val urlLabel = if (targetUrl == url) "primary" else "domain-root"
-                    logger.info { "✅ Cloudflare bypass succeeded on attempt $attempt/$MAX_BYPASS_RETRIES ($urlLabel) — got ${cookies.size} cookie(s)" }
-                    return cookies
-                }
-
-                val urlLabel = if (targetUrl == url) "primary" else "fallback"
-                logger.warn { "No Cloudflare cookies found on attempt $attempt/$MAX_BYPASS_RETRIES ($urlLabel) — challenge may have failed" }
-            } catch (e: Exception) {
-                logger.error(e) { "Cloudflare bypass failed on attempt $attempt/$MAX_BYPASS_RETRIES" }
-            } finally {
-                process?.let {
-                    it.destroyForcibly()
-                    try { it.waitFor(2, TimeUnit.SECONDS) } catch (_: Exception) {}
-                }
-            }
-
-            // Brief pause between retries
-            if (attempt < MAX_BYPASS_RETRIES) {
-                try { Thread.sleep(1500L * attempt) } catch (_: Exception) {}
-            }
-        }
-
-        logger.warn { "❌ Cloudflare bypass failed after $MAX_BYPASS_RETRIES attempts" }
-        return emptyMap()
     }
 
-    // ── Internal ──────────────────────────────────────────────────────
+    /**
+     * Gracefully shut down the persistent Chrome process.
+     * Call this when the app exits to clean up system resources.
+     *
+     * Safe to call multiple times — checks if Chrome is alive first.
+     */
+    fun shutdown() {
+        lock.withLock {
+            val proc = chromeProcess ?: return
+            if (proc.isAlive) {
+                logger.info { "Shutting down persistent Chrome (PID ${proc.pid()})..." }
+                proc.destroyForcibly()
+                try { proc.waitFor(3, TimeUnit.SECONDS) } catch (_: Exception) {}
+                logger.info { "Persistent Chrome shut down." }
+            }
+            chromeProcess = null
+            chromePort = -1
+            chromeWsUrl = null
+            hasEverStartedChrome = false
+        }
+    }
+
+    // ── Persistent Chrome lifecycle ────────────────────────────────────
+
+    /**
+     * Ensure the persistent Chrome instance is running and responsive.
+     * If it's not running or has crashed, starts a new instance.
+     *
+     * @return true if Chrome is running and ready
+     */
+    private fun ensureChromeRunning(): Boolean {
+        // Fast path: Chrome is alive and responding
+        if (chromeProcess?.isAlive == true && chromePort > 0) {
+            // Quick health check via /json/version
+            if (isRunning) return true
+
+            // Port is stale — Chrome may have crashed. Reset state.
+            logger.warn { "Persistent Chrome health check failed — restarting..." }
+            chromeProcess?.destroyForcibly()
+            chromeProcess = null
+            chromePort = -1
+            chromeWsUrl = null
+        }
+
+        // Launch a new Chrome instance
+        return try {
+            val (process, port) = launchChromeWithPort()
+            chromeProcess = process
+            chromePort = port
+
+            // Get the WebSocket debugger URL
+            val wsUrl = getDebuggerUrl(port)
+            chromeWsUrl = wsUrl
+
+            if (wsUrl == null) {
+                logger.warn { "Failed to get Chrome DevTools URL after launch" }
+                chromeProcess?.destroyForcibly()
+                chromeProcess = null
+                chromePort = -1
+                return false
+            }
+
+            if (!hasEverStartedChrome) {
+                logger.info { "🚀 Persistent Chrome started (PID ${process.pid()}, port $port)" }
+                hasEverStartedChrome = true
+            } else {
+                logger.info { "♻️ Persistent Chrome restarted (PID ${process.pid()}, port $port)" }
+            }
+
+            true
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to launch persistent Chrome" }
+            chromeProcess = null
+            chromePort = -1
+            chromeWsUrl = null
+            false
+        }
+    }
+
+    /**
+     * Refresh the cached WebSocket URL from the running Chrome instance.
+     * Called when a WebSocket connection fails — the debugger URL may have changed
+     * (e.g., Chrome restarted a DevTools session), so we refetch it from /json/version.
+     */
+    private fun refreshWsUrl() {
+        val port = chromePort
+        if (port <= 0) return
+        chromeWsUrl = getDebuggerUrl(port)
+    }
+
+    // ── Chrome process management ──────────────────────────────────────
 
     private fun chromeExecutable(): File {
-        // Custom path takes priority
         if (customChromePath.isNotBlank()) {
             val customFile = File(customChromePath)
             if (customFile.isFile) return customFile
         }
-        // Standard macOS Chrome location
         val standardPath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
         if (File(standardPath).isFile) return File(standardPath)
-        // Chromium via Homebrew
         val chromiumPath = "/opt/homebrew/bin/chromium"
         if (File(chromiumPath).isFile) return File(chromiumPath)
-        // Brave
         val bravePath = "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
         if (File(bravePath).isFile) return File(bravePath)
-        // Microsoft Edge
         val edgePath = "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
         if (File(edgePath).isFile) return File(edgePath)
-        // Fallback
         return File(standardPath)
     }
 
     /**
      * Launch Chrome with `--remote-debugging-port=0` and parse the assigned
-     * port from stderr. Returns a single Chrome instance — no double launch.
+     * port from stderr.
      */
     private fun launchChromeWithPort(): Pair<Process, Int> {
+        // Use a persistent user-data-dir so session state (cookies, localStorage,
+        // TLS cache) survives across navigation cycles within the same Chrome instance.
+        val userDataDir = File(
+            System.getProperty("java.io.tmpdir"),
+            "anikku-chrome-cdp-profile"
+        )
+        userDataDir.mkdirs()
+
         val builder = ProcessBuilder(
             chromeExecutable().absolutePath,
             "--remote-debugging-port=0",
@@ -218,13 +364,13 @@ object ChromeCDPClient {
             "--disable-background-networking",
             "--disable-sync",
             "--no-sandbox",
+            "--user-data-dir=${userDataDir.absolutePath}",
             "--disable-blink-features=AutomationControlled",
             "about:blank",
         )
         builder.environment()["DISPLAY"] = ""
         val process = builder.start()
 
-        // Parse port from stderr: "DevTools listening on ws://127.0.0.1:PORT/devtools/browser/HASH"
         val portRef = AtomicInteger(-1)
         val stderrThread = Thread({
             try {
@@ -242,9 +388,8 @@ object ChromeCDPClient {
         stderrThread.isDaemon = true
         stderrThread.start()
 
-        // Wait for the port with a timeout
         val startTime = System.currentTimeMillis()
-        val timeoutMs = 10000L
+        val timeoutMs = 15000L
         while (portRef.get() < 0 && System.currentTimeMillis() - startTime < timeoutMs) {
             Thread.sleep(100)
         }
@@ -256,7 +401,6 @@ object ChromeCDPClient {
             throw IllegalStateException("Failed to get Chrome DevTools port within ${timeoutMs}ms")
         }
 
-        // Give Chrome a moment to finish initializing
         Thread.sleep(300)
 
         return Pair(process, port)
@@ -278,8 +422,7 @@ object ChromeCDPClient {
     }
 
     /**
-     * Navigate to a URL via CDP WebSocket, wait for page load (Cloudflare
-     * JS challenge included), then extract cookies via Network.getCookies.
+     * Navigate to a URL via CDP WebSocket, wait for page load, extract cookies.
      *
      * Uses a multi-phase approach:
      * 1. Wait for Page.loadEventFired (initial page load complete)
@@ -298,6 +441,7 @@ object ChromeCDPClient {
         val cookies = ConcurrentHashMap<String, String>()
         var messageId = 0
         val pageLoaded = AtomicBoolean(false)
+        val wsFailed = AtomicBoolean(false)
 
         val ws = httpClient.newWebSocket(
             Request.Builder().url(wsUrl).build(),
@@ -311,14 +455,13 @@ object ChromeCDPClient {
                     val enableNet = """{"id":$messageId,"method":"Network.enable"}"""
                     logDebug(">>> $enableNet")
                     webSocket.send(enableNet)
-                    // User-Agent override: Chrome CDP uses its own headless UA by default
-                    // which Cloudflare detects. Set the real desktop UA the extension uses.
+                    // User-Agent override
                     messageId++
                     val escapedUA = userAgent.replace("\\", "\\\\").replace("\"", "\\\"")
                     val setUA = """{"id":$messageId,"method":"Network.setUserAgentOverride","params":{"userAgent":"$escapedUA"}}"""
                     logDebug(">>> $setUA")
                     webSocket.send(setUA)
-                    // Anti-detection scripts — Cloudflare/Turnstile check these for headless mode
+                    // Anti-detection scripts
                     val antiDetectJS = """
                         Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
                         Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
@@ -331,7 +474,7 @@ object ChromeCDPClient {
                     val navigateParams = StringBuilder(""""url":"$targetUrl"""")
                     if (!referer.isNullOrBlank()) {
                         val escapedReferer = referer.replace("\\", "\\\\").replace("\"", "\\\"")
-                        navigateParams.append("""","referrer":"$escapedReferer"""")
+                        navigateParams.append(""","referrer":"$escapedReferer"""")
                     }
                     val navigate = """{"id":$messageId,"method":"Page.navigate","params":{$navigateParams}}"""
                     logDebug(">>> $navigate")
@@ -339,20 +482,16 @@ object ChromeCDPClient {
                 }
 
                 override fun onMessage(webSocket: WebSocket, text: String) {
-                    // Log truncated incoming CDP message for debug
                     logDebug("<<< ${text.take(500)}${if (text.length > 500) "..." else ""}")
                     try {
                         val msg = json.parseToJsonElement(text).jsonObject
                         val method = msg["method"]?.jsonPrimitive?.content
 
-                        // Page fully loaded → Cloudflare JS challenge resolved.
                         if (method == "Page.loadEventFired") {
                             pageLoaded.set(true)
-                            // First cookie fetch: wait 1.5s for post-load CF JS
                             scheduleCookieFetch(webSocket, targetUrl, delayMs = 1500)
                         }
 
-                        // Process Network.getCookies response
                         val result = msg["result"]
                         val msgId = msg["id"]
                         if (result != null && msgId != null) {
@@ -375,18 +514,17 @@ object ChromeCDPClient {
                             }
                         }
 
-                        // Page load error or stopped — still try to get cookies
                         if (method == "Page.frameStoppedLoading") {
                             scheduleCookieFetch(webSocket, targetUrl, delayMs = 1000)
                         }
                     } catch (e: Exception) {
-                        // Malformed CDP message — in debug mode, log it so the user can diagnose
                         logDebug("<<< [MALFORMED] ${text.take(500)} — ${e.message}")
                     }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     logger.warn(t) { "CDP WebSocket connection failed" }
+                    wsFailed.set(true)
                     latch.countDown()
                 }
             },
@@ -395,15 +533,14 @@ object ChromeCDPClient {
         // Wait for initial cookie fetch or timeout
         val success = latch.await(timeoutSeconds, TimeUnit.SECONDS)
 
-        // If page loaded but no cookies yet, try a few more polling rounds
-        if (cookies.isEmpty() && pageLoaded.get()) {
+        // If page loaded but no cookies yet, try polling
+        if (cookies.isEmpty() && pageLoaded.get() && !wsFailed.get()) {
             logger.debug { "Page loaded but no CF cookies yet — polling for more time..." }
-            val pollLatch = CountDownLatch(1)
             val remainingMs = (timeoutSeconds * 1000) - (System.currentTimeMillis() % (timeoutSeconds * 1000))
             val maxPollMs = remainingMs.coerceAtMost(15000L)
             val startPoll = System.currentTimeMillis()
 
-            while (cookies.isEmpty() && System.currentTimeMillis() - startPoll < maxPollMs) {
+            while (cookies.isEmpty() && System.currentTimeMillis() - startPoll < maxPollMs && !wsFailed.get()) {
                 val pollId = cookieFetchId.incrementAndGet()
                 val pollMsg = """{"id":$pollId,"method":"Network.getCookies","params":{"urls":["$targetUrl"]}}"""
                 logDebug(">>> $pollMsg")
@@ -412,9 +549,18 @@ object ChromeCDPClient {
             }
         }
 
-        if (!success) {
+        if (!success && !wsFailed.get()) {
             logger.warn { "Timed out waiting for Cloudflare challenge after ${timeoutSeconds}s" }
-            ws.close(1000, "Timeout")
+        }
+
+        // Close the WebSocket (don't close if it already failed)
+        if (!wsFailed.get()) {
+            ws.close(1000, "Done")
+        }
+
+        // If WebSocket failed, signal the caller to refresh WS URL
+        if (wsFailed.get()) {
+            throw WebSocketOrChromeFailure("CDP WebSocket connection lost")
         }
 
         return cookies.toMap()
@@ -422,15 +568,10 @@ object ChromeCDPClient {
 
     /**
      * Check if a URL looks like a navigable page (HTML) vs a direct resource.
-     * Resource URLs (videos, M3U8 playlists, API endpoints) don't trigger
-     * Cloudflare challenge pages. Domain root URLs do.
      */
     private fun isPageUrl(url: String): Boolean {
         val path = url.substringAfter("://").substringAfter("/").substringBefore("?").substringBefore("#")
-        // Empty path or common page patterns → likely an HTML page
         if (path.isEmpty() || path == "/") return true
-        // Check for CDN/resource path patterns first (overrides extension check).
-        // Many video CDNs use extensionless URLs like /stream/<hash> or /hls/<id>.
         val lowerPath = path.lowercase()
         val resourcePathPatterns = listOf(
             "/stream/", "/api/", "/video/", "/hls/", "/manifest/",
@@ -438,14 +579,13 @@ object ChromeCDPClient {
         )
         if (resourcePathPatterns.any { lowerPath.contains(it) }) return false
         val extension = path.substringAfterLast(".")
-        // File extensions that indicate non-HTML resources
         val nonPageExtensions = setOf(
-            "mp4", "mkv", "webm", "avi", "mov", "flv", "ts",  // video
-            "m3u8", "m3u", "mpd", // streaming playlists
-            "jpg", "jpeg", "png", "gif", "webp", // images
-            "zip", "rar", "7z", // archives
-            "pdf", "doc", "docx", // documents
-            "json", "xml", // data
+            "mp4", "mkv", "webm", "avi", "mov", "flv", "ts",
+            "m3u8", "m3u", "mpd",
+            "jpg", "jpeg", "png", "gif", "webp",
+            "zip", "rar", "7z",
+            "pdf", "doc", "docx",
+            "json", "xml",
         )
         return extension.lowercase() !in nonPageExtensions
     }
@@ -459,16 +599,13 @@ object ChromeCDPClient {
     }
 
     /**
-     * Schedule a [Network.getCookies] request after a delay, without blocking
-     * the WebSocket dispatch thread.
+     * Schedule a [Network.getCookies] request after a delay.
      */
     private fun scheduleCookieFetch(
         webSocket: WebSocket,
         targetUrl: String,
         delayMs: Long,
     ) {
-        // Use an incremental ID tracked outside the WebSocketListener
-        // to avoid closure issues with the local "messageId" variable.
         val thread = Thread({
             Thread.sleep(delayMs)
             val id = cookieFetchId.incrementAndGet()
@@ -485,20 +622,23 @@ object ChromeCDPClient {
 
     /**
      * Log a debug message only when [debugMode] is enabled.
-     * Uses INFO level so these messages appear in the default log configuration.
-     * Also captures the message in an in-memory ring buffer for file export.
      */
     private fun logDebug(message: String) {
         if (debugMode) {
             val entry = "[${Instant.now()}] $message"
             logger.info { "[CDP-DEBUG] $entry" }
             debugLog.add(entry)
-            // Prune ring buffer if over capacity
             while (debugLog.size > MAX_DEBUG_MESSAGES) {
                 debugLog.poll()
             }
         }
     }
+
+    /**
+     * Exception thrown when the CDP WebSocket connection fails.
+     * Signals the caller to refresh the WS URL and potentially restart Chrome.
+     */
+    private class WebSocketOrChromeFailure(message: String) : Exception(message)
 
     private val CLOUDFLARE_COOKIE_NAMES = setOf(
         "cf_clearance",
@@ -507,21 +647,20 @@ object ChromeCDPClient {
         "cf_chl_3",
         "cf_chl_rc_ni",
         "cf_chl_rc_m",
-        "cf_chl_seq",                    // Cloudflare challenge sequence
-        "cf_chl_prog",                   // Cloudflare challenge progress
-        "cf_chl_cc",                     // Cloudflare challenge captcha
-        "cf_ob_info",                    // Cloudflare observability
-        "cf_use_ob",                     // Cloudflare observability flag
-        "__cflb",                        // Cloudflare load balancer
-        "__cfruid",                      // Cloudflare rate-limiting UID
-        "__cfwaitingroom",               // Cloudflare Waiting Room
-        // Non-Cloudflare WAF cookies (Chrome CDP can solve these too)
-        "dd_testcookie",                 // DataDome test
-        "ak_bmsc",                       // Akamai bot manager
-        "bm_sz",                         // Akamai bot manager session
-        "_abck",                         // Akamai sensor data
-        "reese84",                       // Imperva/Incapsula
-        "incap_ses",                     // Imperva session
-        "visid_incap",                   // Imperva visitor ID
+        "cf_chl_seq",
+        "cf_chl_prog",
+        "cf_chl_cc",
+        "cf_ob_info",
+        "cf_use_ob",
+        "__cflb",
+        "__cfruid",
+        "__cfwaitingroom",
+        "dd_testcookie",
+        "ak_bmsc",
+        "bm_sz",
+        "_abck",
+        "reese84",
+        "incap_ses",
+        "visid_incap",
     )
 }
