@@ -1,3 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pref_app_icon">ऐप आइकन</string>
+    <string name="pref_app_icon_toast">ऐप आइकन बदलकर यह हो गया %s</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
+    <string name="install_amnis">टोरेंट</string>
+    <string name="pref_category_torrentserver">टोरेंट सर्वर प्राथमिकताएं</string>
+    <string name="pref_torrentserver_port">टोरेंट सर्वर पोर्ट</string>
+    <string name="torrentserver_is_running">टोरेंट सर्वर चल रहा है</string>
+    <string name="pref_torrent_trackers">टोरेंट ट्रैकर्स</string>
+    <string name="pref_reset_torrent_trackers_string">डिफ़ॉल्ट टॉरेंट ट्रैकर स्ट्रिंग रीसेट करें</string>
+    <string name="flare_solver_user_agent_update_success">फ्लेयरसॉल्वर काम कर रहा है। यूज़र एजेंट अपडेट हो गया है। कृपया ऐप को रीस्टार्ट करें।</string>
+    <string name="flare_solver_update_user_agent_failed">फ्लेयरसॉल्वर काम नहीं कर रहा है। यूज़र एजेंट अपडेट नहीं हुआ है। कृपया अपनी सेटिंग्स चेक करें।</string>
+    <string name="flare_solver_error">फ्लेयरसॉल्वर से संपर्क करने में त्रुटि</string>
+    <string name="flare_solver_error_webview">वेब-दृश्य के साथ रिज़ॉल्व करने में गड़बड़ी</string>
+    <string name="pref_enable_flare_solverr">फ्लेयरसॉल्वर चालू करें</string>
 </resources>
