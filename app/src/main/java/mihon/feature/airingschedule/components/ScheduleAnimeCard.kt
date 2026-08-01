@@ -246,7 +246,7 @@ private fun AirTimeBadgeRow(
             color = if (hasAired) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
         ) {
             Text(
-                text = if (hasAired) "Aired ${expectedUploadTime ?: officialAirTime}" else (expectedUploadTime ?: officialAirTime),
+                text = if (hasAired) "Aired ${expectedUploadTime ?: officialAirTime}" else expectedUploadTime ?: officialAirTime,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = if (hasAired) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onPrimary,
