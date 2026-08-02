@@ -6,10 +6,7 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.extension.model.LoadResult
 import eu.kanade.tachiyomi.source.CatalogueSource
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -33,11 +30,16 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileWriter
 import java.time.Instant
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Comprehensive extension compatibility test.
  *
- * Loads ALL 52 extension JARs and tests each one across four stages:
+ * Loads every installed extension JAR and tests each one across four stages:
  * - **Load**: Can the JAR be loaded and trusted?
  * - **Browse**: Does getPopularAnime return actual results?
  * - **Episodes**: Does getEpisodeList return episodes for the first popular anime?
@@ -48,7 +50,7 @@ import java.time.Instant
  *
  * Stage code:
  *   ✅ = PASS (returned data)
- *   ⏱  = Timeout (request > 20s)
+ *   ⏱  = Timeout (stage > 30s)
  *   ❌ = FAIL (error or empty result)
  *   ⚠  = SKIP (missing extension JAR or unsupported API)
  */
@@ -106,6 +108,15 @@ class ExtensionCompatibilityTest {
     private val results = mutableListOf<ExtensionResult>()
     private val extensionsDir = File(System.getProperty("user.home"), EXTENSIONS_DIR)
     private var startTime: Long = 0
+    private val stageThreadCounter = AtomicInteger()
+    private val stageExecutor = Executors.newCachedThreadPool { runnable ->
+        Thread(runnable, "extension-compat-stage-${stageThreadCounter.incrementAndGet()}").apply {
+            // A third-party source can ignore interruption inside blocking HTTP or
+            // JavaScript. A daemon worker lets the test enforce its deadline and
+            // still allows the Gradle test JVM to terminate cleanly.
+            isDaemon = true
+        }
+    }
 
     @BeforeAll
     fun setup() {
@@ -174,13 +185,28 @@ class ExtensionCompatibilityTest {
 
     @AfterAll
     fun tearDown() {
+        stageExecutor.shutdownNow()
         MacOSExtensionLoader.closeAll()
         stopKoin()
         generateReport()
     }
 
+    private fun <T> runStage(block: suspend () -> T): T {
+        val future = stageExecutor.submit(Callable { runBlocking { block() } })
+        return try {
+            future.get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        } catch (error: TimeoutException) {
+            future.cancel(true)
+            throw error
+        } catch (error: ExecutionException) {
+            val cause = error.cause
+            if (cause is Exception) throw cause
+            throw error
+        }
+    }
+
     @Test
-    fun `test all 52 extensions`() = runBlocking {
+    fun `test all installed extensions`() = runBlocking {
         val jarFiles = extensionsDir.listFiles()
             ?.filter { it.extension == "jar" }
             ?.sortedBy { it.name }
@@ -299,7 +325,7 @@ class ExtensionCompatibilityTest {
             VideoResult("⚠", 0, "", "")
         }
 
-        // Close the classloader to prevent resource leaks across 45 iterations
+        // Close the classloader to prevent resource leaks across the installed fleet.
         MacOSExtensionLoader.closeClassLoader(pkgName)
 
         // Capture CDP diagnostics after ALL stages (browse, episodes, video)
@@ -383,13 +409,7 @@ class ExtensionCompatibilityTest {
 
     private fun testBrowse(source: CatalogueSource, pkgName: String): BrowseResult {
         return try {
-            val page = runBlocking {
-                withContext(Dispatchers.IO) {
-                    withTimeout(TIMEOUT_MS) {
-                        source.getPopularAnime(page = 1)
-                    }
-                }
-            }
+            val page = runStage { source.getPopularAnime(page = 1) }
 
             val validAnime = page.animes.filter { a ->
                 safeTitle(a).isNotBlank()
@@ -401,7 +421,7 @@ class ExtensionCompatibilityTest {
                 val first = validAnime.first()
                 BrowseResult("✅", validAnime.size, first, safeTitle(first).take(40))
             }
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+        } catch (e: TimeoutException) {
             BrowseResult("⏱", 0, null, "Timeout")
         } catch (e: Exception) {
             BrowseResult("❌", 0, null, "${e::class.simpleName}")
@@ -419,21 +439,10 @@ class ExtensionCompatibilityTest {
 
     private fun testEpisodes(source: CatalogueSource, anime: SAnime, pkgName: String): EpisodeResult {
         return try {
-            val details = runBlocking {
-                withContext(Dispatchers.IO) {
-                    withTimeout(TIMEOUT_MS) {
-                        source.getAnimeDetails(anime)
-                    }
-                }
-            }
-            ensureUrl(details, safeUrl(anime))
-
-            val episodes = runBlocking {
-                withContext(Dispatchers.IO) {
-                    withTimeout(TIMEOUT_MS) {
-                        source.getEpisodeList(details)
-                    }
-                }
+            val episodes = runStage {
+                val details = source.getAnimeDetails(anime)
+                ensureUrl(details, safeUrl(anime))
+                source.getEpisodeList(details)
             }
 
             val validEpisodes = episodes.filter { e ->
@@ -446,7 +455,7 @@ class ExtensionCompatibilityTest {
                 val first = validEpisodes.first()
                 EpisodeResult("✅", validEpisodes.size, first, safeName(first).take(30))
             }
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+        } catch (e: TimeoutException) {
             EpisodeResult("⏱", 0, null, "Timeout")
         } catch (e: Exception) {
             EpisodeResult("❌", 0, null, "${e::class.simpleName}")
@@ -466,13 +475,7 @@ class ExtensionCompatibilityTest {
         return try {
             ensureEpisodeUrl(episode, "/episode/1")
 
-            val videos: List<Video> = runBlocking {
-                withContext(Dispatchers.IO) {
-                    withTimeout(TIMEOUT_MS) {
-                        source.getVideoList(episode)
-                    }
-                }
-            }
+            val videos: List<Video> = runStage { source.getVideoList(episode) }
 
             if (videos.isEmpty()) {
                 VideoResult("⚠", 0, "", "")
@@ -487,7 +490,7 @@ class ExtensionCompatibilityTest {
             }
         } catch (e: NoSuchMethodError) {
             VideoResult("⚠", 0, "NoSuchMethod", "")
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+        } catch (e: TimeoutException) {
             VideoResult("⏱", 0, "", "Timeout")
         } catch (e: Exception) {
             VideoResult("❌", 0, "", "${e::class.simpleName}")
