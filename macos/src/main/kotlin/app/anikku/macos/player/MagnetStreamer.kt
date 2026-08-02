@@ -4,7 +4,7 @@ import app.anikku.macos.platform.logging.CrashReporter
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
@@ -14,7 +14,11 @@ private val logger = KotlinLogging.logger {}
  */
 sealed class MagnetStreamResult {
     /** Success — the stream is being served at this local HTTP URL. */
-    data class Success(val httpUrl: String, val process: Process) : MagnetStreamResult()
+    data class Success(
+        val httpUrl: String,
+        val process: Process,
+        val outputThread: Thread? = null,
+    ) : MagnetStreamResult()
 
     /** Failure — webtorrent-cli is not available or streaming failed. */
     data class Failure(val message: String) : MagnetStreamResult()
@@ -57,6 +61,12 @@ object MagnetStreamer {
 
     private const val TIMEOUT_SECONDS = 60L
 
+    private sealed interface ProcessOutput {
+        data class Line(val value: String) : ProcessOutput
+        data class Failed(val error: Throwable) : ProcessOutput
+        data object Closed : ProcessOutput
+    }
+
     /**
      * Check if webtorrent-cli is available on this system.
      *
@@ -88,58 +98,108 @@ object MagnetStreamer {
      * @return [MagnetStreamResult.Success] with the HTTP URL and managed process,
      *         or [MagnetStreamResult.Failure] with an error message.
      */
-    suspend fun startStreaming(magnetUrl: String): MagnetStreamResult = withContext(Dispatchers.IO) {
+    suspend fun startStreaming(magnetUrl: String): MagnetStreamResult = startStreaming(
+        magnetUrl = magnetUrl,
+        timeoutMillis = TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS),
+        processFactory = { url ->
+            ProcessBuilder(
+                "npx", "--yes", "webtorrent-cli",
+                url,
+                "-p", "0",
+            )
+                .redirectErrorStream(true)
+                .start()
+        },
+    )
+
+    internal suspend fun startStreaming(
+        magnetUrl: String,
+        timeoutMillis: Long,
+        processFactory: (String) -> Process,
+    ): MagnetStreamResult = withContext(Dispatchers.IO) {
+        startStreamingBlocking(magnetUrl, timeoutMillis, processFactory)
+    }
+
+    private fun startStreamingBlocking(
+        magnetUrl: String,
+        timeoutMillis: Long,
+        processFactory: (String) -> Process,
+    ): MagnetStreamResult {
         logger.info { "🧲 MAGNET_STREAM: Starting torrent stream: ${magnetUrl.take(80)}..." }
         CrashReporter.logEvent("Magnet stream start", "url=${magnetUrl.take(80)}")
 
         try {
-            // Spawn webtorrent-cli via npx (auto-downloads if not installed)
-            // -p 0 = pick any available port (avoids port conflicts)
-            val processBuilder = ProcessBuilder(
-                "npx", "--yes", "webtorrent-cli",
-                magnetUrl,
-                "-p", "0",
-            )
-            processBuilder.redirectErrorStream(true)
+            require(timeoutMillis > 0) { "timeoutMillis must be positive" }
+            val process = processFactory(magnetUrl)
+            val output = LinkedBlockingQueue<ProcessOutput>()
+            val outputThread = Thread({
+                try {
+                    process.inputStream.bufferedReader().useLines { lines ->
+                        lines.forEach { output.offer(ProcessOutput.Line(it)) }
+                    }
+                } catch (error: Throwable) {
+                    if (process.isAlive) output.offer(ProcessOutput.Failed(error))
+                } finally {
+                    output.offer(ProcessOutput.Closed)
+                }
+            }, "anikku-webtorrent-output").apply {
+                // The process pipe can ignore interruption until the child exits.
+                // Keeping this daemonized prevents a broken CLI from pinning the JVM.
+                isDaemon = true
+                start()
+            }
 
-            val process = processBuilder.start()
-            val reader = process.inputStream.bufferedReader()
-
-            // Read stdout line by line until we find the HTTP server URL
             val httpUrlPattern = Regex("http://localhost:\\d+/\\d+")
-            var serverUrl: String? = null
-            val startTime = System.currentTimeMillis()
+            val deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
 
             while (true) {
-                // Timeout check
-                if (System.currentTimeMillis() - startTime > TIMEOUT_SECONDS * 1000) {
-                    process.destroy()
-                    val msg = "Magnet stream timed out after ${TIMEOUT_SECONDS}s"
+                val remainingNanos = deadlineNanos - System.nanoTime()
+                if (remainingNanos <= 0L) {
+                    stopProcess(process, outputThread)
+                    val msg = "Magnet stream timed out after ${timeoutMillis}ms"
                     logger.warn { "🧲 MAGNET_STREAM: $msg" }
                     CrashReporter.logEvent("Magnet timeout", msg)
-                    return@withContext MagnetStreamResult.Failure(msg)
+                    return MagnetStreamResult.Failure(msg)
                 }
 
-                val line = reader.readLine() ?: break
+                val event = output.poll(
+                    minOf(remainingNanos, TimeUnit.MILLISECONDS.toNanos(250)),
+                    TimeUnit.NANOSECONDS,
+                ) ?: continue
+
+                if (event is ProcessOutput.Closed) {
+                    stopProcess(process, outputThread)
+                    val msg = "Could not find HTTP server URL in webtorrent output"
+                    logger.warn { "🧲 MAGNET_STREAM: $msg" }
+                    CrashReporter.logEvent("Magnet error", msg)
+                    return MagnetStreamResult.Failure(msg)
+                }
+
+                if (event is ProcessOutput.Failed) {
+                    stopProcess(process, outputThread)
+                    throw event.error
+                }
+
+                val line = (event as ProcessOutput.Line).value
                 logger.debug { "🧲 MAGNET_STREAM: $line" }
 
-                // Look for the local HTTP server URL
                 val match = httpUrlPattern.find(line)
                 if (match != null) {
-                    serverUrl = match.value
+                    val serverUrl = match.value
                     logger.info { "🧲 MAGNET_STREAM: Found server URL: $serverUrl" }
-                    break
+                    logger.info { "🧲 MAGNET_STREAM: Success! Stream ready at $serverUrl" }
+                    CrashReporter.logEvent("Magnet success", "url=$serverUrl")
+                    return MagnetStreamResult.Success(serverUrl, process, outputThread)
                 }
 
-                // Check for common errors in output
                 val lowerLine = line.lowercase()
                 when {
                     "error" in lowerLine && ("not found" in lowerLine || "cant find" in lowerLine) -> {
-                        process.destroy()
+                        stopProcess(process, outputThread)
                         val msg = "webtorrent-cli not found. Install: npm install -g webtorrent-cli"
                         logger.warn { "🧲 MAGNET_STREAM: $msg" }
                         CrashReporter.logEvent("Magnet error", msg)
-                        return@withContext MagnetStreamResult.Failure(msg)
+                        return MagnetStreamResult.Failure(msg)
                     }
                     "no peers" in lowerLine && "no tmp" in lowerLine -> {
                         // Still trying to connect — keep waiting
@@ -147,24 +207,11 @@ object MagnetStreamer {
                     }
                 }
             }
-
-            if (serverUrl == null) {
-                process.destroy()
-                val msg = "Could not find HTTP server URL in webtorrent output"
-                logger.warn { "🧲 MAGNET_STREAM: $msg" }
-                CrashReporter.logEvent("Magnet error", msg)
-                return@withContext MagnetStreamResult.Failure(msg)
-            }
-
-            logger.info { "🧲 MAGNET_STREAM: Success! Stream ready at $serverUrl" }
-            CrashReporter.logEvent("Magnet success", "url=$serverUrl")
-            MagnetStreamResult.Success(serverUrl, process)
-
         } catch (e: Exception) {
             val msg = "Magnet stream failed: ${e.message ?: "Unknown error"}"
             logger.error(e) { "🧲 MAGNET_STREAM: $msg" }
             CrashReporter.logError("MagnetStream", msg, e)
-            MagnetStreamResult.Failure(msg)
+            return MagnetStreamResult.Failure(msg)
         }
     }
 
@@ -172,13 +219,25 @@ object MagnetStreamer {
      * Stop a running webtorrent process and clean up resources.
      */
     fun stopStreaming(result: MagnetStreamResult.Success) {
+        stopProcess(result.process, result.outputThread)
+        logger.info { "🧲 MAGNET_STREAM: Process stopped" }
+    }
+
+    private fun stopProcess(process: Process, outputThread: Thread?) {
         try {
-            result.process.destroy()
-            // Force kill if it doesn't stop within 3 seconds
-            if (!result.process.waitFor(3, TimeUnit.SECONDS)) {
-                result.process.destroyForcibly()
+            val descendants = try {
+                process.descendants().toList()
+            } catch (_: UnsupportedOperationException) {
+                emptyList()
             }
-            logger.info { "🧲 MAGNET_STREAM: Process stopped" }
+            descendants.asReversed().forEach { it.destroy() }
+            process.destroy()
+            if (!process.waitFor(3, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+                process.waitFor(1, TimeUnit.SECONDS)
+            }
+            descendants.asReversed().filter { it.isAlive }.forEach { it.destroyForcibly() }
+            outputThread?.join(1_000)
         } catch (e: Exception) {
             logger.warn(e) { "🧲 MAGNET_STREAM: Error stopping process" }
         }
