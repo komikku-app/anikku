@@ -622,12 +622,64 @@ tasks.register<Exec>("buildBiometricHelper") {
     commandLine("bash", scriptPath)
 }
 
-// Wire Sparkle helper build and configuration validation before packageDmg.
-tasks.whenTaskAdded {
-    if (name == "packageDmg") {
-        dependsOn("buildSparkleHelper")
-        dependsOn("validateSparkleConfiguration")
+// jpackage normalizes application-resource permissions to 0644. Restore the
+// executable bit on native Mach-O payloads after createDistributable and before
+// the DMG/PKG task archives the .app. TorrServer cannot launch without this;
+// Sparkle's Autoupdate/XPC helpers have the same requirement.
+val repairPackagedNativePermissions = tasks.register("repairPackagedNativePermissions") {
+    description = "Restore executable permissions on packaged native payloads"
+    group = "distribution"
+    dependsOn("createDistributable")
+
+    doLast {
+        val resources = layout.buildDirectory
+            .dir("compose/binaries/main/app/Anikku.app/Contents/app/resources")
+            .get()
+            .asFile
+        require(resources.isDirectory) { "Packaged resources directory is missing: $resources" }
+
+        val machOMagic = setOf(
+            0xFEEDFACE.toInt(), 0xCEFAEDFE.toInt(),
+            0xFEEDFACF.toInt(), 0xCFFAEDFE.toInt(),
+            0xCAFEBABE.toInt(), 0xBEBAFECA.toInt(),
+        )
+        val nativeFiles = resources.walkTopDown()
+            .filter(File::isFile)
+            .filter { file ->
+                file.inputStream().buffered().use { input ->
+                    val header = ByteArray(4)
+                    if (input.read(header) != header.size) return@use false
+                    val magic = header.fold(0) { value, byte -> (value shl 8) or (byte.toInt() and 0xff) }
+                    magic in machOMagic
+                }
+            }
+            .toList()
+        require(nativeFiles.isNotEmpty()) { "No packaged Mach-O payloads were found" }
+        nativeFiles.forEach { file ->
+            require(file.setExecutable(true, false) && file.canExecute()) {
+                "Unable to make packaged native payload executable: $file"
+            }
+        }
+        val torrServer = File(resources, "TorrServer/$torrServerBinaryName")
+        require(torrServer.isFile && torrServer.canExecute()) { "Packaged TorrServer is not executable" }
+        logger.lifecycle("Restored executable permissions on ${nativeFiles.size} packaged native payload(s)")
     }
+}
+
+tasks.matching { it.name == "packageDmg" || it.name == "packagePkg" }.configureEach {
+    dependsOn(repairPackagedNativePermissions)
+    // The Compose packaging task does not fingerprint POSIX mode changes in
+    // createDistributable. Always rebuild the archive after permission repair.
+    outputs.upToDateWhen { false }
+}
+
+tasks.matching { it.name == "packageDmg" }.configureEach {
+    dependsOn("buildSparkleHelper")
+    dependsOn("validateSparkleConfiguration")
+}
+
+// Wire staged native resources into Compose packaging.
+tasks.whenTaskAdded {
     if (name == "prepareAppResources") {
         dependsOn(prepareNativeAppResources)
     }
@@ -730,8 +782,12 @@ tasks.register("verifyPackage") {
 
         val sparkleHelper = File(resourcesDir, "Frameworks/libSparkleHelper.dylib")
         val sparkleFramework = File(resourcesDir, "Frameworks/Sparkle.framework/Versions/B/Sparkle")
+        val sparkleAutoupdate = File(resourcesDir, "Frameworks/Sparkle.framework/Versions/B/Autoupdate")
         if (!sparkleHelper.isFile) throw GradleException("Sparkle helper dylib is not bundled")
         if (!sparkleFramework.isFile) throw GradleException("Sparkle.framework is not bundled")
+        if (!sparkleAutoupdate.isFile || !sparkleAutoupdate.canExecute()) {
+            throw GradleException("Sparkle Autoupdate helper is missing or not executable")
+        }
         logger.lifecycle("  [Sparkle] Framework and helper found")
 
         val biometricHelper = File(resourcesDir, "Frameworks/libAnikkuBiometric.dylib")
