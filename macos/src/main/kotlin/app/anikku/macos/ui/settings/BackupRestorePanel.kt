@@ -194,10 +194,10 @@ fun BackupRestorePanel(
             title = { Text("Restore Backup") },
             text = {
                 Column {
-                    Text("This will replace your current library and history with the data from the backup.")
+                    Text("This will merge library, history, and supported settings from the backup into your current data.")
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Your current data will be lost. Make sure to create a backup first.",
+                        "Matching entries are updated. Creating a current backup first is still recommended.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -391,7 +391,7 @@ fun BackupRestorePanel(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
         ) {
             Text(
-                "💡 Tip: Use File > Open Backup in the menu bar (⌘O) to restore a backup from any location on your computer.",
+                "💡 Tip: File > Open Backup (⌘O) imports macOS backups and Android .tachibk files from any location.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

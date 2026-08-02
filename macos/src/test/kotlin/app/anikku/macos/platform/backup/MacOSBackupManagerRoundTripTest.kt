@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package app.anikku.macos.platform.backup
 
 import app.anikku.macos.platform.data.DownloadRepository
@@ -5,12 +7,16 @@ import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoBuf
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
+import java.util.zip.GZIPOutputStream
 
 class MacOSBackupManagerRoundTripTest {
 
@@ -167,6 +173,69 @@ class MacOSBackupManagerRoundTripTest {
         assertTrue(fixture.preferences.getBoolean("safe_setting", false).get())
     }
 
+    @Test
+    fun `Android tachibk imports library categories history progress and custom metadata`(@TempDir tempDir: Path) {
+        val animeUrl = "/anime/android"
+        val episodeUrl = "/episode/2"
+        val backup = AndroidFixtureBackup(
+            anime = listOf(
+                AndroidFixtureAnime(
+                    source = 42,
+                    url = animeUrl,
+                    title = "Original title",
+                    author = "Original author",
+                    genre = listOf("Action"),
+                    status = 1,
+                    dateAdded = 1234,
+                    episodes = listOf(
+                        AndroidFixtureEpisode("/episode/1", "Episode 1", seen = true, episodeNumber = 1f),
+                        AndroidFixtureEpisode(
+                            episodeUrl,
+                            "Episode 2",
+                            seen = true,
+                            lastSecondSeen = 91,
+                            totalSeconds = 120,
+                            episodeNumber = 2f,
+                        ),
+                    ),
+                    categories = listOf(7),
+                    history = listOf(AndroidFixtureHistory(episodeUrl, lastRead = 5678, readDuration = 88)),
+                    lastModifiedAt = 4321,
+                    customTitle = "Custom Android title",
+                    customGenre = listOf("Drama"),
+                    customStatus = 2,
+                ),
+            ),
+            categories = listOf(AndroidFixtureCategory("Imported", order = 7, hidden = true)),
+        )
+        val backupFile = tempDir.resolve("android.tachibk").toFile()
+        GZIPOutputStream(backupFile.outputStream()).use { gzip ->
+            gzip.write(ProtoBuf.encodeToByteArray(AndroidFixtureBackup.serializer(), backup))
+        }
+
+        val fixture = Fixture(tempDir.resolve("restored-android"))
+        val result = fixture.manager.importFrom(backupFile)
+
+        assertTrue(result.success, result.error)
+        assertEquals(1, result.libraryCount)
+        assertEquals(1, result.historyCount)
+        assertEquals(1, result.customAnimeCount)
+        val animeId = animeUrl.hashCode().toLong()
+        val restored = fixture.library.get(animeId)!!
+        assertEquals("Custom Android title", restored.title)
+        assertEquals(42, restored.sourceId)
+        assertEquals(91, restored.lastSecondSeen)
+        assertEquals(120, restored.totalSeconds)
+        assertEquals(2.0, restored.latestEpisodeNumber)
+        assertEquals("Imported", fixture.library.getCategory(restored.categoryId)?.name)
+        assertTrue(fixture.library.getCategory(restored.categoryId)?.hidden == true)
+        val restoredHistory = fixture.history.getLatestForAnime(animeId)!!
+        assertEquals(episodeUrl, restoredHistory.episodeUrl)
+        assertEquals(91, restoredHistory.lastSecondSeen)
+        assertEquals("Custom Android title", fixture.customAnime.get(animeId)?.title)
+        assertEquals(listOf("Drama"), fixture.customAnime.get(animeId)?.genre)
+    }
+
     private class Fixture(root: Path) {
         private val dataDir = root.toFile().apply { mkdirs() }
         val preferences = MacOSPreferenceStore(dataDir.resolve("preferences.json"))
@@ -182,4 +251,53 @@ class MacOSBackupManagerRoundTripTest {
             customAnimeRepository = customAnime,
         )
     }
+
+    @Serializable
+    private data class AndroidFixtureBackup(
+        @ProtoNumber(3) val anime: List<AndroidFixtureAnime>,
+        @ProtoNumber(4) val categories: List<AndroidFixtureCategory>,
+    )
+
+    @Serializable
+    private data class AndroidFixtureAnime(
+        @ProtoNumber(1) val source: Long,
+        @ProtoNumber(2) val url: String,
+        @ProtoNumber(3) val title: String,
+        @ProtoNumber(5) val author: String? = null,
+        @ProtoNumber(7) val genre: List<String> = emptyList(),
+        @ProtoNumber(8) val status: Int = 0,
+        @ProtoNumber(13) val dateAdded: Long = 0,
+        @ProtoNumber(16) val episodes: List<AndroidFixtureEpisode> = emptyList(),
+        @ProtoNumber(17) val categories: List<Long> = emptyList(),
+        @ProtoNumber(100) val favorite: Boolean = true,
+        @ProtoNumber(104) val history: List<AndroidFixtureHistory> = emptyList(),
+        @ProtoNumber(106) val lastModifiedAt: Long = 0,
+        @ProtoNumber(602) val customStatus: Int = 0,
+        @ProtoNumber(800) val customTitle: String? = null,
+        @ProtoNumber(805) val customGenre: List<String>? = null,
+    )
+
+    @Serializable
+    private data class AndroidFixtureEpisode(
+        @ProtoNumber(1) val url: String,
+        @ProtoNumber(2) val name: String,
+        @ProtoNumber(4) val seen: Boolean = false,
+        @ProtoNumber(6) val lastSecondSeen: Long = 0,
+        @ProtoNumber(16) val totalSeconds: Long = 0,
+        @ProtoNumber(9) val episodeNumber: Float = 0f,
+    )
+
+    @Serializable
+    private data class AndroidFixtureHistory(
+        @ProtoNumber(1) val url: String,
+        @ProtoNumber(2) val lastRead: Long,
+        @ProtoNumber(3) val readDuration: Long = 0,
+    )
+
+    @Serializable
+    private data class AndroidFixtureCategory(
+        @ProtoNumber(1) val name: String,
+        @ProtoNumber(2) val order: Long,
+        @ProtoNumber(900) val hidden: Boolean = false,
+    )
 }

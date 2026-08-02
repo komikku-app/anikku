@@ -19,7 +19,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Manages JSON backup export and import for the macOS app.
+ * Manages lossless macOS JSON backup export/import and Android `.tachibk`
+ * migration imports.
  *
  * Backup format includes:
  * - Library entries (favorites with categories)
@@ -62,6 +63,7 @@ class MacOSBackupManager(
     companion object {
         const val BACKUP_VERSION = 2
         const val BACKUP_EXTENSION = ".anikku_backup.json"
+        const val ANDROID_BACKUP_EXTENSION = ".tachibk"
     }
 
     // -----------------------------------------------------------------------
@@ -106,7 +108,7 @@ class MacOSBackupManager(
     // -----------------------------------------------------------------------
 
     /**
-     * Import app data from a backup JSON file.
+     * Import app data from a macOS JSON backup or Android `.tachibk` file.
      *
      * Restores library, history, downloads, and preferences.
      *
@@ -118,19 +120,12 @@ class MacOSBackupManager(
             return ImportResult(success = false, error = "File not found: $inputFile")
         }
 
-        // Read and parse backup JSON. File-system failures are returned to the
-        // caller so the UI can show an actionable restore error instead of
-        // losing the coroutine exception silently.
-        val backupText = try {
-            inputFile.readText()
-        } catch (e: Exception) {
-            io.github.oshai.kotlinlogging.KotlinLogging.logger {}
-                .error(e) { "Backup import could not read ${inputFile.name}" }
-            return ImportResult(success = false, error = "Read error: ${e.message?.take(200) ?: "Unknown"}")
-        }
-        val backup: BackupData
-        try {
-            backup = json.decodeFromString<BackupData>(backupText)
+        val backup = try {
+            if (AndroidBackupCodec.isAndroidBackup(inputFile)) {
+                AndroidBackupCodec.decode(inputFile, libraryRepository.getCategories())
+            } else {
+                json.decodeFromString<BackupData>(inputFile.readText())
+            }
         } catch (e: Exception) {
             io.github.oshai.kotlinlogging.KotlinLogging.logger {}
                 .error(e) { "Backup import failed for ${inputFile.name}" }

@@ -235,7 +235,8 @@ fun main() = application {
             val parentFrame = window as? Frame
             val fileChooser = java.awt.FileDialog(parentFrame, "Restore Backup", java.awt.FileDialog.LOAD)
             fileChooser.setFilenameFilter { _, name ->
-                name.endsWith(MacOSBackupManager.BACKUP_EXTENSION)
+                name.endsWith(MacOSBackupManager.BACKUP_EXTENSION, ignoreCase = true) ||
+                    name.endsWith(MacOSBackupManager.ANDROID_BACKUP_EXTENSION, ignoreCase = true)
             }
             fileChooser.isVisible = true
             if (fileChooser.file != null) {
