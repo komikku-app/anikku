@@ -8,6 +8,8 @@ import app.anikku.macos.platform.storage.MacOSAtomicFile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
 import java.nio.file.Files
+import tachiyomi.domain.anime.model.CustomAnimeInfo
+import tachiyomi.domain.anime.repository.CustomAnimeRepository
 
 private val customAnimeLogger = KotlinLogging.logger {}
 
@@ -31,35 +33,49 @@ val LocalHistoryRepository = compositionLocalOf { HistoryRepository(composeFallb
  * Stores user-defined custom anime metadata edits as JSON.
  * Data file: {dataDirectory}/edits.json
  *
- * TODO Phase 2+: Implement tachiyomi.domain.anime.repository.CustomAnimeRepository
- * when shared modules are integrated via desktopMain source sets.
+ * Implements the same domain contract as Android while using atomic JSON files
+ * in Application Support instead of Android external storage.
  */
-class MacOSCustomAnimeRepository(dataDir: File) {
+class MacOSCustomAnimeRepository(dataDir: File) : CustomAnimeRepository {
 
     private val editJson = File(dataDir, "edits.json")
     private val lock = Any()
     private val customAnimeMap: MutableMap<Long, CustomAnimeEntry> = loadFromFile()
 
     @Synchronized
-    fun get(animeId: Long): CustomAnimeEntry? = customAnimeMap[animeId]
+    override fun get(animeId: Long): CustomAnimeInfo? = customAnimeMap[animeId]?.toDomain()
+
+    @Synchronized
+    override fun set(animeInfo: CustomAnimeInfo) {
+        val normalized = animeInfo.copy(
+            title = animeInfo.title?.takeIf(String::isNotBlank),
+            status = animeInfo.status?.takeUnless { it == 0L },
+        )
+        if (normalized.hasNoOverrides()) {
+            if (customAnimeMap.remove(normalized.id) != null) saveToFile()
+        } else {
+            customAnimeMap[normalized.id] = CustomAnimeEntry.fromDomain(normalized)
+            saveToFile()
+        }
+    }
 
     @Synchronized
     fun set(animeId: Long, title: String? = null, author: String? = null,
             artist: String? = null, thumbnailUrl: String? = null,
             description: String? = null, genre: List<String>? = null, status: Long? = null) {
         val existing = customAnimeMap[animeId]
-        val entry = CustomAnimeEntry(
-            id = animeId,
-            title = title ?: existing?.title,
-            author = author ?: existing?.author,
-            artist = artist ?: existing?.artist,
-            thumbnailUrl = thumbnailUrl ?: existing?.thumbnailUrl,
-            description = description ?: existing?.description,
-            genre = genre ?: existing?.genre,
-            status = status ?: existing?.status,
+        set(
+            CustomAnimeInfo(
+                id = animeId,
+                title = title ?: existing?.title,
+                author = author ?: existing?.author,
+                artist = artist ?: existing?.artist,
+                thumbnailUrl = thumbnailUrl ?: existing?.thumbnailUrl,
+                description = description ?: existing?.description,
+                genre = genre ?: existing?.genre,
+                status = status ?: existing?.status,
+            ),
         )
-        customAnimeMap[animeId] = entry
-        saveToFile()
     }
 
     @Synchronized
@@ -99,7 +115,35 @@ class MacOSCustomAnimeRepository(dataDir: File) {
         val description: String? = null,
         val genre: List<String>? = null,
         val status: Long? = null,
-    )
+    ) {
+        fun toDomain(): CustomAnimeInfo = CustomAnimeInfo(
+            id = id,
+            title = title?.takeIf(String::isNotBlank),
+            author = author,
+            artist = artist,
+            thumbnailUrl = thumbnailUrl,
+            description = description,
+            genre = genre,
+            status = status?.takeUnless { it == 0L },
+        )
+
+        companion object {
+            fun fromDomain(value: CustomAnimeInfo): CustomAnimeEntry = CustomAnimeEntry(
+                id = value.id,
+                title = value.title,
+                author = value.author,
+                artist = value.artist,
+                thumbnailUrl = value.thumbnailUrl,
+                description = value.description,
+                genre = value.genre,
+                status = value.status,
+            )
+        }
+    }
+
+    private fun CustomAnimeInfo.hasNoOverrides(): Boolean =
+        title == null && author == null && artist == null && thumbnailUrl == null &&
+            description == null && genre == null && status == null
 
     @Serializable
     private data class AnimeList(val animes: List<CustomAnimeEntry>? = null)
