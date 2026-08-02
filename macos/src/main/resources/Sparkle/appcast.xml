@@ -4,13 +4,27 @@
     <title>Anikku macOS Appcast</title>
     <description>Most recent changes to Anikku macOS — Sparkle-compatible auto-update feed</description>
     <language>en</language>
-    <lastBuildDate>Mon, 14 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 02 Aug 2026 21:15:28 +0100</lastBuildDate>
 
     <!--
-      This feed intentionally has no release item until a real DMG has been
-      generated and signed with the private key matching ed25519_pub.pem.
-      Use macos/scripts/generate-appcast.sh to add a signed release item.
+      Signed release items are added with macos/scripts/generate-appcast.sh.
+      The feed is served from this file via raw.githubusercontent.com and is
+      referenced by SUFeedURL in build.gradle.kts.
       Never commit a placeholder signature or zero-length artifact.
     -->
-  </channel>
+  
+    <item>
+      <title>Version 1.0.0</title>
+      <sparkle:version>1.0.0</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <pubDate>Sun, 02 Aug 2026 21:15:15 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.0/Anikku-1.0.0.dmg"
+        sparkle:edSignature="YPnUfaXhbXSr7NvF4IXDY1uHDvsdxFJhlFhpLBbsrlwgHXv0JCmc5+OKNNRxglOclmT+xL6jZ6MBo8HbRkzFAA=="
+        length="214139885"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.0
+      </sparkle:releaseNotesLink>
+    </item></channel>
 </rss>

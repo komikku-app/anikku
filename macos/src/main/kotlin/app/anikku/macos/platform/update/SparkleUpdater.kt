@@ -235,7 +235,7 @@ class SparkleUpdater(
                 null
             }
         }
-        return "https://anikku.app/sparkle/appcast.xml"
+        return "https://raw.githubusercontent.com/ErnestHysa/anikku/master/macos/src/main/resources/Sparkle/appcast.xml"
     }
 
     // ---- Private helpers ----

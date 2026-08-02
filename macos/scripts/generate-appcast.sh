@@ -217,7 +217,7 @@ SIGNATURE=$(openssl pkeyutl \
     -sign \
     -inkey "$SIGNING_KEY" \
     -rawin \
-    -in "$DMG_PATH" | base64 | tr -d '\\n')
+    -in "$DMG_PATH" | base64 | tr -d '\n')
 if [ -z "$SIGNATURE" ]; then
     err "Failed to generate Ed25519 signature."
     err "Make sure you're using OpenSSL 3.x+"
@@ -284,7 +284,13 @@ if 'Version ${VERSION}' in content:
 # Insert after <channel> (keep newest first = items in reverse chronological order)
 # Sparkle uses the first item as the latest, but items in the feed are typically
 # ordered newest-first.
-insert_pos = content.find('<channel>') + len('<channel>') + 1
+# Insert newest-first: before the first existing item, or (on the first
+# release) before </channel> so the channel metadata stays above the items.
+first_item = content.find('<item>')
+if first_item != -1:
+    insert_pos = first_item
+else:
+    insert_pos = content.rfind('</channel>')
 content = content[:insert_pos] + '\n' + new_item + content[insert_pos:]
 
 with open('${APPCAST_PATH}', 'w') as f:

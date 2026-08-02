@@ -555,7 +555,7 @@ compose.desktop {
                         .trim()
                     extraKeysRawXml = """
                         <key>SUFeedURL</key>
-                        <string>https://anikku.app/sparkle/appcast.xml</string>
+                        <string>https://raw.githubusercontent.com/ErnestHysa/anikku/master/macos/src/main/resources/Sparkle/appcast.xml</string>
                         <key>SUPublicEDKey</key>
                         <string>$publicKey</string>
                         <key>NSFaceIDUsageDescription</key>
@@ -853,7 +853,7 @@ tasks.register("listDistributionTasks") {
 }
 
 // ---- Sparkle Public Key and feed validation -------------------------------
-val sparkleFeedUrl = "https://anikku.app/sparkle/appcast.xml"
+val sparkleFeedUrl = "https://raw.githubusercontent.com/ErnestHysa/anikku/master/macos/src/main/resources/Sparkle/appcast.xml"
 val sparkleEd25519SubjectPublicKeyLength = 44
 val sparkleEd25519SignatureLength = 64
 
