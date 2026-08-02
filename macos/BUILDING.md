@@ -26,13 +26,15 @@ java -version
 
 ### libmpv (Required for Video Playback)
 
-For hardware-accelerated video playback, install libmpv:
+For native video playback during development, install libmpv:
 
 ```bash
 brew install mpv
 ```
 
-Without libmpv, the app runs in mock mode — the player UI works but no video will play.
+The current Compose surface uses libmpv's software-rendering path. Without
+libmpv, the app runs in mock mode — the player UI works but no video will play.
+Packaged application bundles include the required library.
 
 ### Gradle
 
@@ -52,6 +54,15 @@ cd macos
 ./gradlew compileKotlin
 ```
 
+This uses the existing `libs/source-api-jvm.jar` and `libs/common-jvm.jar`, so
+normal incremental builds do not rebuild the Android/shared projects.
+
+Refresh those shared JARs when their source has changed:
+
+```bash
+./gradlew compileKotlin -PrefreshSourceApi=true
+```
+
 ### Run
 
 ```bash
@@ -63,7 +74,24 @@ This compiles and launches the application.
 ### Run Tests
 
 ```bash
+./gradlew quickTest
+```
+
+`quickTest` runs the deterministic unit, UI-state, security, storage, and local
+HTTP tests. It excludes live extension-site sweeps, real streaming, and tests
+that require a local media file.
+
+Run the entire suite, including live network and playback checks, explicitly:
+
+```bash
 ./gradlew test
+```
+
+For the normal pre-commit validation pass (compile, deterministic tests, and
+Sparkle updater configuration):
+
+```bash
+./gradlew quickCheck
 ```
 
 ### Package as .app Bundle
@@ -72,7 +100,22 @@ This compiles and launches the application.
 ./gradlew packageDmg
 ```
 
+Compose packaging rejects Homebrew's JDK vendor by default. Prefer Temurin or
+Corretto for release builds. If Homebrew is the only installed JDK, the same
+local build can be attempted with the documented Compose override:
+
+```bash
+./gradlew packageDmg -Pcompose.desktop.packaging.checkJdkVendor=false
+```
+
 Output: `macos/build/compose/binaries/main/dmg/Anikku-1.0.0.dmg`
+
+Verify the generated application bundle and disk image:
+
+```bash
+./gradlew verifyPackage
+hdiutil verify build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
+```
 
 ### Package as .pkg Installer
 
@@ -91,6 +134,10 @@ Output: `macos/build/compose/binaries/main/dmg/Anikku-1.0.0.dmg`
 ```bash
 ./gradlew build
 ```
+
+The full build intentionally includes every test and can take much longer than
+`quickCheck` because extension compatibility depends on external anime sites,
+Cloudflare challenges, DNS, and streaming timeouts.
 
 ## Project Structure
 

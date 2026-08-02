@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — 2026-08-02
+
+### Reliability and security
+
+- Removed JVM-global insecure TLS behavior and retained normal certificate and
+  hostname verification.
+- Hardened extension package/signature validation, duplicate-source handling,
+  atomic replacement/rollback, trust state, and classloader cleanup.
+- Added atomic persistence and malformed-data recovery across preferences,
+  repositories, downloads, backups, and tracker tokens.
+- Hardened the local media server against traversal, unauthorized methods,
+  invalid ranges, stale routes, and shutdown races.
+
+### Playback and controls
+
+- Corrected libmpv ABI/render parameters and made renderer callbacks, native
+  memory, resize/disposal, and repeated player lifecycle safe.
+- Added authoritative playback-state handling, stale end-event rejection,
+  exact local seek behavior, and click/drag/keyboard transport tests.
+- Revalidated real extension-to-libmpv playback plus HTTP, HLS, DASH, and
+  magnet/torrent stream paths.
+
+### Updates, packaging, and validation
+
+- Restricted update checks and release links to authenticated HTTPS, added
+  semantic version ordering and bounded retries, and made fallback behavior
+  informational rather than an unverified installer.
+- Added deterministic Sparkle helper shutdown and fixed its feed-string
+  lifetime; active signed-enclosure verification remains pending owner signing
+  credentials and a release artifact.
+- Produced and structurally verified an unsigned Apple-silicon DMG containing
+  the runtime, libmpv, Sparkle framework/helper, and application icon.
+- Made the live extension fleet test enforce its documented per-stage timeout,
+  preventing a blocking third-party provider from hanging Gradle.
+
+This remains a development preview: Developer ID signing/notarization, a signed
+Sparkle release enclosure, native Discord IPC/biometrics, and final manual GUI
+playback acceptance are not complete.
+
 ## [1.0.0-beta.2] — 2026-07-29
 
 ### Extension System — Major Compatibility Milestone

@@ -6,17 +6,21 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
 ![Build: Gradle](https://img.shields.io/badge/build-Gradle-green)
 ![Kotlin: 2.2.x](https://img.shields.io/badge/kotlin-2.2.x-purple)
 
-> ✅ **Status: Active Development — 33/58 Extensions End-to-End Verified**
+> ✅ **Status: Active Development — Packaged and Streaming**
 >
-> The app compiles, launches, and streams video. **33 out of 58 pre-installed extension JARs** pass all four stages (Load → Browse → Episodes → Video URL) with real video playback through Chrome CDP Cloudflare bypass. The remaining extensions are being actively fixed — most failures are external (dead sites, DNS issues) or CDP timeout-related. See the [compatibility test results](#extension-compatibility) for details.
+> The app compiles, packages as a DMG, loads the installed JVM extension set,
+> browses/searches anime, resolves episodes, and streams through libmpv. Automated
+> live checks cover ordinary HTTP video, HLS, DASH, and Nyaa magnet/torrent paths.
+> Individual third-party sites remain inherently changeable; no fixed fleet-wide
+> pass count is claimed.
 >
 > See [CHANGELOG.md](CHANGELOG.md) for the development history and [the architecture plan](../architectural_rework_for_macos.md) for the full rework roadmap.
 
 ## Features
 
-- **Browse Sources** — Discover anime from 58 pre-installed extension sources (33 verified working)
+- **Browse Sources** — Discover and search anime using compatible Aniyomi/Keiyoushi sources
 - **Library Management** — Organize your anime collection with categories
-- **Video Player** — Full-featured mpv-based player with hardware acceleration (videotoolbox)
+- **Video Player** — Full-featured libmpv software-rendered player
   - Playback speed control (0.25x–4.0x)
   - Audio track selection
   - Subtitle track selection with delay adjustment
@@ -24,9 +28,8 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
   - Screenshot capture
   - Keyboard shortcuts (Space, ←→, ↑↓)
 - **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth
-- **Discord Rich Presence** — Show what you're watching on Discord
 - **Backup & Restore** — Cross-compatible with Android `.tachibk` backups
-- **Touch ID / PIN Lock** — Secure your library
+- **PIN Lock** — Secure local access (native Touch ID is currently unavailable)
 - **20+ Color Schemes** — Including Monet, Nord, Material You, and more
 - **macOS Native** — Native menu bar, Dock integration, Dark Mode support
 
@@ -65,28 +68,28 @@ anikku/
 | 3 | Networking & Sources | ✅ Complete (Chrome CDP Cloudflare bypass) |
 | 4 | UI Framework & Navigation | ✅ Complete |
 | 5 | Screen-by-Screen UI | ✅ Complete |
-| 6 | mpv Video Player (JNA) | ✅ Code written, tested in isolation |
+| 6 | mpv Video Player (JNA) | ✅ Native playback/render/seek tested |
 | 7 | Advanced Features | ✅ Complete |
 | 8 | WebView Replacement | ✅ Complete (CDP-based) |
 | 9 | macOS Native Integration | ✅ Complete |
-| 10 | Packaging & Distribution | ❌ Not started |
-| 11 | Testing & Polish | ✅ Compatibility test: 33/58 pass end-to-end |
+| 10 | Packaging & Distribution | ✅ Unsigned DMG and bundle verification |
+| 11 | Testing & Polish | ✅ Deterministic, native, and live stream gates |
 | 12 | Documentation | ✅ This doc + BUILDING, INSTALL, guides |
 
 ### Extension Compatibility
 
-58 extension JARs are pre-installed. The compatibility test exercises each extension through four stages with Chrome CDP Cloudflare bypass:
+The packaged-app smoke test loaded all 53 JARs currently installed in the test
+profile. Live regression tests independently exercise load, browse/search,
+details, episode discovery, video resolution, and libmpv playback. HLS, DASH,
+and magnet/torrent tests are separate so one provider outage does not hide which
+transport failed.
 
-| Stage | Count |
-|---|---|
-| **Load** (JAR loads, class found) | 53/58 |
-| **Browse** (getPopularAnime returns results) | 33/58 |
-| **Episodes** (getEpisodeList returns episodes) | 29/58 |
-| **Video URL** (getVideoList returns playable URLs) | 33/58 |
-
-**33 extensions pass ALL four stages** and return actual video URLs. Top performers: animegg (125 videos), Nyaa.si (75), kisskh (40), rule34video (35).
-
-5 extensions fail at Load (compilation issues — actively being fixed), ~15 fail at Browse (external: dead sites, DNS failures), and ~11 fail at Video (CDP Cloudflare timeout).
+The production format is a JVM JAR named for its package and containing
+`META-INF/extension.json`. Raw Android APKs can be discovered and converted with
+the JADX compatibility path, but Android bytecode/resources and `android.*` APIs
+cannot be made universally portable at runtime. For reliable compatibility,
+build the extension from source with `scripts/build-keiyoushi-from-source.sh` or
+install a pre-converted JAR. See [the migration guide](docs/MIGRATION-GUIDE.md).
 
 ### Detailed breakdown
 
@@ -100,7 +103,7 @@ anikku/
 - OkHttp network client with interceptors
 - **Chrome CDP Cloudflare bypass** — auto-launches headless Chrome to solve WAF challenges
 - Extension JAR loading via URLClassLoader
-- **58 extension JARs pre-installed, 33 verified end-to-end**
+- Package-keyed extension JAR loading with duplicate/source-ID rejection and explicit trust
 - Material 3 theme with 20 color schemes
 - Voyager navigation (tab navigator + per-tab inner navigators)
 - All UI components (Scrollbar, FastScroller, SettingsItems, Toast, etc.)
@@ -115,27 +118,24 @@ anikku/
 - Extension development guides (3 docs)
 - Extension build pipeline (batch-build from source)
 
-⚡ **Code written but untested end-to-end:**
+⚡ **Implemented with remaining external/native limitations:**
 - Library, Updates, History, Browse, Downloads, Stats screens
 - AnimeDetailScreen (extension source calls)
 - SourceBrowseScreen (search, browse)
-- PlayerScreen with full controls UI
-- PlayerViewModel (mpv initialization, playback, tracks, equalizer)
-- MPVLib JNA bindings
-- MPVEventLoop, MPVSoftwareRenderer, MPVVideoSurface
+- PlayerScreen and PlayerViewModel (native playback, rendering, seek, tracks, lifecycle)
+- MPVLib, MPVEventLoop, MPVSoftwareRenderer, and MPVVideoSurface
 - MacOSHttpServer (NanoHTTPd for local video streaming)
 - Tracker OAuth (TrackerManager, OAuthServer, TokenStore)
 - Google Drive REST client
-- Discord Rich Presence
-- Biometric Auth (Touch ID + PIN)
+- Discord Rich Presence (explicitly unavailable until real IPC is implemented)
+- Biometric Auth (PIN fallback; native LocalAuthentication is not implemented)
 - TorrentServerBridge
 - Download manager
 - Local HTTP server for video streaming
 
-❌ **Not yet implemented:**
-- jpackage DMG/.pkg packaging
-- macOS code signing and notarization
-- Sparkle auto-updater (template exists, needs wiring)
+❌ **Release operations still requiring owner credentials/infrastructure:**
+- Developer ID signing and Apple notarization
+- A Sparkle-signed release enclosure and hosted HTTPS appcast
 
 ## Quick Start
 
@@ -156,7 +156,7 @@ For installation instructions, see [INSTALL.md](INSTALL.md).
 
 - **macOS 12.0+** (Monterey or later)
 - **JDK 17+** (recommended: OpenJDK 17 via Homebrew or SDKMAN)
-- **libmpv** (for hardware-accelerated video playback):
+- **libmpv** (for development playback; packaged builds bundle it):
   ```bash
   brew install mpv
   ```

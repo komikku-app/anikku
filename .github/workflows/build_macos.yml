@@ -74,8 +74,24 @@ jobs:
           echo "---"
           echo "JAR size: $(wc -c < "$HOME/Library/Application Support/Anikku/extensions/app.anikku.macos.testextension.jar") bytes"
 
-      - name: Run macOS unit tests
-        run: ./macos/gradlew -p macos test --no-daemon
+      - name: Run macOS verification
+        run: |
+          ./macos/gradlew -p macos quickCheck --no-daemon
+          ./macos/gradlew -p macos test --no-daemon \
+            --tests 'app.anikku.macos.platform.extension.ExtensionRepoIntegrationTest' \
+            --tests 'app.anikku.macos.player.MPVPlaybackTest' \
+            --tests 'app.anikku.macos.player.MPVRenderExperiment'
+
+      - name: Upload macOS test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-test-reports
+          path: |
+            macos/build/reports/tests/
+            macos/build/test-results/
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload test extension JAR as artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

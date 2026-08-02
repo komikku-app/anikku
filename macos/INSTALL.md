@@ -3,9 +3,11 @@
 ## System Requirements
 
 - **macOS 12.0+** (Monterey, Ventura, Sonoma, Sequoia)
-- **Apple Silicon or Intel** (universal binary)
+- **Apple Silicon** for the currently verified packaged artifact
 - **4GB RAM minimum** (8GB+ recommended for smooth video playback)
-- **libmpv** (install via Homebrew — see below)
+
+Intel source builds may be possible with matching native dependencies, but an
+Intel package has not been produced or verified by the current release process.
 
 ## Installation Methods
 
@@ -27,18 +29,14 @@ cd anikku/macos
 # Output: build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
 ```
 
-### Option 3: Install via Homebrew (Future)
-
-```bash
-# Coming soon
-brew install anikku
-```
+There is currently no supported Homebrew formula.
 
 ## Post-Installation Setup
 
-### 1. Install libmpv (Required for Video Playback)
+### 1. Verify bundled playback support
 
-The app needs `libmpv` for video playback. Install it via Homebrew:
+The packaged app includes `libmpv`; no separate mpv installation is required.
+Developers running from Gradle should install it through Homebrew:
 
 ```bash
 brew install mpv
@@ -51,7 +49,7 @@ mpv --version
 # mpv 0.41.0 Copyright © 2000-2024 mpv/MPlayer/mplayer2 projects
 ```
 
-> **Without libmpv:** The app launches and all UI features work, but video playback will show a placeholder screen with instructions.
+Without libmpv, a development run starts in mock mode and cannot display video.
 
 ### 2. First Launch
 
@@ -68,14 +66,9 @@ To sync your watch history with MyAnimeList, AniList, or Kitsu:
 3. Click "Login" — your default browser will open the OAuth page
 4. Authorize the app and return to Anikku
 
-### 4. (Optional) Discord Rich Presence
-
-To show what you're watching on Discord:
-
-1. Install Discord desktop app
-2. Go to Settings → Connections → Discord
-3. Enable Rich Presence
-4. Your current anime will automatically appear in your Discord status
+Discord Rich Presence is not available in this build because a native Discord
+IPC transport has not been implemented. Its failure cannot block startup or
+playback.
 
 ## Updating
 
@@ -113,27 +106,17 @@ If you have an existing Anikku installation on Android, you can migrate your dat
 
 ## Uninstalling
 
-To completely remove Anikku:
-
-```bash
-# Remove the app
-rm -rf /Applications/Anikku.app
-
-# Remove app data
-rm -rf ~/Library/Application\ Support/Anikku
-
-# Remove logs
-rm -rf ~/Library/Logs/Anikku
-
-# Remove preferences
-defaults delete app.anikku.macos
-```
+Move `Anikku.app` from Applications to the Trash. To remove local data too,
+delete only the `Anikku` folders listed under **File Locations** above. Library,
+download, and preference data cannot be recovered after the Trash is emptied.
 
 ## Troubleshooting
 
 ### "Anikku.app is damaged and can't be opened"
 
-This occurs for unsigned builds on macOS. To bypass:
+This can occur because development builds are not Developer ID signed or
+notarized. First use Finder's **Right-click → Open** flow. For a DMG you built
+yourself from trusted source, quarantine can also be removed explicitly:
 
 ```bash
 xattr -rd com.apple.quarantine /Applications/Anikku.app

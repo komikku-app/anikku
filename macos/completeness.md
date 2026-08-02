@@ -1347,10 +1347,10 @@ Scope note: This continuation changed only Phase 11 audit targets/tests plus the
 
 ## 12.1 Script validation
 
-- [ ] Every tracked macOS shell script under `macos/` passes `bash -n`.
-- [ ] Every tracked macOS Python script under `macos/` passes `python3 -m py_compile`.
-- [ ] Generated Python caches are removed if unintended.
-- [ ] Unsafe macOS script behavior has been reviewed.
+- [x] Every tracked macOS shell script under `macos/` passes `bash -n`. **Completed 2026-08-02, Codex (GPT-5): all tracked `scripts/*.sh` exited 0.**
+- [x] Every tracked macOS Python script under `macos/` passes `python3 -m py_compile`. **Completed 2026-08-02, Codex (GPT-5): all tracked scripts passed with `PYTHONPYCACHEPREFIX` outside the repository.**
+- [x] Generated Python caches are removed if unintended. **Completed 2026-08-02, Codex (GPT-5): six pre-existing untracked `scripts/__pycache__/*.pyc` files were removed; final search found none.**
+- [x] Unsafe macOS script behavior has been reviewed. **Completed 2026-08-02, Codex (GPT-5): path guards, quoting, archive/build/update/signing operations, and syntax were reviewed; no script was allowed to publish, sign, or deploy.**
 
 Use macOS-scoped commands so this document does not audit or modify Android/shared tooling:
 
@@ -1368,11 +1368,11 @@ If `py_compile` creates `__pycache__` or `.pyc` files, remove only the unintende
 
 ## 12.2 macOS build/test validation
 
-- [ ] `compileKotlin` passes.
-- [ ] deterministic macOS tests pass.
-- [ ] relevant integration tests pass.
-- [ ] `check` passes or failures are documented.
-- [ ] native MPV/Sparkle limitations are documented.
+- [x] `compileKotlin` passes. **Completed 2026-08-02, Codex (GPT-5): final production compilation passed as part of `quickCheck`, `check`, and `packageDmg`.**
+- [x] deterministic macOS tests pass. **Completed 2026-08-02, Codex (GPT-5): `quickCheck` exited 0 with 511 tests, 0 failures, 0 errors, and 3 documented skips.**
+- [x] relevant integration tests pass. **Completed 2026-08-02, Codex (GPT-5): extension repository/security, 53-extension fleet, local HTTP/download, native MPV, real search/episode/stream, HLS, DASH, and bounded torrent paths passed.**
+- [x] `check` passes or failures are documented. **Completed 2026-08-02, Codex (GPT-5): final `check` exited 0 in 13m33s with 542 tests across 58 suites, 0 failures, 0 errors, and 3 skips. Earlier harness/torrent hangs and their fixes are recorded in `COMPLETION-REPORT.md`.**
+- [x] native MPV/Sparkle limitations are documented. **Completed 2026-08-02, Codex (GPT-5): `README.md`, `BUILDING.md`, `INSTALL.md`, `CHANGELOG.md`, and `COMPLETION-REPORT.md` distinguish verified software rendering/ad-hoc packaging from owner-gated Developer ID/notarization and signed-enclosure work.**
 
 ## 12.3 CI and configuration review
 
@@ -1385,23 +1385,23 @@ macos/gradlew
 .github/workflows/build_macos.yml
 ```
 
-- [ ] Java/JVM versions are compatible.
-- [ ] Kotlin/Compose versions are compatible.
-- [ ] JNA/OkHttp/HTTP-server dependencies are compatible.
-- [ ] MPV/Sparkle requirements are documented.
-- [ ] CI paths and Gradle tasks are valid.
-- [ ] CI does not silently ignore failures.
-- [ ] CI produces useful reports.
-- [ ] CI does not unexpectedly publish or deploy.
+- [x] Java/JVM versions are compatible. **Completed 2026-08-02, Codex (GPT-5): local JDK 17.0.19 and CI Temurin 17 match the build; Gradle 8.14.3 executed all final gates.**
+- [x] Kotlin/Compose versions are compatible. **Completed 2026-08-02, Codex (GPT-5): Kotlin 2.2.20 and Compose 1.11.1 compiled, tested, rendered, and packaged together.**
+- [x] JNA/OkHttp/HTTP-server dependencies are compatible. **Completed 2026-08-02, Codex (GPT-5): JNA 5.14.0, OkHttp 5.1.0, and NanoHTTPD 2.3.1 passed focused and full integration coverage.**
+- [x] MPV/Sparkle requirements are documented. **Completed 2026-08-02, Codex (GPT-5): development versus bundled libmpv, Apple-silicon packaging, HTTPS feed, signing, and notarization boundaries are explicit.**
+- [x] CI paths and Gradle tasks are valid. **Completed 2026-08-02, Codex (GPT-5): workflow paths/tasks were source-audited and its YAML parsed successfully; it runs `quickCheck` plus controlled extension/native MPV integrations.**
+- [x] CI does not silently ignore failures. **Completed 2026-08-02, Codex (GPT-5): verification commands use normal strict shell exit behavior; no `continue-on-error` or failure suppression exists.**
+- [x] CI produces useful reports. **Completed 2026-08-02, Codex (GPT-5): the workflow now uploads Gradle HTML and XML test results under `if: always()` for seven days.**
+- [x] CI does not unexpectedly publish or deploy. **Completed 2026-08-02, Codex (GPT-5): permissions remain `contents: read`; only test reports and the test extension are uploaded as workflow artifacts.**
 
 Evidence:
 
 | Subphase | Status | Completion/evidence |
 |---|---|---|
-| 12.1 Scripts | - [ ] | |
-| 12.2 Build/tests | - [ ] | |
-| 12.3 CI/configuration | - [ ] | |
-| Phase 12 gate passed | - [ ] | |
+| 12.1 Scripts | - [x] | Syntax/compile/cache/safety review completed 2026-08-02 by Codex; no repository Python cache remains. |
+| 12.2 Build/tests | - [x] | Final quickCheck 511/0/0/3 and check 542/0/0/3 passed; native/live/package evidence is in `COMPLETION-REPORT.md`. |
+| 12.3 CI/configuration | - [x] | macOS CI is deterministic, strict, report-producing, read-only, and YAML-valid. |
+| Phase 12 gate passed | - [x] | Completed 2026-08-02 by Codex with reproducible commands and exact limitations documented. |
 
 ---
 
@@ -1409,23 +1409,23 @@ Evidence:
 
 If the environment permits, perform this test after all changes:
 
-- [ ] Start the macOS application.
-- [ ] Load a real extension.
-- [ ] Search for an anime.
-- [ ] Select an episode.
-- [ ] Start a real stream.
+- [x] Start the macOS application. **Completed 2026-08-02, Codex (GPT-5): launched the final packaged `.app` executable on macOS 26.5.2; initialization completed.**
+- [x] Load a real extension. **Completed 2026-08-02, Codex (GPT-5): packaged smoke loaded 53/53 installed JARs with zero untrusted; the full live suite also loaded AniDB.**
+- [x] Search for an anime. **Completed 2026-08-02, Codex (GPT-5): automated real workflow searched for `One Piece` through AniDB. This was not a manual GUI action.**
+- [x] Select an episode. **Completed 2026-08-02, Codex (GPT-5): the real workflow resolved AniDB details/episodes and selected a playable episode. This was not a manual GUI action.**
+- [x] Start a real stream. **Completed 2026-08-02, Codex (GPT-5): both extension-to-libmpv tests reported MPV playback verified; HLS/DASH also passed.**
 - [ ] Confirm video and audio.
 - [ ] Watch beyond 30 seconds.
 - [ ] Confirm no false retry screen.
-- [ ] Click timeline to seek.
-- [ ] Drag timeline to seek.
-- [ ] Pause/resume.
-- [ ] Test Spacebar.
-- [ ] Test left/right arrows.
+- [x] Click timeline to seek. **Completed 2026-08-02, Codex (GPT-5): deterministic Compose click callback and production native exact-seek checks passed; not manually clicked in the final packaged app.**
+- [x] Drag timeline to seek. **Completed 2026-08-02, Codex (GPT-5): deterministic drag-state/callback tests passed; not manually dragged in the final packaged app.**
+- [x] Pause/resume. **Completed 2026-08-02, Codex (GPT-5): authoritative native/Compose play-pause state and callback coverage passed; no final manual GUI action.**
+- [x] Test Spacebar. **Completed 2026-08-02, Codex (GPT-5): Compose key injection toggled playback once from the focused root.**
+- [x] Test left/right arrows. **Completed 2026-08-02, Codex (GPT-5): Compose key injection delivered exact -10/+10 second callbacks.**
 - [ ] Change episodes.
 - [ ] Retry a deliberately failed stream.
 - [ ] Stop playback and start another episode.
-- [ ] Close/reopen the app if practical.
+- [x] Close/reopen the app if practical. **Completed 2026-08-02, Codex (GPT-5): packaged app launch/quit was repeated during packaging smoke; final run exited 0 through `tell application "Anikku" to quit`, and `pgrep -x Anikku` was empty.**
 
 Record:
 
@@ -1444,16 +1444,16 @@ Evidence:
 
 | Acceptance area | Status | Completion/evidence |
 |---|---|---|
-| Extension loading | - [ ] | |
-| Search and episode selection | - [ ] | |
-| Real video/audio playback | - [ ] | |
-| Extended playback | - [ ] | |
-| Timeline click/drag seeking | - [ ] | |
-| Play/pause and keyboard controls | - [ ] | |
-| Genuine failure/retry | - [ ] | |
-| Episode switching | - [ ] | |
-| Restart/shutdown | - [ ] | |
-| Phase 13 gate passed | - [ ] | |
+| Extension loading | - [x] | Final package loaded 53 installed extensions, zero untrusted. |
+| Search and episode selection | - [x] Automated | `One Piece` via AniDB resolved to an episode in the real workflow; manual GUI confirmation remains absent. |
+| Real video/audio playback | - [ ] Partial | Real mpv position advance and visible native frames passed; audible output was not manually confirmed. |
+| Extended playback | - [ ] | No final manual >30-second observation. |
+| Timeline click/drag seeking | - [x] Automated | Compose click/drag plus exact production native seek passed. |
+| Play/pause and keyboard controls | - [x] Automated | Native state plus Space/arrow/volume key injection passed. |
+| Genuine failure/retry | - [ ] | Timeout/error cleanup is tested, but no manual deliberately failed stream retry. |
+| Episode switching | - [ ] | No final manual episode-switch sequence. |
+| Restart/shutdown | - [x] | Repeated packaged launch/normal quit and repeated native player lifecycle passed. |
+| Phase 13 gate passed | - [ ] | Manual audible >30-second playback, false-retry observation, genuine retry, and episode switching remain unverified; no completion claim. |
 
 If this test cannot be performed, do not mark it complete. Record the limitation instead.
 
@@ -1463,16 +1463,16 @@ If this test cannot be performed, do not mark it complete. Record the limitation
 
 ## 14.1 Final repository checks
 
-- [ ] Run `git status --short`.
-- [ ] Run `git diff --stat`.
-- [ ] Run `git diff --summary`.
-- [ ] Run `git diff --check`.
-- [ ] Confirm only intended macOS files changed.
-- [ ] Confirm no Android/shared files changed.
-- [ ] Confirm no generated artifacts were added.
-- [ ] Confirm no executable modes changed accidentally.
-- [ ] Confirm no secrets, credentials, tokens, private keys, or personal paths were added.
-- [ ] Remove unintended `__pycache__`, `.pyc`, temporary extension trees, downloaded artifacts, and local caches.
+- [x] Run `git status --short`. **Completed 2026-08-02, Codex (GPT-5): run before final commit and again after it.**
+- [x] Run `git diff --stat`. **Completed 2026-08-02, Codex (GPT-5): final documentation/CI/icon scope reviewed before commit.**
+- [x] Run `git diff --summary`. **Completed 2026-08-02, Codex (GPT-5): no unexpected mode or rename operation found.**
+- [x] Run `git diff --check`. **Completed 2026-08-02, Codex (GPT-5): exited 0.**
+- [x] Confirm only intended macOS files changed. **Completed 2026-08-02, Codex (GPT-5): exact manifest is in `COMPLETION-REPORT.md`; the only non-`macos/` path is the macOS CI workflow.**
+- [x] Confirm no Android/shared files changed. **Completed 2026-08-02, Codex (GPT-5): final path audit found none.**
+- [x] Confirm no generated artifacts were added. **Completed 2026-08-02, Codex (GPT-5): build/DMG/test output remains ignored; only the intentionally rebuilt tracked Sparkle helper and production icon are binary changes.**
+- [x] Confirm no executable modes changed accidentally. **Completed 2026-08-02, Codex (GPT-5): `git diff --summary` found none in the final diff.**
+- [x] Confirm no secrets, credentials, tokens, private keys, or personal paths were added. **Completed 2026-08-02, Codex (GPT-5): changed-file content audit found none; local absolute paths appear only in command output, not committed text.**
+- [x] Remove unintended `__pycache__`, `.pyc`, temporary extension trees, downloaded artifacts, and local caches. **Completed 2026-08-02, Codex (GPT-5): final filesystem/status audit found none under `macos/`.**
 
 Check tracked artifacts:
 
@@ -1483,46 +1483,46 @@ git ls-files | grep -Ei \
 
 ## 14.2 Final evidence review
 
-- [ ] Every checked checkbox has a completion timestamp.
-- [ ] Every checked checkbox has an actor.
-- [ ] Every checked checkbox has reproducible evidence.
-- [ ] Test results contain actual counts and exit status.
-- [ ] Manual tests identify environment and exact actions.
-- [ ] Unverified items remain unchecked.
-- [ ] Blocked items explain the blocker.
-- [ ] No evidence was fabricated.
+- [ ] Every checked checkbox has a completion timestamp. **Not claimed: earlier inherited phases include grouped rather than per-checkbox timestamps.**
+- [ ] Every checked checkbox has an actor. **Not claimed: earlier inherited phases include grouped actor annotations.**
+- [ ] Every checked checkbox has reproducible evidence. **Not claimed globally; new Phase 12–14 claims do, while earlier source-audit items vary in granularity.**
+- [x] Test results contain actual counts and exit status. **Completed 2026-08-02, Codex (GPT-5): quickCheck 511/0/0/3 and check 542/0/0/3, both exit 0.**
+- [x] Manual tests identify environment and exact actions. **Completed 2026-08-02, Codex (GPT-5): packaged launch/quit is identified as the only manual application action; automated evidence is labeled automated.**
+- [x] Unverified items remain unchecked. **Completed 2026-08-02, Codex (GPT-5): Phase 13 manual audio/duration/retry/switching and release-signing items remain open.**
+- [x] Blocked items explain the blocker. **Completed 2026-08-02, Codex (GPT-5): signing/notarization/Sparkle enclosure require owner credentials/artifact; manual acceptance requires a human GUI/audio session.**
+- [x] No evidence was fabricated. **Completed 2026-08-02, Codex (GPT-5): fleet/provider failures and manual gaps are retained rather than converted into passes.**
 
 ## 14.3 Final report
 
 Create a final report containing:
 
-- [ ] Exact files changed.
-- [ ] Exact issues fixed.
-- [ ] Security issues fixed.
-- [ ] Extension-loader changes.
-- [ ] HTTP-server changes.
-- [ ] Download-manager changes.
-- [ ] MPV/player changes.
-- [ ] UI/control changes.
-- [ ] Updater changes.
-- [ ] Storage/keychain/lifecycle changes.
-- [ ] Tests added.
-- [ ] Commands executed.
-- [ ] Successful checks.
-- [ ] Failed checks.
-- [ ] Environment limitations.
-- [ ] Native/integration tests not run.
-- [ ] Remaining unsupported features.
-- [ ] Remaining known risks.
-- [ ] Behavior intentionally left unchanged to protect streaming.
-- [ ] Evidence that real playback still works, or an explicit statement that it could not be verified.
-- [ ] Evidence that only macOS scope was modified.
+- [x] Exact files changed. **Completed 2026-08-02, Codex (GPT-5): `COMPLETION-REPORT.md` exact categorized manifest and commit sequence.**
+- [x] Exact issues fixed. **Completed 2026-08-02, Codex (GPT-5): report section `Issues fixed`.**
+- [x] Security issues fixed. **Completed 2026-08-02, Codex (GPT-5): TLS, extension trust, containment, persistence/token, updater, and local-server controls reported.**
+- [x] Extension-loader changes. **Completed 2026-08-02, Codex (GPT-5): loader/manager/trust/install/timeout changes reported.**
+- [x] HTTP-server changes. **Completed 2026-08-02, Codex (GPT-5): containment/range/method/route/lifecycle changes reported.**
+- [x] Download-manager changes. **Completed 2026-08-02, Codex (GPT-5): atomic path/retry/cancel/dedup/shutdown changes reported.**
+- [x] MPV/player changes. **Completed 2026-08-02, Codex (GPT-5): ABI/render/event/state/seek/lifecycle/torrent changes reported.**
+- [x] UI/control changes. **Completed 2026-08-02, Codex (GPT-5): transport/focus/accessibility/menu/onboarding status reported.**
+- [x] Updater changes. **Completed 2026-08-02, Codex (GPT-5): HTTPS/version/retry/fallback/Sparkle lifecycle and signing boundary reported.**
+- [x] Storage/keychain/lifecycle changes. **Completed 2026-08-02, Codex (GPT-5): atomic/malformed-safe persistence, Keychain-only tokens, and cleanup reported.**
+- [x] Tests added. **Completed 2026-08-02, Codex (GPT-5): exact test-file manifest and counts reported.**
+- [x] Commands executed. **Completed 2026-08-02, Codex (GPT-5): principal reproducible Gradle/script/package commands reported here and in `COMPLETION-REPORT.md`.**
+- [x] Successful checks. **Completed 2026-08-02, Codex (GPT-5): exact quick/full/live/native/package results reported.**
+- [x] Failed checks. **Completed 2026-08-02, Codex (GPT-5): JDK vendor rejection, fixture/install, extension timeout, torrent timeout, and transient compile diagnostics reported.**
+- [x] Environment limitations. **Completed 2026-08-02, Codex (GPT-5): Apple-silicon/JDK/mpv/credentials/manual boundaries reported.**
+- [x] Native/integration tests not run. **Completed 2026-08-02, Codex (GPT-5): report states what ran and identifies manual/native boundaries not run; no omitted automated native test is concealed.**
+- [x] Remaining unsupported features. **Completed 2026-08-02, Codex (GPT-5): Discord IPC, Touch ID, Dock actions, custom API, release operations reported.**
+- [x] Remaining known risks. **Completed 2026-08-02, Codex (GPT-5): provider volatility, manual acceptance, Intel, Keychain concurrency, dialogs/focus reported.**
+- [x] Behavior intentionally left unchanged to protect streaming. **Completed 2026-08-02, Codex (GPT-5): report records macOS-only targeted changes and unchanged Android/shared/source contracts.**
+- [x] Evidence that real playback still works, or an explicit statement that it could not be verified. **Completed 2026-08-02, Codex (GPT-5): AniDB extension-to-libmpv and search-to-stream tests passed in final check.**
+- [x] Evidence that only macOS scope was modified. **Completed 2026-08-02, Codex (GPT-5): final manifest/path audit recorded.**
 
 Final classification must be evidence-based:
 
 - [ ] Production-ready
 - [ ] Release candidate
-- [ ] Development preview
+- [x] Development preview **Assigned 2026-08-02 by Codex (GPT-5): code/build/live/native/package gates pass, but final manual GUI audio/duration/retry/switching and owner-gated release operations remain open.**
 - [ ] Experimental / not release-ready
 
 Do not claim production readiness if native, integration, real-extension, updater, or real-playback boundaries remain unverified.
@@ -1531,10 +1531,10 @@ Evidence:
 
 | Subphase | Status | Completion/evidence |
 |---|---|---|
-| 14.1 Repository clean | - [ ] | |
-| 14.2 Evidence reviewed | - [ ] | |
-| 14.3 Final report complete | - [ ] | |
-| Final classification assigned | - [ ] | |
+| 14.1 Repository clean | - [x] | Final diff/path/cache/secret/mode checks completed 2026-08-02 by Codex; clean status is rechecked after the final commit. |
+| 14.2 Evidence reviewed | - [ ] Partial | New evidence has timestamps/actors/commands/counts; the inherited ledger does not support claiming per-checkbox annotations globally. |
+| 14.3 Final report complete | - [x] | `COMPLETION-REPORT.md` contains every required category and explicit limitations. |
+| Final classification assigned | - [x] | Development preview; no production/release-candidate claim. |
 
 ---
 
@@ -1587,3 +1587,18 @@ Before declaring this plan complete, explicitly answer:
 12. Which behaviors remain unverified?
 
 A “yes” answer must be backed by the evidence log. If the answer is unknown, say “Not verified” and leave the applicable acceptance checkbox unchecked.
+
+Answers recorded 2026-08-02 by Codex (GPT-5):
+
+1. **Yes.** The final package loaded all 53 installed JARs with zero untrusted; the final full test loaded AniDB for real playback.
+2. **Yes.** The live search workflow found `One Piece` through AniDB.
+3. **Yes.** That workflow resolved details and episodes and selected a playable episode.
+4. **Yes.** Both real extension-to-libmpv tests reported verified playback; HLS and DASH also passed.
+5. **Partially verified.** Native position advance and visible production-renderer pixels passed. Audible output was not manually confirmed, so the Phase 13 audio checkbox remains open.
+6. **Not verified.** No final human observation beyond 30 seconds checked the retry overlay and audible/video continuity.
+7. **Yes, automated.** Compose click seeking and exact production native seek passed; no final manual GUI click was performed.
+8. **Yes, automated.** Compose drag-state and seek callback coverage passed; no final manual GUI drag was performed.
+9. **Yes, automated.** Native state handling and Compose Space/arrow/volume key injection passed.
+10. **Not verified end-to-end.** Genuine HTTP/download and torrent timeout failures clean up and retry deterministically, but no final deliberately failed real-stream retry was performed in the GUI.
+11. **Yes.** All source/document changes are under `macos/` except `.github/workflows/build_macos.yml`, which is exclusively the macOS workflow. No Android/shared file changed.
+12. **Unverified:** manual audible playback beyond 30 seconds, false-retry absence during that observation, manual episode switching and genuine stream retry, real concurrent Keychain CLI access, complete native dialog/focus/action audit, Intel packaging, Developer ID signing/notarization, and a signed Sparkle enclosure.
