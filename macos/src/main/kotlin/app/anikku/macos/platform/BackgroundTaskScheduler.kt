@@ -1,12 +1,19 @@
 package app.anikku.macos.platform
 
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import java.util.concurrent.ConcurrentHashMap
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Replaces Android WorkManager for background tasks on macOS desktop.
@@ -30,7 +37,7 @@ class BackgroundTaskScheduler(
     private val scope: CoroutineScope,
 ) {
 
-    private val runningTasks = mutableMapOf<String, Job>()
+    private val runningTasks = ConcurrentHashMap<String, Job>()
 
     /**
      * Schedules a periodic task that runs at the given interval.
@@ -42,19 +49,8 @@ class BackgroundTaskScheduler(
         runImmediately: Boolean = false,
         task: suspend () -> Unit,
     ): Job {
-        cancelTask(name)
-
-        return scope.launch {
-            if (runImmediately) {
-                runCatching { task() }
-            }
-            while (isActive) {
-                delay(intervalMinutes.minutes)
-                runCatching { task() }
-            }
-        }.also {
-            runningTasks[name] = it
-        }
+        require(intervalMinutes > 0) { "Periodic interval must be positive" }
+        return schedulePeriodic(name, intervalMinutes.minutes, runImmediately, task)
     }
 
     /**
@@ -66,16 +62,13 @@ class BackgroundTaskScheduler(
         runImmediately: Boolean = false,
         task: suspend () -> Unit,
     ): Job {
-        return scope.launch {
-            if (runImmediately) {
-                runCatching { task() }
-            }
-            while (isActive) {
+        require(interval.isPositive()) { "Periodic interval must be positive" }
+        return launchUnique(name) {
+            if (runImmediately) runSafely(name, task)
+            while (currentCoroutineContext().isActive) {
                 delay(interval)
-                runCatching { task() }
+                runSafely(name, task)
             }
-        }.also {
-            runningTasks[name] = it
         }
     }
 
@@ -86,28 +79,23 @@ class BackgroundTaskScheduler(
         name: String,
         task: suspend () -> Unit,
     ): Job {
-        return scope.launch {
-            runCatching { task() }
-            runningTasks.remove(name)
-        }.also {
-            runningTasks[name] = it
-        }
+        return launchUnique(name) { runSafely(name, task) }
     }
 
     /**
      * Cancels a running task by name.
      */
     fun cancelTask(name: String) {
-        runningTasks[name]?.cancel()
-        runningTasks.remove(name)
+        runningTasks.remove(name)?.cancel()
     }
 
     /**
      * Cancels all running tasks.
      */
     fun cancelAll() {
-        runningTasks.values.forEach { it.cancel() }
+        val tasks = runningTasks.values.toList()
         runningTasks.clear()
+        tasks.forEach(Job::cancel)
     }
 
     /**
@@ -115,5 +103,38 @@ class BackgroundTaskScheduler(
      */
     fun isRunning(name: String): Boolean {
         return runningTasks[name]?.isActive == true
+    }
+
+    /** Snapshot of active names for diagnostics/status UI. */
+    fun activeTaskNames(): Set<String> = runningTasks
+        .filterValues(Job::isActive)
+        .keys
+        .toSet()
+
+    private fun launchUnique(name: String, block: suspend () -> Unit): Job {
+        require(name.isNotBlank()) { "Task name must not be blank" }
+        lateinit var job: Job
+        job = scope.launch(start = CoroutineStart.LAZY) {
+            try {
+                block()
+            } finally {
+                // An older task must never remove a newer replacement that is
+                // registered under the same unique name.
+                runningTasks.remove(name, job)
+            }
+        }
+        runningTasks.put(name, job)?.cancel()
+        job.start()
+        return job
+    }
+
+    private suspend fun runSafely(name: String, task: suspend () -> Unit) {
+        try {
+            task()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logger.warn(error) { "Background task '$name' failed" }
+        }
     }
 }

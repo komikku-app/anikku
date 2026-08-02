@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
@@ -134,5 +135,61 @@ class BackgroundTaskSchedulerTest {
         delay(200)
         assertTrue(afterError)
         assertFalse(scheduler.isRunning("failing-task"))
+    }
+
+    @Test
+    fun `same-name one shot replaces old job without stale cleanup removing replacement`() = runBlocking {
+        var oldCompleted = false
+        var replacementCompleted = false
+        scheduler.runOnce("unique") {
+            try {
+                delay(5_000)
+                oldCompleted = true
+            } finally {
+                // Make cancellation cleanup overlap replacement registration.
+                delay(50)
+            }
+        }
+        delay(20)
+        scheduler.runOnce("unique") {
+            delay(200)
+            replacementCompleted = true
+        }
+        delay(80)
+
+        assertTrue(scheduler.isRunning("unique"))
+        assertTrue("unique" in scheduler.activeTaskNames())
+        delay(200)
+        assertFalse(oldCompleted)
+        assertTrue(replacementCompleted)
+        assertFalse(scheduler.isRunning("unique"))
+    }
+
+    @Test
+    fun `Duration periodic replacement cancels the previous loop`() = runBlocking {
+        var oldRuns = 0
+        var newRuns = 0
+        scheduler.schedulePeriodic("periodic", 20.milliseconds, runImmediately = true) { oldRuns++ }
+        delay(45)
+        scheduler.schedulePeriodic("periodic", 20.milliseconds, runImmediately = true) { newRuns++ }
+        val oldRunsAtReplacement = oldRuns
+        delay(80)
+        scheduler.cancelTask("periodic")
+
+        assertEquals(oldRunsAtReplacement, oldRuns)
+        assertTrue(newRuns >= 2)
+    }
+
+    @Test
+    fun `invalid task definitions are rejected`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            scheduler.runOnce(" ") {}
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            scheduler.schedulePeriodic("bad", 0.milliseconds) {}
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            scheduler.schedulePeriodic("bad", intervalMinutes = 0) {}
+        }
     }
 }
