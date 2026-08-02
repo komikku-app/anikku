@@ -5,9 +5,8 @@ import androidx.compose.material3.ColorScheme
 /**
  * macOS Custom color scheme.
  *
- * Generates a Material 3 color scheme from a user-selected seed color.
- * For Phase 4, falls back to TachiyomiColorScheme. Dynamic seed-based
- * color generation will be wired in Phase 5 when the settings UI is ported.
+ * Uses the deterministic desktop fallback palette. A user seed is accepted for
+ * source compatibility but macOS does not currently expose a custom seed UI.
  */
 class CustomColorScheme(
     seedColor: Int = 0xFF0058CA.toInt(),

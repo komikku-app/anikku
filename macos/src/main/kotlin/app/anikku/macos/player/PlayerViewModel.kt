@@ -164,7 +164,7 @@ class PlayerViewModel(
         val mpvLoaded = MPVLib.initialize()
         if (!mpvLoaded) {
             _playbackState.value = PlaybackState.ERROR
-            logger.warn { "MPV not available — player will operate in mock mode" }
+            logger.warn { "MPV not available — playback is disabled" }
             CrashReporter.logEvent("MPV init failed", "libmpv could not be loaded")
             return false
         }

@@ -46,18 +46,8 @@ object MPVLib {
     val isAvailable: Boolean get() = isInitialized && !initFailed
 
     /**
-     * Attempt to load libmpv from standard locations.
-     *
-     * Search order:
-     * 1. Bundle path: `Anikku.app/Contents/Frameworks/libmpv.1.dylib`
-     * 2. Homebrew: `/opt/homebrew/lib/libmpv.1.dylib` (Apple Silicon)
-     * 3. Homebrew (Intel): `/usr/local/lib/libmpv.1.dylib`
-     * 4. MacPorts: `/opt/local/lib/libmpv.1.dylib`
-     * 5. System `java.library.path`
-     * 6. Default JNA lookup (DYLD_LIBRARY_PATH, etc.)
-     */
-    /**
-     * Attempt to load libmpv from standard locations.
+     * Load bundled libmpv first, then Homebrew/MacPorts ABI 2 or ABI 1, then
+     * use JNA's normal library lookup.
      *
      * @return true if libmpv was successfully loaded and is available.
      */
@@ -79,7 +69,7 @@ object MPVLib {
         forceCLocale()
 
         val libraryPaths = listOfNotNull(
-            // Bundle path (Phase 6.1)
+            // Packaged application resources
             findBundleLibrary(),
             // Homebrew Apple Silicon (mpv ships libmpv.2.dylib as of 0.41.0+)
             "/opt/homebrew/lib/libmpv.2.dylib",
@@ -154,11 +144,11 @@ object MPVLib {
             val libc = NativeLibrary.getInstance("c")
             val setlocale = libc.getFunction("setlocale")
             // LC_ALL = 0 (all locale categories) — most reliable
-            val result = setlocale.invoke(arrayOf(0, "C"))
-            val resultStr = if (result is Pointer && Pointer.nativeValue(result) != 0L) {
+            val result = setlocale.invoke(Pointer::class.java, arrayOf<Any>(0, "C")) as Pointer?
+            val resultStr = if (result != null && Pointer.nativeValue(result) != 0L) {
                 result.getString(0)
             } else {
-                result?.toString() ?: "null"
+                "null"
             }
             logger.debug { "setlocale(LC_ALL, \"C\") returned: $resultStr" }
             success = resultStr.contains("C")
@@ -170,7 +160,7 @@ object MPVLib {
             try {
                 val libc = NativeLibrary.getInstance("System")
                 val setlocale = libc.getFunction("setlocale")
-                setlocale.invoke(arrayOf(1, "C"))
+                setlocale.invoke(Pointer::class.java, arrayOf<Any>(1, "C"))
                 logger.debug { "setlocale(LC_NUMERIC, \"C\") via libSystem succeeded" }
                 success = true
             } catch (e: Throwable) {
@@ -209,7 +199,6 @@ object MPVLib {
         return instance ?: error("libmpv not available. Install via: brew install mpv")
     }
 
-    /** Create a new mpv handle. */
     /** Create a new mpv handle. Returns null on failure. */
     fun create(): Pointer? {
         return try {
@@ -631,7 +620,7 @@ object MPVLib {
 private interface MPVNatives : Library {
 
     /** Create a new mpv instance (mpv_create). */
-    fun mpv_create(): Pointer
+    fun mpv_create(): Pointer?
 
     /** Initialize an mpv instance (mpv_initialize). */
     fun mpv_initialize(handle: Pointer): Int
@@ -664,13 +653,13 @@ private interface MPVNatives : Library {
     fun mpv_request_event(handle: Pointer, event: Int, enable: Int): Int
 
     /** Wait for the next event (mpv_wait_event). */
-    fun mpv_wait_event(handle: Pointer, timeout: Double): Pointer
+    fun mpv_wait_event(handle: Pointer, timeout: Double): Pointer?
 
     /** Free a string returned by mpv (mpv_free). */
     fun mpv_free(data: Pointer)
 
     /** Get the client name (mpv_client_name). */
-    fun mpv_client_name(handle: Pointer): Pointer
+    fun mpv_client_name(handle: Pointer): Pointer?
 
     /** Get the client API version (mpv_client_api_version). */
     fun mpv_client_api_version(): Long

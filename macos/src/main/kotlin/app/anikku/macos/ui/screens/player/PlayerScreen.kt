@@ -1325,35 +1325,6 @@ internal fun PlayerContent(
         }
     }
 
-    val toastHost = LocalToastHost.current
-
-    // Mock simulation fallback (when mpv is not available and no real video loaded)
-    // Wait 3 seconds for mpv to initialize before entering mock mode, since
-    // mpv initialization (lib loading, handle creation, option config) can
-    // take 1-2 seconds and isMPVAvailable may be false during that window.
-    LaunchedEffect(isPlaying, playerViewModel?.playbackState?.value) {
-        if (isPlaying && !isMPVAvailable && totalSeconds > 0) {
-            // Give mpv a chance to initialize before entering mock mode
-            delay(3000L)
-            // Check again — mpv might have initialized during the delay
-            if (isMPVAvailable) return@LaunchedEffect
-            // Also check if a real video is loaded (playbackState would be PLAYING or LOADING)
-            val state = playerViewModel?.playbackState?.value
-            if (state == PlaybackState.LOADING || state == PlaybackState.PLAYING || state == PlaybackState.BUFFERING) {
-                return@LaunchedEffect
-            }
-            while (true) {
-                delay(1000L)
-                elapsedSeconds = (elapsedSeconds + 1).coerceAtMost(totalSeconds)
-                seekFraction = if (totalSeconds > 0) elapsedSeconds.toFloat() / totalSeconds else 0f
-                if (elapsedSeconds >= totalSeconds) {
-                    toastHost.show("Episode complete", ToastDuration.SHORT)
-                    break
-                }
-            }
-        }
-    }
-
     // Keyboard shortcuts
     val canSeek = !isLive && totalSeconds > 0L
     val interactionSource = remember { MutableInteractionSource() }
@@ -1442,15 +1413,13 @@ internal fun PlayerContent(
                     color = Color.White.copy(alpha = 0.5f),
                 )
                 Spacer(Modifier.height(4.dp))
-                if (currentEpisode != null) {
-                    Text(
-                        "Episode ${String.format("%.0f", currentEpisode.episodeNumber)} — ${currentEpisode.name}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.3f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    "Episode ${String.format("%.0f", currentEpisode.episodeNumber)} — ${currentEpisode.name}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.3f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Spacer(Modifier.height(16.dp))
                 Text(
                     videoErrorDiagnostic?.title ?: "Could not resolve video URL",

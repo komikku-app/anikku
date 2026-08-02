@@ -7,13 +7,8 @@ import org.koin.dsl.module
 /**
  * Application-level Koin module.
  *
- * Registers application-scoped singletons:
- * - Application CoroutineScope (SupervisorJob + Dispatchers.Default)
- *
- * Future Phase 4+ additions:
- * - Window state management
- * - Navigation state
- * - Theme manager
+ * Registers the application CoroutineScope. Compose owns window, navigation,
+ * and theme state at the UI lifecycle boundary.
  */
 fun appModule(app: AnikkuApplication) = module {
 

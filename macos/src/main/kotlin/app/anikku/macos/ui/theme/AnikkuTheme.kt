@@ -31,10 +31,9 @@ import app.anikku.macos.ui.theme.colorscheme.YotsubaColorScheme
  * macOS Anikku Theme System.
  *
  * Ported from the Android TachiyomiTheme. Provides the same 18+ color schemes.
- * On macOS, Monet falls back to the default TachiyomiColorScheme since we don't
- * have access to the system wallpaper.
- *
- * Future: add preference integration via Koin for theme persistence.
+ * Theme selection and appearance mode are persisted by [SettingsState]. Monet
+ * and Custom use deterministic desktop palettes because wallpaper colors are
+ * not exposed through the macOS desktop target.
  */
 object AnikkuTheme {
 
