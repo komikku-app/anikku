@@ -28,9 +28,16 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +74,7 @@ fun PlayerTransportControls(
     currentPositionSeconds: Long,
     totalDurationSeconds: Long,
     isPlaying: Boolean,
+    isLive: Boolean = false,
     playbackState: PlaybackState = PlaybackState.IDLE,
     currentEpisodeIndex: Int,
     episodeCount: Int,
@@ -78,9 +86,16 @@ fun PlayerTransportControls(
     onSeekRelative: (Double) -> Unit,
     onNavigateEpisode: (Int) -> Unit,
 ) {
-    val seekFraction = if (totalDurationSeconds > 0) {
+    val hasSeekableDuration = !isLive && totalDurationSeconds > 0
+    val seekFraction = if (hasSeekableDuration) {
         (currentPositionSeconds.toFloat() / totalDurationSeconds).coerceIn(0f, 1f)
     } else 0f
+    // Keep the thumb under the mouse while dragging. The position flow updates
+    // several times per second, so binding Slider.value directly to it makes
+    // the thumb jump back underneath the pointer and makes seeking unreliable.
+    var isDragging by remember { mutableStateOf(false) }
+    var dragFraction by remember { mutableFloatStateOf(seekFraction) }
+    val displayedFraction = if (isDragging) dragFraction else seekFraction
 
     Column(
         modifier = Modifier
@@ -100,12 +115,23 @@ fun PlayerTransportControls(
             )
 
             Slider(
-                value = seekFraction,
-                onValueChange = onSeek,
-                onValueChangeFinished = { onSeekEnd(seekFraction) },
+                value = displayedFraction,
+                onValueChange = {
+                    isDragging = true
+                    dragFraction = it.coerceIn(0f, 1f)
+                    onSeek(dragFraction)
+                },
+                onValueChangeFinished = {
+                    onSeekEnd(dragFraction)
+                    isDragging = false
+                },
+                enabled = hasSeekableDuration,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = 8.dp)
+                    .semantics {
+                        contentDescription = "Seek position"
+                    },
                 colors = SliderDefaults.colors(
                     thumbColor = Color.White,
                     activeTrackColor = MaterialTheme.colorScheme.primary,
@@ -114,7 +140,11 @@ fun PlayerTransportControls(
             )
 
             Text(
-                text = formatDuration(totalDurationSeconds),
+                text = when {
+                    isLive -> "LIVE"
+                    totalDurationSeconds > 0 -> formatDuration(totalDurationSeconds)
+                    else -> "—"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.width(48.dp),
@@ -154,6 +184,7 @@ fun PlayerTransportControls(
             TransportIconButton(
                 icon = Icons.Outlined.FastRewind,
                 description = "Rewind 10 seconds",
+                enabled = hasSeekableDuration,
                 onClick = { onSeekRelative(-10.0) },
             )
 
@@ -178,6 +209,7 @@ fun PlayerTransportControls(
             TransportIconButton(
                 icon = Icons.Outlined.FastForward,
                 description = "Forward 10 seconds",
+                enabled = hasSeekableDuration,
                 onClick = { onSeekRelative(10.0) },
             )
 

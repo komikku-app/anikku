@@ -8,9 +8,17 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.key.Key
 import app.anikku.macos.player.PlaybackState
+import app.anikku.macos.ui.screens.models.EpisodeModel
 import org.junit.Rule
 import org.junit.Test
 
@@ -28,6 +36,58 @@ class PlayerTransportControlsRobotTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun `focused player root handles playback seek and volume shortcuts`() {
+        var toggles = 0
+        val seekOffsets = mutableListOf<Double>()
+        val volumes = mutableListOf<Int>()
+        val episode = EpisodeModel(
+            id = 1L,
+            animeId = 1L,
+            name = "Episode 1",
+            episodeNumber = 1.0,
+            seen = false,
+            totalSeconds = 100L,
+            lastSecondSeen = 50L,
+        )
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerContent(
+                    animeTitle = "Keyboard test",
+                    episodes = listOf(episode),
+                    currentEpisodeIndex = 0,
+                    currentEpisode = episode,
+                    playbackState = PlaybackState.PAUSED,
+                    currentPosition = 50.0,
+                    duration = 100.0,
+                    isPaused = true,
+                    volume = 100,
+                    isMPVAvailable = true,
+                    hasVideoUrl = true,
+                    isLoading = false,
+                    onBack = {},
+                    onNavigateEpisode = {},
+                    onTogglePlay = { toggles++ },
+                    onSeekRelative = { seekOffsets += it },
+                    onSetVolume = { volumes += it },
+                )
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.onRoot().performKeyInput {
+            pressKey(Key.Spacebar)
+            pressKey(Key.DirectionLeft)
+            pressKey(Key.DirectionRight)
+            pressKey(Key.DirectionUp)
+            pressKey(Key.DirectionDown)
+        }
+
+        assert(toggles == 1) { "Space should toggle playback exactly once, got $toggles" }
+        assert(seekOffsets == listOf(-10.0, 10.0)) { "Arrow seek callbacks were $seekOffsets" }
+        assert(volumes == listOf(105, 95)) { "Arrow volume callbacks were $volumes" }
+    }
 
     // ========================================================================
     // Play / Pause toggle
@@ -263,6 +323,120 @@ class PlayerTransportControlsRobotTest {
         }
         composeRule.onNodeWithContentDescription("Forward 10 seconds").performClick()
         assert(offset == 10.0) { "Forward should seek by 10.0, got $offset" }
+    }
+
+    // ========================================================================
+    // Timeline seeking and unknown/live streams
+    // ========================================================================
+
+    @Test
+    fun `seek slider exposes accessibility label and click updates position`() {
+        var lastFraction = -1f
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerTransportControls(
+                    currentPositionSeconds = 25,
+                    totalDurationSeconds = 100,
+                    isPlaying = false,
+                    currentEpisodeIndex = 0,
+                    episodeCount = 1,
+                    onTogglePlay = {},
+                    onSeek = { lastFraction = it },
+                    onSeekEnd = {},
+                    onSeekRelative = {},
+                    onNavigateEpisode = {},
+                )
+            }
+        }
+
+        val seek = composeRule.onNodeWithContentDescription("Seek position")
+        seek.assertIsEnabled()
+        seek.performTouchInput { down(center); up() }
+        assert(lastFraction in 0.35f..0.65f) {
+            "Clicking the seek bar should update its fraction, got $lastFraction"
+        }
+    }
+
+    @Test
+    fun `seek slider keeps drag updates and commits at release`() {
+        var updates = 0
+        var committed = -1f
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerTransportControls(
+                    currentPositionSeconds = 25,
+                    totalDurationSeconds = 100,
+                    isPlaying = false,
+                    currentEpisodeIndex = 0,
+                    episodeCount = 1,
+                    onTogglePlay = { },
+                    onSeek = { updates++ },
+                    onSeekEnd = { committed = it },
+                    onSeekRelative = {},
+                    onNavigateEpisode = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Seek position")
+            .performTouchInput {
+                val y = center.y
+                val startX = left + width * 0.25f
+                val endX = left + width * 0.75f
+                down(Offset(startX, y))
+                moveTo(Offset(endX, y), delayMillis = 200L)
+                up()
+            }
+        assert(updates > 0) { "Dragging the seek bar should emit position updates" }
+        assert(committed in 0f..1f) { "Dragging should commit a clamped fraction, got $committed" }
+    }
+
+    @Test
+    fun `live stream displays LIVE and disables seeking`() {
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerTransportControls(
+                    currentPositionSeconds = 0,
+                    totalDurationSeconds = 0,
+                    isPlaying = true,
+                    isLive = true,
+                    currentEpisodeIndex = 0,
+                    episodeCount = 1,
+                    onTogglePlay = {},
+                    onSeek = {},
+                    onSeekEnd = {},
+                    onSeekRelative = {},
+                    onNavigateEpisode = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("LIVE").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Seek position").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `unknown duration disables seeking without inventing a duration`() {
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerTransportControls(
+                    currentPositionSeconds = 0,
+                    totalDurationSeconds = 0,
+                    isPlaying = false,
+                    currentEpisodeIndex = 0,
+                    episodeCount = 1,
+                    onTogglePlay = {},
+                    onSeek = {},
+                    onSeekEnd = {},
+                    onSeekRelative = {},
+                    onNavigateEpisode = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("00:00").assertIsDisplayed()
+        composeRule.onNodeWithText("—").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Seek position").assertIsNotEnabled()
     }
 
     // ========================================================================

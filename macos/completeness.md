@@ -1011,41 +1011,41 @@ macos/src/main/kotlin/app/anikku/macos/player/MPVSoftwareRenderer.kt
 - [x] Handle null/unknown events safely.
 - [x] Decode end-file reasons accurately.
 - [ ] Distinguish buffering, idle, shutdown, reconfiguration, property changes, and fatal failure. **Not fully verified:** source handling exists, but no deterministic event-loop state-transition matrix was run.
-- [ ] Ensure event-loop exceptions do not silently stop playback. **Not verified:** no injected event-loop failure test was run.
+- [x] Ensure event-loop exceptions do not silently stop playback. Injected native-link failure is emitted, polling resumes, a later property event is delivered, and shutdown terminates the loop.
 
 ## 8.2 Render parameters and native memory
 
 - [x] Verify render constants against the exact MPV headers/version.
 - [x] Test render parameter layout and invalid terminator.
-- [ ] Keep native `Memory` objects strongly reachable through native calls. **Source-reviewed only:** no dedicated GC/lifetime stress test was run.
-- [ ] Protect render calls from context-disposal races. **Source-reviewed only:** no concurrent render/dispose test was run.
-- [ ] Verify callback lifetime and disposal behavior. **Not verified:** no callback-after-disposal regression test was run.
+- [x] Keep native `Memory` objects strongly reachable through native calls. Production renderer retains each render parameter/buffer owner and the native stress run completed repeated render/resize/lifecycle operations without corruption.
+- [x] Protect render calls from context-disposal races. Concurrent native render, repeated resize, and disposal completed without exception or a stuck thread.
+- [x] Verify callback lifetime and disposal behavior. Callback is strongly retained while active, explicitly unregistered before context free, released on disposal, and double disposal is safe.
 - [x] Verify stride, format, allocation, and image conversion. **Limited evidence:** the native render experiment produced visible pixels at one resolution using the configured BGR0 path.
-- [ ] Test resize and multiple resolutions. **Not verified:** the native render experiment exercised one resolution only.
+- [x] Test resize and multiple resolutions. Native rendering passed at 160x90, 640x360, and 321x181 after a visible 320x240 frame.
 
 ## 8.3 Player state machine
 
 - [ ] Use a stream/session generation ID or cancellation token. **Source-reviewed only:** a load token exists, but no dedicated generation-order test was run.
 - [ ] Prevent old timeouts from affecting new streams. **Not verified:** no deterministic stale-timeout test was run.
 - [ ] Prevent old seeks from affecting new episodes. **Not verified:** no deterministic stale-seek regression test was run.
-- [ ] Prevent old end-file events from changing current state. **Not verified:** the implementation guards state transitions, but no out-of-order end-file test was run.
+- [x] Prevent old end-file events from changing current state. Deterministic tests reject stale and unowned playlist-entry end events during replacement while accepting the active entry.
 - [ ] Distinguish buffering from fatal failure. **Not verified:** no deterministic buffering/failure transition test was run.
 - [ ] Cancel startup timeout after playback begins. **Source-reviewed only:** no controlled playback-start event test was run.
-- [ ] Cancel jobs on disposal. **Source-reviewed only:** no initialized-player job-cancellation test was run.
+- [x] Cancel jobs on disposal. Shutdown cancels and joins every job that can enter JNA before freeing the handle; three native initialize/shutdown cycles and repeatable double shutdown passed.
 - [ ] Release old episode resources. **Source-reviewed only:** no rapid episode-change resource test was run.
-- [ ] Prevent retry/render-context leaks. **Source-reviewed only:** no repeated lifecycle/leak test was run.
+- [x] Prevent retry/render-context leaks. Three complete player lifecycles and three renderer create/destroy lifecycles passed, including double disposal.
 
 ## 8.4 Focused tests
 
-- [ ] Out-of-order stale event tests. **Not verified.**
+- [x] Out-of-order stale event tests. Playlist-entry correlation tests cover stale, missing, active, and post-load end events.
 - [ ] Buffering without false retry. **Not verified.**
 - [ ] Genuine failure/retry test. **Not verified.**
-- [ ] Render during resize. **Not verified.**
-- [ ] Render during dispose. **Not verified.**
-- [ ] Repeated renderer create/destroy. **Not verified.**
+- [x] Render during resize. Native concurrent render/resize stress passed.
+- [x] Render during dispose. Native concurrent render/dispose stress passed and the render thread terminated within five seconds.
+- [x] Repeated renderer create/destroy. Three native cycles passed, including repeatable disposal.
 - [ ] Rapid episode changes. **Not verified.**
-- [ ] Callback after disposal. **Not verified.**
-- [ ] Zero/unknown duration. **Not verified.**
+- [x] Callback after disposal. Disposal unregisters the native callback before freeing the context; post-disposal render returns null and repeated dispose is safe.
+- [x] Zero/unknown duration. Compose transport tests verify unknown-duration and live media remain non-seekable without inventing a duration.
 - [ ] Renderer initialization failure. **Not verified.**
 
 ## 8.5 Protected real-playback regression
@@ -1074,14 +1074,23 @@ Evidence:
 
 | Subphase | Status | Completion/evidence |
 |---|---|---|
-| 8.1 ABI/events | Partial | Deterministic ABI/event checks completed; no real-stream regression evidence. |
-| 8.2 Render/native memory | Partial | ABI/layout and native software-render experiment completed; multiple-resolution coverage remains unverified. |
-| 8.3 Player state machine | Partial | Generation/timeout/lifecycle protections implemented and compiled; stale seek/end-file regression tests remain unverified. |
-| 8.4 Focused tests | Partial | Deterministic ABI and player/render tests passed; the listed stale-event/renderer lifecycle matrix was not fully run. |
-| 8.5 Real-playback regression | Not verified | Required extension/search/real-stream procedure was not performed; local MPV playback test was skipped because the test video/native playback prerequisite was unavailable. |
-| Phase 8 gate passed | - [ ] | Open: real-playback regression and listed focused lifecycle gaps remain unverified. |
+| 8.1 ABI/events | Partial | ABI/event snapshot tests pass; injected polling failure recovery is verified. A full buffering/fatal transition matrix remains open. |
+| 8.2 Render/native memory | - [x] | ABI/layout, visible pixels, three resize targets, concurrent resize/render/dispose, callback unregistration, and repeated lifecycle checks passed against libmpv 0.41.0. |
+| 8.3 Player state machine | Partial | Production-model playback/render/seek and repeated shutdown pass; stale end-event protection is tested. Stale timeout/seek and rapid remote episode switching remain open. |
+| 8.4 Focused tests | Partial | Event-loop failure, stale end event, native rendering/lifecycle, local playback/seek, production model, and zero/live duration checks pass. Explicit renderer-init failure and genuine retry tests remain open. |
+| 8.5 Real-playback regression | Partial | Automated live extension browse/search/details/episode/stream-to-libmpv tests pass, including HLS, DASH, and torrent. Manual GUI audio/watch/timeline/retry/episode-switch checks remain open. |
+| Phase 8 gate passed | - [ ] | Open only for the remaining manual GUI real-playback and focused stale-timeout/retry/rapid-switch checks; all native changes in this run passed their focused regressions. |
 
 Phase 8 completion annotations:
+
+```text
+Completed: 2026-08-02 (Europe/Dublin)
+Actor: Codex (GPT-5)
+Evidence: `./gradlew quickCheck --console=plain --stacktrace`; focused `quickTest` runs for `MPVEventLoopTest`, `PlayerScreenTest`, and `PlayerTransportControlsRobotTest`; `test --tests app.anikku.macos.player.MPVRenderExperiment --tests app.anikku.macos.player.MPVPlaybackTest`; post-change `StreamingEndToEndTest.full end-to-end - extension to mpv streaming playback` plus the earlier search/HLS/DASH/torrent runs.
+Result: Deterministic gate passed 509 tests with 0 failures/errors and 3 documented skips; injected polling failure recovered; stale/unowned END_FILE events were rejected; all five native playback/render/seek/lifecycle tests passed together; visible frames rendered at four sizes; concurrent resize/render/dispose and repeated callback/context/player shutdown were safe; the production PlayerViewModel loaded, rendered, advanced, and sought seekable media; the post-change live extension-to-libmpv stream passed. Manual GUI audio/watch/retry/episode-switch evidence is still intentionally not claimed.
+Files: `MPVEventLoop.kt`, `MPVLib.kt`, `MPVSoftwareRenderer.kt`, `MPVVideoSurface.kt`, `PlayerViewModel.kt`, and focused player/UI tests.
+Proof artifact: Gradle reports under `build/reports/tests/` and XML under `build/test-results/`; terminal output in the active completion run.
+```
 
 ```text
 Completed: 2026-08-01 14:26:29 +0100
@@ -1130,13 +1139,13 @@ macos/src/main/kotlin/app/anikku/macos/ui/screens/player/PlayerScreen.kt
 macos/src/main/kotlin/app/anikku/macos/ui/screens/player/PlayerControls.kt
 ```
 
-- [ ] Verify initial play/pause reflects actual MPV state. **Not verified:** no native MPV/UI integration run was performed; direct transport tests only verify rendering from the supplied `isPlaying` value.
+- [x] Verify initial play/pause reflects actual MPV state. The production model derives state from observed mpv pause/cache properties, native playback reached PLAYING/BUFFERING, and Compose transport tests render the supplied authoritative state.
 - [x] Verify timeline updates do not fight dragging.
 - [x] Verify click-to-seek.
 - [x] Verify drag-to-seek.
-- [ ] Verify left/right arrows. **Not verified:** implementation was source-reviewed, but no deterministic key-event test was run.
-- [ ] Verify Spacebar. **Not verified:** implementation was source-reviewed, but no deterministic key-event test was run.
-- [ ] Verify focus restoration. **Not verified:** no focused UI integration test was run.
+- [x] Verify left/right arrows. Compose key injection delivered -10/+10 second callbacks from the focused player root.
+- [x] Verify Spacebar. Compose key injection toggled playback exactly once from the focused player root.
+- [x] Verify focus restoration. The normal player root requests focus after attachment and the key-injection test proves it receives keyboard input without an extra click.
 - [ ] Verify retry overlay focus and shortcuts. **Not verified:** no retry-overlay UI test was run.
 - [x] Verify disabled controls.
 - [ ] Verify zero/unknown duration and live streams. **Partial:** direct transport tests cover unknown duration and explicit live rendering/disabled seeking; integrated MPV/source live metadata was not verified.
@@ -1149,12 +1158,21 @@ Evidence:
 
 | Subphase | Status | Completion/evidence |
 |---|---|---|
-| Controls behavior | - [ ] Partial | Timeline click/drag, disabled controls, accessibility semantics, and non-seekable transport behavior are directly tested; native MPV state, keyboard, focus, retry, text-field propagation, and integrated live metadata remain unverified. |
-| UI tests | - [x] | 74 focused tests passed, including Compose transport tests for play/pause rendering, episode boundaries, click/drag seek callbacks, accessibility label, unknown duration, live display, and disabled controls. |
-| Real-playback regression | - [ ] Not verified | The protected real extension-to-MPV workflow was not run in this Phase 9 continuation. |
-| Phase 9 gate passed | - [ ] Not verified | The gate remains open because native MPV state, keyboard/focus integration, integrated live metadata, retry-overlay behavior, text-field isolation, and real playback were not directly verified. |
+| Controls behavior | Partial | Timeline click/drag, disabled controls, accessibility, non-seekable media, authoritative native state, Space, arrows, and root focus are directly tested; retry-overlay focus, text-field propagation, and integrated live metadata remain open. |
+| UI tests | - [x] | Focused Compose/player tests pass, including keyboard injection, transport rendering, episode boundaries, click/drag seek callbacks, accessibility, unknown duration, live display, and disabled controls. |
+| Real-playback regression | Partial | Automated extension-to-libmpv streaming passes; manual GUI video/audio/timeline/retry validation remains open. |
+| Phase 9 gate passed | - [ ] Not verified | The gate remains open for retry-overlay focus, text-field isolation, integrated live metadata, and manual GUI real playback. |
 
 Phase 9 completion annotations:
+
+```text
+Completed: 2026-08-02 (Europe/Dublin)
+Actor: Codex (GPT-5)
+Evidence: `quickTest` focused on `PlayerTransportControlsRobotTest`, `PlayerScreenTest`, and `MPVEventLoopTest`; native production-model playback/render/seek in `MPVRenderExperiment`; local `MPVPlaybackTest` exact seek.
+Result: Focused root accepted Space, left/right seek, and up/down volume key events; click and drag seeking, unknown/live duration, disabled states, and accessibility remain green; production PlayerViewModel state, rendering, position advancement, and exact seek passed against libmpv 0.41.0. Retry-overlay/text-field and manual GUI checks remain open.
+Files: `PlayerScreen.kt`, `PlayerControls.kt`, `PlayerTransportControlsRobotTest.kt`, `PlayerScreenTest.kt`, and native player tests.
+Proof artifact: Gradle focused test output and reports under `build/reports/tests/`.
+```
 
 ```text
 Completed: 2026-08-02 01:24:07 +0100

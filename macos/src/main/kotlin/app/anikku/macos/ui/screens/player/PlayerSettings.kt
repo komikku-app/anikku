@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.anikku.macos.player.TrackInfo
 
 /**
  * Player settings panels (Phase 5.8).
@@ -169,7 +170,7 @@ fun PlayerSpeedPanel(
  */
 @Composable
 fun PlayerAudioTrackPanel(
-    tracks: List<String> = emptyList(),
+    tracks: List<TrackInfo> = emptyList(),
     currentTrackIndex: Int = 0,
     audioDelay: Double = 0.0,
     onTrackSelected: (Int) -> Unit,
@@ -206,11 +207,11 @@ fun PlayerAudioTrackPanel(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                tracks.forEachIndexed { index, track ->
-                    val isSelected = index == currentTrackIndex
+                tracks.forEach { track ->
+                    val isSelected = track.id == currentTrackIndex
                     OutlinedButton(
                         onClick = {
-                            onTrackSelected(index)
+                            onTrackSelected(track.id)
                             onDismiss()
                         },
                         modifier = Modifier
@@ -226,7 +227,7 @@ fun PlayerAudioTrackPanel(
                         ),
                     ) {
                         Text(
-                            text = track,
+                            text = track.title,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         )
                     }
@@ -274,8 +275,8 @@ fun PlayerAudioTrackPanel(
  */
 @Composable
 fun PlayerSubtitleTrackPanel(
-    tracks: List<String> = emptyList(),
-    currentTrackIndex: Int = -1, // -1 = disabled
+    tracks: List<app.anikku.macos.player.TrackInfo> = emptyList(),
+    currentTrackIndex: Int = -1, // -1 = disabled; otherwise the mpv track ID
     subtitleDelay: Double = 0.0,
     onTrackSelected: (Int) -> Unit,
     onDelayChange: (Double) -> Unit,
@@ -320,7 +321,7 @@ fun PlayerSubtitleTrackPanel(
                     checked = subsEnabled,
                     onCheckedChange = {
                         subsEnabled = it
-                        onTrackSelected(if (it) 0 else -1)
+                        onTrackSelected(if (it) tracks.firstOrNull()?.id ?: -1 else -1)
                     },
                 )
             }
@@ -335,11 +336,11 @@ fun PlayerSubtitleTrackPanel(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                tracks.forEachIndexed { index, track ->
-                    val isSelected = index == currentTrackIndex
+                tracks.forEach { track ->
+                    val isSelected = track.id == currentTrackIndex
                     OutlinedButton(
                         onClick = {
-                            onTrackSelected(index)
+                            onTrackSelected(track.id)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -354,7 +355,7 @@ fun PlayerSubtitleTrackPanel(
                         ),
                     ) {
                         Text(
-                            text = track,
+                            text = track.title,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         )
                     }

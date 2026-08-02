@@ -1,10 +1,12 @@
 package app.anikku.macos.player
 
+import com.sun.jna.Callback
 import com.sun.jna.Memory
 import com.sun.jna.Pointer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
+import java.lang.ref.Reference
 
 private val logger = KotlinLogging.logger {}
 
@@ -49,6 +51,10 @@ class MPVSoftwareRenderer(
     var videoHeight: Int = 0
         private set
 
+    /** Current video stride in bytes. */
+    var videoStride: Int = 0
+        private set
+
     /** Native memory buffer for raw RGBA pixel data. */
     private var pixelBuffer: Memory? = null
 
@@ -60,12 +66,16 @@ class MPVSoftwareRenderer(
 
     /** Reusable native memory for render params (avoids per-frame allocation). */
     private var sizeParams: Memory? = null
+    /** size_t* — one scalar stride in bytes per row (not an array). */
     private var strideParam: Memory? = null
     private var formatParam: Memory? = null
-    private var renderParams: Pointer? = null
+    /** Must be [Memory] (not Pointer) to prevent GC from freeing native buffer while mpv reads it. */
+    private var renderParams: Memory? = null
+    /** Reusable non-blocking target time param (value = 0). */
+    private val blockParam: Memory = Memory(4).also { it.setInt(0, 0) }
 
-    /** Fallback byte buffer for non-bgr0 pixel formats. */
-    private var rawByteBuffer: ByteArray? = null
+    /** Update callback registered with mpv — must be a field to prevent GC. */
+    private var updateCallback: UpdateCallback? = null
 
     /** Whether the render context has been successfully created. */
     var isReady: Boolean = false
@@ -73,6 +83,34 @@ class MPVSoftwareRenderer(
 
     /** Lock protecting mutable renderer state across threads. */
     private val lock = Any()
+
+    /**
+     * Serializes native render calls with context disposal. The render context
+     * is snapshotted under [lock], so disposal also needs this second barrier
+     * before calling mpv_render_context_free().
+     */
+    private val nativeRenderLock = Any()
+
+    /** Frame counter for diagnostic logging (logged every 100 frames). */
+    private var frameCount: Long = 0
+
+    /** Whether we've already logged the first-frame milestone. */
+    private var loggedFirstFrame: Boolean = false
+
+    /**
+     * Anchors the current frame's Memory buffers at the class level so the JVM JIT
+     * compiler cannot perform dead-code elimination and garbage-collect them while
+     * mpv's native render is still reading them.
+     *
+     * Without this volatile field, the JIT may determine that the sub-Memory
+     * references captured in the RenderSnapshot (sizeParams, strideParam,
+     * formatParam) are "dead" after destructuring — even though
+     * mpv is actively dereferencing them via raw pointers in renderParams.
+     * GC then frees those native buffers → mpv reads garbage → malloc heap
+     * corruption → "memory corruption of free block" crash.
+     */
+    @Volatile
+    private var inFlightSnapshot: RenderSnapshot? = null
 
     // -------------------------------------------------------------------------
     // Lifecycle
@@ -92,8 +130,15 @@ class MPVSoftwareRenderer(
                 val ctx = MPVLib.renderContextCreate(mpvHandle)
                 if (ctx != null) {
                     renderContext = ctx
+                    // Register update callback — mpv calls this when a new frame is available.
+                    // We poll via the Compose render loop, but the callback must exist
+                    // for mpv's internal render state machine to advance correctly.
+                    updateCallback = object : UpdateCallback {
+                        override fun invoke(cbCtx: Pointer?) { /* no-op: polled externally */ }
+                    }
+                    MPVLib.renderContextSetUpdateCallback(ctx, updateCallback!!, null)
                     isReady = true
-                    logger.info { "MPV software render context created" }
+                    logger.info { "MPV software render context created (update callback registered)" }
                     return true
                 } else {
                     logger.error { "Failed to create MPV render context" }
@@ -123,14 +168,26 @@ class MPVSoftwareRenderer(
             videoWidth = width
             videoHeight = height
 
-            // Allocate native pixel buffer (4 bytes per pixel, "bgr0" format)
-            val newSize = width * height * 4
+            videoStride = width * 4
+
+            // Allocate native pixel buffer (4 bytes per pixel).
+            // EXTRA PADDING: allocate 8 extra rows to prevent SIMD writes
+            // from going past buffer boundaries (mp_image_clear uses
+            // NEON SIMD on ARM64 which can write up to 64 bytes past
+            // the last pixel in a row).
+            val paddedHeight = height + 8
+            val newSize = videoStride * paddedHeight
             pixelBuffer = Memory(newSize.toLong())
-            // Use TYPE_INT_ARGB_PRE (premultiplied alpha) for Skia compatibility.
-            // The mpv bgr0 format produces B, G, R, 0 bytes per pixel.
-            // On little-endian macOS this is stored as 0x00RRGGBB.
-            // TYPE_INT_ARGB_PRE expects 0xAARRGGBB. We set alpha=255 in the
-            // copy loop to ensure opaque rendering.
+            // Zero-initialize the buffer so mpv's read-modify-write ops
+            // don't operate on garbage malloc data.
+            pixelBuffer!!.clear()
+            // TYPE_INT_ARGB with alpha=0xFF for fully opaque pixels.
+            // CRITICAL: Discard the old IntArray so it is recreated with the
+            // correct (new) dimensions. Without this, render() reuses the old
+            // smaller array → nativeBuffer.read writes past the array bounds
+            // → JVM heap corruption → G1 barrier SIGSEGV + malloc corruption.
+            rawIntBuffer = null
+
             frameImage = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
 
             // Reuse render param memory; reallocate only when dimensions change.
@@ -138,10 +195,12 @@ class MPVSoftwareRenderer(
                 mem.setInt(0, width)
                 mem.setInt(4, height)
             }
+            // The software render API uses scalar values here:
+            // SW_STRIDE points to one size_t (bytes per row), and SW_POINTER
+            // points directly at the first pixel. These are not plane arrays.
             strideParam = Memory(8).also { mem ->
-                mem.setLong(0, width * 4L)
+                mem.setLong(0, videoStride.toLong())
             }
-            formatParam = Memory(5L).also { it.setString(0, MPVLib.RENDER_FORMAT_BGR0) }
             renderParams = buildRenderParamsForFormat(MPVLib.RENDER_FORMAT_BGR0)
         }
 
@@ -149,27 +208,32 @@ class MPVSoftwareRenderer(
     }
 
     /** Build the reusable render params memory for the given pixel format. */
-    private fun buildRenderParamsForFormat(format: String): Pointer {
+    private fun buildRenderParamsForFormat(format: String): Memory {
         formatParam = Memory(5L).also { it.setString(0, format) }
         return MPVLib.buildRenderParams(
             MPVLib.RENDER_PARAM_SW_SIZE to sizeParams,
             MPVLib.RENDER_PARAM_SW_FORMAT to formatParam,
             MPVLib.RENDER_PARAM_SW_STRIDE to strideParam,
             MPVLib.RENDER_PARAM_SW_POINTER to pixelBuffer,
+            MPVLib.RENDER_PARAM_BLOCK_FOR_TARGET_TIME to blockParam,
         )
     }
 
     /** Snapshot of renderer state captured under [lock] for a render call. */
     private data class RenderSnapshot(
+        val context: Pointer,
         val buffer: Memory,
         val image: BufferedImage,
         val width: Int,
         val height: Int,
         val stride: Int,
-        val params: Pointer,
+        /** Held as Memory to prevent GC of native buffer during the render call. */
+        val params: Memory,
         val intBuffer: IntArray,
-        /** Whether the snapshot is using the rgb0 fallback path. */
-        val isRgb0Fallback: Boolean = false,
+        /** Parameter memory referenced by [params]. */
+        val sizeParams: Memory?,
+        val strideParam: Memory?,
+        val formatParam: Memory?,
     )
 
     /**
@@ -181,65 +245,119 @@ class MPVSoftwareRenderer(
      * @return A [BufferedImage] with the current frame, or null if no frame.
      */
     fun render(): BufferedImage? {
+        // Acquire this before snapshotting the context. dispose() uses the same
+        // lock, so it cannot free the context between snapshot and native render.
+        synchronized(nativeRenderLock) {
         // Snapshot mutable state under the lock so render() and
         // updateVideoSize()/dispose() cannot race.
         val snapshot = synchronized(lock) {
-            val ctx = renderContext ?: return null
-            val buffer = pixelBuffer ?: return null
-            val image = frameImage ?: return null
-            val width = videoWidth
-            val height = videoHeight
-            val params = renderParams ?: return null
-            if (width <= 0 || height <= 0) return null
-            val stride = width * 4
-            val intBuffer = rawIntBuffer ?: IntArray(height * stride / 4).also { rawIntBuffer = it }
-            val isRgb0 = formatParam?.getString(0) == MPVLib.RENDER_FORMAT_RGB0
-            RenderSnapshot(buffer, image, width, height, stride, params, intBuffer, isRgb0)
-        }
-
-        try {
-            val result = MPVLib.renderContextRender(snapshot.ctx, snapshot.params)
-            if (result < 0) {
-                // If we got a format error and haven't tried the fallback yet,
-                // switch to rgb0 and retry on the next frame.
-                if (result == MPVLib.ERROR_INVALID_PARAMETER && !snapshot.isRgb0Fallback) {
-                    if (switchToRgb0Fallback()) {
-                        return null // retry next frame with fallback
-                    }
-                }
-                // No frame available yet — this is normal during buffering
+            val ctx = renderContext
+            if (ctx == null) {
+                if (frameCount == 0L) logger.debug { "🎬 RENDER: renderContext is null — not yet created" }
                 return null
             }
-
-            // Copy from native buffer to BufferedImage.
-            if (snapshot.isRgb0Fallback) {
-                copyBufferToImageRgb0(snapshot)
-            } else {
-                copyBufferToImage(snapshot)
+            val buffer = pixelBuffer
+            if (buffer == null) {
+                // This is the most common failure: updateVideoSize() hasn't been called yet
+                // because VIDEO_RECONFIG hasn't fired or dwidth/dheight returned 0.
+                if (frameCount == 0L) logger.warn { "🎬 RENDER: pixelBuffer is null — VIDEO_RECONFIG not yet received or dimensions not available" }
+                return null
             }
+            val image = frameImage
+            if (image == null) {
+                logger.error { "🎬 RENDER: frameImage is null — unexpected, should be allocated with pixelBuffer" }
+                return null
+            }
+            val width = videoWidth
+            val height = videoHeight
+            val stride = videoStride
+            val params = renderParams
+            if (params == null) {
+                if (frameCount == 0L) logger.warn { "🎬 RENDER: renderParams is null — updateVideoSize not yet called" }
+                return null
+            }
+            if (width <= 0 || height <= 0) {
+                if (frameCount == 0L) logger.warn { "🎬 RENDER: invalid video dimensions ${width}x${height}" }
+                return null
+            }
+            // Recreate intBuffer if dimensions changed and the old array is too small.
+            // Without this check, nativeBuffer.read writes past the array bounds
+            // → JVM heap corruption → G1 barrier crash + malloc corruption.
+            val requiredInts = height * stride / 4
+            var ints = rawIntBuffer
+            if (ints == null || ints.size < requiredInts) {
+                ints = IntArray(requiredInts)
+                rawIntBuffer = ints
+            }
+            val intBuffer = ints
+            // Capture every Memory object referenced by renderParams so native
+            // pointers remain valid for the complete render and copy operation.
+            RenderSnapshot(
+                context = ctx,
+                buffer = buffer,
+                image = image,
+                width = width,
+                height = height,
+                stride = stride,
+                params = params,
+                intBuffer = intBuffer,
+                sizeParams = sizeParams,
+                strideParam = strideParam,
+                formatParam = formatParam,
+            )
+        }
 
-            return snapshot.image
+        // Anchor snapshot at class level to prevent JIT dead-code elimination
+        // from freeing Memory objects during the native render call.
+        inFlightSnapshot = snapshot
+        try {
+                val result = MPVLib.renderContextRender(snapshot.context, snapshot.params)
+
+                if (result < 0) {
+                    if (frameCount == 0L) {
+                        val errorName = when (result) {
+                            MPVLib.ERROR_INVALID_PARAMETER -> "INVALID_PARAMETER"
+                            MPVLib.ERROR_UNINITIALIZED -> "UNINITIALIZED"
+                            MPVLib.ERROR_NOMEM -> "NOMEM"
+                            MPVLib.ERROR_UNSUPPORTED -> "UNSUPPORTED"
+                            MPVLib.ERROR_NOT_IMPLEMENTED -> "NOT_IMPLEMENTED"
+                            else -> "unknown($result)"
+                        }
+                        logger.warn { "🎬 RENDER: mpv_render_context_render returned error $errorName — no frame available yet. pixelBuffer=allocated, format=bgr0" }
+                    }
+                    return null
+                }
+
+                // Copy the native pixel data into the BufferedImage for display.
+                copyBufferToImage(snapshot)
+
+                // Keep Memory objects alive until after BOTH the native render call
+                // AND the buffer copy complete. Placed AFTER copyBufferToImage because
+                // it also reads snapshot.buffer (via nativeBuffer.read()).
+                Reference.reachabilityFence(snapshot.buffer)
+                Reference.reachabilityFence(snapshot.params)
+                Reference.reachabilityFence(snapshot.sizeParams)
+                Reference.reachabilityFence(snapshot.strideParam)
+                Reference.reachabilityFence(snapshot.formatParam)
+
+                frameCount++
+                if (!loggedFirstFrame) {
+                    loggedFirstFrame = true
+                    logger.info { "🎬 RENDER: first frame rendered successfully! ${snapshot.width}x${snapshot.height}, format=bgr0" }
+                    logger.info { "🎬 RENDER: ✅ VIDEO IS RENDERING" }
+                }
+                if (frameCount % 100L == 0L) {
+                    logger.debug { "🎬 RENDER: frame $frameCount rendered (${snapshot.width}x${snapshot.height})" }
+                }
+
+                return snapshot.image
         } catch (e: Exception) {
             logger.debug { "Render frame failed (normal during buffering): ${e.message}" }
             return null
+        } finally {
+            // Release the anchor so the old snapshot can be GC'd before the next frame.
+            inFlightSnapshot = null
         }
-    }
-
-    /** Convenience access to the render context for the snapshot. */
-    private val RenderSnapshot.ctx get() = renderContext
-
-    /**
-     * Attempt to switch to the fallback rgb0 format.
-     * @return true if the switch happened, false if already using fallback.
-     */
-    private fun switchToRgb0Fallback(): Boolean {
-        synchronized(lock) {
-            if (renderParams == null || formatParam?.getString(0) == MPVLib.RENDER_FORMAT_RGB0) {
-                return false
-            }
-            logger.warn { "bgr0 not supported by this libmpv build — falling back to rgb0 + conversion" }
-            renderParams = buildRenderParamsForFormat(MPVLib.RENDER_FORMAT_RGB0)
-            return true
         }
     }
 
@@ -247,16 +365,21 @@ class MPVSoftwareRenderer(
      * Copy raw BGR0 pixel data from a native [Memory] buffer into a
      * [BufferedImage] with TYPE_INT_ARGB.
      *
-     * The mpv buffer has bytes B, G, R, 0 per pixel (bgr0 format).
+     * The mpv buffer has bytes B, G, R, A per pixel (bgra format).
      * BufferedImage.TYPE_INT_ARGB has layout 0xAARRGGBB.
      *
-     * On little-endian: mpv bytes [B, G, R, 0] → int 0x00RRGGBB
+     * On little-endian: mpv bytes [B, G, R, A] → int 0xAARRGGBB
      * We need: int 0xFFRRGGBB (alpha=255 for opaque)
      *
      * We set the alpha byte to 0xFF (255) after the bulk copy.
      */
     private fun copyBufferToImage(snapshot: RenderSnapshot) {
-        val (nativeBuffer, image, width, height, stride, _, rawInts) = snapshot
+        val nativeBuffer = snapshot.buffer
+        val image = snapshot.image
+        val width = snapshot.width
+        val height = snapshot.height
+        val stride = snapshot.stride
+        val rawInts = snapshot.intBuffer
         val pixels = (image.raster.dataBuffer as DataBufferInt).data
         val intCount = height * stride / 4
 
@@ -283,51 +406,47 @@ class MPVSoftwareRenderer(
     }
 
     /**
-     * Fallback copy for "rgb0" format (R, G, B, 0 in memory).
-     * Needed when the installed libmpv does not support "bgr0".
-     * Sets alpha to 0xFF for each pixel.
-     */
-    private fun copyBufferToImageRgb0(snapshot: RenderSnapshot) {
-        val (nativeBuffer, image, width, height, stride) = snapshot
-        val pixels = (image.raster.dataBuffer as DataBufferInt).data
-        val byteCount = height * stride
-
-        val rawBytes = ByteArray(byteCount)
-        nativeBuffer.read(0, rawBytes, 0, byteCount)
-
-        for (y in 0 until height) {
-            val rowOffset = y * stride
-            for (x in 0 until width) {
-                val srcIdx = rowOffset + x * 4
-                val destIdx = y * width + x
-                val r = rawBytes[srcIdx].toInt() and 0xFF
-                val g = rawBytes[srcIdx + 1].toInt() and 0xFF
-                val b = rawBytes[srcIdx + 2].toInt() and 0xFF
-                // Set alpha = 0xFF (fully opaque)
-                pixels[destIdx] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
-            }
-        }
-    }
-
-    /**
      * Dispose of the render context and free resources.
      */
     fun dispose() {
-        synchronized(lock) {
-            renderContext?.let { MPVLib.renderContextFree(it) }
-            renderContext = null
-            pixelBuffer = null
-            frameImage = null
-            rawIntBuffer = null
-            rawByteBuffer = null
-            sizeParams = null
-            strideParam = null
-            formatParam = null
-            renderParams = null
-            isReady = false
-            videoWidth = 0
-            videoHeight = 0
+        // Wait for an in-flight native render/copy before freeing its context
+        // and buffers. Without this barrier, shutdown can free the context while
+        // the Compose render coroutine is still inside mpv_render_context_render().
+        synchronized(nativeRenderLock) {
+            synchronized(lock) {
+                renderContext?.let { context ->
+                    // Unregister before freeing so mpv cannot call back into a
+                    // renderer that has released its Kotlin/JNA state.
+                    MPVLib.renderContextSetUpdateCallback(context, null, null)
+                    MPVLib.renderContextFree(context)
+                }
+                renderContext = null
+                updateCallback = null
+                pixelBuffer = null
+                frameImage = null
+                rawIntBuffer = null
+                sizeParams = null
+                strideParam = null
+                formatParam = null
+                renderParams = null
+                inFlightSnapshot = null
+                isReady = false
+                videoWidth = 0
+                videoHeight = 0
+                videoStride = 0
+            }
         }
         logger.info { "MPV software renderer disposed" }
     }
+}
+
+/**
+ * JNA callback for mpv's render update notification.
+ *
+ * mpv calls this when a new video frame is available for rendering.
+ * Since we poll periodically via the Compose render loop, the callback
+ * itself is a no-op — its presence is what matters.
+ */
+private interface UpdateCallback : Callback {
+    fun invoke(cbCtx: Pointer?)
 }

@@ -7,15 +7,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 private val logger = KotlinLogging.logger {}
 
@@ -52,6 +50,15 @@ private val logger = KotlinLogging.logger {}
  */
 class MPVEventLoop(
     private val mpvHandle: Pointer,
+    private val waitForEvent: (Pointer, Double) -> MPVEvent? = { handle, timeout ->
+        MPVLib.waitEvent(handle, timeout)
+    },
+    private val observe: (Pointer, Long, String, Int) -> Int = { handle, id, name, format ->
+        MPVLib.observeProperty(handle, id, name, format)
+    },
+    private val unobserve: (Pointer, Long) -> Int = { handle, id ->
+        MPVLib.unobserveProperty(handle, id)
+    },
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -76,6 +83,15 @@ class MPVEventLoop(
     /** Property changes (from observed properties) emitted as a hot Flow. */
     val propertyChanges: Flow<PropertyChange> = _propertyChanges.asSharedFlow()
 
+    private val _errors = MutableSharedFlow<Throwable>(
+        replay = 0,
+        extraBufferCapacity = 8,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Recoverable polling/JNA failures observed while the loop continues. */
+    val errors: Flow<Throwable> = _errors.asSharedFlow()
+
     /** Whether the event loop is currently running. */
     var isRunning: Boolean = false
         private set
@@ -90,9 +106,11 @@ class MPVEventLoop(
 
         eventJob = scope.launch {
             logger.info { "MPV event loop started" }
-            while (isActive) {
+            var consecutiveFailures = 0
+            while (isActive && isRunning) {
                 try {
-                    val event = MPVLib.waitEvent(mpvHandle, 0.05) // 50ms timeout
+                    val event = waitForEvent(mpvHandle, 0.05) // 50ms timeout
+                    consecutiveFailures = 0
                     if (event != null) {
                         processEvent(event)
                     }
@@ -104,7 +122,12 @@ class MPVEventLoop(
                     // Error types (UnsatisfiedLinkError, etc.) when native functions
                     // return unexpected values.
                     if (isActive) {
+                        _errors.tryEmit(e)
                         logger.warn(e) { "Error in mpv event loop" }
+                        // A broken native binding must not turn into a hot CPU
+                        // loop. Keep retrying, but with bounded backoff.
+                        consecutiveFailures = (consecutiveFailures + 1).coerceAtMost(10)
+                        delay((consecutiveFailures * 10L).coerceAtMost(100L))
                     }
                 }
             }
@@ -117,7 +140,11 @@ class MPVEventLoop(
      */
     fun stop() {
         isRunning = false
-        eventJob?.cancel()
+        val job = eventJob
+        job?.cancel()
+        // mpv_wait_event is a native call. Do not let the owner destroy the
+        // handle until the polling coroutine has actually left that call.
+        if (job != null) runBlocking { job.join() }
         eventJob = null
     }
 
@@ -128,7 +155,7 @@ class MPVEventLoop(
      */
     fun observeProperty(name: String, format: Int = MPVLib.FORMAT_DOUBLE) {
         try {
-            MPVLib.observeProperty(mpvHandle, name.hashCode().toLong(), name, format)
+            observe(mpvHandle, name.hashCode().toLong(), name, format)
         } catch (e: Exception) {
             logger.warn(e) { "Failed to observe property: $name" }
         }
@@ -139,7 +166,7 @@ class MPVEventLoop(
      */
     fun unobserveProperty(name: String) {
         try {
-            MPVLib.unobserveProperty(mpvHandle, name.hashCode().toLong())
+            unobserve(mpvHandle, name.hashCode().toLong())
         } catch (e: Exception) {
             // Safe to ignore
         }
@@ -157,32 +184,35 @@ class MPVEventLoop(
                 isRunning = false
             }
             MPVLib.MPV_EVENT_LOG_MESSAGE -> {
-                // Log messages can be noisy — only log at debug level
+                processLogMessage(event)
             }
         }
     }
 
     private fun processPropertyChange(event: MPVEvent) {
-        // Parse property change event data
-        // The mpv_event_property struct layout (64-bit):
-        //   offset 0: name (pointer, 8 bytes) — *const c_char
-        //   offset 8: format (int, 4 bytes) — mpv_format enum
-        //   offset 12: padding (4 bytes)
-        //   offset 16: data (pointer, 8 bytes) — *mut c_void
-        val dataPtr = event.data
-        if (dataPtr == null || dataPtr == Pointer.NULL) return
+        // MPVEvent snapshots the transient mpv_event_property payload before it
+        // is emitted to asynchronous consumers.
+        val name = event.propertyName ?: return
+        val format = event.propertyFormat ?: return
+        _propertyChanges.tryEmit(PropertyChange(name, format, event.replyUserdata))
+    }
 
-        try {
-            // Read property name pointer at offset 0
-            val namePtr = dataPtr.getPointer(0)
-            val name = namePtr?.getString(0) ?: return
+    /**
+     * Process an mpv log message event to capture internal mpv errors.
+     * MPVEvent snapshots the transient mpv_event_log_message payload before
+     * this event reaches asynchronous processing.
+     */
+    private fun processLogMessage(event: MPVEvent) {
+        val prefix = event.logPrefix ?: "?"
+        val level = event.logLevelName ?: "?"
+        val text = event.logText ?: "?"
+        val logLevel = event.logLevel ?: return
 
-            // Read format at offset 8 (int32 on both x86_64 and arm64)
-            val format = dataPtr.getInt(8)
-
-            _propertyChanges.tryEmit(PropertyChange(name, format, event.replyUserdata))
-        } catch (e: Exception) {
-            logger.debug { "Failed to parse property change event: ${e.message}" }
+        // Only log render-related and error/warn messages to avoid noise.
+        if (prefix.contains("libmpv") || prefix.contains("vo") || prefix.contains("render") ||
+            logLevel <= MPVLib.LOG_LEVEL_WARN
+        ) {
+            logger.info { "🎬 MPV_LOG [$prefix/$level] $text" }
         }
     }
 }

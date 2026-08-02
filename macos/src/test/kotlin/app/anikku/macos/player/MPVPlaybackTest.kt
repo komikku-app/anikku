@@ -101,9 +101,24 @@ class MPVPlaybackTest {
             println("  time-pos after 2s: $laterTimePos")
             assertTrue(laterTimePos > timePos, "Playback did not advance — time-pos did not increase")
 
+            // ── Step 7: Verify the same absolute seek operation used by the UI ──
+            println("[7] Seeking to 7 seconds...")
+            val seekResult = MPVLib.setPropertyDouble(handle, "time-pos", 7.0)
+            assertTrue(seekResult != null && seekResult >= 0, "Absolute seek command failed: $seekResult")
+            var seekedTimePos = 0.0
+            attempts = 0
+            while (seekedTimePos < 6.5 && attempts < 20) {
+                Thread.sleep(100)
+                drainEvents(handle)
+                seekedTimePos = MPVLib.getPropertyDouble(handle, "time-pos", 0.0)
+                attempts++
+            }
+            println("  time-pos after seek: $seekedTimePos")
+            assertTrue(seekedTimePos >= 6.5, "Playback did not seek to the requested position")
+
             println()
-            println("  ✅✅✅ LOCAL VIDEO PLAYBACK WORKS!")
-            println("  MPVLib can load and play local MP4 files on macOS.")
+            println("  ✅✅✅ LOCAL VIDEO PLAYBACK AND SEEK WORK!")
+            println("  MPVLib can load, play, advance, and seek local MP4 files on macOS.")
 
         } finally {
             println()

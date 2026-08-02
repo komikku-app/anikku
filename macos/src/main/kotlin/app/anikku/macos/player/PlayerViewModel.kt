@@ -2,6 +2,7 @@ package app.anikku.macos.player
 
 import app.anikku.macos.platform.logging.CrashReporter
 import com.sun.jna.Pointer
+import eu.kanade.tachiyomi.animesource.model.Track
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
@@ -49,8 +51,36 @@ class PlayerViewModel {
     /** Tracks the periodic position-update coroutine for cleanup on shutdown. */
     private var positionUpdateJob: Job? = null
 
+    /** Collectors attached to the current MPV event loop. */
+    private var propertyChangesJob: Job? = null
+    private var eventsJob: Job? = null
+
+    /** Asynchronous torrent startup for the current magnet request. */
+    private var magnetLoadJob: Job? = null
+
     /** Current video URL being played. */
     private var currentUrl: String? = null
+
+    /** Playlist entry associated with the current load, used to reject stale END_FILE events. */
+    @Volatile
+    private var activePlaylistEntryId: Long? = null
+
+    /** External subtitle tracks supplied by the source for the current load. */
+    @Volatile
+    private var activeExternalSubtitleTracks: List<Track> = emptyList()
+
+    /** URLs already handed to mpv for the current load. */
+    private val loadedExternalSubtitleUrls = mutableSetOf<String>()
+
+    /** Serializes external subtitle bookkeeping across the event and load threads. */
+    private val subtitleLock = Any()
+
+    /** Delayed track discovery/selection job for the current load. */
+    private var subtitleLoadJob: Job? = null
+
+    /** Prevents asynchronous track events from overriding the user's selection. */
+    @Volatile
+    private var subtitleDefaultApplied = false
 
     /** Magnet streamer process when playing a torrent. */
     private var magnetProcess: Process? = null
@@ -178,7 +208,7 @@ class PlayerViewModel {
                 CrashReporter.logEvent("MPV init failed", "mpv_initialize returned $initResult")
                 return false
             }
-            logger.info { "🚀 MPV_CORE: mpv initialized successfully (vo=libmpv, hwdec=videotoolbox)" }
+            logger.info { "🚀 MPV_CORE: mpv initialized successfully (vo=libmpv, hwdec=no — SW renderer)" }
 
             // Create software render context
             val renderer = MPVSoftwareRenderer(handle)
@@ -190,100 +220,178 @@ class PlayerViewModel {
                 logger.warn { "🚀 MPV_RENDER: software render context creation FAILED — video will not render" }
             }
 
+            // Request VIDEO_RECONFIG events explicitly as a belt-and-suspenders measure.
+            MPVLib.requestEvent(handle, MPVLib.MPV_EVENT_VIDEO_RECONFIG, true)
+
+            // Request mpv log messages at verbose level via the correct API.
+            // mpv_request_log_messages() is the proper way to receive MPV_EVENT_LOG_MESSAGE
+            // events — mpv_request_event(MPV_EVENT_LOG_MESSAGE) alone does NOT work.
+            // The msg-level option (set in configureMPV before mpv_initialize) controls
+            // which modules and severity levels actually generate log events.
+            MPVLib.requestLogMessages(handle, "v")
+
             // Start event loop
             val loop = MPVEventLoop(handle)
             eventLoop = loop
             loop.observeProperty("time-pos")
             loop.observeProperty("duration")
-            loop.observeProperty("pause")
+            loop.observeProperty("pause", MPVLib.FORMAT_FLAG)
+            loop.observeProperty("paused-for-cache", MPVLib.FORMAT_FLAG)
+            loop.observeProperty("cache-buffering-state", MPVLib.FORMAT_INT64)
             loop.observeProperty("volume")
+            // Track metadata changes asynchronously after FILE_LOADED and sub-add.
+            // Observing this is what makes external subtitles appear reliably in
+            // the selector instead of relying on a one-time manual refresh.
+            loop.observeProperty("track-list", MPVLib.FORMAT_NODE_ARRAY)
             loop.start()
 
             // Listen for property changes
-            scope.launch {
+            propertyChangesJob = scope.launch {
                 loop.propertyChanges.collect { change ->
                     when (change.name) {
                         "time-pos" -> updatePosition()
                         "duration" -> updateDuration()
-                        "pause" -> updatePauseState()
+                        "pause", "paused-for-cache", "cache-buffering-state" -> updatePauseState()
                         "volume" -> updateVolume()
+                        "track-list" -> {
+                            refreshTracks()
+                            val token = loadToken
+                            if (!subtitleDefaultApplied && token != null) {
+                                scheduleSubtitleSelection(handle, token)
+                            }
+                        }
                     }
                 }
             }
 
             // Listen for events
-            scope.launch {
+            eventsJob = scope.launch {
                 loop.events.collect { event ->
                     when (event.eventId) {
+                        MPVLib.MPV_EVENT_START_FILE -> {
+                            activePlaylistEntryId = event.playlistEntryId
+                            logger.debug { "🎬 VIDEO_START: playlist entry=${event.playlistEntryId}" }
+                        }
                         MPVLib.MPV_EVENT_FILE_LOADED -> {
-                            val eventToken = loadToken
-                            if (loadToken === eventToken) {
-                                _playbackState.value = PlaybackState.PLAYING
-                                _isPaused.value = false
-                                updateDuration()
-                                loadTimeoutJob?.cancel()
-                                loadTimeoutJob = null
-                                logger.info { "🎬 VIDEO_FILE: file loaded into mpv — starting playback" }
-                            } else {
-                                logger.debug { "🎬 VIDEO_FILE: ignoring stale FILE_LOADED from previous load" }
+                            // FILE_LOADED means mpv accepted the file, not necessarily
+                            // that it is currently playing. Read the real pause/cache
+                            // properties instead of forcing the UI to PLAYING.
+                            updatePauseState()
+                            updateDuration()
+                            updateRendererVideoSize(handle)
+                            refreshTracks()
+                            val token = loadToken
+                            if (token != null) {
+                                addExternalSubtitleTracks(handle, activeExternalSubtitleTracks, token)
+                                scheduleSubtitleSelection(handle, token)
                             }
+                            // Keep the timeout alive until mpv actually starts;
+                            // FILE_LOADED can arrive while the demuxer is still buffering.
+                            logger.info { "🎬 VIDEO_FILE: file loaded into mpv — synchronized playback state" }
                         }
                         MPVLib.MPV_EVENT_END_FILE -> {
-                            val eventToken = loadToken
-                            if (_playbackState.value == PlaybackState.LOADING ||
-                                _playbackState.value == PlaybackState.SEEKING) {
-                                if (loadToken === eventToken) {
-                                    _playbackState.value = PlaybackState.ERROR
-                                    logger.warn { "🎬 VIDEO_END: file ended while still loading — likely unreachable URL, blocked CDN, or embed page URL" }
-                                } else {
-                                    logger.debug { "🎬 VIDEO_END: ignoring stale END_FILE from previous load (state was LOADING/SEEKING)" }
+                            val state = _playbackState.value
+                            if (shouldIgnoreEndFileDuringLoad(
+                                    state = state,
+                                    loadInProgress = loadInProgress,
+                                    activePlaylistEntryId = activePlaylistEntryId,
+                                    eventPlaylistEntryId = event.playlistEntryId,
+                                )
+                            ) {
+                                logger.debug {
+                                    "🎬 VIDEO_END: ignoring stale/unowned entry=${event.playlistEntryId}, " +
+                                        "active=$activePlaylistEntryId"
                                 }
-                            } else if (_playbackState.value == PlaybackState.PLAYING) {
-                                // File ended during normal playback. With keep-open=no,
-                                // mpv stops playback entirely. We keep the PLAYING state
-                                // so the UI shows the last frame with working controls.
-                                if (loadToken === eventToken) {
-                                    logger.info { "🎬 VIDEO_FILE: playback ended (keep-open=no, stream finished)" }
-                                } else {
-                                    logger.debug { "🎬 VIDEO_END: ignoring stale END_FILE from previous load" }
-                                }
-                            } else {
-                                if (loadToken === eventToken) {
-                                    _playbackState.value = PlaybackState.ENDED
-                                    logger.info { "🎬 VIDEO_FILE: playback ended normally" }
-                                } else {
-                                    logger.debug { "🎬 VIDEO_END: ignoring stale END_FILE from previous load" }
-                                }
+                                return@collect
                             }
-
-                            if (loadToken === eventToken) {
+                            val position = MPVLib.getPropertyDouble(handle, "time-pos", -1.0)
+                            val endReason = event.endFileReason
+                            if (state == PlaybackState.LOADING && loadInProgress &&
+                                endReason == MPVLib.END_FILE_REASON_ERROR
+                            ) {
+                                loadInProgress = false
                                 loadTimeoutJob?.cancel()
                                 loadTimeoutJob = null
+                                _playbackState.value = PlaybackState.ERROR
+                                logger.warn { "🎬 VIDEO_END: mpv reported a fatal end-file error (error=${event.endFileError})" }
+                            } else if (
+                                state == PlaybackState.LOADING &&
+                                loadInProgress &&
+                                endReason in setOf(
+                                    MPVLib.END_FILE_REASON_STOP,
+                                    MPVLib.END_FILE_REASON_QUIT,
+                                    MPVLib.END_FILE_REASON_REDIRECT,
+                                )
+                            ) {
+                                // STOP/QUIT/REDIRECT are non-fatal lifecycle reasons.
+                                // Do not leave the startup timeout armed: a late
+                                // event from the replaced file must not turn the
+                                // next episode into a false ERROR.
+                                loadInProgress = false
+                                loadTimeoutJob?.cancel()
+                                loadTimeoutJob = null
+                                _playbackState.value = if (endReason == MPVLib.END_FILE_REASON_QUIT) {
+                                    PlaybackState.IDLE
+                                } else {
+                                    PlaybackState.ENDED
+                                }
+                                logger.info { "🎬 VIDEO_END: non-fatal end-file reason=$endReason" }
+                            } else if (state == PlaybackState.LOADING && loadInProgress) {
+                                val started = position >= 0.0 &&
+                                    !MPVLib.getPropertyFlag(handle, "pause", default = true)
+                                if (started) {
+                                    loadInProgress = false
+                                    loadTimeoutJob?.cancel()
+                                    loadTimeoutJob = null
+                                } else {
+                                    // mpv_event.error is not the end-file
+                                    // reason payload. Leave failure classification
+                                    // to the guarded startup timeout instead of
+                                    // risking a stale END_FILE hiding a healthy
+                                    // stream behind the retry screen.
+                                    logger.warn { "🎬 VIDEO_END: load ended before playback started; waiting for guarded timeout (eventError=${event.error})" }
+                                }
+                            } else if (state == PlaybackState.SEEKING) {
+                                // A seek can produce an END_FILE-like transition
+                                // for some network demuxers; the playback-restart
+                                // event/property update will restore PLAYING.
+                                logger.debug { "🎬 VIDEO_END: ignoring end event during seek (position=$position)" }
+                            } else {
+                                loadInProgress = false
+                                loadTimeoutJob?.cancel()
+                                loadTimeoutJob = null
+                                _playbackState.value = when (endReason) {
+                                    MPVLib.END_FILE_REASON_ERROR -> PlaybackState.ERROR
+                                    MPVLib.END_FILE_REASON_QUIT -> PlaybackState.IDLE
+                                    else -> PlaybackState.ENDED
+                                }
+                                logger.info { "🎬 VIDEO_FILE: playback ended (reason=$endReason, error=${event.endFileError})" }
                             }
                         }
                         MPVLib.MPV_EVENT_VIDEO_RECONFIG -> {
-                            val w = MPVLib.getPropertyInt(handle, "dwidth", 0)
-                            val h = MPVLib.getPropertyInt(handle, "dheight", 0)
-                            if (w > 0 && h > 0) {
-                                softwareRenderer?.updateVideoSize(w, h)
-                                logger.info { "🎬 VIDEO_RECONFIG: video dimensions detected: ${w}x${h}" }
-                            } else {
-                                logger.debug { "🎬 VIDEO_RECONFIG: event received (no usable dimensions yet)" }
-                            }
+                            updateRendererVideoSize(handle)
                         }
                         MPVLib.MPV_EVENT_PLAYBACK_RESTART -> {
-                            val eventToken = loadToken
-                            if (loadToken === eventToken) {
-                                _playbackState.value = PlaybackState.PLAYING
-                                _isPaused.value = false
-                                loadTimeoutJob?.cancel()
-                                loadTimeoutJob = null
-                                logger.info { "🎬 VIDEO_RESTART: playback restarted after seek/load" }
-                            } else {
-                                logger.debug { "🎬 VIDEO_RESTART: ignoring stale PLAYBACK_RESTART from previous load" }
-                            }
+                            // This event is emitted after loading, seeking, and
+                            // buffering recovery. The pause/cache properties are
+                            // authoritative for the visible control state.
+                            updatePauseState()
+                            updateRendererVideoSize(handle)
+                            // updatePauseState cancels the startup timeout only
+                            // after confirming mpv is actually running. Do not
+                            // cancel it unconditionally: a stale restart event
+                            // must not strand a new load in LOADING forever.
+                            logger.info { "🎬 VIDEO_RESTART: playback restarted — synchronized playback state" }
                         }
                         MPVLib.MPV_EVENT_SEEK -> {
+                            // A seek during playback must never make the original
+                            // load timeout turn a healthy stream into ERROR. The
+                            // timeout only applies while the initial load is still
+                            // genuinely waiting for playback to start.
+                            if (_playbackState.value != PlaybackState.LOADING) {
+                                loadTimeoutJob?.cancel()
+                                loadTimeoutJob = null
+                            }
                             _playbackState.value = PlaybackState.SEEKING
                             logger.info { "🎬 VIDEO_SEEK: mpv seek event — position=${currentPosition.value}" }
                         }
@@ -298,9 +406,16 @@ class PlayerViewModel {
             positionUpdateJob = scope.launch {
                 while (isActive) {
                     delay(250) // 250ms for smoother position tracking
-                    if (mpvHandle != null) {
+                    mpvHandle?.let { handle ->
                         updatePosition()
                         updateDuration()
+                        // Retry metadata discovery until the decoder exposes
+                        // dimensions. This covers VIDEO_RECONFIG/FILE_LOADED
+                        // ordering races that would otherwise leave the SW
+                        // renderer permanently without a pixel buffer.
+                        if (softwareRenderer?.videoWidth == 0 || softwareRenderer?.videoHeight == 0) {
+                            updateRendererVideoSize(handle)
+                        }
                     }
                 }
             }
@@ -323,7 +438,13 @@ class PlayerViewModel {
         var allOk = true
         val criticalOptions = listOf(
             "vo" to "libmpv",
-            "hwdec" to "videotoolbox-copy",
+            "hwdec" to "no",
+            // CRITICAL: hwdec MUST be "no" when using MPV_RENDER_API_TYPE_SW (software renderer).
+            // VideoToolbox hardware decoding (videotoolbox-copy, videotoolbox) produces GPU-backed
+            // CVPixelBuffers that the SW render API cannot access — mpv_render_context_render() fails
+            // silently, resulting in black video with working audio. Software decoding via FFmpeg/lavc
+            // works reliably with the SW renderer and is more than sufficient for anime streams.
+            // See: https://mpv.io/manual/stable/#options-hwdec
             "cache" to "yes",
             "cache-secs" to "30",
             "demuxer-max-bytes" to "150M",
@@ -342,6 +463,11 @@ class PlayerViewModel {
             "keep-open" to "no",
             "screenshot-format" to "png",
             "screenshot-template" to "anikku-screenshot-%n",
+            // Verbose logging for video/render modules to capture render API errors.
+            // Targets vo (output), libmpv (render context), video (decoding) at verbose level.
+            // The processLogMessage filter further restricts what we actually print.
+            // MUST be set before mpv_initialize to take effect.
+            "msg-level" to "vo=v:libmpv=v:video=v",
         )
 
         for ((name, value) in criticalOptions) {
@@ -401,11 +527,33 @@ class PlayerViewModel {
      */
     fun shutdown() {
         logger.info { "🎬 PLAYER_SHUTDOWN: shutting down mpv player..." }
-        loadTimeoutJob?.cancel()
+        val nativeJobs = listOfNotNull(
+            loadTimeoutJob,
+            positionUpdateJob,
+            propertyChangesJob,
+            eventsJob,
+            subtitleLoadJob,
+        )
+        nativeJobs.forEach { it.cancel() }
+        // These jobs may be inside short JNA calls. Wait for them to leave the
+        // current mpv handle before its native memory is destroyed.
+        runBlocking { nativeJobs.forEach { it.join() } }
         loadTimeoutJob = null
-        positionUpdateJob?.cancel()
+        loadInProgress = false
         positionUpdateJob = null
+        propertyChangesJob = null
+        eventsJob = null
+        magnetLoadJob?.cancel()
+        magnetLoadJob = null
+        magnetLoadToken = null
+        loadToken = null
+        activePlaylistEntryId = null
         eventLoop?.stop()
+        subtitleLoadJob = null
+        synchronized(subtitleLock) {
+            activeExternalSubtitleTracks = emptyList()
+            loadedExternalSubtitleUrls.clear()
+        }
         softwareRenderer?.dispose()
         _renderer.value = null
         softwareRenderer = null
@@ -418,6 +566,7 @@ class PlayerViewModel {
         _handle.value = null
         mpvHandle = null
         eventLoop = null
+        currentUrl = null
 
         // Clean up magnet streamer process if running
         magnetProcess?.let { proc ->
@@ -429,6 +578,9 @@ class PlayerViewModel {
         }
 
         _playbackState.value = PlaybackState.IDLE
+        _currentPosition.value = 0.0
+        _duration.value = 0.0
+        _isPaused.value = true
         logger.info { "🎬 PLAYER_SHUTDOWN: mpv player shut down complete" }
         CrashReporter.logEvent("Player shutdown")
     }
@@ -443,13 +595,35 @@ class PlayerViewModel {
     @Volatile
     private var loadToken: Any? = null
 
+    /** True only while the current load is waiting for its first playback start. */
+    @Volatile
+    private var loadInProgress = false
+
     /**
-     * Load and play a video URL with optional HTTP headers.
+     * Load and play a video URL with optional HTTP headers and source-provided
+     * external subtitle tracks.
+     *
+     * Subtitles are intentionally added after FILE_LOADED. mpv cannot attach
+     * an external subtitle to the replaced file before its demuxer has created
+     * the new track list, and doing so would race episode navigation.
      */
-    fun loadEpisode(url: String, headers: Map<String, String>? = null) {
+    fun loadEpisode(
+        url: String,
+        headers: Map<String, String>? = null,
+        subtitleTracks: List<Track> = emptyList(),
+    ) = loadEpisodeInternal(url, headers, subtitleTracks, retainMagnetProcess = false)
+
+    private fun loadEpisodeInternal(
+        url: String,
+        headers: Map<String, String>?,
+        subtitleTracks: List<Track>,
+        retainMagnetProcess: Boolean,
+    ) {
+        if (!retainMagnetProcess) cancelMagnetPlayback()
+
         // ── Magnet link handling ────────────────────────────────────
         if (url.startsWith("magnet:")) {
-            loadMagnetEpisode(url)
+            loadMagnetEpisode(url, headers, subtitleTracks)
             return
         }
 
@@ -464,8 +638,22 @@ class PlayerViewModel {
 
         val token = Any()
         loadToken = token
+        activePlaylistEntryId = null
+        loadTimeoutJob?.cancel()
+        loadTimeoutJob = null
+        subtitleDefaultApplied = false
+        subtitleLoadJob?.cancel()
+        synchronized(subtitleLock) {
+            activeExternalSubtitleTracks = subtitleTracks
+                .filter { it.url.isNotBlank() }
+                .distinctBy { it.url }
+            loadedExternalSubtitleUrls.clear()
+        }
 
         _playbackState.value = PlaybackState.LOADING
+        _currentPosition.value = 0.0
+        _duration.value = 0.0
+        loadInProgress = true
         logger.info { "🎬 VIDEO_LOAD: loading episode into mpv: $url" }
         CrashReporter.logEvent("Video loading", "url=$url")
 
@@ -512,7 +700,13 @@ class PlayerViewModel {
             }
 
             logger.info { "🎬 VIDEO_LOAD: set http-header-fields and user-agent properties" }
-            MPVLib.command(handle, "loadfile", url, "replace")
+            val loadResult = MPVLib.command(handle, "loadfile", url, "replace")
+            if (loadResult != 0) {
+                throw IllegalStateException("mpv loadfile failed with code $loadResult")
+            }
+            activePlaylistEntryId = MPVLib.getPropertyInt(handle, "playlist-entry-id", -1)
+                .takeIf { it >= 0 }
+                ?.toLong()
             logger.info { "🎬 VIDEO_LOAD: loadfile command sent successfully" }
 
             // Start a timeout: if the file doesn't load within 30 seconds,
@@ -523,23 +717,52 @@ class PlayerViewModel {
                 if (loadToken !== token) return@launch
 
                 val state = _playbackState.value
-                if (state == PlaybackState.LOADING || state == PlaybackState.SEEKING) {
+                // Only fail a load that is still waiting for playback to
+                // start. In particular, never treat SEEKING/BUFFERING or an
+                // already-audible stream as a failed URL: mpv can keep its
+                // audio clock alive while video data catches up.
+                val position = MPVLib.getPropertyDouble(handle, "time-pos", -1.0)
+                val paused = MPVLib.getPropertyFlag(handle, "pause", default = true)
+                val playbackHasStarted = position >= 0.0 && !paused
+                if (state == PlaybackState.LOADING && loadInProgress && !playbackHasStarted) {
                     _playbackState.value = PlaybackState.ERROR
-                    logger.warn { "🎬 VIDEO_TIMEOUT: file did not load within ${LOAD_TIMEOUT_MS / 1000}s" +
+                    loadInProgress = false
+                    logger.warn { "🎬 VIDEO_TIMEOUT: file did not start within ${LOAD_TIMEOUT_MS / 1000}s" +
                         " — server may be unreachable, blocked, or URL not a playable stream" }
-                    CrashReporter.logEvent("Video timeout", "url=$url, state=$state" )
+                    CrashReporter.logEvent("Video timeout", "url=$url, state=$state, position=$position, paused=$paused" )
                 }
             }
         } catch (e: Exception) {
             logger.error(e) { "Failed to load episode: $url" }
             CrashReporter.logError("VideoLoad", "Failed to load $url", e)
+            loadInProgress = false
+            loadTimeoutJob?.cancel()
+            loadTimeoutJob = null
             _playbackState.value = PlaybackState.ERROR
         }
     }
 
     // ── Magnet Link Handling ──────────────────────────────────────
 
-    private fun loadMagnetEpisode(magnetUrl: String) {
+    private fun cancelMagnetPlayback() {
+        magnetLoadToken = null
+        magnetLoadJob?.cancel()
+        magnetLoadJob = null
+        magnetProcess?.let { process ->
+            runCatching {
+                MagnetStreamer.stopStreaming(MagnetStreamResult.Success("", process))
+            }.onFailure { error ->
+                logger.debug(error) { "Failed to stop previous magnet stream" }
+            }
+        }
+        magnetProcess = null
+    }
+
+    private fun loadMagnetEpisode(
+        magnetUrl: String,
+        headers: Map<String, String>? = null,
+        subtitleTracks: List<Track> = emptyList(),
+    ) {
         logger.info { "🧲 MAGNET: Starting torrent stream: ${magnetUrl.take(80)}..." }
         _playbackState.value = PlaybackState.LOADING
 
@@ -555,10 +778,14 @@ class PlayerViewModel {
             magnetProcess = null
         }
 
-        scope.launch {
+        magnetLoadJob?.cancel()
+        magnetLoadJob = scope.launch {
             try {
                 val result = MagnetStreamer.startStreaming(magnetUrl)
-                if (magnetLoadToken !== token) return@launch
+                if (magnetLoadToken !== token) {
+                    if (result is MagnetStreamResult.Success) MagnetStreamer.stopStreaming(result)
+                    return@launch
+                }
 
                 withContext(Dispatchers.Main) {
                     when (result) {
@@ -569,7 +796,12 @@ class PlayerViewModel {
                                 MagnetStreamer.stopStreaming(result)
                                 return@withContext
                             }
-                            loadEpisode(result.httpUrl)
+                            loadEpisodeInternal(
+                                result.httpUrl,
+                                headers,
+                                subtitleTracks,
+                                retainMagnetProcess = true,
+                            )
                         }
                         is MagnetStreamResult.Failure -> {
                             if (magnetLoadToken !== token) return@withContext
@@ -592,6 +824,46 @@ class PlayerViewModel {
 
     companion object {
         private const val LOAD_TIMEOUT_MS = 30_000L // 30 seconds for slower CDNs
+        private const val MAX_TRACK_LIST_ENTRIES = 256
+        private const val SUBTITLE_DISCOVERY_ATTEMPTS = 15
+        private const val SUBTITLE_DISCOVERY_DELAY_MS = 200L
+        private const val DEFAULT_SUBTITLE_LANGUAGE = "eng"
+
+        /**
+         * During replacement, mpv can deliver an END_FILE for the previous
+         * playlist entry after the next episode is already loading. Only an
+         * END_FILE owned by the active entry may complete/fail that new load.
+         */
+        internal fun shouldIgnoreEndFileDuringLoad(
+            state: PlaybackState,
+            loadInProgress: Boolean,
+            activePlaylistEntryId: Long?,
+            eventPlaylistEntryId: Long?,
+        ): Boolean = state == PlaybackState.LOADING && loadInProgress &&
+            (activePlaylistEntryId == null || eventPlaylistEntryId == null ||
+                activePlaylistEntryId != eventPlaylistEntryId)
+
+        /** Pure selection rule shared by tests and the native-track flow. */
+        internal fun chooseDefaultSubtitleTrack(
+            tracks: List<TrackInfo>,
+            preferredLanguage: String = DEFAULT_SUBTITLE_LANGUAGE,
+        ): Int {
+            val preferred = normalizeSubtitleLanguage(preferredLanguage)
+            return tracks.firstOrNull { normalizeSubtitleLanguage(it.language) == preferred }?.id
+                ?: tracks.firstOrNull()?.id
+                ?: -1
+        }
+
+        private fun normalizeSubtitleLanguage(language: String): String {
+            val value = language.trim().lowercase().substringBefore('-').substringBefore('_')
+            return when (value) {
+                "en", "eng", "english" -> "eng"
+                "ja", "jpn", "japanese" -> "jpn"
+                "zh", "zho", "chi", "chinese" -> "zho"
+                "ko", "kor", "korean" -> "kor"
+                else -> value
+            }
+        }
     }
 
     /**
@@ -601,8 +873,11 @@ class PlayerViewModel {
         val handle = mpvHandle ?: return
         try {
             val paused = MPVLib.getPropertyFlag(handle, "pause", default = true)
+            // The observed mpv `pause` property is the single source of truth.
+            // Do not optimistically mutate _isPaused here: the command can be
+            // rejected or delayed while buffering, which used to desynchronize
+            // the button from the actual player.
             MPVLib.setPropertyString(handle, "pause", if (paused) "no" else "yes")
-            _isPaused.value = !paused
         } catch (e: Exception) {
             logger.warn(e) { "Failed to toggle pause" }
         }
@@ -693,33 +968,114 @@ class PlayerViewModel {
 
     /**
      * Reload track lists from mpv.
+     *
+     * Use the read-only indexed track-list rather than sub/audio indexes. The
+     * latter are not guaranteed to equal mpv's actual track IDs, especially
+     * after external tracks are added.
      */
     fun refreshTracks() {
         val handle = mpvHandle ?: return
-        val trackList = MPVLib.getPropertyString(handle, "track-list") ?: return
 
         try {
-            val audioCount = MPVLib.getPropertyInt(handle, "audio-count", 0)
-            val subCount = MPVLib.getPropertyInt(handle, "sub-count", 0)
-
-            _audioTracks.value = (0 until audioCount).mapNotNull { index ->
-                val lang = MPVLib.getPropertyString(handle, "audio/$index/lang") ?: "unknown"
-                val title = MPVLib.getPropertyString(handle, "audio/$index/title") ?: "Track ${index + 1}"
-                val codec = MPVLib.getPropertyString(handle, "audio/$index/codec") ?: ""
-                TrackInfo(index, title, lang, codec)
+            val nativeTracks = buildList {
+                for (index in 0 until MAX_TRACK_LIST_ENTRIES) {
+                    val type = MPVLib.getPropertyString(handle, "track-list/$index/type") ?: break
+                    val id = MPVLib.getPropertyInt(handle, "track-list/$index/id", -1)
+                    if (id < 0) continue
+                    add(
+                        TrackInfo(
+                            id = id,
+                            title = MPVLib.getPropertyString(handle, "track-list/$index/title")
+                                ?: "Track $id",
+                            language = MPVLib.getPropertyString(handle, "track-list/$index/lang")
+                                ?: "unknown",
+                            codec = MPVLib.getPropertyString(handle, "track-list/$index/codec") ?: "",
+                            external = MPVLib.getPropertyFlag(handle, "track-list/$index/external", false),
+                            type = type,
+                        ),
+                    )
+                }
             }
 
-            _subtitleTracks.value = (0 until subCount).mapNotNull { index ->
-                val lang = MPVLib.getPropertyString(handle, "sub/$index/lang") ?: "unknown"
-                val title = MPVLib.getPropertyString(handle, "sub/$index/title") ?: "Track ${index + 1}"
-                val codec = MPVLib.getPropertyString(handle, "sub/$index/codec") ?: ""
-                TrackInfo(index, title, lang, codec)
-            }
-
-            _selectedAudioTrack.value = MPVLib.getPropertyInt(handle, "audio", -1)
-            _selectedSubtitleTrack.value = MPVLib.getPropertyInt(handle, "sub", -1)
+            _audioTracks.value = nativeTracks.filter { it.type == "audio" }
+            _subtitleTracks.value = nativeTracks.filter { it.type == "sub" }
+            _selectedAudioTrack.value = MPVLib.getPropertyInt(handle, "aid", -1)
+            _selectedSubtitleTrack.value = MPVLib.getPropertyInt(handle, "sid", -1)
         } catch (e: Exception) {
             logger.debug(e) { "Failed to parse track list" }
+        }
+    }
+
+    /** Add source-provided subtitle URLs after the current media is loaded. */
+    private fun addExternalSubtitleTracks(handle: Pointer, tracks: List<Track>, token: Any) {
+        if (loadToken !== token || tracks.isEmpty()) return
+
+        for (track in tracks) {
+            val shouldAdd = synchronized(subtitleLock) {
+                if (loadedExternalSubtitleUrls.contains(track.url)) {
+                    false
+                } else {
+                    loadedExternalSubtitleUrls += track.url
+                    true
+                }
+            }
+            if (!shouldAdd) continue
+
+            val language = track.lang.trim().ifBlank { "und" }
+            val result = MPVLib.command(
+                handle,
+                "sub-add",
+                track.url,
+                "auto",
+                "External ($language)",
+                language,
+            )
+            if (result < 0) {
+                synchronized(subtitleLock) { loadedExternalSubtitleUrls.remove(track.url) }
+                logger.warn { "🎬 SUBTITLE: failed to add external track (${result}): ${track.url.take(120)}" }
+            } else {
+                logger.info { "🎬 SUBTITLE: queued external ${language} track" }
+            }
+        }
+    }
+
+    /**
+     * Wait for embedded/external tracks to appear, then enable the preferred
+     * language or the first available subtitle. This mirrors Android's
+     * onFinishLoadingTracks behavior while accounting for asynchronous sub-add.
+     */
+    private fun scheduleSubtitleSelection(handle: Pointer, token: Any) {
+        subtitleLoadJob?.cancel()
+        subtitleLoadJob = scope.launch {
+            repeat(SUBTITLE_DISCOVERY_ATTEMPTS) { attempt ->
+                delay(SUBTITLE_DISCOVERY_DELAY_MS)
+                if (loadToken !== token || mpvHandle !== handle) return@launch
+
+                refreshTracks()
+                val expectedExternalCount = synchronized(subtitleLock) {
+                    activeExternalSubtitleTracks.size
+                }
+                val externalReady = expectedExternalCount == 0 ||
+                    _subtitleTracks.value.count { it.external } >= expectedExternalCount
+                if (externalReady || attempt == SUBTITLE_DISCOVERY_ATTEMPTS - 1) {
+                    selectDefaultSubtitleTrack()
+                    return@launch
+                }
+            }
+        }
+    }
+
+    /** Select English when available, otherwise the first subtitle track. */
+    private fun selectDefaultSubtitleTrack() {
+        if (subtitleDefaultApplied) return
+        val tracks = _subtitleTracks.value
+        if (tracks.isEmpty()) return
+
+        val selected = chooseDefaultSubtitleTrack(tracks)
+        if (selected >= 0) {
+            setSubtitleTrack(selected)
+            subtitleDefaultApplied = true
+            logger.info { "🎬 SUBTITLE: enabled default track id=$selected" }
         }
     }
 
@@ -737,16 +1093,35 @@ class PlayerViewModel {
     }
 
     /**
-     * Select a subtitle track by its mpv ID.
+     * Select a subtitle track by its mpv ID. A user selection is sticky and
+     * cannot be overwritten by the asynchronous default-track discovery.
      */
     fun selectSubtitleTrack(trackId: Int) {
-        val handle = mpvHandle ?: return
+        if (setSubtitleTrack(trackId)) {
+            subtitleDefaultApplied = true
+        }
+    }
+
+    /** Apply a track selection internally without marking it as a user choice. */
+    private fun setSubtitleTrack(trackId: Int): Boolean {
+        val handle = mpvHandle ?: return false
         try {
-            MPVLib.setPropertyInt(handle, "sid", trackId)
-            _selectedSubtitleTrack.value = trackId
+            // mpv represents the disabled state as the string value "no";
+            // passing -1 through FORMAT_INT64 is not portable across libmpv
+            // versions and can leave the old subtitle visible.
+            val result = if (trackId < 0) {
+                MPVLib.setPropertyString(handle, "sid", "no")
+            } else {
+                MPVLib.setPropertyInt(handle, "sid", trackId)
+            }
+            if (result != null && result >= 0) {
+                _selectedSubtitleTrack.value = trackId
+                return true
+            }
         } catch (e: Exception) {
             logger.warn(e) { "Failed to select subtitle track $trackId" }
         }
+        return false
     }
 
     /**
@@ -923,6 +1298,30 @@ class PlayerViewModel {
     // Internal state updates
     // -------------------------------------------------------------------------
 
+    /**
+     * Allocate the software-render target from the best dimensions currently
+     * exposed by mpv. VIDEO_RECONFIG can race FILE_LOADED on libmpv, so this is
+     * intentionally safe to call from both events; it is a no-op until mpv has
+     * usable video dimensions.
+     */
+    private fun updateRendererVideoSize(handle: Pointer) {
+        val width = listOf("dwidth", "video-params/w", "width")
+            .asSequence()
+            .map { MPVLib.getPropertyInt(handle, it, 0) }
+            .firstOrNull { it > 0 } ?: 0
+        val height = listOf("dheight", "video-params/h", "height")
+            .asSequence()
+            .map { MPVLib.getPropertyInt(handle, it, 0) }
+            .firstOrNull { it > 0 } ?: 0
+
+        if (width > 0 && height > 0) {
+            softwareRenderer?.updateVideoSize(width, height)
+            logger.info { "🎬 VIDEO_SIZE: software render target ${width}x${height}" }
+        } else {
+            logger.debug { "🎬 VIDEO_SIZE: dimensions not available yet (d=${width}x${height})" }
+        }
+    }
+
     private fun updatePosition() {
         val handle = mpvHandle ?: return
         try {
@@ -945,8 +1344,27 @@ class PlayerViewModel {
         val handle = mpvHandle ?: return
         try {
             val paused = MPVLib.getPropertyFlag(handle, "pause", default = true)
+            val pausedForCache = MPVLib.getPropertyFlag(handle, "paused-for-cache", default = false)
             _isPaused.value = paused
-            _playbackState.value = if (paused) PlaybackState.PAUSED else PlaybackState.PLAYING
+
+            // Once mpv reports that it is actually running, the initial-load
+            // timeout is no longer allowed to change the UI to ERROR later.
+            if (!paused && !pausedForCache) {
+                loadInProgress = false
+                loadTimeoutJob?.cancel()
+                loadTimeoutJob = null
+            }
+
+            _playbackState.value = when {
+                pausedForCache -> PlaybackState.BUFFERING
+                // During the initial load, mpv may briefly expose pause=yes
+                // while it prepares the demuxer. Keep the loading state so the
+                // guarded timeout can still report a genuinely stuck load and
+                // the UI does not claim the user paused the video.
+                loadInProgress -> PlaybackState.LOADING
+                paused -> PlaybackState.PAUSED
+                else -> PlaybackState.PLAYING
+            }
         } catch (_: Exception) { }
     }
 
@@ -966,4 +1384,6 @@ data class TrackInfo(
     val title: String,
     val language: String,
     val codec: String = "",
+    val external: Boolean = false,
+    val type: String = "sub",
 )

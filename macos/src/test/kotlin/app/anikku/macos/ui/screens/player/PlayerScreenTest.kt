@@ -10,6 +10,7 @@ import app.anikku.macos.ui.screens.models.EpisodeModel
 import app.anikku.macos.ui.screens.models.MockData
 import org.junit.jupiter.api.Assertions.assertEquals
 
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -246,6 +247,79 @@ class PlayerScreenTest {
     // ========================================================================
     // Phase 6: PlayerViewModel Initialization
     // ========================================================================
+
+    @Test
+    fun `default subtitle selection prefers English regardless of language spelling`() {
+        val tracks = listOf(
+            TrackInfo(id = 7, title = "Japanese", language = "jpn"),
+            TrackInfo(id = 12, title = "English", language = "en-US"),
+        )
+
+        assertEquals(12, PlayerViewModel.chooseDefaultSubtitleTrack(tracks))
+    }
+
+    @Test
+    fun `default subtitle selection falls back to first available track`() {
+        val tracks = listOf(
+            TrackInfo(id = 21, title = "Spanish", language = "spa"),
+            TrackInfo(id = 22, title = "French", language = "fra"),
+        )
+
+        assertEquals(21, PlayerViewModel.chooseDefaultSubtitleTrack(tracks))
+    }
+
+    @Test
+    fun `default subtitle selection returns disabled for empty track list`() {
+        assertEquals(-1, PlayerViewModel.chooseDefaultSubtitleTrack(emptyList()))
+    }
+
+    @Test
+    fun `stale or unowned end file cannot fail a replacement load`() {
+        assertTrue(
+            PlayerViewModel.shouldIgnoreEndFileDuringLoad(
+                state = PlaybackState.LOADING,
+                loadInProgress = true,
+                activePlaylistEntryId = 42L,
+                eventPlaylistEntryId = 41L,
+            ),
+        )
+        assertTrue(
+            PlayerViewModel.shouldIgnoreEndFileDuringLoad(
+                state = PlaybackState.LOADING,
+                loadInProgress = true,
+                activePlaylistEntryId = null,
+                eventPlaylistEntryId = 41L,
+            ),
+        )
+        assertTrue(
+            PlayerViewModel.shouldIgnoreEndFileDuringLoad(
+                state = PlaybackState.LOADING,
+                loadInProgress = true,
+                activePlaylistEntryId = 42L,
+                eventPlaylistEntryId = null,
+            ),
+        )
+    }
+
+    @Test
+    fun `owned end file and completed loads are not suppressed`() {
+        assertFalse(
+            PlayerViewModel.shouldIgnoreEndFileDuringLoad(
+                state = PlaybackState.LOADING,
+                loadInProgress = true,
+                activePlaylistEntryId = 42L,
+                eventPlaylistEntryId = 42L,
+            ),
+        )
+        assertFalse(
+            PlayerViewModel.shouldIgnoreEndFileDuringLoad(
+                state = PlaybackState.PLAYING,
+                loadInProgress = false,
+                activePlaylistEntryId = 42L,
+                eventPlaylistEntryId = 41L,
+            ),
+        )
+    }
 
     @Test
     fun `PlayerViewModel initializes with IDLE state by default`() {

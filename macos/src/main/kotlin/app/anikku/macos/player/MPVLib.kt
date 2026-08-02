@@ -1,5 +1,6 @@
 package app.anikku.macos.player
 
+import com.sun.jna.Callback
 import com.sun.jna.Library
 import com.sun.jna.Memory
 import com.sun.jna.Native
@@ -179,22 +180,20 @@ object MPVLib {
     }
 
     private fun findBundleLibrary(): String? {
-        // Check several possible bundle-relative paths.
-        // When running from the packaged .app (jpackage/nativeDistributions),
-        // the working directory is Anikku.app/Contents/MacOS/.
-        // appResourcesRootDir places files in Contents/Resources/.
-        val bundleCandidates = listOf(
-            // Packaged app: Contents/Resources/libmpv.2.dylib (via appResourcesRootDir)
+        val packagedResources = System.getProperty("compose.application.resources.dir")
+            ?.takeIf { it.isNotBlank() }
+            ?.let(::File)
+        val bundleCandidates = listOfNotNull(
+            packagedResources?.resolve("libmpv.2.dylib")?.path,
+            packagedResources?.resolve("libmpv.1.dylib")?.path,
+            // Compatibility with older package layouts and local launches.
             "../Resources/libmpv.2.dylib",
             "../Resources/libmpv.1.dylib",
-            // jpackage standard: Contents/lib/libmpv.2.dylib
             "../lib/libmpv.2.dylib",
             "../lib/libmpv.1.dylib",
-            // Running from IDE — check relative paths
             "../Frameworks/libmpv.2.dylib",
             "../../Frameworks/libmpv.2.dylib",
             "../../Frameworks/libmpv.1.dylib",
-
         )
         return bundleCandidates.firstOrNull { File(it).isFile }
     }
@@ -396,12 +395,22 @@ object MPVLib {
      * Build an array of [mpv_render_param] in native memory.
      * Each pair is (type, dataPointer). The array is terminated with INVALID.
      *
+     * **IMPORTANT:** Returns [Memory] (not [Pointer]) so callers MUST hold a
+     * reference to prevent Java GC from freeing the native buffer while mpv
+     * is still reading it. Storing only as [Pointer] causes "memory corruption
+     * of free block" crashes (SIGBUS) when the GC finalizer runs.
+     *
      * @param params Variable number of (type, dataPointer) pairs.
-     * @return Pointer to the native memory block containing the param array.
+     * @return Memory block containing the param array. Caller must retain reference.
      */
-    fun buildRenderParams(vararg params: Pair<Int, Pointer?>): Pointer {
+    fun buildRenderParams(vararg params: Pair<Int, Pointer?>): Memory {
         val count = params.size + 1 // +1 for INVALID terminator
         val mem = Memory((count * 16).toLong())
+        // CRITICAL: JNA Memory is malloc'd (uninitialized garbage).
+        // Without clear(), the terminator struct and padding bytes contain
+        // random data. mpv reads garbage type IDs → treats them as valid
+        // params → dereferences garbage pointers → heap corruption.
+        mem.clear()
         for ((i, pair) in params.withIndex()) {
             mem.setInt(i * 16.toLong(), pair.first)
             pair.second?.let { mem.setPointer(i * 16L + 8, it) }
@@ -416,9 +425,9 @@ object MPVLib {
             logger.warn { "renderContextCreate called with null handle" }
             return null
         }
-        val params = buildRenderParams(
-            RENDER_PARAM_API_TYPE to Memory(3L).also { it.setString(0, RENDER_API_TYPE_SW) },
-        )
+        // Hold apiTypeMem locally to prevent GC of native string before mpv reads it.
+        val apiTypeMem = Memory(3L).also { it.setString(0, RENDER_API_TYPE_SW) }
+        val params = buildRenderParams(RENDER_PARAM_API_TYPE to apiTypeMem)
         val res = PointerByReference()
         val result = checkAvailable().mpv_render_context_create(res, mpvHandle, params)
         return if (result >= 0) res.value else null
@@ -436,6 +445,30 @@ object MPVLib {
     fun renderContextRender(ctx: Pointer?, params: Pointer): Int {
         if (ctx == null) return -999
         return checkAvailable().mpv_render_context_render(ctx, params)
+    }
+
+    /** Request log messages from mpv at the given minimum level.
+     * This is the CORRECT API for receiving MPV_EVENT_LOG_MESSAGE events.
+     * Using mpv_request_event(MPV_EVENT_LOG_MESSAGE) alone does NOT work —
+     * log messages are managed through this dedicated function. */
+    fun requestLogMessages(handle: Pointer?, minLevel: String): Int {
+        if (handle == null) return -999
+        return try {
+            checkAvailable().mpv_request_log_messages(handle, minLevel)
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to request mpv log messages" }
+            -999
+        }
+    }
+
+    /** Set the render update callback. JNA auto-converts [Callback] to a native function pointer. */
+    fun renderContextSetUpdateCallback(ctx: Pointer?, callback: Callback?, cbCtx: Pointer?) {
+        if (ctx == null) return
+        try {
+            checkAvailable().mpv_render_context_set_update_callback(ctx, callback, cbCtx)
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to set mpv render update callback" }
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -460,27 +493,30 @@ object MPVLib {
     const val MPV_EVENT_NONE = 0
     const val MPV_EVENT_SHUTDOWN = 1
     const val MPV_EVENT_LOG_MESSAGE = 2
-    const val MPV_EVENT_GET_CPU_REQUEST = 3
-    const val MPV_EVENT_GET_CPU_REPLY = 4
-    const val MPV_EVENT_CLIENT_MESSAGE = 6
-    const val MPV_EVENT_VIDEO_RECONFIG = 8
-    const val MPV_EVENT_AUDIO_RECONFIG = 9
-    const val MPV_EVENT_SEEK = 11
-    const val MPV_EVENT_PLAYBACK_RESTART = 12
-    const val MPV_EVENT_PROPERTY_CHANGE = 23
-    const val MPV_EVENT_FILE_LOADED = 26
-    const val MPV_EVENT_END_FILE = 27
-    const val MPV_EVENT_HOOK = 32
+    const val MPV_EVENT_GET_PROPERTY_REPLY = 3
+    const val MPV_EVENT_SET_PROPERTY_REPLY = 4
+    const val MPV_EVENT_COMMAND_REPLY = 5
+    const val MPV_EVENT_START_FILE = 6
+    const val MPV_EVENT_END_FILE = 7
+    const val MPV_EVENT_FILE_LOADED = 8
+    const val MPV_EVENT_CLIENT_MESSAGE = 16
+    const val MPV_EVENT_VIDEO_RECONFIG = 17
+    const val MPV_EVENT_AUDIO_RECONFIG = 18
+    const val MPV_EVENT_SEEK = 20
+    const val MPV_EVENT_PLAYBACK_RESTART = 21
+    const val MPV_EVENT_PROPERTY_CHANGE = 22
+    const val MPV_EVENT_QUEUE_OVERFLOW = 24
+    const val MPV_EVENT_HOOK = 25
 
     // -------------------------------------------------------------------------
     // End file reason constants
     // -------------------------------------------------------------------------
 
     const val END_FILE_REASON_EOF = 0
-    const val END_FILE_REASON_STOP = 1
-    const val END_FILE_REASON_QUIT = 2
-    const val END_FILE_REASON_ERROR = 3
-    const val END_FILE_REASON_REDIRECT = 4
+    const val END_FILE_REASON_STOP = 2
+    const val END_FILE_REASON_QUIT = 3
+    const val END_FILE_REASON_ERROR = 4
+    const val END_FILE_REASON_REDIRECT = 5
 
     // -------------------------------------------------------------------------
     // Log level constants
@@ -526,29 +562,30 @@ object MPVLib {
 
     const val RENDER_PARAM_INVALID = 0
     const val RENDER_PARAM_API_TYPE = 1
-    const val RENDER_PARAM_OPENGL_INIT_PARAMS = 3
-    const val RENDER_PARAM_OPENGL_FBO = 6
-    const val RENDER_PARAM_FLIP_Y = 7
-    const val RENDER_PARAM_DEPTH = 8
-    const val RENDER_PARAM_ICC_PROFILE = 9
-    const val RENDER_PARAM_AMBIENT_LIGHT = 10
-    const val RENDER_PARAM_X11 = 11
-    const val RENDER_PARAM_WL = 12
-    const val RENDER_PARAM_OPENGL_FBO_SIZE = 14
-    const val RENDER_PARAM_NEXT_FRAME_INFO = 15
-    const val RENDER_PARAM_BLOCK_FOR_TARGET_TIME = 16
-    const val RENDER_PARAM_SKIP_RENDERING = 17
-    const val RENDER_PARAM_DRM_DISPLAY = 18
-    const val RENDER_PARAM_DRM_DRAW_SURFACE_SIZE = 19
+    const val RENDER_PARAM_OPENGL_INIT_PARAMS = 2
+    const val RENDER_PARAM_OPENGL_FBO = 3
+    const val RENDER_PARAM_FLIP_Y = 4
+    const val RENDER_PARAM_DEPTH = 5
+    const val RENDER_PARAM_ICC_PROFILE = 6
+    const val RENDER_PARAM_AMBIENT_LIGHT = 7
+    const val RENDER_PARAM_X11 = 8
+    const val RENDER_PARAM_WL = 9
+    const val RENDER_PARAM_ADVANCED_CONTROL = 10
+    const val RENDER_PARAM_NEXT_FRAME_INFO = 11
+    const val RENDER_PARAM_BLOCK_FOR_TARGET_TIME = 12
+    const val RENDER_PARAM_SKIP_RENDERING = 13
+    const val RENDER_PARAM_DRM_DISPLAY = 14
+    const val RENDER_PARAM_DRM_DRAW_SURFACE_SIZE = 15
+    const val RENDER_PARAM_DRM_DISPLAY_V2 = 16
 
     // -------------------------------------------------------------------------
     // Software render API constants (added in mpv 0.35.0+)
     // -------------------------------------------------------------------------
 
-    const val RENDER_PARAM_SW_SIZE = 20
-    const val RENDER_PARAM_SW_FORMAT = 21
-    const val RENDER_PARAM_SW_STRIDE = 22
-    const val RENDER_PARAM_SW_POINTER = 23
+    const val RENDER_PARAM_SW_SIZE = 17
+    const val RENDER_PARAM_SW_FORMAT = 18
+    const val RENDER_PARAM_SW_STRIDE = 19
+    const val RENDER_PARAM_SW_POINTER = 20
 
     // -------------------------------------------------------------------------
     // Render API type constants
@@ -564,6 +601,8 @@ object MPVLib {
 
     const val RENDER_FORMAT_RGB0 = "rgb0"
     const val RENDER_FORMAT_BGR0 = "bgr0"
+    const val RENDER_FORMAT_BGRA = "bgra"
+    const val RENDER_FORMAT_RGBA = "rgba"
     const val RENDER_FORMAT_0RGB = "0rgb"
     const val RENDER_FORMAT_0BGR = "0bgr"
 
@@ -656,7 +695,10 @@ private interface MPVNatives : Library {
     fun mpv_render_context_render(ctx: Pointer, params: Pointer): Int
 
     /** Set update callback (mpv_render_context_set_update_callback). */
-    fun mpv_render_context_set_update_callback(ctx: Pointer, callback: Pointer, cb_ctx: Pointer)
+    fun mpv_render_context_set_update_callback(ctx: Pointer, callback: Callback?, cb_ctx: Pointer?)
+
+    /** Request log messages at the given minimum level (mpv_request_log_messages). */
+    fun mpv_request_log_messages(ctx: Pointer, min_level: String): Int
 }
 
 // -------------------------------------------------------------------------
@@ -677,13 +719,26 @@ class MPVEvent(nativePointer: Pointer) {
     val eventId: Int
     val error: Int
     val replyUserdata: Long
-    /** Event-specific data payload, or null if the event has no payload.
-     *
-     * Some mpv events (e.g. MPV_EVENT_NONE, property changes with null data)
-     * have a NULL data pointer. JNA's [Pointer.getPointer] throws
-     * NullPointerException when the stored pointer is NULL, so we must
-     * catch that case here to prevent the event loop from crashing. */
-    val data: Pointer?
+    /** End-file reason payload, copied while the MPV event memory is valid. */
+    val endFileReason: Int?
+
+    /** End-file error payload, copied while the MPV event memory is valid. */
+    val endFileError: Int?
+
+    /** Playlist entry ID from START_FILE or END_FILE payloads. */
+    val playlistEntryId: Long?
+
+    /** Snapshot of an observed property's name, or null for other events. */
+    val propertyName: String?
+
+    /** Snapshot of an observed property's format, or null for other events. */
+    val propertyFormat: Int?
+
+    /** Snapshot of an MPV log message prefix, level name, and text. */
+    val logPrefix: String?
+    val logLevelName: String?
+    val logText: String?
+    val logLevel: Int?
 
     init {
         // mpv_event struct layout (platform-dependent offsets):
@@ -694,20 +749,55 @@ class MPVEvent(nativePointer: Pointer) {
         eventId = nativePointer.getInt(0)
         error = nativePointer.getInt(4)
         replyUserdata = nativePointer.getLong(8)
-        data = try {
-            nativePointer.getPointer(16)
-        } catch (e: NullPointerException) {
-            // getPointer throws NPE when the stored pointer is NULL.
-            // This is normal for events without a data payload.
-            null
+
+        // The data pointer and every payload it references belong to libmpv and
+        // are only valid until mpv_wait_event returns the next event. Decode all
+        // payloads synchronously here; MPVEvent is later emitted on a Flow and
+        // must not expose transient native memory to asynchronous consumers.
+        val payload = readPointer(nativePointer, 16)
+        endFileReason = if (eventId == MPVLib.MPV_EVENT_END_FILE) payload?.getInt(0) else null
+        endFileError = if (eventId == MPVLib.MPV_EVENT_END_FILE) payload?.getInt(4) else null
+        playlistEntryId = when (eventId) {
+            MPVLib.MPV_EVENT_START_FILE -> payload?.getLong(0)
+            MPVLib.MPV_EVENT_END_FILE -> payload?.getLong(8)
+            else -> null
+        }
+
+        if (eventId == MPVLib.MPV_EVENT_PROPERTY_CHANGE) {
+            propertyName = readPointer(payload, 0)?.getString(0)
+            propertyFormat = payload?.getInt(8)
+        } else {
+            propertyName = null
+            propertyFormat = null
+        }
+
+        if (eventId == MPVLib.MPV_EVENT_LOG_MESSAGE) {
+            logPrefix = readPointer(payload, 0)?.getString(0)
+            logLevelName = readPointer(payload, 8)?.getString(0)
+            logText = readPointer(payload, 16)?.getString(0)
+            logLevel = payload?.getInt(24)
+        } else {
+            logPrefix = null
+            logLevelName = null
+            logText = null
+            logLevel = null
         }
     }
+
+    private fun readPointer(base: Pointer?, offset: Long): Pointer? = try {
+        base?.getPointer(offset)?.takeUnless { it == Pointer.NULL }
+    } catch (_: NullPointerException) {
+        null
+    }
+
+    private fun readPointer(base: Pointer, offset: Int): Pointer? = readPointer(base, offset.toLong())
 
     /** Returns a human-readable name for the event ID. */
     fun eventName(): String = when (eventId) {
         MPVLib.MPV_EVENT_NONE -> "none"
         MPVLib.MPV_EVENT_SHUTDOWN -> "shutdown"
         MPVLib.MPV_EVENT_LOG_MESSAGE -> "log_message"
+        MPVLib.MPV_EVENT_START_FILE -> "start_file"
         MPVLib.MPV_EVENT_VIDEO_RECONFIG -> "video_reconfig"
         MPVLib.MPV_EVENT_AUDIO_RECONFIG -> "audio_reconfig"
         MPVLib.MPV_EVENT_SEEK -> "seek"
@@ -715,6 +805,7 @@ class MPVEvent(nativePointer: Pointer) {
         MPVLib.MPV_EVENT_PROPERTY_CHANGE -> "property_change"
         MPVLib.MPV_EVENT_FILE_LOADED -> "file_loaded"
         MPVLib.MPV_EVENT_END_FILE -> "end_file"
+        MPVLib.MPV_EVENT_QUEUE_OVERFLOW -> "queue_overflow"
         MPVLib.MPV_EVENT_HOOK -> "hook"
         else -> "unknown($eventId)"
     }

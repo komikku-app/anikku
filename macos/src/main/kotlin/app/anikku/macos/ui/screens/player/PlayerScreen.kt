@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,10 +51,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,6 +91,7 @@ import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.tachiyomi.animesource.model.SEpisode
+import eu.kanade.tachiyomi.animesource.model.Track
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -146,6 +153,7 @@ data class PlayerScreen(
     data class VideoResolution(
         val url: String,
         val headers: Map<String, String>? = null,
+        val subtitleTracks: List<Track> = emptyList(),
     )
 
     /**
@@ -395,6 +403,7 @@ data class PlayerScreen(
     data class ResolveResult(
         val url: String,
         val headers: Map<String, String>? = null,
+        val subtitleTracks: List<Track> = emptyList(),
         val candidateIndex: Int = -1,
         val qualityResolution: Int? = null,
         val qualityLabel: String? = null,
@@ -500,6 +509,7 @@ data class PlayerScreen(
                             return ResolveResult(
                                 url = videoUrl,
                                 headers = videoHeaders,
+                                subtitleTracks = video.subtitleTracks,
                                 candidateIndex = orderedIndex,
                                 qualityResolution = video.resolution,
                                 qualityLabel = video.videoTitle.takeIf { it.isNotBlank() },
@@ -585,6 +595,10 @@ data class PlayerScreen(
         val videoRotation by playerViewModel.videoRotation.collectAsState()
         val isHflip by playerViewModel.isHflip.collectAsState()
         val isVflip by playerViewModel.isVflip.collectAsState()
+        val audioTracks by playerViewModel.audioTracks.collectAsState()
+        val subtitleTracks by playerViewModel.subtitleTracks.collectAsState()
+        val selectedAudioTrack by playerViewModel.selectedAudioTrack.collectAsState()
+        val selectedSubtitleTrack by playerViewModel.selectedSubtitleTrack.collectAsState()
 
         // State: episode data from source
         // Keep the original SEpisode objects so we can pass full data to getVideoList()
@@ -705,7 +719,11 @@ data class PlayerScreen(
                 downloadManager.isDownloaded(animeId, currentEpisodeNumber)
 
             if (resolved != null) {
-                resolvedVideo = VideoResolution(url = resolved.url, headers = resolved.headers)
+                resolvedVideo = VideoResolution(
+                    url = resolved.url,
+                    headers = resolved.headers,
+                    subtitleTracks = resolved.subtitleTracks,
+                )
                 lastAttemptedIndex = resolved.candidateIndex
                 videoQualityResolution = resolved.qualityResolution
                 videoQualityLabel = resolved.qualityLabel
@@ -733,7 +751,7 @@ data class PlayerScreen(
                 } else {
                     "Loading video into mpv player..."
                 }
-                playerViewModel.loadEpisode(video.url, video.headers)
+                playerViewModel.loadEpisode(video.url, video.headers, video.subtitleTracks)
             }
         }
 
@@ -887,7 +905,11 @@ data class PlayerScreen(
                 isLoading = false
 
                 if (resolved != null) {
-                    resolvedVideo = VideoResolution(url = resolved.url, headers = resolved.headers)
+                    resolvedVideo = VideoResolution(
+                    url = resolved.url,
+                    headers = resolved.headers,
+                    subtitleTracks = resolved.subtitleTracks,
+                )
                     lastAttemptedIndex = resolved.candidateIndex
                     videoQualityResolution = resolved.qualityResolution
                     videoQualityLabel = resolved.qualityLabel
@@ -973,6 +995,10 @@ data class PlayerScreen(
         PlayerContent(
             playerViewModel = playerViewModel,
             mpvHandle = mpvHandle,
+            audioTracks = audioTracks,
+            subtitleTracks = subtitleTracks,
+            selectedAudioTrack = selectedAudioTrack,
+            selectedSubtitleTrack = selectedSubtitleTrack,
             softwareRenderer = softwareRenderer,
             animeTitle = animeTitle,
             episodes = allEpisodes,
@@ -1062,7 +1088,11 @@ data class PlayerScreen(
                             },
                         )
                         if (resolved != null) {
-                            resolvedVideo = VideoResolution(url = resolved.url, headers = resolved.headers)
+                            resolvedVideo = VideoResolution(
+                    url = resolved.url,
+                    headers = resolved.headers,
+                    subtitleTracks = resolved.subtitleTracks,
+                )
                             lastAttemptedIndex = resolved.candidateIndex
                             videoQualityResolution = resolved.qualityResolution
                             videoQualityLabel = resolved.qualityLabel
@@ -1106,10 +1136,14 @@ data class PlayerScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PlayerContent(
+internal fun PlayerContent(
     playerViewModel: PlayerViewModel? = null,
     mpvHandle: com.sun.jna.Pointer? = null,
     softwareRenderer: MPVSoftwareRenderer? = null,
+    audioTracks: List<app.anikku.macos.player.TrackInfo> = emptyList(),
+    subtitleTracks: List<app.anikku.macos.player.TrackInfo> = emptyList(),
+    selectedAudioTrack: Int = -1,
+    selectedSubtitleTrack: Int = -1,
     animeTitle: String,
     episodes: List<EpisodeModel>,
     currentEpisodeIndex: Int,
@@ -1157,10 +1191,15 @@ private fun PlayerContent(
     onTakeScreenshot: () -> Unit = {},
 ) {
     // --- Player state ---
-    var isPlaying by remember { mutableStateOf(!isPaused) }
+    // mpv's observed pause property is authoritative. Keeping a second
+    // optimistic play state here caused the icon to disagree with playback
+    // until the user manually toggled it.
+    val isPlaying = !isPaused
     var isControlsVisible by remember { mutableStateOf(true) }
     var elapsedSeconds by remember { mutableLongStateOf(currentEpisode?.lastSecondSeen ?: 0L) }
-    var totalSeconds by remember { mutableLongStateOf(currentEpisode?.totalSeconds?.coerceAtLeast(1) ?: 1440L) }
+    var totalSeconds by remember {
+        mutableLongStateOf(currentEpisode?.totalSeconds?.takeIf { it > 0 } ?: 0L)
+    }
     var seekFraction by remember { mutableFloatStateOf(0f) }
 
     // Settings panel visibility
@@ -1172,8 +1211,6 @@ private fun PlayerContent(
     var showAspectRatioPanel by remember { mutableStateOf(false) }
     var showVideoFilterPanel by remember { mutableStateOf(false) }
 
-    // Sync with mpv state when available
-    LaunchedEffect(isPaused) { isPlaying = !isPaused }
     // Always update elapsed time from currentPosition when it changes,
     // regardless of whether duration is set yet.
     LaunchedEffect(currentPosition) {
@@ -1188,16 +1225,17 @@ private fun PlayerContent(
             if (currentPosition > 0) {
                 seekFraction = (currentPosition / duration).toFloat().coerceIn(0f, 1f)
             }
+        } else {
+            totalSeconds = 0L
+            seekFraction = 0f
         }
     }
 
     // If episode changes, reset progress
     LaunchedEffect(currentEpisode?.id) {
-        if (duration <= 0) {
-            elapsedSeconds = currentEpisode?.lastSecondSeen ?: 0L
-            totalSeconds = currentEpisode?.totalSeconds?.coerceAtLeast(1) ?: 1440L
-            seekFraction = if (totalSeconds > 0) elapsedSeconds.toFloat() / totalSeconds else 0f
-        }
+        elapsedSeconds = currentEpisode?.lastSecondSeen ?: 0L
+        totalSeconds = currentEpisode?.totalSeconds?.takeIf { it > 0 } ?: 0L
+        seekFraction = if (totalSeconds > 0) elapsedSeconds.toFloat() / totalSeconds else 0f
     }
 
     // Auto-hide controls after 3 seconds of playback
@@ -1215,7 +1253,7 @@ private fun PlayerContent(
     // mpv initialization (lib loading, handle creation, option config) can
     // take 1-2 seconds and isMPVAvailable may be false during that window.
     LaunchedEffect(isPlaying, playerViewModel?.playbackState?.value) {
-        if (isPlaying && !isMPVAvailable) {
+        if (isPlaying && !isMPVAvailable && totalSeconds > 0) {
             // Give mpv a chance to initialize before entering mock mode
             delay(3000L)
             // Check again — mpv might have initialized during the delay
@@ -1230,7 +1268,6 @@ private fun PlayerContent(
                 elapsedSeconds = (elapsedSeconds + 1).coerceAtMost(totalSeconds)
                 seekFraction = if (totalSeconds > 0) elapsedSeconds.toFloat() / totalSeconds else 0f
                 if (elapsedSeconds >= totalSeconds) {
-                    isPlaying = false
                     toastHost.show("Episode complete", ToastDuration.SHORT)
                     break
                 }
@@ -1239,8 +1276,10 @@ private fun PlayerContent(
     }
 
     // Keyboard shortcuts
+    val canSeek = !isLive && totalSeconds > 0L
     val interactionSource = remember { MutableInteractionSource() }
-
+    val focusRequester = remember { FocusRequester() }
+    val errorFocusRequester = remember { FocusRequester() }
     // Loading overlay (shown on top of video surface while buffering)
     val showLoadingOverlay = isLoading || isResolvingVideo
 
@@ -1285,7 +1324,10 @@ private fun PlayerContent(
         Box(
             Modifier.fillMaxSize()
                 .background(Color.Black)
+                .focusRequester(errorFocusRequester)
+                .focusable()
                 .onKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                     when (event.key) {
                         Key.A -> {
                             if (hasNextQuality && !isAutoRetrying) {
@@ -1304,6 +1346,9 @@ private fun PlayerContent(
                 },
             contentAlignment = Alignment.Center,
         ) {
+            LaunchedEffect(Unit) {
+                errorFocusRequester.requestFocus()
+            }
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                 Icon(
                     Icons.Outlined.PlayCircle,
@@ -1514,6 +1559,12 @@ private fun PlayerContent(
         return
     }
 
+    LaunchedEffect(Unit) {
+        // This effect is composed only with the normal player root, so its
+        // FocusRequester is guaranteed to be attached before the request.
+        focusRequester.requestFocus()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1524,24 +1575,29 @@ private fun PlayerContent(
             ) {
                 isControlsVisible = !isControlsVisible
             }
+            .focusRequester(focusRequester)
+            .focusable()
+            // Handle shortcuts after focused descendants have had a chance to
+            // consume their own text-editing keys. This keeps Space/arrows from
+            // leaking out of a text field placed over the player in the future.
             .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 when {
                     event.key == Key.Spacebar -> {
                         onTogglePlay()
-                        isPlaying = !isPlaying
                         isControlsVisible = true
                         true
                     }
-                    event.key == Key.DirectionLeft -> {
+                    event.key == Key.DirectionLeft && canSeek -> {
                         onSeekRelative(-10.0)
                         elapsedSeconds = (elapsedSeconds - 10).coerceAtLeast(0)
-                        seekFraction = if (totalSeconds > 0) elapsedSeconds.toFloat() / totalSeconds else 0f
+                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
                         true
                     }
-                    event.key == Key.DirectionRight -> {
+                    event.key == Key.DirectionRight && canSeek -> {
                         onSeekRelative(10.0)
                         elapsedSeconds = (elapsedSeconds + 10).coerceAtMost(totalSeconds)
-                        seekFraction = if (totalSeconds > 0) elapsedSeconds.toFloat() / totalSeconds else 0f
+                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
                         true
                     }
                     event.key == Key.DirectionUp -> {
@@ -1714,7 +1770,7 @@ private fun PlayerContent(
 
         // === Center play/pause ===
         AnimatedVisibility(visible = !isPlaying && isControlsVisible && !showLoadingOverlay, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.Center)) {
-            IconButton(onClick = { onTogglePlay(); isPlaying = true }, modifier = Modifier.size(72.dp)) {
+            IconButton(onClick = onTogglePlay, modifier = Modifier.size(72.dp)) {
                 Icon(Icons.Outlined.PlayCircle, contentDescription = "Play", tint = Color.White, modifier = Modifier.fillMaxSize())
             }
         }
@@ -1730,22 +1786,27 @@ private fun PlayerContent(
                 currentPositionSeconds = elapsedSeconds,
                 totalDurationSeconds = totalSeconds,
                 isPlaying = isPlaying,
+                isLive = isLive,
                 playbackState = playbackState,
                 currentEpisodeIndex = currentEpisodeIndex,
                 episodeCount = episodes.size,
                 volume = volume,
                 showVolume = isMPVAvailable,
-                onTogglePlay = { onTogglePlay(); isPlaying = !isPlaying },
-                onSeek = { seekFraction = it },
+                onTogglePlay = onTogglePlay,
+                onSeek = { if (canSeek) seekFraction = it },
                 onSeekEnd = { fraction ->
-                    val newSeconds = (fraction * totalSeconds).toLong()
-                    elapsedSeconds = newSeconds
-                    onSeekTo(newSeconds.toDouble())
+                    if (canSeek) {
+                        val newSeconds = (fraction * totalSeconds).toLong()
+                        elapsedSeconds = newSeconds
+                        onSeekTo(newSeconds.toDouble())
+                    }
                 },
                 onSeekRelative = { offset ->
-                    onSeekRelative(offset)
-                    elapsedSeconds = (elapsedSeconds + offset.toLong()).coerceIn(0, totalSeconds)
-                    seekFraction = if (totalSeconds > 0) elapsedSeconds.toFloat() / totalSeconds else 0f
+                    if (canSeek) {
+                        onSeekRelative(offset)
+                        elapsedSeconds = (elapsedSeconds + offset.toLong()).coerceIn(0, totalSeconds)
+                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+                    }
                 },
                 onNavigateEpisode = onNavigateEpisode,
             )
@@ -1772,10 +1833,10 @@ private fun PlayerContent(
             PlayerSpeedPanel(currentSpeed = playbackSpeed.toFloat(), onSpeedChange = { playerViewModel?.setSpeed(it.toDouble()) }, onDismiss = { showSpeedPanel = false })
         }
         AnimatedVisibility(visible = showAudioPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
-            PlayerAudioTrackPanel(tracks = playerViewModel?.audioTracks?.value?.map { it.title } ?: emptyList(), currentTrackIndex = playerViewModel?.selectedAudioTrack?.value ?: -1, audioDelay = audioDelay, onTrackSelected = { playerViewModel?.selectAudioTrack(it) }, onDelayChange = { playerViewModel?.setAudioDelay(it) }, onDismiss = { showAudioPanel = false })
+            PlayerAudioTrackPanel(tracks = audioTracks, currentTrackIndex = selectedAudioTrack, audioDelay = audioDelay, onTrackSelected = { playerViewModel?.selectAudioTrack(it) }, onDelayChange = { playerViewModel?.setAudioDelay(it) }, onDismiss = { showAudioPanel = false })
         }
         AnimatedVisibility(visible = showSubtitlePanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
-            PlayerSubtitleTrackPanel(tracks = playerViewModel?.subtitleTracks?.value?.map { it.title } ?: emptyList(), currentTrackIndex = playerViewModel?.selectedSubtitleTrack?.value ?: -1, subtitleDelay = subtitleDelay, onTrackSelected = { playerViewModel?.selectSubtitleTrack(it) }, onDelayChange = { playerViewModel?.setSubtitleDelay(it) }, onDismiss = { showSubtitlePanel = false })
+            PlayerSubtitleTrackPanel(tracks = subtitleTracks, currentTrackIndex = selectedSubtitleTrack, subtitleDelay = subtitleDelay, onTrackSelected = { playerViewModel?.selectSubtitleTrack(it) }, onDelayChange = { playerViewModel?.setSubtitleDelay(it) }, onDismiss = { showSubtitlePanel = false })
         }
         AnimatedVisibility(visible = showEqualizerPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerEqualizerPanel(brightness = brightness, contrast = contrast, saturation = saturation, gamma = gamma, onBrightnessChange = { playerViewModel?.setBrightness(it) }, onContrastChange = { playerViewModel?.setContrast(it) }, onSaturationChange = { playerViewModel?.setSaturation(it) }, onGammaChange = { playerViewModel?.setGamma(it) }, onReset = { playerViewModel?.resetEqualizer() }, onDismiss = { showEqualizerPanel = false })

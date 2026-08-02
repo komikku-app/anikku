@@ -16,9 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
@@ -79,7 +76,17 @@ fun MPVVideoSurface(
     // Rendering is performed on Dispatchers.IO to avoid blocking the Compose
     // UI thread; only the resulting ImageBitmap is posted back to the UI.
     LaunchedEffect(renderer, mpvAvailable) {
-        if (renderer == null || !mpvAvailable) return@LaunchedEffect
+        if (renderer == null || !mpvAvailable) {
+            if (renderer == null) logger.warn { "🎬 SURFACE: renderer is null — cannot render frames" }
+            if (!mpvAvailable) logger.warn { "🎬 SURFACE: mpv not available — cannot render frames" }
+            return@LaunchedEffect
+        }
+
+        // Track frames-per-second for diagnostic logging
+        var frameCount = 0L
+        var lastFpsLog = System.nanoTime()
+        var loggedFirstFrameMessage = false
+        var loggedWaitingMessage = false
 
         while (isActive) {
             val startTime = System.nanoTime()
@@ -91,6 +98,28 @@ fun MPVVideoSurface(
                 currentFrame = bufferedImage.toComposeImageBitmap()
                 hasFirstFrame = true
                 frameCounter++ // Force recomposition
+                frameCount++
+
+                if (!loggedFirstFrameMessage) {
+                    loggedFirstFrameMessage = true
+                    logger.info { "🎬 SURFACE: first frame received and displayed (${bufferedImage.width}x${bufferedImage.height})" }
+                }
+
+                // Log frame rate every 5 seconds
+                val now = System.nanoTime()
+                val elapsedSec = (now - lastFpsLog) / 1_000_000_000.0
+                if (elapsedSec >= 5.0) {
+                    val fps = (frameCount / elapsedSec).toInt()
+                    logger.debug { "🎬 SURFACE: ~${fps} fps (${frameCount} frames in ${elapsedSec.toInt()}s)" }
+                    frameCount = 0
+                    lastFpsLog = now
+                }
+            } else {
+                // No frame available yet — normal during initial buffering
+                if (!loggedFirstFrameMessage && !loggedWaitingMessage) {
+                    loggedWaitingMessage = true
+                    logger.debug { "🎬 SURFACE: waiting for first frame (renderer returned null — normal during buffering)" }
+                }
             }
 
             // Adaptive delay: aim for the target frame interval
@@ -112,32 +141,7 @@ fun MPVVideoSurface(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
-            .onSizeChanged { size -> surfaceSize = size }
-            .onKeyEvent { event ->
-                when (event.key) {
-                    Key.Spacebar -> {
-                        mpvHandle?.let { togglePause(it) }
-                        true
-                    }
-                    Key.DirectionLeft -> {
-                        mpvHandle?.let { seekRelative(it, -5.0) }
-                        true
-                    }
-                    Key.DirectionRight -> {
-                        mpvHandle?.let { seekRelative(it, 5.0) }
-                        true
-                    }
-                    Key.DirectionUp -> {
-                        mpvHandle?.let { adjustVolume(it, 5) }
-                        true
-                    }
-                    Key.DirectionDown -> {
-                        mpvHandle?.let { adjustVolume(it, -5) }
-                        true
-                    }
-                    else -> false
-                }
-            },
+            .onSizeChanged { size -> surfaceSize = size },
         contentAlignment = Alignment.Center,
     ) {
         val bitmap = currentFrame
