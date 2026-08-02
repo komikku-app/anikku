@@ -101,6 +101,14 @@ class StreamingEndToEndTest {
         val mpvPlaybackVerified: Boolean = false,
     )
 
+    private data class AcceptanceStream(
+        val url: String,
+        val headers: Map<String, String>,
+        val animeTitle: String,
+        val episodeName: String,
+        val sourceName: String,
+    )
+
     @BeforeAll
     fun setup() {
         // Initialize Koin once before all tests (extensions use Koin for DI)
@@ -321,6 +329,23 @@ class StreamingEndToEndTest {
         Assertions.assertTrue(
             verified,
             "No installed extension completed search → details → episode → video URL → mpv playback",
+        )
+    }
+
+    @Test
+    fun `extended search stream seek failure retry and episode switch acceptance`() = runBlocking {
+        val streams = findAcceptanceStreams()
+        Assertions.assertNotNull(
+            streams,
+            "No installed extension returned two playable episode URLs from a search result",
+        )
+        val (first, second) = streams!!
+        println("  Extended acceptance via ${first.sourceName}: ${first.animeTitle}")
+        println("  Episode 1: ${first.episodeName}")
+        println("  Episode 2: ${second.episodeName}")
+        Assertions.assertTrue(
+            verifyExtendedPlaybackSession(first, second),
+            "Extended playback, seek, failure/retry, or episode switch acceptance failed",
         )
     }
 
@@ -1187,6 +1212,213 @@ class StreamingEndToEndTest {
             MPVLib.destroy(handle)
             println("    mpv handle destroyed")
         }
+    }
+
+    private suspend fun findAcceptanceStreams(): Pair<AcceptanceStream, AcceptanceStream>? {
+        val preferredPackages = listOf("anidb", "animepahe", "kisskh", "allanime", "aniwave")
+        val jarFiles = extensionsDir.listFiles()
+            ?.filter { it.extension == "jar" }
+            ?.sortedBy { jar ->
+                preferredPackages.indexOfFirst { jar.name.contains(it, ignoreCase = true) }
+                    .let { if (it < 0) Int.MAX_VALUE else it }
+            }
+            ?.take(10)
+            .orEmpty()
+
+        for (jarFile in jarFiles) {
+            val metadata = app.anikku.macos.platform.extension.MacOSExtensionLoader.readMetadata(jarFile)
+                ?: continue
+            val source = loadExtensionSource(jarFile, metadata.pkgName) ?: continue
+            try {
+                for (query in listOf("One Piece", "Naruto", "Bleach")) {
+                    val matches = runCatching {
+                        withContext(Dispatchers.IO) {
+                            withTimeout(TIMEOUT_MS) {
+                                source.getSearchAnime(1, query, AnimeFilterList())
+                            }
+                        }.animes.filter { safeTitle(it).isNotBlank() }
+                    }.getOrDefault(emptyList())
+
+                    for (anime in matches.take(5)) {
+                        val details = runCatching {
+                            withContext(Dispatchers.IO) {
+                                withTimeout(TIMEOUT_MS) { source.getAnimeDetails(anime) }
+                            }
+                        }.getOrNull() ?: continue
+                        ensureUrl(details, safeUrl(anime))
+                        val episodes = runCatching {
+                            withContext(Dispatchers.IO) {
+                                withTimeout(TIMEOUT_MS) { source.getEpisodeList(details) }
+                            }
+                        }.getOrDefault(emptyList())
+                        val candidates = mutableListOf<AcceptanceStream>()
+                        for (episode in episodes.take(8)) {
+                            ensureEpisodeUrl(episode, "/episode/acceptance-${candidates.size}")
+                            val videos = runCatching {
+                                withContext(Dispatchers.IO) {
+                                    withTimeout(TIMEOUT_MS) { source.getVideoList(episode) }
+                                }
+                            }.getOrDefault(emptyList())
+                            val video = videos.firstOrNull {
+                                runCatching { it.videoUrl.isNotBlank() }.getOrDefault(false)
+                            } ?: continue
+                            val headers = runCatching {
+                                buildMap {
+                                    video.headers?.let { sourceHeaders ->
+                                        for (index in 0 until sourceHeaders.size) {
+                                            put(sourceHeaders.name(index), sourceHeaders.value(index))
+                                        }
+                                    }
+                                    putIfAbsent("User-Agent", MPVLib.DEFAULT_USER_AGENT)
+                                }
+                            }.getOrElse { mapOf("User-Agent" to MPVLib.DEFAULT_USER_AGENT) }
+                            candidates += AcceptanceStream(
+                                url = video.videoUrl,
+                                headers = headers,
+                                animeTitle = safeTitle(details).ifBlank { safeTitle(anime) },
+                                episodeName = safeName(episode),
+                                sourceName = source.name,
+                            )
+                            if (candidates.size == 2) return candidates[0] to candidates[1]
+                        }
+                    }
+                }
+            } finally {
+                closeLoader(metadata.pkgName)
+            }
+        }
+        return null
+    }
+
+    private fun verifyExtendedPlaybackSession(
+        first: AcceptanceStream,
+        second: AcceptanceStream,
+    ): Boolean {
+        val handle = MPVLib.create() ?: return false
+        try {
+            for ((name, value) in listOf(
+                "vo" to "null",
+                "ao" to "null",
+                "cache" to "yes",
+                "cache-secs" to "15",
+                "keep-open" to "yes",
+                "pause" to "no",
+                "ytdl" to "yes",
+                "ytdl-format" to "bestvideo+bestaudio/best",
+            )) {
+                MPVLib.setOptionString(handle, name, value)
+            }
+            if ((MPVLib.initialize(handle) ?: -1) < 0) return false
+
+            applyHeaders(handle, first.headers)
+            if (MPVLib.command(handle, "loadfile", first.url, "replace") != 0) return false
+            val startedAt = awaitPlayback(handle, 30_000) ?: return false
+            val trackCount = MPVLib.getPropertyInt(handle, "track-list/count", 0)
+            val trackTypes = (0 until trackCount).mapNotNull {
+                MPVLib.getPropertyString(handle, "track-list/$it/type")
+            }.toSet()
+            println("  Tracks detected: $trackTypes")
+            if ("video" !in trackTypes || "audio" !in trackTypes) return false
+
+            // Observe more than 30 seconds of continuous media-time advance and
+            // fail immediately on a false END_FILE error/retry condition.
+            val targetPosition = startedAt + 31.0
+            val extendedDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(50)
+            var lastPosition = startedAt
+            while (System.nanoTime() < extendedDeadline && lastPosition < targetPosition) {
+                Thread.sleep(500)
+                while (true) {
+                    val event = MPVLib.waitEvent(handle, 0.0) ?: break
+                    if (event.eventId == MPVLib.MPV_EVENT_NONE) break
+                    if (event.eventId == MPVLib.MPV_EVENT_END_FILE &&
+                        event.endFileReason == MPVLib.END_FILE_REASON_ERROR
+                    ) return false
+                }
+                lastPosition = MPVLib.getPropertyDouble(handle, "time-pos", -1.0)
+            }
+            if (lastPosition < targetPosition) return false
+            println("  Continuous playback advanced %.1f seconds".format(lastPosition - startedAt))
+
+            val beforeSeek = lastPosition
+            if (MPVLib.command(handle, "seek", "10", "relative+exact") != 0) return false
+            val afterSeek = awaitPosition(handle, beforeSeek + 7.0, 15_000) ?: return false
+            println("  Exact seek verified: %.1f → %.1f".format(beforeSeek, afterSeek))
+
+            // Force a genuine load failure and require libmpv's error event.
+            if (MPVLib.command(handle, "loadfile", "http://127.0.0.1:1/anikku-intentional-failure", "replace") != 0) {
+                return false
+            }
+            val failureDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+            var genuineFailure = false
+            while (System.nanoTime() < failureDeadline && !genuineFailure) {
+                val event = MPVLib.waitEvent(handle, 0.25) ?: continue
+                genuineFailure = event.eventId == MPVLib.MPV_EVENT_END_FILE &&
+                    event.endFileReason == MPVLib.END_FILE_REASON_ERROR &&
+                    (event.endFileError ?: 0) < 0
+            }
+            if (!genuineFailure) return false
+            println("  Genuine failed stream produced END_FILE(error)")
+
+            // Retry the original stream on the same handle.
+            applyHeaders(handle, first.headers)
+            if (MPVLib.command(handle, "loadfile", first.url, "replace") != 0) return false
+            if (awaitPlayback(handle, 30_000) == null) return false
+            println("  Retry recovered playback")
+
+            // Switch to a second episode without rebuilding the player.
+            applyHeaders(handle, second.headers)
+            if (MPVLib.command(handle, "loadfile", second.url, "replace") != 0) return false
+            if (awaitPlayback(handle, 30_000) == null) return false
+            println("  Second episode started on the same player handle")
+            return true
+        } finally {
+            MPVLib.destroy(handle)
+        }
+    }
+
+    private fun applyHeaders(handle: Pointer, headers: Map<String, String>) {
+        val fields = headers.entries
+            .filterNot { it.key.equals("User-Agent", ignoreCase = true) }
+            .joinToString(",") { (name, value) -> "$name: ${value.replace(",", "\\,")}" }
+        MPVLib.setPropertyString(handle, "http-header-fields", fields)
+        MPVLib.setPropertyString(
+            handle,
+            "user-agent",
+            headers.entries.firstOrNull { it.key.equals("User-Agent", ignoreCase = true) }?.value
+                ?: MPVLib.DEFAULT_USER_AGENT,
+        )
+    }
+
+    private fun awaitPlayback(handle: Pointer, timeoutMillis: Long): Double? {
+        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
+        var firstPositive: Double? = null
+        while (System.nanoTime() < deadline) {
+            Thread.sleep(250)
+            while (true) {
+                val event = MPVLib.waitEvent(handle, 0.0) ?: break
+                if (event.eventId == MPVLib.MPV_EVENT_NONE) break
+                if (event.eventId == MPVLib.MPV_EVENT_END_FILE &&
+                    event.endFileReason == MPVLib.END_FILE_REASON_ERROR
+                ) return null
+            }
+            val position = MPVLib.getPropertyDouble(handle, "time-pos", -1.0)
+            if (position > 0.0) {
+                if (firstPositive == null) firstPositive = position
+                if (position > firstPositive + 0.5) return position
+            }
+        }
+        return null
+    }
+
+    private fun awaitPosition(handle: Pointer, target: Double, timeoutMillis: Long): Double? {
+        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
+        while (System.nanoTime() < deadline) {
+            Thread.sleep(250)
+            drainEvents(handle)
+            val position = MPVLib.getPropertyDouble(handle, "time-pos", -1.0)
+            if (position >= target) return position
+        }
+        return null
     }
 
     /**
