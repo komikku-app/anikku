@@ -11,105 +11,84 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.io.EOFException
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.channels.SocketChannel
+import java.net.StandardProtocolFamily
+import java.net.UnixDomainSocketAddress
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
 
 private val logger = KotlinLogging.logger {}
 
 /**
- * Discord Rich Presence client using the Discord IPC (local socket) method.
+ * Discord Rich Presence client for the local Discord desktop IPC socket.
  *
- * On macOS, Discord exposes a Unix domain socket at a well-known path for IPC.
- * This client connects to that socket and sends presence updates using Discord's
- * RPC protocol (OAuth 2.0 + WebSocket frame protocol).
- *
- * This is a desktop-compatible rewrite of the Android DiscordWebSocket/DiscordRPC
- * implementation. The Android version communicates with Discord's WebSocket gateway;
- * the desktop version uses the local IPC socket which is simpler (no OAuth flow needed
- * for basic presence).
- *
- * ## Usage
- *
- * ```kotlin
- * val rpc = DiscordRPC(coroutineScope)
- * rpc.setPresence(
- *     details = "Watching Attack on Titan",
- *     state = "Episode 3 - A Dim Light Amid Despair",
- *     largeImage = "anikku_logo",
- *     largeText = "Anikku",
- * )
- * rpc.start()
- * ```
+ * Discord IPC is a little-endian binary protocol over a Unix-domain socket. A
+ * successful connection is only reported after Discord answers the handshake
+ * with a READY frame. Discord is optional: failures remain isolated from app
+ * startup and playback and are retried while this client is running.
  */
 class DiscordRPC(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    private val clientId: String = "1345678901234567890", // Placeholder — set via preferences
+    private val clientId: String = ANIKKU_DISCORD_APPLICATION_ID,
+    private val socketCandidates: () -> List<Path> = ::defaultDiscordSocketCandidates,
+    private val reconnectDelayMillis: Long = DEFAULT_RECONNECT_DELAY_MILLIS,
 ) {
 
     private var connectionJob: Job? = null
     private var reconnectJob: Job? = null
-    private var ws: WebSocket? = null
+    private var socket: SocketChannel? = null
+    private val requested = AtomicBoolean(false)
+    private val writeLock = Any()
 
     private val json = Json {
         ignoreUnknownKeys = true
-        encodeDefaults = false
+        // The handshake version is a protocol-required field even though its
+        // Kotlin model has a default value.
+        encodeDefaults = true
+        explicitNulls = true
     }
 
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
+    @Volatile
     private var currentPresence: DiscordPresence? = null
     private var nonceCounter: Int = 0
 
-    // OkHttp client for Unix socket connections
-    private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.SECONDS) // No read timeout for long-lived WebSocket
-        .build()
-
-    /**
-     * Start the Discord RPC connection.
-     * Attempts to connect to Discord's IPC socket and authenticate.
-     */
+    /** Start connecting to the local Discord client. Safe to call repeatedly. */
     fun start() {
-        if (connectionJob?.isActive == true) return
-
-        _connectionState.value = ConnectionState.CONNECTING
-        connectionJob = scope.launch {
-            connect()
-        }
+        requested.set(true)
+        if (connectionJob?.isActive == true || reconnectJob?.isActive == true) return
+        launchConnection()
     }
 
-    /**
-     * Stop the Discord RPC connection.
-     */
+    /** Stop reconnecting, clear Rich Presence when possible, and close IPC. */
     fun stop() {
+        requested.set(false)
         reconnectJob?.cancel()
+        reconnectJob = null
+        if (_connectionState.value == ConnectionState.CONNECTED) {
+            runCatching { sendClearPresence() }
+        }
         connectionJob?.cancel()
-        ws?.close(1000, "App closing")
-        ws = null
+        connectionJob = null
+        closeSocket()
         _connectionState.value = ConnectionState.DISCONNECTED
         logger.info { "Discord RPC stopped" }
     }
 
-    /**
-     * Set the current presence information.
-     *
-     * @param details Top line of the presence (e.g., "Watching Attack on Titan")
-     * @param state Second line (e.g., "Episode 3")
-     * @param largeImage Key for the large image asset (registered on Discord Developer Portal)
-     * @param largeText Tooltip text for the large image
-     * @param smallImage Key for the small image asset
-     * @param smallText Tooltip text for the small image
-     * @param startTimestamp When playback started (epoch millis), null to hide
-     * @param endTimestamp When playback ends (epoch millis), null to hide
-     */
     fun setPresence(
         details: String,
         state: String,
@@ -130,166 +109,185 @@ class DiscordRPC(
             startTimestamp = startTimestamp,
             endTimestamp = endTimestamp,
         )
-
         if (connectionState.value == ConnectionState.CONNECTED) {
-            sendPresence(currentPresence!!)
+            runCatching { sendPresence(currentPresence!!) }
+                .onFailure { disconnectAfterWriteFailure(it) }
         }
     }
 
-    /**
-     * Clear the current presence (set to idle/empty state).
-     */
     fun clearPresence() {
         currentPresence = null
         if (connectionState.value == ConnectionState.CONNECTED) {
-            sendPresence(DiscordPresence())
+            runCatching { sendClearPresence() }
+                .onFailure { disconnectAfterWriteFailure(it) }
         }
     }
 
-    /**
-     * Whether the RPC client is connected and active.
-     */
     val isConnected: Boolean get() = connectionState.value == ConnectionState.CONNECTED
 
-    // -------------------------------------------------------------------------
-    // Internal: Connection Management
-    // -------------------------------------------------------------------------
-
-    private suspend fun connect() {
-        // Find Discord IPC socket path
-        val socketPath = findDiscordSocket() ?: run {
-            logger.warn { "Discord IPC socket not found. Is Discord running?" }
-            _connectionState.value = ConnectionState.DISCONNECTED
-            return
+    private fun launchConnection() {
+        if (!requested.get()) return
+        _connectionState.value = ConnectionState.CONNECTING
+        connectionJob = scope.launch {
+            try {
+                withContext(Dispatchers.IO) { connectAndRead() }
+            } catch (e: Exception) {
+                if (requested.get()) logger.warn(e) { "Discord IPC connection ended" }
+            } finally {
+                closeSocket()
+                _connectionState.value = ConnectionState.DISCONNECTED
+                connectionJob = null
+                scheduleReconnect()
+            }
         }
+    }
+
+    private fun connectAndRead() {
+        require(clientId.matches(Regex("[0-9]{17,20}"))) {
+            "Discord application ID must be a 17-20 digit snowflake"
+        }
+        val socketPath = findDiscordSocket()
+            ?: throw IllegalStateException("Discord IPC socket not found; is Discord desktop running?")
 
         logger.info { "Connecting to Discord IPC at $socketPath" }
+        val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
+        socket = channel
+        channel.connect(UnixDomainSocketAddress.of(socketPath))
+        sendJsonFrame(channel, OP_HANDSHAKE, json.encodeToString(DiscordHandshake(client_id = clientId)))
 
-        try {
-            // Open WebSocket connection via raw Unix socket. The native transport
-            // is not bundled yet; never report CONNECTED for a simulated socket.
-            if (!connectToSocket(socketPath)) {
-                _connectionState.value = ConnectionState.DISCONNECTED
-                return
-            }
-
-            // Handshake (OP_HANDSHAKE = 0)
-            sendFrame(0, DiscordHandshake(client_id = clientId))
-
-            // Start a reconnection monitor
-            startReconnectMonitor()
-        } catch (e: Exception) {
-            logger.error(e) { "Failed to connect to Discord IPC" }
-            _connectionState.value = ConnectionState.DISCONNECTED
+        val ready = readFrame(channel)
+        check(ready.opCode == OP_FRAME && ready.eventName() == "READY") {
+            "Discord rejected IPC handshake (opcode=${ready.opCode}, event=${ready.eventName()})"
         }
-    }
 
-    /**
-     * Connect to Discord's Unix socket.
-     *
-     * The macOS port currently has no native Unix-domain-socket transport.
-     * Returning false is deliberate: an unavailable optional integration must
-     * remain disconnected rather than advertising a fake connected state.
-     */
-    private fun connectToSocket(socketPath: String): Boolean {
-        logger.warn {
-            "Discord IPC is unavailable: native Unix-socket transport is not bundled " +
-                "(socket=$socketPath)"
-        }
-        return false
-    }
+        _connectionState.value = ConnectionState.CONNECTED
+        logger.info { "Discord RPC connected" }
+        currentPresence?.let(::sendPresence)
 
-    private fun startReconnectMonitor() {
-        reconnectJob?.cancel()
-        reconnectJob = scope.launch {
-            while (isActive) {
-                delay(30_000) // Check every 30 seconds
-                if (_connectionState.value != ConnectionState.CONNECTED) {
-                    logger.info { "Discord RPC disconnected, attempting reconnect..." }
-                    start()
+        while (requested.get() && channel.isOpen) {
+            val frame = readFrame(channel)
+            when (frame.opCode) {
+                OP_CLOSE -> throw EOFException("Discord closed IPC: ${frame.payload}")
+                OP_PING -> sendRawFrame(channel, OP_PONG, frame.payload)
+                OP_FRAME -> if (frame.eventName() == "ERROR") {
+                    logger.warn { "Discord IPC command error: ${frame.payload}" }
                 }
             }
         }
     }
 
-    private fun sendFrame(opCode: Int, data: Any) {
-        // Frame format: [opCode: 4 bytes][payload: JSON string]
-        val payload = json.encodeToString(data)
-        // Send via WebSocket
-        ws?.send(payload)
+    private fun scheduleReconnect() {
+        if (!requested.get() || reconnectJob?.isActive == true) return
+        reconnectJob = scope.launch {
+            delay(reconnectDelayMillis)
+            reconnectJob = null
+            if (isActive && requested.get()) launchConnection()
+        }
     }
 
     private fun sendPresence(presence: DiscordPresence) {
+        val activity = DiscordActivity(
+            type = ACTIVITY_TYPE_WATCHING,
+            details = presence.details,
+            state = presence.state,
+            assets = DiscordAssets(
+                large_image = presence.largeImage,
+                large_text = presence.largeText,
+                small_image = presence.smallImage,
+                small_text = presence.smallText,
+            ),
+            timestamps = if (presence.startTimestamp != null || presence.endTimestamp != null) {
+                DiscordTimestamps(
+                    start = presence.startTimestamp?.toDiscordSeconds(),
+                    end = presence.endTimestamp?.toDiscordSeconds(),
+                )
+            } else {
+                null
+            },
+            instance = false,
+        )
+        sendActivity(activity)
+        logger.debug { "Sent Discord presence: ${presence.details}" }
+    }
+
+    private fun sendClearPresence() = sendActivity(null)
+
+    private fun sendActivity(activity: DiscordActivity?) {
         nonceCounter++
         val frame = DiscordPresenceFrame(
             cmd = "SET_ACTIVITY",
             args = DiscordPresenceArgs(
                 pid = ProcessHandle.current().pid().toInt(),
-                activity = DiscordActivity(
-                    details = presence.details,
-                    state = presence.state,
-                    assets = DiscordAssets(
-                        large_image = presence.largeImage,
-                        large_text = presence.largeText,
-                        small_image = presence.smallImage,
-                        small_text = presence.smallText,
-                    ),
-                    timestamps = if (presence.startTimestamp != null || presence.endTimestamp != null) {
-                        DiscordTimestamps(
-                            start = presence.startTimestamp,
-                            end = presence.endTimestamp,
-                        )
-                    } else null,
-                    instance = false,
-                ),
+                activity = activity,
             ),
-            nonce = "anikku_${nonceCounter}",
+            nonce = "anikku_$nonceCounter",
         )
-        sendFrame(1, frame)
-        logger.debug { "Sent Discord presence: ${presence.details}" }
+        val channel = socket ?: throw IllegalStateException("Discord IPC is not connected")
+        sendJsonFrame(channel, OP_FRAME, json.encodeToString(frame))
     }
 
-    /**
-     * Find Discord's IPC socket path on macOS.
-     *
-     * Discord creates Unix domain sockets at:
-     * `~/Library/Application Support/discord/ipc-{0,1,2,...}`
-     */
-    private fun findDiscordSocket(): String? {
-        val homeDir = System.getProperty("user.home") ?: return null
-        val discordDir = File(homeDir, "Library/Application Support/discord")
-
-        if (!discordDir.isDirectory) {
-            logger.debug { "Discord directory not found at $discordDir" }
-            return null
-        }
-
-        // Try ipc-0 through ipc-9
-        for (i in 0..9) {
-            val socketFile = File(discordDir, "ipc-$i")
-            if (socketFile.exists()) {
-                return socketFile.absolutePath
-            }
-        }
-
-        return null
+    private fun sendJsonFrame(channel: SocketChannel, opCode: Int, payload: String) {
+        sendRawFrame(channel, opCode, payload)
     }
 
-    /**
-     * Check if Discord is installed by looking for the Discord.app in Applications.
-     */
+    private fun sendRawFrame(channel: SocketChannel, opCode: Int, payload: String) {
+        val bytes = payload.toByteArray(StandardCharsets.UTF_8)
+        require(bytes.size <= MAX_FRAME_SIZE) { "Discord IPC frame exceeds $MAX_FRAME_SIZE bytes" }
+        val frame = ByteBuffer.allocate(HEADER_SIZE + bytes.size).order(ByteOrder.LITTLE_ENDIAN)
+        frame.putInt(opCode)
+        frame.putInt(bytes.size)
+        frame.put(bytes)
+        frame.flip()
+        synchronized(writeLock) {
+            while (frame.hasRemaining()) channel.write(frame)
+        }
+    }
+
+    private fun readFrame(channel: SocketChannel): IpcFrame {
+        val header = ByteBuffer.allocate(HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN)
+        readFully(channel, header)
+        header.flip()
+        val opCode = header.int
+        val length = header.int
+        require(length in 0..MAX_FRAME_SIZE) { "Invalid Discord IPC frame length: $length" }
+        val payload = ByteBuffer.allocate(length)
+        readFully(channel, payload)
+        payload.flip()
+        return IpcFrame(opCode, StandardCharsets.UTF_8.decode(payload).toString())
+    }
+
+    private fun readFully(channel: SocketChannel, buffer: ByteBuffer) {
+        while (buffer.hasRemaining()) {
+            if (channel.read(buffer) < 0) throw EOFException("Discord IPC socket closed")
+        }
+    }
+
+    private fun IpcFrame.eventName(): String? = runCatching {
+        json.parseToJsonElement(payload).jsonObject["evt"]?.jsonPrimitive?.content
+    }.getOrNull()
+
+    private fun findDiscordSocket(): Path? = socketCandidates().firstOrNull {
+        Files.exists(it)
+    }
+
+    private fun disconnectAfterWriteFailure(error: Throwable) {
+        logger.warn(error) { "Discord IPC write failed" }
+        closeSocket()
+        _connectionState.value = ConnectionState.DISCONNECTED
+    }
+
+    private fun closeSocket() {
+        synchronized(writeLock) {
+            runCatching { socket?.close() }
+            socket = null
+        }
+    }
+
     val isDiscordInstalled: Boolean
-        get() {
-            val discordPaths = listOf(
-                "/Applications/Discord.app",
-                "${System.getProperty("user.home")}/Applications/Discord.app",
-            )
-            return discordPaths.any { File(it).isDirectory }
-        }
-
-    // -------------------------------------------------------------------------
-    // Data classes
-    // -------------------------------------------------------------------------
+        get() = listOf(
+            "/Applications/Discord.app",
+            "${System.getProperty("user.home")}/Applications/Discord.app",
+        ).any { File(it).isDirectory }
 
     data class DiscordPresence(
         val details: String? = null,
@@ -301,20 +299,48 @@ class DiscordRPC(
         val startTimestamp: Long? = null,
         val endTimestamp: Long? = null,
     )
+
+    private data class IpcFrame(val opCode: Int, val payload: String)
+
+    companion object {
+        private const val ANIKKU_DISCORD_APPLICATION_ID = "1173423931865170070"
+        private const val DEFAULT_RECONNECT_DELAY_MILLIS = 30_000L
+        private const val HEADER_SIZE = 8
+        private const val MAX_FRAME_SIZE = 1024 * 1024
+        private const val OP_HANDSHAKE = 0
+        private const val OP_FRAME = 1
+        private const val OP_CLOSE = 2
+        private const val OP_PING = 3
+        private const val OP_PONG = 4
+        private const val ACTIVITY_TYPE_WATCHING = 3
+
+        private fun defaultDiscordSocketCandidates(): List<Path> {
+            val environmentDirectories = listOf("XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP")
+                .mapNotNull(System::getenv)
+                .filter(String::isNotBlank)
+                .map(Path::of)
+                .plus(Path.of("/tmp"))
+                .distinct()
+            val standard = environmentDirectories.flatMap { directory ->
+                (0..9).map { directory.resolve("discord-ipc-$it") }
+            }
+            val home = System.getProperty("user.home")
+            val legacy = if (home.isNullOrBlank()) emptyList() else (0..9).flatMap { index ->
+                val directory = Path.of(home, "Library", "Application Support", "discord")
+                listOf(directory.resolve("discord-ipc-$index"), directory.resolve("ipc-$index"))
+            }
+            return standard + legacy
+        }
+
+        private fun Long.toDiscordSeconds(): Long = if (this >= 100_000_000_000L) this / 1_000L else this
+    }
 }
 
-/**
- * Connection state for Discord RPC.
- */
 enum class ConnectionState {
     DISCONNECTED,
     CONNECTING,
     CONNECTED,
 }
-
-// -------------------------------------------------------------------------
-// Discord IPC Protocol Data Classes (use snake_case for JSON serialization)
-// -------------------------------------------------------------------------
 
 @Serializable
 private data class DiscordHandshake(
@@ -332,11 +358,12 @@ private data class DiscordPresenceFrame(
 @Serializable
 private data class DiscordPresenceArgs(
     val pid: Int,
-    val activity: DiscordActivity,
+    val activity: DiscordActivity?,
 )
 
 @Serializable
 private data class DiscordActivity(
+    val type: Int,
     val details: String? = null,
     val state: String? = null,
     val assets: DiscordAssets? = null,
