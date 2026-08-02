@@ -8,7 +8,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.InputStream
+import java.io.RandomAccessFile
 import java.net.URLClassLoader
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.jar.JarFile
 import java.util.zip.ZipEntry
@@ -22,6 +26,10 @@ private val logger = KotlinLogging.logger {}
  * Each JAR must contain a `META-INF/extension.json` file with metadata.
  *
  * Replaces the Android ExtensionLoader which uses PackageManager and PathClassLoader.
+ *
+ * An in-process extension is not a security sandbox. Trust and archive checks
+ * protect the install boundary, but trusted extension code still runs with the
+ * application's JVM privileges.
  */
 object MacOSExtensionLoader {
 
@@ -32,6 +40,8 @@ object MacOSExtensionLoader {
     private const val EXTENSION_METADATA_PATH = "META-INF/extension.json"
 
     private val json = Json { ignoreUnknownKeys = true }
+    private val packageNamePattern = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*")
+    private val classNamePattern = Regex("[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*")
 
     /**
      * Tracks active URLClassLoaders by package name for cleanup.
@@ -84,7 +94,9 @@ object MacOSExtensionLoader {
     ): List<LoadResult> {
         if (!extensionsDir.isDirectory) return emptyList()
 
-        val files = extensionsDir.listFiles()?.filter { it.isFile } ?: emptyList()
+        val files = extensionsDir.listFiles()?.filter {
+            it.isFile && !Files.isSymbolicLink(it.toPath())
+        } ?: emptyList()
 
         // Separate JAR/EXT files from APK files
         val jarFiles = files.filter { it.extension == "jar" || it.extension == "ext" }.toMutableList()
@@ -101,13 +113,73 @@ object MacOSExtensionLoader {
 
         val results = mutableListOf<LoadResult>()
 
-        // Load native JVM extensions
-        results.addAll(jarFiles.map { loadExtension(it, extensionsDir, trustStore, loadNsfw) })
+        // Resolve metadata before loading any code so duplicate package names can
+        // be rejected as a set. Loading whichever duplicate happens to sort first
+        // would make the active artifact depend on its filename.
+        val orderedJarFiles = jarFiles.sortedBy { it.name }
+        val metadataByJar = orderedJarFiles.associateWith(::readMetadata)
+        val duplicatePackages = metadataByJar.values
+            .filterNotNull()
+            .groupingBy { it.pkgName }
+            .eachCount()
+            .filterValues { it > 1 }
+            .keys
+
+        // Load native JVM extensions in a stable order. Reject duplicate package
+        // names and source IDs instead of allowing map/source aggregation to
+        // silently replace an existing extension.
+        val seenPackages = mutableSetOf<String>()
+        val seenSourceIds = mutableMapOf<Long, String>()
+        for (jarFile in orderedJarFiles) {
+            val metadata = metadataByJar[jarFile]
+            if (metadata == null) {
+                logger.error { "Rejecting invalid extension artifact: ${jarFile.name}" }
+                results.add(LoadResult.Error)
+                continue
+            }
+            if (metadata.pkgName in duplicatePackages) {
+                logger.error { "Rejecting duplicate extension package ${metadata.pkgName}: ${jarFile.name}" }
+                results.add(LoadResult.Error)
+                continue
+            }
+            seenPackages.add(metadata.pkgName)
+
+            when (val result = loadExtension(
+                jarFile = jarFile,
+                libsDir = extensionsDir,
+                trustStore = trustStore,
+                loadNsfw = loadNsfw,
+                occupiedSourceIds = seenSourceIds,
+            )) {
+                is LoadResult.Success -> {
+                    val duplicateId = result.extension.sources.firstNotNullOfOrNull { source ->
+                        seenSourceIds[source.id]?.let { owner -> source.id to owner }
+                    }
+                    if (duplicateId != null) {
+                        logger.error { "Rejecting ${metadata.pkgName}: source ID ${duplicateId.first} already belongs to ${duplicateId.second}" }
+                        closeClassLoader(metadata.pkgName)
+                        results.add(LoadResult.Error)
+                    } else {
+                        result.extension.sources.forEach { source -> seenSourceIds[source.id] = metadata.pkgName }
+                        results.add(result)
+                    }
+                }
+                else -> results.add(result)
+            }
+        }
 
         // Convert and load legacy APK (keiyoushi) extensions
         if (apkFiles.isNotEmpty()) {
             logger.warn { "Legacy APK extensions found: ${apkFiles.map { it.name }}. Pre-converted JAR repos are recommended." }
-            convertAndLoadApks(apkFiles, extensionsDir, results, trustStore, loadNsfw)
+            convertAndLoadApks(
+                apkFiles = apkFiles,
+                extensionsDir = extensionsDir,
+                results = results,
+                trustStore = trustStore,
+                loadNsfw = loadNsfw,
+                seenPackages = seenPackages,
+                seenSourceIds = seenSourceIds,
+            )
         }
 
         return results
@@ -135,6 +207,8 @@ object MacOSExtensionLoader {
         results: MutableList<LoadResult>,
         trustStore: Map<String, List<TrustEntry>> = emptyMap(),
         loadNsfw: Boolean = false,
+        seenPackages: MutableSet<String> = mutableSetOf(),
+        seenSourceIds: MutableMap<Long, String> = mutableMapOf(),
     ) {
         if (!DexClassLoader.isAvailable()) {
             logger.warn { "jadx not available — cannot convert ${apkFiles.size} legacy APK extension(s). Install: brew install jadx, or use a pre-converted JAR repo." }
@@ -147,16 +221,53 @@ object MacOSExtensionLoader {
         for (apkFile in apkFiles) {
             val jarName = apkFile.nameWithoutExtension + ".jar"
             val jarFile = File(extensionsDir, jarName)
+            val convertedFile = File(extensionsDir, ".${jarName}.converted.tmp")
 
-            logger.warn { "Converting legacy APK extension: ${apkFile.name} → ${jarFile.name}" }
-            val success = DexClassLoader.convertToJar(apkFile, jarFile, null, null)
-
-            if (success && jarFile.isFile) {
-                logger.info { "Loading converted extension: ${jarFile.name}" }
-                results.add(loadExtension(jarFile, extensionsDir, trustStore, loadNsfw))
-            } else {
-                logger.error { "Failed to convert legacy APK extension: ${apkFile.name}" }
+            if (Files.isSymbolicLink(jarFile.toPath()) || jarFile.exists() ||
+                Files.isSymbolicLink(convertedFile.toPath()) || convertedFile.exists()
+            ) {
+                logger.error { "Rejecting legacy APK with occupied or unsafe conversion target: ${apkFile.name}" }
                 results.add(LoadResult.Error)
+                continue
+            }
+
+            try {
+                logger.warn { "Converting legacy APK extension: ${apkFile.name} → ${jarFile.name}" }
+                val success = DexClassLoader.convertToJar(apkFile, convertedFile, null, null)
+
+                if (!success || !Files.isRegularFile(convertedFile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+                    throw IllegalStateException("APK conversion did not produce a regular JAR")
+                }
+
+                logger.info { "Loading converted extension: ${jarFile.name}" }
+                val metadata = readMetadata(convertedFile)
+                if (metadata == null || !seenPackages.add(metadata.pkgName)) {
+                    logger.error { "Rejecting duplicate or invalid converted extension: ${jarFile.name}" }
+                    results.add(LoadResult.Error)
+                    continue
+                }
+
+                try {
+                    Files.move(convertedFile.toPath(), jarFile.toPath(), StandardCopyOption.ATOMIC_MOVE)
+                } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+                    Files.move(convertedFile.toPath(), jarFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                }
+                val result = loadExtension(
+                    jarFile = jarFile,
+                    libsDir = extensionsDir,
+                    trustStore = trustStore,
+                    loadNsfw = loadNsfw,
+                    occupiedSourceIds = seenSourceIds,
+                )
+                if (result is LoadResult.Success) {
+                    result.extension.sources.forEach { source -> seenSourceIds[source.id] = metadata.pkgName }
+                }
+                results.add(result)
+            } catch (e: Exception) {
+                logger.error(e) { "Failed to convert legacy APK extension: ${apkFile.name}" }
+                results.add(LoadResult.Error)
+            } finally {
+                convertedFile.delete()
             }
         }
     }
@@ -174,6 +285,7 @@ object MacOSExtensionLoader {
         libsDir: File? = null,
         trustStore: Map<String, List<TrustEntry>> = emptyMap(),
         loadNsfw: Boolean = false,
+        occupiedSourceIds: Map<Long, String> = emptyMap(),
     ): LoadResult {
         val metadata = readMetadata(jarFile) ?: return LoadResult.Error
 
@@ -213,27 +325,50 @@ object MacOSExtensionLoader {
             return LoadResult.Error
         }
 
-        // Close old class loader if replacing
-        classLoaders.remove(pkgName)?.close()
-
-        // Build class loader
-        val classLoader = buildClassLoader(jarFile, libsDir)
-        classLoaders[pkgName] = classLoader
+        // Build the replacement classloader first. The previous loader remains
+        // usable until the new artifact has been validated and instantiated.
+        val classLoader = try {
+            buildClassLoader(jarFile, libsDir)
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to create classloader for $pkgName" }
+            return LoadResult.Error
+        }
 
         // Load sources (resilient: individual class failures skip, not fail the extension)
         val sources = try {
             loadSources(classLoader, metadata)
+        } catch (e: LinkageError) {
+            logger.error(e) { "Linkage failure loading sources from $pkgName" }
+            classLoader.close()
+            return LoadResult.Error
         } catch (e: Exception) {
             logger.error(e) { "Unexpected error loading sources from $pkgName" }
-            classLoaders.remove(pkgName)?.close()
+            classLoader.close()
             return LoadResult.Error
         }
 
         if (sources.isEmpty()) {
             logger.warn { "No valid sources found in $pkgName — all listed classes failed to instantiate" }
-            classLoaders.remove(pkgName)?.close()
+            classLoader.close()
             return LoadResult.Error
         }
+
+        val duplicateSource = sources
+            .groupBy { it.id }
+            .entries
+            .firstOrNull { it.value.size > 1 }
+            ?.let { it.key to "${metadata.pkgName} (duplicate within artifact)" }
+            ?: sources.firstNotNullOfOrNull { source ->
+                occupiedSourceIds[source.id]?.let { owner -> source.id to owner }
+            }
+        if (duplicateSource != null) {
+            logger.error { "Rejecting $pkgName: source ID ${duplicateSource.first} already belongs to ${duplicateSource.second}" }
+            classLoader.close()
+            return LoadResult.Error
+        }
+
+        // Swap only after successful construction, then release the old loader.
+        classLoaders.put(pkgName, classLoader)?.close()
 
         logger.info { "Loaded ${sources.size} source(s) from $pkgName" }
 
@@ -273,6 +408,8 @@ object MacOSExtensionLoader {
      */
     fun readMetadata(jarFile: File): ExtensionMetadata? {
         return try {
+            requireSafeArtifactFile(jarFile)
+            validateArchive(jarFile)
             JarFile(jarFile).use { jar ->
                 val entry: ZipEntry = jar.getEntry(EXTENSION_METADATA_PATH)
                     ?: return logAndNull("No $EXTENSION_METADATA_PATH in ${jarFile.name}")
@@ -281,12 +418,157 @@ object MacOSExtensionLoader {
                     stream.readBytes().toString(Charsets.UTF_8)
                 }
 
-                json.decodeFromString<ExtensionMetadata>(content)
+                val metadata = json.decodeFromString<ExtensionMetadata>(content)
+                validateMetadata(metadata)
+                metadata
             }
         } catch (e: Exception) {
             logger.error(e) { "Failed to read metadata from ${jarFile.name}" }
             null
         }
+    }
+
+    /**
+     * Validate every archive entry before the artifact is trusted or loaded.
+     * The current loader does not extract JAR contents, but rejecting unsafe
+     * archives here protects future extraction paths and prevents a malformed
+     * artifact from crossing the install/load boundary.
+     */
+    internal fun validateArchive(jarFile: File) {
+        requireSafeArtifactFile(jarFile)
+        val unixSymlinkEntries = findUnixSymlinkEntries(jarFile)
+        require(unixSymlinkEntries.isEmpty()) {
+            "Archive contains symlink entries: ${unixSymlinkEntries.joinToString(limit = 3)}"
+        }
+        JarFile(jarFile).use { jar ->
+            jar.entries().asSequence().forEach { entry ->
+                validateArchiveEntryPath(entry.name)
+            }
+        }
+    }
+
+    private fun validateArchiveEntryPath(entryName: String) {
+        val normalizedSeparators = entryName.replace('\\', '/')
+        val path = java.nio.file.Paths.get(normalizedSeparators)
+        if (entryName.isBlank() || normalizedSeparators.startsWith("/") ||
+            normalizedSeparators.matches(Regex("^[A-Za-z]:/.*")) || path.isAbsolute ||
+            normalizedSeparators.split('/').any { it == ".." } ||
+            path.normalize().startsWith(java.nio.file.Paths.get(".."))
+        ) {
+            throw IllegalArgumentException("Unsafe archive entry path: $entryName")
+        }
+    }
+
+    private fun validateMetadata(metadata: ExtensionMetadata) {
+        require(packageNamePattern.matches(metadata.pkgName)) { "Invalid extension package name" }
+        require(metadata.name.isNotBlank() && metadata.versionName.isNotBlank()) { "Missing extension identity metadata" }
+        require(metadata.versionCode >= 0L && metadata.libVersion.isFinite()) { "Invalid extension version metadata" }
+        require(metadata.sourceClass.isNotBlank() && metadata.sourceClass.split(';').all { className ->
+            val trimmed = className.trim()
+            classNamePattern.matches(trimmed) && trimmed.startsWith("${metadata.pkgName}.")
+        }) {
+            "Invalid extension source class metadata"
+        }
+    }
+
+    private fun requireSafeArtifactFile(file: File) {
+        require(Files.isRegularFile(file.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+            "Extension artifact is not a regular file: ${file.absolutePath}"
+        }
+    }
+
+    /**
+     * ZipEntry does not expose Unix external attributes on Java 17. Read the
+     * central directory record to reject entries whose Unix mode is symlink.
+     */
+    private fun findUnixSymlinkEntries(jarFile: File): Set<String> {
+        val symlinkEntries = mutableSetOf<String>()
+        RandomAccessFile(jarFile, "r").use { file ->
+            val length = file.length()
+            val endOfCentralDirectory = findEndOfCentralDirectory(file)
+            file.seek(endOfCentralDirectory + 4)
+            val diskNumber = readLittleEndianShort(file)
+            val centralDirectoryDisk = readLittleEndianShort(file)
+            val entriesOnDisk = readLittleEndianShort(file)
+            val entryCount = readLittleEndianShort(file)
+            val centralDirectorySize = readLittleEndianInt(file).toLong() and 0xffffffffL
+            val centralDirectoryOffset = readLittleEndianInt(file).toLong() and 0xffffffffL
+
+            require(diskNumber == 0 && centralDirectoryDisk == 0 && entriesOnDisk == entryCount) {
+                "Multi-disk archives are not supported"
+            }
+            require(entryCount != 0xffff && centralDirectorySize != 0xffffffffL &&
+                centralDirectoryOffset != 0xffffffffL
+            ) {
+                "ZIP64 extension archives are not supported"
+            }
+            val centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize
+            require(centralDirectoryOffset >= 0 && centralDirectoryEnd <= endOfCentralDirectory &&
+                centralDirectoryEnd <= length
+            ) {
+                "Invalid central directory bounds"
+            }
+
+            file.seek(centralDirectoryOffset)
+            repeat(entryCount) {
+                val headerOffset = file.filePointer
+                require(readLittleEndianInt(file) == 0x02014b50) {
+                    "Invalid central directory entry"
+                }
+                val madeBy = readLittleEndianShort(file)
+                file.skipBytes(22)
+                val nameLength = readLittleEndianShort(file)
+                val extraLength = readLittleEndianShort(file)
+                val commentLength = readLittleEndianShort(file)
+                file.skipBytes(4)
+                val externalAttributes = readLittleEndianInt(file).toLong() and 0xffffffffL
+                file.skipBytes(4)
+                val name = ByteArray(nameLength)
+                file.readFully(name)
+                val unixMode = (externalAttributes ushr 16) and 0xffff
+                if (((madeBy ushr 8) and 0xff) == 3 && unixMode and 0xf000L == 0xa000L &&
+                    name.isNotEmpty()
+                ) {
+                    symlinkEntries += name.toString(Charsets.UTF_8)
+                }
+                val nextHeader = headerOffset + 46L + nameLength + extraLength + commentLength
+                require(nextHeader <= centralDirectoryEnd) { "Invalid central directory entry bounds" }
+                file.seek(nextHeader)
+            }
+        }
+        return symlinkEntries
+    }
+
+    private fun findEndOfCentralDirectory(file: RandomAccessFile): Long {
+        val length = file.length()
+        require(length >= 22) { "Archive is too small" }
+        val searchLength = minOf(length, 22L + 0xffffL).toInt()
+        val searchOffset = length - searchLength
+        val tail = ByteArray(searchLength)
+        file.seek(searchOffset)
+        file.readFully(tail)
+
+        for (index in tail.size - 22 downTo 0) {
+            val signature = (tail[index].toInt() and 0xff) or
+                ((tail[index + 1].toInt() and 0xff) shl 8) or
+                ((tail[index + 2].toInt() and 0xff) shl 16) or
+                ((tail[index + 3].toInt() and 0xff) shl 24)
+            if (signature != 0x06054b50) continue
+            val commentLength = (tail[index + 20].toInt() and 0xff) or
+                ((tail[index + 21].toInt() and 0xff) shl 8)
+            if (index + 22 + commentLength == tail.size) {
+                return searchOffset + index
+            }
+        }
+        throw IllegalArgumentException("Archive has no valid end-of-central-directory record")
+    }
+
+    private fun readLittleEndianShort(file: RandomAccessFile): Int {
+        return file.readUnsignedByte() or (file.readUnsignedByte() shl 8)
+    }
+
+    private fun readLittleEndianInt(file: RandomAccessFile): Int {
+        return readLittleEndianShort(file) or (readLittleEndianShort(file) shl 16)
     }
 
     /**
@@ -305,6 +587,13 @@ object MacOSExtensionLoader {
     ) {
         logger.info { "🔍 Scanning ${jarFiles.size} JAR(s) for dependency packages..." }
         val libsDir = File(extensionsDir, "libs")
+        if (Files.isSymbolicLink(libsDir.toPath()) ||
+            (!libsDir.exists() && !libsDir.mkdirs()) ||
+            libsDir.canonicalFile.parentFile != extensionsDir.canonicalFile
+        ) {
+            logger.error { "Skipping dependency relocation: unsafe extension libs directory ${libsDir.absolutePath}" }
+            return
+        }
         val iterator = jarFiles.iterator()
         var movedCount = 0
         var scannedCount = 0
@@ -327,17 +616,29 @@ object MacOSExtensionLoader {
                 pkg.contains("anitusk")
 
             if (isDependency) {
-                libsDir.mkdirs()
                 val target = File(libsDir, jarFile.name)
-
-                if (!jarFile.renameTo(target)) {
-                    jarFile.copyTo(target, overwrite = true)
-                    jarFile.delete()
+                if (Files.isSymbolicLink(target.toPath()) ||
+                    target.exists() ||
+                    target.canonicalFile.parentFile != libsDir.canonicalFile
+                ) {
+                    logger.error { "Skipping unsafe or occupied dependency target: ${target.absolutePath}" }
+                    continue
                 }
 
-                iterator.remove()
-                movedCount++
-                logger.info { "  ✅ Moved dependency JAR to libs/: ${jarFile.name} ($pkg)" }
+                try {
+                    if (!jarFile.renameTo(target)) {
+                        jarFile.copyTo(target, overwrite = true)
+                        if (!jarFile.delete()) {
+                            throw IllegalStateException("Could not remove original dependency after copy")
+                        }
+                    }
+
+                    iterator.remove()
+                    movedCount++
+                    logger.info { "  ✅ Moved dependency JAR to libs/: ${jarFile.name} ($pkg)" }
+                } catch (e: Exception) {
+                    logger.error(e) { "Failed to relocate dependency JAR ${jarFile.name}; leaving it in place" }
+                }
             }
         }
 
@@ -364,9 +665,9 @@ object MacOSExtensionLoader {
 
         // 1. Scan the extension's own libs/ directory for dependency JARs
         val depsDir = libsDir?.let { File(it, "libs") } ?: File(jarFile.parentFile, "libs")
-        if (depsDir.isDirectory) {
+        if (depsDir.isDirectory && !Files.isSymbolicLink(depsDir.toPath())) {
             depsDir.listFiles()
-                ?.filter { it.extension == "jar" }
+                ?.filter { it.extension == "jar" && !Files.isSymbolicLink(it.toPath()) }
                 ?.forEach { urls.add(it.toURI().toURL()) }
         }
 
@@ -375,17 +676,17 @@ object MacOSExtensionLoader {
         //    contain the source-api and core/common classes that extensions
         //    reference via `compileOnly` (ConfigurableAnimeSource, AnimeSource, etc.).
         val sharedLibsDir = findSharedLibsDir()
-        if (sharedLibsDir.isDirectory) {
+        if (sharedLibsDir.isDirectory && !Files.isSymbolicLink(sharedLibsDir.toPath())) {
             sharedLibsDir.listFiles()
-                ?.filter { it.extension == "jar" }
+                ?.filter { it.extension == "jar" && !Files.isSymbolicLink(it.toPath()) }
                 ?.forEach { urls.add(it.toURI().toURL()) }
         }
 
         // 3. Also scan extensions/libs/ for globally shared dependency JARs
         val globalLibsDir = File(jarFile.parentFile, "libs")
-        if (globalLibsDir.isDirectory && globalLibsDir != depsDir) {
+        if (globalLibsDir.isDirectory && !Files.isSymbolicLink(globalLibsDir.toPath()) && globalLibsDir != depsDir) {
             globalLibsDir.listFiles()
-                ?.filter { it.extension == "jar" }
+                ?.filter { it.extension == "jar" && !Files.isSymbolicLink(it.toPath()) }
                 ?.forEach { urls.add(it.toURI().toURL()) }
         }
 
@@ -461,34 +762,32 @@ object MacOSExtensionLoader {
                             logger.info { "Loaded SourceFactory: $fullClassName — creating sources..." }
                             instance.createSources()
                         }
-                        is AnimeSource -> {
-                            logger.warn { "Class $fullClassName implements AnimeSource but not Source. Wrapping via SourceAdapter." }
-                            listOf(SourceAdapter(instance))
-                        }
                         else -> {
-                            // Try reflection-based wrapping for real extension JARs
-                            val wrapped = wrapAsSource(instance)
-                            if (wrapped != null) {
-                                logger.info { "Wrapped ${instance.javaClass.name} via reflection as CatalogueSource" }
-                                listOf(wrapped)
+                            if (instance is AnimeSource) {
+                                logger.warn { "Class $fullClassName implements AnimeSource but not Source. Wrapping via SourceAdapter." }
+                                listOf(SourceAdapter(instance))
                             } else {
-                                throw IllegalStateException(
-                                    "Unknown source class type for $fullClassName: ${instance.javaClass.name}"
-                                )
+                                // Try reflection-based wrapping for real extension JARs
+                                val wrapped = wrapAsSource(instance)
+                                if (wrapped != null) {
+                                    logger.info { "Wrapped ${instance.javaClass.name} via reflection as CatalogueSource" }
+                                    listOf(wrapped)
+                                } else {
+                                    throw IllegalStateException(
+                                        "Unknown source class type for $fullClassName: ${instance.javaClass.name}"
+                                    )
+                                }
                             }
                         }
                     }
-                } catch (e: NoClassDefFoundError) {
-                    logger.warn { "Skipping $className — missing JVM dependency: ${e.message}" }
+                } catch (e: LinkageError) {
+                    logger.warn { "Skipping $className — linkage failure: ${e.message}" }
                     emptyList()
                 } catch (e: IllegalAccessException) {
                     logger.warn { "Skipping $className — cannot access constructor (private/protected): ${e.message}" }
                     emptyList()
                 } catch (e: NoSuchMethodException) {
                     logger.warn { "Skipping $className — no no-arg constructor found: ${e.message}" }
-                    emptyList()
-                } catch (e: ExceptionInInitializerError) {
-                    logger.warn { "Skipping $className — static initializer failed: ${e.message}" }
                     emptyList()
                 } catch (e: java.lang.reflect.InvocationTargetException) {
                     val cause = e.cause ?: e
@@ -505,6 +804,7 @@ object MacOSExtensionLoader {
      * Compute SHA-256 hash of a file.
      */
     fun computeSha256(file: File): String {
+        requireSafeArtifactFile(file)
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(8192)

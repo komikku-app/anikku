@@ -22,8 +22,11 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import okhttp3.Request
 import okio.IOException
+import java.io.IOException as JavaIOException
 import java.io.File
+import java.net.URI
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
@@ -124,33 +127,49 @@ class MacOSExtensionManager(
     /**
      * Reload a single extension after install/update (avoids full rescan).
      */
-    fun reloadExtension(pkgName: String) {
-        val jarFile = File(extensionsDir, "$pkgName.jar")
+    fun reloadExtension(pkgName: String): Boolean {
+        require(PACKAGE_NAME_PATTERN.matches(pkgName)) { "Invalid extension package name" }
+        val jarFile = safeExtensionFile(pkgName, ".jar")
         if (!jarFile.isFile) {
             installedExtensionsMapFlow.value -= pkgName
             untrustedExtensionsMapFlow.value -= pkgName
             MacOSExtensionLoader.closeClassLoader(pkgName)
-            return
+            return true
         }
+
+        val previousInstalled = installedExtensionsMapFlow.value[pkgName]
+        val previousUntrusted = untrustedExtensionsMapFlow.value[pkgName]
+        val occupiedSourceIds = installedExtensionsMapFlow.value
+            .filterKeys { it != pkgName }
+            .values
+            .flatMap { it.sources }
+            .associate { it.id to it.javaClass.name }
 
         val result = MacOSExtensionLoader.loadExtension(
             jarFile = jarFile,
+            libsDir = extensionsDir,
             trustStore = trustStore,
             loadNsfw = loadNsfwSource,
+            occupiedSourceIds = occupiedSourceIds,
         )
 
-        when (result) {
+        return when (result) {
             is LoadResult.Success -> {
                 installedExtensionsMapFlow.value += pkgName to result.extension
                 untrustedExtensionsMapFlow.value -= pkgName
+                true
             }
             is LoadResult.Untrusted -> {
-                installedExtensionsMapFlow.value -= pkgName
-                untrustedExtensionsMapFlow.value += pkgName to result.extension
+                if (previousInstalled == null) {
+                    untrustedExtensionsMapFlow.value += pkgName to result.extension
+                }
+                false
             }
             is LoadResult.Error -> {
-                installedExtensionsMapFlow.value -= pkgName
-                untrustedExtensionsMapFlow.value -= pkgName
+                if (previousInstalled == null && previousUntrusted == null) {
+                    untrustedExtensionsMapFlow.value -= pkgName
+                }
+                false
             }
         }
     }
@@ -185,12 +204,14 @@ class MacOSExtensionManager(
                 .get()
                 .build()
 
-            val response = networkHelper.client.newCall(request).execute()
-            val body = response.body?.string() ?: return emptyList()
+            val body = networkHelper.client.newCall(request).execute().use { response ->
+                response.body?.string() ?: return emptyList()
+            }
 
             val extList: List<ExtensionJsonObject> = json.decodeFromString(body)
 
             val extensions = extList
+                .filter { it.isValidMetadata(repoBaseUrl) }
                 .filter {
                     val libVersion = it.extractLibVersion()
                     libVersion >= MacOSExtensionLoader.LIB_VERSION_MIN &&
@@ -256,6 +277,19 @@ class MacOSExtensionManager(
         onProgress: ((InstallStep) -> Unit)? = null,
     ) {
         val isPreConvertedJar = extension.apkName.endsWith(".jar", ignoreCase = true)
+        val paths = try {
+            requireValidAvailableExtension(extension)
+            InstallPaths(
+                tmpFile = safeExtensionFile(extension.pkgName, ".download.tmp"),
+                finalJar = safeExtensionFile(extension.pkgName, ".jar"),
+                apkFile = safeExtensionFile(extension.pkgName, ".apk"),
+                convertedJar = safeExtensionFile(extension.pkgName, ".converted.jar"),
+            )
+        } catch (e: Exception) {
+            logger.error(e) { "Rejected extension install before download: ${extension.pkgName}" }
+            onProgress?.invoke(InstallStep.Error(e.message ?: "Invalid extension artifact"))
+            return
+        }
 
         // Pre-converted JAR repos serve files at the root; legacy APK repos use /apk/
         val downloadUrl = if (isPreConvertedJar) {
@@ -264,17 +298,19 @@ class MacOSExtensionManager(
             "${extension.repoUrl}/apk/${extension.apkName}"
         }
 
-        val tmpFile = File(extensionsDir, "${extension.pkgName}.download.tmp")
-        val finalJar = File(extensionsDir, "${extension.pkgName}.jar")
-        val apkFile = File(extensionsDir, "${extension.pkgName}.apk")
+        val tmpFile = paths.tmpFile
+        val finalJar = paths.finalJar
+        val apkFile = paths.apkFile
+        val convertedJar = paths.convertedJar
 
         try {
             onProgress?.invoke(InstallStep.Downloading(0f))
 
-            // Remove any previous downloads or JARs for this package
+            // Never remove the currently installed artifact before the new
+            // artifact has downloaded and passed validation.
             apkFile.delete()
             tmpFile.delete()
-            finalJar.delete()
+            convertedJar.delete()
 
             val request = Request.Builder()
                 .url(downloadUrl)
@@ -282,15 +318,16 @@ class MacOSExtensionManager(
                 .build()
 
             val response = networkHelper.client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                throw IOException("Download failed: ${response.code} ${response.message}")
-            }
+            response.use { downloadedResponse ->
+                if (!downloadedResponse.isSuccessful) {
+                    throw IOException("Download failed: ${downloadedResponse.code} ${downloadedResponse.message}")
+                }
 
-            // Download to temp file
-            response.body?.byteStream()?.use { input ->
+                // Download to temp file
+                downloadedResponse.body.byteStream().use { input ->
                 tmpFile.outputStream().use { output ->
                     val buffer = ByteArray(8 * 1024)
-                    val contentLength = response.body?.contentLength() ?: -1L
+                    val contentLength = downloadedResponse.body!!.contentLength()
                     var bytesRead: Int
                     var totalRead = 0L
 
@@ -303,15 +340,16 @@ class MacOSExtensionManager(
                             )
                         }
                     }
+                    }
                 }
             }
 
             onProgress?.invoke(InstallStep.Installing)
 
             if (isPreConvertedJar) {
-                // Atomic move from temp to final JAR
-                moveOrCopy(tmpFile, finalJar)
-                logger.info { "Installed pre-converted JAR: ${extension.pkgName} (${finalJar.length()} bytes)" }
+                validateDownloadedJar(tmpFile, extension)
+                replaceAndReload(tmpFile, finalJar, extension.pkgName)
+                logger.info { "Installed validated pre-converted JAR: ${extension.pkgName} (${finalJar.length()} bytes)" }
             } else {
                 // Legacy APK path — move temp to .apk and attempt conversion
                 moveOrCopy(tmpFile, apkFile)
@@ -328,29 +366,29 @@ class MacOSExtensionManager(
                 logger.info { "Converting APK to JAR: ${extension.pkgName}" }
                 val sourceApiJar = findSourceApiJar()
                 val commonJvmJar = findCommonJvmJar()
-                val success = DexClassLoader.convertToJar(apkFile, finalJar, sourceApiJar, commonJvmJar)
+                val success = DexClassLoader.convertToJar(apkFile, convertedJar, sourceApiJar, commonJvmJar)
 
-                if (success && finalJar.isFile && finalJar.length() > 0) {
+                if (success && convertedJar.isFile && convertedJar.length() > 0) {
+                    validateDownloadedJar(convertedJar, extension)
+                    replaceAndReload(convertedJar, finalJar, extension.pkgName)
                     apkFile.delete()
-                    logger.info { "Converted ${extension.pkgName} to JAR (${finalJar.length()} bytes)" }
+                    logger.info { "Converted and validated ${extension.pkgName} to JAR (${finalJar.length()} bytes)" }
                 } else {
-                    // Conversion failed — clean up both APK and broken JAR
+                    // Conversion failed — clean up only the new temporary files;
+                    // preserve the currently installed JAR.
                     apkFile.delete()
-                    finalJar.delete()
+                    convertedJar.delete()
                     logger.warn { "APK conversion failed for ${extension.pkgName}." }
                     throw IOException("APK conversion failed. Try a pre-converted JAR repo instead.")
                 }
             }
 
             onProgress?.invoke(InstallStep.Complete)
-
-            // Load the newly installed extension
-            reloadExtension(extension.pkgName)
             logger.info { "Installed extension: ${extension.pkgName}" }
         } catch (e: Exception) {
             tmpFile.delete()
             apkFile.delete()
-            if (finalJar.exists()) finalJar.delete()
+            convertedJar.delete()
             logger.error(e) { "Failed to install extension: ${extension.pkgName}" }
             onProgress?.invoke(InstallStep.Error(e.message ?: "Unknown error"))
             // Don't throw — let the UI show the error message gracefully
@@ -363,6 +401,10 @@ class MacOSExtensionManager(
      * after the operation.
      */
     private fun moveOrCopy(source: File, destination: File) {
+        requireSafeExtensionPath(destination)
+        require(Files.isRegularFile(source.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+            "Source artifact is not a regular file: ${source.absolutePath}"
+        }
         if (source == destination) return
         try {
             Files.move(
@@ -371,15 +413,87 @@ class MacOSExtensionManager(
                 StandardCopyOption.ATOMIC_MOVE,
                 StandardCopyOption.REPLACE_EXISTING,
             )
-        } catch (e: IOException) {
-            // Atomic move failed (different filesystems, etc.) — fall back to copy+delete
-            logger.warn(e) { "Atomic move failed from ${source.absolutePath} to ${destination.absolutePath}, falling back to copy+delete" }
-            source.copyTo(destination, overwrite = true)
-            source.delete()
+        } catch (e: JavaIOException) {
+            // Atomic move can be unavailable across filesystems. Preserve the
+            // destination while copying so a partial copy cannot destroy it.
+            logger.warn(e) { "Atomic move failed from ${source.absolutePath} to ${destination.absolutePath}, falling back to rollback-safe copy" }
+            val backup = File.createTempFile(".${destination.name}.backup-", ".tmp", destination.parentFile)
+            try {
+                requireSafeExtensionPath(backup)
+                if (destination.isFile) {
+                    Files.copy(destination.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                } else {
+                    backup.delete()
+                }
+                try {
+                    Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    Files.delete(source.toPath())
+                } catch (copyFailure: Exception) {
+                    Files.deleteIfExists(destination.toPath())
+                    if (backup.isFile) {
+                        Files.move(backup.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    }
+                    throw copyFailure
+                }
+            } finally {
+                backup.delete()
+            }
         }
 
-        if (!destination.isFile) {
+        if (!Files.isRegularFile(destination.toPath(), LinkOption.NOFOLLOW_LINKS)) {
             throw IOException("Failed to move ${source.absolutePath} to ${destination.absolutePath}")
+        }
+    }
+
+    /**
+     * Replace an installed artifact only if the replacement can be loaded.
+     * The prior artifact remains available for rollback if validation passed but
+     * class loading or source construction fails.
+     */
+    private fun replaceAndReload(source: File, destination: File, pkgName: String) {
+        requireSafeExtensionPath(destination)
+        val hadExisting = Files.isRegularFile(destination.toPath(), LinkOption.NOFOLLOW_LINKS)
+        var backup: File? = null
+        var backupReady = false
+
+        try {
+            if (hadExisting) {
+                backup = File.createTempFile(".${destination.name}.previous-", ".tmp", destination.parentFile)
+                requireSafeExtensionPath(backup!!)
+                Files.copy(destination.toPath(), backup!!.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                require(Files.isRegularFile(backup!!.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+                    "Previous extension backup was not created"
+                }
+                backupReady = true
+            }
+            moveOrCopy(source, destination)
+            if (!reloadExtension(pkgName)) {
+                throw IOException("Installed extension could not be loaded: $pkgName")
+            }
+        } catch (failure: Exception) {
+            runCatching {
+                if (backupReady && backup != null && backup.isFile) {
+                    Files.deleteIfExists(destination.toPath())
+                    Files.move(backup.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    if (!reloadExtension(pkgName)) {
+                        throw JavaIOException("Previous extension could not be restored: $pkgName")
+                    }
+                } else if (!hadExisting) {
+                    Files.deleteIfExists(destination.toPath())
+                    MacOSExtensionLoader.closeClassLoader(pkgName)
+                    installedExtensionsMapFlow.value -= pkgName
+                    untrustedExtensionsMapFlow.value -= pkgName
+                }
+            }.getOrElse { rollbackFailure ->
+                logger.error(rollbackFailure) { "Failed to restore previous extension artifact: $pkgName" }
+                throw JavaIOException(
+                    "Extension replacement failed and rollback could not restore $pkgName",
+                    rollbackFailure,
+                )
+            }
+            throw failure
+        } finally {
+            backup?.delete()
         }
     }
 
@@ -439,9 +553,12 @@ class MacOSExtensionManager(
      * Remove (uninstall) an extension.
      */
     fun removeExtension(extension: Extension) {
+        val jarFile = safeExtensionFile(extension.pkgName, ".jar")
         MacOSExtensionLoader.closeClassLoader(extension.pkgName)
 
-        val jarFile = File(extensionsDir, "${extension.pkgName}.jar")
+        if (Files.isSymbolicLink(jarFile.toPath())) {
+            throw IllegalStateException("Refusing to remove a symlinked extension artifact")
+        }
         if (jarFile.exists()) {
             jarFile.delete()
             logger.info { "Removed extension: ${extension.pkgName}" }
@@ -450,10 +567,6 @@ class MacOSExtensionManager(
         installedExtensionsMapFlow.value -= extension.pkgName
         untrustedExtensionsMapFlow.value -= extension.pkgName
     }
-
-    // -------------------------------------------------------------------------
-    // Trust management
-    // -------------------------------------------------------------------------
 
     private fun loadTrustStore() {
         if (trustFile.isFile) {
@@ -470,70 +583,61 @@ class MacOSExtensionManager(
             }
         }
 
-        // Always scan for new JARs not yet in the trust store and auto-trust them.
-        // This handles fresh installs (no trust file) AND new JARs added after
-        // a batch rebuild without requiring the user to manually trust each one.
-        autoTrustAllJars()
     }
 
-    /**
-     * Auto-trust JAR files in the extensions directory that are not already trusted.
-     *
-     * Called on every startup to handle:
-     * - Fresh installs (no trust store exists yet)
-     * - New JARs added after batch rebuilds
-     * - Manually placed extension JARs
-     *
-     * Only trusts packages NOT already in the trust store — previously trusted
-     * packages with updated hashes still require manual re-trust for security.
-     * Users can always revoke trust for individual extensions via the UI.
-     */
-    private fun autoTrustAllJars() {
-        val jars = extensionsDir.listFiles()
-            ?.filter { it.extension == "jar" }
-            ?: emptyList()
+    // -------------------------------------------------------------------------
+    // Trust management
+    // -------------------------------------------------------------------------
 
-        if (jars.isEmpty()) return
 
-        logger.info { "🔑 Auto-trust scan: checking ${jars.size} JAR(s) against trust store (${trustStore.size} packages known)..." }
 
-        var newCount = 0
-        var skippedCount = 0
-        for (jar in jars) {
-            val metadata = MacOSExtensionLoader.readMetadata(jar)
-            if (metadata == null) {
-                logger.debug { "  No metadata for ${jar.name} — skipping" }
-                continue
-            }
+    private data class InstallPaths(
+        val tmpFile: File,
+        val finalJar: File,
+        val apkFile: File,
+        val convertedJar: File,
+    )
 
-            val hash = MacOSExtensionLoader.computeSha256(jar)
-
-            // Skip only if already trusted with this exact hash.
-            // Checking pkgName alone is insufficient — batch rebuilds produce
-            // new hashes for the same package, and the old hash won't match.
-            val alreadyTrusted = trustStore[metadata.pkgName]
-                ?.any { it.signatureHash == hash } == true
-            if (alreadyTrusted) {
-                skippedCount++
-                continue
-            }
-
-            val entry = MacOSExtensionLoader.TrustEntry(
-                pkgName = metadata.pkgName,
-                versionCode = metadata.versionCode,
-                signatureHash = hash,
-            )
-            trustStore.getOrPut(metadata.pkgName) { mutableListOf() }.add(entry)
-            logger.info { "  ✅ Auto-trusted: ${metadata.pkgName} (hash: ${hash.take(12)}...)" }
-            newCount++
+    private fun validateDownloadedJar(file: File, expected: Extension.Available) {
+        if (!Files.isRegularFile(file.toPath(), LinkOption.NOFOLLOW_LINKS) || file.length() <= 0L) {
+            throw IOException("Downloaded extension artifact is empty or incomplete")
         }
-
-        logger.info { "🔑 Auto-trust done: $newCount new trusted, $skippedCount already trusted, ${trustStore.size} total packages" }
-
-        if (newCount > 0) {
-            saveTrustStore()
-            logger.info { "💾 Trust store saved (${trustStore.size} packages)" }
+        val metadata = MacOSExtensionLoader.readMetadata(file)
+            ?: throw IOException("Downloaded extension artifact has invalid metadata")
+        if (metadata.pkgName != expected.pkgName ||
+            metadata.versionCode != expected.versionCode ||
+            metadata.libVersion != expected.libVersion
+        ) {
+            throw IOException("Downloaded extension metadata does not match repository metadata")
         }
+        expected.artifactSha256?.let { expectedHash ->
+            val actualHash = MacOSExtensionLoader.computeSha256(file)
+            if (!actualHash.equals(expectedHash, ignoreCase = true)) {
+                throw IOException("Downloaded extension artifact failed trusted SHA-256 verification")
+            }
+        }
+    }
+
+    private fun requireValidAvailableExtension(extension: Extension.Available) {
+        require(PACKAGE_NAME_PATTERN.matches(extension.pkgName)) { "Invalid extension package name" }
+        require(extension.apkName.matches(ARTIFACT_NAME_PATTERN)) { "Invalid extension artifact name" }
+        require(extension.repoUrl.isAllowedRepository()) { "Extension repository must use HTTPS" }
+        require(extension.versionCode >= 0L && extension.versionName.isNotBlank()) { "Invalid extension version metadata" }
+        require(extension.libVersion.isFinite()) { "Invalid extension library version" }
+    }
+
+    private fun safeExtensionFile(pkgName: String, suffix: String): File {
+        require(PACKAGE_NAME_PATTERN.matches(pkgName)) { "Invalid extension package name" }
+        val file = File(extensionsDir, "$pkgName$suffix")
+        requireSafeExtensionPath(file)
+        return file
+    }
+
+    private fun requireSafeExtensionPath(file: File) {
+        require(!Files.isSymbolicLink(file.toPath())) { "Refusing to use symlinked extension path" }
+        val parent = extensionsDir.canonicalFile
+        val canonical = file.canonicalFile
+        require(canonical.parentFile == parent) { "Extension path escapes its directory" }
     }
 
     private fun saveTrustStore() {
@@ -583,6 +687,11 @@ class MacOSExtensionManager(
     fun revokeTrust(pkgName: String) {
         trustStore.remove(pkgName)
         saveTrustStore()
+        // Revocation is an explicit security action: stop the currently loaded
+        // code before exposing the artifact as untrusted again.
+        MacOSExtensionLoader.closeClassLoader(pkgName)
+        installedExtensionsMapFlow.value -= pkgName
+        untrustedExtensionsMapFlow.value -= pkgName
         reloadExtension(pkgName)
     }
 
@@ -606,6 +715,11 @@ class MacOSExtensionManager(
     // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
+
+    companion object {
+        private val PACKAGE_NAME_PATTERN = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*")
+        private val ARTIFACT_NAME_PATTERN = Regex("[A-Za-z0-9._-]+\\.(?:jar|apk)", RegexOption.IGNORE_CASE)
+    }
 
     /**
      * Shut down the extension manager. Cancels coroutine scope and closes all class loaders.
@@ -639,6 +753,7 @@ private data class ExtensionJsonObject(
     val nsfw: Int = 0,
     val torrent: Int = 0,
     val sources: List<ExtensionSourceJsonObject>? = null,
+    val sha256: String? = null,
 )
 
 @Serializable
@@ -648,6 +763,28 @@ private data class ExtensionSourceJsonObject(
     val name: String,
     val baseUrl: String,
 )
+
+private fun ExtensionJsonObject.isValidMetadata(repoUrl: String): Boolean {
+    val packagePattern = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*")
+    val artifactPattern = Regex("[A-Za-z0-9._-]+\\.(?:jar|apk)", RegexOption.IGNORE_CASE)
+    return packagePattern.matches(pkg) &&
+        artifactPattern.matches(apk) &&
+        version.isNotBlank() &&
+        code >= 0L &&
+        (sha256 == null || sha256.matches(Regex("[0-9a-fA-F]{64}"))) &&
+        repoUrl.isAllowedRepository()
+}
+
+private fun String.isAllowedRepository(): Boolean {
+    return runCatching {
+        URI(this).let { uri ->
+            val host = uri.host
+            val localTestHost = host == "localhost" || host == "127.0.0.1" || host == "::1"
+            (uri.scheme == "https" || (uri.scheme == "http" && localTestHost)) &&
+                !host.isNullOrBlank() && uri.userInfo == null && uri.fragment == null
+        }
+    }.getOrDefault(false)
+}
 
 private fun ExtensionJsonObject.extractLibVersion(): Double {
     return version.substringBeforeLast('.').toDouble()
@@ -674,5 +811,6 @@ private fun ExtensionJsonObject.toExtension(repoUrl: String): Extension.Availabl
         apkName = apk,
         iconUrl = "$repoUrl/icon/$pkg.png",
         repoUrl = repoUrl,
+        artifactSha256 = sha256,
     )
 }

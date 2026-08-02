@@ -292,6 +292,22 @@ if [ -d "$HANIME_DIR" ]; then
     if [ -f "$PATCH_SCRIPT" ]; then
         python3 "$PATCH_SCRIPT" "$HANIME_DIR" 2>&1 | sed 's/^/  /'
         log "  Hanime patching complete"
+
+    # Patch: update DEFAULT_CDN_BASE_URL from dead cached.freeanimehentai.net to guest.freeanimehentai.net
+    # cached.freeanimehentai.net was the old CDN domain and is now completely unreachable (HTTP 000).
+    # The hanime.tv homepage reveals the current working API endpoint at:
+    #   https://guest.freeanimehentai.net/api/v11/search_hvs
+    # Two changes needed:
+    #   1. CDN URL: cached.freeanimehentai.net → guest.freeanimehentai.net
+    #   2. API version: v10 → v11 (v10 returns HTTP 403 on the new CDN)
+    HANIME_KT="${GIT_CLONE_DIR}/src/en/hanime/src/eu/kanade/tachiyomi/animeextension/en/hanime/Hanime.kt"
+    if [ -f "$HANIME_KT" ]; then
+        # Change DEFAULT_CDN_BASE_URL
+        sed -i '' 's|cached\.freeanimehentai\.net|guest.freeanimehentai.net|g' "$HANIME_KT" 2>/dev/null || true
+        # Change /api/v10/ to /api/v11/ in the search_hvs endpoint call
+        sed -i '' 's|"/api/v10/search_hvs"|"/api/v11/search_hvs"|' "$HANIME_KT" 2>/dev/null || true
+        log "  Patched: Hanime.kt — CDN URL updated to guest.freeanimehentai.net, API v10→v11"
+    fi
     else
         log "  WARNING: patch-hanime-source.py not found at $PATCH_SCRIPT — skipping"
     fi
@@ -499,6 +515,18 @@ if [ -f "$MIRURO_FILE" ]; then
     sed -i '' '/^\/\/ import keiyoushi\.utils\.getListPreference /c\
 import keiyoushi.utils.getListPreference' "$MIRURO_FILE" 2>/dev/null || true
     log "  Patched: Miruro.kt — replaced commented import with clean import"
+
+    # Fix: add explicit type annotation to the lazy MiruroExtractor delegate.
+    # The Kotlin/JVM compiler cannot infer the type parameter 'T' from the lazy
+    # initializer when the delegated property type involves a generic lambda.
+    # The constructor call is:
+    #   MiruroExtractor(client, PIPE_KEY, PROXY_KEY, headers, preferences, baseUrl) { providerDisplayName(it) }
+    # The lambda { providerDisplayName(it) } has type (String) -> String, and the
+    # MiruroExtractor constructor expects a (String) -> String for its last param.
+    # On JVM, this causes 'cannot infer type for type parameter T' on the lazy delegate.
+    # Fix: add explicit type: `: MiruroExtractor by lazy { ... }`
+    sed -i '' 's/private val extractor by lazy {/private val extractor: MiruroExtractor by lazy {/' "$MIRURO_FILE" 2>/dev/null || true
+    log "  Patched: Miruro.kt — added explicit type annotation to lazy MiruroExtractor delegate"
 fi
 
 # Patch: remove problematic extractor dependencies from MiruroExtractor (m3u8server,
@@ -509,6 +537,17 @@ if [ -f "$MIRURO_PATCH" ]; then
     python3 "$MIRURO_PATCH" "${GIT_CLONE_DIR}" 2>&1 | sed 's/^/  /'
 else
     log "  WARNING: patch-miruro-sources.py not found — cannot patch miruro"
+fi
+
+# A malformed Miruro patch must fail the build. Never replace the extractor
+# with an implementation that compiles but returns no videos: that would turn
+# a visible extension-build failure into a silent streaming regression.
+MIRURO_EXTRACTOR_FILE="${GIT_CLONE_DIR}/src/en/miruro/src/eu/kanade/tachiyomi/animeextension/en/miruro/MiruroExtractor.kt"
+if [ -f "$MIRURO_FILE" ]; then
+    if [ ! -f "$MIRURO_EXTRACTOR_FILE" ] || ! grep -q 'class MiruroExtractor' "$MIRURO_EXTRACTOR_FILE" 2>/dev/null; then
+        err "Miruro extractor is missing or malformed after patching"
+        exit 1
+    fi
 fi
 
 # Patch: wcotheme iframeParse — make content-based instead of domain-whitelisted

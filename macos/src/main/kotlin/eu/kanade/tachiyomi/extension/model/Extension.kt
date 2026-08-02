@@ -49,6 +49,8 @@ sealed class Extension {
         val apkName: String,
         val iconUrl: String,
         val repoUrl: String,
+        /** SHA-256 published by the trusted repository, when available. */
+        val artifactSha256: String? = null,
     ) : Extension() {
 
         data class AnimeSource(

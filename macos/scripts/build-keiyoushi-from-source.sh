@@ -45,7 +45,7 @@ COMMON_JVM_JAR="${PROJECT_DIR}/libs/common-jvm.jar"
 detect_java_home() {
     # Try common JDK locations
     for candidate in \
-        "${JAVA_HOME}" \
+        "${JAVA_HOME:-}" \
         "/opt/homebrew/opt/openjdk@17" \
         "/opt/homebrew/opt/openjdk@21" \
         "/opt/homebrew/opt/openjdk" \
@@ -69,16 +69,26 @@ JAR_CMD="${JAVA_HOME}/bin/jar"
 log() { echo "[*] $*"; }
 err() { echo "[!] $*" >&2; }
 
+require_command() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        err "Required command not found: $1"
+        exit 1
+    fi
+}
+
 cleanup() {
     if [ "${KEEP_TEMP:-false}" != "true" ]; then
+        # Refuse to recursively remove an unexpected or dangerously broad path.
+        case "$TEMP_DIR" in
+            /tmp/anikku-source-build) ;;
+            *) err "Refusing to clean unexpected temporary directory: ${TEMP_DIR}"; return 1 ;;
+        esac
         log "Cleaning up temporary files..."
-        rm -rf "${TEMP_DIR}"
+        rm -rf "$TEMP_DIR"
     else
         log "Keeping temporary files at: ${TEMP_DIR}"
     fi
 }
-trap cleanup EXIT
-
 usage() {
     cat <<EOF
 Usage: $(basename "$0") --pkg <name> [OPTIONS]
@@ -104,13 +114,32 @@ KEEP_TEMP=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --pkg) PKG_NAME="$2"; shift 2 ;;
-        --lang) LANG="$2"; shift 2 ;;
+        --pkg)
+            [ "$#" -ge 2 ] || { err "Error: --pkg requires a value"; exit 1; }
+            PKG_NAME="$2"
+            shift 2
+            ;;
+        --lang)
+            [ "$#" -ge 2 ] || { err "Error: --lang requires a value"; exit 1; }
+            LANG="$2"
+            shift 2
+            ;;
         --keep-temp) KEEP_TEMP=true; shift ;;
-        --repo) REPO_URL="$2"; shift 2 ;;
+        --repo)
+            [ "$#" -ge 2 ] || { err "Error: --repo requires a value"; exit 1; }
+            REPO_URL="$2"
+            shift 2
+            ;;
         --help|-h) usage ;;
         *) err "Unknown option: $1"; usage ;;
     esac
+done
+
+# Validate the external tools used by the build before any source or temp
+# directory mutation occurs. brew remains optional because its result has a
+# portable fallback below. Help exits from the parser above before this check.
+for required_command in git python3 kotlinc sed grep find sort head awk cut wc tail cp mkdir rm tr xargs dirname basename cat mktemp ls stat which; do
+    require_command "$required_command"
 done
 
 if [ -z "$PKG_NAME" ]; then
@@ -118,13 +147,17 @@ if [ -z "$PKG_NAME" ]; then
     usage
 fi
 
+# Install cleanup only after argument parsing has accepted a build request;
+# --help and malformed invocations must not remove an existing temp tree.
+trap cleanup EXIT
+
 # Validate prerequisites
-if [ -z "$JAVA_HOME" ] || [ ! -f "$JAVA_CMD" ]; then
+if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_CMD" ]; then
     err "JDK 17+ not found. Install: brew install openjdk@17"
     err "  Then: export JAVA_HOME=/opt/homebrew/opt/openjdk@17"
     exit 1
 fi
-if [ ! -f "$JAR_CMD" ]; then
+if [ ! -x "$JAR_CMD" ]; then
     err "jar command not found at $JAR_CMD"
     exit 1
 fi
@@ -174,16 +207,16 @@ git clone --depth 1 --filter=blob:none --no-checkout \
 
 cd "${GIT_CLONE_DIR}"
 
-# Checkout extension directory and all shared libs
-SHARED_LIBS=$(git ls-tree --name-only HEAD 2>/dev/null | grep -E '^(lib|core|common)' || true)
-SPARSE_PATTERNS="src/${LANG}/${PKG_NAME}"
-for lib in $SHARED_LIBS; do
-    SPARSE_PATTERNS="$SPARSE_PATTERNS $lib"
-done
+# Checkout extension directory and all shared libs. Keep each sparse path as
+# its own array element so paths containing spaces are preserved.
+SPARSE_PATTERNS=("src/${LANG}/${PKG_NAME}")
+while IFS= read -r lib; do
+    [ -n "$lib" ] && SPARSE_PATTERNS+=("$lib")
+done < <(git ls-tree --name-only HEAD 2>/dev/null | grep -E '^(lib|core|common)' || true)
 # Also get gradle version catalog
-SPARSE_PATTERNS="$SPARSE_PATTERNS gradle"
+SPARSE_PATTERNS+=("gradle")
 
-git sparse-checkout set $SPARSE_PATTERNS 2>&1
+git sparse-checkout set "${SPARSE_PATTERNS[@]}" 2>&1
 git checkout 2>&1 | tail -2
 
 SRC_DIR="${GIT_CLONE_DIR}/src/${LANG}/${PKG_NAME}"
@@ -379,9 +412,9 @@ fi
 # Also check Gradle wrapper kotlin distribution
 KOTLIN_PROJECT_DIR="${PROJECT_DIR}/.gradle"
 if [ -d "$KOTLIN_PROJECT_DIR" ]; then
-    for j in $(find "$KOTLIN_PROJECT_DIR" -name 'kotlin-stdlib-*.jar' 2>/dev/null | head -5); do
-        add_to_cp "$j"
-    done
+    while IFS= read -r j; do
+        [ -n "$j" ] && add_to_cp "$j"
+    done < <(find "$KOTLIN_PROJECT_DIR" -name 'kotlin-stdlib-*.jar' -print 2>/dev/null | head -5)
 fi
 
 # Common extension dependencies (from Gradle cache)
@@ -683,22 +716,41 @@ fi
 # (27 AniLib references throughout Miruro.kt). The import stays intact.
 # Also runs patch-miruro-sources.py to remove unavailable extractor deps.
 MIRURO_SRC=$(find "${SRC_DIR}" -name "Miruro.kt" 2>/dev/null | head -1)
+MIRURO_EXTRACTOR_SRC=$(find "${SRC_DIR}" -name "MiruroExtractor.kt" 2>/dev/null | head -1)
 if [ -n "$MIRURO_SRC" ] && [ -f "$MIRURO_SRC" ]; then
     log "  NOTE: Miruro.kt uses AniLib via import — anilib extractor is on classpath ✓"
     MIRURO_PATCH_SCRIPT="${SCRIPT_DIR}/patch-miruro-sources.py"
-    if [ -f "$MIRURO_PATCH_SCRIPT" ]; then
-        GIT_ROOT="$(cd "${SRC_DIR}/../../.." && pwd)"
-        python3 "$MIRURO_PATCH_SCRIPT" "$GIT_ROOT" 2>&1 | sed 's/^/  /'
+    if [ ! -f "$MIRURO_PATCH_SCRIPT" ]; then
+        err "Required Miruro patch script not found: ${MIRURO_PATCH_SCRIPT}"
+        exit 1
+    fi
+    if [ -z "$MIRURO_EXTRACTOR_SRC" ] || [ ! -f "$MIRURO_EXTRACTOR_SRC" ]; then
+        err "Expected Miruro extractor source not found"
+        exit 1
+    fi
+    GIT_ROOT="$(cd "${SRC_DIR}/../../.." && pwd)"
+    python3 "$MIRURO_PATCH_SCRIPT" "$GIT_ROOT" 2>&1 | sed 's/^/  /'
+    if ! grep -q '\[patched\]' "$MIRURO_EXTRACTOR_SRC" && ! grep -q 'm3u8 proxying unavailable on JVM' "$MIRURO_EXTRACTOR_SRC"; then
+        err "Miruro patch verification failed: ${MIRURO_EXTRACTOR_SRC}"
+        exit 1
     fi
 fi
 
 # Patch: wcotheme — make iframeParse content-based (not domain-whitelisted)
-# Runs unconditionally because wcotheme is a shared theme used by 6+ extensions.
+# Runs for the shared theme only when that source is present in the sparse checkout.
 WCO_VIDEO_PATCH="${SCRIPT_DIR}/patch-wco-video-extraction.py"
-if [ -f "$WCO_VIDEO_PATCH" ]; then
+WCO_THEME_FILE="${GIT_CLONE_DIR}/lib-multisrc/wcotheme/src/eu/kanade/tachiyomi/multisrc/wcotheme/WcoTheme.kt"
+if [ -f "$WCO_THEME_FILE" ]; then
+    if [ ! -f "$WCO_VIDEO_PATCH" ]; then
+        err "Required WCO patch script not found: ${WCO_VIDEO_PATCH}"
+        exit 1
+    fi
     GIT_ROOT="$(cd "${SRC_DIR}/../../.." && pwd)"
     python3 "$WCO_VIDEO_PATCH" "$GIT_ROOT" 2>&1 | sed 's/^/  /'
-fi
+    if ! grep -q 'Domain-agnostic extraction' "$WCO_THEME_FILE"; then
+        err "WCO patch verification failed: ${WCO_THEME_FILE}"
+        exit 1
+    fi
 fi
 
 # Patch: superstream — add CloudflareInterceptor to custom OkHttpClient

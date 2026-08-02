@@ -164,9 +164,6 @@ class ExtensionCompatibilityTest {
             })
         }
 
-        // Install lenient SSL for extension requests
-        app.anikku.macos.platform.network.InsecureSSLHelper.install()
-
         // Enable CDP debug mode to capture detailed WebSocket traffic for diagnostics
         app.anikku.macos.platform.network.ChromeCDPClient.debugMode = true
 

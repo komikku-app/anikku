@@ -72,11 +72,16 @@ def patch_miruro_extractor(filepath):
             r'            }\n')
     content = re.sub(pat, repl, content, flags=re.MULTILINE)
 
-    # 5. Line-wide fallback: comment out lines with extractor refs
+    # 5. Line-wide fallback: comment out lines with extractor refs.
+    # Preserve already-patched lines so repeated builds do not stack comments.
     for ref in ["megaCloudExtractor", "rapidCloudExtractor", "embedExtractor", "m3u8Integration"]:
-        content = re.sub(
-            r'^(.*' + re.escape(ref) + r'\b(?!.*\[patched\]).*)$',
-            r'// [patched] \1', content, flags=re.MULTILINE)
+        pattern = re.compile(r'^(.*' + re.escape(ref) + r'\b.*)$', flags=re.MULTILINE)
+
+        def comment_unpatched(match):
+            line = match.group(1)
+            return line if '[patched]' in line else '// [patched] ' + line
+
+        content = pattern.sub(comment_unpatched, content)
 
     # 6. Handle orphaned named arguments after commented-out extractor calls.
     # Use line-by-line processing (not multi-line regex) for robustness.
@@ -87,8 +92,9 @@ def patch_miruro_extractor(filepath):
     i = 0
     while i < len(lines):
         line = lines[i]
-        # Detect start: a [patched] line with getVideosFromUrl( or extractVideos(
-        if re.search(r'\[patched\].*(getVideosFromUrl|extractVideos)\(', line):
+        # Detect an unprocessed [patched] line with getVideosFromUrl( or extractVideos(.
+        if (not line.lstrip().startswith('// [patched]') and
+                re.search(r'\[patched\].*(getVideosFromUrl|extractVideos)\(', line)):
             in_orphaned_block = True
             lines[i] = '// [patched] extractor call block removed'
             i += 1

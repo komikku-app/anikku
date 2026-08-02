@@ -1,6 +1,7 @@
 package app.anikku.macos.player
 
 import com.sun.jna.Pointer
+import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -124,9 +125,6 @@ class StreamingEndToEndTest {
             })
         }
 
-        // Install lenient SSL for extension HTTP requests (many sources have invalid certs)
-        app.anikku.macos.platform.network.InsecureSSLHelper.install()
-
         // Initialize mpv for playback tests
         Assumptions.assumeTrue(
             MPVLib.initialize(),
@@ -236,21 +234,94 @@ class StreamingEndToEndTest {
             catch (_: Exception) {}
         }
 
-        // Assert: at least confirm we tested extensions
+        // The protected workflow is the purpose of this live test. Do not let
+        // it pass merely because an extension class could be instantiated.
         Assertions.assertTrue(
-            extensionsTested.any { it.loadOk },
-            "At least one extension should load successfully"
+            foundPlayableVideo && mpvPlaybackVerified,
+            "No installed extension completed browse → episodes → videos → mpv playback",
         )
+    }
 
-        // Soft assertion: warn if no video URLs found, but don't fail the test
-        // (this is expected for many extensions that need hoster-based flow updates)
-        if (extensionsTested.none { it.videosOk }) {
-            System.err.println(
-                "⚠ No extension returned playable video URLs. " +
-                "This is a known limitation for many ported extensions. " +
-                "The extension compatibility report has details."
-            )
+    @Test
+    fun `search anime to episode and mpv streaming playback`() = runBlocking {
+        val preferredPackages = listOf("anidb", "animepahe", "kisskh", "allanime", "aniwave")
+        val jarFiles = extensionsDir.listFiles()
+            ?.filter { it.extension == "jar" }
+            ?.sortedBy { jar ->
+                preferredPackages.indexOfFirst { jar.name.contains(it, ignoreCase = true) }
+                    .let { if (it < 0) Int.MAX_VALUE else it }
+            }
+            ?.take(8)
+            .orEmpty()
+        Assumptions.assumeTrue(jarFiles.isNotEmpty(), "No installed extension JARs available for search")
+
+        var verified = false
+        for (jarFile in jarFiles) {
+            val metadata = app.anikku.macos.platform.extension.MacOSExtensionLoader.readMetadata(jarFile)
+                ?: continue
+            val source = loadExtensionSource(jarFile, metadata.pkgName) ?: continue
+            try {
+                for (query in listOf("One Piece", "Naruto")) {
+                    val matches = try {
+                        withContext(Dispatchers.IO) {
+                            withTimeout(TIMEOUT_MS) {
+                                source.getSearchAnime(1, query, AnimeFilterList())
+                            }
+                        }.animes.filter { safeTitle(it).isNotBlank() }
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                    if (matches.isEmpty()) continue
+
+                    println("  Search '$query' via ${source.name}: ${matches.size} result(s)")
+                    for (anime in matches.take(5)) {
+                        val videos = try {
+                            val details = withContext(Dispatchers.IO) {
+                                withTimeout(TIMEOUT_MS) { source.getAnimeDetails(anime) }
+                            }
+                            ensureUrl(details, safeUrl(anime))
+                            val episode = withContext(Dispatchers.IO) {
+                                withTimeout(TIMEOUT_MS) { source.getEpisodeList(details) }
+                            }.firstOrNull() ?: continue
+                            ensureEpisodeUrl(episode, "/episode/search-test")
+                            withContext(Dispatchers.IO) {
+                                withTimeout(TIMEOUT_MS) { source.getVideoList(episode) }
+                            }
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
+                        val video = videos.firstOrNull {
+                            runCatching { it.videoUrl.isNotBlank() }.getOrDefault(false)
+                        } ?: continue
+                        val headers = runCatching {
+                            buildMap {
+                                video.headers?.let { sourceHeaders ->
+                                    for (index in 0 until sourceHeaders.size) {
+                                        put(sourceHeaders.name(index), sourceHeaders.value(index))
+                                    }
+                                }
+                                putIfAbsent("User-Agent", MPVLib.DEFAULT_USER_AGENT)
+                            }
+                        }.getOrElse { mapOf("User-Agent" to MPVLib.DEFAULT_USER_AGENT) }
+
+                        verified = verifyMpvPlayback(video.videoUrl, headers)
+                        if (verified) {
+                            println("  Search-to-stream verified: ${safeTitle(anime)} via ${source.name}")
+                            break
+                        }
+                    }
+                    if (verified) break
+                }
+            } finally {
+                closeLoader(metadata.pkgName)
+            }
+            if (verified) break
         }
+
+        Assertions.assertTrue(
+            verified,
+            "No installed extension completed search → details → episode → video URL → mpv playback",
+        )
     }
 
     // ═════════════════════════════════════════════════════════════════════════
