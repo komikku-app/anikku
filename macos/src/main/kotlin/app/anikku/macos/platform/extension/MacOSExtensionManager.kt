@@ -467,7 +467,14 @@ class MacOSExtensionManager(
                 backupReady = true
             }
             moveOrCopy(source, destination)
-            if (!reloadExtension(pkgName)) {
+            val loaded = reloadExtension(pkgName)
+            // A first-time install is expected to enter the explicit user-trust
+            // state. That proves its metadata/artifact loaded successfully even
+            // though no source code is activated yet. Updates to an already
+            // trusted install still require Success so a changed, untrusted
+            // replacement rolls back to the working version.
+            val installedAsUntrusted = !hadExisting && pkgName in untrustedExtensionsMapFlow.value
+            if (!loaded && !installedAsUntrusted) {
                 throw IOException("Installed extension could not be loaded: $pkgName")
             }
         } catch (failure: Exception) {

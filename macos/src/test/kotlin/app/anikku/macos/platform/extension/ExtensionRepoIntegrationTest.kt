@@ -10,6 +10,9 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert
 import org.junit.Test
 import java.io.File
+import java.util.jar.JarEntry
+import java.util.jar.JarFile
+import java.util.jar.JarOutputStream
 
 /**
  * Integration tests for the extension repository fetch and download pipeline.
@@ -26,6 +29,51 @@ import java.io.File
 class ExtensionRepoIntegrationTest {
 
     private val sampleJarPath = "sample-extension/build/libs/sample-extension-1.0.0.jar"
+
+    /** Build a real JAR fixture whose signed repository metadata agrees with the index entry. */
+    private fun matchingJar(
+        baseJar: File,
+        directory: File,
+        fileName: String,
+        packageName: String,
+        versionCode: Long,
+        libVersion: Double,
+        lang: String = "en",
+        nsfw: Boolean = false,
+    ): File {
+        val output = File(directory, fileName)
+        val metadata = """
+            {
+              "name": "Aniyomi: TestExtension",
+              "pkgName": "$packageName",
+              "versionName": "1.0.0",
+              "versionCode": $versionCode,
+              "libVersion": $libVersion,
+              "lang": "$lang",
+              "isNsfw": $nsfw,
+              "isTorrent": false,
+              "sourceClass": "$packageName.SampleAnimeSource",
+              "pkgFactory": null,
+              "hasReadme": false,
+              "hasChangelog": false
+            }
+        """.trimIndent().toByteArray()
+
+        JarFile(baseJar).use { input ->
+            JarOutputStream(output.outputStream()).use { jar ->
+                input.entries().asSequence().forEach { entry ->
+                    if (entry.name == "META-INF/extension.json") return@forEach
+                    jar.putNextEntry(JarEntry(entry.name))
+                    if (!entry.isDirectory) input.getInputStream(entry).use { it.copyTo(jar) }
+                    jar.closeEntry()
+                }
+                jar.putNextEntry(JarEntry("META-INF/extension.json"))
+                jar.write(metadata)
+                jar.closeEntry()
+            }
+        }
+        return output
+    }
 
     /**
      * Creates an isolated [MacOSExtensionManager] backed by a temp directory.
@@ -89,11 +137,15 @@ class ExtensionRepoIntegrationTest {
     fun `download with progress callback reports all steps`() = runBlocking {
         val sampleJar = File(sampleJarPath)
         Assert.assertTrue("Sample JAR not built: cd macos/sample-extension && ./gradlew buildExtensionJar", sampleJar.exists())
+        val fixtureDir = createTempDir("anikku-progress-fixture-")
+        val servedJar = matchingJar(
+            sampleJar, fixtureDir, "progress.jar", "com.example.progresstest", 100L, 14.0,
+        )
 
         val server = MockWebServer().apply { start(0) }
         try {
             val baseUrl = server.url("").toString().trimEnd('/')
-            setupMockRepo(server, sampleJar, "com.example.progresstest", 999003L)
+            setupMockRepo(server, servedJar, "com.example.progresstest", 999003L)
 
             val (testManager, tempDir) = createIsolatedManager()
             try {
@@ -119,7 +171,7 @@ class ExtensionRepoIntegrationTest {
                 // Verify the JAR download request path — pre-converted JAR repos
                 // serve files at the root, not under /apk/
                 val jarRequest = server.takeRequest()
-                Assert.assertEquals("/${sampleJar.name}", jarRequest.path)
+                Assert.assertEquals("/${servedJar.name}", jarRequest.path)
 
                 Assert.assertTrue("Should track progress", progressValues.isNotEmpty())
                 Assert.assertTrue("Progress should reach near 1.0", progressValues.last() >= 0.9f)
@@ -132,6 +184,7 @@ class ExtensionRepoIntegrationTest {
             }
         } finally {
             server.shutdown()
+            fixtureDir.deleteRecursively()
         }
     }
 
@@ -191,6 +244,9 @@ class ExtensionRepoIntegrationTest {
     fun `multiple extensions in repo all install correctly`() = runBlocking {
         val sampleJar = File(sampleJarPath)
         Assert.assertTrue("Sample JAR not built", sampleJar.exists())
+        val fixtureDir = createTempDir("anikku-multiple-fixture-")
+        val extAJar = matchingJar(sampleJar, fixtureDir, "ext-a.jar", "com.example.exta", 100L, 14.0)
+        val extBJar = matchingJar(sampleJar, fixtureDir, "ext-b.jar", "com.example.extb", 101L, 13.0, "ja", true)
 
         val server = MockWebServer().apply { start(0) }
         try {
@@ -204,8 +260,8 @@ class ExtensionRepoIntegrationTest {
             ]
             """.trimIndent()
             server.enqueue(MockResponse().apply { setResponseCode(200); setBody(indexJson) })
-            server.enqueue(MockResponse().apply { setResponseCode(200); setBody(okio.Buffer().write(sampleJar.readBytes())) })
-            server.enqueue(MockResponse().apply { setResponseCode(200); setBody(okio.Buffer().write(sampleJar.readBytes())) })
+            server.enqueue(MockResponse().apply { setResponseCode(200); setBody(okio.Buffer().write(extAJar.readBytes())) })
+            server.enqueue(MockResponse().apply { setResponseCode(200); setBody(okio.Buffer().write(extBJar.readBytes())) })
 
             val (testManager, tempDir) = createIsolatedManager()
             try {
@@ -240,6 +296,7 @@ class ExtensionRepoIntegrationTest {
             }
         } finally {
             server.shutdown()
+            fixtureDir.deleteRecursively()
         }
     }
 

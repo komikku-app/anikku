@@ -580,6 +580,15 @@ Evidence:
 Phase 4 completion annotations:
 
 ```text
+Completed: 2026-08-02 (Europe/Dublin)
+Actor: Codex (GPT-5)
+Evidence: Full `check` exposed an outdated package-mismatched repository fixture and a first-install lifecycle defect; fixed fixtures now generate metadata-matching JARs; focused `ExtensionRepoIntegrationTest` plus `ExtensionSecurityTest` passed 13/13.
+Result: A validated first-time repository install now persists as Untrusted for explicit user approval instead of being rolled back as a load failure. A changed untrusted update to an already trusted artifact still rolls back, preserving the security invariant. Progress, two-package install, APK fallback, live index fetch, install/trust/browse, duplicate rejection, and failed-update rollback all pass.
+Files: `MacOSExtensionManager.kt`, `ExtensionRepoIntegrationTest.kt`, and this ledger.
+Proof artifact: Focused Gradle test output and `build/reports/tests/test/`.
+```
+
+```text
 Completed: 2026-08-01 03:36:04 +0100
 Actor: Buffy (openai/gpt-5.6-luna)
 Evidence: Source audit of MacOSExtensionLoader.kt and MacOSExtensionManager.kt; focused tests `ExtensionSecurityTest`, `ExtensionLoadingTest`, and `SampleExtensionIntegrationTest`.
