@@ -73,6 +73,7 @@ import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
+import app.anikku.macos.platform.discord.LocalDiscordRPC
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.MacOSDockManager
@@ -88,6 +89,7 @@ import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.models.EpisodeModel
 import app.anikku.macos.ui.screens.models.toEpisodeModel
 import app.anikku.macos.ui.screens.tracker.TrackerSearchScreen
+import app.anikku.macos.ui.settings.LocalSettingsState
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -555,6 +557,8 @@ data class PlayerScreen(
         val toastHost = LocalToastHost.current
         val historyRepo = LocalHistoryRepository.current
         val trackerManager = LocalTrackerManager.current
+        val discordRPC = LocalDiscordRPC.current
+        val settings = LocalSettingsState.current
 
         // Initialize the player view model (Phase 6)
         val playerViewModel = remember { PlayerViewModel() }
@@ -860,6 +864,46 @@ data class PlayerScreen(
 
         val currentEpisode = remember(currentEpisodeIndex, allEpisodes) {
             allEpisodes.getOrNull(currentEpisodeIndex)
+        }
+
+        // Publish playback activity only when the user has enabled the local
+        // Discord connection. Source URLs, headers, and account data never
+        // leave the player. Duration changes only once for normal media, so
+        // this avoids sending an IPC command on every position tick.
+        LaunchedEffect(
+            discordRPC,
+            settings.discordRichPresenceEnabled,
+            animeTitle,
+            currentEpisode?.id,
+            playbackState,
+            isPaused,
+            duration,
+        ) {
+            val rpc = discordRPC ?: return@LaunchedEffect
+            val isActive = playbackState == PlaybackState.PLAYING ||
+                playbackState == PlaybackState.PAUSED ||
+                playbackState == PlaybackState.BUFFERING
+            if (!settings.discordRichPresenceEnabled || !isActive) {
+                rpc.clearPresence()
+                return@LaunchedEffect
+            }
+            val episodeLabel = currentEpisode?.name?.takeIf(String::isNotBlank)
+                ?: currentEpisode?.episodeNumber?.let { number ->
+                    val display = if (number % 1.0 == 0.0) number.toInt().toString() else number.toString()
+                    "Episode $display"
+                }
+                ?: "Watching"
+            rpc.setPlaybackPresence(
+                animeTitle = animeTitle,
+                episodeLabel = episodeLabel,
+                positionSeconds = currentPosition,
+                durationSeconds = duration,
+                isPaused = isPaused || playbackState == PlaybackState.PAUSED,
+            )
+        }
+
+        DisposableEffect(discordRPC) {
+            onDispose { discordRPC?.clearPresence() }
         }
 
         // Shared helper: re-resolve the video URL starting from the given index.

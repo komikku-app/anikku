@@ -39,6 +39,7 @@ import app.anikku.macos.platform.auth.TrackerOAuthManager
 import app.anikku.macos.platform.auth.TrackerTokenStore
 import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.security.MacOSKeychain
+import app.anikku.macos.platform.discord.LocalDiscordRPC
 import app.anikku.macos.platform.network.ProxyConfig
 import app.anikku.macos.platform.network.ProxyType
 import app.anikku.macos.ui.components.ToastDuration
@@ -108,7 +109,11 @@ fun main() = application {
         DisposableEffect(window, settingsState) {
             val focusListener = object : WindowAdapter() {
                 override fun windowGainedFocus(event: java.awt.event.WindowEvent?) {
-                    app.onAppFocused()
+                    if (settingsState.discordRichPresenceEnabled) {
+                        app.onAppFocused()
+                    } else {
+                        app.discordRPC.stop()
+                    }
                 }
 
                 override fun windowLostFocus(event: java.awt.event.WindowEvent?) {
@@ -119,7 +124,7 @@ fun main() = application {
                 }
             }
             window.addWindowFocusListener(focusListener)
-            if (window.isFocused) app.onAppFocused()
+            if (window.isFocused && settingsState.discordRichPresenceEnabled) app.onAppFocused()
             onDispose {
                 window.removeWindowFocusListener(focusListener)
                 app.onAppBlurred()
@@ -306,6 +311,7 @@ fun main() = application {
             LocalBackupManager provides app.backupManager,
             LocalToastHost provides toastHostState,
             LocalTrackerManager provides trackerManager,
+            LocalDiscordRPC provides app.discordRPC,
         ) {
             AnikkuTheme(
                 theme = settingsState.theme,

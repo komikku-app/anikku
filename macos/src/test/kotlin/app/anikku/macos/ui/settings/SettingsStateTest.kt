@@ -118,6 +118,16 @@ class SettingsStateTest {
     }
 
     @Test
+    fun `Discord Rich Presence setting defaults off and persists opt in`(@TempDir tempDir: Path) {
+        val store = MacOSPreferenceStore(File(tempDir.toFile(), "preferences.json"))
+        assertFalse(SettingsState(store).discordRichPresenceEnabled)
+
+        SettingsState(store).discordRichPresenceEnabled = true
+
+        assertTrue(SettingsState(store).discordRichPresenceEnabled)
+    }
+
+    @Test
     fun `multiple theme changes all persist`(@TempDir tempDir: Path) {
         val prefsFile = File(tempDir.toFile(), "preferences.json")
         val store = MacOSPreferenceStore(prefsFile)

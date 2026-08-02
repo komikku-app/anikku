@@ -278,10 +278,10 @@ class AnikkuApplication {
      * Pauses Discord RPC and saves sync state.
      */
     fun onAppBlurred() {
-        // Phase 7.3: Discord Rich Presence — disconnect on blur
-        if (discordRPC.isConnected) {
-            discordRPC.clearPresence()
-        }
+        // Phase 7.3: Discord Rich Presence — stop the background IPC task on
+        // blur. The current activity is retained in memory and restored after
+        // the next successful focus-triggered connection.
+        discordRPC.stop()
     }
 
     /**

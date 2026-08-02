@@ -48,6 +48,9 @@ class SettingsState(
         private const val KEY_LOCK_ON_BLUR = "app_lock_on_blur"
         private const val KEY_USE_BIOMETRICS = "app_lock_use_biometrics"
 
+        // Connections settings
+        private const val KEY_DISCORD_RICH_PRESENCE = "discord_rich_presence"
+
         // Player settings
         private const val KEY_AUTO_PLAY_NEXT = "auto_play_next"
         private const val KEY_RESUME_FROM_LAST = "resume_from_last"
@@ -138,6 +141,21 @@ class SettingsState(
         set(value) {
             _useBiometrics.value = value
             useBiometricsPref?.set(value)
+        }
+
+    // -------------------------------------------------------------------------
+    // Connections settings
+    // -------------------------------------------------------------------------
+
+    private val discordRichPresencePref = preferenceStore?.getBoolean(KEY_DISCORD_RICH_PRESENCE, false)
+    private val _discordRichPresenceEnabled = mutableStateOf(discordRichPresencePref?.get() ?: false)
+
+    /** Whether playback metadata may be published to the local Discord client. */
+    var discordRichPresenceEnabled: Boolean
+        get() = _discordRichPresenceEnabled.value
+        set(value) {
+            _discordRichPresenceEnabled.value = value
+            discordRichPresencePref?.set(value)
         }
 
     // -------------------------------------------------------------------------

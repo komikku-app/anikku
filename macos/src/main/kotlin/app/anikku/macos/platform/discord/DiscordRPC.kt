@@ -1,5 +1,6 @@
 package app.anikku.macos.platform.discord
 
+import androidx.compose.runtime.compositionLocalOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -121,6 +122,37 @@ class DiscordRPC(
             runCatching { sendClearPresence() }
                 .onFailure { disconnectAfterWriteFailure(it) }
         }
+    }
+
+    /**
+     * Publish the currently playing episode without exposing source URLs or
+     * account data. Timestamps let Discord render elapsed/remaining time while
+     * playback is active; pausing intentionally removes them.
+     */
+    fun setPlaybackPresence(
+        animeTitle: String,
+        episodeLabel: String,
+        positionSeconds: Double,
+        durationSeconds: Double,
+        isPaused: Boolean,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
+        val presence = playbackPresence(
+            animeTitle = animeTitle,
+            episodeLabel = episodeLabel,
+            positionSeconds = positionSeconds,
+            durationSeconds = durationSeconds,
+            isPaused = isPaused,
+            nowMillis = nowMillis,
+        )
+        setPresence(
+            details = presence.details.orEmpty(),
+            state = presence.state.orEmpty(),
+            largeImage = presence.largeImage.orEmpty(),
+            largeText = presence.largeText.orEmpty(),
+            startTimestamp = presence.startTimestamp,
+            endTimestamp = presence.endTimestamp,
+        )
     }
 
     val isConnected: Boolean get() = connectionState.value == ConnectionState.CONNECTED
@@ -313,6 +345,7 @@ class DiscordRPC(
         private const val OP_PING = 3
         private const val OP_PONG = 4
         private const val ACTIVITY_TYPE_WATCHING = 3
+        private const val MAX_ACTIVITY_TEXT_LENGTH = 128
 
         private fun defaultDiscordSocketCandidates(): List<Path> {
             val environmentDirectories = listOf("XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP")
@@ -333,8 +366,47 @@ class DiscordRPC(
         }
 
         private fun Long.toDiscordSeconds(): Long = if (this >= 100_000_000_000L) this / 1_000L else this
+
+        internal fun normalizeActivityText(value: String, fallback: String): String =
+            value.replace(Regex("[\\p{Cc}\\p{Cf}]+"), " ")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+                .ifBlank { fallback }
+                .take(MAX_ACTIVITY_TEXT_LENGTH)
+
+        internal fun playbackPresence(
+            animeTitle: String,
+            episodeLabel: String,
+            positionSeconds: Double,
+            durationSeconds: Double,
+            isPaused: Boolean,
+            nowMillis: Long,
+        ): DiscordPresence {
+            val details = normalizeActivityText("Watching $animeTitle", "Watching anime")
+            val state = normalizeActivityText(
+                if (isPaused) "$episodeLabel • Paused" else episodeLabel,
+                if (isPaused) "Paused" else "Watching",
+            )
+            val validPosition = positionSeconds.takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
+            val validDuration = durationSeconds.takeIf { it.isFinite() && it > validPosition }
+            val startTimestamp = if (!isPaused) nowMillis - (validPosition * 1_000.0).toLong() else null
+            val endTimestamp = if (!isPaused && validDuration != null) {
+                startTimestamp!! + (validDuration * 1_000.0).toLong()
+            } else {
+                null
+            }
+            return DiscordPresence(
+                details = details,
+                state = state,
+                startTimestamp = startTimestamp,
+                endTimestamp = endTimestamp,
+            )
+        }
     }
 }
+
+/** Optional app-level Discord client for Compose screens. */
+val LocalDiscordRPC = compositionLocalOf<DiscordRPC?> { null }
 
 enum class ConnectionState {
     DISCONNECTED,

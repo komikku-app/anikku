@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.auth.LocalTrackerManager
 import app.anikku.macos.platform.backup.LocalBackupManager
+import app.anikku.macos.platform.discord.LocalDiscordRPC
 import app.anikku.macos.platform.web.BrowserLauncher
 import app.anikku.macos.ui.components.CheckboxItem
 import app.anikku.macos.ui.components.HeadingItem
@@ -330,6 +331,27 @@ fun SettingsScreen() {
                 onTrackerChanged = { /* login status updated reactively via StateFlow */ },
             )
         }
+
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+
+        // =====================================================================
+        // Connections
+        // =====================================================================
+        HeadingItem("Connections")
+        val discordRPC = LocalDiscordRPC.current
+        CheckboxItem(
+            label = "Discord Rich Presence",
+            checked = settings.discordRichPresenceEnabled,
+            onClick = {
+                val enabled = !settings.discordRichPresenceEnabled
+                settings.discordRichPresenceEnabled = enabled
+                if (enabled) discordRPC?.start() else discordRPC?.stop()
+                toastHost.show(
+                    "Discord activity: ${if (enabled) "on" else "off"}",
+                    ToastDuration.SHORT,
+                )
+            },
+        )
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 

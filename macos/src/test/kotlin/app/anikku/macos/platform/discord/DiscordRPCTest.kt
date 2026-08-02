@@ -74,6 +74,41 @@ class DiscordRPCTest {
     }
 
     @Test
+    fun `playback presence sanitizes metadata and calculates media timestamps`() {
+        assertEquals(
+            "Watching My Anime",
+            DiscordRPC.normalizeActivityText("Watching My\nAnime", "fallback"),
+        )
+        assertEquals(128, DiscordRPC.normalizeActivityText("x".repeat(200), "fallback").length)
+        assertEquals("fallback", DiscordRPC.normalizeActivityText("\u0000\n", "fallback"))
+
+        val playing = DiscordRPC.playbackPresence(
+            animeTitle = "My Anime",
+            episodeLabel = "Episode 7",
+            positionSeconds = 30.5,
+            durationSeconds = 90.0,
+            isPaused = false,
+            nowMillis = 1_700_000_100_000,
+        )
+        assertEquals("Watching My Anime", playing.details)
+        assertEquals("Episode 7", playing.state)
+        assertEquals(1_700_000_069_500, playing.startTimestamp)
+        assertEquals(1_700_000_159_500, playing.endTimestamp)
+
+        val paused = DiscordRPC.playbackPresence(
+            animeTitle = "My Anime",
+            episodeLabel = "Episode 7",
+            positionSeconds = Double.NaN,
+            durationSeconds = Double.POSITIVE_INFINITY,
+            isPaused = true,
+            nowMillis = 1_700_000_100_000,
+        )
+        assertEquals("Episode 7 • Paused", paused.state)
+        assertEquals(null, paused.startTimestamp)
+        assertEquals(null, paused.endTimestamp)
+    }
+
+    @Test
     fun `native IPC performs handshake publishes presence responds to ping and clears activity`() = runBlocking {
         val socketPath = shortSocketPath()
         val received = LinkedBlockingQueue<IpcFrame>()
