@@ -59,6 +59,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 /**
@@ -419,6 +421,7 @@ fun TextItem(
     label: String,
     value: String,
     onChange: (String) -> Unit,
+    isPassword: Boolean = false,
 ) {
     OutlinedTextField(
         modifier = Modifier
@@ -428,6 +431,8 @@ fun TextItem(
         value = value,
         onValueChange = onChange,
         singleLine = true,
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = if (isPassword) KeyboardOptions(keyboardType = KeyboardType.Password) else KeyboardOptions.Default,
     )
 }
 

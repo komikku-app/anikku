@@ -76,27 +76,12 @@ class MacOSHttpServer(
         return "http://127.0.0.1:$actualPort/stream/$encodedName"
     }
 
-    /**
-     * Download-ID URLs are intentionally disabled until a repository-backed
-     * ID-to-file mapping exists. Returning null prevents callers from
-     * advertising a route that cannot resolve an ID safely.
-     */
-    fun getStreamUrl(downloadId: Long): String? = null
-
     override fun serve(session: IHTTPSession): Response {
         val uri = session.uri
         val method = session.method
 
         if (uri == "/health" || uri == "/") {
             return textResponse(Response.Status.OK, "Anikku local media server — OK", method)
-        }
-
-        if (uri.startsWith("/download/")) {
-            return textResponse(
-                Response.Status.NOT_FOUND,
-                "Download-ID streaming is unavailable",
-                method,
-            )
         }
 
         if (!uri.startsWith("/stream/")) {

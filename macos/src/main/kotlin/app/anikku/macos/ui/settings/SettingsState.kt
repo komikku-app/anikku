@@ -4,6 +4,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
 import app.anikku.macos.platform.network.ProxyType
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
+import app.anikku.macos.platform.security.MacOSSecretStore
 import app.anikku.macos.ui.theme.AnikkuTheme
 
 /**
@@ -35,6 +36,7 @@ enum class ThemeMode {
 
 class SettingsState(
     private val preferenceStore: MacOSPreferenceStore? = null,
+    private val secretStore: MacOSSecretStore? = null,
 ) {
 
     companion object {
@@ -337,16 +339,27 @@ class SettingsState(
             proxyUsernamePref?.set(value)
         }
 
-    private val proxyPasswordPref = preferenceStore?.getString(KEY_PROXY_PASSWORD, "")
-    private val _proxyPassword = mutableStateOf(proxyPasswordPref?.get() ?: "")
+    private val legacyProxyPasswordPref = preferenceStore?.getString(KEY_PROXY_PASSWORD, "")
+    private val _proxyPassword = mutableStateOf(loadProxyPassword())
+    private val _proxyPasswordStorageError = mutableStateOf<String?>(null)
 
-    /** Proxy authentication password. */
+    /** Proxy authentication password. Persisted only in macOS Keychain. */
     var proxyPassword: String
         get() = _proxyPassword.value
         set(value) {
             _proxyPassword.value = value
-            proxyPasswordPref?.set(value)
+            if (secretStore == null) return
+            val stored = if (value.isBlank()) {
+                secretStore.delete(KEY_PROXY_PASSWORD)
+            } else {
+                secretStore.store(KEY_PROXY_PASSWORD, value)
+            }
+            _proxyPasswordStorageError.value = if (stored) null else {
+                secretStore.lastError ?: "Unable to store proxy password in macOS Keychain"
+            }
         }
+
+    val proxyPasswordStorageError: String? get() = _proxyPasswordStorageError.value
 
     private val chromePathPref = preferenceStore?.getString(KEY_CHROME_PATH, "")
     private val _chromePath = mutableStateOf(chromePathPref?.get() ?: "")
@@ -433,6 +446,24 @@ class SettingsState(
         } catch (_: Exception) {
             ThemeMode.SYSTEM
         }
+    }
+
+    private fun loadProxyPassword(): String {
+        if (secretStore == null) return ""
+        val secured = secretStore.retrieve(KEY_PROXY_PASSWORD)
+        if (!secured.isNullOrEmpty()) {
+            legacyProxyPasswordPref?.delete()
+            return secured
+        }
+
+        // One-time migration from builds that persisted proxy credentials in
+        // preferences. Delete plaintext only after a successful Keychain write.
+        val legacy = legacyProxyPasswordPref?.get().orEmpty()
+        if (legacy.isNotBlank() && secretStore.store(KEY_PROXY_PASSWORD, legacy)) {
+            legacyProxyPasswordPref?.delete()
+            return legacy
+        }
+        return ""
     }
 }
 

@@ -113,9 +113,13 @@ fun NetworkSettingsPanel() {
         TextItem(
             label = "Password (optional)",
             value = proxyPassword,
+            isPassword = true,
             onChange = {
                 proxyPassword = it
                 settings.proxyPassword = it
+                settings.proxyPasswordStorageError?.let { error ->
+                    toastHost.show(error, ToastDuration.LONG, isError = true)
+                }
             },
         )
 

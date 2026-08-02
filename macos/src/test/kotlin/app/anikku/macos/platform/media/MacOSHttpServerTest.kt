@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -55,7 +54,6 @@ class MacOSHttpServerTest {
         assertNotNull(url)
         assertTrue(url!!.startsWith("http://127.0.0.1:${server.actualPort}/stream/"))
         assertTrue(url.endsWith("episode%20one.mp4"))
-        assertNull(server.getStreamUrl(42L), "Download-ID route is disabled until an ID mapping exists")
     }
 
     @Test

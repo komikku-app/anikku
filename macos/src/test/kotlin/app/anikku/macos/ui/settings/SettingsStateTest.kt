@@ -1,6 +1,7 @@
 package app.anikku.macos.ui.settings
 
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
+import app.anikku.macos.platform.security.MacOSSecretStore
 import app.anikku.macos.ui.theme.AnikkuTheme
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -280,6 +281,69 @@ class SettingsStateTest {
         assertTrue(restarted.appLockEnabled)
         assertFalse(restarted.lockOnBlur)
         assertFalse(restarted.useBiometrics)
+    }
+
+    @Test
+    fun `legacy proxy password migrates to Keychain and plaintext is deleted`(@TempDir tempDir: Path) {
+        val store = MacOSPreferenceStore(tempDir.resolve("preferences.json").toFile())
+        store.getString("proxy_password", "").set("legacy-secret")
+        val secrets = FakeSecretStore()
+
+        val state = SettingsState(store, secrets)
+
+        assertEquals("legacy-secret", state.proxyPassword)
+        assertEquals("legacy-secret", secrets.retrieve("proxy_password"))
+        assertFalse(store.getString("proxy_password", "").isSet())
+    }
+
+    @Test
+    fun `proxy password persists only in Keychain`(@TempDir tempDir: Path) {
+        val store = MacOSPreferenceStore(tempDir.resolve("preferences.json").toFile())
+        val secrets = FakeSecretStore()
+        val state = SettingsState(store, secrets)
+
+        state.proxyPassword = "new-secret"
+
+        assertEquals("new-secret", SettingsState(store, secrets).proxyPassword)
+        assertFalse(store.getString("proxy_password", "").isSet())
+        assertEquals(null, state.proxyPasswordStorageError)
+    }
+
+    @Test
+    fun `Keychain failure never falls back to plaintext proxy storage`(@TempDir tempDir: Path) {
+        val store = MacOSPreferenceStore(tempDir.resolve("preferences.json").toFile())
+        val secrets = FakeSecretStore(failWrites = true)
+        val state = SettingsState(store, secrets)
+
+        state.proxyPassword = "must-not-leak"
+
+        assertFalse(store.getString("proxy_password", "").isSet())
+        assertTrue(state.proxyPasswordStorageError?.contains("injected") == true)
+    }
+
+    private class FakeSecretStore(
+        private val failWrites: Boolean = false,
+    ) : MacOSSecretStore {
+        private val values = mutableMapOf<String, String>()
+        override val isAvailable: Boolean = true
+        override var lastError: String? = null
+
+        override fun store(key: String, value: String): Boolean {
+            if (failWrites) {
+                lastError = "injected Keychain write failure"
+                return false
+            }
+            values[key] = value
+            lastError = null
+            return true
+        }
+
+        override fun retrieve(key: String): String? = values[key]
+
+        override fun delete(key: String): Boolean {
+            values.remove(key)
+            return true
+        }
     }
 
     // ---------------------------------------------------------------------------

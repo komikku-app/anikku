@@ -124,7 +124,12 @@ fun main() = application {
         title = "Anikku",
         state = windowState,
     ) {
-        val settingsState = remember { SettingsState(app.preferenceStore) }
+        val settingsState = remember {
+            SettingsState(
+                preferenceStore = app.preferenceStore,
+                secretStore = MacOSKeychain(service = "anikku-proxy", account = "network"),
+            )
+        }
         if (settingsState.appLockEnabled && !app.biometricAuth.isPinSet) {
             // Never strand a user behind a lock whose Keychain credential is
             // missing or inaccessible.
@@ -299,13 +304,10 @@ fun main() = application {
             )
         }
 
-        // Phase 9.2: Initialize global keyboard shortcuts
-        GlobalKeyboardShortcuts.initialize(
-            onToggleSidebar = { /* Future: toggle sidebar visibility */ },
-            onOpenSearch = { /* Future: focus search in current screen */ },
-            onOpenSettings = { TabSwitchHandler.switchTo(4) },
-            onNewSource = { TabSwitchHandler.switchTo(3) },
-        )
+        // MainWindow owns the sidebar/search callbacks because their state is
+        // composable-local. These two callbacks are application-wide.
+        GlobalKeyboardShortcuts.onOpenSettings = { TabSwitchHandler.switchTo(4) }
+        GlobalKeyboardShortcuts.onNewSource = { TabSwitchHandler.switchTo(3) }
 
         // Phase 5.6: Wire extension manager to BrowseTab
         BrowseTab.setExtensionManager(app.extensionManager)
