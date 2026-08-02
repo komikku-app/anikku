@@ -2,6 +2,9 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.Test
 import java.net.URI
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
 import java.util.Base64
 import javax.xml.parsers.DocumentBuilderFactory
 
@@ -159,7 +162,7 @@ tasks.register<Test>("quickTest") {
 tasks.register("quickCheck") {
     description = "Compile the app, run deterministic tests, and validate updater configuration"
     group = "verification"
-    dependsOn("quickTest", "validateSparkleConfiguration")
+    dependsOn("quickTest", "validateSparkleConfiguration", "validateTorrServerConfiguration")
 }
 
 // ---- Extension Build Tasks ------------------------------------------------
@@ -369,13 +372,108 @@ tasks.register("batchBuildKeiyoushiExtensions") {
 val appVersion: String by project
 val appVersionName: String by project
 
+// Pinned native torrent helper. Distribution builds fetch the binary for the
+// build machine's architecture and verify it before placing it in the .app.
+val torrServerVersion = "MatriX.141.1"
+val torrServerArchitecture = when (System.getProperty("os.arch").lowercase()) {
+    "aarch64", "arm64" -> "arm64"
+    else -> "amd64"
+}
+val torrServerChecksums = mapOf(
+    "arm64" to "a91adbfcec069a0db204ae909d098832d16220c154e86e409b10e2f243e1c7f9",
+    "amd64" to "fbf13d00e9619524b3caba12302886151e3e84219fd08549bb6f585285dfc5ab",
+)
+val torrServerBinaryName = "TorrServer-darwin-$torrServerArchitecture"
+val torrServerBinary = layout.buildDirectory.file("torrserver/$torrServerBinaryName")
+
+fun sha256(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    file.inputStream().buffered().use { input ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            digest.update(buffer, 0, count)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
+tasks.register("validateTorrServerConfiguration") {
+    description = "Validate the pinned TorrServer release metadata without downloading it"
+    group = "verification"
+    doLast {
+        val checksum = torrServerChecksums.getValue(torrServerArchitecture)
+        require(Regex("[0-9a-f]{64}").matches(checksum)) { "Invalid TorrServer SHA-256" }
+        val uri = URI("https://github.com/YouROK/TorrServer/releases/download/$torrServerVersion/$torrServerBinaryName")
+        require(uri.scheme == "https" && uri.host == "github.com") { "TorrServer download must use GitHub HTTPS" }
+        logger.lifecycle("TorrServer configuration valid: $torrServerVersion $torrServerArchitecture")
+    }
+}
+
+tasks.register("downloadTorrServer") {
+    description = "Download and verify the pinned native TorrServer helper"
+    group = "distribution"
+    dependsOn("validateTorrServerConfiguration")
+    inputs.property("version", torrServerVersion)
+    inputs.property("architecture", torrServerArchitecture)
+    inputs.property("sha256", torrServerChecksums.getValue(torrServerArchitecture))
+    outputs.file(torrServerBinary)
+    outputs.upToDateWhen {
+        val target = torrServerBinary.get().asFile
+        target.isFile && sha256(target) == torrServerChecksums.getValue(torrServerArchitecture)
+    }
+
+    doLast {
+        val target = torrServerBinary.get().asFile
+        val expected = torrServerChecksums.getValue(torrServerArchitecture)
+        if (target.isFile && sha256(target) == expected) {
+            target.setExecutable(true, false)
+            logger.lifecycle("Using verified cached ${target.name}")
+            return@doLast
+        }
+
+        target.parentFile.mkdirs()
+        val temporary = File(target.parentFile, "${target.name}.download")
+        val uri = URI("https://github.com/YouROK/TorrServer/releases/download/$torrServerVersion/$torrServerBinaryName")
+        logger.lifecycle("Downloading $uri")
+        uri.toURL().openStream().use { input ->
+            temporary.outputStream().buffered().use(input::copyTo)
+        }
+        val actual = sha256(temporary)
+        if (actual != expected) {
+            temporary.delete()
+            throw GradleException("TorrServer checksum mismatch: expected $expected, got $actual")
+        }
+        Files.move(
+            temporary.toPath(),
+            target.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE,
+        )
+        check(target.setExecutable(true, false)) { "Unable to make ${target.name} executable" }
+    }
+}
+
+tasks.register<Test>("nativeTorrServerTest") {
+    description = "Launch the verified bundled TorrServer and exercise its localhost JSON API"
+    group = "verification"
+    dependsOn("downloadTorrServer", "compileTestKotlin")
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    include("**/TorrentServerNativeIntegrationTest.class")
+    systemProperty("anikku.test.torrserver.bin", torrServerBinary.get().asFile.absolutePath)
+    testLogging { events("passed", "failed", "skipped") }
+}
+
 // Compose Desktop only consumes app resources from common/, <os>/, or
 // <os>-<arch>/ below appResourcesRootDir. Keep the checked-in native binaries
 // in their existing layout and create the expected hierarchy as a build output.
 val prepareNativeAppResources by tasks.registering(Sync::class) {
     description = "Stage native libraries for Compose Desktop packaging"
     group = "distribution"
-    dependsOn("buildSparkleHelper", "buildBiometricHelper")
+    dependsOn("buildSparkleHelper", "buildBiometricHelper", "downloadTorrServer")
 
     from("src/main/resources/dist") {
         into("common")
@@ -390,6 +488,14 @@ val prepareNativeAppResources by tasks.registering(Sync::class) {
     from(layout.buildDirectory.dir("native")) {
         into("common/Frameworks")
         include("libAnikkuBiometric.dylib")
+    }
+    from(layout.buildDirectory.dir("torrserver")) {
+        into("common/TorrServer")
+        include("TorrServer-darwin-*")
+        filePermissions { unix("rwxr-xr-x") }
+    }
+    from("THIRD_PARTY_NOTICES.md") {
+        into("common")
     }
     into(layout.buildDirectory.dir("native-app-resources"))
 }
@@ -619,6 +725,15 @@ tasks.register("verifyPackage") {
         val biometricHelper = File(resourcesDir, "Frameworks/libAnikkuBiometric.dylib")
         if (!biometricHelper.isFile) throw GradleException("LocalAuthentication helper dylib is not bundled")
         logger.lifecycle("  [Touch ID] LocalAuthentication helper found")
+
+        val torrServer = File(resourcesDir, "TorrServer/$torrServerBinaryName")
+        if (!torrServer.isFile || !torrServer.canExecute()) {
+            throw GradleException("Executable $torrServerBinaryName is not bundled")
+        }
+        if (sha256(torrServer) != torrServerChecksums.getValue(torrServerArchitecture)) {
+            throw GradleException("Bundled $torrServerBinaryName failed checksum verification")
+        }
+        logger.lifecycle("  [TorrServer] $torrServerVersion $torrServerArchitecture verified")
 
         val launcher = File(appDir, "Contents/MacOS/Anikku")
         val javaRuntime = File(appDir, "Contents/runtime/Contents/MacOS/libjli.dylib")

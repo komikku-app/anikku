@@ -11,330 +11,328 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
+import java.net.ServerSocket
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
 /**
- * TorrServer bridge for macOS.
+ * Owns the bundled TorrServer process and its localhost API.
  *
- * TorrServer is a lightweight torrent streaming server that converts
- * torrent files into HTTP streams. The Android app bundles the TorrServer
- * binary and manages its lifecycle. This class does the same for macOS.
- *
- * ## TorrServer Binary
- *
- * On macOS, TorrServer must be downloaded or bundled:
- * - Download from: https://github.com/YouROK/TorrServer/releases
- * - Place in: `~Library/Application Support/Anikku/torrserver/TorrServer-macOS-arm64` (Apple Silicon)
- * - Or: `TorrServer-macOS-amd64` (Intel)
- *
- * ## Usage
- *
- * ```kotlin
- * val bridge = TorrentServerBridge(scope, storageProvider)
- * bridge.start()
- *
- * // Convert torrent to stream
- * val streamUrl = bridge.addTorrent(torrentUrl)
- * // Pass streamUrl to mpv for playback
- *
- * bridge.stop()
- * ```
+ * The API calls intentionally follow TorrServer's versioned JSON contract:
+ * `POST /torrents` with `add`, `get`, `list`, and `rem` actions. Playback uses
+ * `/play/{hash}/{fileId}` after selecting the largest video file in the torrent.
  */
 class TorrentServerBridge(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val binDirectory: File,
     private val dataDirectory: File,
+    private val bundledBinDirectory: File? = packagedBinDirectory(),
     private val torrServerHost: String = "127.0.0.1",
-    private val torrServerPort: Int = 8090,
+    private val torrServerPort: Int = availableLoopbackPort(),
 ) {
-
     private var serverProcess: Process? = null
     private var processWatcher: Job? = null
+    private var outputThread: Thread? = null
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
+        .connectTimeout(3, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
     private val _serverStatus = MutableStateFlow(ServerStatus.STOPPED)
     val serverStatus: StateFlow<ServerStatus> = _serverStatus.asStateFlow()
 
-    /** Whether the TorrServer is running and healthy. */
     val isRunning: Boolean get() = _serverStatus.value == ServerStatus.RUNNING
+    internal val apiBase: String get() = "http://$torrServerHost:$torrServerPort"
 
-    /** The base URL for TorrServer API calls. */
-    private val apiBase: String get() = "http://$torrServerHost:$torrServerPort"
-
-    // -------------------------------------------------------------------------
-    // Lifecycle
-    // -------------------------------------------------------------------------
-
-    /**
-     * Start the TorrServer process.
-     *
-     * @param timeoutSeconds Maximum time to wait for the server to become healthy.
-     * @return true if the server started successfully.
-     */
-    suspend fun start(timeoutSeconds: Int = 30): Boolean {
-        if (isRunning) return true
-
-        _serverStatus.value = ServerStatus.STARTING
+    suspend fun start(timeoutSeconds: Int = 15): Boolean {
+        if (isRunning && serverProcess?.isAlive == true) return true
 
         val binary = findServerBinary() ?: run {
-            logger.warn { "TorrServer binary not found" }
             _serverStatus.value = ServerStatus.ERROR
+            logger.info { "Bundled TorrServer binary is unavailable; WebTorrent fallback will be used" }
             return false
         }
+        require(timeoutSeconds > 0) { "timeoutSeconds must be positive" }
+        require(dataDirectory.exists() || dataDirectory.mkdirs()) {
+            "Unable to create TorrServer data directory: ${dataDirectory.path}"
+        }
 
+        _serverStatus.value = ServerStatus.STARTING
         return try {
-            val processBuilder = ProcessBuilder(
+            serverProcess = ProcessBuilder(
                 binary.absolutePath,
+                "--ip", torrServerHost,
                 "--port", torrServerPort.toString(),
                 "--path", dataDirectory.absolutePath,
+                "--logpath", File(dataDirectory, "logs").absolutePath,
+                "--dontkill",
             )
-            processBuilder.directory(binDirectory)
-            processBuilder.environment()["HOME"] = System.getProperty("user.home")
+                .directory(binary.parentFile)
+                .redirectErrorStream(true)
+                .start()
+                .also(::drainProcessOutput)
 
-            serverProcess = processBuilder.start()
-
-            // Wait for server to become healthy
-            val startTime = System.currentTimeMillis()
-            var healthy = false
-
-            while (System.currentTimeMillis() - startTime < timeoutSeconds * 1000L) {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds.toLong())
+            while (System.nanoTime() < deadline && serverProcess?.isAlive == true) {
                 if (isServerHealthy()) {
-                    healthy = true
-                    break
+                    _serverStatus.value = ServerStatus.RUNNING
+                    startProcessWatcher()
+                    logger.info { "TorrServer started from ${binary.name} on $apiBase" }
+                    return true
                 }
-                delay(500)
+                delay(200)
             }
 
-            if (healthy) {
-                _serverStatus.value = ServerStatus.RUNNING
-                startProcessWatcher()
-                logger.info { "TorrServer started on $apiBase" }
-                true
-            } else {
-                logger.warn { "TorrServer failed to become healthy within ${timeoutSeconds}s" }
-                _serverStatus.value = ServerStatus.ERROR
-                stop()
-                false
-            }
-        } catch (e: Exception) {
-            logger.error(e) { "Failed to start TorrServer" }
+            logger.warn { "TorrServer failed to become ready within ${timeoutSeconds}s" }
+            stop()
+            _serverStatus.value = ServerStatus.ERROR
+            false
+        } catch (error: Exception) {
+            logger.warn(error) { "Failed to start bundled TorrServer" }
+            stop()
             _serverStatus.value = ServerStatus.ERROR
             false
         }
     }
 
-    /**
-     * Stop the TorrServer process.
-     */
     fun stop() {
         processWatcher?.cancel()
-        serverProcess?.destroyForcibly()
+        processWatcher = null
+        serverProcess?.let { process ->
+            runCatching {
+                process.destroy()
+                if (!process.waitFor(2, TimeUnit.SECONDS)) process.destroyForcibly()
+            }
+        }
         serverProcess = null
+        outputThread?.interrupt()
+        outputThread = null
         _serverStatus.value = ServerStatus.STOPPED
-        logger.info { "TorrServer stopped" }
     }
 
-    /**
-     * Restart the TorrServer process.
-     */
-    suspend fun restart(timeoutSeconds: Int = 30): Boolean {
+    suspend fun restart(timeoutSeconds: Int = 15): Boolean {
         stop()
-        delay(1000)
         return start(timeoutSeconds)
     }
 
-    // -------------------------------------------------------------------------
-    // Torrent Operations
-    // -------------------------------------------------------------------------
+    /** Add a torrent, wait for metadata, and return the best playable file URL. */
+    suspend fun prepareStream(
+        torrentUrl: String,
+        title: String? = null,
+        metadataTimeoutSeconds: Int = 60,
+    ): TorrentServerStream? {
+        if (!isRunning || metadataTimeoutSeconds <= 0) return null
 
-    /**
-     * Add a torrent to TorrServer and get a streaming URL.
-     *
-     * @param torrentUrl URL to a .torrent file or magnet link.
-     * @param title Optional title for the torrent.
-     * @return The HTTP streaming URL to pass to mpv, or null on failure.
-     */
-    fun addTorrent(torrentUrl: String, title: String? = null): String? {
-        if (!isRunning) {
-            logger.warn { "TorrServer not running" }
-            return null
-        }
+        val added = postTorrentAction(
+            JSONObject()
+                .put("action", "add")
+                .put("link", torrentUrl)
+                .put("save_to_db", false)
+                .apply { if (!title.isNullOrBlank()) put("title", title) },
+        ) ?: return null
+        val hash = added.optString("hash").takeIf { it.isNotBlank() } ?: return null
 
-        return try {
-            val requestBody = FormBody.Builder()
-                .add("link", torrentUrl)
-                .add("download", "true")
-                .add("save", "true")
-                .apply { if (title != null) add("title", title) }
-                .build()
-
-            val request = Request.Builder()
-                .url("$apiBase/torrents")
-                .post(requestBody)
-                .build()
-
-            val response = httpClient.newCall(request).execute()
-            val bodyString = response.body?.string() ?: return null
-
-            if (!response.isSuccessful) {
-                logger.warn { "Failed to add torrent: ${response.code}" }
-                return null
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(metadataTimeoutSeconds.toLong())
+        var status = added
+        while (System.nanoTime() < deadline) {
+            val files = parseFiles(status.optJSONArray("file_stats"))
+            if (files.isNotEmpty()) {
+                val selected = selectPlayableFile(files)
+                return TorrentServerStream(
+                    httpUrl = "$apiBase/play/$hash/${selected.id}",
+                    torrentHash = hash,
+                    file = selected,
+                )
             }
-
-            // Extract the torrent hash/ID from the response
-            // TorrServer returns JSON with the torrent info
-            val torrentId = extractTorrentId(bodyString) ?: return null
-
-            // Build streaming URL
-            "$apiBase/stream/$torrentId:1"
-        } catch (e: Exception) {
-            logger.error(e) { "Failed to add torrent: $torrentUrl" }
-            null
+            delay(250)
+            status = postTorrentAction(
+                JSONObject().put("action", "get").put("hash", hash),
+            ) ?: continue
         }
+
+        logger.warn { "TorrServer metadata timed out for ${torrentUrl.take(80)}" }
+        removeTorrent(hash)
+        return null
     }
 
-    /**
-     * Remove a torrent from TorrServer.
-     *
-     * @param torrentId The torrent hash or ID to remove.
-     */
     fun removeTorrent(torrentId: String): Boolean {
-        if (!isRunning) return false
-
-        return try {
-            val request = Request.Builder()
-                .url("$apiBase/torrents/$torrentId")
-                .delete()
-                .build()
-
-            val response = httpClient.newCall(request).execute()
-            response.isSuccessful
-        } catch (e: Exception) {
-            logger.warn(e) { "Failed to remove torrent: $torrentId" }
-            false
-        }
+        if (!isRunning || torrentId.isBlank()) return false
+        return postTorrentAction(
+            JSONObject().put("action", "rem").put("hash", torrentId),
+            expectJson = false,
+        ) != null
     }
 
-    /**
-     * List all torrents in TorrServer.
-     *
-     * @return List of torrent info objects.
-     */
     fun listTorrents(): List<TorrentInfo> {
         if (!isRunning) return emptyList()
-
-        return try {
-            val request = Request.Builder()
-                .url("$apiBase/torrents")
-                .get()
-                .build()
-
-            val response = httpClient.newCall(request).execute()
-            val bodyString = response.body?.string() ?: return emptyList()
-
-            parseTorrentList(bodyString)
-        } catch (e: Exception) {
-            logger.warn(e) { "Failed to list torrents" }
-            emptyList()
-        }
+        val response = postTorrentAction(
+            JSONObject().put("action", "list"),
+            expectArray = true,
+        ) ?: return emptyList()
+        return parseTorrentList(response.optJSONArray("items"))
     }
 
-    // -------------------------------------------------------------------------
-    // Internal
-    // -------------------------------------------------------------------------
+    val isBinaryAvailable: Boolean get() = findServerBinary() != null
 
     private fun findServerBinary(): File? {
-        val candidates = listOf(
-            File(binDirectory, "TorrServer-macOS-arm64"),
-            File(binDirectory, "TorrServer-macOS-amd64"),
-            File(binDirectory, "TorrServer"),
+        val architecture = normalizedArchitecture()
+        val names = listOf(
+            "TorrServer-darwin-$architecture",
+            "TorrServer-macOS-$architecture",
+            "TorrServer",
         )
-        return candidates.firstOrNull { it.isFile && it.canExecute() }
+        return listOfNotNull(bundledBinDirectory, binDirectory)
+            .distinctBy { it.absolutePath }
+            .asSequence()
+            .flatMap { directory -> names.asSequence().map { File(directory, it) } }
+            .firstOrNull { it.isFile && it.canExecute() }
     }
 
-    private fun isServerHealthy(): Boolean {
-        return try {
-            val request = Request.Builder()
-                .url("$apiBase/health")
-                .get()
-                .build()
-            val response = httpClient.newCall(request).execute()
-            response.isSuccessful
-        } catch (_: Exception) {
-            false
+    private fun isServerHealthy(): Boolean = runCatching {
+        httpClient.newCall(Request.Builder().url("$apiBase/echo").get().build()).execute().use {
+            it.isSuccessful && !it.body?.string().isNullOrBlank()
+        }
+    }.getOrDefault(false)
+
+    /** Wrap an array response so one internal helper can return JSONObject. */
+    private fun postTorrentAction(
+        payload: JSONObject,
+        expectJson: Boolean = true,
+        expectArray: Boolean = false,
+    ): JSONObject? = runCatching {
+        val request = Request.Builder()
+            .url("$apiBase/torrents")
+            .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
+            .build()
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            val body = response.body?.string().orEmpty()
+            when {
+                expectArray -> JSONObject().put("items", JSONArray(body))
+                expectJson -> JSONObject(body)
+                else -> JSONObject()
+            }
+        }
+    }.onFailure { error ->
+        logger.debug(error) { "TorrServer API action failed: ${payload.optString("action")}" }
+    }.getOrNull()
+
+    private fun drainProcessOutput(process: Process) {
+        outputThread = Thread({
+            runCatching {
+                process.inputStream.bufferedReader().useLines { lines ->
+                    lines.forEach { logger.debug { "TorrServer: $it" } }
+                }
+            }
+        }, "anikku-torrserver-output").apply {
+            isDaemon = true
+            start()
         }
     }
 
     private fun startProcessWatcher() {
+        processWatcher?.cancel()
         processWatcher = scope.launch {
             while (isActive) {
-                delay(10_000)
-                if (serverProcess?.isAlive == false) {
-                    logger.warn { "TorrServer process died unexpectedly" }
+                delay(2_000)
+                if (serverProcess?.isAlive != true) {
                     _serverStatus.value = ServerStatus.ERROR
+                    logger.warn { "TorrServer process exited unexpectedly" }
                     break
                 }
             }
         }
     }
 
-    private fun extractTorrentId(responseBody: String): String? {
-        // Parse TorrServer JSON response to extract torrent hash
-        return try {
-            val json = org.json.JSONObject(responseBody)
-            json.optString("hash") ?: json.optString("id")
-        } catch (_: Exception) {
-            null
-        }
-    }
+    companion object {
+        private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+        private val VIDEO_EXTENSIONS = setOf(
+            "3gp", "avi", "flv", "m2ts", "m4v", "mkv", "mov", "mp4", "mpeg", "mpg", "mts", "ogm", "ts", "webm", "wmv",
+        )
 
-    private fun parseTorrentList(responseBody: String): List<TorrentInfo> {
-        return try {
-            val jsonArray = org.json.JSONArray(responseBody)
-            (0 until jsonArray.length()).map { index ->
-                val obj = jsonArray.getJSONObject(index)
-                TorrentInfo(
-                    hash = obj.optString("hash", ""),
-                    title = obj.optString("title", "Unknown"),
-                    size = obj.optLong("size", 0),
-                    progress = (obj.optDouble("percent_downloaded", 0.0) / 100.0).toFloat(),
-                    status = obj.optString("status", "unknown"),
-                    seeders = obj.optInt("seeders", 0),
-                )
+        fun createDefault(
+            scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        ): TorrentServerBridge {
+            val base = File(
+                System.getProperty("user.home"),
+                "Library${File.separator}Application Support${File.separator}Anikku",
+            )
+            return TorrentServerBridge(
+                scope = scope,
+                binDirectory = File(base, "torrserver/bin"),
+                dataDirectory = File(base, "torrserver/data"),
+            )
+        }
+
+        internal fun parseFiles(array: JSONArray?): List<TorrentFile> {
+            if (array == null) return emptyList()
+            return (0 until array.length()).mapNotNull { index ->
+                runCatching { array.getJSONObject(index) }.getOrNull()?.let { item ->
+                    val id = item.optInt("id", -1)
+                    val path = item.optString("path")
+                    if (id <= 0 || path.isBlank()) null else TorrentFile(id, path, item.optLong("length", 0L))
+                }
             }
-        } catch (_: Exception) {
-            emptyList()
         }
+
+        internal fun selectPlayableFile(files: List<TorrentFile>): TorrentFile {
+            require(files.isNotEmpty()) { "Torrent has no files" }
+            val videos = files.filter { file ->
+                file.path.substringAfterLast('.', "").lowercase(Locale.ROOT) in VIDEO_EXTENSIONS
+            }
+            return (videos.ifEmpty { files }).maxBy { it.length }
+        }
+
+        private fun parseTorrentList(array: JSONArray?): List<TorrentInfo> {
+            if (array == null) return emptyList()
+            return (0 until array.length()).mapNotNull { index ->
+                runCatching { array.getJSONObject(index) }.getOrNull()?.let { item ->
+                    TorrentInfo(
+                        hash = item.optString("hash"),
+                        title = item.optString("title", item.optString("name", "Unknown")),
+                        size = item.optLong("torrent_size", 0L),
+                        progress = if (item.optLong("torrent_size", 0L) > 0L) {
+                            (item.optDouble("loaded_size", 0.0) / item.optDouble("torrent_size", 1.0)).toFloat()
+                        } else 0f,
+                        status = item.optString("stat_string", "unknown"),
+                        seeders = item.optInt("connected_seeders", 0),
+                    )
+                }
+            }
+        }
+
+        private fun normalizedArchitecture(): String = when (System.getProperty("os.arch").lowercase(Locale.ROOT)) {
+            "aarch64", "arm64" -> "arm64"
+            else -> "amd64"
+        }
+
+        private fun packagedBinDirectory(): File? = System.getProperty("compose.application.resources.dir")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { File(it, "TorrServer") }
+
+        private fun availableLoopbackPort(): Int = ServerSocket(0).use { it.localPort }
     }
-
-    /**
-     * Check if the TorrServer binary exists and is executable.
-     */
-    val isBinaryAvailable: Boolean get() = findServerBinary() != null
 }
 
-/**
- * Status of the TorrServer process.
- */
-enum class ServerStatus {
-    STOPPED,
-    STARTING,
-    RUNNING,
-    ERROR,
-}
+enum class ServerStatus { STOPPED, STARTING, RUNNING, ERROR }
 
-/**
- * Information about a torrent in TorrServer.
- */
+data class TorrentServerStream(
+    val httpUrl: String,
+    val torrentHash: String,
+    val file: TorrentFile,
+)
+
+data class TorrentFile(val id: Int, val path: String, val length: Long)
+
 data class TorrentInfo(
     val hash: String,
     val title: String,

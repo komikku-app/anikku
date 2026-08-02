@@ -3,7 +3,9 @@ package app.anikku.macos.platform.torrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
+import org.json.JSONArray
 import java.io.File
+import kotlinx.coroutines.runBlocking
 
 class TorrentServerBridgeTest {
 
@@ -60,13 +62,13 @@ class TorrentServerBridgeTest {
     }
 
     @Test
-    fun `addTorrent returns null when not running`() {
+    fun `prepareStream returns null when not running`() = runBlocking {
         val bridge = TorrentServerBridge(
             scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob()),
             binDirectory = File("/tmp"),
             dataDirectory = File("/tmp"),
         )
-        val url = bridge.addTorrent("magnet:?xt=urn:btih:test")
+        val url = bridge.prepareStream("magnet:?xt=urn:btih:test")
         assertEquals(null, url)
     }
 
@@ -78,5 +80,30 @@ class TorrentServerBridgeTest {
             dataDirectory = File("/tmp"),
         )
         assertFalse(bridge.removeTorrent("test_hash"))
+    }
+
+    @Test
+    fun `largest recognized video is selected over archives and samples`() {
+        val files = TorrentServerBridge.parseFiles(
+            JSONArray(
+                """[
+                    {"id":1,"path":"release.zip","length":9000000000},
+                    {"id":2,"path":"sample.mkv","length":10000000},
+                    {"id":3,"path":"Episode 01.MP4","length":1400000000}
+                ]""",
+            ),
+        )
+
+        assertEquals(TorrentFile(3, "Episode 01.MP4", 1_400_000_000), TorrentServerBridge.selectPlayableFile(files))
+    }
+
+    @Test
+    fun `largest file is used when torrent has no recognized video extension`() {
+        val files = listOf(
+            TorrentFile(1, "one.bin", 10),
+            TorrentFile(2, "two.unknown", 20),
+        )
+
+        assertEquals(files[1], TorrentServerBridge.selectPlayableFile(files))
     }
 }

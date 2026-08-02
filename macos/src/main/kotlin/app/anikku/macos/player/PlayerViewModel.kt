@@ -27,7 +27,9 @@ private val logger = KotlinLogging.logger {}
  * and episode navigation. Communicates with mpv via [MPVLib] and
  * processes events via [MPVEventLoop].
  */
-class PlayerViewModel {
+class PlayerViewModel(
+    private val torrentStreamer: TorrentStreamingCoordinator = TorrentStreamingCoordinator(),
+) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -82,8 +84,8 @@ class PlayerViewModel {
     @Volatile
     private var subtitleDefaultApplied = false
 
-    /** Magnet streamer process when playing a torrent. */
-    private var magnetProcess: Process? = null
+    /** Active native TorrServer or WebTorrent session. */
+    private var torrentStream: TorrentStreamingResult.Success? = null
 
     /**
      * Token to guard against stale magnet-load coroutines firing after
@@ -568,12 +570,10 @@ class PlayerViewModel {
         eventLoop = null
         currentUrl = null
 
-        // Clean up magnet streamer process if running
-        magnetProcess?.let { proc ->
-            try {
-                MagnetStreamer.stopStreaming(MagnetStreamResult.Success("", proc))
-            } catch (_: Exception) { }
-            magnetProcess = null
+        // Clean up torrent server/process if running.
+        torrentStream?.let { stream ->
+            torrentStreamer.stop(stream)
+            torrentStream = null
             logger.info { "🧲 MAGNET_SHUTDOWN: torrent stream process terminated" }
         }
 
@@ -748,14 +748,8 @@ class PlayerViewModel {
         magnetLoadToken = null
         magnetLoadJob?.cancel()
         magnetLoadJob = null
-        magnetProcess?.let { process ->
-            runCatching {
-                MagnetStreamer.stopStreaming(MagnetStreamResult.Success("", process))
-            }.onFailure { error ->
-                logger.debug(error) { "Failed to stop previous magnet stream" }
-            }
-        }
-        magnetProcess = null
+        torrentStream?.let(torrentStreamer::stop)
+        torrentStream = null
     }
 
     private fun loadMagnetEpisode(
@@ -769,31 +763,25 @@ class PlayerViewModel {
         val token = Any()
         magnetLoadToken = token
 
-        magnetProcess?.let { prevProcess ->
-            try {
-                prevProcess.destroy()
-                prevProcess.waitFor(3, TimeUnit.SECONDS)
-                MagnetStreamer.stopStreaming(MagnetStreamResult.Success("", prevProcess))
-            } catch (_: Exception) { }
-            magnetProcess = null
-        }
+        torrentStream?.let(torrentStreamer::stop)
+        torrentStream = null
 
         magnetLoadJob?.cancel()
         magnetLoadJob = scope.launch {
             try {
-                val result = MagnetStreamer.startStreaming(magnetUrl)
+                val result = torrentStreamer.start(magnetUrl)
                 if (magnetLoadToken !== token) {
-                    if (result is MagnetStreamResult.Success) MagnetStreamer.stopStreaming(result)
+                    if (result is TorrentStreamingResult.Success) torrentStreamer.stop(result)
                     return@launch
                 }
 
                 withContext(Dispatchers.Main) {
                     when (result) {
-                        is MagnetStreamResult.Success -> {
-                            magnetProcess = result.process
-                            logger.info { "🧲 MAGNET: webtorrent server ready at ${result.httpUrl}" }
+                        is TorrentStreamingResult.Success -> {
+                            torrentStream = result
+                            logger.info { "🧲 MAGNET: ${result.backend} server ready at ${result.httpUrl}" }
                             if (magnetLoadToken !== token) {
-                                MagnetStreamer.stopStreaming(result)
+                                torrentStreamer.stop(result)
                                 return@withContext
                             }
                             loadEpisodeInternal(
@@ -803,7 +791,7 @@ class PlayerViewModel {
                                 retainMagnetProcess = true,
                             )
                         }
-                        is MagnetStreamResult.Failure -> {
+                        is TorrentStreamingResult.Failure -> {
                             if (magnetLoadToken !== token) return@withContext
                             _playbackState.value = PlaybackState.ERROR
                             logger.warn { "🧲 MAGNET: Failed to start torrent stream: ${result.message}" }
