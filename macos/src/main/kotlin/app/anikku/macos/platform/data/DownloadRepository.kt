@@ -6,9 +6,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+import app.anikku.macos.platform.storage.MacOSAtomicFile
 
 /**
  * CompositionLocal for MacOSDownloadManager.
@@ -163,6 +161,22 @@ class DownloadRepository(private val dataDir: File) {
         saveToFile()
     }
 
+    /** Replaces persisted queue metadata, preserving stable backup IDs. */
+    @Synchronized
+    fun replaceAll(restored: List<DownloadEntry>) {
+        val previousEntries = entries
+        val previousNextId = nextId
+        entries = restored.distinctBy { it.id }.toMutableList()
+        nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
+        try {
+            saveToFile()
+        } catch (error: Exception) {
+            entries = previousEntries
+            nextId = previousNextId
+            throw error
+        }
+    }
+
     @Synchronized
     fun pruneCompleted(keepCount: Int = 20) {
         val completed = entries.filter { it.status == DownloadStatus.COMPLETED }
@@ -188,27 +202,7 @@ class DownloadRepository(private val dataDir: File) {
     }
 
     private fun saveToFile() {
-        downloadFile.parentFile?.mkdirs()
-        val temporaryFile = File(downloadFile.parentFile, ".${downloadFile.name}.tmp")
-        temporaryFile.writeText(json.encodeToString(DownloadList(entries)))
-        try {
-            try {
-                Files.move(
-                    temporaryFile.toPath(),
-                    downloadFile.toPath(),
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING,
-                )
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(
-                    temporaryFile.toPath(),
-                    downloadFile.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                )
-            }
-        } finally {
-            Files.deleteIfExists(temporaryFile.toPath())
-        }
+        MacOSAtomicFile.writeText(downloadFile, json.encodeToString(DownloadList(entries)))
     }
 
     @Serializable

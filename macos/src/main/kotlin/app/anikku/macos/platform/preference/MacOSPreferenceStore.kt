@@ -171,6 +171,33 @@ class MacOSPreferenceStore(
         }
     }
 
+    /** Lossless JSON snapshot used by the portable backup format. */
+    fun snapshotJson(): Map<String, JsonElement> = synchronized(mutationLock) {
+        store.toMap()
+    }
+
+    /**
+     * Atomically persists a typed preference snapshot.
+     *
+     * When [replace] is false, restored values override matching keys while
+     * preferences introduced after the backup was made remain intact.
+     */
+    fun restoreJson(values: Map<String, JsonElement>, replace: Boolean = false) {
+        synchronized(mutationLock) {
+            val previous = store.toMap()
+            if (replace) store.clear()
+            store.putAll(values)
+            try {
+                saveToFile()
+            } catch (error: Exception) {
+                store.clear()
+                store.putAll(previous)
+                throw error
+            }
+            keyFlow.tryEmit(null)
+        }
+    }
+
     private fun loadFromFile() {
         if (!prefsFile.exists()) return
         try {

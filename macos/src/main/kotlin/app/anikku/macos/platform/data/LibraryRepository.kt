@@ -143,6 +143,40 @@ class LibraryRepository(private val dataDir: File) {
 
     fun count(): Int = entries.size
 
+    /** Replaces library and category state for transactional backup restore. */
+    @Synchronized
+    fun replaceAll(restoredEntries: List<LibraryEntry>, restoredCategories: List<CategoryEntry> = categories) {
+        val previousEntries = entries
+        val previousCategories = categories
+        val normalizedCategories = restoredCategories
+            .distinctBy { it.id }
+            .toMutableList()
+            .also { list ->
+                if (list.none { it.id == CATEGORY_DEFAULT_ID }) {
+                    list.add(0, DEFAULT_CATEGORIES.first())
+                }
+            }
+        val validCategoryIds = normalizedCategories.mapTo(mutableSetOf()) { it.id }
+        entries = restoredEntries
+            .distinctBy { it.animeId }
+            .map { entry ->
+                if (entry.categoryId in validCategoryIds) entry else entry.copy(categoryId = CATEGORY_DEFAULT_ID)
+            }
+            .toMutableList()
+        categories = normalizedCategories
+        try {
+            saveCategoriesToFile()
+            saveToFile()
+        } catch (error: Exception) {
+            entries = previousEntries
+            categories = previousCategories
+            runCatching { saveCategoriesToFile() }
+            runCatching { saveToFile() }
+            throw error
+        }
+        _revision.value++
+    }
+
     /**
      * Update the resume position for an anime in the library.
      */

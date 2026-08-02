@@ -3,10 +3,16 @@ package app.anikku.macos.platform.backup
 import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.LibraryRepository
+import app.anikku.macos.platform.data.CategoryEntry
+import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
+import app.anikku.macos.platform.storage.MacOSAtomicFile
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import tachiyomi.domain.anime.model.CustomAnimeInfo
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -44,12 +50,17 @@ class MacOSBackupManager(
     private val historyRepository: HistoryRepository,
     private val downloadRepository: DownloadRepository,
     private val preferenceStore: MacOSPreferenceStore? = null,
-    private val customAnimeDir: File? = null,
-    private val json: Json = Json { prettyPrint = true; ignoreUnknownKeys = true },
+    private val customAnimeRepository: MacOSCustomAnimeRepository? = null,
+    private val json: Json = Json {
+        prettyPrint = true
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        explicitNulls = false
+    },
 ) {
 
     companion object {
-        const val BACKUP_VERSION = 1
+        const val BACKUP_VERSION = 2
         const val BACKUP_EXTENSION = ".anikku_backup.json"
     }
 
@@ -66,8 +77,7 @@ class MacOSBackupManager(
     fun exportTo(outputFile: File): Boolean {
         return try {
             val backup = buildBackupData()
-            outputFile.parentFile?.mkdirs()
-            outputFile.writeText(json.encodeToString(backup))
+            MacOSAtomicFile.writeText(outputFile, json.encodeToString(backup))
             true
         } catch (e: Exception) {
             io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -135,78 +145,71 @@ class MacOSBackupManager(
             )
         }
 
-        // Restore library
-        val libraryEntries = backup.library
-        var libraryCount = 0
-        if (libraryEntries != null) {
-            for (entry in libraryEntries) {
-                libraryRepository.add(
-                    LibraryRepository.LibraryEntry(
-                        animeId = entry.animeId,
-                        title = entry.title,
-                        sourceId = entry.sourceId,
-                        url = entry.url,
-                        thumbnailUrl = entry.thumbnailUrl,
-                        author = entry.author,
-                        artist = entry.artist,
-                        description = entry.description,
-                        genre = entry.genre,
-                        status = entry.status,
-                        categoryId = entry.categoryId,
-                        lastSecondSeen = entry.lastSecondSeen,
-                        totalSeconds = entry.totalSeconds,
-                        latestEpisodeNumber = entry.latestEpisodeNumber,
-                        latestEpisodeName = entry.latestEpisodeName,
-                        unseenEpisodeCount = entry.unseenEpisodeCount,
-                        addedAt = entry.addedAt,
-                        lastUpdatedAt = entry.lastUpdatedAt,
-                    )
+        // Decode and validate every record before mutating live state.
+        val restoredLibrary = backup.library.orEmpty().map(BackupLibraryEntry::toRepository)
+        val restoredCategories = backup.categories?.map(BackupCategoryEntry::toRepository)
+        val restoredHistory = backup.history.orEmpty().map(BackupHistoryEntry::toRepository)
+        val restoredDownloads = try {
+            backup.downloads.orEmpty().map(BackupDownloadEntry::toRepository)
+        } catch (error: IllegalArgumentException) {
+            return ImportResult(success = false, error = "Invalid download status: ${error.message}")
+        }
+        val restoredCustomAnime = backup.customAnime.orEmpty().map(BackupCustomAnimeEntry::toDomain)
+        val restoredPreferences = backup.preferenceValues
+            ?: backup.preferences?.mapValues { JsonPrimitive(it.value) }
+            ?: emptyMap()
+
+        val previousLibrary = libraryRepository.getAll()
+        val previousCategories = libraryRepository.getCategories()
+        val previousHistory = historyRepository.getAll()
+        val previousDownloads = downloadRepository.getAll()
+        val previousPreferences = preferenceStore?.snapshotJson()
+        val previousCustomAnime = customAnimeRepository?.getAll()
+
+        return try {
+            val mergedLibrary = (previousLibrary + restoredLibrary)
+                .associateBy { it.animeId }
+                .values
+                .toList()
+            val mergedCategories = if (restoredCategories == null) {
+                previousCategories
+            } else {
+                (previousCategories + restoredCategories).associateBy { it.id }.values.toList()
+            }
+            libraryRepository.replaceAll(mergedLibrary, mergedCategories)
+
+            historyRepository.replaceAll(
+                (previousHistory + restoredHistory)
+                    .associateBy { it.animeId to it.episodeId }
+                    .values
+                    .toList(),
+            )
+            downloadRepository.replaceAll(
+                (previousDownloads + restoredDownloads).associateBy { it.id }.values.toList(),
+            )
+            if (restoredPreferences.isNotEmpty()) preferenceStore?.restoreJson(restoredPreferences)
+            if (restoredCustomAnime.isNotEmpty()) {
+                customAnimeRepository?.replaceAll(
+                    (previousCustomAnime.orEmpty() + restoredCustomAnime).associateBy { it.id }.values.toList(),
                 )
-                libraryCount++
             }
+
+            ImportResult(
+                success = true,
+                libraryCount = restoredLibrary.size,
+                historyCount = restoredHistory.size,
+                downloadsCount = restoredDownloads.size,
+                customAnimeCount = restoredCustomAnime.size,
+            )
+        } catch (error: Exception) {
+            // Best-effort rollback keeps an I/O failure from leaving a partial restore.
+            runCatching { libraryRepository.replaceAll(previousLibrary, previousCategories) }
+            runCatching { historyRepository.replaceAll(previousHistory) }
+            runCatching { downloadRepository.replaceAll(previousDownloads) }
+            if (previousPreferences != null) runCatching { preferenceStore?.restoreJson(previousPreferences, replace = true) }
+            if (previousCustomAnime != null) runCatching { customAnimeRepository?.replaceAll(previousCustomAnime) }
+            ImportResult(success = false, error = "Restore failed: ${error.message?.take(200) ?: "Unknown"}")
         }
-
-        // Restore history
-        val historyEntries = backup.history
-        var historyCount = 0
-        if (historyEntries != null) {
-            for (entry in historyEntries) {
-                historyRepository.add(
-                    HistoryRepository.HistoryEntry(
-                        animeId = entry.animeId,
-                        episodeId = entry.episodeId,
-                        animeTitle = entry.animeTitle,
-                        episodeName = entry.episodeName,
-                        episodeNumber = entry.episodeNumber,
-                        sourceId = entry.sourceId,
-                        episodeUrl = entry.episodeUrl,
-                        seenAt = entry.seenAt,
-                        watchDuration = entry.watchDuration,
-                        lastSecondSeen = entry.lastSecondSeen,
-                        totalSeconds = entry.totalSeconds,
-                    )
-                )
-                historyCount++
-            }
-        }
-
-        // Restore download metadata (count only)
-        var downloadsCount = backup.downloads?.size ?: 0
-
-        // Restore preferences
-        val prefs = backup.preferences
-        if (prefs != null) {
-            for ((key, value) in prefs) {
-                preferenceStore?.getString(key, "")?.set(value)
-            }
-        }
-
-        return ImportResult(
-            success = true,
-            libraryCount = libraryCount,
-            historyCount = historyCount,
-            downloadsCount = downloadsCount,
-        )
     }
 
     // -----------------------------------------------------------------------
@@ -237,6 +240,16 @@ class MacOSBackupManager(
             )
         }
 
+        val categories = libraryRepository.getCategories().map { category ->
+            BackupCategoryEntry(
+                id = category.id,
+                name = category.name,
+                order = category.order,
+                isDefault = category.isDefault,
+                hidden = category.hidden,
+            )
+        }
+
         val history = historyRepository.getAll().map { entry ->
             BackupHistoryEntry(
                 animeId = entry.animeId,
@@ -245,6 +258,7 @@ class MacOSBackupManager(
                 episodeName = entry.episodeName,
                 episodeNumber = entry.episodeNumber,
                 sourceId = entry.sourceId,
+                animeUrl = entry.animeUrl,
                 episodeUrl = entry.episodeUrl,
                 seenAt = entry.seenAt,
                 watchDuration = entry.watchDuration,
@@ -262,21 +276,41 @@ class MacOSBackupManager(
                 episodeName = entry.episodeName,
                 episodeNumber = entry.episodeNumber,
                 episodeUrl = entry.episodeUrl,
+                videoUrl = entry.videoUrl,
+                fileName = entry.fileName,
+                filePath = entry.filePath,
                 status = entry.status.name,
+                progress = entry.progress,
+                totalBytes = entry.totalBytes,
+                downloadedBytes = entry.downloadedBytes,
                 createdAt = entry.createdAt,
+                completedAt = entry.completedAt,
             )
         }
 
-        val preferences = preferenceStore?.getAll()?.mapValues { it.value.toString() }
+        val customAnime = customAnimeRepository?.getAll()?.map { entry ->
+            BackupCustomAnimeEntry(
+                id = entry.id,
+                title = entry.title,
+                author = entry.author,
+                artist = entry.artist,
+                thumbnailUrl = entry.thumbnailUrl,
+                description = entry.description,
+                genre = entry.genre,
+                status = entry.status,
+            )
+        }
 
         return BackupData(
             version = BACKUP_VERSION,
             appName = "Anikku macOS",
             exportedAt = System.currentTimeMillis(),
             library = library,
+            categories = categories,
             history = history,
             downloads = downloads,
-            preferences = preferences,
+            preferenceValues = preferenceStore?.snapshotJson(),
+            customAnime = customAnime,
         )
     }
 
@@ -290,9 +324,13 @@ class MacOSBackupManager(
         val appName: String = "Anikku macOS",
         val exportedAt: Long = System.currentTimeMillis(),
         val library: List<BackupLibraryEntry>? = null,
+        val categories: List<BackupCategoryEntry>? = null,
         val history: List<BackupHistoryEntry>? = null,
         val downloads: List<BackupDownloadEntry>? = null,
+        /** Version 0/1 compatibility field. */
         val preferences: Map<String, String>? = null,
+        val preferenceValues: Map<String, JsonElement>? = null,
+        val customAnime: List<BackupCustomAnimeEntry>? = null,
     )
 
     @Serializable
@@ -315,7 +353,24 @@ class MacOSBackupManager(
         val unseenEpisodeCount: Int = 0,
         val addedAt: Long = System.currentTimeMillis(),
         val lastUpdatedAt: Long = System.currentTimeMillis(),
-    )
+    ) {
+        fun toRepository() = LibraryRepository.LibraryEntry(
+            animeId, title, sourceId, url, thumbnailUrl, author, artist, description,
+            genre, status, categoryId, lastSecondSeen, totalSeconds, latestEpisodeNumber,
+            latestEpisodeName, unseenEpisodeCount, addedAt, lastUpdatedAt,
+        )
+    }
+
+    @Serializable
+    data class BackupCategoryEntry(
+        val id: Long,
+        val name: String,
+        val order: Long = 0L,
+        val isDefault: Boolean = false,
+        val hidden: Boolean = false,
+    ) {
+        fun toRepository() = CategoryEntry(id, name, order, isDefault, hidden)
+    }
 
     @Serializable
     data class BackupHistoryEntry(
@@ -325,12 +380,18 @@ class MacOSBackupManager(
         val episodeName: String = "",
         val episodeNumber: Double = 0.0,
         val sourceId: Long = 0L,
+        val animeUrl: String? = null,
         val episodeUrl: String? = null,
         val seenAt: Long = System.currentTimeMillis(),
         val watchDuration: Long = 0L,
         val lastSecondSeen: Long = 0L,
         val totalSeconds: Long = 0L,
-    )
+    ) {
+        fun toRepository() = HistoryRepository.HistoryEntry(
+            animeId, episodeId, animeTitle, episodeName, episodeNumber, sourceId,
+            animeUrl, episodeUrl, seenAt, watchDuration, lastSecondSeen, totalSeconds,
+        )
+    }
 
     @Serializable
     data class BackupDownloadEntry(
@@ -341,9 +402,36 @@ class MacOSBackupManager(
         val episodeName: String = "",
         val episodeNumber: Double = 0.0,
         val episodeUrl: String? = null,
+        val videoUrl: String? = null,
+        val fileName: String? = null,
+        val filePath: String? = null,
         val status: String = "QUEUED",
+        val progress: Float = 0f,
+        val totalBytes: Long = 0L,
+        val downloadedBytes: Long = 0L,
         val createdAt: Long = System.currentTimeMillis(),
-    )
+        val completedAt: Long? = null,
+    ) {
+        fun toRepository() = DownloadRepository.DownloadEntry(
+            id, animeId, sourceId, animeTitle, episodeName, episodeNumber, episodeUrl,
+            videoUrl, fileName, filePath, DownloadRepository.DownloadStatus.valueOf(status),
+            progress, totalBytes, downloadedBytes, createdAt, completedAt,
+        )
+    }
+
+    @Serializable
+    data class BackupCustomAnimeEntry(
+        val id: Long,
+        val title: String? = null,
+        val author: String? = null,
+        val artist: String? = null,
+        val thumbnailUrl: String? = null,
+        val description: String? = null,
+        val genre: List<String>? = null,
+        val status: Long? = null,
+    ) {
+        fun toDomain() = CustomAnimeInfo(id, title, author, artist, thumbnailUrl, description, genre, status)
+    }
 }
 
 /**
@@ -354,5 +442,6 @@ data class ImportResult(
     val libraryCount: Int = 0,
     val historyCount: Int = 0,
     val downloadsCount: Int = 0,
+    val customAnimeCount: Int = 0,
     val error: String? = null,
 )

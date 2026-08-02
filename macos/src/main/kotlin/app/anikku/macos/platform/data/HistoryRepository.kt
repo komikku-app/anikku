@@ -62,6 +62,23 @@ class HistoryRepository(private val dataDir: File) {
 
     fun count(): Int = entries.size
 
+    /** Replaces persisted history for transactional backup restore. */
+    @Synchronized
+    fun replaceAll(restored: List<HistoryEntry>) {
+        val previous = entries
+        entries = restored
+            .distinctBy { it.animeId to it.episodeId }
+            .sortedByDescending { it.seenAt }
+            .take(500)
+            .toMutableList()
+        try {
+            saveToFile()
+        } catch (error: Exception) {
+            entries = previous
+            throw error
+        }
+    }
+
     fun getForAnime(animeId: Long): List<HistoryEntry> =
         entries.filter { it.animeId == animeId }.sortedByDescending { it.seenAt }
 

@@ -155,6 +155,7 @@ class AnikkuApplication {
             historyRepository = historyRepository,
             downloadRepository = downloadRepository,
             preferenceStore = preferenceStore,
+            customAnimeRepository = customAnimeRepository,
         )
         libraryUpdateService = MacOSLibraryUpdateService(
             libraryRepository = libraryRepository,

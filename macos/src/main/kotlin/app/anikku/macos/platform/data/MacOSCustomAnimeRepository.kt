@@ -60,6 +60,29 @@ class MacOSCustomAnimeRepository(dataDir: File) : CustomAnimeRepository {
     }
 
     @Synchronized
+    fun getAll(): List<CustomAnimeInfo> = customAnimeMap.values.map(CustomAnimeEntry::toDomain)
+
+    @Synchronized
+    fun replaceAll(restored: List<CustomAnimeInfo>) {
+        val previous = customAnimeMap.toMap()
+        customAnimeMap.clear()
+        restored
+            .map { value -> value.copy(
+                title = value.title?.takeIf(String::isNotBlank),
+                status = value.status?.takeUnless { it == 0L },
+            ) }
+            .filterNot { it.hasNoOverrides() }
+            .forEach { value -> customAnimeMap[value.id] = CustomAnimeEntry.fromDomain(value) }
+        try {
+            saveToFile()
+        } catch (error: Exception) {
+            customAnimeMap.clear()
+            customAnimeMap.putAll(previous)
+            throw error
+        }
+    }
+
+    @Synchronized
     fun set(animeId: Long, title: String? = null, author: String? = null,
             artist: String? = null, thumbnailUrl: String? = null,
             description: String? = null, genre: List<String>? = null, status: Long? = null) {
