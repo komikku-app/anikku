@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,10 +47,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.extension.MacOSExtensionManager
+import app.anikku.macos.ui.GlobalKeyboardShortcuts
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
@@ -123,6 +127,21 @@ data class GlobalSearchScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val toastHost = LocalToastHost.current
+        val searchFocusRequester = remember { FocusRequester() }
+
+        DisposableEffect(searchFocusRequester) {
+            val previousSearchHandler = GlobalKeyboardShortcuts.onOpenSearch
+            val focusSearch: () -> Unit = { searchFocusRequester.requestFocus() }
+            GlobalKeyboardShortcuts.onOpenSearch = focusSearch
+            onDispose {
+                if (GlobalKeyboardShortcuts.onOpenSearch === focusSearch) {
+                    GlobalKeyboardShortcuts.onOpenSearch = previousSearchHandler
+                }
+            }
+        }
+        LaunchedEffect(Unit) {
+            searchFocusRequester.requestFocus()
+        }
 
         // Get all CatalogueSource extensions
         val installedExtensions by remember(extensionManager) {
@@ -264,6 +283,7 @@ data class GlobalSearchScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .focusRequester(searchFocusRequester)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     placeholder = { Text("Search all sources for anime...") },
                     leadingIcon = {

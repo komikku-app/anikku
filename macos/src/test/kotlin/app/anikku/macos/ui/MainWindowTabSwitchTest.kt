@@ -1,8 +1,10 @@
 package app.anikku.macos.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import app.anikku.macos.ui.theme.AnikkuTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -110,5 +112,35 @@ class MainWindowTabSwitchTest {
 
         composeTestRule.onNodeWithText("History").assertIsDisplayed()
         composeTestRule.onNodeWithText("Browse").assertIsDisplayed()
+    }
+
+    @Test
+    fun `global search callback switches to Browse and opens focused search screen`() {
+        composeTestRule.setContent {
+            AnikkuTheme { MainWindow() }
+        }
+
+        composeTestRule.runOnIdle {
+            requireNotNull(GlobalKeyboardShortcuts.onOpenSearch).invoke()
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Global Search").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Search all sources for anime...").assertIsDisplayed()
+    }
+
+    @Test
+    fun `global sidebar callback hides navigation rail`() {
+        composeTestRule.setContent {
+            AnikkuTheme { MainWindow() }
+        }
+        composeTestRule.onNodeWithText("More").assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            requireNotNull(GlobalKeyboardShortcuts.onToggleSidebar).invoke()
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onAllNodesWithText("More").assertCountEquals(0)
     }
 }

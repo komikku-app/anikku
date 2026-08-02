@@ -7,18 +7,23 @@ import kotlinx.serialization.json.Json
 import app.anikku.macos.platform.storage.MacOSAtomicFile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+import java.nio.file.Files
 
 private val customAnimeLogger = KotlinLogging.logger {}
 
 /**
  * CompositionLocal providing the [LibraryRepository] to the Compose tree.
  */
-val LocalLibraryRepository = compositionLocalOf { LibraryRepository(java.io.File("")) }
+private val composeFallbackDataDirectory: File by lazy {
+    Files.createTempDirectory("anikku-compose-fallback-").toFile().apply { deleteOnExit() }
+}
+
+val LocalLibraryRepository = compositionLocalOf { LibraryRepository(composeFallbackDataDirectory) }
 
 /**
  * CompositionLocal providing the [HistoryRepository] to the Compose tree.
  */
-val LocalHistoryRepository = compositionLocalOf { HistoryRepository(java.io.File("")) }
+val LocalHistoryRepository = compositionLocalOf { HistoryRepository(composeFallbackDataDirectory) }
 
 /**
  * macOS-specific custom anime info repository.

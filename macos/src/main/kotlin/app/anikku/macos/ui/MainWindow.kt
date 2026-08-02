@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -20,6 +22,8 @@ import app.anikku.macos.ui.screens.HistoryScreen
 import app.anikku.macos.ui.screens.LibraryScreen
 import app.anikku.macos.ui.screens.MoreScreen
 import app.anikku.macos.ui.screens.UpdatesScreen
+import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.ui.screens.browse.GlobalSearchScreen
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.CurrentTab
@@ -60,14 +64,26 @@ fun MainWindow() {
         // AnimeDetailScreen is on the tab's inner navigator stack.
         var currentTabIndex by remember { mutableStateOf(0) }
         var sidebarVisible by remember { mutableStateOf(true) }
+        var searchRequestId by remember { mutableLongStateOf(0L) }
+        var handledSearchRequestId by remember { mutableLongStateOf(0L) }
+        val extensionManager = LocalExtensionManager.current
 
         // Bridge the native View > Toggle Sidebar action to the Compose rail.
-        DisposableEffect(Unit) {
+        DisposableEffect(tabNavigator) {
             val sidebarToggleHandler: () -> Unit = { sidebarVisible = !sidebarVisible }
+            val searchHandler: () -> Unit = {
+                tabNavigator.current = BrowseScreen
+                currentTabIndex = 3
+                searchRequestId++
+            }
             GlobalKeyboardShortcuts.onToggleSidebar = sidebarToggleHandler
+            GlobalKeyboardShortcuts.onOpenSearch = searchHandler
             onDispose {
                 if (GlobalKeyboardShortcuts.onToggleSidebar === sidebarToggleHandler) {
                     GlobalKeyboardShortcuts.onToggleSidebar = null
+                }
+                if (GlobalKeyboardShortcuts.onOpenSearch === searchHandler) {
+                    GlobalKeyboardShortcuts.onOpenSearch = null
                 }
             }
         }
@@ -127,7 +143,16 @@ fun MainWindow() {
                     // stack — initially the tab content, but also any pushed screens.
                     // CurrentTab() always renders the tab content and ignores pushes,
                     // making navigation "appear to do nothing."
-                    Navigator(orderedTabs[currentTabIndex]) { _ ->
+                    Navigator(orderedTabs[currentTabIndex]) { navigator ->
+                        LaunchedEffect(currentTabIndex, searchRequestId) {
+                            if (
+                                currentTabIndex == 3 &&
+                                searchRequestId > handledSearchRequestId
+                            ) {
+                                handledSearchRequestId = searchRequestId
+                                navigator.push(GlobalSearchScreen(extensionManager = extensionManager))
+                            }
+                        }
                         CurrentScreen()
                     }
                 }

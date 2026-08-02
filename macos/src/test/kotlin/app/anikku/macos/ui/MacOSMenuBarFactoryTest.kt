@@ -169,6 +169,25 @@ class MacOSMenuBarFactoryTest {
     }
 
     @Test
+    fun `Find invokes global search callback with command F shortcut`() {
+        val frame = createTestFrame()
+        var opened = false
+        GlobalKeyboardShortcuts.onOpenSearch = { opened = true }
+        try {
+            val menuBar = MacOSMenuBarFactory.create(frame, onQuit = {})
+            val editMenu = menuBar.getMenu(2)
+            val findItem = findMenuItem(editMenu, "Find…")
+            assertNotNull(findItem)
+            assertEquals(java.awt.event.KeyEvent.VK_F, findItem!!.shortcut.key)
+
+            fireAction(findItem)
+            assertTrue(opened)
+        } finally {
+            GlobalKeyboardShortcuts.onOpenSearch = null
+        }
+    }
+
+    @Test
     fun `default callbacks are no-ops`() {
         val frame = createTestFrame()
         // Should not throw with no callbacks provided

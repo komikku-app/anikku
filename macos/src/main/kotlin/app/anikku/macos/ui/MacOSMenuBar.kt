@@ -184,6 +184,10 @@ fun create(
             add(MenuItem("Select All", MenuShortcut(KeyEvent.VK_A, false)).also {
                 it.addActionListener { dispatchEditAction(DefaultEditorKit.selectAllAction) }
             })
+            addSeparator()
+            add(MenuItem("Find…", MenuShortcut(KeyEvent.VK_F, false)).also {
+                it.addActionListener { GlobalKeyboardShortcuts.onOpenSearch?.invoke() }
+            })
         }
     }
 
@@ -229,7 +233,7 @@ fun create(
             add(MenuItem("Toggle Sidebar", MenuShortcut(KeyEvent.VK_S, false)).also {
                 it.addActionListener { GlobalKeyboardShortcuts.onToggleSidebar?.invoke() }
             })
-            add(MenuItem("Toggle Full Screen", MenuShortcut(KeyEvent.VK_F, false)).also {
+            add(MenuItem("Toggle Full Screen").also {
                 it.addActionListener { MacOSFullScreen.toggleFullScreen(frame) }
             })
         }
