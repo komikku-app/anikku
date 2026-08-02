@@ -158,6 +158,7 @@ class MacOSBackupManager(
         val restoredPreferences = backup.preferenceValues
             ?: backup.preferences?.mapValues { JsonPrimitive(it.value) }
             ?: emptyMap()
+        val safeRestoredPreferences = restoredPreferences.filterKeys(::isSafePreferenceForBackup)
 
         val previousLibrary = libraryRepository.getAll()
         val previousCategories = libraryRepository.getCategories()
@@ -187,7 +188,7 @@ class MacOSBackupManager(
             downloadRepository.replaceAll(
                 (previousDownloads + restoredDownloads).associateBy { it.id }.values.toList(),
             )
-            if (restoredPreferences.isNotEmpty()) preferenceStore?.restoreJson(restoredPreferences)
+            if (safeRestoredPreferences.isNotEmpty()) preferenceStore?.restoreJson(safeRestoredPreferences)
             if (restoredCustomAnime.isNotEmpty()) {
                 customAnimeRepository?.replaceAll(
                     (previousCustomAnime.orEmpty() + restoredCustomAnime).associateBy { it.id }.values.toList(),
@@ -309,9 +310,18 @@ class MacOSBackupManager(
             categories = categories,
             history = history,
             downloads = downloads,
-            preferenceValues = preferenceStore?.snapshotJson(),
+            preferenceValues = preferenceStore?.snapshotJson()?.filterKeys(::isSafePreferenceForBackup),
             customAnime = customAnime,
         )
+    }
+
+    private fun isSafePreferenceForBackup(key: String): Boolean {
+        val normalized = key.lowercase(Locale.ROOT)
+        return normalized != "syncyomi_host" &&
+            !normalized.endsWith("_etag") &&
+            !normalized.contains("password") &&
+            !normalized.contains("secret") &&
+            !normalized.contains("token")
     }
 
     // -----------------------------------------------------------------------

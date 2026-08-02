@@ -307,6 +307,12 @@ fun SettingsScreen() {
             selectedIndex = updateIntervals.indexOf(settings.googleDriveSyncIntervalHours).coerceAtLeast(0),
             onSelect = { settings.googleDriveSyncIntervalHours = updateIntervals[it] },
         )
+        SelectItem(
+            label = "SyncYomi schedule",
+            options = updateIntervalLabels,
+            selectedIndex = updateIntervals.indexOf(settings.syncYomiIntervalHours).coerceAtLeast(0),
+            onSelect = { settings.syncYomiIntervalHours = updateIntervals[it] },
+        )
 
         // Backup & Restore
         val backupManager = LocalBackupManager.current
@@ -362,6 +368,7 @@ fun SettingsScreen() {
         // Connections
         // =====================================================================
         HeadingItem("Connections")
+        SyncYomiSettingsPanel()
         val discordRPC = LocalDiscordRPC.current
         CheckboxItem(
             label = "Discord Rich Presence",

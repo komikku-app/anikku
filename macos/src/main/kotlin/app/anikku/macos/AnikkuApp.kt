@@ -44,6 +44,7 @@ import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.security.MacOSKeychain
 import app.anikku.macos.platform.discord.LocalDiscordRPC
 import app.anikku.macos.platform.sync.LocalGoogleDriveService
+import app.anikku.macos.platform.sync.LocalSyncYomiService
 import app.anikku.macos.platform.network.ProxyConfig
 import app.anikku.macos.platform.network.ProxyType
 import app.anikku.macos.ui.components.ToastDuration
@@ -154,12 +155,14 @@ fun main() = application {
             settingsState.autoBackupIntervalHours,
             settingsState.libraryUpdateIntervalHours,
             settingsState.googleDriveSyncIntervalHours,
+            settingsState.syncYomiIntervalHours,
         ) {
             app.backgroundJobs.configure(
                 BackgroundJobConfiguration(
                     automaticBackupHours = settingsState.autoBackupIntervalHours,
                     libraryUpdateHours = settingsState.libraryUpdateIntervalHours,
                     googleDriveSyncHours = settingsState.googleDriveSyncIntervalHours,
+                    syncYomiSyncHours = settingsState.syncYomiIntervalHours,
                 ),
             )
             if (window.isFocused) app.backgroundJobs.onAppFocused()
@@ -328,6 +331,7 @@ fun main() = application {
             LocalTrackerManager provides trackerManager,
             LocalDiscordRPC provides app.discordRPC,
             LocalGoogleDriveService provides app.googleDriveService,
+            LocalSyncYomiService provides app.syncYomiService,
             LocalBackgroundJobs provides app.backgroundJobs,
         ) {
             AnikkuTheme(

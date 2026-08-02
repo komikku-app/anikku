@@ -134,19 +134,24 @@ class SettingsStateTest {
         assertEquals(12, state.autoBackupIntervalHours)
         assertEquals(0, state.libraryUpdateIntervalHours)
         assertEquals(0, state.googleDriveSyncIntervalHours)
+        assertEquals(0, state.syncYomiIntervalHours)
 
         state.autoBackupIntervalHours = 24
         state.libraryUpdateIntervalHours = 4
         state.googleDriveSyncIntervalHours = 6
+        state.syncYomiIntervalHours = 12
         val restarted = SettingsState(store)
         assertEquals(24, restarted.autoBackupIntervalHours)
         assertEquals(4, restarted.libraryUpdateIntervalHours)
         assertEquals(6, restarted.googleDriveSyncIntervalHours)
+        assertEquals(12, restarted.syncYomiIntervalHours)
 
         restarted.libraryUpdateIntervalHours = -10
         restarted.googleDriveSyncIntervalHours = 10_000
+        restarted.syncYomiIntervalHours = 10_000
         assertEquals(0, restarted.libraryUpdateIntervalHours)
         assertEquals(720, restarted.googleDriveSyncIntervalHours)
+        assertEquals(720, restarted.syncYomiIntervalHours)
     }
 
     @Test

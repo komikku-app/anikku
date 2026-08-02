@@ -23,6 +23,7 @@ import app.anikku.macos.platform.storage.MacOSFilePicker
 import app.anikku.macos.platform.storage.MacOSStorageProvider
 import app.anikku.macos.platform.sync.GoogleDriveRestClient
 import app.anikku.macos.platform.sync.MacOSGoogleDriveService
+import app.anikku.macos.platform.sync.MacOSSyncYomiService
 import app.anikku.macos.platform.update.AppUpdateChecker
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -121,6 +122,7 @@ fun platformModule(app: AnikkuApplication) = module {
     // Phase 7.2: Google Drive Sync
     single<GoogleDriveRestClient> { GoogleDriveRestClient(app.networkHelper.client) }
     single<MacOSGoogleDriveService> { app.googleDriveService }
+    single<MacOSSyncYomiService> { app.syncYomiService }
 
     // Phase 7.3: Discord Rich Presence
     single<DiscordRPC> { app.discordRPC }

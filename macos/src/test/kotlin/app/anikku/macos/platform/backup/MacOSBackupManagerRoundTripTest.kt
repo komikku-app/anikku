@@ -23,6 +23,8 @@ class MacOSBackupManagerRoundTripTest {
         source.preferences.getFloat("float", 0f).set(1.25f)
         source.preferences.getString("string", "").set("value")
         source.preferences.getStringSet("set", emptySet()).set(setOf("en", "ja"))
+        source.preferences.getString("proxy_password", "").set("must-not-leave-keychain-bound-state")
+        source.preferences.getString("syncyomi_etag", "").set("machine-specific")
 
         val category = source.library.addCategory("Favorites")
         source.library.add(
@@ -78,6 +80,8 @@ class MacOSBackupManagerRoundTripTest {
         assertTrue(encoded.contains("\"version\": 2"))
         assertTrue(encoded.contains("\"preferenceValues\""))
         assertFalse(encoded.contains("\"preferences\":"), "Legacy string-only field must not be emitted")
+        assertFalse(encoded.contains("must-not-leave-keychain-bound-state"))
+        assertFalse(encoded.contains("machine-specific"))
 
         val restored = Fixture(tempDir.resolve("restored"))
         restored.preferences.getString("newer-setting", "").set("preserved")
@@ -104,6 +108,7 @@ class MacOSBackupManagerRoundTripTest {
         assertEquals("value", restored.preferences.getString("string", "").get())
         assertEquals(setOf("en", "ja"), restored.preferences.getStringSet("set", emptySet()).get())
         assertEquals("preserved", restored.preferences.getString("newer-setting", "").get())
+        assertEquals("", restored.preferences.getString("proxy_password", "").get())
 
         val restarted = Fixture(tempDir.resolve("restored"))
         assertEquals("Backup anime", restarted.library.get(10)?.title)
@@ -133,6 +138,33 @@ class MacOSBackupManagerRoundTripTest {
         assertFalse(result.success)
         assertEquals("Existing", fixture.library.get(1)?.title)
         assertEquals(null, fixture.library.get(2))
+    }
+
+    @Test
+    fun `restore ignores credential shaped preference keys`(@TempDir tempDir: Path) {
+        val fixture = Fixture(tempDir.resolve("state"))
+        fixture.preferences.getString("proxy_password", "").set("existing-secret")
+        val backup = tempDir.resolve("untrusted${MacOSBackupManager.BACKUP_EXTENSION}").toFile().apply {
+            writeText(
+                """
+                {
+                  "version": 2,
+                  "preferenceValues": {
+                    "proxy_password": "injected-secret",
+                    "tracker_token_anilist": "injected-token",
+                    "safe_setting": true
+                  }
+                }
+                """.trimIndent(),
+            )
+        }
+
+        val result = fixture.manager.importFrom(backup)
+
+        assertTrue(result.success, result.error)
+        assertEquals("existing-secret", fixture.preferences.getString("proxy_password", "").get())
+        assertEquals("", fixture.preferences.getString("tracker_token_anilist", "").get())
+        assertTrue(fixture.preferences.getBoolean("safe_setting", false).get())
     }
 
     private class Fixture(root: Path) {

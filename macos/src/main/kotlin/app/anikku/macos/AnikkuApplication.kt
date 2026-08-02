@@ -30,6 +30,7 @@ import app.anikku.macos.platform.storage.MacOSStorageManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
 import app.anikku.macos.platform.sync.GoogleDriveRestClient
 import app.anikku.macos.platform.sync.MacOSGoogleDriveService
+import app.anikku.macos.platform.sync.MacOSSyncYomiService
 import app.anikku.macos.platform.update.AppUpdateChecker
 import app.anikku.macos.platform.update.SparkleUpdater
 import kotlinx.coroutines.CoroutineScope
@@ -82,6 +83,7 @@ class AnikkuApplication {
     // Phase 7: Advanced Features
     val discordRPC: DiscordRPC
     val googleDriveService: MacOSGoogleDriveService
+    val syncYomiService: MacOSSyncYomiService
     val backgroundJobs: MacOSBackgroundJobs
     val notificationManager: MacOSNotificationManager
     val biometricAuth: MacOSBiometricAuth
@@ -178,6 +180,16 @@ class AnikkuApplication {
         backgroundScheduler.runOnce("restore-google-drive-session") {
             googleDriveService.restoreSession()
         }
+        syncYomiService = MacOSSyncYomiService(
+            httpClient = networkHelper.client,
+            backupManager = backupManager,
+            cacheDirectory = storageProvider.cacheDirectory,
+            secretStore = MacOSKeychain(service = "anikku-syncyomi", account = "sync"),
+            preferenceStore = preferenceStore,
+        )
+        backgroundScheduler.runOnce("restore-syncyomi-configuration") {
+            syncYomiService.restoreConfiguration()
+        }
 
         // 9b. macOS Notifications
         notificationManager = MacOSNotificationManager()
@@ -191,6 +203,7 @@ class AnikkuApplication {
             googleDriveService = googleDriveService,
             notificationManager = notificationManager,
             preferenceStore = preferenceStore,
+            syncYomiService = syncYomiService,
         )
 
         // 9c. Biometric Authentication (Touch ID + PIN fallback)

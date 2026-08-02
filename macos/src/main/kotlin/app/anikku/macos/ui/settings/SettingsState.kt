@@ -55,6 +55,7 @@ class SettingsState(
         private const val KEY_AUTO_BACKUP_INTERVAL_HOURS = "auto_backup_interval_hours"
         private const val KEY_LIBRARY_UPDATE_INTERVAL_HOURS = "library_update_interval_hours"
         private const val KEY_GOOGLE_DRIVE_SYNC_INTERVAL_HOURS = "google_drive_sync_interval_hours"
+        private const val KEY_SYNCYOMI_INTERVAL_HOURS = "syncyomi_interval_hours"
 
         // Player settings
         private const val KEY_AUTO_PLAY_NEXT = "auto_play_next"
@@ -166,9 +167,11 @@ class SettingsState(
     private val autoBackupIntervalPref = preferenceStore?.getInt(KEY_AUTO_BACKUP_INTERVAL_HOURS, 12)
     private val libraryUpdateIntervalPref = preferenceStore?.getInt(KEY_LIBRARY_UPDATE_INTERVAL_HOURS, 0)
     private val googleDriveSyncIntervalPref = preferenceStore?.getInt(KEY_GOOGLE_DRIVE_SYNC_INTERVAL_HOURS, 0)
+    private val syncYomiIntervalPref = preferenceStore?.getInt(KEY_SYNCYOMI_INTERVAL_HOURS, 0)
     private val _autoBackupIntervalHours = mutableStateOf(sanitizeJobInterval(autoBackupIntervalPref?.get() ?: 12))
     private val _libraryUpdateIntervalHours = mutableStateOf(sanitizeJobInterval(libraryUpdateIntervalPref?.get() ?: 0))
     private val _googleDriveSyncIntervalHours = mutableStateOf(sanitizeJobInterval(googleDriveSyncIntervalPref?.get() ?: 0))
+    private val _syncYomiIntervalHours = mutableStateOf(sanitizeJobInterval(syncYomiIntervalPref?.get() ?: 0))
 
     var autoBackupIntervalHours: Int
         get() = _autoBackupIntervalHours.value
@@ -192,6 +195,14 @@ class SettingsState(
             val sanitized = sanitizeJobInterval(value)
             _googleDriveSyncIntervalHours.value = sanitized
             googleDriveSyncIntervalPref?.set(sanitized)
+        }
+
+    var syncYomiIntervalHours: Int
+        get() = _syncYomiIntervalHours.value
+        set(value) {
+            val sanitized = sanitizeJobInterval(value)
+            _syncYomiIntervalHours.value = sanitized
+            syncYomiIntervalPref?.set(sanitized)
         }
 
     // -------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import app.anikku.macos.platform.library.MacOSLibraryUpdateService
 import app.anikku.macos.platform.notification.MacOSNotificationManager
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.platform.sync.MacOSGoogleDriveService
+import app.anikku.macos.platform.sync.MacOSSyncYomiService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,7 @@ data class BackgroundJobConfiguration(
     val automaticBackupHours: Int = 12,
     val libraryUpdateHours: Int = 0,
     val googleDriveSyncHours: Int = 0,
+    val syncYomiSyncHours: Int = 0,
 )
 
 data class BackgroundJobStatus(
@@ -41,6 +43,7 @@ class MacOSBackgroundJobs(
     private val googleDriveService: MacOSGoogleDriveService,
     private val notificationManager: MacOSNotificationManager,
     private val preferenceStore: MacOSPreferenceStore,
+    private val syncYomiService: MacOSSyncYomiService? = null,
     private val clockMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val backupMutex = Mutex()
@@ -57,6 +60,7 @@ class MacOSBackgroundJobs(
             automaticBackupHours = value.automaticBackupHours.coerceIn(0, MAX_INTERVAL_HOURS),
             libraryUpdateHours = value.libraryUpdateHours.coerceIn(0, MAX_INTERVAL_HOURS),
             googleDriveSyncHours = value.googleDriveSyncHours.coerceIn(0, MAX_INTERVAL_HOURS),
+            syncYomiSyncHours = value.syncYomiSyncHours.coerceIn(0, MAX_INTERVAL_HOURS),
         )
         if (normalized == configuration && configured) return
         configuration = normalized
@@ -75,6 +79,11 @@ class MacOSBackgroundJobs(
             intervalHours = normalized.googleDriveSyncHours,
             task = ::syncGoogleDrive,
         )
+        configurePeriodic(
+            name = SYNCYOMI_PERIODIC,
+            intervalHours = normalized.syncYomiSyncHours,
+            task = ::syncSyncYomi,
+        )
         configured = true
     }
 
@@ -86,12 +95,14 @@ class MacOSBackgroundJobs(
             if (isDue(LAST_AUTO_BACKUP, config.automaticBackupHours)) createAutomaticBackup()
             if (isDue(LAST_LIBRARY_UPDATE, config.libraryUpdateHours)) updateLibrary()
             if (isDue(LAST_DRIVE_SYNC, config.googleDriveSyncHours)) syncGoogleDrive()
+            if (isDue(LAST_SYNCYOMI, config.syncYomiSyncHours)) syncSyncYomi()
         }
     }
 
     fun updateLibraryNow() = scheduler.runOnce(LIBRARY_UPDATE_MANUAL, ::updateLibrary)
     fun createBackupNow() = scheduler.runOnce(AUTO_BACKUP_MANUAL, ::createAutomaticBackup)
     fun syncGoogleDriveNow() = scheduler.runOnce(DRIVE_SYNC_MANUAL, ::syncGoogleDrive)
+    fun syncYomiNow() = scheduler.runOnce(SYNCYOMI_MANUAL, ::syncSyncYomi)
 
     private fun configurePeriodic(name: String, intervalHours: Int, task: suspend () -> Unit) {
         if (intervalHours <= 0) {
@@ -150,6 +161,25 @@ class MacOSBackgroundJobs(
         }
     }
 
+    private suspend fun syncSyncYomi() {
+        val service = syncYomiService ?: return
+        if (!service.isConfigured && !service.restoreConfiguration()) {
+            backgroundLogger.debug { "Skipping SyncYomi sync: not configured" }
+            return
+        }
+        runStatus("SyncYomi", "Synchronizing library…") {
+            val result = service.sync()
+            if (!result.success) error(result.error ?: "SyncYomi failed")
+            markSuccess(LAST_SYNCYOMI)
+            when (result.outcome) {
+                app.anikku.macos.platform.sync.SyncYomiOutcome.MERGED -> "Merged SyncYomi data"
+                app.anikku.macos.platform.sync.SyncYomiOutcome.UPLOADED -> "Uploaded SyncYomi data"
+                app.anikku.macos.platform.sync.SyncYomiOutcome.NOT_MODIFIED -> "SyncYomi is up to date"
+                else -> "SyncYomi complete"
+            }
+        }
+    }
+
     private suspend fun runStatus(taskName: String, initialMessage: String, task: suspend () -> String) {
         _status.value = BackgroundJobStatus(runningTask = taskName, message = initialMessage)
         try {
@@ -180,13 +210,16 @@ class MacOSBackgroundJobs(
         private const val AUTO_BACKUP_PERIODIC = "automatic-backup-periodic"
         private const val LIBRARY_UPDATE_PERIODIC = "library-update-periodic"
         private const val DRIVE_SYNC_PERIODIC = "google-drive-sync-periodic"
+        private const val SYNCYOMI_PERIODIC = "syncyomi-periodic"
         private const val FOCUS_REFRESH = "background-focus-refresh"
         private const val AUTO_BACKUP_MANUAL = "automatic-backup-manual"
         private const val LIBRARY_UPDATE_MANUAL = "library-update-manual"
         private const val DRIVE_SYNC_MANUAL = "google-drive-sync-manual"
+        private const val SYNCYOMI_MANUAL = "syncyomi-manual"
         private const val LAST_AUTO_BACKUP = "background_last_auto_backup"
         private const val LAST_LIBRARY_UPDATE = "background_last_library_update"
         private const val LAST_DRIVE_SYNC = "background_last_drive_sync"
+        private const val LAST_SYNCYOMI = "background_last_syncyomi"
     }
 }
 

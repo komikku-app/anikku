@@ -21,6 +21,7 @@ open class MacOSStorageProvider : FolderProvider {
     val logsDirectory: File get() = File(directory(), "logs")
     val coversDirectory: File get() = File(directory(), "covers")
     val dataDirectory: File get() = File(directory(), "data")
+    val cacheDirectory: File get() = File(directory(), "cache")
 
     fun ensureDirectories() {
         listOf(
@@ -30,6 +31,7 @@ open class MacOSStorageProvider : FolderProvider {
             logsDirectory,
             coversDirectory,
             dataDirectory,
+            cacheDirectory,
         ).forEach { directory ->
             require(directory.exists() || directory.mkdirs()) {
                 "Unable to create storage directory: ${directory.path}"

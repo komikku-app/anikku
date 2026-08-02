@@ -45,19 +45,21 @@ class MacOSBackgroundJobsTest {
     }
 
     @Test
-    fun `configure creates and removes the three periodic jobs`(@TempDir tempDir: Path) {
+    fun `configure creates and removes all periodic jobs`(@TempDir tempDir: Path) {
         val fixture = fixture(tempDir)
 
-        fixture.jobs.configure(BackgroundJobConfiguration(12, 4, 6))
+        fixture.jobs.configure(BackgroundJobConfiguration(12, 4, 6, 8))
 
         assertTrue(scheduler.isRunning("automatic-backup-periodic"))
         assertTrue(scheduler.isRunning("library-update-periodic"))
         assertTrue(scheduler.isRunning("google-drive-sync-periodic"))
+        assertTrue(scheduler.isRunning("syncyomi-periodic"))
 
-        fixture.jobs.configure(BackgroundJobConfiguration(0, 0, 0))
+        fixture.jobs.configure(BackgroundJobConfiguration(0, 0, 0, 0))
         assertFalse(scheduler.isRunning("automatic-backup-periodic"))
         assertFalse(scheduler.isRunning("library-update-periodic"))
         assertFalse(scheduler.isRunning("google-drive-sync-periodic"))
+        assertFalse(scheduler.isRunning("syncyomi-periodic"))
     }
 
     @Test
