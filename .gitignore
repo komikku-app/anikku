@@ -28,6 +28,10 @@ app/standard/preview/*
 *.key.pem
 ed25519-key.pem
 
+# Sparkle release keys kept next to the macOS project — DO NOT COMMIT!
+# Private key lives here and in ~/.anikku-release-keys/
+sparkle-key/
+
 # Downloaded test video files
 *.mkv
 *.mp4
