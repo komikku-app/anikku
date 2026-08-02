@@ -2,6 +2,9 @@ package app.anikku.macos.platform
 
 import com.sun.jna.Pointer
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.awt.MenuItem
+import java.awt.PopupMenu
+import java.awt.Taskbar
 
 private val logger = KotlinLogging.logger {}
 
@@ -32,6 +35,7 @@ private val logger = KotlinLogging.logger {}
 object MacOSDockManager {
 
     private var isAvailable: Boolean = false
+    private var dockMenu: PopupMenu? = null
 
     /** Callback invoked when the dock's Play/Pause menu item is clicked. */
     var onPlayPause: () -> Unit = {}
@@ -145,19 +149,33 @@ object MacOSDockManager {
         logger.debug { "Dock Next Episode callback registered" }
     }
 
-    /**
-     * Create and set the dock menu with Play/Pause and Next Episode items.
-     *
-     * This path is intentionally disabled until the Objective-C action target
-     * is wired. Showing menu items whose selectors do nothing is worse than
-     * omitting the optional menu, so callers receive an explicit warning and
-     * the Dock remains unchanged.
-     */
-    fun createDockMenu() {
-        logger.warn {
-            "Dock menu is unavailable: Objective-C action dispatch is not wired; " +
-                "optional controls were not registered"
+    /** Create a real Dock context menu through the standard desktop Taskbar API. */
+    fun createDockMenu(): Boolean {
+        if (!Taskbar.isTaskbarSupported()) return false
+        return try {
+            val taskbar = Taskbar.getTaskbar()
+            if (!taskbar.isSupported(Taskbar.Feature.MENU)) {
+                logger.info { "Dock menus are not supported by this runtime" }
+                return false
+            }
+            val menu = buildDockMenu()
+            taskbar.menu = menu
+            dockMenu = menu // Retain the AWT peers and action listeners.
+            logger.info { "Dock playback menu registered" }
+            true
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to register Dock playback menu" }
+            false
         }
+    }
+
+    internal fun buildDockMenu(): PopupMenu = PopupMenu().apply {
+        add(MenuItem("Play / Pause").apply {
+            addActionListener { onPlayPause() }
+        })
+        add(MenuItem("Next Episode").apply {
+            addActionListener { onNextEpisode() }
+        })
     }
 
     // -----------------------------------------------------------------------
@@ -181,15 +199,4 @@ object MacOSDockManager {
         return ObjC.objc_msgSend_str(alloced, initSel, str)
     }
 
-    /**
-     * Add an NSMenuItem to an NSMenu with the given title.
-     * Uses `[menu addItemWithTitle:action:keyEquivalent:]`.
-     */
-    private fun addMenuItem(menu: Pointer, title: String) {
-        val addItemSel = ObjC.sel_registerName("addItemWithTitle:action:keyEquivalent:")
-        val nsTitle = createNSString(title) ?: return
-        val emptyAction = ObjC.sel_registerName("")
-        val emptyKey = createNSString("") ?: return
-        ObjC.objc_msgSend_void(menu, addItemSel, nsTitle, emptyAction, emptyKey)
-    }
 }

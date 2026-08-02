@@ -75,8 +75,10 @@ import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.logging.UIActionLogger
+import app.anikku.macos.platform.MacOSDockManager
 import app.anikku.macos.platform.media.MacOSHttpServer
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.MacOSMenuBarFactory
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OfflineBadge
 import app.anikku.macos.ui.components.OfflineCheckmarkAnimation
@@ -962,6 +964,105 @@ data class PlayerScreen(
             resolveAndPlay(startIndex = 0)
         }
 
+        fun navigateToEpisode(index: Int) {
+            if (index in allEpisodes.indices) {
+                val oldEpisode = allEpisodes.getOrNull(currentEpisodeIndex)
+                if (oldEpisode != null && currentPosition > 0 && duration > 0) {
+                    saveResumePosition(oldEpisode, currentPosition.toLong(), duration.toLong())
+                }
+
+                val oldIndex = currentEpisodeIndex
+                currentEpisodeIndex = index
+                val episode = allEpisodes[index]
+                val direction = if (index > oldIndex) "next" else "previous"
+                toastHost.show(
+                    "$direction episode: ${String.format("%.0f", episode.episodeNumber)}",
+                    ToastDuration.SHORT,
+                )
+
+                scope.launch {
+                    isOfflinePlayback = downloadManager != null &&
+                        episode.episodeNumber > 0 &&
+                        downloadManager.isDownloaded(animeId, episode.episodeNumber)
+
+                    val se = sourceEpisodes.getOrNull(index)
+                    val resolved = resolveVideoUrl(
+                        sEpisode = se,
+                        episodeNumber = episode.episodeNumber,
+                        httpServer = httpServer,
+                        startIndex = 0,
+                        onCandidateList = { candidates -> videoCandidates = candidates },
+                        onError = { msg ->
+                            toastHost.show(
+                                text = msg,
+                                duration = ToastDuration.LONG,
+                                isError = true,
+                                source = sourceId?.toString(),
+                                location = "PlayerScreen.navigateToEpisode.resolveVideoUrl",
+                            )
+                        },
+                        onDiagnostic = { diag -> videoErrorDiagnostic = diag },
+                    )
+                    if (resolved != null) {
+                        resolvedVideo = VideoResolution(
+                            url = resolved.url,
+                            headers = resolved.headers,
+                            subtitleTracks = resolved.subtitleTracks,
+                        )
+                        lastAttemptedIndex = resolved.candidateIndex
+                        videoQualityResolution = resolved.qualityResolution
+                        videoQualityLabel = resolved.qualityLabel
+                    } else {
+                        toastHost.show(
+                            text = "No video source available",
+                            duration = ToastDuration.SHORT,
+                            isError = true,
+                            source = sourceId?.toString(),
+                            location = "PlayerScreen.navigateToEpisode",
+                        )
+                    }
+                }
+            } else if (index > currentEpisodeIndex) {
+                toastHost.show("No next episode available", ToastDuration.SHORT)
+            } else if (index < currentEpisodeIndex) {
+                toastHost.show("No previous episode available", ToastDuration.SHORT)
+            }
+        }
+
+        // Native menu and Dock actions share the exact same callbacks as the
+        // on-screen controls. Restore the previous handlers when this player
+        // leaves the navigation stack.
+        DisposableEffect(playerViewModel, currentEpisodeIndex, allEpisodes, volume) {
+            val previousMenuHandler = MacOSMenuBarFactory.onPlaybackAction
+            val previousDockPlayPause = MacOSDockManager.onPlayPause
+            val previousDockNext = MacOSDockManager.onNextEpisode
+            val menuHandler: (MacOSMenuBarFactory.PlaybackAction) -> Unit = { action ->
+                when (action) {
+                    MacOSMenuBarFactory.PlaybackAction.PLAY_PAUSE -> playerViewModel.togglePause()
+                    MacOSMenuBarFactory.PlaybackAction.SKIP_FORWARD -> playerViewModel.seekRelative(10.0)
+                    MacOSMenuBarFactory.PlaybackAction.SKIP_BACKWARD -> playerViewModel.seekRelative(-10.0)
+                    MacOSMenuBarFactory.PlaybackAction.VOLUME_UP -> playerViewModel.setVolume(volume + 5)
+                    MacOSMenuBarFactory.PlaybackAction.VOLUME_DOWN -> playerViewModel.setVolume(volume - 5)
+                }
+            }
+            val dockPlayPause: () -> Unit = { playerViewModel.togglePause() }
+            val dockNext: () -> Unit = { navigateToEpisode(currentEpisodeIndex + 1) }
+            MacOSMenuBarFactory.onPlaybackAction = menuHandler
+            MacOSDockManager.setPlayPauseCallback(dockPlayPause)
+            MacOSDockManager.setNextEpisodeCallback(dockNext)
+            onDispose {
+                if (MacOSMenuBarFactory.onPlaybackAction === menuHandler) {
+                    MacOSMenuBarFactory.onPlaybackAction = previousMenuHandler
+                }
+                if (MacOSDockManager.onPlayPause === dockPlayPause) {
+                    MacOSDockManager.setPlayPauseCallback(previousDockPlayPause)
+                }
+                if (MacOSDockManager.onNextEpisode === dockNext) {
+                    MacOSDockManager.setNextEpisodeCallback(previousDockNext)
+                }
+            }
+        }
+
         // Auto-retry LaunchedEffect: watches for mpv ERROR state while auto-retry
         // mode is active, then automatically tries the next quality.
         // Keyed only on playbackState so intermediate resolvedVideo=null changes
@@ -1045,73 +1146,7 @@ data class PlayerScreen(
                     )
                 )
             },
-            onNavigateEpisode = { index ->
-                if (index in allEpisodes.indices) {
-                    // Save resume position for current episode before switching
-                    val oldEpisode = allEpisodes.getOrNull(currentEpisodeIndex)
-                    if (oldEpisode != null && currentPosition > 0 && duration > 0) {
-                        saveResumePosition(oldEpisode, currentPosition.toLong(), duration.toLong())
-                    }
-
-                    val oldIndex = currentEpisodeIndex
-                    currentEpisodeIndex = index
-                    val episode = allEpisodes[index]
-                    val direction = if (index > oldIndex) "next" else "previous"
-                    toastHost.show("$direction episode: ${String.format("%.0f", episode.episodeNumber)}", ToastDuration.SHORT)
-
-                    // Resolve new episode's video URL — use full SEpisode with all fields
-                    scope.launch {
-                        isOfflinePlayback = downloadManager != null &&
-                            episode.episodeNumber > 0 &&
-                            downloadManager.isDownloaded(animeId, episode.episodeNumber)
-
-                        val se = sourceEpisodes.getOrNull(index)
-                        val resolved = resolveVideoUrl(
-                            sEpisode = se,
-                            episodeNumber = episode.episodeNumber,
-                            httpServer = httpServer,
-                            startIndex = 0,
-                            onCandidateList = { candidates ->
-                                videoCandidates = candidates
-                            },
-                            onError = { msg ->
-                                toastHost.show(
-                                    text = msg,
-                                    duration = ToastDuration.LONG,
-                                    isError = true,
-                                    source = sourceId?.toString(),
-                                    location = "PlayerScreen.onNavigateEpisode.resolveVideoUrl",
-                                )
-                            },
-                            onDiagnostic = { diag ->
-                                videoErrorDiagnostic = diag
-                            },
-                        )
-                        if (resolved != null) {
-                            resolvedVideo = VideoResolution(
-                    url = resolved.url,
-                    headers = resolved.headers,
-                    subtitleTracks = resolved.subtitleTracks,
-                )
-                            lastAttemptedIndex = resolved.candidateIndex
-                            videoQualityResolution = resolved.qualityResolution
-                            videoQualityLabel = resolved.qualityLabel
-                        } else {
-                            toastHost.show(
-                                text = "No video source available",
-                                duration = ToastDuration.SHORT,
-                                isError = true,
-                                source = sourceId?.toString(),
-                                location = "PlayerScreen.onNavigateEpisode",
-                            )
-                        }
-                    }
-                } else if (index > currentEpisodeIndex) {
-                    toastHost.show("No next episode available", ToastDuration.SHORT)
-                } else if (index < currentEpisodeIndex) {
-                    toastHost.show("No previous episode available", ToastDuration.SHORT)
-                }
-            },
+            onNavigateEpisode = ::navigateToEpisode,
             onTogglePlay = { playerViewModel.togglePause() },
             onSeekTo = { seconds -> playerViewModel.seekTo(seconds) },
             onSeekRelative = { offset -> playerViewModel.seekRelative(offset) },

@@ -1,8 +1,17 @@
 package app.anikku.macos.platform
 
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.awt.event.ActionEvent
 
 class MacOSDockManagerTest {
+
+    @AfterEach
+    fun resetCallbacks() {
+        MacOSDockManager.setPlayPauseCallback {}
+        MacOSDockManager.setNextEpisodeCallback {}
+    }
 
     @Test
     fun `set badge count does not throw`() {
@@ -85,5 +94,27 @@ class MacOSDockManagerTest {
         MacOSDockManager.onPlayPause()
         assert(playInvoked)
         assert(!nextInvoked)
+    }
+
+    @Test
+    fun `dock menu has native playback items wired to current callbacks`() {
+        var playInvoked = false
+        var nextInvoked = false
+        MacOSDockManager.setPlayPauseCallback { playInvoked = true }
+        MacOSDockManager.setNextEpisodeCallback { nextInvoked = true }
+
+        val menu = MacOSDockManager.buildDockMenu()
+        assertEquals(2, menu.itemCount)
+        assertEquals("Play / Pause", menu.getItem(0).label)
+        assertEquals("Next Episode", menu.getItem(1).label)
+
+        menu.getItem(0).actionListeners.single().actionPerformed(
+            ActionEvent(menu.getItem(0), ActionEvent.ACTION_PERFORMED, "play"),
+        )
+        menu.getItem(1).actionListeners.single().actionPerformed(
+            ActionEvent(menu.getItem(1), ActionEvent.ACTION_PERFORMED, "next"),
+        )
+        assert(playInvoked)
+        assert(nextInvoked)
     }
 }

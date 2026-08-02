@@ -267,6 +267,12 @@ fun main() = application {
 
         // Phase 9.6: Initialize Dock integration (non-fatal — app works without dock features)
         try {
+            MacOSDockManager.setPlayPauseCallback {
+                MacOSMenuBarFactory.onPlaybackAction?.invoke(MacOSMenuBarFactory.PlaybackAction.PLAY_PAUSE)
+            }
+            MacOSDockManager.setNextEpisodeCallback {
+                toastHostState.show("No next episode — open the player first", ToastDuration.SHORT)
+            }
             MacOSDockManager.setBadgeCount(0) // Clear badge on launch
             MacOSDockManager.createDockMenu() // Create dock menu with Play/Pause and Next Episode
         } catch (e: Exception) {
