@@ -375,7 +375,7 @@ val appVersionName: String by project
 val prepareNativeAppResources by tasks.registering(Sync::class) {
     description = "Stage native libraries for Compose Desktop packaging"
     group = "distribution"
-    dependsOn("buildSparkleHelper")
+    dependsOn("buildSparkleHelper", "buildBiometricHelper")
 
     from("src/main/resources/dist") {
         into("common")
@@ -386,6 +386,10 @@ val prepareNativeAppResources by tasks.registering(Sync::class) {
         into("common/Frameworks")
         include("Sparkle.framework/**")
         include("libSparkleHelper.dylib")
+    }
+    from(layout.buildDirectory.dir("native")) {
+        into("common/Frameworks")
+        include("libAnikkuBiometric.dylib")
     }
     into(layout.buildDirectory.dir("native-app-resources"))
 }
@@ -436,6 +440,8 @@ compose.desktop {
                         <string>https://anikku.app/sparkle/appcast.xml</string>
                         <key>SUPublicEDKey</key>
                         <string>$publicKey</string>
+                        <key>NSFaceIDUsageDescription</key>
+                        <string>Use biometric authentication to unlock Anikku.</string>
                     """.trimIndent()
                 }
 
@@ -481,6 +487,19 @@ tasks.register<Exec>("buildSparkleHelper") {
     outputs.file(dylibPath)
     outputs.dir("${layout.buildDirectory.get()}/sparkle/Sparkle.framework")
     outputs.upToDateWhen { project.findProperty("force") as? String != "true" }
+
+    commandLine("bash", scriptPath)
+}
+
+tasks.register<Exec>("buildBiometricHelper") {
+    description = "Compile the LocalAuthentication helper dylib"
+    group = "distribution"
+
+    val scriptPath = "${project.projectDir}/scripts/build-biometric-helper.sh"
+    val dylibPath = "${layout.buildDirectory.get()}/native/libAnikkuBiometric.dylib"
+    inputs.file(scriptPath)
+    inputs.file("src/main/swift/BiometricHelper.swift")
+    outputs.file(dylibPath)
 
     commandLine("bash", scriptPath)
 }
@@ -571,7 +590,7 @@ tasks.register("verifyPackage") {
         if (infoPlist.isFile) {
             val text = infoPlist.readText()
             logger.lifecycle("  [Info.plist] Found (${text.length} bytes)")
-            listOf("SUFeedURL", "SUPublicEDKey", "LSApplicationCategoryType").forEach { key ->
+            listOf("SUFeedURL", "SUPublicEDKey", "LSApplicationCategoryType", "NSFaceIDUsageDescription").forEach { key ->
                 if (key !in text) throw GradleException("Info.plist is missing $key")
                 logger.lifecycle("    $key: present")
             }
@@ -596,6 +615,10 @@ tasks.register("verifyPackage") {
         if (!sparkleHelper.isFile) throw GradleException("Sparkle helper dylib is not bundled")
         if (!sparkleFramework.isFile) throw GradleException("Sparkle.framework is not bundled")
         logger.lifecycle("  [Sparkle] Framework and helper found")
+
+        val biometricHelper = File(resourcesDir, "Frameworks/libAnikkuBiometric.dylib")
+        if (!biometricHelper.isFile) throw GradleException("LocalAuthentication helper dylib is not bundled")
+        logger.lifecycle("  [Touch ID] LocalAuthentication helper found")
 
         val launcher = File(appDir, "Contents/MacOS/Anikku")
         val javaRuntime = File(appDir, "Contents/runtime/Contents/MacOS/libjli.dylib")
