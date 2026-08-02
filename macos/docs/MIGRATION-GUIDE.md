@@ -889,6 +889,6 @@ The JAR is downloaded from `{repoBaseUrl}/apk/{apk}`.
 - [`EXTENSION-METADATA.md`](./EXTENSION-METADATA.md) — Full extension metadata field reference
 - [`macos/src/main/kotlin/app/anikku/macos/platform/extension/`](../src/main/kotlin/app/anikku/macos/platform/extension/) — macOS extension loader source code
 - [`macos/src/main/resources/test-extension/extension.json`](../src/main/resources/test-extension/extension.json) — Minimal working example metadata
-- [`macos/src/test/kotlin/app/anikku/macos/testextension/TestAnimeSource.kt`](../src/test/kotlin/app/anikku/macos/testextension/TestAnimeSource.kt) — Reference source implementation
+- [`macos/src/main/kotlin/app/anikku/macos/testextension/TestAnimeSource.kt`](../src/main/kotlin/app/anikku/macos/testextension/TestAnimeSource.kt) — Reference source implementation
 - [Aniyomi Extension Guide (Android)](https://aniyomi.org/docs/guides/contribute) — Original Android extension development docs
 - [`docs/samples/META-INF/extension.json`](./samples/META-INF/extension.json) — Ready-to-use metadata template with comments

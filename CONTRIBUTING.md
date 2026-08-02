@@ -24,6 +24,33 @@ Before you start, please note that the ability to use following technologies is 
 - [Android Studio](https://developer.android.com/studio)
 - Emulator or phone with developer options enabled to test changes.
 
+## macOS port contributions
+
+The desktop application is an isolated Compose Desktop build under `macos/`.
+It requires macOS 12+, JDK 17, and Homebrew `mpv` for development playback.
+Start with [the macOS build guide](macos/BUILDING.md) and the
+[implemented architecture](macos/docs/ARCHITECTURE.md).
+
+Run commands from `macos/`:
+
+```bash
+./gradlew quickCheck
+./gradlew test                     # includes live/native suites
+./gradlew packageDmg
+./gradlew verifyPackage
+```
+
+Keep platform code inside `macos/` unless a genuinely portable shared contract
+must change. Do not add plaintext credential fallbacks: secrets belong in
+macOS Keychain and must be excluded from backups/logging. Extension changes
+must preserve metadata/trust validation and atomic rollback. Player/JNA changes
+must follow [the native ownership contract](macos/docs/MPV-JNA.md) and include
+focused ABI/lifecycle tests.
+
+Live provider tests depend on third-party sites. Report their dated results
+separately from deterministic regressions, and do not weaken TLS, trust, or
+timeouts to make an external provider pass.
+
 ## Getting help
 
 - Join [the Discord server](https://discord.gg/85jB7V5AJR) for online help and to ask questions while developing.

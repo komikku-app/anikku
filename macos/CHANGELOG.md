@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased] — 2026-08-02
 
+### Completed desktop architecture
+
+- Completed and live-tested the real extension browse/search → details →
+  episodes → video resolution → libmpv play/seek flow, including playback past
+  30 seconds, deliberate failure/retry, and switching to a second episode on
+  the same player.
+- Added versioned startup migrations, secure SyncYomi synchronization, full
+  Google Drive desktop OAuth/backup restore, native Discord Desktop IPC,
+  LocalAuthentication/Touch ID, actionable Dock controls, and Keychain-only
+  proxy credentials.
+- Added Android gzip/protobuf `.tachibk` migration import for library,
+  categories, history/progress, and custom anime metadata while retaining the
+  lossless versioned macOS JSON format.
+- Added ADRs and a detailed libmpv JNA ABI/threading/ownership reference.
+
 ### Reliability and security
 
 - Removed JVM-global insecure TLS behavior and retained normal certificate and
@@ -27,6 +42,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   exact local seek behavior, and click/drag/keyboard transport tests.
 - Revalidated real extension-to-libmpv playback plus HTTP, HLS, DASH, and
   magnet/torrent stream paths.
+- Enabled safe hardware decoding with `hwdec=auto-copy-safe`, bounded image
+  caches, adaptive lazy library rendering, and high-bitrate playback/seek/heap
+  regression coverage.
+- Removed the old no-libmpv simulated watch-progress path; playback now fails
+  visibly instead of reporting progress without rendered media.
+
+### Native torrent streaming
+
+- Pinned TorrServer `MatriX.141.1` for Apple Silicon and Intel, with HTTPS
+  download, architecture-specific SHA-256 verification, executable packaging,
+  localhost API integration, and a native launch/API regression task.
+- Select the largest recognized video file from torrent metadata and retain a
+  bounded WebTorrent fallback when the native helper cannot prepare a stream.
 
 ### Updates, packaging, and validation
 
@@ -41,9 +69,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Made the live extension fleet test enforce its documented per-stage timeout,
   preventing a blocking third-party provider from hanging Gradle.
 
-This remains a development preview: Developer ID signing/notarization, a signed
-Sparkle release enclosure, native Discord IPC/biometrics, and final manual GUI
-playback acceptance are not complete.
+This remains a development preview only because Developer ID signing,
+notarization, and an active Sparkle-signed release enclosure require release
+owner credentials/artifacts. Those release operations were not fabricated.
 
 ## [1.0.0-beta.2] — 2026-07-29
 

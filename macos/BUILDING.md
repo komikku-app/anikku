@@ -32,9 +32,11 @@ For native video playback during development, install libmpv:
 brew install mpv
 ```
 
-The current Compose surface uses libmpv's software-rendering path. Without
-libmpv, the app runs in mock mode — the player UI works but no video will play.
-Packaged application bundles include the required library.
+The Compose surface uses libmpv's Render API with a software frame-transfer
+surface and `hwdec=auto-copy-safe` when the platform supports it. Without
+libmpv, the app remains usable but playback reports an unavailable/error state;
+it never simulates watch progress. Packaged builds include the required ABI 2
+library.
 
 ### Gradle
 
@@ -87,8 +89,27 @@ Run the entire suite, including live network and playback checks, explicitly:
 ./gradlew test
 ```
 
+Useful focused native/release gates:
+
+```bash
+# Download/checksum/launch the pinned native TorrServer and query its JSON API
+./gradlew nativeTorrServerTest
+
+# Generate a high-bitrate 1080p60 fixture; verify playback, seeks, and heap bounds
+./gradlew performancePlaybackTest
+
+# Production renderer lifecycle and visible-pixel tests
+./gradlew test --tests MPVRenderExperiment
+
+# Live extension browse → episode → stream → play → seek acceptance
+./gradlew test --tests StreamingEndToEndTest
+```
+
+Live tests depend on third-party sites and are evidence for the moment they run,
+not a permanent source-availability guarantee.
+
 For the normal pre-commit validation pass (compile, deterministic tests, and
-Sparkle updater configuration):
+Sparkle/TorrServer configuration):
 
 ```bash
 ./gradlew quickCheck
@@ -110,11 +131,31 @@ local build can be attempted with the documented Compose override:
 
 Output: `macos/build/compose/binaries/main/dmg/Anikku-1.0.0.dmg`
 
+Packaging downloads the architecture-specific TorrServer `MatriX.141.1`
+helper from its HTTPS GitHub release, verifies the pinned SHA-256, and stages it
+with libmpv, Sparkle, the Touch ID helper, third-party notices, and the Java
+runtime. The downloaded helper is cached under `build/torrserver/`.
+
 Verify the generated application bundle and disk image:
 
 ```bash
 ./gradlew verifyPackage
 hdiutil verify build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
+```
+
+For Developer ID signing and notarization (requires owner credentials):
+
+```bash
+./gradlew packageDmg -Psign=true \
+  -PsignIdentity="Developer ID Application: Name (TEAMID)"
+
+APPLE_ID="account@example.com" \
+APPLE_TEAM_ID="TEAMID" \
+APPLE_PASSWORD="@keychain:AC_PASSWORD" \
+./gradlew submitForNotarization \
+  -PdmgPath=build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
+
+xcrun stapler staple build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
 ```
 
 ### Package as .pkg Installer
@@ -187,7 +228,9 @@ macos/
 │   └── test/
 │       └── kotlin/app/anikku/macos/ # Unit & UI tests
 └── docs/
-    └── EXTENSION-METADATA.md
+    ├── ARCHITECTURE.md
+    ├── MPV-JNA.md
+    └── extension development and migration guides
 ```
 
 ## IDE Setup
@@ -208,9 +251,9 @@ macos/
 
 ## Troubleshooting
 
-### "Unresolved reference: MPVLib"
+### Player reports that libmpv is unavailable
 
-The mpv JNA bindings require libmpv at runtime. Make sure mpv is installed:
+Development runs require libmpv at runtime. Make sure mpv is installed:
 
 ```bash
 brew install mpv
@@ -224,14 +267,21 @@ Ensure you're using JDK 17+:
 java -version
 ```
 
-### "Native library not found" on first run
+### "Native library not found" on a development run
 
-The app searches for `libmpv.1.dylib` in the following locations:
-1. `/opt/homebrew/lib/libmpv.1.dylib` (Apple Silicon)
-2. `/usr/local/lib/libmpv.1.dylib` (Intel)
-3. `$APPDIR/Contents/Frameworks/libmpv.1.dylib` (bundled)
+The app checks the packaged resources directory first, then Homebrew and
+MacPorts ABI 2/ABI 1 paths, including:
+
+1. `compose.application.resources.dir/libmpv.2.dylib` (packaged JVM property)
+2. `/opt/homebrew/lib/libmpv.2.dylib` (Apple Silicon Homebrew)
+3. `/usr/local/lib/libmpv.2.dylib` (Intel Homebrew)
+4. `/opt/local/lib/libmpv.2.dylib` (MacPorts)
+5. ABI 1 compatibility paths and JNA's normal library lookup
 
 Install mpv via Homebrew to resolve this.
+
+The complete native ownership and threading contract is documented in
+[docs/MPV-JNA.md](docs/MPV-JNA.md).
 
 ### Tests fail to run
 

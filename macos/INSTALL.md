@@ -35,8 +35,9 @@ There is currently no supported Homebrew formula.
 
 ### 1. Verify bundled playback support
 
-The packaged app includes `libmpv`; no separate mpv installation is required.
-Developers running from Gradle should install it through Homebrew:
+The packaged app includes `libmpv`, native TorrServer, the Touch ID helper, and
+its Java runtime; no separate player or torrent helper installation is required.
+Developers running from Gradle should install mpv through Homebrew:
 
 ```bash
 brew install mpv
@@ -49,13 +50,17 @@ mpv --version
 # mpv 0.41.0 Copyright © 2000-2024 mpv/MPlayer/mplayer2 projects
 ```
 
-Without libmpv, a development run starts in mock mode and cannot display video.
+Without libmpv, a development run remains usable but playback is disabled and
+shows an error. Watch progress is never simulated.
 
 ### 2. First Launch
 
 1. Open `Anikku.app` from your Applications folder
 2. Grant any permission prompts (notifications, file access)
 3. Browse the extension sources and find anime to watch
+
+Touch ID is offered when LocalAuthentication reports enrolled biometrics. A
+Keychain-backed PIN remains available as the fallback.
 
 ### 3. (Optional) Tracker Login
 
@@ -66,15 +71,21 @@ To sync your watch history with MyAnimeList, AniList, or Kitsu:
 3. Click "Login" — your default browser will open the OAuth page
 4. Authorize the app and return to Anikku
 
-Discord Rich Presence is not available in this build because a native Discord
-IPC transport has not been implemented. Its failure cannot block startup or
-playback.
+Discord Rich Presence is available as an opt-in setting. It connects only to a
+locally running Discord Desktop client through its Unix-domain IPC socket; a
+missing Discord client cannot block startup or playback.
+
+Google Drive backup requires your own Google Desktop OAuth client ID. The
+browser flow uses PKCE and stores the resulting session only in Keychain.
 
 ## Updating
 
 ### Automatic Update Check
 
-The app checks for updates on launch by querying the GitHub Releases API. When an update is available, a notification appears with a link to the release page.
+Packaged builds initialize Sparkle against the validated HTTPS appcast.
+Development runs, or builds without the native helper, fall back to an
+informational GitHub Releases check that opens the release page; the fallback
+does not install an unverified artifact.
 
 ### Manual Update
 
@@ -89,7 +100,12 @@ If you have an existing Anikku installation on Android, you can migrate your dat
 1. **On Android:** Settings → Data & Storage → Backup → Create Backup
 2. Transfer the `.tachibk` file to your Mac (AirDrop, iCloud, USB)
 3. **On macOS:** File → Open Backup... → Select your `.tachibk` file
-4. Your library, categories, and settings will be restored
+4. The import is merged into the current macOS data
+
+The importer restores Android library entries, category membership, episode
+history/progress, and custom anime metadata. Android app/source preferences and
+credentials are intentionally not imported. macOS-created backups use the
+lossless `.anikku_backup.json` format and can be restored from the same menu.
 
 ## File Locations
 
@@ -122,7 +138,7 @@ yourself from trusted source, quarantine can also be removed explicitly:
 xattr -rd com.apple.quarantine /Applications/Anikku.app
 ```
 
-### "mpv: command not found"
+### "mpv: command not found" during development
 
 Install libmpv:
 
@@ -136,15 +152,19 @@ Check your internet connection. If you're behind a firewall, ensure outbound HTT
 
 ### Player shows black screen
 
-1. Verify libmpv is installed: `mpv --version`
-2. Try a different video format or source
-3. Check the logs at `~/Library/Logs/Anikku/` for error details
+1. For a Gradle development run, verify libmpv is installed: `mpv --version`
+2. For an installed build, run `./gradlew verifyPackage` against the built app
+   to confirm bundled native components
+3. Try a different video format or source
+4. Check the logs at `~/Library/Logs/Anikku/` for error details
 
 ### App crashes on launch
 
-1. Clear the app data: `rm -rf ~/Library/Application\ Support/Anikku`
-2. Check crash logs: `cat ~/Library/Logs/Anikku/crash-*.log`
-3. File an issue on [GitHub](https://github.com/komikku-app/anikku/issues)
+1. Quit Anikku and move its data aside so it remains recoverable:
+   `mv "$HOME/Library/Application Support/Anikku" "$HOME/Desktop/Anikku-data-backup"`
+2. Reopen the app and check crash logs under `~/Library/Logs/Anikku/`
+3. Restore the moved folder if the reset did not help
+4. File an issue on [GitHub](https://github.com/komikku-app/anikku/issues)
 
 ## Getting Help
 

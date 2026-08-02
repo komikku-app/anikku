@@ -6,7 +6,7 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
 ![Build: Gradle](https://img.shields.io/badge/build-Gradle-green)
 ![Kotlin: 2.2.x](https://img.shields.io/badge/kotlin-2.2.x-purple)
 
-> ✅ **Status: Active Development — Packaged and Streaming**
+> ✅ **Status: Development Preview — Packaged and Streaming**
 >
 > The app compiles, packages as a DMG, loads the installed JVM extension set,
 > browses/searches anime, resolves episodes, and streams through libmpv. Automated
@@ -14,13 +14,14 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
 > Individual third-party sites remain inherently changeable; no fixed fleet-wide
 > pass count is claimed.
 >
-> See [CHANGELOG.md](CHANGELOG.md) for the development history and [the architecture plan](../architectural_rework_for_macos.md) for the full rework roadmap.
+> See [CHANGELOG.md](CHANGELOG.md), the [implemented architecture](docs/ARCHITECTURE.md),
+> and the [original rework plan](../architectural_rework_for_macos.md).
 
 ## Features
 
 - **Browse Sources** — Discover and search anime using compatible Aniyomi/Keiyoushi sources
 - **Library Management** — Organize your anime collection with categories
-- **Video Player** — Full-featured libmpv software-rendered player
+- **Video Player** — libmpv Render API output with safe hardware decoding when available
   - Playback speed control (0.25x–4.0x)
   - Audio track selection
   - Subtitle track selection with delay adjustment
@@ -28,9 +29,11 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
   - Screenshot capture
   - Keyboard shortcuts (Space, ←→, ↑↓)
 - **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth
-- **Backup & Restore** — Cross-compatible with Android `.tachibk` backups
-- **PIN Lock** — Secure local access (native Touch ID is currently unavailable)
-- **20+ Color Schemes** — Including Monet, Nord, Material You, and more
+- **Backup & Restore** — Lossless macOS backups plus Android `.tachibk` migration import
+- **Cloud Sync** — Google Drive backup/restore and SyncYomi synchronization
+- **Discord Rich Presence** — Opt-in native Unix-socket IPC to Discord Desktop
+- **App Lock** — Keychain-backed PIN with native Touch ID through LocalAuthentication
+- **19 Color Schemes** — Including Monet, Nord, Material You, and more
 - **macOS Native** — Native menu bar, Dock integration, Dark Mode support
 
 ## Architecture
@@ -70,11 +73,11 @@ anikku/
 | 5 | Screen-by-Screen UI | ✅ Complete |
 | 6 | mpv Video Player (JNA) | ✅ Native playback/render/seek tested |
 | 7 | Advanced Features | ✅ Complete |
-| 8 | WebView Replacement | ✅ Complete (CDP-based) |
+| 8 | WebView Replacement | ✅ System browser + targeted Chrome CDP |
 | 9 | macOS Native Integration | ✅ Complete |
 | 10 | Packaging & Distribution | ✅ Unsigned DMG and bundle verification |
 | 11 | Testing & Polish | ✅ Deterministic, native, and live stream gates |
-| 12 | Documentation | ✅ This doc + BUILDING, INSTALL, guides |
+| 12 | Documentation | ✅ User guides, ADRs, and mpv/JNA reference |
 
 ### Extension Compatibility
 
@@ -104,11 +107,11 @@ install a pre-converted JAR. See [the migration guide](docs/MIGRATION-GUIDE.md).
 - **Chrome CDP Cloudflare bypass** — auto-launches headless Chrome to solve WAF challenges
 - Extension JAR loading via URLClassLoader
 - Package-keyed extension JAR loading with duplicate/source-ID rejection and explicit trust
-- Material 3 theme with 20 color schemes
+- Material 3 theme with 19 color schemes
 - Voyager navigation (tab navigator + per-tab inner navigators)
 - All UI components (Scrollbar, FastScroller, SettingsItems, Toast, etc.)
 - Settings screen with 15 sub-screens
-- macOS menu bar (5 menus with keyboard shortcuts)
+- macOS menu bar (application + 6 functional menus with keyboard shortcuts)
 - Global keyboard shortcuts (⌘1-5, ⌘F, ⌘,, Space, arrows)
 - Dock integration (badge count, dock menu)
 - File picker, OAuth server, update checker
@@ -118,7 +121,7 @@ install a pre-converted JAR. See [the migration guide](docs/MIGRATION-GUIDE.md).
 - Extension development guides (3 docs)
 - Extension build pipeline (batch-build from source)
 
-⚡ **Implemented with remaining external/native limitations:**
+✅ **Working platform integrations:**
 - Library, Updates, History, Browse, Downloads, Stats screens
 - AnimeDetailScreen (extension source calls)
 - SourceBrowseScreen (search, browse)
@@ -126,16 +129,22 @@ install a pre-converted JAR. See [the migration guide](docs/MIGRATION-GUIDE.md).
 - MPVLib, MPVEventLoop, MPVSoftwareRenderer, and MPVVideoSurface
 - MacOSHttpServer (NanoHTTPd for local video streaming)
 - Tracker OAuth (TrackerManager, OAuthServer, TokenStore)
-- Google Drive REST client
-- Discord Rich Presence (explicitly unavailable until real IPC is implemented)
-- Biometric Auth (PIN fallback; native LocalAuthentication is not implemented)
-- TorrentServerBridge
+- Google Drive desktop OAuth/PKCE, Keychain sessions, and backup upload/download/restore
+- SyncYomi conditional synchronization with Keychain-only API tokens
+- Discord Rich Presence over native Discord Desktop IPC (disabled by default)
+- LocalAuthentication/Touch ID with Keychain-backed PIN fallback
+- Bundled native TorrServer with checksum verification and WebTorrent fallback
 - Download manager
 - Local HTTP server for video streaming
+- Android gzip/protobuf `.tachibk` import for library, categories, history,
+  episode progress, and custom anime metadata
 
 ❌ **Release operations still requiring owner credentials/infrastructure:**
 - Developer ID signing and Apple notarization
 - A Sparkle-signed release enclosure and hosted HTTPS appcast
+
+The application and unsigned DMG are complete without those credentials; they
+are release operations, not simulated application features.
 
 ## Quick Start
 
@@ -156,7 +165,7 @@ For installation instructions, see [INSTALL.md](INSTALL.md).
 
 - **macOS 12.0+** (Monterey or later)
 - **JDK 17+** (recommended: OpenJDK 17 via Homebrew or SDKMAN)
-- **libmpv** (for development playback; packaged builds bundle it):
+- **libmpv** (development runs only; packaged builds bundle ABI 2):
   ```bash
   brew install mpv
   ```
@@ -176,6 +185,17 @@ For installation instructions, see [INSTALL.md](INSTALL.md).
 | `⌘F` | Open search |
 | `⌘W` | Close window |
 | `⌘Q` | Quit app |
+
+## Security and data formats
+
+Tracker, Google Drive, SyncYomi, app-lock, and proxy credentials are stored in
+macOS Keychain and are excluded from backups. macOS-native backups use the
+versioned `.anikku_backup.json` format so every desktop field can round-trip.
+Android `.tachibk` files are accepted as migration input; macOS does not write
+Android protobuf backups.
+
+Developer architecture records are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
+with the native player contract in [docs/MPV-JNA.md](docs/MPV-JNA.md).
 
 ## File Locations
 
