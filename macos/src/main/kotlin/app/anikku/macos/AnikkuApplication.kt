@@ -19,6 +19,7 @@ import app.anikku.macos.platform.logging.MacOSLogger
 import app.anikku.macos.platform.logging.TerminalErrorLogger
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.library.MacOSLibraryUpdateService
+import app.anikku.macos.platform.migration.MacOSMigrationManager
 import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.network.MacOSCookieJar
 import app.anikku.macos.platform.network.MacOSNetworkHelper
@@ -37,6 +38,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.atomic.AtomicBoolean
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -61,6 +63,7 @@ class AnikkuApplication {
 
     val storageProvider = MacOSStorageProvider()
     val preferenceStore: MacOSPreferenceStore
+    val migrationManager: MacOSMigrationManager
     val backgroundScheduler = BackgroundTaskScheduler(applicationScope)
     val databaseDriver: MacOSDatabaseDriver
 
@@ -112,6 +115,20 @@ class AnikkuApplication {
         // 4. Initialize preferences (JSON file-backed)
         val prefsFile = File(storageProvider.dataDirectory, "preferences.json")
         preferenceStore = MacOSPreferenceStore(prefsFile)
+
+        // 4b. Run idempotent platform migrations before services read state.
+        migrationManager = MacOSMigrationManager(
+            preferences = preferenceStore,
+            storageProvider = storageProvider,
+            secretStore = MacOSKeychain(service = "anikku", account = "anikku-app"),
+        )
+        runBlocking {
+            val result = migrationManager.migrate()
+            if (!result.success) {
+                MacOSLogger.getLogger<AnikkuApplication>()
+                    .warn("macOS migration deferred at ${result.failedMigration}")
+            }
+        }
 
         // 5. Initialize database driver
         databaseDriver = MacOSDatabaseDriver(storageProvider)

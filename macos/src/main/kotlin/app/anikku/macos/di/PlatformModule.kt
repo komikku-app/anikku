@@ -9,6 +9,7 @@ import app.anikku.macos.platform.database.MacOSDatabaseDriver
 import app.anikku.macos.platform.discord.DiscordRPC
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.network.CloudflareInterceptor
+import app.anikku.macos.platform.migration.MacOSMigrationManager
 import app.anikku.macos.platform.network.DiagnosticLoggingInterceptor
 import app.anikku.macos.platform.network.HttpRetryInterceptor
 import app.anikku.macos.platform.network.MacOSCookieJar
@@ -52,6 +53,7 @@ fun platformModule(app: AnikkuApplication) = module {
     single<MacOSDatabaseDriver> { app.databaseDriver }
     single<BackgroundTaskScheduler> { app.backgroundScheduler }
     single<MacOSBackgroundJobs> { app.backgroundJobs }
+    single<MacOSMigrationManager> { app.migrationManager }
 
     // Phase 3: Networking
     single<MacOSNetworkHelper> { app.networkHelper }
