@@ -23,6 +23,7 @@ import app.anikku.macos.platform.network.MacOSNetworkHelper
 import app.anikku.macos.platform.notification.MacOSNotificationManager
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.platform.security.MacOSBiometricAuth
+import app.anikku.macos.platform.security.MacOSKeychain
 import app.anikku.macos.platform.storage.MacOSStorageManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
 import app.anikku.macos.platform.update.AppUpdateChecker
@@ -158,7 +159,9 @@ class AnikkuApplication {
         notificationManager.initialize()
 
         // 9c. Biometric Authentication (Touch ID + PIN fallback)
-        biometricAuth = MacOSBiometricAuth()
+        biometricAuth = MacOSBiometricAuth(
+            secretStore = MacOSKeychain(service = "anikku-security", account = "app-lock"),
+        )
 
         // 9d. App Update Checker (GitHub API)
         appUpdateChecker = AppUpdateChecker(

@@ -231,6 +231,13 @@ fun SettingsScreen() {
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
         // =====================================================================
+        // Security
+        // =====================================================================
+        SecuritySettingsPanel()
+
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+
+        // =====================================================================
         // Downloads
         // =====================================================================
         HeadingItem("Downloads")

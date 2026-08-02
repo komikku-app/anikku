@@ -42,6 +42,12 @@ class SettingsState(
         private const val KEY_AMOLED_OLED = "amoled_oled"
         private const val KEY_THEME_MODE = "theme_mode"
 
+        // Security settings. The PIN hash itself is stored only in Keychain by
+        // MacOSBiometricAuth; preferences contain non-secret behavior flags.
+        private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
+        private const val KEY_LOCK_ON_BLUR = "app_lock_on_blur"
+        private const val KEY_USE_BIOMETRICS = "app_lock_use_biometrics"
+
         // Player settings
         private const val KEY_AUTO_PLAY_NEXT = "auto_play_next"
         private const val KEY_RESUME_FROM_LAST = "resume_from_last"
@@ -100,6 +106,38 @@ class SettingsState(
         set(value) {
             _themeMode.value = value
             themeModePref?.set(value.name)
+        }
+
+    // -------------------------------------------------------------------------
+    // Security settings
+    // -------------------------------------------------------------------------
+
+    private val appLockPref = preferenceStore?.getBoolean(KEY_APP_LOCK_ENABLED, false)
+    private val lockOnBlurPref = preferenceStore?.getBoolean(KEY_LOCK_ON_BLUR, true)
+    private val useBiometricsPref = preferenceStore?.getBoolean(KEY_USE_BIOMETRICS, true)
+    private val _appLockEnabled = mutableStateOf(appLockPref?.get() ?: false)
+    private val _lockOnBlur = mutableStateOf(lockOnBlurPref?.get() ?: true)
+    private val _useBiometrics = mutableStateOf(useBiometricsPref?.get() ?: true)
+
+    var appLockEnabled: Boolean
+        get() = _appLockEnabled.value
+        set(value) {
+            _appLockEnabled.value = value
+            appLockPref?.set(value)
+        }
+
+    var lockOnBlur: Boolean
+        get() = _lockOnBlur.value
+        set(value) {
+            _lockOnBlur.value = value
+            lockOnBlurPref?.set(value)
+        }
+
+    var useBiometrics: Boolean
+        get() = _useBiometrics.value
+        set(value) {
+            _useBiometrics.value = value
+            useBiometricsPref?.set(value)
         }
 
     // -------------------------------------------------------------------------

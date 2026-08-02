@@ -47,6 +47,9 @@ import app.anikku.macos.ui.components.ToastHost
 import app.anikku.macos.ui.components.ToastHostState
 import app.anikku.macos.ui.settings.LocalSettingsState
 import app.anikku.macos.ui.settings.SettingsState
+import app.anikku.macos.ui.settings.AppLockController
+import app.anikku.macos.ui.settings.LocalAppLockController
+import app.anikku.macos.ui.security.AppLockScreen
 import app.anikku.macos.ui.theme.AnikkuTheme
 
 import coil3.ImageLoader
@@ -92,7 +95,17 @@ fun main() = application {
         title = "Anikku",
         state = windowState,
     ) {
-        DisposableEffect(window) {
+        val settingsState = remember { SettingsState(app.preferenceStore) }
+        if (settingsState.appLockEnabled && !app.biometricAuth.isPinSet) {
+            // Never strand a user behind a lock whose Keychain credential is
+            // missing or inaccessible.
+            settingsState.appLockEnabled = false
+        }
+        var isLocked by remember {
+            mutableStateOf(settingsState.appLockEnabled && app.biometricAuth.isPinSet)
+        }
+
+        DisposableEffect(window, settingsState) {
             val focusListener = object : WindowAdapter() {
                 override fun windowGainedFocus(event: java.awt.event.WindowEvent?) {
                     app.onAppFocused()
@@ -100,6 +113,9 @@ fun main() = application {
 
                 override fun windowLostFocus(event: java.awt.event.WindowEvent?) {
                     app.onAppBlurred()
+                    if (settingsState.appLockEnabled && settingsState.lockOnBlur && app.biometricAuth.isPinSet) {
+                        isLocked = true
+                    }
                 }
             }
             window.addWindowFocusListener(focusListener)
@@ -109,8 +125,6 @@ fun main() = application {
                 app.onAppBlurred()
             }
         }
-
-        val settingsState = remember { SettingsState(app.preferenceStore) }
 
         // Wire proxy settings from UI to network helper.
         // The proxyProvider lambda reads the current settings on every client build.
@@ -272,6 +286,12 @@ fun main() = application {
 
         CompositionLocalProvider(
             LocalSettingsState provides settingsState,
+            LocalAppLockController provides remember(app.biometricAuth) {
+                AppLockController(
+                    authentication = app.biometricAuth,
+                    lockNow = { if (settingsState.appLockEnabled) isLocked = true },
+                )
+            },
             LocalBookmarkStore provides bookmarkStore,
             LocalLibraryRepository provides libraryRepository,
             LocalHistoryRepository provides historyRepository,
@@ -298,6 +318,20 @@ fun main() = application {
                                 showOnboarding = false
                             },
                         ).Content()
+                    } else if (isLocked && settingsState.appLockEnabled) {
+                        AppLockScreen(
+                            biometricAvailable = app.biometricAuth.isBiometricAvailable,
+                            useBiometrics = settingsState.useBiometrics,
+                            onVerifyPin = app.biometricAuth::verifyPin,
+                            onBiometricUnlock = {
+                                withContext(Dispatchers.IO) {
+                                    app.biometricAuth.authenticateWithBiometrics(
+                                        reason = "Unlock your Anikku library",
+                                    )
+                                }
+                            },
+                            onUnlocked = { isLocked = false },
+                        )
                     } else {
                         MainWindow()
                     }

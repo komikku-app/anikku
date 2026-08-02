@@ -227,6 +227,24 @@ class SettingsStateTest {
         assertFalse(state.isAmoledOLED)
     }
 
+    @Test
+    fun `app lock settings use secure defaults and persist`(@TempDir tempDir: Path) {
+        val store = MacOSPreferenceStore(tempDir.resolve("preferences.json").toFile())
+        val state = SettingsState(store)
+        assertFalse(state.appLockEnabled)
+        assertTrue(state.lockOnBlur)
+        assertTrue(state.useBiometrics)
+
+        state.appLockEnabled = true
+        state.lockOnBlur = false
+        state.useBiometrics = false
+
+        val restarted = SettingsState(store)
+        assertTrue(restarted.appLockEnabled)
+        assertFalse(restarted.lockOnBlur)
+        assertFalse(restarted.useBiometrics)
+    }
+
     // ---------------------------------------------------------------------------
     // LocalSettingsState CompositionLocal
     // ---------------------------------------------------------------------------

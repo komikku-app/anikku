@@ -5,6 +5,7 @@ import com.sun.jna.Native
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
@@ -26,13 +27,16 @@ interface BiometricHelperLib : Library {
  */
 class MacOSBiometricAuth(
     private val biometricHelper: BiometricHelperLib? = loadBiometricHelper(),
+    private val secretStore: MacOSSecretStore? = null,
 ) {
 
     companion object {
         private const val PIN_HASH_ALGORITHM = "PBKDF2WithHmacSHA256"
         private const val PIN_ITERATIONS = 100_000
         private const val PIN_KEY_LENGTH = 256
-        private const val PIN_SALT = "AnikkuBiometricSalt_v1"
+        private const val PIN_STORAGE_KEY = "app_lock_pin"
+        private const val PIN_RECORD_VERSION = "v2"
+        private const val PIN_SALT_BYTES = 16
 
         private fun loadBiometricHelper(): BiometricHelperLib? {
             if (!System.getProperty("os.name", "").contains("mac", ignoreCase = true)) return null
@@ -63,9 +67,10 @@ class MacOSBiometricAuth(
         }
     }
 
-    private var pinHash: String? = null
+    @Volatile
+    private var pinRecord: String? = loadPinRecord()
 
-    val isPinSet: Boolean get() = pinHash != null
+    val isPinSet: Boolean get() = pinRecord != null
 
     /** Re-check every time because enrolled biometrics can change at runtime. */
     val isBiometricAvailable: Boolean
@@ -107,34 +112,67 @@ class MacOSBiometricAuth(
         return pin != null && isPinSet && verifyPin(pin)
     }
 
-    fun setPin(pin: String) {
-        pinHash = hashPin(pin)
-        logger.info { "Biometric PIN set" }
+    fun setPin(pin: String): Boolean {
+        val salt = ByteArray(PIN_SALT_BYTES).also(SecureRandom()::nextBytes)
+        val record = encodePinRecord(salt, hashPin(pin, salt))
+        if (secretStore != null) {
+            if (!secretStore.isAvailable || !secretStore.store(PIN_STORAGE_KEY, record)) {
+                logger.error { "Failed to store app-lock PIN securely: ${secretStore.lastError ?: "Keychain unavailable"}" }
+                return false
+            }
+        }
+        pinRecord = record
+        logger.info { "App-lock PIN set" }
+        return true
     }
 
     fun changePin(oldPin: String, newPin: String): Boolean {
         if (!verifyPin(oldPin)) return false
-        setPin(newPin)
+        return setPin(newPin)
+    }
+
+    fun clearPin(): Boolean {
+        if (secretStore != null && (!secretStore.isAvailable || !secretStore.delete(PIN_STORAGE_KEY))) {
+            logger.error { "Failed to clear app-lock PIN securely: ${secretStore.lastError ?: "Keychain unavailable"}" }
+            return false
+        }
+        pinRecord = null
+        logger.info { "App-lock PIN cleared" }
         return true
     }
 
-    fun clearPin() {
-        pinHash = null
-        logger.info { "Biometric PIN cleared" }
-    }
-
     fun verifyPin(pin: String): Boolean {
-        val hash = pinHash ?: return false
-        return MessageDigest.isEqual(hashPin(pin).toByteArray(), hash.toByteArray())
+        val record = pinRecord ?: return false
+        val parts = record.split(':')
+        if (parts.size != 3 || parts[0] != PIN_RECORD_VERSION) return false
+        return try {
+            val salt = Base64.getDecoder().decode(parts[1])
+            val expected = Base64.getDecoder().decode(parts[2])
+            MessageDigest.isEqual(hashPin(pin, salt), expected)
+        } catch (e: IllegalArgumentException) {
+            logger.warn(e) { "Stored app-lock PIN record is malformed" }
+            false
+        }
     }
 
-    private fun hashPin(pin: String): String {
-        val spec = PBEKeySpec(pin.toCharArray(), PIN_SALT.toByteArray(), PIN_ITERATIONS, PIN_KEY_LENGTH)
+    private fun hashPin(pin: String, salt: ByteArray): ByteArray {
+        val spec = PBEKeySpec(pin.toCharArray(), salt, PIN_ITERATIONS, PIN_KEY_LENGTH)
         return try {
-            val hash = SecretKeyFactory.getInstance(PIN_HASH_ALGORITHM).generateSecret(spec).encoded
-            Base64.getEncoder().encodeToString(hash)
+            SecretKeyFactory.getInstance(PIN_HASH_ALGORITHM).generateSecret(spec).encoded
         } finally {
             spec.clearPassword()
         }
+    }
+
+    private fun encodePinRecord(salt: ByteArray, hash: ByteArray): String = listOf(
+        PIN_RECORD_VERSION,
+        Base64.getEncoder().encodeToString(salt),
+        Base64.getEncoder().encodeToString(hash),
+    ).joinToString(":")
+
+    private fun loadPinRecord(): String? {
+        val store = secretStore ?: return null
+        if (!store.isAvailable) return null
+        return store.retrieve(PIN_STORAGE_KEY)?.takeIf { it.isNotBlank() }
     }
 }

@@ -127,6 +127,50 @@ class MacOSBiometricAuthTest {
         assertDoesNotThrow { nativeAuth.isBiometricAvailable }
     }
 
+    @Test
+    fun `PIN record persists securely across auth instances`() {
+        val secrets = FakeSecretStore()
+        val first = MacOSBiometricAuth(unavailableHelper, secrets)
+        assertTrue(first.setPin("2468"))
+        val storedRecord = secrets.values.getValue("app_lock_pin")
+
+        val restarted = MacOSBiometricAuth(unavailableHelper, secrets)
+        assertTrue(restarted.isPinSet)
+        assertTrue(restarted.verifyPin("2468"))
+        assertFalse(restarted.verifyPin("1357"))
+        assertTrue(storedRecord.startsWith("v2:"))
+        assertFalse(storedRecord.contains("2468"))
+    }
+
+    @Test
+    fun `reusing a PIN produces a new random salt`() {
+        val secrets = FakeSecretStore()
+        val secureAuth = MacOSBiometricAuth(unavailableHelper, secrets)
+        assertTrue(secureAuth.setPin("2468"))
+        val first = secrets.values.getValue("app_lock_pin")
+        assertTrue(secureAuth.setPin("2468"))
+        val second = secrets.values.getValue("app_lock_pin")
+
+        assertFalse(first == second)
+        assertTrue(secureAuth.verifyPin("2468"))
+    }
+
+    @Test
+    fun `Keychain set and clear failures retain prior security state`() {
+        val secrets = FakeSecretStore()
+        val secureAuth = MacOSBiometricAuth(unavailableHelper, secrets)
+        assertTrue(secureAuth.setPin("2468"))
+        secrets.failWrites = true
+        assertFalse(secureAuth.setPin("9999"))
+        assertTrue(secureAuth.verifyPin("2468"))
+
+        secrets.failWrites = false
+        secrets.failDeletes = true
+        assertFalse(secureAuth.clearPin())
+        assertTrue(secureAuth.isPinSet)
+        assertTrue(secureAuth.verifyPin("2468"))
+    }
+
     private class FakeBiometricHelper(
         private val available: Boolean,
         private val evaluationResult: Int = 0,
@@ -142,6 +186,36 @@ class MacOSBiometricAuthTest {
             lastReason = reason
             lastTimeout = timeoutSeconds
             return evaluationResult
+        }
+    }
+
+    private class FakeSecretStore : MacOSSecretStore {
+        val values = mutableMapOf<String, String>()
+        var failWrites = false
+        var failDeletes = false
+        override val isAvailable: Boolean = true
+        override var lastError: String? = null
+
+        override fun store(key: String, value: String): Boolean {
+            if (failWrites) {
+                lastError = "write denied"
+                return false
+            }
+            values[key] = value
+            lastError = null
+            return true
+        }
+
+        override fun retrieve(key: String): String? = values[key]
+
+        override fun delete(key: String): Boolean {
+            if (failDeletes) {
+                lastError = "delete denied"
+                return false
+            }
+            values.remove(key)
+            lastError = null
+            return true
         }
     }
 }
