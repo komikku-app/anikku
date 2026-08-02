@@ -34,15 +34,27 @@ private val logger = KotlinLogging.logger {}
  * All methods are safe to call from any thread. Each call spawns a short-lived
  * `security` process. Avoid calling from the main thread in tight loops.
  */
+interface MacOSSecretStore {
+    val isAvailable: Boolean
+    val lastError: String?
+    fun store(key: String, value: String): Boolean
+    fun retrieve(key: String): String?
+    fun delete(key: String): Boolean
+}
+
 class MacOSKeychain(
     /** Keychain service name — scopes entries so they don't collide with other apps. */
     private val service: String = "anikku",
     /** Keychain account name — groups related entries under one account. */
     private val account: String = "anikku-app",
-) {
+) : MacOSSecretStore {
+
+    @Volatile
+    override var lastError: String? = null
+        private set
 
     /** Whether the `security` CLI tool is available on this system. */
-    val isAvailable: Boolean by lazy {
+    override val isAvailable: Boolean by lazy {
         try {
             val process = ProcessBuilder("which", "security")
                 .redirectErrorStream(true)
@@ -63,28 +75,34 @@ class MacOSKeychain(
      * @param value The value to store.
      * @return true if the value was stored successfully.
      */
-    fun store(key: String, value: String): Boolean {
+    @Synchronized
+    override fun store(key: String, value: String): Boolean {
         if (value.isBlank()) return delete(key)
 
         return try {
-            // Try to update existing item first
-            val updateResult = runCommand(
+            // Keep the secret out of argv/process listings. With -w as the final
+            // argument, security prompts on stdin; no token is passed in argv.
+            val updateResult = runCommandWithStdin(
+                "$value\n",
                 "security", "add-generic-password",
                 "-a", account,
                 "-s", "$service-$key",
-                "-w", value,
                 "-U", // Update if exists
                 "-j", service, // Service label for organization
+                "-w",
             )
 
             if (updateResult.exitCode == 0) {
+                lastError = null
                 logger.debug { "Keychain: stored $key (${value.length} chars)" }
                 true
             } else {
+                lastError = "security add-generic-password exited with ${updateResult.exitCode}"
                 logger.warn { "Keychain: failed to store $key (exit ${updateResult.exitCode}): ${updateResult.stderr.take(100)}" }
                 false
             }
         } catch (e: Exception) {
+            lastError = e.message ?: e::class.simpleName
             logger.warn(e) { "Keychain: error storing $key" }
             false
         }
@@ -96,7 +114,8 @@ class MacOSKeychain(
      * @param key The key to look up.
      * @return The stored value, or null if no entry exists.
      */
-    fun retrieve(key: String): String? {
+    @Synchronized
+    override fun retrieve(key: String): String? {
         return try {
             val result = runCommand(
                 "security", "find-generic-password",
@@ -108,16 +127,23 @@ class MacOSKeychain(
             if (result.exitCode == 0) {
                 val value = result.stdout.trimEnd('\n')
                 if (value.isNotBlank()) {
+                    lastError = null
                     logger.debug { "Keychain: retrieved $key (${value.length} chars)" }
                     value
                 } else {
+                    lastError = null
                     null
                 }
             } else {
+                // 44 is errSecItemNotFound: absence is not a keychain failure.
+                lastError = if (result.exitCode == 44) null else {
+                    "security find-generic-password exited with ${result.exitCode}"
+                }
                 logger.debug { "Keychain: no entry found for $key (exit ${result.exitCode})" }
                 null
             }
         } catch (e: Exception) {
+            lastError = e.message ?: e::class.simpleName
             logger.warn(e) { "Keychain: error retrieving $key" }
             null
         }
@@ -129,7 +155,8 @@ class MacOSKeychain(
      * @param key The key to delete.
      * @return true if the entry was deleted or didn't exist.
      */
-    fun delete(key: String): Boolean {
+    @Synchronized
+    override fun delete(key: String): Boolean {
         return try {
             val result = runCommand(
                 "security", "delete-generic-password",
@@ -138,6 +165,7 @@ class MacOSKeychain(
             )
 
             val success = result.exitCode == 0 || result.exitCode == 44 // 44 = item not found
+            lastError = if (success) null else "security delete-generic-password exited with ${result.exitCode}"
             if (success) {
                 logger.debug { "Keychain: deleted $key" }
             } else {
@@ -145,6 +173,7 @@ class MacOSKeychain(
             }
             success
         } catch (e: Exception) {
+            lastError = e.message ?: e::class.simpleName
             logger.warn(e) { "Keychain: error deleting $key" }
             false
         }
@@ -160,18 +189,32 @@ class MacOSKeychain(
         val stderr: String,
     )
 
-    private fun runCommand(vararg args: String): CommandResult {
+    private fun runCommand(vararg args: String): CommandResult =
+        runCommandWithStdin(null, *args)
+
+    private fun runCommandWithStdin(stdin: String?, vararg args: String): CommandResult {
         val process = ProcessBuilder(*args)
             .redirectErrorStream(false)
             .start()
 
+        if (stdin != null) {
+            process.outputStream.bufferedWriter(Charsets.UTF_8).use { it.write(stdin) }
+        } else {
+            process.outputStream.close()
+        }
+
         val stdoutStream = ByteArrayOutputStream()
         val stderrStream = ByteArrayOutputStream()
-
-        process.inputStream.transferTo(stdoutStream)
-        process.errorStream.transferTo(stderrStream)
+        val stdoutReader = Thread({ process.inputStream.transferTo(stdoutStream) }, "keychain-stdout")
+        val stderrReader = Thread({ process.errorStream.transferTo(stderrStream) }, "keychain-stderr")
+        stdoutReader.isDaemon = true
+        stderrReader.isDaemon = true
+        stdoutReader.start()
+        stderrReader.start()
 
         val exitCode = process.waitFor()
+        stdoutReader.join()
+        stderrReader.join()
 
         return CommandResult(
             exitCode = exitCode,

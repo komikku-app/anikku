@@ -140,14 +140,15 @@ class SettingsState(
         }
 
     private val defaultSpeedPref = preferenceStore?.getFloat(KEY_DEFAULT_SPEED, 1.0f)
-    private val _defaultSpeed = mutableStateOf(defaultSpeedPref?.get() ?: 1.0f)
+    private val _defaultSpeed = mutableStateOf(sanitizePlaybackSpeed(defaultSpeedPref?.get() ?: 1.0f))
 
-    /** Default playback speed (1.0 = normal). */
+    /** Default playback speed (1.0 = normal). Invalid values fall back to normal speed. */
     var defaultPlaybackSpeed: Float
         get() = _defaultSpeed.value
         set(value) {
-            _defaultSpeed.value = value
-            defaultSpeedPref?.set(value)
+            val sanitized = sanitizePlaybackSpeed(value)
+            _defaultSpeed.value = sanitized
+            defaultSpeedPref?.set(sanitized)
         }
 
     // -------------------------------------------------------------------------
@@ -166,7 +167,9 @@ class SettingsState(
         }
 
     private val simultaneousPref = preferenceStore?.getInt(KEY_SIMULTANEOUS_DOWNLOADS, 3)
-    private val _simultaneousDownloads = mutableStateOf(simultaneousPref?.get() ?: 3)
+    private val _simultaneousDownloads = mutableStateOf(
+        (simultaneousPref?.get() ?: 3).coerceIn(1, 10),
+    )
 
     /** Number of simultaneous downloads (1-10). */
     var simultaneousDownloads: Int
@@ -182,7 +185,10 @@ class SettingsState(
     // -------------------------------------------------------------------------
 
     private val proxyTypePref = preferenceStore?.getString(KEY_PROXY_TYPE, ProxyType.DISABLED.name)
-    private val _proxyType = mutableStateOf(ProxyType.valueOf(proxyTypePref?.get() ?: ProxyType.DISABLED.name))
+    private val _proxyType = mutableStateOf(
+        runCatching { ProxyType.valueOf(proxyTypePref?.get() ?: ProxyType.DISABLED.name) }
+            .getOrDefault(ProxyType.DISABLED),
+    )
 
     /** Proxy type: DISABLED, HTTP, SOCKS4, SOCKS5. */
     var proxyType: ProxyType
@@ -204,14 +210,17 @@ class SettingsState(
         }
 
     private val proxyPortPref = preferenceStore?.getInt(KEY_PROXY_PORT, 8080)
-    private val _proxyPort = mutableStateOf(proxyPortPref?.get() ?: 8080)
+    private val _proxyPort = mutableStateOf(
+        (proxyPortPref?.get() ?: 8080).coerceIn(1, 65_535),
+    )
 
     /** Proxy port number. */
     var proxyPort: Int
         get() = _proxyPort.value
         set(value) {
-            _proxyPort.value = value
-            proxyPortPref?.set(value)
+            val sanitized = value.coerceIn(1, 65_535)
+            _proxyPort.value = sanitized
+            proxyPortPref?.set(sanitized)
         }
 
     private val proxyUsernamePref = preferenceStore?.getString(KEY_PROXY_USERNAME, "")
@@ -297,6 +306,9 @@ class SettingsState(
         ThemeMode.DARK -> true
         ThemeMode.SYSTEM -> isSystemDark
     }
+
+    private fun sanitizePlaybackSpeed(value: Float): Float =
+        value.takeIf { it.isFinite() }?.coerceIn(0.25f, 4.0f) ?: 1.0f
 
     /** Load theme from preferences if store is available, falling back to DEFAULT. */
     private fun loadTheme(): AnikkuTheme.Theme {

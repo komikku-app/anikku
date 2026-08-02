@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -39,6 +38,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
 import app.anikku.macos.platform.update.AppUpdateChecker
 import app.anikku.macos.platform.update.SparkleUpdater
+import app.anikku.macos.platform.update.UpdateCheckResult
 import app.anikku.macos.platform.update.UpdateInfo
 import app.anikku.macos.platform.web.BrowserLauncher
 import kotlinx.coroutines.Dispatchers
@@ -82,16 +82,20 @@ fun AboutDialog(
             val foundUpdate = withContext(Dispatchers.IO) {
                 // Try Sparkle first (only when natively available)
                 if (sparkleUpdater != null && sparkleUpdater.isAvailable) {
-                    sparkleUpdater.checkForUpdatesWithUI()
-                    null // Sparkle handles its own UI — no UpdateInfo needed
+                    if (sparkleUpdater.checkForUpdatesWithUI()) {
+                        UpdateCheckResult.SparkleDialogOpened // Sparkle handles its own UI
+                    } else {
+                        UpdateCheckResult.Failed("Unable to start the Sparkle update checker")
+                    }
                 } else {
-                    updateChecker?.checkForUpdateSync()
+                    updateChecker?.checkForUpdateSync() ?: UpdateCheckResult.Failed("No updater configured")
                 }
             }
-            updateState = if (foundUpdate != null) {
-                UpdateState.Available(foundUpdate)
-            } else {
-                UpdateState.UpToDate
+            updateState = when (foundUpdate) {
+                is UpdateCheckResult.Available -> UpdateState.Available(foundUpdate.update)
+                UpdateCheckResult.NoUpdate -> UpdateState.UpToDate
+                UpdateCheckResult.SparkleDialogOpened -> UpdateState.NativeDialogOpened
+                is UpdateCheckResult.Failed -> UpdateState.Failed(foundUpdate.reason)
             }
         }
     }
@@ -112,7 +116,6 @@ fun AboutDialog(
             shape = RoundedCornerShape(12.dp),
             tonalElevation = 4.dp,
         ) {
-            SelectionContainer {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -187,19 +190,25 @@ fun AboutDialog(
 
                                         // Try Sparkle first (only when natively available)
                                         if (sparkleUpdater != null && sparkleUpdater.isAvailable) {
-                                            withContext(Dispatchers.IO) {
+                                            val opened = withContext(Dispatchers.IO) {
                                                 sparkleUpdater.checkForUpdatesWithUI()
                                             }
-                                            // Sparkle native UI takes over — no UpdateInfo returned
-                                            updateState = UpdateState.UpToDate
-                                        } else {
-                                            val update = withContext(Dispatchers.IO) {
-                                                updateChecker?.checkForUpdateSync()
-                                            }
-                                            updateState = if (update != null) {
-                                                UpdateState.Available(update)
+                                            // Sparkle native UI takes over — no UpdateInfo returned.
+                                            updateState = if (opened) {
+                                                UpdateState.NativeDialogOpened
                                             } else {
-                                                UpdateState.UpToDate
+                                                UpdateState.Failed("Unable to start the Sparkle update checker")
+                                            }
+                                        } else {
+                                            val result = withContext(Dispatchers.IO) {
+                                                updateChecker?.checkForUpdateSync()
+                                                    ?: UpdateCheckResult.Failed("No updater configured")
+                                            }
+                                            updateState = when (result) {
+                                                is UpdateCheckResult.Available -> UpdateState.Available(result.update)
+                                                UpdateCheckResult.NoUpdate -> UpdateState.UpToDate
+                                                UpdateCheckResult.SparkleDialogOpened -> UpdateState.NativeDialogOpened
+                                                is UpdateCheckResult.Failed -> UpdateState.Failed(result.reason)
                                             }
                                         }
                                     }
@@ -251,11 +260,11 @@ fun AboutDialog(
                             Spacer(Modifier.height(8.dp))
                             Button(
                                 onClick = {
-                                    BrowserLauncher.openSafe(state.update.downloadUrl)
+                                    updateChecker?.openReleasePage(state.update)
                                 },
                                 shape = RoundedCornerShape(8.dp),
                             ) {
-                                Text("Download Update")
+                                Text("View Release")
                             }
                             Spacer(Modifier.height(4.dp))
                             OutlinedButton(
@@ -268,6 +277,50 @@ fun AboutDialog(
                                 ),
                             ) {
                                 Text("Dismiss")
+                            }
+                        }
+                    }
+
+                    is UpdateState.Failed -> {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Update check failed",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = state.reason,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = { updateState = UpdateState.Idle },
+                                shape = RoundedCornerShape(8.dp),
+                            ) {
+                                Text("Try Again")
+                            }
+                        }
+                    }
+
+                    is UpdateState.NativeDialogOpened -> {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Sparkle update checker opened",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = { updateState = UpdateState.Idle },
+                                shape = RoundedCornerShape(8.dp),
+                            ) {
+                                Text("Done")
                             }
                         }
                     }
@@ -324,7 +377,6 @@ fun AboutDialog(
                     Text("Close")
                 }
             }
-            } // End SelectionContainer
         }
     }
 }
@@ -336,5 +388,7 @@ private sealed class UpdateState {
     data object Idle : UpdateState()
     data object Checking : UpdateState()
     data class Available(val update: UpdateInfo) : UpdateState()
+    data class Failed(val reason: String) : UpdateState()
+    data object NativeDialogOpened : UpdateState()
     data object UpToDate : UpdateState()
 }

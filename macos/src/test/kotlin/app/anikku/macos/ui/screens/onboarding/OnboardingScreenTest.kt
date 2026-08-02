@@ -92,6 +92,40 @@ class OnboardingScreenTest {
     }
 
     @Test
+    fun `initial step resumes and step changes are reported`() {
+        val changedSteps = mutableListOf<Int>()
+        composeRule.setContent {
+            OnboardingScreen(
+                onComplete = {},
+                initialStep = 3,
+                onStepChanged = { changedSteps += it },
+            ).Content()
+        }
+
+        composeRule.onNodeWithText("Quick Tips").assertIsDisplayed()
+        composeRule.onNodeWithText("Back").performClick()
+        composeRule.onNodeWithText("Download Location").assertIsDisplayed()
+        assert(changedSteps == listOf(2))
+    }
+
+    @Test
+    fun `completion reports reset step after resumed flow`() {
+        var completed = false
+        val changedSteps = mutableListOf<Int>()
+        composeRule.setContent {
+            OnboardingScreen(
+                onComplete = { completed = true },
+                initialStep = 4,
+                onStepChanged = { changedSteps += it },
+            ).Content()
+        }
+
+        composeRule.onNodeWithText("Get Started!").performClick()
+        assert(completed)
+        assert(changedSteps == listOf(0))
+    }
+
+    @Test
     fun `back button not shown on first step`() {
         composeRule.setContent {
             OnboardingScreen(onComplete = {}).Content()

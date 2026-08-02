@@ -18,7 +18,6 @@ import app.anikku.macos.platform.logging.MacOSLogger
 import app.anikku.macos.platform.logging.TerminalErrorLogger
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.network.ChromeCDPClient
-import app.anikku.macos.platform.network.InsecureSSLHelper
 import app.anikku.macos.platform.network.MacOSCookieJar
 import app.anikku.macos.platform.network.MacOSNetworkHelper
 import app.anikku.macos.platform.notification.MacOSNotificationManager
@@ -31,7 +30,10 @@ import app.anikku.macos.platform.update.SparkleUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import java.util.concurrent.atomic.AtomicBoolean
 import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 import java.io.File
 
 /**
@@ -78,6 +80,8 @@ class AnikkuApplication {
     val appUpdateChecker: AppUpdateChecker
     val sparkleUpdater: SparkleUpdater
 
+    private val shutdownStarted = AtomicBoolean(false)
+
     init {
         // 1. Ensure storage directories exist
         storageProvider.ensureDirectories()
@@ -88,11 +92,9 @@ class AnikkuApplication {
         // 3. Deploy bundled extensions on first launch (Phase 3.3)
         deployBundledExtensions()
 
-        // 3b. Install lenient SSL context BEFORE creating OkHttp clients.
-        // Many anime streaming sites use self-signed/invalid certificates.
-        // This must run before networkHelper is created so OkHttp picks up
-        // the lenient SSL context for all connections.
-        InsecureSSLHelper.install()
+        // 3b. Network clients retain the JVM's secure default certificate and
+        // hostname validation. Extension-specific exceptions must be isolated
+        // to the individual client; never mutate JVM-global TLS state.
 
         // 3c. Initialize UI Action Logger (verbose debugging for development)
         UIActionLogger.initialize(storageProvider.logsDirectory, verboseLevel = 2)
@@ -283,11 +285,19 @@ class AnikkuApplication {
      * Called when the application is shutting down.
      * Cleans up all Phase 7 services and prints a summary of UI errors to the terminal.
      */
+    @Synchronized
     fun onShutdown() {
+        if (!shutdownStarted.compareAndSet(false, true)) return
+
+        // Stop new work first, then release resources in dependency order.
         backgroundScheduler.cancelAll()
+        runCatching {
+            org.koin.core.context.GlobalContext.get().get<app.anikku.macos.platform.download.MacOSDownloadManager>().close()
+        }
         extensionManager.close()
 
-        // Phase 3: Shutdown persistent Chrome instance (CDP Cloudflare bypass)
+        // Phase 3: Release Sparkle updater and persistent Chrome resources.
+        sparkleUpdater.shutdown()
         ChromeCDPClient.shutdown()
 
         // Phase 7.3: Discord RPC
@@ -295,8 +305,11 @@ class AnikkuApplication {
 
         // Phase 7.6: Notifications
         notificationManager.shutdown()
+        storageManager.close()
+        applicationScope.cancel()
 
         CrashReporter.logEvent("App shutdown")
+        runCatching { stopKoin() }
 
         // Print a terminal summary of every UI error captured this session.
         TerminalErrorLogger.printShutdownSummary()

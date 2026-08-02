@@ -6,6 +6,7 @@ import com.sun.jna.Library
 import com.sun.jna.Native
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+import java.net.URI
 
 private val logger = KotlinLogging.logger {}
 
@@ -24,6 +25,9 @@ interface SparkleHelperLib : Library {
 
     /** Silent background check with notification if update found. */
     fun sparkle_checkInBackground()
+
+    /** Release Sparkle's native updater controller. */
+    fun sparkle_shutdown()
 
     /** Return the configured feed URL, or null if not initialized. */
     fun sparkle_feedURL(): String?
@@ -72,6 +76,10 @@ class SparkleUpdater(
     /** The JNA-loaded Sparkle helper dylib, or null if unavailable. */
     private val sparkleLib: SparkleHelperLib? = loadSparkleHelper()
 
+    /** True only after Sparkle accepted a validated HTTPS feed configuration. */
+    @Volatile
+    private var initialized = false
+
     /**
      * Whether we are running inside a packaged macOS .app bundle.
      *
@@ -90,7 +98,7 @@ class SparkleUpdater(
     }
 
     /** Whether the Sparkle helper library is available and loaded. */
-    val isAvailable: Boolean get() = sparkleLib != null && isPackagedApp
+    val isAvailable: Boolean get() = sparkleLib != null && isPackagedApp && initialized
 
     // ---- Initialization ----
 
@@ -103,9 +111,13 @@ class SparkleUpdater(
      * containing SUFeedURL. The AppUpdateChecker fallback handles updates.
      *
      * @param feedURL The appcast feed URL. If null, Sparkle reads SUFeedURL
-     *                from the app's Info.plist (injected by patchInfoPlist).
+     *                from the app's Info.plist (configured by the packaging DSL).
      */
     fun initialize(feedURL: String? = null) {
+        if (feedURL != null && !isHttpsUrl(feedURL)) {
+            logger.error { "Refusing to initialize Sparkle with a non-HTTPS feed URL" }
+            return
+        }
         if (!isPackagedApp) {
             logger.info { "Not running from .app bundle — Sparkle initialization skipped (dev mode). " +
                 "Using AppUpdateChecker fallback for update checks." }
@@ -114,16 +126,19 @@ class SparkleUpdater(
 
         val lib = sparkleLib
         if (lib != null) {
-            logger.info { "Initializing Sparkle with feed URL: ${feedURL ?: "(from Info.plist)"}" }
+            logger.info { "Initializing Sparkle (${if (feedURL == null) "feed from Info.plist" else "explicit feed configured"})" }
             try {
                 val ok = lib.sparkle_init(feedURL)
-                if (ok) {
-                    logger.info { "Sparkle initialized successfully" }
+                if (ok && isHttpsUrl(lib.sparkle_feedURL().orEmpty())) {
+                    initialized = true
+                    logger.info { "Sparkle initialized successfully with a validated HTTPS feed" }
                 } else {
                     logger.warn { "Sparkle initialization returned false" }
                 }
             } catch (e: Exception) {
                 logger.error(e) { "Sparkle initialization failed" }
+            } catch (e: UnsatisfiedLinkError) {
+                logger.error(e) { "Sparkle helper is missing a required symbol" }
             }
         } else {
             logger.info { "Sparkle not available — using AppUpdateChecker fallback" }
@@ -142,7 +157,7 @@ class SparkleUpdater(
      */
     fun checkForUpdatesSilently() {
         val lib = sparkleLib
-        if (lib != null && isPackagedApp) {
+        if (lib != null && isPackagedApp && initialized) {
             logger.info { "Sparkle: starting background update check" }
             try {
                 lib.sparkle_checkInBackground()
@@ -167,14 +182,16 @@ class SparkleUpdater(
      */
     fun checkForUpdatesWithUI(): Boolean {
         val lib = sparkleLib
-        if (lib != null && isPackagedApp) {
+        if (lib != null && isPackagedApp && initialized) {
             logger.info { "Sparkle: showing update dialog" }
             try {
                 lib.sparkle_checkForUpdates()
             } catch (e: Exception) {
                 logger.error(e) { "Sparkle UI check failed" }
-                appUpdateChecker?.checkAndPrompt()
-                return true
+                return appUpdateChecker?.let {
+                    it.checkAndPrompt()
+                    true
+                } ?: false
             }
             return true
         }
@@ -186,6 +203,22 @@ class SparkleUpdater(
         } else {
             logger.warn { "No update checker available — cannot check for updates" }
             return false
+        }
+    }
+
+    /** Release native updater resources when the application shuts down. */
+    fun shutdown() {
+        val shouldShutdownNativeHelper = initialized && isPackagedApp
+        initialized = false
+        if (!shouldShutdownNativeHelper) return
+        try {
+            sparkleLib?.sparkle_shutdown()
+        } catch (e: Exception) {
+            logger.warn(e) { "Sparkle shutdown failed" }
+        } catch (e: UnsatisfiedLinkError) {
+            // A helper built before the lifecycle symbol was added may still be
+            // present in a development bundle; shutdown must remain best-effort.
+            logger.warn(e) { "Sparkle helper does not support shutdown" }
         }
     }
 
@@ -210,19 +243,31 @@ class SparkleUpdater(
     /**
      * Fallback update check using the GitHub API.
      */
+    private fun isHttpsUrl(value: String): Boolean = try {
+        val uri = URI(value)
+        uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrBlank()
+    } catch (_: Exception) { false }
+
     private fun fallbackCheck() {
         logger.info { "Using AppUpdateChecker fallback for update check" }
-        appUpdateChecker?.checkForUpdate { update ->
-            if (update != null) {
-                logger.info { "Update available: ${update.tagName} (${update.versionName})" }
-                notificationManager?.showNotification(
-                    title = "Update Available",
-                    message = "Anikku ${update.versionName} is ready to download",
-                    type = NotificationType.INFO,
-                    onClick = {
-                        appUpdateChecker?.openDownloadPage(update)
-                    },
-                )
+        appUpdateChecker?.checkForUpdate { result ->
+            when (result) {
+                is app.anikku.macos.platform.update.UpdateCheckResult.Available -> {
+                    val update = result.update
+                    logger.info { "Update available: ${update.versionName}" }
+                    notificationManager?.showNotification(
+                        title = "Update Available",
+                        message = "Anikku ${update.versionName} is ready to download",
+                        type = NotificationType.INFO,
+                        onClick = { appUpdateChecker.openReleasePage(update) },
+                    )
+                }
+                app.anikku.macos.platform.update.UpdateCheckResult.NoUpdate ->
+                    logger.info { "App is up to date" }
+                app.anikku.macos.platform.update.UpdateCheckResult.SparkleDialogOpened ->
+                    logger.debug { "Sparkle update dialog is already open" }
+                is app.anikku.macos.platform.update.UpdateCheckResult.Failed ->
+                    logger.warn { "Fallback update check failed: ${result.reason}" }
             }
         }
     }
@@ -239,8 +284,7 @@ class SparkleUpdater(
         private fun loadSparkleHelper(): SparkleHelperLib? {
             val libName = "SparkleHelper"
 
-            // In the packaged .app, the dylib is in Contents/Frameworks/
-            // which is on the java.library.path via jpackage --java-options
+            // Packaged builds expose the helper through java.library.path.
             return try {
                 Native.load(libName, SparkleHelperLib::class.java).also {
                     logger.info { "Sparkle helper dylib loaded via JNA" }
@@ -268,24 +312,19 @@ class SparkleUpdater(
          * Find the development build path for the Sparkle helper dylib.
          */
         private fun findDevDylibPath(): String? {
-            val candidates = listOf(
-                "build/sparkle/libSparkleHelper.dylib",
-                "macos/build/sparkle/libSparkleHelper.dylib",
-                "../build/sparkle/libSparkleHelper.dylib",
-                "src/main/resources/dist/Frameworks/libSparkleHelper.dylib",
-                "macos/src/main/resources/dist/Frameworks/libSparkleHelper.dylib",
-            )
             val cwd = System.getProperty("user.dir", ".")
-            for (candidate in candidates) {
-                val file = File(cwd, candidate)
-                if (file.isFile) return file.absolutePath
-            }
-            // Also check without cwd prefix
-            for (candidate in candidates) {
-                val file = File(candidate)
-                if (file.isFile) return file.absolutePath
-            }
-            return null
+            val packagedResources = System.getProperty("compose.application.resources.dir")
+                ?.takeIf { it.isNotBlank() }
+                ?.let(::File)
+            val candidates = listOfNotNull(
+                packagedResources?.resolve("Frameworks/libSparkleHelper.dylib"),
+                File(cwd, "build/sparkle/libSparkleHelper.dylib"),
+                File(cwd, "macos/build/sparkle/libSparkleHelper.dylib"),
+                File(cwd, "../build/sparkle/libSparkleHelper.dylib"),
+                File(cwd, "src/main/resources/dist/Frameworks/libSparkleHelper.dylib"),
+                File(cwd, "macos/src/main/resources/dist/Frameworks/libSparkleHelper.dylib"),
+            )
+            return candidates.firstOrNull(File::isFile)?.absolutePath
         }
     }
 }

@@ -3,7 +3,11 @@ package app.anikku.macos.platform.data
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import app.anikku.macos.platform.storage.MacOSAtomicFile
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+
+private val libraryLogger = KotlinLogging.logger {}
 
 /**
  * Default category ID for uncategorized library entries.
@@ -70,6 +74,7 @@ class LibraryRepository(private val dataDir: File) {
         val lastUpdatedAt: Long = System.currentTimeMillis(),
     )
 
+    private val lock = Any()
     private var categories: MutableList<CategoryEntry> = loadCategoriesFromFile()
     private var entries: MutableList<LibraryEntry> = loadFromFile()
 
@@ -91,6 +96,7 @@ class LibraryRepository(private val dataDir: File) {
 
     fun isInLibrary(animeId: Long): Boolean = entries.any { it.animeId == animeId }
 
+    @Synchronized
     fun add(entry: LibraryEntry) {
         val existing = entries.indexOfFirst { it.animeId == entry.animeId }
         if (existing >= 0) {
@@ -103,6 +109,7 @@ class LibraryRepository(private val dataDir: File) {
         saveToFile()
     }
 
+    @Synchronized
     fun remove(animeId: Long): Boolean {
         val removed = entries.removeAll { it.animeId == animeId }
         if (removed) saveToFile()
@@ -124,6 +131,7 @@ class LibraryRepository(private val dataDir: File) {
     /**
      * Update the resume position for an anime in the library.
      */
+    @Synchronized
     fun updateProgress(animeId: Long, lastSecondSeen: Long, totalSeconds: Long) {
         val index = entries.indexOfFirst { it.animeId == animeId }
         if (index >= 0) {
@@ -139,6 +147,7 @@ class LibraryRepository(private val dataDir: File) {
     /**
      * Move an entry to a different category.
      */
+    @Synchronized
     fun moveToCategory(animeId: Long, categoryId: Long) {
         val index = entries.indexOfFirst { it.animeId == animeId }
         if (index >= 0) {
@@ -158,6 +167,7 @@ class LibraryRepository(private val dataDir: File) {
 
     fun getCategory(id: Long): CategoryEntry? = categories.find { it.id == id }
 
+    @Synchronized
     fun addCategory(name: String): CategoryEntry {
         val newId = (categories.maxOfOrNull { it.id } ?: 0L) + 1L
         val entry = CategoryEntry(id = newId, name = name, order = categories.size.toLong())
@@ -166,6 +176,7 @@ class LibraryRepository(private val dataDir: File) {
         return entry
     }
 
+    @Synchronized
     fun renameCategory(id: Long, newName: String): Boolean {
         val index = categories.indexOfFirst { it.id == id }
         if (index < 0 || categories[index].isDefault) return false
@@ -177,6 +188,7 @@ class LibraryRepository(private val dataDir: File) {
     /**
      * Remove a category. Entries in that category move to Default.
      */
+    @Synchronized
     fun removeCategory(id: Long): Boolean {
         val cat = categories.find { it.id == id } ?: return false
         if (cat.isDefault) return false
@@ -202,14 +214,20 @@ class LibraryRepository(private val dataDir: File) {
         return try {
             val list = json.decodeFromString<LibraryList>(libraryFile.readText())
             list.entries.toMutableList()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            val backup = MacOSAtomicFile.preserveMalformed(libraryFile)
+            libraryLogger.warn(error) {
+                "Library JSON is malformed; starting with empty state" +
+                    (backup?.let { ", preserved at ${it.name}" } ?: "")
+            }
             mutableListOf()
         }
     }
 
     private fun saveToFile() {
-        libraryFile.parentFile?.mkdirs()
-        libraryFile.writeText(json.encodeToString(LibraryList(entries)))
+        synchronized(this) {
+            MacOSAtomicFile.writeText(libraryFile, json.encodeToString(LibraryList(entries)))
+        }
     }
 
     private fun loadCategoriesFromFile(): MutableList<CategoryEntry> {
@@ -217,14 +235,20 @@ class LibraryRepository(private val dataDir: File) {
         return try {
             val list = json.decodeFromString<CategoryList>(categoriesFile.readText())
             list.categories.toMutableList()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            val backup = MacOSAtomicFile.preserveMalformed(categoriesFile)
+            libraryLogger.warn(error) {
+                "Categories JSON is malformed; starting with defaults" +
+                    (backup?.let { ", preserved at ${it.name}" } ?: "")
+            }
             mutableListOf()
         }
     }
 
     private fun saveCategoriesToFile() {
-        categoriesFile.parentFile?.mkdirs()
-        categoriesFile.writeText(json.encodeToString(CategoryList(categories)))
+        synchronized(this) {
+            MacOSAtomicFile.writeText(categoriesFile, json.encodeToString(CategoryList(categories)))
+        }
     }
 
     @Serializable

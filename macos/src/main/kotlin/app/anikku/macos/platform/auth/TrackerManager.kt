@@ -66,9 +66,10 @@ class TrackerManager(
         }
     }
 
-    fun logout(tracker: String) {
-        tokenStore.removeTokens(tracker)
-        refreshStatus()
+    fun logout(tracker: String): Boolean {
+        val removed = tokenStore.removeTokens(tracker)
+        if (removed) refreshStatus()
+        return removed
     }
 
     fun isLoggedIn(tracker: String): Boolean = tokenStore.isLoggedIn(tracker)

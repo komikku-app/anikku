@@ -23,12 +23,21 @@ open class MacOSStorageProvider : FolderProvider {
     val dataDirectory: File get() = File(directory(), "data")
 
     fun ensureDirectories() {
-        downloadsDirectory.mkdirs()
-        backupsDirectory.mkdirs()
-        extensionsDirectory.mkdirs()
-        logsDirectory.mkdirs()
-        coversDirectory.mkdirs()
-        dataDirectory.mkdirs()
+        listOf(
+            downloadsDirectory,
+            backupsDirectory,
+            extensionsDirectory,
+            logsDirectory,
+            coversDirectory,
+            dataDirectory,
+        ).forEach { directory ->
+            require(directory.exists() || directory.mkdirs()) {
+                "Unable to create storage directory: ${directory.path}"
+            }
+            require(directory.isDirectory) {
+                "Storage path is not a directory: ${directory.path}"
+            }
+        }
     }
 
     companion object {

@@ -83,8 +83,8 @@ fi
 # ---------------------------------------------------------------------------
 # Step 2: Compile the Swift helper dylib
 # ---------------------------------------------------------------------------
-if [ -f "$HELPER_DYLIB" ]; then
-    log "Helper dylib already compiled — skipping"
+if [ -f "$HELPER_DYLIB" ] && [ "$HELPER_DYLIB" -nt "$SWIFT_SOURCE" ]; then
+    log "Helper dylib is up to date — skipping"
 else
     if [ ! -f "$SWIFT_SOURCE" ]; then
         err "Swift source not found: ${SWIFT_SOURCE}"

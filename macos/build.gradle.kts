@@ -1,4 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.testing.Test
+import java.net.URI
+import java.util.Base64
+import javax.xml.parsers.DocumentBuilderFactory
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -118,6 +123,7 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.compose.ui.test)
     testImplementation(libs.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     testRuntimeOnly(libs.junit.vintage.engine)
 }
 
@@ -127,6 +133,33 @@ tasks.test {
     testLogging {
         events("passed", "failed", "skipped")
     }
+}
+
+val slowValidationTests = listOf(
+    "**/*IntegrationTest.class",
+    "**/ExtensionCompatibilityTest.class",
+    "**/StreamingEndToEndTest.class",
+    "**/MPVPlaybackTest.class",
+    "**/MPVRenderExperiment.class",
+)
+
+tasks.register<Test>("quickTest") {
+    description = "Run deterministic tests without live extensions, streaming, or local-media playback"
+    group = "verification"
+    dependsOn("buildTestExtensionJar")
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    exclude(slowValidationTests)
+    testLogging {
+        events("passed", "failed", "skipped")
+    }
+}
+
+tasks.register("quickCheck") {
+    description = "Compile the app, run deterministic tests, and validate updater configuration"
+    group = "verification"
+    dependsOn("quickTest", "validateSparkleConfiguration")
 }
 
 // ---- Extension Build Tasks ------------------------------------------------
@@ -158,8 +191,14 @@ tasks.register<Exec>("rebuildSourceApiJars") {
     )
 }
 
+val refreshSourceApi = providers.gradleProperty("refreshSourceApi")
+    .map(String::toBoolean)
+    .orElse(false)
+
 tasks.named("compileKotlin") {
-    dependsOn("rebuildSourceApiJars")
+    if (refreshSourceApi.get()) {
+        dependsOn("rebuildSourceApiJars")
+    }
 }
 
 tasks.register<Exec>("downloadKeiyoushiExtension") {
@@ -330,6 +369,27 @@ tasks.register("batchBuildKeiyoushiExtensions") {
 val appVersion: String by project
 val appVersionName: String by project
 
+// Compose Desktop only consumes app resources from common/, <os>/, or
+// <os>-<arch>/ below appResourcesRootDir. Keep the checked-in native binaries
+// in their existing layout and create the expected hierarchy as a build output.
+val prepareNativeAppResources by tasks.registering(Sync::class) {
+    description = "Stage native libraries for Compose Desktop packaging"
+    group = "distribution"
+    dependsOn("buildSparkleHelper")
+
+    from("src/main/resources/dist") {
+        into("common")
+        exclude("Frameworks/Sparkle.framework/**")
+        exclude("Frameworks/libSparkleHelper.dylib")
+    }
+    from(layout.buildDirectory.dir("sparkle")) {
+        into("common/Frameworks")
+        include("Sparkle.framework/**")
+        include("libSparkleHelper.dylib")
+    }
+    into(layout.buildDirectory.dir("native-app-resources"))
+}
+
 // ---- Desktop Application Configuration ------------------------------------
 
 compose.desktop {
@@ -356,14 +416,28 @@ compose.desktop {
             // Add JVM args for native library search path (Sparkle helper dylib)
             // and module system access for JNA reflective calls.
             jvmArgs += listOf(
-                "-Djava.library.path=\$APPDIR/Contents/Frameworks",
+                "-Djava.library.path=\$APPDIR/resources/Frameworks:\$APPDIR/resources",
             )
 
             macOS {
                 bundleID = "app.anikku.macos"
                 iconFile.set(project.file("src/main/resources/icons/app.icns"))
                 minimumSystemVersion = "12.0"
+                appCategory = "public.app-category.entertainment"
                 entitlementsFile.set(project.file("src/main/resources/entitlements.plist"))
+                infoPlist {
+                    val publicKey = project.file("src/main/resources/Sparkle/ed25519_pub.pem")
+                        .readLines()
+                        .filterNot { it.trim().startsWith("-") || it.isBlank() }
+                        .joinToString("")
+                        .trim()
+                    extraKeysRawXml = """
+                        <key>SUFeedURL</key>
+                        <string>https://anikku.app/sparkle/appcast.xml</string>
+                        <key>SUPublicEDKey</key>
+                        <string>$publicKey</string>
+                    """.trimIndent()
+                }
 
                 // ---- Code Signing Configuration ----
                 // Usage: ./gradlew -p macos packageDmg -Psign=true
@@ -379,8 +453,9 @@ compose.desktop {
                 }
             }
 
-            // Bundle native libraries into Contents/Resources/
-            appResourcesRootDir.set(file("src/main/resources/dist"))
+            // Compose places these files in Contents/app/resources/ and exposes
+            // that directory through compose.application.resources.dir.
+            appResourcesRootDir.set(layout.buildDirectory.dir("native-app-resources"))
         }
     }
 }
@@ -401,89 +476,23 @@ tasks.register<Exec>("buildSparkleHelper") {
 
     val scriptPath = "${project.projectDir}/scripts/build-sparkle-helper.sh"
     val dylibPath = "${layout.buildDirectory.get()}/sparkle/libSparkleHelper.dylib"
-
-    onlyIf {
-        val force = project.findProperty("force") as? String == "true"
-        force || !file(dylibPath).isFile
-    }
+    inputs.file(scriptPath)
+    inputs.file("src/main/swift/SparkleHelper.swift")
+    outputs.file(dylibPath)
+    outputs.dir("${layout.buildDirectory.get()}/sparkle/Sparkle.framework")
+    outputs.upToDateWhen { project.findProperty("force") as? String != "true" }
 
     commandLine("bash", scriptPath)
 }
 
-// Wire Sparkle helper build before packageDmg
+// Wire Sparkle helper build and configuration validation before packageDmg.
 tasks.whenTaskAdded {
     if (name == "packageDmg") {
         dependsOn("buildSparkleHelper")
+        dependsOn("validateSparkleConfiguration")
     }
-}
-
-/**
- * Patch the generated Info.plist with Sparkle auto-updater keys.
- * Runs after packageDmg to inject SUFeedURL and SUPublicEDKey.
- *
- * Usage:
- *   ./gradlew -p macos patchInfoPlist -PappPath=/path/to/Anikku.app
- *
- * The Info.plist Sparkle entries are:
- *   SUFeedURL: https://anikku.app/sparkle/appcast.xml
- *   SUPublicEDKey: (from src/main/resources/Sparkle/ed25519_pub.pem)
- *   NSHighResolutionCapable: true
- *   LSApplicationCategoryType: public.app-category.entertainment
- */
-val patchInfoPlistAppPath: String? by project
-
-tasks.register("patchInfoPlist") {
-    description = "Inject Sparkle keys into the generated Info.plist"
-    group = "distribution"
-
-    doLast {
-        val appDir = patchInfoPlistAppPath?.let { file(it) }
-            ?: file("build/compose/binaries/main/dmg/Anikku.app")
-
-        if (!appDir.isDirectory) {
-            logger.warn("App bundle not found at ${appDir.absolutePath}")
-            logger.warn("Provide -PappPath=/path/to/Anikku.app")
-            return@doLast
-        }
-
-        val infoPlistFile = File(appDir, "Contents/Info.plist")
-        if (!infoPlistFile.isFile) {
-            logger.warn("Info.plist not found — skipping")
-            return@doLast
-        }
-
-        val publicKey = readSparklePublicKey()
-        val feedUrl = "https://anikku.app/sparkle/appcast.xml"
-
-        if (publicKey.startsWith("PLACEHOLDER")) {
-            logger.warn("Sparkle Ed25519 public key is a placeholder!")
-            logger.warn("Generate keys: openssl genpkey -algorithm ed25519 -out ed25519-key.pem")
-            logger.warn("             openssl pkey -in ed25519-key.pem -pubout -out ed25519-pub.pem")
-            logger.warn("Then copy ed25519-pub.pem to macos/src/main/resources/Sparkle/ed25519_pub.pem")
-        }
-
-        var plist = infoPlistFile.readText()
-
-        val sparkleEntries = """
-    <key>SUFeedURL</key>
-    <string>${feedUrl}</string>
-    <key>SUPublicEDKey</key>
-    <string>${publicKey}</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>LSApplicationCategoryType</key>
-    <string>public.app-category.entertainment</string>
-"""
-
-        if (plist.contains("SUFeedURL")) {
-            logger.lifecycle("  Info.plist already has SUFeedURL — skipping")
-        } else {
-            plist = plist.replace("</dict>\n</plist>", "${sparkleEntries}</dict>\n</plist>")
-            infoPlistFile.writeText(plist)
-            logger.lifecycle("  Patched Info.plist with Sparkle keys")
-            logger.lifecycle("    SUFeedURL: ${feedUrl}")
-            logger.lifecycle("    SUPublicEDKey: ${publicKey.take(24)}...")
-        }
+    if (name == "prepareAppResources") {
+        dependsOn(prepareNativeAppResources)
     }
 }
 
@@ -549,16 +558,7 @@ tasks.register("verifyPackage") {
 
     doLast {
         val app = verifyAppPath
-            ?: file("build/compose/binaries/main/dmg/Anikku.app").let {
-                if (it.isDirectory) it.absolutePath
-                else {
-                    val dmgDir = file("build/compose/binaries/main/dmg")
-                    val found = dmgDir.listFiles()?.find { it.extension == "app" }
-                    found?.absolutePath ?: throw GradleException(
-                        "Cannot find .app bundle. Build packageDmg first.",
-                    )
-                }
-            }
+            ?: file("build/compose/binaries/main/app/Anikku.app").absolutePath
 
         val appDir = file(app)
         if (!appDir.isDirectory) {
@@ -571,40 +571,52 @@ tasks.register("verifyPackage") {
         if (infoPlist.isFile) {
             val text = infoPlist.readText()
             logger.lifecycle("  [Info.plist] Found (${text.length} bytes)")
-            if ("SUFeedURL" in text) logger.lifecycle("    SUFeedURL: present")
-            else logger.lifecycle("    SUFeedURL: missing")
-            if ("SUPublicEDKey" in text) logger.lifecycle("    SUPublicEDKey: present")
-            else logger.lifecycle("    SUPublicEDKey: missing")
+            listOf("SUFeedURL", "SUPublicEDKey", "LSApplicationCategoryType").forEach { key ->
+                if (key !in text) throw GradleException("Info.plist is missing $key")
+                logger.lifecycle("    $key: present")
+            }
         } else {
-            logger.lifecycle("  [Info.plist] NOT FOUND")
+            throw GradleException("Info.plist not found")
         }
 
-        // Check libmpv
+        val resourcesDir = File(appDir, "Contents/app/resources")
         val libmpv = listOf(
+            File(resourcesDir, "libmpv.2.dylib"),
             File(appDir, "Contents/Frameworks/libmpv.2.dylib"),
             File(appDir, "Contents/Resources/libmpv.2.dylib"),
         ).firstOrNull { it.isFile }
         if (libmpv != null) {
             logger.lifecycle("  [libmpv] Found (${libmpv.length()} bytes)")
         } else {
-            logger.lifecycle("  [libmpv] Not bundled")
+            throw GradleException("libmpv.2.dylib is not bundled")
         }
 
-        // Check code signing
+        val sparkleHelper = File(resourcesDir, "Frameworks/libSparkleHelper.dylib")
+        val sparkleFramework = File(resourcesDir, "Frameworks/Sparkle.framework/Versions/B/Sparkle")
+        if (!sparkleHelper.isFile) throw GradleException("Sparkle helper dylib is not bundled")
+        if (!sparkleFramework.isFile) throw GradleException("Sparkle.framework is not bundled")
+        logger.lifecycle("  [Sparkle] Framework and helper found")
+
+        val launcher = File(appDir, "Contents/MacOS/Anikku")
+        val javaRuntime = File(appDir, "Contents/runtime/Contents/MacOS/libjli.dylib")
+        if (!launcher.isFile) throw GradleException("Native launcher is missing")
+        if (!javaRuntime.isFile) throw GradleException("Bundled Java runtime is missing")
+        logger.lifecycle("  [Runtime] Launcher and Java runtime found")
+
         try {
-            val proc = ProcessBuilder("codesign", "-dvvv", "--deep", appDir.absolutePath)
+            val proc = ProcessBuilder("codesign", "--verify", "--deep", "--strict", "--verbose=2", appDir.absolutePath)
                 .redirectErrorStream(true)
                 .start()
             val output = proc.inputStream.reader().readText()
             if (proc.waitFor() == 0) {
-                val authority = output.lines().find { it.contains("Authority=") }
-                    ?.substringAfter("Authority=") ?: "unknown"
-                logger.lifecycle("  [Signing] Signed (Authority: $authority)")
+                logger.lifecycle("  [Signing] Bundle signature is valid")
             } else {
-                logger.lifecycle("  [Signing] Not signed")
+                throw GradleException("Bundle signature is invalid:\n$output")
             }
-        } catch (_: Exception) {
-            logger.lifecycle("  [Signing] Cannot verify")
+        } catch (e: GradleException) {
+            throw e
+        } catch (e: Exception) {
+            throw GradleException("Could not verify bundle signature", e)
         }
     }
 }
@@ -621,38 +633,111 @@ tasks.register("listDistributionTasks") {
         logger.lifecycle("Available distribution tasks:")
         logger.lifecycle("  packageDmg          - Build unsigned DMG")
         logger.lifecycle("  packageDmg -Psign=true - Build signed DMG")
-        logger.lifecycle("  patchInfoPlist      - Inject Sparkle keys into Info.plist")
         logger.lifecycle("  submitForNotarization - Submit DMG for Apple notarization")
         logger.lifecycle("  verifyPackage       - Verify .app bundle integrity")
         logger.lifecycle("  generateAppcast     - Generate Sparkle appcast entry")
         logger.lifecycle("")
         logger.lifecycle("Workflow:")
         logger.lifecycle("  1. ./gradlew -p macos packageDmg                   # Build DMG")
-        logger.lifecycle("  2. ./gradlew -p macos patchInfoPlist               # Add Sparkle keys")
-        logger.lifecycle("  3. ./gradlew -p macos verifyPackage                # Verify bundle")
-        logger.lifecycle("  4. ./gradlew -p macos packageDmg -Psign=true       # Sign")
-        logger.lifecycle("  5. ./gradlew -p macos submitForNotarization -PdmgPath=...    # Notarize")
+        logger.lifecycle("  2. ./gradlew -p macos verifyPackage                # Verify bundle")
+        logger.lifecycle("  3. ./gradlew -p macos packageDmg -Psign=true       # Sign")
+        logger.lifecycle("  4. ./gradlew -p macos submitForNotarization -PdmgPath=...    # Notarize")
         logger.lifecycle("")
     }
 }
 
-// ---- Sparkle Public Key ----------------------------------------------------
+// ---- Sparkle Public Key and feed validation -------------------------------
+val sparkleFeedUrl = "https://anikku.app/sparkle/appcast.xml"
+val sparkleEd25519SubjectPublicKeyLength = 44
+val sparkleEd25519SignatureLength = 64
+
 fun readSparklePublicKey(): String {
     val pemFile = file("src/main/resources/Sparkle/ed25519_pub.pem")
-    return if (pemFile.isFile) {
-        pemFile.readLines()
-            .filterNot { it.startsWith("-") || it.isBlank() }
-            .joinToString("")
-            .trim()
-            .ifEmpty { "PLACEHOLDER_SPARKLE_PUBLIC_KEY" }
-    } else {
-        "PLACEHOLDER_SPARKLE_PUBLIC_KEY"
+    if (!pemFile.isFile) {
+        throw GradleException("Sparkle Ed25519 public key is missing: ${pemFile.path}")
+    }
+    val key = pemFile.readLines()
+        .filterNot { it.trim().startsWith("-") || it.isBlank() }
+        .joinToString("")
+        .trim()
+    if (key.isBlank()) {
+        throw GradleException("Sparkle Ed25519 public key is empty")
+    }
+    if (key.contains("PLACEHOLDER", ignoreCase = true)) {
+        throw GradleException("Sparkle Ed25519 public key is still a placeholder")
+    }
+
+    val der = try {
+        Base64.getDecoder().decode(key)
+    } catch (e: IllegalArgumentException) {
+        throw GradleException("Sparkle Ed25519 public key is not valid base64", e)
+    }
+    val expectedPrefix = byteArrayOf(
+        0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65,
+        0x70, 0x03, 0x21, 0x00,
+    )
+    if (der.size != sparkleEd25519SubjectPublicKeyLength ||
+        !der.copyOfRange(0, expectedPrefix.size).contentEquals(expectedPrefix)
+    ) {
+        throw GradleException("Sparkle Ed25519 public key is not a DER-encoded Ed25519 SubjectPublicKeyInfo")
+    }
+    return key
+}
+
+private fun validateSparkleFeedUrl(value: String) {
+    val uri = URI(value)
+    if (uri.scheme != "https" || uri.host.isNullOrBlank() || uri.userInfo != null || uri.fragment != null) {
+        throw GradleException("Sparkle feed URL must be an authenticated HTTPS URL without credentials/fragments")
     }
 }
 
-// Wire patchInfoPlist after packageDmg using whenTaskAdded
-tasks.whenTaskAdded {
-    if (name == "packageDmg") {
-        finalizedBy("patchInfoPlist")
+tasks.register("validateSparkleConfiguration") {
+    description = "Validate Sparkle's public key, feed URL, and signed appcast entries"
+    group = "verification"
+
+    doLast {
+        val publicKey = readSparklePublicKey()
+        validateSparkleFeedUrl(sparkleFeedUrl)
+        val appcastFile = file("src/main/resources/Sparkle/appcast.xml")
+        if (!appcastFile.isFile) {
+            throw GradleException("Sparkle appcast is missing: ${appcastFile.path}")
+        }
+
+        val document = try {
+            DocumentBuilderFactory.newInstance().apply {
+                isNamespaceAware = true
+                setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+                setFeature("http://xml.org/sax/features/external-general-entities", false)
+                setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+                setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+            }.newDocumentBuilder().parse(appcastFile)
+        } catch (e: Exception) {
+            throw GradleException("Sparkle appcast is not valid safe XML", e)
+        }
+
+        val enclosures = document.getElementsByTagName("enclosure")
+        for (index in 0 until enclosures.length) {
+            val enclosure = enclosures.item(index)
+            val url = enclosure.attributes?.getNamedItem("url")?.nodeValue.orEmpty()
+            val signature = enclosure.attributes?.getNamedItem("sparkle:edSignature")?.nodeValue.orEmpty()
+            val length = enclosure.attributes?.getNamedItem("length")?.nodeValue.orEmpty()
+            if (!url.startsWith("https://") || URI(url).host.isNullOrBlank()) {
+                throw GradleException("Sparkle enclosure $index does not use a valid HTTPS URL")
+            }
+            if (signature.contains("REPLACE_WITH", ignoreCase = true) || signature.isBlank()) {
+                throw GradleException("Sparkle enclosure $index has no real Ed25519 signature")
+            }
+            val decodedSignature = try { Base64.getDecoder().decode(signature) } catch (e: IllegalArgumentException) {
+                throw GradleException("Sparkle enclosure $index has an invalid base64 signature", e)
+            }
+            if (decodedSignature.size != sparkleEd25519SignatureLength) {
+                throw GradleException("Sparkle enclosure $index signature must be 64 bytes")
+            }
+            if (length.toLongOrNull()?.takeIf { it > 0 } == null) {
+                throw GradleException("Sparkle enclosure $index must declare a positive artifact length")
+            }
+        }
+
+        logger.lifecycle("Sparkle configuration valid: Ed25519 key (${publicKey.length} base64 chars), HTTPS feed, ${enclosures.length} signed appcast enclosure(s)")
     }
 }

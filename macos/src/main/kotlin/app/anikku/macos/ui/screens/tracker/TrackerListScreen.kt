@@ -173,8 +173,14 @@ class TrackerListScreen : AnikkuScreen() {
                             )
                         },
                         onLogout = {
-                            trackerManager?.logout(status.tracker)
-                            toastHost.show("Logged out of ${status.displayName}", ToastDuration.SHORT)
+                            val removed = trackerManager?.logout(status.tracker) == true
+                            toastHost.show(
+                                text = if (removed) "Logged out of ${status.displayName}" else "Could not clear ${status.displayName} credentials",
+                                duration = ToastDuration.LONG,
+                                isError = !removed,
+                                source = status.tracker,
+                                location = "TrackerListScreen.logout",
+                            )
                         },
                     )
                 }

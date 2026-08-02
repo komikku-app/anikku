@@ -58,7 +58,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
  * - Appearance: theme selector (18+ color schemes), AMOLED black toggle
  * - Library: badges, tabs preferences
  * - Player: default player behavior
- * - Tracking: tracker login (placeholder)
+ * - Tracking: tracker login and synchronization controls
  * - About: app version, build info
  *
  * Preferences are read/written through [SettingsState] via [LocalSettingsState].

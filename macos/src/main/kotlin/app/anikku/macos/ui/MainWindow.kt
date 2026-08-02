@@ -59,6 +59,18 @@ fun MainWindow() {
         // throws ClassCastException when a non-Tab screen like
         // AnimeDetailScreen is on the tab's inner navigator stack.
         var currentTabIndex by remember { mutableStateOf(0) }
+        var sidebarVisible by remember { mutableStateOf(true) }
+
+        // Bridge the native View > Toggle Sidebar action to the Compose rail.
+        DisposableEffect(Unit) {
+            val sidebarToggleHandler: () -> Unit = { sidebarVisible = !sidebarVisible }
+            GlobalKeyboardShortcuts.onToggleSidebar = sidebarToggleHandler
+            onDispose {
+                if (GlobalKeyboardShortcuts.onToggleSidebar === sidebarToggleHandler) {
+                    GlobalKeyboardShortcuts.onToggleSidebar = null
+                }
+            }
+        }
 
         // Bridge ⌘1-4/⌘5 View menu shortcuts to Voyager tab switching
         DisposableEffect(tabNavigator) {
@@ -81,17 +93,19 @@ fun MainWindow() {
             Row {
                 // Side Navigation Rail — pass index to avoid reading
                 // tabNavigator.current during composition
-                NavigationRailSidebar(
-                    currentTabIndex = currentTabIndex,
-                    onSelectTab = { index ->
+                if (sidebarVisible) {
+                    NavigationRailSidebar(
+                        currentTabIndex = currentTabIndex,
+                        onSelectTab = { index ->
                         orderedTabs.getOrNull(index)?.let { tab ->
                             val tabNames = listOf("Library", "Updates", "History", "Browse", "More")
                             UIActionLogger.logNavigation("NavigationRail", tabNames.getOrElse(index) { "?" }, "tab=$index")
                             tabNavigator.current = tab
                             currentTabIndex = index
                         }
-                    },
-                )
+                        },
+                    )
+                }
 
                 // Tab content with saveable-state-safe fade transition.
                 // Each tab gets its own nested Navigator so that non-Tab screens

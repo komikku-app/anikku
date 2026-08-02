@@ -151,6 +151,24 @@ class MacOSMenuBarFactoryTest {
     }
 
     @Test
+    fun `Toggle Sidebar invokes the global sidebar callback`() {
+        val frame = createTestFrame()
+        var toggled = false
+        GlobalKeyboardShortcuts.onToggleSidebar = { toggled = true }
+        try {
+            val menuBar = MacOSMenuBarFactory.create(frame, onQuit = {})
+            val viewMenu = menuBar.getMenu(3)
+            val toggleItem = findMenuItem(viewMenu, "Toggle Sidebar")
+            assertNotNull(toggleItem)
+
+            fireAction(toggleItem!!)
+            assertTrue(toggled, "Toggle Sidebar should invoke the registered callback")
+        } finally {
+            GlobalKeyboardShortcuts.onToggleSidebar = null
+        }
+    }
+
+    @Test
     fun `default callbacks are no-ops`() {
         val frame = createTestFrame()
         // Should not throw with no callbacks provided

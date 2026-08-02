@@ -3,7 +3,11 @@ package app.anikku.macos.platform.data
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import app.anikku.macos.platform.storage.MacOSAtomicFile
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+
+private val historyLogger = KotlinLogging.logger {}
 
 /**
  * JSON-backed repository for the user's episode watch history.
@@ -38,6 +42,7 @@ class HistoryRepository(private val dataDir: File) {
 
     fun getLatest(): HistoryEntry? = entries.maxByOrNull { it.seenAt }
 
+    @Synchronized
     fun add(entry: HistoryEntry) {
         // Remove duplicate entry for same episode if exists (replace with latest)
         entries.removeAll { it.episodeId == entry.episodeId && it.animeId == entry.animeId }
@@ -49,6 +54,7 @@ class HistoryRepository(private val dataDir: File) {
         saveToFile()
     }
 
+    @Synchronized
     fun clearAll() {
         entries.clear()
         saveToFile()
@@ -70,14 +76,20 @@ class HistoryRepository(private val dataDir: File) {
         return try {
             val list = json.decodeFromString<HistoryList>(historyFile.readText())
             list.entries.toMutableList()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            val backup = MacOSAtomicFile.preserveMalformed(historyFile)
+            historyLogger.warn(error) {
+                "History JSON is malformed; starting with empty state" +
+                    (backup?.let { ", preserved at ${it.name}" } ?: "")
+            }
             mutableListOf()
         }
     }
 
     private fun saveToFile() {
-        historyFile.parentFile?.mkdirs()
-        historyFile.writeText(json.encodeToString(HistoryList(entries)))
+        synchronized(this) {
+            MacOSAtomicFile.writeText(historyFile, json.encodeToString(HistoryList(entries)))
+        }
     }
 
     @Serializable

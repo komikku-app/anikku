@@ -148,61 +148,15 @@ object MacOSDockManager {
     /**
      * Create and set the dock menu with Play/Pause and Next Episode items.
      *
-     * Uses JNA/ObjC to call:
-     * - `[[NSMenu alloc] initWithTitle:]`
-     * - `[menu addItemWithTitle:action:keyEquivalent:]`
-     * - `[NSApp setDockMenu:menu]`
-     *
-     * **Note:** Action selectors are currently set to empty (no-op) because
-     * JNA ObjC callback forwarding requires additional infrastructure.
-     * The callbacks stored in [onPlayPause] and [onNextEpisode] are available
-     * for future integration when ObjC block bridging is implemented.
-     *
-     * The dock menu items display correctly in the macOS Dock context menu
-     * even without wired actions — users can see available controls.
+     * This path is intentionally disabled until the Objective-C action target
+     * is wired. Showing menu items whose selectors do nothing is worse than
+     * omitting the optional menu, so callers receive an explicit warning and
+     * the Dock remains unchanged.
      */
     fun createDockMenu() {
-        if (!isAvailable) return
-        try {
-            val nsApp = ObjC.objc_getClass("NSApplication")
-            if (Pointer.nativeValue(nsApp) == 0L) return
-            val sharedAppSel = ObjC.sel_registerName("sharedApplication")
-            val sharedApp = ObjC.objc_msgSend(nsApp, sharedAppSel)
-            if (sharedApp == null || Pointer.nativeValue(sharedApp) == 0L) return
-
-            // Create NSMenu
-            val nsMenuCls = ObjC.objc_getClass("NSMenu")
-            if (Pointer.nativeValue(nsMenuCls) == 0L) return
-            val allocSel = ObjC.sel_registerName("alloc")
-            val allocedMenu = ObjC.objc_msgSend(nsMenuCls, allocSel)
-            if (allocedMenu == null || Pointer.nativeValue(allocedMenu) == 0L) return
-            val initTitleSel = ObjC.sel_registerName("initWithTitle:")
-            val menuTitle = createNSString("DockMenu") ?: return
-            val dockMenu = ObjC.objc_msgSend(allocedMenu, initTitleSel, menuTitle)
-            if (dockMenu == null || Pointer.nativeValue(dockMenu) == 0L) return
-
-            // Add "Play / Pause" menu item
-            addMenuItem(dockMenu, "Play / Pause")
-
-            // Add separator
-            val separatorItemCls = ObjC.objc_getClass("NSMenuItem")
-            if (Pointer.nativeValue(separatorItemCls) == 0L) return
-            val sepSel = ObjC.sel_registerName("separatorItem")
-            val separator = ObjC.objc_msgSend(separatorItemCls, sepSel)
-            if (separator == null || Pointer.nativeValue(separator) == 0L) return
-            val addItemSel = ObjC.sel_registerName("addItem:")
-            ObjC.objc_msgSend_void(dockMenu, addItemSel, separator)
-
-            // Add "Next Episode" menu item
-            addMenuItem(dockMenu, "Next Episode")
-
-            // Set as dock menu
-            val setDockMenuSel = ObjC.sel_registerName("setDockMenu:")
-            ObjC.objc_msgSend_void(sharedApp, setDockMenuSel, dockMenu)
-
-            logger.info { "Dock menu created with Play/Pause and Next Episode items" }
-        } catch (e: Exception) {
-            logger.warn(e) { "Failed to create Dock menu" }
+        logger.warn {
+            "Dock menu is unavailable: Objective-C action dispatch is not wired; " +
+                "optional controls were not registered"
         }
     }
 

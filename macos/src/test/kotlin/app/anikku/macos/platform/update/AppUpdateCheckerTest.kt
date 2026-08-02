@@ -9,36 +9,33 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-/**
- * Tests for [AppUpdateChecker].
- *
- * Uses a mock OkHttp interceptor to simulate GitHub API responses
- * without making actual network calls.
- */
 class AppUpdateCheckerTest {
 
     private var lastInterceptor: LastCallInterceptor? = null
     private lateinit var checker: AppUpdateChecker
 
-    /**
-     * OkHttp interceptor that captures the last request and returns a custom response.
-     */
     class LastCallInterceptor : Interceptor {
         var statusCode: Int = 200
         var responseBody: String = "{}"
+        var calls: Int = 0
+        var lastRequest: okhttp3.Request? = null
 
         override fun intercept(chain: Interceptor.Chain): Response {
+            calls++
             val request = chain.request()
+            lastRequest = request
             return Response.Builder()
                 .request(request)
                 .protocol(Protocol.HTTP_1_1)
                 .code(statusCode)
-                .message(if (statusCode == 200) "OK" else "Error")
+                .message(if (statusCode in 200..299) "OK" else "Error")
                 .body(responseBody.toResponseBody("application/json".toMediaType()))
                 .build()
         }
@@ -48,13 +45,11 @@ class AppUpdateCheckerTest {
     fun setUp() {
         BrowserLauncher.testMode = false
         lastInterceptor = LastCallInterceptor()
-        val client = OkHttpClient.Builder()
-            .addInterceptor(lastInterceptor!!)
-            .build()
         checker = AppUpdateChecker(
             currentVersion = "1.0.0",
-            client = client,
+            client = OkHttpClient.Builder().addInterceptor(lastInterceptor!!).build(),
             githubApiBase = "http://mock/api",
+            allowInsecureEndpointForTests = true,
         )
     }
 
@@ -65,87 +60,141 @@ class AppUpdateCheckerTest {
     }
 
     @Test
-    fun `returns update when newer version available`() {
-        lastInterceptor!!.statusCode = 200
-        lastInterceptor!!.responseBody = """
-        {
-            "tag_name": "v2.0.0",
-            "html_url": "https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0",
-            "body": "New features and bug fixes",
-            "published_at": "2026-07-01T00:00:00Z",
-            "assets": [
-                {
-                    "name": "Anikku-2.0.0.dmg",
-                    "browser_download_url": "https://github.com/ErnestHysa/anikku/releases/download/v2.0.0/Anikku-2.0.0.dmg"
-                }
-            ]
-        }
-        """.trimIndent()
-
-        val update = checker.checkForUpdateSync()
-
-        assertNotNull(update, "Should find an update when a newer version exists")
-        assertEquals("v2.0.0", update?.tagName)
-        assertEquals("2.0.0", update?.versionName)
-        assertEquals(
-            "https://github.com/ErnestHysa/anikku/releases/download/v2.0.0/Anikku-2.0.0.dmg",
-            update?.downloadUrl,
+    fun `default updater endpoint uses HTTPS`() {
+        val interceptor = LastCallInterceptor()
+        val secureChecker = AppUpdateChecker(
+            currentVersion = "1.0.0",
+            client = OkHttpClient.Builder().addInterceptor(interceptor).build(),
         )
+
+        secureChecker.checkForUpdateSync()
+
+        assertEquals("https", interceptor.lastRequest?.url?.scheme)
+        assertEquals("api.github.com", interceptor.lastRequest?.url?.host)
     }
 
     @Test
-    fun `returns null when already on latest version`() {
-        lastInterceptor!!.statusCode = 200
-        lastInterceptor!!.responseBody = """
-        {
-            "tag_name": "v1.0.0",
-            "html_url": "https://github.com/ErnestHysa/anikku/releases/tag/v1.0.0",
-            "body": "Initial release",
-            "published_at": "2026-06-01T00:00:00Z",
-            "assets": []
-        }
-        """.trimIndent()
+    fun `insecure endpoint is rejected outside explicit test opt in`() {
+        val insecureChecker = AppUpdateChecker(
+            currentVersion = "1.0.0",
+            client = OkHttpClient.Builder().build(),
+            githubApiBase = "http://mock/api",
+        )
 
-        val update = checker.checkForUpdateSync()
+        val result = insecureChecker.checkForUpdateSync()
 
-        assertNull(update, "Should return null when current version matches latest")
+        val failure = result as? UpdateCheckResult.Failed
+            ?: error("Expected Failed result, got $result")
+        assertTrue(failure.reason.contains("HTTPS"))
     }
 
     @Test
-    fun `returns null on API error`() {
-        lastInterceptor!!.statusCode = 403
-        lastInterceptor!!.responseBody = """{"message": "Rate limit exceeded"}"""
-
-        val update = checker.checkForUpdateSync()
-
-        assertNull(update, "Should return null on API error")
-    }
-
-    @Test
-    fun `falls back to release page when no DMG asset found`() {
-        lastInterceptor!!.statusCode = 200
+    fun `returns update when newer version available`() {
         lastInterceptor!!.responseBody = """
         {
             "tag_name": "v2.0.0",
             "html_url": "https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0",
-            "body": "New release without DMG",
-            "published_at": "2026-07-01T00:00:00Z",
-            "assets": []
+            "assets": [{
+                "name": "Anikku-2.0.0.dmg",
+                "browser_download_url": "https://github.com/ErnestHysa/anikku/releases/download/v2.0.0/Anikku-2.0.0.dmg"
+            }]
         }
         """.trimIndent()
 
-        val update = checker.checkForUpdateSync()
+        val result = checker.checkForUpdateSync()
 
-        assertNotNull(update, "Should still return update info even without DMG asset")
+        val available = result as? UpdateCheckResult.Available
+            ?: error("Expected Available result, got $result")
+        assertEquals("v2.0.0", available.update.tagName)
+        assertEquals("2.0.0", available.update.versionName)
         assertEquals(
             "https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0",
-            update?.downloadUrl,
-            "Should fall back to release page URL when no DMG asset exists",
+            available.update.downloadUrl,
         )
     }
 
     @Test
-    fun `openDownloadPage delegates to BrowserLauncher`() {
+    fun `semantic comparison handles multi digit components`() {
+        assertTrue(AppUpdateChecker.compareVersions("1.10.0", "1.9.0") > 0)
+        assertTrue(AppUpdateChecker.compareVersions("1.2.10", "1.2.9") > 0)
+        assertTrue(AppUpdateChecker.compareVersions("1.2.9", "1.2.10") < 0)
+    }
+
+    @Test
+    fun `semantic comparison orders prereleases before release`() {
+        assertTrue(AppUpdateChecker.compareVersions("1.0.0", "1.0.0-rc.1") > 0)
+        assertTrue(AppUpdateChecker.compareVersions("1.0.0-beta.2", "1.0.0-beta.11") < 0)
+        assertEquals(0, AppUpdateChecker.compareVersions("v1.0.0+build.7", "1.0.0+build.8"))
+    }
+
+    @Test
+    fun `malformed versions fail rather than compare lexicographically`() {
+        assertTrue(
+            runCatching { AppUpdateChecker.compareVersions("1.0", "1.0.0") }.isFailure,
+        )
+
+        val result = AppUpdateChecker(
+            currentVersion = "not-a-version",
+            client = OkHttpClient.Builder().build(),
+            githubApiBase = "http://mock/api",
+            allowInsecureEndpointForTests = true,
+        ).checkForUpdateSync()
+
+        assertTrue(result is UpdateCheckResult.Failed)
+    }
+
+    @Test
+    fun `no update is distinct from API failure`() {
+        lastInterceptor!!.responseBody = """{"tag_name":"v1.0.0","html_url":"https://github.com/ErnestHysa/anikku/releases/tag/v1.0.0"}"""
+        assertTrue(checker.checkForUpdateSync() is UpdateCheckResult.NoUpdate)
+
+        lastInterceptor!!.statusCode = 403
+        assertTrue(checker.checkForUpdateSync() is UpdateCheckResult.Failed)
+    }
+
+    @Test
+    fun `transient server failure is retried with bounded attempts`() {
+        lastInterceptor!!.statusCode = 503
+        val result = checker.checkForUpdateSync()
+
+        assertTrue(result is UpdateCheckResult.Failed)
+        assertEquals(2, lastInterceptor!!.calls)
+    }
+
+    @Test
+    fun `insecure release links are rejected and secure release page is retained`() {
+        lastInterceptor!!.responseBody = """
+        {
+            "tag_name": "v2.0.0",
+            "html_url": "http://example.invalid/release",
+            "assets": [{"name":"Anikku-2.0.0.dmg","browser_download_url":"http://example.invalid/app.dmg"}]
+        }
+        """.trimIndent()
+
+        val result = checker.checkForUpdateSync()
+
+        val failure = result as? UpdateCheckResult.Failed
+            ?: error("Expected Failed result, got $result")
+        assertTrue(failure.reason.contains("trusted", ignoreCase = true))
+    }
+
+    @Test
+    fun `fallback always uses the secure release page without installation`() {
+        lastInterceptor!!.responseBody = """
+        {
+            "tag_name": "v2.0.0",
+            "html_url": "https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0",
+            "assets": []
+        }
+        """.trimIndent()
+
+        val result = checker.checkForUpdateSync() as? UpdateCheckResult.Available
+            ?: error("Expected Available result")
+        assertEquals("https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0", result.update.downloadUrl)
+    }
+
+    @Test
+    fun `browser delegation works only for HTTPS update URL`() {
         BrowserLauncher.testMode = true
         val update = UpdateInfo(
             tagName = "v2.0.0",
@@ -154,20 +203,26 @@ class AppUpdateCheckerTest {
             downloadUrl = "https://github.com/ErnestHysa/anikku/releases/download/v2.0.0/Anikku-2.0.0.dmg",
         )
 
-        // Should not throw — BrowserLauncher.openSafe handles headless environments gracefully
         checker.openDownloadPage(update)
-    }
+        assertNotNull(BrowserLauncher.lastOpenedUri)
+        assertFalse(BrowserLauncher.lastOpenedUri!!.scheme == "http")
 
-    @Test
-    fun `openReleasePage delegates to BrowserLauncher`() {
-        BrowserLauncher.testMode = true
-        val update = UpdateInfo(
-            tagName = "v2.0.0",
-            versionName = "2.0.0",
-            htmlUrl = "https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0",
+        checker.openDownloadPage(update.copy(
+            htmlUrl = "http://example.invalid/release",
             downloadUrl = "https://github.com/ErnestHysa/anikku/releases/download/v2.0.0/Anikku-2.0.0.dmg",
+        ))
+        assertEquals(
+            "https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0",
+            BrowserLauncher.lastOpenedUri?.toString(),
         )
 
-        checker.openReleasePage(update)
+        checker.openDownloadPage(update.copy(
+            htmlUrl = "https://example.invalid/release",
+            downloadUrl = "https://github.com/ErnestHysa/anikku/releases/download/v2.0.0/Anikku-2.0.0.dmg",
+        ))
+        assertEquals(
+            "https://github.com/ErnestHysa/anikku/releases/tag/v2.0.0",
+            BrowserLauncher.lastOpenedUri?.toString(),
+        )
     }
 }

@@ -2,6 +2,7 @@ package app.anikku.macos.platform.storage
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -22,9 +23,11 @@ import java.io.File
 class MacOSStorageManager(
     private val storageProvider: MacOSStorageProvider,
     storagePreferences: MacOSStoragePreferences? = null,
-) {
+) : AutoCloseable {
 
     private val scope = CoroutineScope(Dispatchers.IO)
+    @Volatile
+    private var closed = false
 
     private var baseDir: File = storageProvider.directory()
 
@@ -38,10 +41,14 @@ class MacOSStorageManager(
             ?.drop(1)
             ?.distinctUntilChanged()
             ?.onEach { path ->
-                baseDir = File(path)
-                baseDir.mkdirs()
-                createDirectories(baseDir)
-                _changes.send(Unit)
+                if (!closed) {
+                    baseDir = File(path).canonicalFile
+                    require(baseDir.exists() || baseDir.mkdirs()) {
+                        "Unable to create storage directory: ${baseDir.path}"
+                    }
+                    createDirectories(baseDir)
+                    _changes.send(Unit)
+                }
             }
             ?.launchIn(scope)
 
@@ -79,7 +86,19 @@ class MacOSStorageManager(
 
     private fun ensureDir(parent: File, name: String): File? {
         val dir = File(parent, name)
-        return if (dir.exists() || dir.mkdirs()) dir else null
+        return if (dir.exists() || dir.mkdirs()) {
+            require(dir.isDirectory) { "Storage path is not a directory: ${dir.path}" }
+            dir
+        } else {
+            throw IllegalStateException("Unable to create storage directory: ${dir.path}")
+        }
+    }
+
+    override fun close() {
+        if (closed) return
+        closed = true
+        scope.cancel()
+        _changes.close()
     }
 
     companion object {

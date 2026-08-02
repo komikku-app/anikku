@@ -211,12 +211,9 @@ class MacOSBiometricAuth {
      * and return false (which triggers the PIN fallback path).
      */
     private fun evaluateBiometricPolicy(reason: String, timeoutSeconds: Int): Boolean {
-        // TODO: Phase 9 — Implement actual JNA bridge to LocalAuthentication.framework
-        // LAContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
-        //                         localizedReason: reason) { success, error in ... }
-        //
-        // For now, biometric authentication is not yet wired via JNA.
-        // Users can use PIN-based authentication as a fallback.
+        // Unsupported until a LocalAuthentication JNA bridge with an async
+        // callback is bundled. Keep this explicit so callers use the PIN
+        // fallback instead of mistaking a silent false for a successful check.
         logger.warn {
             "Touch ID via JNA not yet implemented. " +
                 "Falling back to PIN authentication."

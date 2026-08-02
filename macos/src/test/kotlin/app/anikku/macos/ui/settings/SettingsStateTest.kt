@@ -181,6 +181,39 @@ class SettingsStateTest {
     }
 
     @Test
+    fun `invalid settings are normalized to safe bounds`() {
+        val state = SettingsState()
+
+        state.proxyPort = 0
+        assertEquals(1, state.proxyPort)
+        state.proxyPort = 70_000
+        assertEquals(65_535, state.proxyPort)
+
+        state.simultaneousDownloads = 0
+        assertEquals(1, state.simultaneousDownloads)
+        state.simultaneousDownloads = 99
+        assertEquals(10, state.simultaneousDownloads)
+
+        state.defaultPlaybackSpeed = Float.NaN
+        assertEquals(1.0f, state.defaultPlaybackSpeed)
+        state.defaultPlaybackSpeed = 10.0f
+        assertEquals(4.0f, state.defaultPlaybackSpeed)
+    }
+
+    @Test
+    fun `invalid persisted settings load with safe defaults`() {
+        val file = File.createTempFile("settings-invalid-", ".json").apply { deleteOnExit() }
+        file.writeText("""
+            {"proxy_port":70000,"simultaneous_downloads":0,"default_playback_speed":"not-a-number"}
+        """.trimIndent())
+        val state = SettingsState(MacOSPreferenceStore(file))
+
+        assertEquals(65_535, state.proxyPort)
+        assertEquals(1, state.simultaneousDownloads)
+        assertEquals(1.0f, state.defaultPlaybackSpeed)
+    }
+
+    @Test
     fun `null store does not throw on any operation`() {
         val state = SettingsState(null)
 

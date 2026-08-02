@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
-     xmlns:dc="http://purl.org/dc/elements/1.1/">
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>Anikku macOS Appcast</title>
     <description>Most recent changes to Anikku macOS — Sparkle-compatible auto-update feed</description>
@@ -8,73 +7,10 @@
     <lastBuildDate>Mon, 14 Jul 2026 00:00:00 +0000</lastBuildDate>
 
     <!--
-      =========================================================================
-      Sparkle 2 Ed25519 Signing Key
-      =========================================================================
-
-      Public key (SUPublicEDKey in Info.plist):
-        MCowBQYDK2VwAyEAqrhm8RdXyYrShqr6DN/Utx73Mj2pjuuI7Kq0GqYY4Q4=
-
-      Private key: stored in macOS Keychain or macos/ed25519-key.pem
-      (KEEP PRIVATE KEY SECURE — never commit it to git!)
-
-      =========================================================================
-      How to add a new release
-      =========================================================================
-
-      After publishing a new release on GitHub with a .dmg asset:
-
-        1. Run the appcast generator:
-           ./macos/scripts/generate-appcast.sh --auto --signing-key ./macos/ed25519-key.pem
-
-        2. This will:
-           - Fetch the latest release from GitHub
-           - Download the .dmg asset
-           - Sign it with Ed25519
-           - Add a new <item> to this appcast.xml
-           - Write a JSON version to appcast.json
-
-        3. Upload this appcast.xml to your server at:
-           https://anikku.app/sparkle/appcast.xml
-
-      =========================================================================
-      Manual mode (if --auto doesn't work):
-      =========================================================================
-
-        ./macos/scripts/generate-appcast.sh \\
-          --version 1.0.1 \\
-          --dmg /path/to/Anikku-1.0.1.dmg \\
-          --signing-key ./macos/ed25519-key.pem \\
-          --appcast ./macos/src/main/resources/Sparkle/appcast.xml
-
-      =========================================================================
+      This feed intentionally has no release item until a real DMG has been
+      generated and signed with the private key matching ed25519_pub.pem.
+      Use macos/scripts/generate-appcast.sh to add a signed release item.
+      Never commit a placeholder signature or zero-length artifact.
     -->
-
-    <!-- ================================================================
-         v1.0.0 entry — Ed25519 signature and DMG size need to be
-         filled in after building and uploading the DMG.
-
-         To generate the real signature:
-           ./macos/scripts/generate-appcast.sh \
-             --version 1.0.0 \
-             --dmg ./build/compose/binaries/main/dmg/Anikku-1.0.0.dmg \
-             --signing-key ./macos/ed25519-key.pem \
-             --appcast ./macos/src/main/resources/Sparkle/appcast.xml
-         ================================================================ -->
-    <item>
-      <title>Version 1.0.0</title>
-      <sparkle:version>1.0.0</sparkle:version>
-      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
-      <pubDate>Thu, 16 Jul 2026 23:56:36 +0000</pubDate>
-      <enclosure
-        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.0/Anikku-1.0.0.dmg"
-        sparkle:edSignature="REPLACE_WITH_REAL_SIGNATURE"
-        length="0"
-        type="application/octet-stream" />
-      <sparkle:releaseNotesLink>
-        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.0
-      </sparkle:releaseNotesLink>
-    </item>
-
   </channel>
 </rss>

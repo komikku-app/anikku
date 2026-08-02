@@ -1,7 +1,7 @@
 package app.anikku.macos.platform.auth
 
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
-import app.anikku.macos.platform.security.MacOSKeychain
+import app.anikku.macos.platform.security.MacOSSecretStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -11,10 +11,15 @@ private val logger = KotlinLogging.logger {}
 
 class TrackerTokenStore(
     private val preferenceStore: MacOSPreferenceStore,
-    private val keychain: MacOSKeychain? = null,
+    private val keychain: MacOSSecretStore? = null,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
-    private val useKeychain: Boolean get() = keychain != null && keychain.isAvailable
+    /** A supplied keychain is an explicit secure-storage requirement; it is never silently downgraded. */
+    private val requiresKeychain: Boolean get() = keychain != null
+    private val useKeychain: Boolean get() = keychain?.isAvailable == true
+    @Volatile
+    var lastStorageError: String? = null
+        private set
     private val knownTrackers = listOf("myanimelist", "anilist", "kitsu", "shikimori")
 
     data class TrackerLoginStatus(
@@ -34,16 +39,16 @@ class TrackerTokenStore(
     }
 
     fun isLoggedIn(tracker: String): Boolean {
-        return if (useKeychain) {
-            getRawTokenFromKeychain(tracker) != null
+        return if (requiresKeychain) {
+            if (!keychainAvailableForRead()) false else getRawTokenFromKeychain(tracker) != null
         } else {
             getTokensFromPrefs(tracker) != null
         }
     }
 
     fun getTokens(tracker: String): StoredToken? {
-        return if (useKeychain) {
-            getTokensFromKeychain(tracker)
+        return if (requiresKeychain) {
+            if (!keychainAvailableForRead()) null else getTokensFromKeychain(tracker)
         } else {
             getTokensFromPrefs(tracker)
         }
@@ -56,12 +61,13 @@ class TrackerTokenStore(
             scope = token.scope,
             createdAt = token.createdAt,
         )
-        if (useKeychain) {
+        if (requiresKeychain) {
+            requireKeychainAvailable()
             val tokenBlob = json.encodeToString(StoredTokenBlob(
                 accessToken = token.accessToken,
                 refreshToken = token.refreshToken,
             ))
-            keychain!!.store("tracker_token_$tracker", tokenBlob)
+            requireKeychainStore("tracker_token_$tracker", tokenBlob)
             preferenceStore.getString("tracker_meta_$tracker", "").set(json.encodeToString(metadata))
             logger.info { "Tokens saved for $tracker (Keychain)" }
         } else {
@@ -89,9 +95,25 @@ class TrackerTokenStore(
         return raw.ifBlank { null }
     }
 
-    fun removeTokens(tracker: String) {
-        if (useKeychain) {
-            keychain!!.delete("tracker_token_$tracker")
+    /**
+     * Remove tokens and associated metadata.
+     *
+     * Secure deletion is transactional: if the Keychain is unavailable or
+     * refuses deletion, preference metadata is retained so the app does not
+     * claim logout while leaving a credential orphaned in the Keychain.
+     */
+    fun removeTokens(tracker: String): Boolean {
+        if (requiresKeychain) {
+            if (!useKeychain) {
+                lastStorageError = "Cannot clear tokens because the Keychain is unavailable"
+                logger.error { lastStorageError!! }
+                return false
+            }
+            if (!keychain!!.delete("tracker_token_$tracker")) {
+                lastStorageError = "Keychain failed to clear tokens for $tracker: ${keychain.lastError ?: "access denied"}"
+                logger.error { lastStorageError!! }
+                return false
+            }
             logger.info { "Tokens removed for $tracker (Keychain)" }
         } else {
             preferenceStore.getString(key(tracker), "").delete()
@@ -99,12 +121,20 @@ class TrackerTokenStore(
         }
         preferenceStore.getString("tracker_meta_$tracker", "").delete()
         preferenceStore.getString("tracker_user_$tracker", "").delete()
+        lastStorageError = null
+        return true
     }
 
     fun saveClientCredentials(tracker: String, clientId: String, clientSecret: String) {
-        if (useKeychain) {
-            keychain!!.store("creds_id_$tracker", clientId)
-            keychain!!.store("creds_secret_$tracker", clientSecret)
+        if (requiresKeychain) {
+            requireKeychainAvailable()
+            requireKeychainStore("creds_id_$tracker", clientId)
+            try {
+                requireKeychainStore("creds_secret_$tracker", clientSecret)
+            } catch (error: Exception) {
+                keychain!!.delete("creds_id_$tracker")
+                throw error
+            }
             logger.info { "OAuth client credentials saved for $tracker (Keychain)" }
         } else {
             preferenceStore.getString("creds_id_$tracker", "").set(clientId)
@@ -114,9 +144,10 @@ class TrackerTokenStore(
     }
 
     fun getClientCredentials(tracker: String): Pair<String, String>? {
-        return if (useKeychain) {
+        return if (requiresKeychain) {
+            if (!keychainAvailableForRead()) return null
             val clientId = keychain!!.retrieve("creds_id_$tracker") ?: return null
-            val clientSecret = keychain!!.retrieve("creds_secret_$tracker") ?: return null
+            val clientSecret = keychain.retrieve("creds_secret_$tracker") ?: return null
             Pair(clientId, clientSecret)
         } else {
             val clientId = preferenceStore.getString("creds_id_$tracker", "").get()
@@ -128,10 +159,14 @@ class TrackerTokenStore(
     }
 
     fun removeClientCredentials(tracker: String) {
-        if (useKeychain) {
-            keychain!!.delete("creds_id_$tracker")
-            keychain!!.delete("creds_secret_$tracker")
-            logger.info { "OAuth client credentials removed for $tracker (Keychain)" }
+        if (requiresKeychain) {
+            if (!useKeychain) {
+                logger.error { "Cannot clear OAuth credentials for $tracker because the Keychain is unavailable" }
+            } else {
+                keychain!!.delete("creds_id_$tracker")
+                keychain!!.delete("creds_secret_$tracker")
+                logger.info { "OAuth client credentials removed for $tracker (Keychain)" }
+            }
         } else {
             preferenceStore.getString("creds_id_$tracker", "").delete()
             preferenceStore.getString("creds_secret_$tracker", "").delete()
@@ -165,8 +200,8 @@ class TrackerTokenStore(
         logger.info { "Anime mapping removed for \"${animeTitle.take(30)}\" on $tracker" }
     }
 
-    fun removeAll() {
-        knownTrackers.forEach { removeTokens(it) }
+    fun removeAll(): Boolean {
+        return knownTrackers.all { removeTokens(it) }
     }
 
     private fun key(tracker: String) = "tracker_token_$tracker"
@@ -200,7 +235,34 @@ class TrackerTokenStore(
     }
 
     private fun getRawTokenFromKeychain(tracker: String): String? {
-        return keychain?.retrieve("tracker_token_$tracker")
+        val raw = keychain?.retrieve("tracker_token_$tracker")
+        if (raw == null && keychain?.lastError != null) {
+            logger.error { "Keychain failed while retrieving tokens for $tracker: ${keychain.lastError}" }
+        }
+        return raw
+    }
+
+    private fun keychainAvailableForRead(): Boolean {
+        if (useKeychain) return true
+        lastStorageError = "Secure Keychain is unavailable; token presence could not be checked"
+        logger.error { lastStorageError!! }
+        return false
+    }
+
+    private fun requireKeychainAvailable() {
+        if (!useKeychain) {
+            lastStorageError = "Secure Keychain storage is unavailable; refusing plaintext fallback"
+            throw IllegalStateException(lastStorageError)
+        }
+        lastStorageError = null
+    }
+
+    private fun requireKeychainStore(key: String, value: String) {
+        if (!keychain!!.store(key, value)) {
+            lastStorageError = "Keychain failed to store secure value for $key: ${keychain.lastError ?: "access denied"}"
+            throw IllegalStateException(lastStorageError)
+        }
+        lastStorageError = null
     }
 
     private fun getTokensFromPrefs(tracker: String): StoredToken? {

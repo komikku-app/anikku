@@ -143,9 +143,15 @@ fun TrackerSettingsPanel(
                 }
             },
             onLogout = {
-                trackerManager?.logout(status.tracker)
-                toastHost.show("Logged out of ${status.displayName}", ToastDuration.SHORT)
-                onTrackerChanged()
+                val removed = trackerManager?.logout(status.tracker) == true
+                toastHost.show(
+                    text = if (removed) "Logged out of ${status.displayName}" else "Could not clear ${status.displayName} credentials",
+                    duration = ToastDuration.LONG,
+                    isError = !removed,
+                    source = status.tracker,
+                    location = "TrackerSettingsPanel.logout",
+                )
+                if (removed) onTrackerChanged()
             },
         )
     }

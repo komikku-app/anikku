@@ -4,7 +4,11 @@ import androidx.compose.runtime.compositionLocalOf
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import app.anikku.macos.platform.storage.MacOSAtomicFile
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+
+private val customAnimeLogger = KotlinLogging.logger {}
 
 /**
  * CompositionLocal providing the [LibraryRepository] to the Compose tree.
@@ -28,10 +32,13 @@ val LocalHistoryRepository = compositionLocalOf { HistoryRepository(java.io.File
 class MacOSCustomAnimeRepository(dataDir: File) {
 
     private val editJson = File(dataDir, "edits.json")
+    private val lock = Any()
     private val customAnimeMap: MutableMap<Long, CustomAnimeEntry> = loadFromFile()
 
+    @Synchronized
     fun get(animeId: Long): CustomAnimeEntry? = customAnimeMap[animeId]
 
+    @Synchronized
     fun set(animeId: Long, title: String? = null, author: String? = null,
             artist: String? = null, thumbnailUrl: String? = null,
             description: String? = null, genre: List<String>? = null, status: Long? = null) {
@@ -50,9 +57,9 @@ class MacOSCustomAnimeRepository(dataDir: File) {
         saveToFile()
     }
 
+    @Synchronized
     fun remove(animeId: Long) {
-        customAnimeMap.remove(animeId)
-        saveToFile()
+        if (customAnimeMap.remove(animeId) != null) saveToFile()
     }
 
     private fun loadFromFile(): MutableMap<Long, CustomAnimeEntry> {
@@ -60,15 +67,20 @@ class MacOSCustomAnimeRepository(dataDir: File) {
         return try {
             val list = Json.decodeFromString<AnimeList>(editJson.readText())
             list.animes?.associateBy { it.id }?.toMutableMap() ?: mutableMapOf()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            val backup = MacOSAtomicFile.preserveMalformed(editJson)
+            customAnimeLogger.warn(error) {
+                "Custom anime JSON is malformed; starting with empty state" +
+                    (backup?.let { ", preserved at ${it.name}" } ?: "")
+            }
             mutableMapOf()
         }
     }
 
     private fun saveToFile() {
-        if (customAnimeMap.isNotEmpty()) {
-            editJson.parentFile?.mkdirs()
-            editJson.writeText(Json.encodeToString(AnimeList(customAnimeMap.values.toList())))
+        synchronized(lock) {
+            val content = Json.encodeToString(AnimeList(customAnimeMap.values.toList()))
+            MacOSAtomicFile.writeText(editJson, content)
         }
     }
 

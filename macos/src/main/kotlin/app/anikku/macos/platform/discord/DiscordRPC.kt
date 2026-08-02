@@ -15,7 +15,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.File
@@ -167,12 +166,12 @@ class DiscordRPC(
         logger.info { "Connecting to Discord IPC at $socketPath" }
 
         try {
-            val request = Request.Builder()
-                .url("ws+unix://$socketPath")
-                .build()
-
-            // Open WebSocket connection via raw Unix socket
-            connectToSocket(socketPath)
+            // Open WebSocket connection via raw Unix socket. The native transport
+            // is not bundled yet; never report CONNECTED for a simulated socket.
+            if (!connectToSocket(socketPath)) {
+                _connectionState.value = ConnectionState.DISCONNECTED
+                return
+            }
 
             // Handshake (OP_HANDSHAKE = 0)
             sendFrame(0, DiscordHandshake(client_id = clientId))
@@ -186,20 +185,18 @@ class DiscordRPC(
     }
 
     /**
-     * Connect to a Unix domain socket using raw file descriptor access.
+     * Connect to Discord's Unix socket.
      *
-     * On macOS, Discord's IPC socket is at a path like:
-     * `~/Library/Application Support/discord/ipc-0`
+     * The macOS port currently has no native Unix-domain-socket transport.
+     * Returning false is deliberate: an unavailable optional integration must
+     * remain disconnected rather than advertising a fake connected state.
      */
-    private fun connectToSocket(socketPath: String) {
-        // TODO: For actual Unix socket connection, use JNA or a library like junixsocket.
-        // For now, log that the connection attempt was made and simulate connected state
-        // so the rest of the app can be tested.
-        _connectionState.value = ConnectionState.CONNECTED
-        logger.info { "Discord RPC connected (simulated — Unix socket connection pending)" }
-
-        // If there's a pending presence, send it
-        currentPresence?.let { sendPresence(it) }
+    private fun connectToSocket(socketPath: String): Boolean {
+        logger.warn {
+            "Discord IPC is unavailable: native Unix-socket transport is not bundled " +
+                "(socket=$socketPath)"
+        }
+        return false
     }
 
     private fun startReconnectMonitor() {

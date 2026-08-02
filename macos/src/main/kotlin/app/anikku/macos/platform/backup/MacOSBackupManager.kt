@@ -108,8 +108,16 @@ class MacOSBackupManager(
             return ImportResult(success = false, error = "File not found: $inputFile")
         }
 
-        // Parse backup JSON
-        val backupText = inputFile.readText()
+        // Read and parse backup JSON. File-system failures are returned to the
+        // caller so the UI can show an actionable restore error instead of
+        // losing the coroutine exception silently.
+        val backupText = try {
+            inputFile.readText()
+        } catch (e: Exception) {
+            io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+                .error(e) { "Backup import could not read ${inputFile.name}" }
+            return ImportResult(success = false, error = "Read error: ${e.message?.take(200) ?: "Unknown"}")
+        }
         val backup: BackupData
         try {
             backup = json.decodeFromString<BackupData>(backupText)

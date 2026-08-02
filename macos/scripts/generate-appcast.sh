@@ -69,7 +69,7 @@ VERSION=""
 DMG_PATH=""
 SIGNING_KEY=""
 APPCAST_PATH=""
-REPO="komikku-app/anikku"
+REPO="ErnestHysa/anikku"
 OUTPUT_DIR=""
 
 while [[ $# -gt 0 ]]; do
@@ -117,9 +117,10 @@ if [ "$AUTO_MODE" = true ]; then
     log "Auto mode: fetching latest release from ${REPO}..."
 
     API_URL="https://api.github.com/repos/${REPO}/releases/latest"
-    RELEASE_JSON=$(curl -sL -H "Accept: application/vnd.github.v3+json" \
+    RELEASE_JSON=$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        -H "Accept: application/vnd.github.v3+json" \
         -H "User-Agent: Anikku-Appcast-Generator/1.0" \
-        "$API_URL" 2>/dev/null)
+        "$API_URL")
 
     if [ -z "$RELEASE_JSON" ]; then
         err "Failed to fetch release data from GitHub"
@@ -140,10 +141,14 @@ if [ "$AUTO_MODE" = true ]; then
     DMG_URL=$(echo "$RELEASE_JSON" | python3 -c "
 import sys, json
 release = json.load(sys.stdin)
+from urllib.parse import urlparse
 for asset in release.get('assets', []):
     name = asset.get('name', '')
-    if name.endswith('.dmg') or 'mac' in name.lower():
-        print(asset['browser_download_url'])
+    url = asset.get('browser_download_url', '')
+    parsed = urlparse(url)
+    if (name.endswith('.dmg') or 'mac' in name.lower()) and \
+            parsed.scheme == 'https' and parsed.hostname in {'github.com', 'www.github.com'}:
+        print(url)
         sys.exit(0)
 print('')
 " 2>/dev/null)
@@ -159,9 +164,22 @@ for a in json.load(sys.stdin).get('assets',[]):
         exit 1
     fi
 
-    log "  Downloading DMG: ${DMG_URL}..."
+    if [[ "$DMG_URL" != https://github.com/* && "$DMG_URL" != https://www.github.com/* ]]; then
+        err "Refusing DMG URL outside GitHub HTTPS hosts"
+        exit 1
+    fi
+    log "  Downloading DMG from a verified HTTPS URL"
     DMG_PATH="${OUTPUT_DIR}/Anikku-${VERSION}.dmg"
-    curl -sL "$DMG_URL" -o "$DMG_PATH"
+    DMG_TMP="${DMG_PATH}.part"
+    rm -f "$DMG_TMP"
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        "$DMG_URL" -o "$DMG_TMP"
+    if [ ! -s "$DMG_TMP" ]; then
+        rm -f "$DMG_TMP"
+        err "Failed to download DMG"
+        exit 1
+    fi
+    mv -f "$DMG_TMP" "$DMG_PATH"
 
     if [ ! -f "$DMG_PATH" ] || [ ! -s "$DMG_PATH" ]; then
         err "Failed to download DMG"
@@ -199,20 +217,24 @@ SIGNATURE=$(openssl pkeyutl \
     -sign \
     -inkey "$SIGNING_KEY" \
     -rawin \
-    -in "$DMG_PATH" 2>/dev/null | base64)
-
+    -in "$DMG_PATH" | base64 | tr -d '\\n')
 if [ -z "$SIGNATURE" ]; then
     err "Failed to generate Ed25519 signature."
     err "Make sure you're using OpenSSL 3.x+"
     exit 1
 fi
-
-log "  Signature: ${SIGNATURE:0:48}..."
+log "  Signature generated (${#SIGNATURE} base64 characters)"
 
 # ---------------------------------------------------------------------------
 # Generate/update appcast.xml
 # ---------------------------------------------------------------------------
-DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v${VERSION}/Anikku-${VERSION}.dmg"
+# Preserve the exact GitHub asset URL selected above. Reconstructing the
+# filename can point Sparkle at a non-existent or unintended artifact.
+if [ "$AUTO_MODE" = true ]; then
+    DOWNLOAD_URL="$DMG_URL"
+else
+    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v${VERSION}/Anikku-${VERSION}.dmg"
+fi
 RELEASE_NOTES_URL="${HTML_URL}"
 
 # RFC 2822 date
@@ -314,7 +336,7 @@ log "═════════════════════════
 log "  Appcast:       ${APPCAST_PATH}"
 log "  Version:       ${VERSION}"
 log "  DMG:           ${DMG_PATH} (${DMG_SIZE} bytes)"
-log "  Signature:     ${SIGNATURE:0:48}..."
+log "  Signature generated (${#SIGNATURE} base64 characters)"
 log "  Download URL:  ${DOWNLOAD_URL}"
 log ""
 log "  Next steps:"

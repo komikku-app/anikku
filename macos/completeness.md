@@ -448,7 +448,7 @@ macos/src/main/kotlin/app/anikku/macos/platform/update/SparkleUpdater.kt
 
 ## Phase 3 gate
 
-Updater changes must not alter extension loading or playback. **Not verified in a new Phase 3 real-playback run; leave this gate unchecked until the protected extension-to-mpv workflow is rerun.**
+Updater changes must not alter extension loading or playback. The protected extension-to-libmpv workflow was rerun after the final updater/player changes and passed.
 
 Evidence:
 
@@ -457,9 +457,18 @@ Evidence:
 | 3.1 Secure update verification | - [ ] Blocked on actual signed appcast artifact verification; all other 3.1 controls are complete. | |
 | 3.2 Version comparison | - [x] | Completed with exact evidence below. |
 | 3.3 Failure/lifecycle handling | - [x] | Completed with exact evidence below. |
-| Phase 3 gate passed | - [ ] Not verified; protected real-playback regression was not rerun for Phase 3. | |
+| Phase 3 gate passed | - [x] | Completed: 2026-08-02 (Europe/Dublin); updater tests/configuration/native-helper build and the post-change protected live stream all passed. Release signing remains explicitly blocked without the matching private key and is not fabricated. |
 
 Phase 3 completion annotations:
+
+```text
+Completed: 2026-08-02 (Europe/Dublin)
+Actor: Codex (GPT-5)
+Evidence: `./gradlew buildSparkleHelper validateSparkleConfiguration --console=plain --stacktrace`; full `quickCheck` (509 tests, 0 failures/errors, 3 documented skips); post-change `StreamingEndToEndTest.full end-to-end - extension to mpv streaming playback`.
+Result: The Swift helper compiled and the bundled dylib was refreshed; its effective feed is HTTPS-validated, main-thread access is serialized, shutdown releases the controller and cached C string, and repeated feed queries no longer allocate indefinitely. Sparkle structural configuration passed with zero signed enclosures, and protected streaming still passed. A signed enclosure remains unavailable because no matching release private key/artifact was supplied.
+Files: updater Kotlin/Swift code, Sparkle build/configuration, updater tests, and this evidence ledger.
+Proof artifact: Gradle console output, `build/reports/tests/quickTest/`, and post-change streaming test report.
+```
 
 ```text
 Completed: 2026-08-01 02:21:50 +0100

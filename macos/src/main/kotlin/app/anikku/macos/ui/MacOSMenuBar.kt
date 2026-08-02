@@ -120,10 +120,10 @@ fun create(
                 it.addActionListener { frame.state = Frame.ICONIFIED }
             })
             add(MenuItem("Hide Others", MenuShortcut(KeyEvent.VK_H, true)).also {
-                it.addActionListener { /* TODO: Phase 9.6 — macOS hide-others via JNA */ }
+                it.addActionListener { hideOtherWindows(frame) }
             })
             add(MenuItem("Show All").also {
-                it.addActionListener { /* TODO: Phase 9.6 — macOS show-all via JNA */ }
+                it.addActionListener { showAllWindows() }
             })
             addSeparator()
             add(MenuItem("Quit Anikku", MenuShortcut(KeyEvent.VK_Q, false)).also {
@@ -227,7 +227,7 @@ fun create(
             })
             addSeparator()
             add(MenuItem("Toggle Sidebar", MenuShortcut(KeyEvent.VK_S, false)).also {
-                it.addActionListener { /* TODO: Phase 5 */ }
+                it.addActionListener { GlobalKeyboardShortcuts.onToggleSidebar?.invoke() }
             })
             add(MenuItem("Toggle Full Screen", MenuShortcut(KeyEvent.VK_F, false)).also {
                 it.addActionListener { MacOSFullScreen.toggleFullScreen(frame) }
@@ -308,6 +308,23 @@ fun create(
     /** Opens backup help info in the browser. */
     private fun openBackupHelp() {
         BrowserLauncher.openSafe("https://github.com/ErnestHysa/anikku/blob/master/macos/README.md")
+    }
+
+    /** Minimize every other app window while leaving the active window unchanged. */
+    private fun hideOtherWindows(activeFrame: Frame) {
+        Frame.getFrames()
+            .filter { it !== activeFrame && it.isDisplayable }
+            .forEach { it.state = Frame.ICONIFIED }
+    }
+
+    /** Restore every displayable app window. */
+    private fun showAllWindows() {
+        Frame.getFrames()
+            .filter { it.isDisplayable }
+            .forEach {
+                it.isVisible = true
+                it.state = Frame.NORMAL
+            }
     }
 
     /** Toggles the frame between maximized and normal state. */

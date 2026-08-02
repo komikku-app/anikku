@@ -22,8 +22,13 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
+import app.anikku.macos.platform.storage.MacOSAtomicFile
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
+import io.github.oshai.kotlinlogging.KotlinLogging
+
+private val preferenceLogger = KotlinLogging.logger {}
 
 /**
  * macOS file-backed PreferenceStore implementation.
@@ -35,9 +40,12 @@ import java.util.concurrent.ConcurrentHashMap
 class MacOSPreferenceStore(
     private val prefsFile: File,
     private val json: Json = Json { prettyPrint = true },
+    private val writeText: (File, String) -> Unit = MacOSAtomicFile::writeText,
 ) : PreferenceStore {
 
     private val store = ConcurrentHashMap<String, JsonElement>()
+    private val mutationLock = Any()
+    private val persistenceError = AtomicReference<Throwable?>(null)
     private val keyFlow = MutableSharedFlow<String?>(
         replay = 0,
         extraBufferCapacity = 64,
@@ -51,6 +59,7 @@ class MacOSPreferenceStore(
     override fun getString(key: String, defaultValue: String): Preference<String> {
         return JsonFilePreference(
             store = store,
+            mutationLock = mutationLock,
             keyFlow = keyFlow,
             key = key,
             defaultValue = defaultValue,
@@ -63,6 +72,7 @@ class MacOSPreferenceStore(
     override fun getLong(key: String, defaultValue: Long): Preference<Long> {
         return JsonFilePreference(
             store = store,
+            mutationLock = mutationLock,
             keyFlow = keyFlow,
             key = key,
             defaultValue = defaultValue,
@@ -75,6 +85,7 @@ class MacOSPreferenceStore(
     override fun getInt(key: String, defaultValue: Int): Preference<Int> {
         return JsonFilePreference(
             store = store,
+            mutationLock = mutationLock,
             keyFlow = keyFlow,
             key = key,
             defaultValue = defaultValue,
@@ -87,6 +98,7 @@ class MacOSPreferenceStore(
     override fun getFloat(key: String, defaultValue: Float): Preference<Float> {
         return JsonFilePreference(
             store = store,
+            mutationLock = mutationLock,
             keyFlow = keyFlow,
             key = key,
             defaultValue = defaultValue,
@@ -99,6 +111,7 @@ class MacOSPreferenceStore(
     override fun getBoolean(key: String, defaultValue: Boolean): Preference<Boolean> {
         return JsonFilePreference(
             store = store,
+            mutationLock = mutationLock,
             keyFlow = keyFlow,
             key = key,
             defaultValue = defaultValue,
@@ -111,6 +124,7 @@ class MacOSPreferenceStore(
     override fun getStringSet(key: String, defaultValue: Set<String>): Preference<Set<String>> {
         return JsonFilePreference(
             store = store,
+            mutationLock = mutationLock,
             keyFlow = keyFlow,
             key = key,
             defaultValue = defaultValue,
@@ -132,6 +146,7 @@ class MacOSPreferenceStore(
     ): Preference<T> {
         return JsonFilePreference(
             store = store,
+            mutationLock = mutationLock,
             keyFlow = keyFlow,
             key = key,
             defaultValue = defaultValue,
@@ -141,35 +156,50 @@ class MacOSPreferenceStore(
         )
     }
 
+    /** Last persistence failure, if a write was rejected by the filesystem. */
+    fun lastPersistenceError(): Throwable? = persistenceError.get()
+
     override fun getAll(): Map<String, *> {
-        return store.toMap().mapValues { (_, element) ->
+        return synchronized(mutationLock) {
+            store.toMap().mapValues { (_, element) ->
             try {
                 element.jsonPrimitive.content
             } catch (_: Exception) {
                 element.toString()
             }
+            }
         }
     }
 
     private fun loadFromFile() {
-        if (prefsFile.exists()) {
-            try {
-                val jsonObject = json.parseToJsonElement(prefsFile.readText()).jsonObject
-                store.putAll(jsonObject)
-            } catch (_: Exception) {
-                // Corrupted file — start fresh
+        if (!prefsFile.exists()) return
+        try {
+            val jsonObject = json.parseToJsonElement(prefsFile.readText()).jsonObject
+            synchronized(mutationLock) { store.putAll(jsonObject) }
+        } catch (error: Exception) {
+            val backup = MacOSAtomicFile.preserveMalformed(prefsFile)
+            preferenceLogger.warn(error) {
+                "Preferences JSON is malformed; starting with defaults" +
+                    (backup?.let { ", preserved at ${it.name}" } ?: "")
             }
         }
     }
 
     private fun saveToFile() {
-        prefsFile.parentFile?.mkdirs()
-        prefsFile.writeText(
-            json.encodeToString(
-                kotlinx.serialization.json.JsonObject.serializer(),
-                kotlinx.serialization.json.JsonObject(store),
-            ),
-        )
+        try {
+            synchronized(mutationLock) {
+                val content = json.encodeToString(
+                    kotlinx.serialization.json.JsonObject.serializer(),
+                    kotlinx.serialization.json.JsonObject(store),
+                )
+                writeText(prefsFile, content)
+            }
+            persistenceError.set(null)
+        } catch (error: Exception) {
+            persistenceError.set(error)
+            preferenceLogger.error(error) { "Failed to persist preferences to ${prefsFile.path}" }
+            throw error
+        }
     }
 
     /**
@@ -177,6 +207,7 @@ class MacOSPreferenceStore(
      */
     private class JsonFilePreference<T>(
         private val store: ConcurrentHashMap<String, JsonElement>,
+        private val mutationLock: Any,
         private val keyFlow: MutableSharedFlow<String?>,
         private val key: String,
         private val defaultValue: T,
@@ -197,17 +228,35 @@ class MacOSPreferenceStore(
         }
 
         override fun set(value: T) {
-            store[key] = serialize(value)
-            onChanged()
-            keyFlow.tryEmit(key)
+            synchronized(mutationLock) {
+                val hadPrevious = store.containsKey(key)
+                val previous = store[key]
+                store[key] = serialize(value)
+                try {
+                    onChanged()
+                } catch (error: Exception) {
+                    if (hadPrevious) store[key] = previous!! else store.remove(key)
+                    throw error
+                }
+                keyFlow.tryEmit(key)
+            }
         }
 
-        override fun isSet(): Boolean = store.containsKey(key)
+        override fun isSet(): Boolean = synchronized(mutationLock) { store.containsKey(key) }
 
         override fun delete() {
-            store.remove(key)
-            onChanged()
-            keyFlow.tryEmit(key)
+            synchronized(mutationLock) {
+                val hadPrevious = store.containsKey(key)
+                val previous = store[key]
+                store.remove(key)
+                try {
+                    onChanged()
+                } catch (error: Exception) {
+                    if (hadPrevious) store[key] = previous!!
+                    throw error
+                }
+                keyFlow.tryEmit(key)
+            }
         }
 
         override fun defaultValue(): T = defaultValue

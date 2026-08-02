@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * CompositionLocal for MacOSDownloadManager.
@@ -63,26 +66,34 @@ class DownloadRepository(private val dataDir: File) {
         nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
     }
 
+    @Synchronized
     fun getAll(): List<DownloadEntry> = entries.toList()
 
+    @Synchronized
     fun get(id: Long): DownloadEntry? = entries.find { it.id == id }
 
+    @Synchronized
     fun getActive(): List<DownloadEntry> = entries.filter { it.isActive }
 
+    @Synchronized
     fun getCompleted(): List<DownloadEntry> = entries.filter { it.status == DownloadStatus.COMPLETED }
 
+    @Synchronized
     fun getForAnime(animeId: Long): List<DownloadEntry> =
         entries.filter { it.animeId == animeId }
 
+    @Synchronized
     fun getForEpisode(animeId: Long, episodeId: Long): DownloadEntry? =
         entries.find { it.animeId == animeId && it.id == episodeId }
 
+    @Synchronized
     fun isDownloaded(animeId: Long, episodeNumber: Double): Boolean =
         entries.any { it.animeId == animeId && it.episodeNumber == episodeNumber && it.status == DownloadStatus.COMPLETED }
 
     /**
      * Create a new download entry with QUEUED status.
      */
+    @Synchronized
     fun enqueue(
         animeId: Long,
         sourceId: Long,
@@ -109,6 +120,7 @@ class DownloadRepository(private val dataDir: File) {
     /**
      * Update a download entry's state.
      */
+    @Synchronized
     fun update(
         id: Long,
         status: DownloadStatus? = null,
@@ -138,17 +150,20 @@ class DownloadRepository(private val dataDir: File) {
         return updated
     }
 
+    @Synchronized
     fun remove(id: Long): Boolean {
         val removed = entries.removeAll { it.id == id }
         if (removed) saveToFile()
         return removed
     }
 
+    @Synchronized
     fun removeAll() {
         entries.clear()
         saveToFile()
     }
 
+    @Synchronized
     fun pruneCompleted(keepCount: Int = 20) {
         val completed = entries.filter { it.status == DownloadStatus.COMPLETED }
             .sortedByDescending { it.completedAt ?: 0L }
@@ -159,6 +174,7 @@ class DownloadRepository(private val dataDir: File) {
         }
     }
 
+    @Synchronized
     fun getDownloadsDir(): File = File(dataDir, "videos")
 
     private fun loadFromFile(): MutableList<DownloadEntry> {
@@ -173,7 +189,26 @@ class DownloadRepository(private val dataDir: File) {
 
     private fun saveToFile() {
         downloadFile.parentFile?.mkdirs()
-        downloadFile.writeText(json.encodeToString(DownloadList(entries)))
+        val temporaryFile = File(downloadFile.parentFile, ".${downloadFile.name}.tmp")
+        temporaryFile.writeText(json.encodeToString(DownloadList(entries)))
+        try {
+            try {
+                Files.move(
+                    temporaryFile.toPath(),
+                    downloadFile.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(
+                    temporaryFile.toPath(),
+                    downloadFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            }
+        } finally {
+            Files.deleteIfExists(temporaryFile.toPath())
+        }
     }
 
     @Serializable

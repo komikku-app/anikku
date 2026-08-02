@@ -56,11 +56,13 @@ import app.anikku.macos.ui.AnikkuScreen
  */
 class OnboardingScreen(
     private val onComplete: () -> Unit,
+    private val initialStep: Int = 0,
+    private val onStepChanged: (Int) -> Unit = {},
 ) : AnikkuScreen() {
 
     @Composable
     override fun Content() {
-        var currentStep by remember { mutableIntStateOf(0) }
+        var currentStep by remember { mutableIntStateOf(initialStep.coerceIn(0, 4)) }
         val totalSteps = 5
 
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -127,7 +129,10 @@ class OnboardingScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     if (currentStep > 0) {
-                        TextButton(onClick = { currentStep-- }) {
+                        TextButton(onClick = {
+                            currentStep--
+                            onStepChanged(currentStep)
+                        }) {
                             Text("Back")
                         }
                     } else {
@@ -136,14 +141,20 @@ class OnboardingScreen(
 
                     if (currentStep < totalSteps - 1) {
                         Button(
-                            onClick = { currentStep++ },
+                            onClick = {
+                                currentStep++
+                                onStepChanged(currentStep)
+                            },
                             shape = RoundedCornerShape(12.dp),
                         ) {
                             Text("Continue")
                         }
                     } else {
                         Button(
-                            onClick = onComplete,
+                            onClick = {
+                                onStepChanged(0)
+                                onComplete()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,

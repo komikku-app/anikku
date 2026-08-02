@@ -1,6 +1,7 @@
 package app.anikku.macos
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +56,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Frame
+import java.awt.event.WindowAdapter
 
 /**
  * Anikku macOS — Entry Point.
@@ -90,6 +92,24 @@ fun main() = application {
         title = "Anikku",
         state = windowState,
     ) {
+        DisposableEffect(window) {
+            val focusListener = object : WindowAdapter() {
+                override fun windowGainedFocus(event: java.awt.event.WindowEvent?) {
+                    app.onAppFocused()
+                }
+
+                override fun windowLostFocus(event: java.awt.event.WindowEvent?) {
+                    app.onAppBlurred()
+                }
+            }
+            window.addWindowFocusListener(focusListener)
+            if (window.isFocused) app.onAppFocused()
+            onDispose {
+                window.removeWindowFocusListener(focusListener)
+                app.onAppBlurred()
+            }
+        }
+
         val settingsState = remember { SettingsState(app.preferenceStore) }
 
         // Wire proxy settings from UI to network helper.
@@ -132,6 +152,9 @@ fun main() = application {
         // Phase 5.12: Check if onboarding has been completed
         val onboardingCompletePref = remember {
             app.preferenceStore.getBoolean("onboarding_completed", false)
+        }
+        val onboardingStepPref = remember {
+            app.preferenceStore.getInt("onboarding_step", 0)
         }
         var showOnboarding by remember {
             mutableStateOf(!onboardingCompletePref.get())
@@ -267,8 +290,11 @@ fun main() = application {
                 Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
                     if (showOnboarding) {
                         OnboardingScreen(
+                            initialStep = onboardingStepPref.get(),
+                            onStepChanged = { onboardingStepPref.set(it) },
                             onComplete = {
                                 onboardingCompletePref.set(true)
+                                onboardingStepPref.set(0)
                                 showOnboarding = false
                             },
                         ).Content()

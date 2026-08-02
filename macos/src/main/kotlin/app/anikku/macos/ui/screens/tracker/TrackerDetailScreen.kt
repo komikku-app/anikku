@@ -283,9 +283,17 @@ data class TrackerDetailScreen(
                                     // ---- Already logged in — show disconnect ----
                                     Button(
                                         onClick = {
-                                            trackerManager?.logout(tracker)
-                                            _loginState.value = LoginState.IDLE
-                                            toastHost.show("Logged out of $displayName", ToastDuration.SHORT)
+                                            val removed = trackerManager?.logout(tracker) == true
+                                            if (removed) {
+                                                _loginState.value = LoginState.IDLE
+                                                toastHost.show("Logged out of $displayName", ToastDuration.SHORT)
+                                            } else {
+                                                toastHost.show(
+                                                    "Could not clear $displayName credentials",
+                                                    ToastDuration.LONG,
+                                                    true,
+                                                )
+                                            }
                                         },
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
@@ -540,9 +548,17 @@ data class TrackerDetailScreen(
                                         Spacer(Modifier.height(24.dp))
                                         OutlinedButton(
                                             onClick = {
-                                                trackerManager?.logout(tracker)
-                                                _loginState.value = LoginState.IDLE
-                                                toastHost.show("Logged out of $displayName", ToastDuration.SHORT)
+                                                val removed = trackerManager?.logout(tracker) == true
+                                                if (removed) {
+                                                    _loginState.value = LoginState.IDLE
+                                                    toastHost.show("Logged out of $displayName", ToastDuration.SHORT)
+                                                } else {
+                                                    toastHost.show(
+                                                        "Could not clear $displayName credentials",
+                                                        ToastDuration.LONG,
+                                                        true,
+                                                    )
+                                                }
                                             },
                                             shape = RoundedCornerShape(8.dp),
                                             colors = ButtonDefaults.outlinedButtonColors(
