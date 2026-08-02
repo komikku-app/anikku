@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Refresh
@@ -36,10 +37,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,6 +60,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.backup.ImportResult
 import app.anikku.macos.platform.backup.MacOSBackupManager
+import app.anikku.macos.platform.sync.GoogleDriveConnectionState
+import app.anikku.macos.platform.sync.GoogleDriveFile
+import app.anikku.macos.platform.sync.LocalGoogleDriveService
 import app.anikku.macos.ui.components.HeadingItem
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
@@ -374,6 +380,10 @@ fun BackupRestorePanel(
 
         HorizontalDivider()
 
+        GoogleDriveBackupSection(onLocalBackupChanged = ::scanBackups)
+
+        HorizontalDivider()
+
         // ---- Import hint ----
         Column(
             modifier = Modifier
@@ -638,6 +648,237 @@ private fun BackupEntryCard(
 }
 
 // =============================================================================
+// Google Drive cloud backups
+// =============================================================================
+
+@Composable
+private fun GoogleDriveBackupSection(
+    onLocalBackupChanged: () -> Unit,
+) {
+    val service = LocalGoogleDriveService.current ?: return
+    val toastHost = LocalToastHost.current
+    val scope = rememberCoroutineScope()
+    val connectionState by service.connectionState.collectAsState()
+    val lastError by service.lastError.collectAsState()
+    var clientId by remember { mutableStateOf(service.savedClientId.orEmpty()) }
+    var cloudBackups by remember { mutableStateOf<List<GoogleDriveFile>>(emptyList()) }
+    var isWorking by remember { mutableStateOf(false) }
+    var restoreCandidate by remember { mutableStateOf<GoogleDriveFile?>(null) }
+    var deleteCandidate by remember { mutableStateOf<GoogleDriveFile?>(null) }
+
+    fun refreshCloudBackups() {
+        scope.launch {
+            isWorking = true
+            val result = withContext(Dispatchers.IO) { service.listBackups() }
+            isWorking = false
+            if (result.success) {
+                cloudBackups = result.value.orEmpty()
+            } else {
+                toastHost.show(result.error ?: "Could not load cloud backups", ToastDuration.LONG, true)
+            }
+        }
+    }
+
+    LaunchedEffect(connectionState) {
+        service.savedClientId?.let { clientId = it }
+        if (connectionState == GoogleDriveConnectionState.CONNECTED) refreshCloudBackups()
+        else cloudBackups = emptyList()
+    }
+
+    restoreCandidate?.let { backup ->
+        AlertDialog(
+            onDismissRequest = { restoreCandidate = null },
+            title = { Text("Restore Cloud Backup") },
+            text = {
+                Text("Download and restore \"${backup.name}\"? Current library and history entries may be replaced.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        restoreCandidate = null
+                        scope.launch {
+                            isWorking = true
+                            val result = withContext(Dispatchers.IO) { service.restoreBackup(backup) }
+                            isWorking = false
+                            if (result.success) {
+                                onLocalBackupChanged()
+                                val restored = result.value
+                                toastHost.show(
+                                    "Restored ${restored?.libraryCount ?: 0} library and ${restored?.historyCount ?: 0} history entries",
+                                    ToastDuration.LONG,
+                                )
+                            } else {
+                                toastHost.show(result.error ?: "Cloud restore failed", ToastDuration.LONG, true)
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                ) { Text("Restore") }
+            },
+            dismissButton = {
+                TextButton(onClick = { restoreCandidate = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    deleteCandidate?.let { backup ->
+        AlertDialog(
+            onDismissRequest = { deleteCandidate = null },
+            title = { Text("Delete Cloud Backup") },
+            text = { Text("Permanently delete \"${backup.name}\" from Google Drive?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        deleteCandidate = null
+                        scope.launch {
+                            isWorking = true
+                            val result = withContext(Dispatchers.IO) { service.deleteBackup(backup.id) }
+                            isWorking = false
+                            if (result.success) {
+                                toastHost.show("Cloud backup deleted", ToastDuration.SHORT)
+                                refreshCloudBackups()
+                            } else {
+                                toastHost.show(result.error ?: "Cloud delete failed", ToastDuration.LONG, true)
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteCandidate = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        HeadingItem("Google Drive")
+        Text(
+            "Cloud backups use the limited Drive file scope. OAuth tokens are stored in macOS Keychain.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (connectionState != GoogleDriveConnectionState.CONNECTED) {
+            OutlinedTextField(
+                value = clientId,
+                onValueChange = { clientId = it.trim() },
+                label = { Text("Google Desktop OAuth client ID") },
+                supportingText = { Text("Create a Desktop app credential with the Drive API enabled.") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isWorking && connectionState != GoogleDriveConnectionState.CONNECTING,
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        isWorking = true
+                        val result = withContext(Dispatchers.IO) { service.connect(clientId) }
+                        isWorking = false
+                        toastHost.show(
+                            if (result.success) "Google Drive connected" else result.error ?: "Connection failed",
+                            ToastDuration.LONG,
+                            isError = !result.success,
+                        )
+                    }
+                },
+                enabled = clientId.isNotBlank() && !isWorking &&
+                    connectionState != GoogleDriveConnectionState.CONNECTING,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (isWorking || connectionState == GoogleDriveConnectionState.CONNECTING) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text("Connect Google Drive")
+            }
+            if (!lastError.isNullOrBlank() && connectionState == GoogleDriveConnectionState.ERROR) {
+                Text(lastError.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isWorking = true
+                            val result = withContext(Dispatchers.IO) { service.uploadBackup() }
+                            isWorking = false
+                            if (result.success) {
+                                toastHost.show("Backup uploaded to Google Drive", ToastDuration.LONG)
+                                onLocalBackupChanged()
+                                refreshCloudBackups()
+                            } else {
+                                toastHost.show(result.error ?: "Upload failed", ToastDuration.LONG, true)
+                            }
+                        }
+                    },
+                    enabled = !isWorking,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Outlined.CloudUpload, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Upload Backup")
+                }
+                OutlinedButton(onClick = ::refreshCloudBackups, enabled = !isWorking) {
+                    Icon(Icons.Outlined.Refresh, contentDescription = "Refresh cloud backups")
+                }
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) { service.disconnect() }
+                            toastHost.show(
+                                if (result.success) "Google Drive disconnected" else result.error ?: "Disconnect failed",
+                                ToastDuration.SHORT,
+                                isError = !result.success,
+                            )
+                        }
+                    },
+                    enabled = !isWorking,
+                ) { Text("Disconnect") }
+            }
+
+            if (isWorking) {
+                CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally).size(24.dp), strokeWidth = 2.dp)
+            } else if (cloudBackups.isEmpty()) {
+                Text("No cloud backups yet.", style = MaterialTheme.typography.bodySmall)
+            } else {
+                cloudBackups.forEach { backup ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(backup.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    formatFileSize(backup.size),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { deleteCandidate = backup }) {
+                                Icon(Icons.Outlined.Delete, contentDescription = "Delete cloud backup")
+                            }
+                            Button(onClick = { restoreCandidate = backup }) {
+                                Icon(Icons.Outlined.Download, contentDescription = null, Modifier.size(16.dp))
+                                Spacer(Modifier.width(5.dp))
+                                Text("Restore")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
 // Count chip helper
 // =============================================================================
 
@@ -661,4 +902,10 @@ private fun CountChip(
             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
         )
     }
+}
+
+private fun formatFileSize(sizeBytes: Long): String = when {
+    sizeBytes < 1_024 -> "$sizeBytes B"
+    sizeBytes < 1_048_576 -> "%.1f KB".format(Locale.US, sizeBytes / 1_024.0)
+    else -> "%.1f MB".format(Locale.US, sizeBytes / 1_048_576.0)
 }

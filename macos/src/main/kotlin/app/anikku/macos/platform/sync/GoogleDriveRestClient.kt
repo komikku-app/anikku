@@ -3,14 +3,25 @@ package app.anikku.macos.platform.sync
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
@@ -72,7 +83,7 @@ class GoogleDriveRestClient(
      * Set the access token for API requests.
      */
     fun authenticate(token: String) {
-        accessToken = token
+        accessToken = token.trim().takeIf(String::isNotEmpty)
     }
 
     /**
@@ -98,39 +109,43 @@ class GoogleDriveRestClient(
     fun exchangeCode(
         code: String,
         clientId: String,
-        clientSecret: String,
+        clientSecret: String = "",
         redirectUri: String,
+        codeVerifier: String? = null,
     ): GoogleTokenResponse? {
         return try {
-            val requestBody = buildString {
-                append("code=").append(code)
-                append("&client_id=").append(clientId)
-                append("&client_secret=").append(clientSecret)
-                append("&redirect_uri=").append(redirectUri)
-                append("&grant_type=authorization_code")
-            }
+            val form = FormBody.Builder()
+                .add("code", code)
+                .add("client_id", clientId)
+                .add("redirect_uri", redirectUri)
+                .add("grant_type", "authorization_code")
+                .apply {
+                    if (clientSecret.isNotBlank()) add("client_secret", clientSecret)
+                    if (!codeVerifier.isNullOrBlank()) add("code_verifier", codeVerifier)
+                }
+                .build()
 
             val request = Request.Builder()
                 .url(oauthTokenUrl)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .post(requestBody.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
+                .post(form)
                 .build()
 
-            val response = client.newCall(request).execute()
-            val bodyString = response.body?.string() ?: return null
+            client.newCall(request).execute().use { response ->
+                val bodyString = response.body?.string() ?: return null
 
-            if (!response.isSuccessful) {
-                logger.warn { "Google token exchange failed: ${response.code} $bodyString" }
-                return null
+                if (!response.isSuccessful) {
+                    logger.warn { "Google token exchange failed: ${response.code} ${bodyString.take(200)}" }
+                    return null
+                }
+
+                val jsonObj = json.parseToJsonElement(bodyString).jsonObject
+                GoogleTokenResponse(
+                    accessToken = jsonObj["access_token"]?.jsonPrimitive?.content ?: return null,
+                    refreshToken = jsonObj["refresh_token"]?.jsonPrimitive?.content ?: "",
+                    expiresIn = jsonObj["expires_in"]?.jsonPrimitive?.content?.toLongOrNull() ?: 3600,
+                    scope = jsonObj["scope"]?.jsonPrimitive?.content ?: "",
+                )
             }
-
-            val jsonObj = json.parseToJsonElement(bodyString).jsonObject
-            GoogleTokenResponse(
-                accessToken = jsonObj["access_token"]?.jsonPrimitive?.content ?: return null,
-                refreshToken = jsonObj["refresh_token"]?.jsonPrimitive?.content ?: "",
-                expiresIn = jsonObj["expires_in"]?.jsonPrimitive?.content?.toLongOrNull() ?: 3600,
-                scope = jsonObj["scope"]?.jsonPrimitive?.content ?: "",
-            )
         } catch (e: Exception) {
             logger.error(e) { "Google token exchange failed" }
             null
@@ -143,34 +158,34 @@ class GoogleDriveRestClient(
     fun refreshAccessToken(
         refreshToken: String,
         clientId: String,
-        clientSecret: String,
+        clientSecret: String = "",
     ): GoogleTokenResponse? {
         return try {
-            val requestBody = buildString {
-                append("refresh_token=").append(refreshToken)
-                append("&client_id=").append(clientId)
-                append("&client_secret=").append(clientSecret)
-                append("&grant_type=refresh_token")
-            }
+            val form = FormBody.Builder()
+                .add("refresh_token", refreshToken)
+                .add("client_id", clientId)
+                .add("grant_type", "refresh_token")
+                .apply { if (clientSecret.isNotBlank()) add("client_secret", clientSecret) }
+                .build()
 
             val request = Request.Builder()
                 .url(oauthTokenUrl)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .post(requestBody.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
+                .post(form)
                 .build()
 
-            val response = client.newCall(request).execute()
-            val bodyString = response.body?.string() ?: return null
+            client.newCall(request).execute().use { response ->
+                val bodyString = response.body?.string() ?: return null
 
-            if (!response.isSuccessful) return null
+                if (!response.isSuccessful) return null
 
-            val jsonObj = json.parseToJsonElement(bodyString).jsonObject
-            GoogleTokenResponse(
-                accessToken = jsonObj["access_token"]?.jsonPrimitive?.content ?: return null,
-                refreshToken = refreshToken,
-                expiresIn = jsonObj["expires_in"]?.jsonPrimitive?.content?.toLongOrNull() ?: 3600,
-                scope = "",
-            )
+                val jsonObj = json.parseToJsonElement(bodyString).jsonObject
+                GoogleTokenResponse(
+                    accessToken = jsonObj["access_token"]?.jsonPrimitive?.content ?: return null,
+                    refreshToken = refreshToken,
+                    expiresIn = jsonObj["expires_in"]?.jsonPrimitive?.content?.toLongOrNull() ?: 3600,
+                    scope = "",
+                )
+            }
         } catch (e: Exception) {
             logger.error(e) { "Google token refresh failed" }
             null
@@ -198,13 +213,13 @@ class GoogleDriveRestClient(
 
         return try {
             // Step 1: Resumable upload session
-            val metadata = buildString {
-                append("{\"name\": \"${file.name}\"")
-                if (parentFolderId != null) {
-                    append(", \"parents\": [\"$parentFolderId\"]")
+            if (!file.isFile) return null
+            val metadata = buildJsonObject {
+                put("name", file.name)
+                if (!parentFolderId.isNullOrBlank()) {
+                    put("parents", JsonArray(listOf(JsonPrimitive(parentFolderId))))
                 }
-                append("}")
-            }
+            }.toString()
 
             val initRequest = Request.Builder()
                 .url("$uploadApiBase/files?uploadType=resumable")
@@ -215,26 +230,32 @@ class GoogleDriveRestClient(
                 .post(metadata.toRequestBody("application/json".toMediaType()))
                 .build()
 
-            val initResponse = client.newCall(initRequest).execute()
-            val uploadUrl = initResponse.header("Location") ?: return null
+            val uploadUrl = client.newCall(initRequest).execute().use { response ->
+                if (!response.isSuccessful) {
+                    logger.warn { "Upload session creation failed: ${response.code}" }
+                    return null
+                }
+                response.header("Location") ?: return null
+            }
 
             // Step 2: Upload the file content
             val uploadRequest = Request.Builder()
                 .url(uploadUrl)
                 .header("Content-Type", mimeType)
-                .put(file.readBytes().toRequestBody(mimeType.toMediaType()))
+                .put(file.asRequestBody(mimeType.toMediaType()))
                 .build()
 
-            val uploadResponse = client.newCall(uploadRequest).execute()
-            val bodyString = uploadResponse.body?.string() ?: return null
+            client.newCall(uploadRequest).execute().use { uploadResponse ->
+                val bodyString = uploadResponse.body?.string() ?: return null
 
-            if (!uploadResponse.isSuccessful) {
-                logger.warn { "Upload failed: ${uploadResponse.code} $bodyString" }
-                return null
+                if (!uploadResponse.isSuccessful) {
+                    logger.warn { "Upload failed: ${uploadResponse.code} ${bodyString.take(200)}" }
+                    return null
+                }
+
+                val jsonObj = json.parseToJsonElement(bodyString).jsonObject
+                jsonObj["id"]?.jsonPrimitive?.content
             }
-
-            val jsonObj = json.parseToJsonElement(bodyString).jsonObject
-            jsonObj["id"]?.jsonPrimitive?.content
         } catch (e: Exception) {
             logger.error(e) { "Failed to upload file to Google Drive" }
             null
@@ -252,25 +273,38 @@ class GoogleDriveRestClient(
         val token = accessToken ?: return false
 
         return try {
+            require(fileId.matches(Regex("[A-Za-z0-9_-]{1,256}"))) { "Invalid Google Drive file ID" }
             val request = Request.Builder()
                 .url("$driveApiBase/files/$fileId?alt=media")
                 .header("Authorization", "Bearer $token")
                 .build()
 
-            val response = client.newCall(request).execute()
-
-            if (!response.isSuccessful) {
-                logger.warn { "Download failed: ${response.code}" }
-                return false
-            }
-
-            destination.parentFile?.mkdirs()
-            response.body?.byteStream()?.use { input ->
-                destination.outputStream().use { output ->
-                    input.copyTo(output)
+            val parent = destination.absoluteFile.parentFile ?: return false
+            if (!parent.exists() && !parent.mkdirs()) return false
+            val temporary = File(parent, ".${destination.name}.part-${UUID.randomUUID()}")
+            try {
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        logger.warn { "Download failed: ${response.code}" }
+                        return false
+                    }
+                    val body = response.body ?: return false
+                    temporary.outputStream().use { output -> body.byteStream().use { it.copyTo(output) } }
                 }
+                runCatching {
+                    Files.move(
+                        temporary.toPath(),
+                        destination.toPath(),
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING,
+                    )
+                }.recoverCatching {
+                    Files.move(temporary.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                }.getOrThrow()
+                true
+            } finally {
+                Files.deleteIfExists(temporary.toPath())
             }
-            true
         } catch (e: Exception) {
             logger.error(e) { "Failed to download file from Google Drive" }
             false
@@ -284,14 +318,14 @@ class GoogleDriveRestClient(
         val token = accessToken ?: return false
 
         return try {
+            require(fileId.matches(Regex("[A-Za-z0-9_-]{1,256}"))) { "Invalid Google Drive file ID" }
             val request = Request.Builder()
                 .url("$driveApiBase/files/$fileId")
                 .header("Authorization", "Bearer $token")
                 .delete()
                 .build()
 
-            val response = client.newCall(request).execute()
-            response.isSuccessful
+            client.newCall(request).execute().use { it.isSuccessful }
         } catch (e: Exception) {
             logger.error(e) { "Failed to delete file from Google Drive" }
             false
@@ -316,32 +350,38 @@ class GoogleDriveRestClient(
             if (query != null) {
                 queryParts.add(query)
             }
-            val q = if (queryParts.isNotEmpty()) {
-                "&q=${java.net.URLEncoder.encode(queryParts.joinToString(" and "), "UTF-8")}"
-            } else ""
+            val url = "$driveApiBase/files".toHttpUrl().newBuilder()
+                .addQueryParameter("fields", "files(id,name,mimeType,size,modifiedTime,createdTime)")
+                .apply {
+                    if (queryParts.isNotEmpty()) addQueryParameter("q", queryParts.joinToString(" and "))
+                }
+                .build()
 
             val request = Request.Builder()
-                .url("$driveApiBase/files?fields=files(id,name,mimeType,size,modifiedTime,createdTime)$q")
+                .url(url)
                 .header("Authorization", "Bearer $token")
                 .build()
 
-            val response = client.newCall(request).execute()
-            val bodyString = response.body?.string() ?: return emptyList()
+            client.newCall(request).execute().use { response ->
+                val bodyString = response.body?.string() ?: return emptyList()
 
-            if (!response.isSuccessful) return emptyList()
+                if (!response.isSuccessful) return emptyList()
 
-            val jsonObj = json.parseToJsonElement(bodyString).jsonObject
-            jsonObj["files"]?.jsonArray?.map { element ->
-                val file = element.jsonObject
-                GoogleDriveFile(
-                    id = file["id"]?.jsonPrimitive?.content ?: "",
-                    name = file["name"]?.jsonPrimitive?.content ?: "",
-                    mimeType = file["mimeType"]?.jsonPrimitive?.content ?: "",
-                    size = file["size"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0L,
-                    modifiedTime = file["modifiedTime"]?.jsonPrimitive?.content ?: "",
-                    createdTime = file["createdTime"]?.jsonPrimitive?.content ?: "",
-                )
-            } ?: emptyList()
+                val jsonObj = json.parseToJsonElement(bodyString).jsonObject
+                jsonObj["files"]?.jsonArray?.mapNotNull { element ->
+                    val file = element.jsonObject
+                    val id = file["id"]?.jsonPrimitive?.content.orEmpty()
+                    if (id.isBlank()) return@mapNotNull null
+                    GoogleDriveFile(
+                        id = id,
+                        name = file["name"]?.jsonPrimitive?.content ?: "",
+                        mimeType = file["mimeType"]?.jsonPrimitive?.content ?: "",
+                        size = file["size"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0L,
+                        modifiedTime = file["modifiedTime"]?.jsonPrimitive?.content ?: "",
+                        createdTime = file["createdTime"]?.jsonPrimitive?.content ?: "",
+                    )
+                } ?: emptyList()
+            }
         } catch (e: Exception) {
             logger.error(e) { "Failed to list files" }
             emptyList()
@@ -357,14 +397,18 @@ class GoogleDriveRestClient(
         val token = accessToken ?: return null
 
         // Check if the folder already exists
-        val existingFolders = listFiles(query = "name='$APP_FOLDER_NAME' and mimeType='$MIME_FOLDER' and trashed=false")
+        val safeFolderName = APP_FOLDER_NAME.replace("'", "\\'")
+        val existingFolders = listFiles(query = "name='$safeFolderName' and mimeType='$MIME_FOLDER' and trashed=false")
         if (existingFolders.isNotEmpty()) {
             return existingFolders.first().id
         }
 
         // Create the folder
         return try {
-            val metadata = """{"name": "$APP_FOLDER_NAME", "mimeType": "$MIME_FOLDER"}"""
+            val metadata = buildJsonObject {
+                put("name", APP_FOLDER_NAME)
+                put("mimeType", MIME_FOLDER)
+            }.toString()
 
             val request = Request.Builder()
                 .url("$driveApiBase/files")
@@ -373,13 +417,14 @@ class GoogleDriveRestClient(
                 .post(metadata.toRequestBody("application/json".toMediaType()))
                 .build()
 
-            val response = client.newCall(request).execute()
-            val bodyString = response.body?.string() ?: return null
+            client.newCall(request).execute().use { response ->
+                val bodyString = response.body?.string() ?: return null
 
-            if (!response.isSuccessful) return null
+                if (!response.isSuccessful) return null
 
-            val jsonObj = json.parseToJsonElement(bodyString).jsonObject
-            jsonObj["id"]?.jsonPrimitive?.content
+                val jsonObj = json.parseToJsonElement(bodyString).jsonObject
+                jsonObj["id"]?.jsonPrimitive?.content
+            }
         } catch (e: Exception) {
             logger.error(e) { "Failed to create backup folder" }
             null

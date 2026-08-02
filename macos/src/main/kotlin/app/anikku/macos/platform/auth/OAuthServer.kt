@@ -205,7 +205,14 @@ class OAuthServer(
 
         logger.info { "OAuth callback received with params: ${params.keys}" }
 
-        callbackFuture?.complete(params)
+        // NanoHTTPD writes the returned response after serve() completes. If
+        // the waiting OAuth coroutine stops the server immediately, the socket
+        // can close before the browser receives this completion page. Delay
+        // future completion briefly so the response is handed back first.
+        val future = callbackFuture
+        CompletableFuture.delayedExecutor(100, TimeUnit.MILLISECONDS).execute {
+            future?.complete(params)
+        }
 
         // Return a friendly "you can close this tab" HTML page
         return newFixedLengthResponse(

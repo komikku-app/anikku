@@ -26,6 +26,8 @@ import app.anikku.macos.platform.security.MacOSBiometricAuth
 import app.anikku.macos.platform.security.MacOSKeychain
 import app.anikku.macos.platform.storage.MacOSStorageManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
+import app.anikku.macos.platform.sync.GoogleDriveRestClient
+import app.anikku.macos.platform.sync.MacOSGoogleDriveService
 import app.anikku.macos.platform.update.AppUpdateChecker
 import app.anikku.macos.platform.update.SparkleUpdater
 import kotlinx.coroutines.CoroutineScope
@@ -76,6 +78,7 @@ class AnikkuApplication {
 
     // Phase 7: Advanced Features
     val discordRPC: DiscordRPC
+    val googleDriveService: MacOSGoogleDriveService
     val notificationManager: MacOSNotificationManager
     val biometricAuth: MacOSBiometricAuth
     val appUpdateChecker: AppUpdateChecker
@@ -153,6 +156,18 @@ class AnikkuApplication {
         // 9. Initialize Phase 7: Advanced Features
         // 9a. Discord Rich Presence
         discordRPC = DiscordRPC(applicationScope)
+
+        // 9a.2 Google Drive backups. Tokens remain exclusively in Keychain;
+        // session restoration runs off the UI thread below.
+        googleDriveService = MacOSGoogleDriveService(
+            driveClient = GoogleDriveRestClient(networkHelper.client),
+            backupManager = backupManager,
+            backupsDirectory = storageProvider.backupsDirectory,
+            secretStore = MacOSKeychain(service = "anikku-google-drive", account = "oauth"),
+        )
+        backgroundScheduler.runOnce("restore-google-drive-session") {
+            googleDriveService.restoreSession()
+        }
 
         // 9b. macOS Notifications
         notificationManager = MacOSNotificationManager()

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.nio.file.Files
 
 class GoogleDriveRestClientTest {
 
@@ -77,6 +78,9 @@ class GoogleDriveRestClientTest {
         assertNotNull(token)
         assertEquals("ya29.test_access", token?.accessToken)
         assertEquals("1//test_refresh", token?.refreshToken)
+        val request = mockServer.takeRequest()
+        assertEquals("/oauth2/token", request.path)
+        assertTrue(request.body.readUtf8().contains("code=4%2F0_test_code"))
     }
 
     @Test
@@ -142,5 +146,76 @@ class GoogleDriveRestClientTest {
 
         val folderId = client.getOrCreateBackupFolder()
         assertEquals("backup_folder_id", folderId)
+    }
+
+    @Test
+    fun `PKCE exchange sends verifier and omits empty desktop client secret`() {
+        mockServer.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"access_token":"access","refresh_token":"refresh","expires_in":3600}""",
+            ),
+        )
+
+        assertNotNull(
+            client.exchangeCode(
+                code = "code with symbols/+",
+                clientId = "desktop.apps.googleusercontent.com",
+                redirectUri = "http://127.0.0.1:54321/oauth/google-drive",
+                codeVerifier = "verifier_-~.123",
+            ),
+        )
+
+        val body = mockServer.takeRequest().body.readUtf8()
+        val decodedBody = java.net.URLDecoder.decode(body, Charsets.UTF_8)
+        assertTrue(decodedBody.contains("code=code with symbols/+"))
+        assertTrue(decodedBody.contains("code_verifier=verifier_-~.123"))
+        assertFalse(body.contains("client_secret"))
+    }
+
+    @Test
+    fun `upload streams file through resumable session with escaped metadata`() {
+        client.authenticate("test_token")
+        val file = Files.createTempFile("drive-quote-\"", ".json").toFile().apply {
+            writeText("payload")
+            deleteOnExit()
+        }
+        mockServer.enqueue(
+            MockResponse().setResponseCode(200).addHeader("Location", mockServer.url("/upload-session")),
+        )
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"id":"uploaded-id"}"""))
+
+        assertEquals("uploaded-id", client.uploadFile(file, "application/json", "folder-id"))
+
+        val session = mockServer.takeRequest()
+        assertEquals("Bearer test_token", session.getHeader("Authorization"))
+        assertTrue(session.body.readUtf8().contains("\\\""), "Filename must be JSON escaped")
+        val upload = mockServer.takeRequest()
+        assertEquals("payload", upload.body.readUtf8())
+    }
+
+    @Test
+    fun `failed download preserves destination and removes partial file`() {
+        client.authenticate("test_token")
+        val directory = Files.createTempDirectory("drive-download-").toFile().apply { deleteOnExit() }
+        val destination = File(directory, "backup.json").apply { writeText("existing") }
+        mockServer.enqueue(MockResponse().setResponseCode(500).setBody("partial"))
+
+        assertFalse(client.downloadFile("valid_file-id", destination))
+        assertEquals("existing", destination.readText())
+        assertTrue(directory.listFiles().orEmpty().none { it.name.contains(".part-") })
+
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("replacement"))
+        assertTrue(client.downloadFile("valid_file-id", destination))
+        assertEquals("replacement", destination.readText())
+    }
+
+    @Test
+    fun `invalid Drive file identifiers are rejected before network access`() {
+        client.authenticate("test_token")
+        val destination = Files.createTempFile("drive-invalid-", ".json").toFile()
+
+        assertFalse(client.downloadFile("../../escape", destination))
+        assertFalse(client.deleteFile("bad/id"))
+        assertEquals(0, mockServer.requestCount)
     }
 }

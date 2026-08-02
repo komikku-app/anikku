@@ -40,6 +40,7 @@ import app.anikku.macos.platform.auth.TrackerTokenStore
 import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.security.MacOSKeychain
 import app.anikku.macos.platform.discord.LocalDiscordRPC
+import app.anikku.macos.platform.sync.LocalGoogleDriveService
 import app.anikku.macos.platform.network.ProxyConfig
 import app.anikku.macos.platform.network.ProxyType
 import app.anikku.macos.ui.components.ToastDuration
@@ -312,6 +313,7 @@ fun main() = application {
             LocalToastHost provides toastHostState,
             LocalTrackerManager provides trackerManager,
             LocalDiscordRPC provides app.discordRPC,
+            LocalGoogleDriveService provides app.googleDriveService,
         ) {
             AnikkuTheme(
                 theme = settingsState.theme,
