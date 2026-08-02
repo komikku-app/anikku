@@ -80,8 +80,8 @@ class PlayerPreferences(
     // Hardware & Performance
     // -------------------------------------------------------------------------
 
-    /** Hardware decoding preference (videotoolbox, auto, no). */
-    val hardwareDecoding = store.getString("player_hardware_decoding", "videotoolbox")
+    /** Hardware decoding preference (safe copy mode supports the software render API). */
+    val hardwareDecoding = store.getString("player_hardware_decoding", "auto-copy-safe")
 
     /** Cache size in MB. */
     val cacheSize = store.getInt("player_cache_size", 150)

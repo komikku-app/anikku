@@ -185,12 +185,12 @@ fun AnimeGrid(
     items: List<AnimeModel>,
     onClick: (AnimeModel) -> Unit,
     modifier: Modifier = Modifier,
-    columns: Int = 3,
+    minCardWidth: androidx.compose.ui.unit.Dp = 150.dp,
     getSubtitle: ((AnimeModel) -> String?)? = null,
     getBadge: (@Composable RowScope.(AnimeModel) -> Unit)? = null,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GridCells.Adaptive(minSize = minCardWidth),
         modifier = modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),

@@ -57,8 +57,8 @@ class PlayerPreferencesTest {
     }
 
     @Test
-    fun `default hardware decoding is videotoolbox`() {
-        assertEquals("videotoolbox", prefs.hardwareDecoding.get())
+    fun `default hardware decoding uses safe copy mode`() {
+        assertEquals("auto-copy-safe", prefs.hardwareDecoding.get())
     }
 
     @Test

@@ -60,12 +60,24 @@ import app.anikku.macos.ui.theme.AnikkuTheme
 
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
+import coil3.disk.DiskCache
+import coil3.disk.directory
+import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Frame
 import java.awt.event.WindowAdapter
+
+internal const val IMAGE_MEMORY_CACHE_BYTES = 256L * 1024L * 1024L
+internal const val IMAGE_DISK_CACHE_BYTES = 512L * 1024L * 1024L
+
+internal fun imageDiskCacheDirectory(userHome: String = System.getProperty("user.home")): java.io.File =
+    java.io.File(
+        userHome,
+        "Library${java.io.File.separator}Application Support${java.io.File.separator}Anikku${java.io.File.separator}cache${java.io.File.separator}images",
+    )
 
 /**
  * Anikku macOS — Entry Point.
@@ -82,6 +94,17 @@ import java.awt.event.WindowAdapter
 fun main() = application {
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizeBytes(IMAGE_MEMORY_CACHE_BYTES)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(imageDiskCacheDirectory())
+                    .maxSizeBytes(IMAGE_DISK_CACHE_BYTES)
+                    .build()
+            }
             .components {
                 add(OkHttpNetworkFetcherFactory())
             }

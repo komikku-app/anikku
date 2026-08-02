@@ -210,7 +210,7 @@ class PlayerViewModel(
                 CrashReporter.logEvent("MPV init failed", "mpv_initialize returned $initResult")
                 return false
             }
-            logger.info { "🚀 MPV_CORE: mpv initialized successfully (vo=libmpv, hwdec=no — SW renderer)" }
+            logger.info { "🚀 MPV_CORE: mpv initialized successfully (vo=libmpv, hwdec=auto-copy-safe)" }
 
             // Create software render context
             val renderer = MPVSoftwareRenderer(handle)
@@ -440,13 +440,11 @@ class PlayerViewModel(
         var allOk = true
         val criticalOptions = listOf(
             "vo" to "libmpv",
-            "hwdec" to "no",
-            // CRITICAL: hwdec MUST be "no" when using MPV_RENDER_API_TYPE_SW (software renderer).
-            // VideoToolbox hardware decoding (videotoolbox-copy, videotoolbox) produces GPU-backed
-            // CVPixelBuffers that the SW render API cannot access — mpv_render_context_render() fails
-            // silently, resulting in black video with working audio. Software decoding via FFmpeg/lavc
-            // works reliably with the SW renderer and is more than sufficient for anime streams.
-            // See: https://mpv.io/manual/stable/#options-hwdec
+            // Copy-mode hardware decoding returns decoded frames to system RAM,
+            // which is compatible with MPV_RENDER_API_TYPE_SW. mpv automatically
+            // falls back to software decoding when no safe copy decoder supports
+            // the stream.
+            "hwdec" to "auto-copy-safe",
             "cache" to "yes",
             "cache-secs" to "30",
             "demuxer-max-bytes" to "150M",

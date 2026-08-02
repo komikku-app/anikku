@@ -143,6 +143,7 @@ val slowValidationTests = listOf(
     "**/ExtensionCompatibilityTest.class",
     "**/StreamingEndToEndTest.class",
     "**/MPVPlaybackTest.class",
+    "**/MPVHighBitratePerformanceTest.class",
     "**/MPVRenderExperiment.class",
 )
 
@@ -163,6 +164,17 @@ tasks.register("quickCheck") {
     description = "Compile the app, run deterministic tests, and validate updater configuration"
     group = "verification"
     dependsOn("quickTest", "validateSparkleConfiguration", "validateTorrServerConfiguration")
+}
+
+tasks.register<Test>("performancePlaybackTest") {
+    description = "Generate and play a high-bitrate file while checking seek and heap bounds"
+    group = "verification"
+    dependsOn("buildTestExtensionJar")
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    include("**/MPVHighBitratePerformanceTest.class")
+    testLogging { events("passed", "failed", "skipped") }
 }
 
 // ---- Extension Build Tasks ------------------------------------------------

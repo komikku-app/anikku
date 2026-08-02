@@ -20,11 +20,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.data.CATEGORY_DEFAULT_ID
@@ -87,9 +89,11 @@ object LibraryTab : AnikkuScreen(), Tab {
         var showSortMenu by remember { mutableStateOf(false) }
         var selectedCategoryId by remember { mutableStateOf<Long?>(null) } // null = All
 
-        // Read library entries and categories
-        val libraryEntries = remember { libraryRepo.getAll() }
-        val categories = remember { libraryRepo.getCategories() }
+        // Observe repository mutations from favorites, restore, and background
+        // updates instead of retaining a one-time snapshot for the tab's life.
+        val libraryRevision by libraryRepo.revision.collectAsState()
+        val libraryEntries = remember(libraryRevision) { libraryRepo.getAll() }
+        val categories = remember(libraryRevision) { libraryRepo.getCategories() }
 
         val allAnime = remember(libraryEntries) {
             libraryEntries.map { entry ->
@@ -179,7 +183,7 @@ object LibraryTab : AnikkuScreen(), Tab {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LibraryContent(
+internal fun LibraryContent(
     libraryAnime: List<AnimeModel>,
     categories: List<CategoryEntry> = emptyList(),
     selectedCategoryId: Long? = null,
@@ -206,7 +210,7 @@ private fun LibraryContent(
                     Box {
                         IconButton(onClick = onToggleSortMenu) {
                             Icon(
-                                imageVector = Icons.Outlined.Sort,
+                                imageVector = Icons.AutoMirrored.Outlined.Sort,
                                 contentDescription = "Sort",
                             )
                         }
@@ -219,7 +223,7 @@ private fun LibraryContent(
                                 onClick = { onSortModeChange(LibraryTab.SortMode.Title); onDismissSortMenu() },
                                 leadingIcon = {
                                     if (sortMode == LibraryTab.SortMode.Title)
-                                        Icon(Icons.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                                 },
                             )
                             DropdownMenuItem(
@@ -227,7 +231,7 @@ private fun LibraryContent(
                                 onClick = { onSortModeChange(LibraryTab.SortMode.Status); onDismissSortMenu() },
                                 leadingIcon = {
                                     if (sortMode == LibraryTab.SortMode.Status)
-                                        Icon(Icons.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                                 },
                             )
                             DropdownMenuItem(
@@ -235,7 +239,7 @@ private fun LibraryContent(
                                 onClick = { onSortModeChange(LibraryTab.SortMode.LastUpdated); onDismissSortMenu() },
                                 leadingIcon = {
                                     if (sortMode == LibraryTab.SortMode.LastUpdated)
-                                        Icon(Icons.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                                 },
                             )
                         }
@@ -352,7 +356,7 @@ private fun LibraryContent(
                             AnimeGrid(
                                 items = libraryAnime,
                                 onClick = onAnimeClick,
-                                columns = 3,
+                                modifier = Modifier.testTag("library_grid"),
                                 getSubtitle = { anime ->
                                     when (anime.status) {
                                         1 -> "Ongoing"
@@ -370,6 +374,7 @@ private fun LibraryContent(
                             AnimeList(
                                 items = libraryAnime,
                                 onClick = onAnimeClick,
+                                modifier = Modifier.testTag("library_list"),
                                 getSubtitle = { anime ->
                                     when (anime.status) {
                                         1 -> "Ongoing"
