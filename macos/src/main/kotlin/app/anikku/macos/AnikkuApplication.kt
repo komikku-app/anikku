@@ -4,6 +4,7 @@ import app.anikku.macos.di.appModule
 import app.anikku.macos.di.domainModule
 import app.anikku.macos.di.platformModule
 import app.anikku.macos.platform.BackgroundTaskScheduler
+import app.anikku.macos.platform.MacOSBackgroundJobs
 import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.data.HistoryRepository
@@ -17,6 +18,7 @@ import app.anikku.macos.platform.logging.CrashReporter
 import app.anikku.macos.platform.logging.MacOSLogger
 import app.anikku.macos.platform.logging.TerminalErrorLogger
 import app.anikku.macos.platform.logging.UIActionLogger
+import app.anikku.macos.platform.library.MacOSLibraryUpdateService
 import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.network.MacOSCookieJar
 import app.anikku.macos.platform.network.MacOSNetworkHelper
@@ -68,6 +70,7 @@ class AnikkuApplication {
     val historyRepository: HistoryRepository
     val downloadRepository: DownloadRepository
     val backupManager: MacOSBackupManager
+    val libraryUpdateService: MacOSLibraryUpdateService
 
     // Phase 3: Networking
     val networkHelper: MacOSNetworkHelper
@@ -79,6 +82,7 @@ class AnikkuApplication {
     // Phase 7: Advanced Features
     val discordRPC: DiscordRPC
     val googleDriveService: MacOSGoogleDriveService
+    val backgroundJobs: MacOSBackgroundJobs
     val notificationManager: MacOSNotificationManager
     val biometricAuth: MacOSBiometricAuth
     val appUpdateChecker: AppUpdateChecker
@@ -152,6 +156,11 @@ class AnikkuApplication {
             downloadRepository = downloadRepository,
             preferenceStore = preferenceStore,
         )
+        libraryUpdateService = MacOSLibraryUpdateService(
+            libraryRepository = libraryRepository,
+            historyRepository = historyRepository,
+            sourceResolver = extensionManager::getSource,
+        )
 
         // 9. Initialize Phase 7: Advanced Features
         // 9a. Discord Rich Presence
@@ -172,6 +181,16 @@ class AnikkuApplication {
         // 9b. macOS Notifications
         notificationManager = MacOSNotificationManager()
         notificationManager.initialize()
+
+        backgroundJobs = MacOSBackgroundJobs(
+            scheduler = backgroundScheduler,
+            backupManager = backupManager,
+            automaticBackupsDirectory = File(storageProvider.backupsDirectory, "automatic"),
+            libraryUpdateService = libraryUpdateService,
+            googleDriveService = googleDriveService,
+            notificationManager = notificationManager,
+            preferenceStore = preferenceStore,
+        )
 
         // 9c. Biometric Authentication (Touch ID + PIN fallback)
         biometricAuth = MacOSBiometricAuth(
@@ -280,11 +299,14 @@ class AnikkuApplication {
      * Equivalent to onStart() in Android lifecycle.
      * Triggers Discord RPC reconnection and sync operations.
      */
-    fun onAppFocused() {
+    fun onAppFocused(enableDiscord: Boolean = true) {
         // Phase 7.3: Discord Rich Presence — connect on app focus
-        if (discordRPC.isDiscordInstalled) {
+        if (enableDiscord && discordRPC.isDiscordInstalled) {
             discordRPC.start()
+        } else if (!enableDiscord) {
+            discordRPC.stop()
         }
+        backgroundJobs.onAppFocused()
     }
 
     /**

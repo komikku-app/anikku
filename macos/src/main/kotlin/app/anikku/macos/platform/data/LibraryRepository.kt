@@ -6,6 +6,9 @@ import kotlinx.serialization.json.Json
 import app.anikku.macos.platform.storage.MacOSAtomicFile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 private val libraryLogger = KotlinLogging.logger {}
 
@@ -70,6 +73,9 @@ class LibraryRepository(private val dataDir: File) {
         val categoryId: Long = CATEGORY_DEFAULT_ID,
         val lastSecondSeen: Long = 0L,
         val totalSeconds: Long = 0L,
+        val latestEpisodeNumber: Double = 0.0,
+        val latestEpisodeName: String? = null,
+        val unseenEpisodeCount: Int = 0,
         val addedAt: Long = System.currentTimeMillis(),
         val lastUpdatedAt: Long = System.currentTimeMillis(),
     )
@@ -77,6 +83,8 @@ class LibraryRepository(private val dataDir: File) {
     private val lock = Any()
     private var categories: MutableList<CategoryEntry> = loadCategoriesFromFile()
     private var entries: MutableList<LibraryEntry> = loadFromFile()
+    private val _revision = MutableStateFlow(0L)
+    val revision: StateFlow<Long> = _revision.asStateFlow()
 
     init {
         // Seed default categories on first run
@@ -90,10 +98,13 @@ class LibraryRepository(private val dataDir: File) {
     // Entry CRUD
     // -----------------------------------------------------------------------
 
+    @Synchronized
     fun getAll(): List<LibraryEntry> = entries.toList()
 
+    @Synchronized
     fun get(animeId: Long): LibraryEntry? = entries.find { it.animeId == animeId }
 
+    @Synchronized
     fun isInLibrary(animeId: Long): Boolean = entries.any { it.animeId == animeId }
 
     @Synchronized
@@ -107,12 +118,16 @@ class LibraryRepository(private val dataDir: File) {
             entries.add(entry)
         }
         saveToFile()
+        _revision.value++
     }
 
     @Synchronized
     fun remove(animeId: Long): Boolean {
         val removed = entries.removeAll { it.animeId == animeId }
-        if (removed) saveToFile()
+        if (removed) {
+            saveToFile()
+            _revision.value++
+        }
         return removed
     }
 
@@ -141,6 +156,7 @@ class LibraryRepository(private val dataDir: File) {
                 lastUpdatedAt = System.currentTimeMillis(),
             )
             saveToFile()
+            _revision.value++
         }
     }
 
@@ -156,6 +172,7 @@ class LibraryRepository(private val dataDir: File) {
                 lastUpdatedAt = System.currentTimeMillis(),
             )
             saveToFile()
+            _revision.value++
         }
     }
 
@@ -173,6 +190,7 @@ class LibraryRepository(private val dataDir: File) {
         val entry = CategoryEntry(id = newId, name = name, order = categories.size.toLong())
         categories.add(entry)
         saveCategoriesToFile()
+        _revision.value++
         return entry
     }
 
@@ -182,6 +200,7 @@ class LibraryRepository(private val dataDir: File) {
         if (index < 0 || categories[index].isDefault) return false
         categories[index] = categories[index].copy(name = newName)
         saveCategoriesToFile()
+        _revision.value++
         return true
     }
 
@@ -199,6 +218,7 @@ class LibraryRepository(private val dataDir: File) {
         }.toMutableList()
         saveCategoriesToFile()
         saveToFile()
+        _revision.value++
         return true
     }
 

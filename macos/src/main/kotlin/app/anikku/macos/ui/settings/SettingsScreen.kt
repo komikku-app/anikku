@@ -284,6 +284,30 @@ fun SettingsScreen() {
         // =====================================================================
         HeadingItem("Data & Storage")
 
+        val backupIntervals = intArrayOf(0, 6, 12, 24, 48, 168)
+        val backupIntervalLabels = arrayOf("Off", "Every 6 hours", "Every 12 hours", "Daily", "Every 2 days", "Weekly")
+        SelectItem(
+            label = "Automatic local backups",
+            options = backupIntervalLabels,
+            selectedIndex = backupIntervals.indexOf(settings.autoBackupIntervalHours).coerceAtLeast(0),
+            onSelect = { settings.autoBackupIntervalHours = backupIntervals[it] },
+        )
+
+        val updateIntervals = intArrayOf(0, 1, 2, 4, 6, 12, 24)
+        val updateIntervalLabels = arrayOf("Off", "Hourly", "Every 2 hours", "Every 4 hours", "Every 6 hours", "Every 12 hours", "Daily")
+        SelectItem(
+            label = "Library update schedule",
+            options = updateIntervalLabels,
+            selectedIndex = updateIntervals.indexOf(settings.libraryUpdateIntervalHours).coerceAtLeast(0),
+            onSelect = { settings.libraryUpdateIntervalHours = updateIntervals[it] },
+        )
+        SelectItem(
+            label = "Google Drive backup schedule",
+            options = updateIntervalLabels,
+            selectedIndex = updateIntervals.indexOf(settings.googleDriveSyncIntervalHours).coerceAtLeast(0),
+            onSelect = { settings.googleDriveSyncIntervalHours = updateIntervals[it] },
+        )
+
         // Backup & Restore
         val backupManager = LocalBackupManager.current
         if (backupManager != null) {

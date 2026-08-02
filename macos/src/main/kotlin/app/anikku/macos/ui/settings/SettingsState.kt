@@ -51,6 +51,11 @@ class SettingsState(
         // Connections settings
         private const val KEY_DISCORD_RICH_PRESENCE = "discord_rich_presence"
 
+        // Background jobs (0 disables the corresponding job).
+        private const val KEY_AUTO_BACKUP_INTERVAL_HOURS = "auto_backup_interval_hours"
+        private const val KEY_LIBRARY_UPDATE_INTERVAL_HOURS = "library_update_interval_hours"
+        private const val KEY_GOOGLE_DRIVE_SYNC_INTERVAL_HOURS = "google_drive_sync_interval_hours"
+
         // Player settings
         private const val KEY_AUTO_PLAY_NEXT = "auto_play_next"
         private const val KEY_RESUME_FROM_LAST = "resume_from_last"
@@ -156,6 +161,37 @@ class SettingsState(
         set(value) {
             _discordRichPresenceEnabled.value = value
             discordRichPresencePref?.set(value)
+        }
+
+    private val autoBackupIntervalPref = preferenceStore?.getInt(KEY_AUTO_BACKUP_INTERVAL_HOURS, 12)
+    private val libraryUpdateIntervalPref = preferenceStore?.getInt(KEY_LIBRARY_UPDATE_INTERVAL_HOURS, 0)
+    private val googleDriveSyncIntervalPref = preferenceStore?.getInt(KEY_GOOGLE_DRIVE_SYNC_INTERVAL_HOURS, 0)
+    private val _autoBackupIntervalHours = mutableStateOf(sanitizeJobInterval(autoBackupIntervalPref?.get() ?: 12))
+    private val _libraryUpdateIntervalHours = mutableStateOf(sanitizeJobInterval(libraryUpdateIntervalPref?.get() ?: 0))
+    private val _googleDriveSyncIntervalHours = mutableStateOf(sanitizeJobInterval(googleDriveSyncIntervalPref?.get() ?: 0))
+
+    var autoBackupIntervalHours: Int
+        get() = _autoBackupIntervalHours.value
+        set(value) {
+            val sanitized = sanitizeJobInterval(value)
+            _autoBackupIntervalHours.value = sanitized
+            autoBackupIntervalPref?.set(sanitized)
+        }
+
+    var libraryUpdateIntervalHours: Int
+        get() = _libraryUpdateIntervalHours.value
+        set(value) {
+            val sanitized = sanitizeJobInterval(value)
+            _libraryUpdateIntervalHours.value = sanitized
+            libraryUpdateIntervalPref?.set(sanitized)
+        }
+
+    var googleDriveSyncIntervalHours: Int
+        get() = _googleDriveSyncIntervalHours.value
+        set(value) {
+            val sanitized = sanitizeJobInterval(value)
+            _googleDriveSyncIntervalHours.value = sanitized
+            googleDriveSyncIntervalPref?.set(sanitized)
         }
 
     // -------------------------------------------------------------------------
@@ -365,6 +401,8 @@ class SettingsState(
 
     private fun sanitizePlaybackSpeed(value: Float): Float =
         value.takeIf { it.isFinite() }?.coerceIn(0.25f, 4.0f) ?: 1.0f
+
+    private fun sanitizeJobInterval(value: Int): Int = value.coerceIn(0, 24 * 30)
 
     /** Load theme from preferences if store is available, falling back to DEFAULT. */
     private fun loadTheme(): AnikkuTheme.Theme {

@@ -155,6 +155,9 @@ class MacOSBackupManager(
                         categoryId = entry.categoryId,
                         lastSecondSeen = entry.lastSecondSeen,
                         totalSeconds = entry.totalSeconds,
+                        latestEpisodeNumber = entry.latestEpisodeNumber,
+                        latestEpisodeName = entry.latestEpisodeName,
+                        unseenEpisodeCount = entry.unseenEpisodeCount,
                         addedAt = entry.addedAt,
                         lastUpdatedAt = entry.lastUpdatedAt,
                     )
@@ -226,6 +229,9 @@ class MacOSBackupManager(
                 categoryId = entry.categoryId,
                 lastSecondSeen = entry.lastSecondSeen,
                 totalSeconds = entry.totalSeconds,
+                latestEpisodeNumber = entry.latestEpisodeNumber,
+                latestEpisodeName = entry.latestEpisodeName,
+                unseenEpisodeCount = entry.unseenEpisodeCount,
                 addedAt = entry.addedAt,
                 lastUpdatedAt = entry.lastUpdatedAt,
             )
@@ -304,6 +310,9 @@ class MacOSBackupManager(
         val categoryId: Long = 0L,
         val lastSecondSeen: Long = 0L,
         val totalSeconds: Long = 0L,
+        val latestEpisodeNumber: Double = 0.0,
+        val latestEpisodeName: String? = null,
+        val unseenEpisodeCount: Int = 0,
         val addedAt: Long = System.currentTimeMillis(),
         val lastUpdatedAt: Long = System.currentTimeMillis(),
     )

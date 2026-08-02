@@ -2,6 +2,7 @@ package app.anikku.macos.di
 
 import app.anikku.macos.AnikkuApplication
 import app.anikku.macos.platform.BackgroundTaskScheduler
+import app.anikku.macos.platform.MacOSBackgroundJobs
 import app.anikku.macos.platform.MacOSDockManager
 import app.anikku.macos.platform.auth.TrackerOAuthManager
 import app.anikku.macos.platform.database.MacOSDatabaseDriver
@@ -49,6 +50,7 @@ fun platformModule(app: AnikkuApplication) = module {
     single<PreferenceStore> { app.preferenceStore }
     single<MacOSDatabaseDriver> { app.databaseDriver }
     single<BackgroundTaskScheduler> { app.backgroundScheduler }
+    single<MacOSBackgroundJobs> { app.backgroundJobs }
 
     // Phase 3: Networking
     single<MacOSNetworkHelper> { app.networkHelper }

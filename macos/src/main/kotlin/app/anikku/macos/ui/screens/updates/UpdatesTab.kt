@@ -20,10 +20,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
+import app.anikku.macos.platform.LocalBackgroundJobs
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.LocalToastHost
@@ -63,8 +68,11 @@ object UpdatesTab : AnikkuScreen(), Tab {
         val libraryRepo = LocalLibraryRepository.current
         val historyRepo = LocalHistoryRepository.current
         val extensionManager = LocalExtensionManager.current
+        val backgroundJobs = LocalBackgroundJobs.current
+        val backgroundStatus = backgroundJobs?.status?.collectAsState()?.value
 
-        val libraryEntries = remember { libraryRepo.getAll() }
+        val libraryRevision by libraryRepo.revision.collectAsState()
+        val libraryEntries = remember(libraryRevision) { libraryRepo.getAll() }
         val historyEntries = remember { historyRepo.getAll() }
 
         // Build update list from library + history
@@ -74,6 +82,19 @@ object UpdatesTab : AnikkuScreen(), Tab {
             } else {
                 // For each library entry, find the most recent history entry
                 libraryEntries.mapNotNull { libEntry ->
+                    if (libEntry.latestEpisodeNumber > 0.0) {
+                        return@mapNotNull UpdateItemData(
+                            animeId = libEntry.animeId,
+                            animeTitle = libEntry.title,
+                            episodeId = stableEpisodeId(libEntry.animeId, libEntry.latestEpisodeNumber),
+                            episodeName = libEntry.latestEpisodeName
+                                ?: "Episode ${formatEpisodeNumber(libEntry.latestEpisodeNumber)}",
+                            episodeNumber = libEntry.latestEpisodeNumber,
+                            seenAt = libEntry.lastUpdatedAt,
+                            sourceId = libEntry.sourceId,
+                            isNew = libEntry.unseenEpisodeCount > 0,
+                        )
+                    }
                     val lastWatched = historyEntries
                         .filter { it.animeId == libEntry.animeId }
                         .maxByOrNull { it.seenAt }
@@ -105,6 +126,9 @@ object UpdatesTab : AnikkuScreen(), Tab {
         UpdatesContent(
             updates = updates,
             libraryCount = libraryEntries.size,
+            isRefreshing = backgroundStatus?.runningTask == "Library update",
+            statusMessage = backgroundStatus?.message,
+            onRefresh = { backgroundJobs?.updateLibraryNow() },
             onUpdateClick = { update ->
                 val libraryEntry = libraryEntries.find { it.animeId == update.animeId }
                 if (libraryEntry != null && libraryEntry.sourceId != 0L) {
@@ -139,6 +163,12 @@ object UpdatesTab : AnikkuScreen(), Tab {
         )
 }
 
+private fun stableEpisodeId(animeId: Long, episodeNumber: Double): Long =
+    31L * animeId + episodeNumber.toBits()
+
+private fun formatEpisodeNumber(number: Double): String =
+    if (number % 1.0 == 0.0) number.toLong().toString() else number.toString()
+
 data class UpdateItemData(
     val animeId: Long,
     val animeTitle: String,
@@ -154,6 +184,9 @@ data class UpdateItemData(
 private fun UpdatesContent(
     updates: List<UpdateItemData>,
     libraryCount: Int = 0,
+    isRefreshing: Boolean = false,
+    statusMessage: String? = null,
+    onRefresh: () -> Unit = {},
     onUpdateClick: (UpdateItemData) -> Unit = {},
 ) {
     if (updates.isEmpty()) {
@@ -174,6 +207,21 @@ private fun UpdatesContent(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = onRefresh, enabled = !isRefreshing && libraryCount > 0) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                    } else {
+                        Icon(Icons.Outlined.Refresh, contentDescription = null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (isRefreshing) "Checking…" else "Check Now")
+                }
+                statusMessage?.takeIf(String::isNotBlank)?.let { message ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(message, style = MaterialTheme.typography.bodySmall)
+                }
                 Spacer(Modifier.height(8.dp))
                 Text(
                     if (libraryCount > 0) "Add anime and watch episodes to see updates" else "Add anime to your library to track updates",
@@ -189,12 +237,24 @@ private fun UpdatesContent(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                Text(
-                    text = "Recent Updates",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Recent Updates",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (isRefreshing) {
+                        CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = onRefresh) {
+                            Icon(Icons.Outlined.Refresh, contentDescription = "Check library for updates")
+                        }
+                    }
+                }
             }
 
             items(

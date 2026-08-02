@@ -128,6 +128,28 @@ class SettingsStateTest {
     }
 
     @Test
+    fun `background schedules preserve Android defaults persist and clamp`(@TempDir tempDir: Path) {
+        val store = MacOSPreferenceStore(File(tempDir.toFile(), "preferences.json"))
+        val state = SettingsState(store)
+        assertEquals(12, state.autoBackupIntervalHours)
+        assertEquals(0, state.libraryUpdateIntervalHours)
+        assertEquals(0, state.googleDriveSyncIntervalHours)
+
+        state.autoBackupIntervalHours = 24
+        state.libraryUpdateIntervalHours = 4
+        state.googleDriveSyncIntervalHours = 6
+        val restarted = SettingsState(store)
+        assertEquals(24, restarted.autoBackupIntervalHours)
+        assertEquals(4, restarted.libraryUpdateIntervalHours)
+        assertEquals(6, restarted.googleDriveSyncIntervalHours)
+
+        restarted.libraryUpdateIntervalHours = -10
+        restarted.googleDriveSyncIntervalHours = 10_000
+        assertEquals(0, restarted.libraryUpdateIntervalHours)
+        assertEquals(720, restarted.googleDriveSyncIntervalHours)
+    }
+
+    @Test
     fun `multiple theme changes all persist`(@TempDir tempDir: Path) {
         val prefsFile = File(tempDir.toFile(), "preferences.json")
         val store = MacOSPreferenceStore(prefsFile)

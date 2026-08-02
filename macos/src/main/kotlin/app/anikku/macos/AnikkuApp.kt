@@ -2,6 +2,7 @@ package app.anikku.macos
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -13,6 +14,8 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import app.anikku.macos.ui.MacOSMenuBarFactory
 import app.anikku.macos.platform.MacOSDockManager
+import app.anikku.macos.platform.BackgroundJobConfiguration
+import app.anikku.macos.platform.LocalBackgroundJobs
 import app.anikku.macos.ui.GlobalKeyboardShortcuts
 import app.anikku.macos.ui.components.AboutDialog
 import app.anikku.macos.ui.screens.browse.BrowseTab
@@ -110,11 +113,7 @@ fun main() = application {
         DisposableEffect(window, settingsState) {
             val focusListener = object : WindowAdapter() {
                 override fun windowGainedFocus(event: java.awt.event.WindowEvent?) {
-                    if (settingsState.discordRichPresenceEnabled) {
-                        app.onAppFocused()
-                    } else {
-                        app.discordRPC.stop()
-                    }
+                    app.onAppFocused(enableDiscord = settingsState.discordRichPresenceEnabled)
                 }
 
                 override fun windowLostFocus(event: java.awt.event.WindowEvent?) {
@@ -125,7 +124,7 @@ fun main() = application {
                 }
             }
             window.addWindowFocusListener(focusListener)
-            if (window.isFocused && settingsState.discordRichPresenceEnabled) app.onAppFocused()
+            if (window.isFocused) app.onAppFocused(enableDiscord = settingsState.discordRichPresenceEnabled)
             onDispose {
                 window.removeWindowFocusListener(focusListener)
                 app.onAppBlurred()
@@ -150,6 +149,21 @@ fun main() = application {
         }
         // Rebuild the client so the proxy takes effect immediately
         app.networkHelper.rebuildClient()
+
+        LaunchedEffect(
+            settingsState.autoBackupIntervalHours,
+            settingsState.libraryUpdateIntervalHours,
+            settingsState.googleDriveSyncIntervalHours,
+        ) {
+            app.backgroundJobs.configure(
+                BackgroundJobConfiguration(
+                    automaticBackupHours = settingsState.autoBackupIntervalHours,
+                    libraryUpdateHours = settingsState.libraryUpdateIntervalHours,
+                    googleDriveSyncHours = settingsState.googleDriveSyncIntervalHours,
+                ),
+            )
+            if (window.isFocused) app.backgroundJobs.onAppFocused()
+        }
 
         // Wire Chrome path from settings to CDP client
         ChromeCDPClient.customChromePath = settingsState.chromePath
@@ -314,6 +328,7 @@ fun main() = application {
             LocalTrackerManager provides trackerManager,
             LocalDiscordRPC provides app.discordRPC,
             LocalGoogleDriveService provides app.googleDriveService,
+            LocalBackgroundJobs provides app.backgroundJobs,
         ) {
             AnikkuTheme(
                 theme = settingsState.theme,
