@@ -22,6 +22,8 @@ import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.platform.security.MacOSBiometricAuth
 import app.anikku.macos.platform.storage.MacOSFilePicker
 import app.anikku.macos.platform.storage.MacOSStorageProvider
+import app.anikku.macos.platform.subtitle.SubtitleCredentialStore
+import app.anikku.macos.platform.subtitle.SubtitleFetcher
 import app.anikku.macos.platform.sync.GoogleDriveRestClient
 import app.anikku.macos.platform.sync.MacOSGoogleDriveService
 import app.anikku.macos.platform.sync.MacOSSyncYomiService
@@ -58,6 +60,10 @@ fun platformModule(app: AnikkuApplication) = module {
     // Phase 3: Networking
     single<MacOSNetworkHelper> { app.networkHelper }
     single<MacOSCookieJar> { app.cookieJar }
+
+    // Phase 3.5: Subtitle fetching (Jimaku + OpenSubtitles)
+    single<SubtitleCredentialStore> { app.subtitleCredentialStore }
+    single<SubtitleFetcher> { app.subtitleFetcher }
 
     // Phase 3: Extension system
     single<MacOSExtensionManager> { app.extensionManager }

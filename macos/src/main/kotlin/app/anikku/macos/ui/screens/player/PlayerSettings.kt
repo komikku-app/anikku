@@ -281,6 +281,12 @@ fun PlayerSubtitleTrackPanel(
     onTrackSelected: (Int) -> Unit,
     onDelayChange: (Double) -> Unit,
     onDismiss: () -> Unit,
+    // Online subtitle search (OpenSubtitles fallback).
+    searchingOnline: Boolean = false,
+    onlineCandidates: List<app.anikku.macos.platform.subtitle.SubtitleCandidate> = emptyList(),
+    onlineError: String? = null,
+    onSearchOnline: () -> Unit = {},
+    onSelectOnline: (app.anikku.macos.platform.subtitle.SubtitleCandidate) -> Unit = {},
 ) {
     var sliderDelay by remember(subtitleDelay) { mutableFloatStateOf(subtitleDelay.toFloat()) }
 
@@ -387,6 +393,52 @@ fun PlayerSubtitleTrackPanel(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Online subtitle search (OpenSubtitles fallback)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            OutlinedButton(
+                onClick = onSearchOnline,
+                enabled = !searchingOnline,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (searchingOnline) "Searching OpenSubtitles…" else "Search OpenSubtitles…")
+            }
+
+            if (onlineError != null) {
+                Text(
+                    text = onlineError,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+
+            if (onlineCandidates.isNotEmpty()) {
+                Text(
+                    text = "Choose a subtitle (English first):",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+                onlineCandidates.forEach { candidate ->
+                    OutlinedButton(
+                        onClick = { onSelectOnline(candidate) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Text(
+                            text = candidate.title,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(12.dp))

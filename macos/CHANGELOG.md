@@ -21,6 +21,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   run on their own schedule instead of a manual `checkForUpdatesInBackground`.
 - App version string now comes from `gradle.properties` (generated `AppInfo.kt`)
   instead of a hardcoded `1.0.0`, so internal version reporting matches the bundle.
+- **Automatic English subtitles**: when a source serves no subtitle track, Anikku
+  resolves the anime via AniList and fetches the exact episode's subs from Jimaku
+  (anime-native database), cached per episode. OpenSubtitles.com is the fallback:
+  the player's subtitle panel has a "Search OpenSubtitles…" entry that lists
+  candidates English-first for the user to pick. Provider keys are baked in from
+  `gradle.properties` (free tiers) and can be overridden in Settings (Keychain).
+- **Smart offset**: manual subtitle-delay adjustments are remembered per anime and
+  auto-applied to subsequent episodes.
 - Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
 
 ---

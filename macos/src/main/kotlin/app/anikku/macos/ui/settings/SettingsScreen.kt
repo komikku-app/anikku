@@ -352,6 +352,13 @@ fun SettingsScreen() {
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
         // =====================================================================
+        // Subtitles (Jimaku + OpenSubtitles credentials)
+        // =====================================================================
+        SubtitleSettingsPanel()
+
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+
+        // =====================================================================
         // Tracking
         // =====================================================================
         val trackerManager = LocalTrackerManager.current

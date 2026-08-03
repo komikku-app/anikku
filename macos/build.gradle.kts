@@ -26,6 +26,7 @@ kotlin {
                 srcDir("keiyoushi-utils/src/main/kotlin")
                 // Generated AppInfo.kt (version from gradle.properties).
                 srcDir(layout.buildDirectory.dir("generated/app-info/kotlin"))
+                srcDir(layout.buildDirectory.dir("generated/subtitle-defaults/kotlin"))
             }
         }
     }
@@ -56,6 +57,45 @@ val generateAppInfo by tasks.registering {
 
 tasks.named("compileKotlin") {
     dependsOn(generateAppInfo)
+}
+
+// ---- Generated subtitle credentials (baked-in developer keys) ------------
+// The developer's free Jimaku + OpenSubtitles keys are baked into the app so
+// end users don't configure anything. Users may override them via Settings
+// (stored in the Keychain, which takes precedence).
+val generateSubtitleDefaults by tasks.registering {
+    val jimakuToken = project.findProperty("subtitle.jimakuToken") as? String ?: ""
+    val osApiKey = project.findProperty("subtitle.opensubtitles.apiKey") as? String ?: ""
+    val osUsername = project.findProperty("subtitle.opensubtitles.username") as? String ?: ""
+    val osPassword = project.findProperty("subtitle.opensubtitles.password") as? String ?: ""
+    val outDir = layout.buildDirectory.dir("generated/subtitle-defaults/kotlin").get().asFile
+    inputs.property("jimakuToken", jimakuToken)
+    inputs.property("osApiKey", osApiKey)
+    inputs.property("osUsername", osUsername)
+    inputs.property("osPassword", osPassword)
+    outputs.dir(outDir)
+    doLast {
+        val pkgDir = File(outDir, "app/anikku/macos/platform/subtitle")
+        pkgDir.mkdirs()
+        File(pkgDir, "SubtitleDefaults.kt").writeText(
+            """
+            |// Generated from gradle.properties (subtitle.*). Do not edit.
+            |package app.anikku.macos.platform.subtitle
+            |
+            |/** Baked-in developer subtitle credentials (free-tier keys). */
+            |object SubtitleDefaults {
+            |    const val JIMAKU_TOKEN: String = "${jimakuToken.replace("\"", "\\\"")}"
+            |    const val OPENSUBTITLES_API_KEY: String = "${osApiKey.replace("\"", "\\\"")}"
+            |    const val OPENSUBTITLES_USERNAME: String = "${osUsername.replace("\"", "\\\"")}"
+            |    const val OPENSUBTITLES_PASSWORD: String = "${osPassword.replace("\"", "\\\"")}"
+            |}
+            |""".trimMargin()
+        )
+    }
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(generateSubtitleDefaults)
 }
 
 dependencies {

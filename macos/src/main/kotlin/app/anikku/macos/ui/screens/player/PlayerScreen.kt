@@ -560,6 +560,15 @@ data class PlayerScreen(
         val discordRPC = LocalDiscordRPC.current
         val settings = LocalSettingsState.current
 
+        // Subtitle fetcher (Jimaku auto-fetch + OpenSubtitles manual search).
+        // Resolved from Koin; null when unavailable (failure-safe).
+        val subtitleFetcher = remember {
+            runCatching {
+                org.koin.core.context.GlobalContext.get()
+                    .get<app.anikku.macos.platform.subtitle.SubtitleFetcher>()
+            }.getOrNull()
+        }
+
         // Initialize the player view model (Phase 6)
         val playerViewModel = remember { PlayerViewModel() }
 
@@ -758,6 +767,29 @@ data class PlayerScreen(
                     "Loading video into mpv player..."
                 }
                 playerViewModel.loadEpisode(video.url, video.headers, video.subtitleTracks)
+
+                // Apply any learned subtitle offset for this anime.
+                playerViewModel.applyLearnedSubtitleOffset(animeId)
+
+                // Auto-fetch English subtitles when the source provided none.
+                // Failure is silent: playback must never be blocked by subtitle
+                // fetching, and the user can still search OpenSubtitles manually.
+                val fetcher = subtitleFetcher
+                if (fetcher != null && video.subtitleTracks.none { it.lang.equals("en", true) || it.lang.equals("eng", true) }) {
+                    val title = animeTitle?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+                    val episodeNumber = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0
+                    if (episodeNumber > 0) {
+                        resolutionStatusText = "Fetching English subtitles..."
+                        val subFile = fetcher.fetchAutoEnglishSubtitle(title, episodeNumber)
+                        if (subFile != null) {
+                            playerViewModel.addDownloadedSubtitleFile(
+                                file = subFile,
+                                title = subFile.name,
+                                language = "en",
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -1139,6 +1171,9 @@ data class PlayerScreen(
 
         PlayerContent(
             playerViewModel = playerViewModel,
+            subtitleFetcher = subtitleFetcher,
+            toastHost = toastHost,
+            animeId = animeId,
             mpvHandle = mpvHandle,
             audioTracks = audioTracks,
             subtitleTracks = subtitleTracks,
@@ -1217,6 +1252,9 @@ data class PlayerScreen(
 @Composable
 internal fun PlayerContent(
     playerViewModel: PlayerViewModel? = null,
+    subtitleFetcher: app.anikku.macos.platform.subtitle.SubtitleFetcher? = null,
+    toastHost: app.anikku.macos.ui.components.ToastHostState? = null,
+    animeId: Long = 0L,
     mpvHandle: com.sun.jna.Pointer? = null,
     softwareRenderer: MPVSoftwareRenderer? = null,
     audioTracks: List<app.anikku.macos.player.TrackInfo> = emptyList(),
@@ -1289,6 +1327,15 @@ internal fun PlayerContent(
     var showEqualizerPanel by remember { mutableStateOf(false) }
     var showAspectRatioPanel by remember { mutableStateOf(false) }
     var showVideoFilterPanel by remember { mutableStateOf(false) }
+
+    // OpenSubtitles search state (subtitle dropdown fallback).
+    var osSearching by remember { mutableStateOf(false) }
+    var osCandidates by remember { mutableStateOf<List<app.anikku.macos.platform.subtitle.SubtitleCandidate>>(emptyList()) }
+    var osSearchError by remember { mutableStateOf<String?>(null) }
+    val osSearchScope = rememberCoroutineScope()
+    val currentEpisodeNumber = currentEpisode?.episodeNumber
+        ?: episodes.getOrNull(currentEpisodeIndex)?.episodeNumber
+        ?: 0.0
 
     // Always update elapsed time from currentPosition when it changes,
     // regardless of whether duration is set yet.
@@ -1884,7 +1931,60 @@ internal fun PlayerContent(
             PlayerAudioTrackPanel(tracks = audioTracks, currentTrackIndex = selectedAudioTrack, audioDelay = audioDelay, onTrackSelected = { playerViewModel?.selectAudioTrack(it) }, onDelayChange = { playerViewModel?.setAudioDelay(it) }, onDismiss = { showAudioPanel = false })
         }
         AnimatedVisibility(visible = showSubtitlePanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
-            PlayerSubtitleTrackPanel(tracks = subtitleTracks, currentTrackIndex = selectedSubtitleTrack, subtitleDelay = subtitleDelay, onTrackSelected = { playerViewModel?.selectSubtitleTrack(it) }, onDelayChange = { playerViewModel?.setSubtitleDelay(it) }, onDismiss = { showSubtitlePanel = false })
+            PlayerSubtitleTrackPanel(
+                tracks = subtitleTracks,
+                currentTrackIndex = selectedSubtitleTrack,
+                subtitleDelay = subtitleDelay,
+                onTrackSelected = { playerViewModel?.selectSubtitleTrack(it) },
+                onDelayChange = { playerViewModel?.setSubtitleDelayForAnime(animeId, it) },
+                onDismiss = { showSubtitlePanel = false },
+                searchingOnline = osSearching,
+                onlineCandidates = osCandidates,
+                onlineError = osSearchError,
+                onSearchOnline = {
+                    val fetcher = subtitleFetcher
+                    val title = animeTitle?.takeIf { it.isNotBlank() }
+                    if (fetcher == null || title == null) {
+                        osSearchError = "Subtitle search unavailable"
+                        return@PlayerSubtitleTrackPanel
+                    }
+                    osSearching = true
+                    osSearchError = null
+                    osCandidates = emptyList()
+                    val episodeNumber = currentEpisodeNumber
+                    osSearchScope.launch {
+                        val candidates = fetcher.searchOpenSubtitles(title, episodeNumber)
+                        osSearching = false
+                        if (candidates.isEmpty()) {
+                            osSearchError = "No subtitles found — check OpenSubtitles credentials in Settings"
+                        } else {
+                            osCandidates = candidates
+                        }
+                    }
+                },
+                onSelectOnline = { candidate ->
+                    val fetcher = subtitleFetcher
+                    if (fetcher == null) return@PlayerSubtitleTrackPanel
+                    osSearchScope.launch {
+                        val file = fetcher.downloadCandidate(candidate)
+                        if (file != null) {
+                            playerViewModel?.addDownloadedSubtitleFile(
+                                file = file,
+                                title = candidate.title,
+                                language = candidate.language,
+                            )
+                            toastHost?.show("Subtitle attached: ${candidate.title.take(48)}", ToastDuration.SHORT)
+                        } else {
+                            toastHost?.show(
+                                text = "Could not download that subtitle",
+                                duration = ToastDuration.LONG,
+                                isError = true,
+                                location = "PlayerScreen.selectOnlineSubtitle",
+                            )
+                        }
+                    }
+                },
+            )
         }
         AnimatedVisibility(visible = showEqualizerPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerEqualizerPanel(brightness = brightness, contrast = contrast, saturation = saturation, gamma = gamma, onBrightnessChange = { playerViewModel?.setBrightness(it) }, onContrastChange = { playerViewModel?.setContrast(it) }, onSaturationChange = { playerViewModel?.setSaturation(it) }, onGammaChange = { playerViewModel?.setGamma(it) }, onReset = { playerViewModel?.resetEqualizer() }, onDismiss = { showEqualizerPanel = false })

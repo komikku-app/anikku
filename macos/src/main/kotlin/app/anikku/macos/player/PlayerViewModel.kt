@@ -1088,6 +1088,94 @@ class PlayerViewModel(
         }
     }
 
+    /**
+     * Attach a downloaded subtitle file (from SubtitleFetcher) as an external
+     * track and auto-select the best available language. Returns true when the
+     * track was added to mpv.
+     *
+     * Mirrors [addExternalSubtitleTracks] but for a local file path produced by
+     * the subtitle service, so it works mid-playback (user picks a candidate
+     * from the subtitle dropdown) and at load time (auto-fetch).
+     */
+    fun addDownloadedSubtitleFile(file: java.io.File, title: String, language: String): Boolean {
+        val handle = mpvHandle ?: return false
+        if (!file.isFile) {
+            logger.warn { "🎬 SUBTITLE: downloaded subtitle file missing: ${file.path}" }
+            return false
+        }
+        val shouldAdd = synchronized(subtitleLock) {
+            if (loadedExternalSubtitleUrls.contains(file.path)) {
+                false
+            } else {
+                loadedExternalSubtitleUrls += file.path
+                true
+            }
+        }
+        if (!shouldAdd) return false
+
+        val lang = language.trim().ifBlank { "und" }
+        val result = MPVLib.command(
+            handle,
+            "sub-add",
+            file.absolutePath,
+            "auto",
+            title,
+            lang,
+        )
+        if (result < 0) {
+            synchronized(subtitleLock) { loadedExternalSubtitleUrls.remove(file.path) }
+            logger.warn { "🎬 SUBTITLE: failed to add downloaded subtitle ($result): $title" }
+            return false
+        }
+        logger.info { "🎬 SUBTITLE: added downloaded subtitle '$title' ($lang)" }
+        refreshTracks()
+        // Do not stomp an explicit user selection; only auto-select when the
+        // user hasn't picked a track yet for this load.
+        if (!subtitleDefaultApplied) {
+            selectDefaultSubtitleTrack()
+        }
+        return true
+    }
+
+    // ---- Learned subtitle offset (smart-offset) ---------------------------
+
+    /**
+     * Per-anime subtitle delay offsets, learned from the user's manual delay
+     * adjustments. Persisted to the preference store so offsets survive app
+     * restarts. Keyed by [animeId].
+     */
+    private fun learnedOffsetKey(animeId: Long): String = "player_subtitle_offset_anime_$animeId"
+
+    /** Remember a manual subtitle delay for [animeId] and apply it to mpv. */
+    fun setSubtitleDelayForAnime(animeId: Long, delay: Double) {
+        val clamped = delay.coerceIn(-10.0, 10.0)
+        if (clamped != 0.0) {
+            runCatching {
+                preferenceStore()?.let { store ->
+                    store.getFloat(learnedOffsetKey(animeId), 0.0f).set(clamped.toFloat())
+                }
+            }
+        }
+        setSubtitleDelay(clamped)
+    }
+
+    /** Apply a previously learned offset for [animeId] when a new episode loads. */
+    fun applyLearnedSubtitleOffset(animeId: Long) {
+        val saved = runCatching {
+            preferenceStore()?.getFloat(learnedOffsetKey(animeId), 0.0f)?.get() ?: 0.0f
+        }.getOrDefault(0.0f)
+        if (saved != 0.0f) {
+            logger.info { "🎬 SUBTITLE: applying learned offset ${saved}s for anime $animeId" }
+            setSubtitleDelay(saved.toDouble())
+        }
+    }
+
+    private fun preferenceStore(): app.anikku.macos.platform.preference.MacOSPreferenceStore? =
+        runCatching {
+            org.koin.core.context.GlobalContext.get()
+                .get<app.anikku.macos.platform.preference.MacOSPreferenceStore>()
+        }.getOrNull()
+
     /** Apply a track selection internally without marking it as a user choice. */
     private fun setSubtitleTrack(trackId: Int): Boolean {
         val handle = mpvHandle ?: return false

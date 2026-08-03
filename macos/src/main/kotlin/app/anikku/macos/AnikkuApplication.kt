@@ -29,6 +29,10 @@ import app.anikku.macos.platform.security.MacOSBiometricAuth
 import app.anikku.macos.platform.security.MacOSKeychain
 import app.anikku.macos.platform.storage.MacOSStorageManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
+import app.anikku.macos.platform.subtitle.SubtitleCredentialStore
+import app.anikku.macos.platform.subtitle.SubtitleCredentials
+import app.anikku.macos.platform.subtitle.SubtitleDefaults
+import app.anikku.macos.platform.subtitle.SubtitleFetcher
 import app.anikku.macos.platform.sync.GoogleDriveRestClient
 import app.anikku.macos.platform.sync.MacOSGoogleDriveService
 import app.anikku.macos.platform.sync.MacOSSyncYomiService
@@ -80,6 +84,10 @@ class AnikkuApplication {
     // Phase 3: Networking
     val networkHelper: MacOSNetworkHelper
     val cookieJar: MacOSCookieJar
+
+    // Phase 3.5: Subtitle fetching (Jimaku + OpenSubtitles)
+    val subtitleCredentialStore: SubtitleCredentialStore
+    val subtitleFetcher: SubtitleFetcher
 
     // Phase 3: Extension system
     val extensionManager: MacOSExtensionManager
@@ -137,6 +145,24 @@ class AnikkuApplication {
         // 5. Initialize networking (Phase 3.1-3.2)
         networkHelper = MacOSNetworkHelper(storageProvider)
         cookieJar = networkHelper.cookieJar
+
+        // 5.2. Subtitle fetching (Jimaku + OpenSubtitles). Credentials live in
+        // the keychain; baked-in developer defaults are the fallback so end
+        // users don't need to configure anything. Cache under cache/subs/.
+        subtitleCredentialStore = SubtitleCredentialStore(
+            keychain = MacOSKeychain(service = "anikku-subtitles", account = "credentials"),
+            bakedDefaults = SubtitleCredentials(
+                jimakuToken = SubtitleDefaults.JIMAKU_TOKEN,
+                openSubtitlesApiKey = SubtitleDefaults.OPENSUBTITLES_API_KEY,
+                openSubtitlesUsername = SubtitleDefaults.OPENSUBTITLES_USERNAME,
+                openSubtitlesPassword = SubtitleDefaults.OPENSUBTITLES_PASSWORD,
+            ),
+        )
+        subtitleFetcher = SubtitleFetcher(
+            client = networkHelper.client,
+            credentialStore = subtitleCredentialStore,
+            cacheDirectory = File(storageProvider.cacheDirectory, "subs"),
+        )
 
         // 5.5. Start Koin BEFORE extension loading — extensions use injectLazy (Koin) to
         // resolve NetworkHelper and other dependencies during construction.
