@@ -20,8 +20,8 @@
       <pubDate>Sun, 02 Aug 2026 21:15:15 +0100</pubDate>
       <enclosure
         url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.0/Anikku-1.0.0.dmg"
-        sparkle:edSignature="YPnUfaXhbXSr7NvF4IXDY1uHDvsdxFJhlFhpLBbsrlwgHXv0JCmc5+OKNNRxglOclmT+xL6jZ6MBo8HbRkzFAA=="
-        length="214139885"
+        sparkle:edSignature="xcuRlTxCW1EMKDppNtJDViELhq4nm/0PkdszTcmG7TBfxidEJ5BObb9Z17X5/6aYk16Kcf1X5sj4sw1YKLzyCQ=="
+        length="214066731"
         type="application/octet-stream" />
       <sparkle:releaseNotesLink>
         https://github.com/ErnestHysa/anikku/releases/tag/v1.0.0
