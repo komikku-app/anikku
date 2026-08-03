@@ -13,7 +13,21 @@
       Never commit a placeholder signature or zero-length artifact.
     -->
   
+    
     <item>
+      <title>Version 1.0.1</title>
+      <sparkle:version>1.0.1</sparkle:version>
+      <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+      <pubDate>Mon, 03 Aug 2026 22:42:18 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.1/Anikku-1.0.1.dmg"
+        sparkle:edSignature="sQ+HQJnTwGN32DAAAGVgj0j4NIYr+jVTuUMw6onGWMReR9yj3CJ3mOfn18OpDsAWtnhi7spTmA9n52dllD/aDg=="
+        length="214101671"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.1
+      </sparkle:releaseNotesLink>
+    </item><item>
       <title>Version 1.0.0</title>
       <sparkle:version>1.0.0</sparkle:version>
       <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>

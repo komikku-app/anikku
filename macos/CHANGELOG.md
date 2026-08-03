@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.1] — 2026-08-03
+
+### Maintenance release
+
+- Added an `android.webkit.URLUtil` stub so more Keiyoushi extensions (e.g. StreamingCommunity) compile and load.
+- Extended the extension build pipeline: okruextractor overload fix, per-extractor retry, cached-classpath fix, and support for newer `src/all` extensions (strips unsupported source-api overrides).
+- Added new sources to the installed fleet: animexin, lmanime, subsplease, rouvideo, chineseanime, animeonsen, mkissa (allanime successor), animetsu, streamingcommunity.
+- Added `scripts/refresh-extensions.sh` for repeatable fleet refresh + reporting.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
+---
+
 ## [Unreleased] — 2026-08-02
 
 ### Completed desktop architecture
