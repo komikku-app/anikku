@@ -519,18 +519,45 @@ while IFS= read -r f; do
     log "  Patched: $(basename $f) — non-null shouldInterceptRequest"
 done < <(grep -rln 'override fun shouldInterceptRequest.*WebView?' "${GIT_CLONE_DIR}/lib/" 2>/dev/null || true)
 
+# Fix: resolve PlaylistUtils.extractFromDash/extractFromHls overload ambiguity in
+# OkruExtractor. kotlinc 2.4.0 mis-resolves the named-arg lambda against the
+# (String, String) videoNameGen overload. Rewrite the calls to positional form
+# with a typed intermediate value, which binds uniquely to the (String) -> String
+# overload (the same text pattern is used for both Hls and Dash).
+OKRU_FILE="${GIT_CLONE_DIR}/lib/okruextractor/src/aniyomi/lib/okruextractor/OkruExtractor.kt"
+if [ -f "$OKRU_FILE" ]; then
+    OKRU_FILE="$OKRU_FILE" python3 - <<'PYEOF'
+import os, pathlib
+p = pathlib.Path(os.environ["OKRU_FILE"])
+s = p.read_text()
+hls_old = 'playlistUtils.extractFromHls(playlistUrl, videoNameGen = { "Okru:$it".addPrefix(prefix) })'
+hls_new = 'playlistUtils.extractFromHls(playlistUrl, videoNameGen = { u: String -> "Okru:$u".addPrefix(prefix) })'
+dash_old = 'playlistUtils.extractFromDash(playlistUrl, videoNameGen = { "Okru:$it".addPrefix(prefix) })'
+# (String,String) overload receives (videoRes, bandwidth); first param is the
+# video name (same input the (String)->String overload passes to videoNameGen).
+dash_new = 'playlistUtils.extractFromDash(playlistUrl, videoNameGen = { videoRes: String, _: String -> "Okru:$videoRes".addPrefix(prefix) })'
+n = 0
+if hls_old in s:
+    s = s.replace(hls_old, hls_new); n += 1
+if dash_old in s:
+    s = s.replace(dash_old, dash_new); n += 1
+p.write_text(s)
+print(f"patched okru callsites: {n}")
+PYEOF
+    log "  Patched: OkruExtractor.kt — overload-unambiguous videoNameGen lambdas"
+fi
+
 # ===================================================================
 # Step 3b-ii: Compile lib/*/ extractor modules (aniyomi.lib.* package)
 # Must compile AFTER keiyoushi-utils since several extractors import keiyoushi.utils.*
 EXTRACTORS_DIR="${GIT_CLONE_DIR}/lib"
 EXTRACTORS_OUT="${SHARED_LIBS_DIR}/lib-extractors"
 if [ -d "$EXTRACTORS_DIR" ]; then
-    if [ -d "$EXTRACTORS_OUT" ]; then
-        cached_classes=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
-        [ "$cached_classes" -gt 0 ] && extractors_compiled=true || { rm -rf "$EXTRACTORS_OUT"; extractors_compiled=false; }
-    else
-        extractors_compiled=false
-    fi
+    # Always run the per-extractor multi-pass batch. The per-extractor
+    # `existing` check inside skips already-compiled modules, so a binary
+    # "any classes present" shortcut would permanently skip extractors that
+    # failed on an earlier run (e.g. okruextractor) and never retry them.
+    extractors_compiled=false
 
     if [ "${extractors_compiled:-false}" != true ]; then
         # Compile each extractor individually into shared output dir.
@@ -784,6 +811,15 @@ fi
 # Step 4: Compile the extension
 # ---------------------------------------------------------------------------
 log ""
+# Ensure ALL cached shared-lib modules are on the compile classpath.
+# Cached modules skip recompilation (their `continue` skips add_to_cp),
+# which otherwise leaves them off -cp and breaks dependent extensions.
+if [ -d "$SHARED_LIBS_DIR" ]; then
+    for mod in "$SHARED_LIBS_DIR"/*/; do
+        [ -d "$mod" ] && add_to_cp "$mod"
+    done
+fi
+
 log "Step 4: Compiling extension..."
 
 CLASSES_DIR="${TEMP_DIR}/classes"
