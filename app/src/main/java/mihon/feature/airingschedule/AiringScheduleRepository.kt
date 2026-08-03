@@ -187,7 +187,7 @@ class AiringScheduleRepository {
         private const val MAX_RETRIES = 5
         private const val BASE_DELAY_MS = 1000L
         private const val MAX_DELAY_MS = 20_000L
-        private const val PAGE_DELAY_MS = 250L
+        private const val PAGE_DELAY_MS = 500L
     }
 }
 
