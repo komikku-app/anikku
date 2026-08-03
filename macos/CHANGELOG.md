@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.3] — 2026-08-04
+
+### Season-aware subtitle matching
+
+- AniList resolution is now season-aware: the player picks the season whose
+  episode range covers the requested episode (e.g. "Solo Leveling" episode 13
+  resolves to Season 2, not Season 1). Falls back to the top title match for
+  airing seasons and unknown episode counts.
+- Removed the hardcoded `season_number=1` from OpenSubtitles searches, which
+  would always match season 1 for multi-season shows.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.0.2] — 2026-08-04
 
 ### Subtitle credentials + resume fix

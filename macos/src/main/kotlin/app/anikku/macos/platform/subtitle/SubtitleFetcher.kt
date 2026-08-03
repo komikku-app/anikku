@@ -143,7 +143,7 @@ class SubtitleFetcher(
                 logger.debug { "SUB: Jimaku not configured — skipping auto-fetch" }
                 return@withContext null
             }
-            val anilistId = resolveAniListId(animeTitle) ?: run {
+            val anilistId = resolveAniListId(animeTitle, episodeNumber) ?: run {
                 logger.warn { "SUB: AniList lookup failed for '$animeTitle'" }
                 return@withContext null
             }
@@ -199,11 +199,19 @@ class SubtitleFetcher(
 
     // ---- AniList title resolution ----------------------------------------
 
+    /** A single AniList search result (id + episode count). */
+    data class Media(val id: Int?, val episodes: Int?)
+
     /**
      * Resolve a free-text anime title to an AniList media ID.
      * Uses the public GraphQL API (no auth). Returns null when unresolved.
+     *
+     * Season-aware: when [episodeNumber] is provided, picks the candidate whose
+     * episode range covers it (e.g. "Solo Leveling" + ep 13 resolves to the
+     * Season 2 media, not Season 1). Falls back to the top search result when
+     * episode ranges are unknown or [episodeNumber] is not positive.
      */
-    fun resolveAniListId(title: String): Int? {
+    fun resolveAniListId(title: String, episodeNumber: Double = 0.0): Int? {
         val cleanTitle = title.trim().take(80)
         if (cleanTitle.isEmpty()) return null
 
@@ -212,6 +220,7 @@ class SubtitleFetcher(
               Page(page: 1, perPage: 5) {
                 media(search: ${'$'}search, type: ANIME) {
                   id
+                  episodes
                   title { romaji english native }
                 }
               }
@@ -238,10 +247,54 @@ class SubtitleFetcher(
             }
             val root = json.parseToJsonElement(response.body?.string().orEmpty()).jsonObject
             val media = root["data"]?.jsonObject?.get("Page")?.jsonObject?.get("media") as? JsonArray ?: return null
-            val id = media.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.intOrNull
-            logger.info { "SUB: AniList resolved '$title' -> id=$id" }
-            return id
+
+            val candidates = media.mapNotNull { el ->
+                val obj = el.jsonObject
+                Media(
+                    id = obj["id"]?.jsonPrimitive?.intOrNull,
+                    episodes = obj["episodes"]?.jsonPrimitive?.intOrNull,
+                )
+            }
+            if (candidates.isEmpty()) return null
+
+            logger.info { "SUB: AniList resolved '$title' (ep=${episodeNumber.toInt()}) -> id=${pickSeasonMatch(candidates, episodeNumber)}" }
+            return pickSeasonMatch(candidates, episodeNumber)
         }
+    }
+
+    /**
+     * Pick the AniList media that best matches the requested episode.
+     * Extracted for testability.
+     *
+     * Strategy:
+     * 1. Top-ranked title match wins when it doesn't clearly exclude the
+     *    episode — i.e. its episode count is unknown (airing) or covers it.
+     * 2. Otherwise (a completed season that is too short) fall through to the
+     *    next candidate whose range covers the episode — this is what lets
+     *    "Solo Leveling" + ep 13 resolve to Season 2.
+     * 3. Fall back to the first candidate with a known range, then the top
+     *    result.
+     *
+     * @param candidates List of (id, episodes) from the AniList search, in rank order.
+     * @param episodeNumber Requested episode (0 = unknown / top result).
+     */
+    internal fun pickSeasonMatch(candidates: List<Media>, episodeNumber: Double): Int? {
+        val requested = episodeNumber.toInt()
+        if (requested <= 0) return candidates.firstOrNull()?.id
+
+        // Pass 1: top-ranked match unless it clearly can't cover the episode.
+        candidates.firstOrNull { (_, eps) ->
+            eps == null || eps >= requested
+        }?.id?.let { return it }
+
+        // Pass 2: any later candidate whose completed range covers the episode.
+        candidates.firstOrNull { (_, eps) ->
+            eps != null && eps >= requested
+        }?.id?.let { return it }
+
+        // Fallback: first with a known range, then top result.
+        return candidates.firstOrNull { (_, eps) -> eps != null }?.id
+            ?: candidates.firstOrNull()?.id
     }
 
     // ---- Jimaku -----------------------------------------------------------
@@ -345,7 +398,9 @@ class SubtitleFetcher(
         val url = buildString {
             append("https://api.opensubtitles.com/api/v1/subtitles?")
             append("query=").append(java.net.URLEncoder.encode(animeTitle.trim().take(100), "UTF-8"))
-            append("&season_number=1")
+            // No season_number: hardcoding one would always match season 1 for
+            // multi-season shows. Search by title + episode number only, then
+            // let the user pick the right release (English first).
             append("&episode_number=").append(episode)
             append("&languages=en")
         }

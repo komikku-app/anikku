@@ -121,6 +121,41 @@ class SubtitleFetcherTest {
         }
     }
 
+    // ---- Season-aware AniList selection ------------------------------------
+
+    private fun media(id: Int, episodes: Int?): SubtitleFetcher.Media =
+        SubtitleFetcher.Media(id = id, episodes = episodes)
+
+    @Test
+    fun `picks season whose episode range covers the requested episode`() {
+        val fetcher = buildFetcher(MockWebServer())
+        // Solo Leveling: S1 (151807, 12 eps), S2 (176496, 13 eps), movie (1 ep)
+        val candidates = listOf(media(151807, 12), media(176496, 13), media(184694, 1))
+        // Ep 5 of S1 → S1
+        assertEquals(151807, fetcher.pickSeasonMatch(candidates, 5.0))
+        // Ep 13 → S2 (S1 only has 12)
+        assertEquals(176496, fetcher.pickSeasonMatch(candidates, 13.0))
+        // Ep 0 / unknown → top result
+        assertEquals(151807, fetcher.pickSeasonMatch(candidates, 0.0))
+    }
+
+    @Test
+    fun `falls back when episode ranges are unknown`() {
+        val fetcher = buildFetcher(MockWebServer())
+        assertEquals(10, fetcher.pickSeasonMatch(listOf(media(10, null), media(20, null)), 7.0))
+        assertEquals(null, fetcher.pickSeasonMatch(emptyList(), 3.0))
+    }
+
+    @Test
+    fun `ongoing season with unknown range still resolves by title rank`() {
+        val fetcher = buildFetcher(MockWebServer())
+        // S2 is airing (AniList reports episodes=null) and ranks first for a
+        // season-qualified title → any requested episode resolves to S2.
+        assertEquals(200, fetcher.pickSeasonMatch(listOf(media(200, null), media(100, 12)), 8.0))
+        // Generic title ranks S1 first (12 eps); ep 8 is S1's.
+        assertEquals(100, fetcher.pickSeasonMatch(listOf(media(100, 12), media(200, null)), 8.0))
+    }
+
     // ---- Credential store --------------------------------------------------
 
     @Test
