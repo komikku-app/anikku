@@ -32,6 +32,7 @@ import app.anikku.macos.platform.storage.MacOSStorageProvider
 import app.anikku.macos.platform.sync.GoogleDriveRestClient
 import app.anikku.macos.platform.sync.MacOSGoogleDriveService
 import app.anikku.macos.platform.sync.MacOSSyncYomiService
+import app.anikku.macos.platform.update.AppInfo
 import app.anikku.macos.platform.update.AppUpdateChecker
 import app.anikku.macos.platform.update.SparkleUpdater
 import kotlinx.coroutines.CoroutineScope
@@ -230,7 +231,7 @@ class AnikkuApplication {
 
         // 9d. App Update Checker (GitHub API)
         appUpdateChecker = AppUpdateChecker(
-            currentVersion = "1.0.0",
+            currentVersion = AppInfo.VERSION,
             repoOwner = "ErnestHysa",
             repoName = "anikku",
         )
@@ -256,7 +257,7 @@ class AnikkuApplication {
         // 9f. Crash Reporting
         CrashReporter.initialize(
             storageProvider = storageProvider,
-            version = "1.0.0",
+            version = AppInfo.VERSION,
         )
 
         // (startKoin moved to step 5.5 — must run before extension loading at step 6)

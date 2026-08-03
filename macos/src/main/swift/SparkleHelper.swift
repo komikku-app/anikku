@@ -48,6 +48,14 @@ public func sparkle_init(feedURL: UnsafePointer<CChar>?) -> Bool {
             userDriverDelegate: nil
         )
 
+        // Enable silent background checks. Sparkle refuses checkForUpdatesInBackground
+        // (and logs an error) while automaticallyChecksForUpdates is NO, because it is
+        // set to ask the user for permission first. Granting automatic checks here
+        // makes the 30s-after-startup background check legitimate and lets Sparkle
+        // drive its own daily schedule.
+        controller.updater.automaticallyChecksForUpdates = true
+        controller.updater.updateCheckInterval = 24 * 60 * 60 // daily
+
         // Sparkle resolves SUFeedURL from the packaged Info.plist. Do not treat
         // the optional input parameter as proof that the effective feed is safe.
         guard let effectiveURL = controller.updater.feedURL,

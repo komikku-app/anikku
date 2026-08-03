@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Extended the extension build pipeline: okruextractor overload fix, per-extractor retry, cached-classpath fix, and support for newer `src/all` extensions (strips unsupported source-api overrides).
 - Added new sources to the installed fleet: animexin, lmanime, subsplease, rouvideo, chineseanime, animeonsen, mkissa (allanime successor), animetsu, streamingcommunity.
 - Added `scripts/refresh-extensions.sh` for repeatable fleet refresh + reporting.
+- Fixed Sparkle auto-update startup: `SUPublicEDKey` now embeds the raw 32-byte
+  Ed25519 key (not the DER/SPKI form Sparkle can't decode), which was causing
+  "Unable to Check For Updates — the update checker failed to start correctly".
+- Enabled Sparkle's `automaticallyChecksForUpdates` so silent background checks
+  run on their own schedule instead of a manual `checkForUpdatesInBackground`.
+- App version string now comes from `gradle.properties` (generated `AppInfo.kt`)
+  instead of a hardcoded `1.0.0`, so internal version reporting matches the bundle.
 - Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
 
 ---

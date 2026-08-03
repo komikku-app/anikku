@@ -24,9 +24,38 @@ kotlin {
                 // keiyoushi.utils.* classes (ContextKt, Network, Crypto, etc.)
                 // at runtime through the URLClassLoader parent delegation.
                 srcDir("keiyoushi-utils/src/main/kotlin")
+                // Generated AppInfo.kt (version from gradle.properties).
+                srcDir(layout.buildDirectory.dir("generated/app-info/kotlin"))
             }
         }
     }
+}
+
+// ---- Generated build info (single source of truth for app version) --------
+val generateAppInfo by tasks.registering {
+    val version = appVersionName
+    val outDir = layout.buildDirectory.dir("generated/app-info/kotlin").get().asFile
+    inputs.property("version", version)
+    outputs.dir(outDir)
+    doLast {
+        val pkgDir = File(outDir, "app/anikku/macos/platform/update")
+        pkgDir.mkdirs()
+        File(pkgDir, "AppInfo.kt").writeText(
+            """
+            |// Generated from gradle.properties (appVersionName). Do not edit.
+            |package app.anikku.macos.platform.update
+            |
+            |/** Single source of truth for the app version string. */
+            |object AppInfo {
+            |    const val VERSION: String = "$version"
+            |}
+            |""".trimMargin()
+        )
+    }
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(generateAppInfo)
 }
 
 dependencies {
@@ -548,11 +577,11 @@ compose.desktop {
                 appCategory = "public.app-category.entertainment"
                 entitlementsFile.set(project.file("src/main/resources/entitlements.plist"))
                 infoPlist {
-                    val publicKey = project.file("src/main/resources/Sparkle/ed25519_pub.pem")
-                        .readLines()
-                        .filterNot { it.trim().startsWith("-") || it.isBlank() }
-                        .joinToString("")
-                        .trim()
+                    // Sparkle 2.6.x expects the RAW 32-byte Ed25519 key (base64) in
+                    // SUPublicEDKey — NOT the DER/SPKI-wrapped SubjectPublicKeyInfo
+                    // stored in the PEM. Embedding the PEM body verbatim makes Sparkle
+                    // fail with "The provided EdDSA key could not be decoded".
+                    val publicKey = readRawSparklePublicKey()
                     extraKeysRawXml = """
                         <key>SUFeedURL</key>
                         <string>https://raw.githubusercontent.com/ErnestHysa/anikku/master/macos/src/main/resources/Sparkle/appcast.xml</string>
@@ -854,7 +883,6 @@ tasks.register("listDistributionTasks") {
 
 // ---- Sparkle Public Key and feed validation -------------------------------
 val sparkleFeedUrl = "https://raw.githubusercontent.com/ErnestHysa/anikku/master/macos/src/main/resources/Sparkle/appcast.xml"
-val sparkleEd25519SubjectPublicKeyLength = 44
 val sparkleEd25519SignatureLength = 64
 
 fun readSparklePublicKey(): String {
@@ -882,12 +910,29 @@ fun readSparklePublicKey(): String {
         0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65,
         0x70, 0x03, 0x21, 0x00,
     )
-    if (der.size != sparkleEd25519SubjectPublicKeyLength ||
+    if (der.size != expectedPrefix.size + 32 || // 12-byte SPKI prefix + 32-byte raw key
         !der.copyOfRange(0, expectedPrefix.size).contentEquals(expectedPrefix)
     ) {
-        throw GradleException("Sparkle Ed25519 public key is not a DER-encoded Ed25519 SubjectPublicKeyInfo")
+        throw GradleException(
+            "Sparkle Ed25519 public key is not a DER-encoded Ed25519 SubjectPublicKeyInfo " +
+                "(der.size=${der.size}, expected=${expectedPrefix.size + 32}, " +
+                "keyB64='$key')"
+        )
     }
     return key
+}
+
+/**
+ * Sparkle 2.6.x's SUPublicEDKey expects the base64 of the RAW 32-byte Ed25519
+ * public key, not the DER/SPKI-wrapped SubjectPublicKeyInfo. The PEM stores the
+ * SPKI form (12-byte prefix + 32-byte raw key); strip the prefix and re-encode.
+ */
+fun readRawSparklePublicKey(): String {
+    val der = Base64.getDecoder().decode(readSparklePublicKey())
+    require(der.size == 44) { "Unexpected Ed25519 SPKI DER size: ${der.size}" }
+    val raw = der.copyOfRange(12, der.size)
+    require(raw.size == 32) { "Unexpected raw Ed25519 key size: ${raw.size}" }
+    return Base64.getEncoder().encodeToString(raw)
 }
 
 private fun validateSparkleFeedUrl(value: String) {
