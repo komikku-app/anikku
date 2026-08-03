@@ -25,6 +25,13 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
   - Playback speed control (0.25x–4.0x)
   - Audio track selection
   - Subtitle track selection with delay adjustment
+  - **Automatic English subtitles** — when a source serves no subtitle track,
+    Anikku resolves the anime via AniList and fetches the exact episode's subs
+    from Jimaku (anime-native database), cached per episode. OpenSubtitles.com
+    is a searchable fallback from the player's subtitle menu (English first).
+    Provider keys are baked in (free tiers); users can override them in Settings.
+  - **Resume playback** — position is saved continuously during playback and
+    restored when you reopen an episode (pause at 10:00, exit, resume at 10:00).
   - Video equalizer (brightness, contrast, saturation, gamma)
   - Screenshot capture
   - Keyboard shortcuts (Space, ←→, ↑↓)

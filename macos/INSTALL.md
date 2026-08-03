@@ -26,7 +26,7 @@ See [BUILDING.md](BUILDING.md) for full build instructions.
 git clone https://github.com/komikku-app/anikku.git
 cd anikku/macos
 ./gradlew packageDmg
-# Output: build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
+# Output: build/compose/binaries/main/dmg/Anikku-1.0.2.dmg
 ```
 
 There is currently no supported Homebrew formula.
@@ -70,6 +70,28 @@ To sync your watch history with MyAnimeList, AniList, or Kitsu:
 2. Select your tracker
 3. Click "Login" — your default browser will open the OAuth page
 4. Authorize the app and return to Anikku
+
+### 4. Automatic English Subtitles
+
+No setup required — the app ships with baked-in free-tier credentials for the
+subtitle providers:
+
+- **Jimaku** (anime-native database) is used automatically when a source serves
+  no subtitle track: the player resolves the anime via AniList, fetches the
+  exact episode's English subs, and attaches them.
+- **OpenSubtitles.com** is a fallback: open the player's subtitle menu →
+  "Search OpenSubtitles…" → pick a result (English first) → it attaches with
+  correct timing.
+
+You can override the built-in keys in **Settings → Subtitles** (values are
+stored in your macOS Keychain and take precedence). Note that all users of a
+given build share the developer account's free-tier download quotas.
+
+### 5. Resume Playback
+
+The player saves your position every few seconds during playback and seeks back
+to it when you reopen an episode — pause at 10:00, quit, reopen, and it resumes
+at 10:00. Toggle this off in Settings → Player → "Resume from last position".
 
 Discord Rich Presence is available as an opt-in setting. It connects only to a
 locally running Discord Desktop client through its Unix-domain IPC socket; a

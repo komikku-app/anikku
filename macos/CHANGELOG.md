@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.2] — 2026-08-04
+
+### Subtitle credentials + resume fix
+
+- Baked the developer's free Jimaku + OpenSubtitles credentials into the app
+  (`gradle.properties` → generated `SubtitleDefaults.kt`) so automatic English
+  subtitles work out of the box with zero end-user configuration.
+- **Fixed resume playback**: the player now saves the watch position every 5s
+  during playback (previously only on screen dispose, which app quit / force-quit
+  could skip) and seeks back to the saved position when reopening an episode.
+  Pause at 10:00, exit, reopen → resumes at 10:00.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.0.1] — 2026-08-03
 
 ### Maintenance release

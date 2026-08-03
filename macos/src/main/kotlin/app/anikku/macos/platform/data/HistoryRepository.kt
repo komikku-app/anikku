@@ -88,6 +88,15 @@ class HistoryRepository(private val dataDir: File) {
     fun getLatestForAnime(animeId: Long): HistoryEntry? =
         entries.filter { it.animeId == animeId }.maxByOrNull { it.seenAt }
 
+    /**
+     * Get the most recent history entry for a specific episode, so the player
+     * can resume from the exact position the user last stopped at.
+     */
+    @Synchronized
+    fun getForEpisode(animeId: Long, episodeId: Long): HistoryEntry? =
+        entries.filter { it.animeId == animeId && it.episodeId == episodeId }
+            .maxByOrNull { it.seenAt }
+
     private fun loadFromFile(): MutableList<HistoryEntry> {
         if (!historyFile.exists()) return mutableListOf()
         return try {

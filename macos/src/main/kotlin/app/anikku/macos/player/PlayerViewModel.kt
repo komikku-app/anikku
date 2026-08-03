@@ -287,6 +287,25 @@ class PlayerViewModel(
                                 addExternalSubtitleTracks(handle, activeExternalSubtitleTracks, token)
                                 scheduleSubtitleSelection(handle, token)
                             }
+                            // Resume from a saved position. Seeking immediately
+                            // after FILE_LOADED can race the demuxer; give mpv a
+                            // short settle delay, then apply the absolute seek.
+                            val resumeAt = pendingStartPosition
+                            if (resumeAt > 0.0) {
+                                logger.info { "🎬 VIDEO_FILE: resuming at ${resumeAt}s" }
+                                scope.launch {
+                                    delay(RESUME_SEEK_DELAY_MS)
+                                    if (loadToken !== token || mpvHandle !== handle) return@launch
+                                    try {
+                                        MPVLib.setPropertyDouble(handle, "time-pos", resumeAt)
+                                        pendingStartPosition = 0.0
+                                        logger.info { "🎬 VIDEO_FILE: resume seek to ${resumeAt}s applied" }
+                                    } catch (e: Exception) {
+                                        logger.warn(e) { "🎬 VIDEO_FILE: resume seek failed" }
+                                        pendingStartPosition = 0.0
+                                    }
+                                }
+                            }
                             // Keep the timeout alive until mpv actually starts;
                             // FILE_LOADED can arrive while the demuxer is still buffering.
                             logger.info { "🎬 VIDEO_FILE: file loaded into mpv — synchronized playback state" }
@@ -598,24 +617,37 @@ class PlayerViewModel(
     private var loadInProgress = false
 
     /**
+     * Resume position (seconds) to seek to once the current file has loaded,
+     * or 0.0 when the episode should start from the beginning. Cleared when
+     * the seek is applied or a new load starts.
+     */
+    @Volatile
+    private var pendingStartPosition = 0.0
+
+    /**
      * Load and play a video URL with optional HTTP headers and source-provided
      * external subtitle tracks.
      *
      * Subtitles are intentionally added after FILE_LOADED. mpv cannot attach
      * an external subtitle to the replaced file before its demuxer has created
      * the new track list, and doing so would race episode navigation.
+     *
+     * @param startPosition Optional resume position in seconds; the player
+     *                      seeks there once the file has loaded (0 = start).
      */
     fun loadEpisode(
         url: String,
         headers: Map<String, String>? = null,
         subtitleTracks: List<Track> = emptyList(),
-    ) = loadEpisodeInternal(url, headers, subtitleTracks, retainMagnetProcess = false)
+        startPosition: Double = 0.0,
+    ) = loadEpisodeInternal(url, headers, subtitleTracks, retainMagnetProcess = false, startPosition = startPosition)
 
     private fun loadEpisodeInternal(
         url: String,
         headers: Map<String, String>?,
         subtitleTracks: List<Track>,
         retainMagnetProcess: Boolean,
+        startPosition: Double = 0.0,
     ) {
         if (!retainMagnetProcess) cancelMagnetPlayback()
 
@@ -636,6 +668,7 @@ class PlayerViewModel(
 
         val token = Any()
         loadToken = token
+        pendingStartPosition = startPosition.coerceAtLeast(0.0)
         activePlaylistEntryId = null
         loadTimeoutJob?.cancel()
         loadTimeoutJob = null
@@ -813,6 +846,7 @@ class PlayerViewModel(
         private const val MAX_TRACK_LIST_ENTRIES = 256
         private const val SUBTITLE_DISCOVERY_ATTEMPTS = 15
         private const val SUBTITLE_DISCOVERY_DELAY_MS = 200L
+        private const val RESUME_SEEK_DELAY_MS = 800L // let the demuxer settle before resume-seek
         private const val DEFAULT_SUBTITLE_LANGUAGE = "eng"
 
         /**

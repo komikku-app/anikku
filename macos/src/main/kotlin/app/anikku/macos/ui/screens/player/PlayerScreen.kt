@@ -766,7 +766,25 @@ data class PlayerScreen(
                 } else {
                     "Loading video into mpv player..."
                 }
-                playerViewModel.loadEpisode(video.url, video.headers, video.subtitleTracks)
+                // Resume from where the user left off when enabled. The episode's
+                // lastSecondSeen is persisted in history; freshly-fetched source
+                // episodes don't carry it, so look it up by (anime, episode).
+                val resumePosition = if (settings.resumeFromLastPosition) {
+                    val episode = allEpisodes.getOrNull(currentEpisodeIndex)
+                    if (episode != null) {
+                        historyRepo?.getForEpisode(animeId, episode.id)?.lastSecondSeen?.toDouble() ?: 0.0
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                }
+                playerViewModel.loadEpisode(
+                    url = video.url,
+                    headers = video.headers,
+                    subtitleTracks = video.subtitleTracks,
+                    startPosition = resumePosition,
+                )
 
                 // Apply any learned subtitle offset for this anime.
                 playerViewModel.applyLearnedSubtitleOffset(animeId)
@@ -891,6 +909,21 @@ data class PlayerScreen(
             onDispose {
                 saveCurrentPosition()
                 playerViewModel.shutdown()
+            }
+        }
+
+        // Persist the resume position periodically during playback. Saving only
+        // on dispose is fragile: app quit, force-quit, or a crash can skip
+        // onDispose entirely. A throttled save (every 5s while playing) ensures
+        // "pause, exit, resume from the same spot" always works.
+        LaunchedEffect(currentEpisodeIndex, playbackState) {
+            if (playbackState != PlaybackState.PLAYING) return@LaunchedEffect
+            while (true) {
+                delay(5_000)
+                val ep = allEpisodes.getOrNull(currentEpisodeIndex) ?: break
+                if (currentPosition > 0 && duration > 0) {
+                    saveResumePosition(ep, currentPosition.toLong(), duration.toLong())
+                }
             }
         }
 

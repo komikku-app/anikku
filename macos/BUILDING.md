@@ -129,7 +129,7 @@ local build can be attempted with the documented Compose override:
 ./gradlew packageDmg -Pcompose.desktop.packaging.checkJdkVendor=false
 ```
 
-Output: `macos/build/compose/binaries/main/dmg/Anikku-1.0.0.dmg`
+Output: `macos/build/compose/binaries/main/dmg/Anikku-1.0.2.dmg`
 
 Packaging downloads the architecture-specific TorrServer `MatriX.141.1`
 helper from its HTTPS GitHub release, verifies the pinned SHA-256, and stages it
@@ -140,7 +140,7 @@ Verify the generated application bundle and disk image:
 
 ```bash
 ./gradlew verifyPackage
-hdiutil verify build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
+hdiutil verify build/compose/binaries/main/dmg/Anikku-1.0.2.dmg
 ```
 
 For Developer ID signing and notarization (requires owner credentials):
@@ -153,9 +153,9 @@ APPLE_ID="account@example.com" \
 APPLE_TEAM_ID="TEAMID" \
 APPLE_PASSWORD="@keychain:AC_PASSWORD" \
 ./gradlew submitForNotarization \
-  -PdmgPath=build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
+  -PdmgPath=build/compose/binaries/main/dmg/Anikku-1.0.2.dmg
 
-xcrun stapler staple build/compose/binaries/main/dmg/Anikku-1.0.0.dmg
+xcrun stapler staple build/compose/binaries/main/dmg/Anikku-1.0.2.dmg
 ```
 
 ### Package as .pkg Installer
