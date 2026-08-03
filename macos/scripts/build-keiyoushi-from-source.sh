@@ -807,6 +807,14 @@ if [ -n "$SUPERSTREAM_SRC" ] && [ -f "$SUPERSTREAM_SRC" ]; then
     log "Patched: SuperStream.kt — added context!! null-safety (setDefaultValue preserved)"
 fi
 
+# Patch: streamingcommunity — screen.context is Context? in JVM stubs but
+# Toast.makeText expects Context.
+STREAMCOMM_SRC=$(find "${GIT_CLONE_DIR}/src/all/streamingcommunity" -name "*.kt" 2>/dev/null | head -1) || true
+if [ -n "$STREAMCOMM_SRC" ] && [ -f "$STREAMCOMM_SRC" ]; then
+    sed -i '' 's/\.makeText(screen\.context,/.makeText(screen.context!!,/g' "$STREAMCOMM_SRC" 2>/dev/null || true
+    log "Patched: StreamingCommunity.kt — added context!! null-safety"
+fi
+
 # Patch: strip source-api overrides the macOS source-api jar does not declare.
 # Newer extensions override fetchRelatedAnimeList / disableRelatedAnimesBySearch
 # (and touch the nullable Activity.intent in UrlActivity files); the macOS app
