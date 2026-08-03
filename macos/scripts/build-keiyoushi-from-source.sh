@@ -807,6 +807,83 @@ if [ -n "$SUPERSTREAM_SRC" ] && [ -f "$SUPERSTREAM_SRC" ]; then
     log "Patched: SuperStream.kt — added context!! null-safety (setDefaultValue preserved)"
 fi
 
+# Patch: strip source-api overrides the macOS source-api jar does not declare.
+# Newer extensions override fetchRelatedAnimeList / disableRelatedAnimesBySearch
+# (and touch the nullable Activity.intent in UrlActivity files); the macOS app
+# uses getRelatedAnimeList() instead, so stripping these overrides is safe and
+# lets the extension fall back to the interface default.
+SRC_DIR="$SRC_DIR" python3 - <<'PYEOF'
+import os, re, pathlib
+root = pathlib.Path(os.environ["SRC_DIR"])
+for f in root.rglob("*.kt"):
+    s = f.read_text()
+    orig = s
+    # 1) override val disableRelatedAnimesBySearch = true/false
+    s = re.sub(r'override\s+val\s+disableRelatedAnimesBySearch\s*=\s*(true|false)\s*\n',
+               '// disableRelatedAnimesBySearch removed — not in macOS source-api\n', s)
+    # 2) override suspend fun fetchRelatedAnimeList(...) { ... } — brace-balanced
+    #    with string/comment awareness so braces inside JSON/strings don't
+    #    skew the count.
+    def _skip_string(s, i):
+        q = s[i]; i += 1
+        if s[i:i+1] == q and s[i+1:i+2] == q:  # """ raw string
+            i += 1
+            while i < len(s):
+                if s[i:i+3] == q*3: return i + 3
+                i += 1
+            return i
+        while i < len(s):
+            if s[i] == '\\': i += 2; continue
+            if s[i] == q: return i + 1
+            i += 1
+        return i
+    def _skip_comment(s, i):
+        if s[i:i+2] == '//':
+            while i < len(s) and s[i] != '\n': i += 1
+            return i
+        if s[i:i+2] == '/*':
+            i += 2
+            while i < len(s) and s[i:i+2] != '*/': i += 1
+            return min(i + 2, len(s))
+        return i
+    def _match_brace(s, brace_idx):
+        depth = 0; i = brace_idx
+        while i < len(s):
+            c = s[i]
+            if c == '"' or c == "'":
+                i = _skip_string(s, i); continue
+            if c == '/' and i + 1 < len(s) and s[i+1] in ('/', '*'):
+                i = _skip_comment(s, i); continue
+            if c == '{': depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0: return i + 1
+            i += 1
+        return i
+    pat = re.compile(r'^(\s*)override\s+suspend\s+fun\s+fetchRelatedAnimeList\([^\n]*\n', re.M)
+    parts = []
+    idx = 0
+    for m in pat.finditer(s):
+        parts.append(s[idx:m.start()])
+        # start from the signature's own '{' (regex [^\n]* already consumed it,
+        # so use m.start(), NOT m.end()-1, or the matcher starts at a nested brace)
+        brace = s.find('{', m.start())
+        if brace == -1:
+            parts.append(s[m.start():m.end()]); idx = m.end(); continue
+        end = _match_brace(s, brace)
+        if end < len(s) and s[end] == '\n': end += 1
+        idx = end
+    parts.append(s[idx:])
+    s = ''.join(parts)
+    # 3) nullable Activity.intent in UrlActivity files
+    if f.name.endswith("UrlActivity.kt"):
+        s = s.replace('intent.data.toString()', 'intent?.data?.toString()')
+    if s != orig:
+        f.write_text(s)
+        print(f"  [patch] {f.name} — stripped unsupported source-api overrides")
+PYEOF
+log "Patched: stripped unsupported source-api overrides (fetchRelatedAnimeList / disableRelatedAnimesBySearch / UrlActivity intent)"
+
 # ---------------------------------------------------------------------------
 # Step 4: Compile the extension
 # ---------------------------------------------------------------------------
