@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -98,6 +99,7 @@ import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.models.EpisodeModel
 import app.anikku.macos.ui.screens.models.toAnimeModel
 import app.anikku.macos.ui.screens.models.toEpisodeModel
+import app.anikku.macos.ui.screens.link.LinkSourceScreen
 import app.anikku.macos.ui.screens.player.PlayerScreen
 import app.anikku.macos.ui.screens.tracker.TrackerSearchScreen
 import cafe.adriel.voyager.core.screen.ScreenKey
@@ -323,6 +325,22 @@ data class AnimeDetailScreen(
                                 modifier = Modifier.padding(horizontal = 32.dp),
                             )
                             Spacer(Modifier.height(16.dp))
+                            if (this@AnimeDetailScreen.sourceId == null) {
+                                OutlinedButton(onClick = {
+                                    navigator.push(
+                                        LinkSourceScreen(
+                                            animeId = animeId,
+                                            animeTitle = animeTitle ?: "",
+                                            anilistId = libraryRepo.get(animeId)?.anilistId,
+                                        ),
+                                    )
+                                }) {
+                                    Icon(Icons.Outlined.Link, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Link to a source")
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
                             OutlinedButton(onClick = { navigator.pop() }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                                 Spacer(Modifier.width(4.dp))

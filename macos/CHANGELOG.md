@@ -14,6 +14,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+---
+
+## [1.1.6] — 2026-08-04
+
+### AniList-synced entries are playable + Library layout rework
+
+**Link a synced anime to a source (now playable)**
+- Clicking an AniList-imported anime (no streaming source) now opens a **source
+  picker**: the installed extensions are listed, picking one searches it for
+  the anime's title, and the user picks the right match — the library entry is
+  updated with that source's id/URL and the detail screen opens so episodes
+  stream from there. Also reachable via "Link to a source" on the anime detail
+  error state, and from Continue Watching cards for synced shows.
+
+**Library layout**
+- Continue Watching is now a **compact strip** (smaller covers, tighter
+  spacing) so the saved-anime grid gets the full remaining height and is easy
+  to scroll through — no more half-and-half fixed panes fighting for space.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.1.5] — 2026-08-04
 
 ### AniList sync fixed + 3-dot remove menus

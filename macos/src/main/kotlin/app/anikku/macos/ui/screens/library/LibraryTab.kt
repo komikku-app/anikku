@@ -77,6 +77,7 @@ import app.anikku.macos.ui.components.OverflowItem
 import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
+import app.anikku.macos.ui.screens.link.LinkSourceScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.player.PlayerScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -190,8 +191,10 @@ object LibraryTab : AnikkuScreen(), Tab {
             onCategorySelect = { selectedCategoryId = it },
             onAnimeClick = { anime ->
                 if (anime.source == 0L && anime.url == null) {
-                    // Entry imported from AniList has no streaming source.
-                    toastHost.show("Synced from AniList — find it via Browse to play", ToastDuration.SHORT)
+                    // Entry imported from AniList has no streaming source — let
+                    // the user link it to an extension so it becomes playable.
+                    val anilistId = libraryEntries.firstOrNull { it.animeId == anime.id }?.anilistId
+                    navigator.push(LinkSourceScreen(animeId = anime.id, animeTitle = anime.title, anilistId = anilistId))
                 } else {
                     navigator.push(AnimeDetailScreen(
                         animeId = anime.id,
@@ -213,7 +216,8 @@ object LibraryTab : AnikkuScreen(), Tab {
             onContinueWatchingClick = { item ->
                 val entry = item.entry
                 if (entry.sourceId == 0L || entry.episodeUrl == null) {
-                    toastHost.show("Synced from AniList — find it via Browse to play", ToastDuration.SHORT)
+                    val anilistId = libraryEntries.firstOrNull { it.animeId == entry.animeId }?.anilistId
+                    navigator.push(LinkSourceScreen(animeId = entry.animeId, animeTitle = entry.animeTitle, anilistId = anilistId))
                 } else {
                     navigator.push(PlayerScreen(
                         animeId = entry.animeId,
@@ -344,7 +348,7 @@ internal fun LibraryContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     FilterChip(
@@ -376,7 +380,7 @@ internal fun LibraryContent(
                     onValueChange = onSearchQueryChange,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
                     placeholder = { Text("Search library...") },
                     leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                     singleLine = true,
@@ -555,7 +559,7 @@ private fun ContinueWatchingCard(
 
     Card(
         onClick = onClick,
-        modifier = Modifier.width(140.dp),
+        modifier = Modifier.width(110.dp),
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
         colors = CardDefaults.cardColors(
@@ -569,16 +573,16 @@ private fun ContinueWatchingCard(
                     thumbnailUrl = item.thumbnailUrl,
                     contentDescription = entry.animeTitle,
                     title = entry.animeTitle,
-                    modifier = Modifier.fillMaxWidth().height(190.dp),
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
                 )
                 if (overflowItems != null) {
                     OverflowMenu(
                         items = overflowItems,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                        modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
                     )
                 }
             }
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(6.dp)) {
                 Text(
                     text = entry.animeTitle,
                     style = MaterialTheme.typography.bodySmall,
