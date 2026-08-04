@@ -42,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.auth.AnilistConfig
 import app.anikku.macos.platform.auth.LocalAniListSyncService
+import app.anikku.macos.platform.auth.LocalTrackerLibrarySyncService
+import app.anikku.macos.platform.auth.TrackerLibrarySyncService
 import app.anikku.macos.platform.auth.TrackerManager
 import app.anikku.macos.platform.auth.TrackerTokenStore
 import app.anikku.macos.platform.library.LocalLibraryAutoLinkService
@@ -92,6 +94,7 @@ fun TrackerSettingsPanel(
     val toastHost = LocalToastHost.current
     val navigator = LocalNavigator.current
     val scope = rememberCoroutineScope()
+    val settings = LocalSettingsState.current
     var loggingInTracker by remember { mutableStateOf<String?>(null) }
 
     // Collect login statuses reactively
@@ -193,7 +196,6 @@ fun TrackerSettingsPanel(
     val anilistLoggedIn = statuses.any { it.tracker == "anilist" && it.isLoggedIn }
     if (anilistLoggedIn) {
         val syncService = LocalAniListSyncService.current
-        val settings = LocalSettingsState.current
         // Captured at composition — composition locals can't be read inside
         // coroutine launches (their getters are @Composable).
         val autoLinkService = LocalLibraryAutoLinkService.current
@@ -282,6 +284,32 @@ fun TrackerSettingsPanel(
         }
     }
 
+    // MAL + Kitsu library sync (2-way) — same pull/push model as AniList,
+    // driven by the shared TrackerLibrarySyncService. Shown only for trackers
+    // the user has actually logged in to.
+    if (statuses.any { it.tracker == "myanimelist" && it.isLoggedIn }) {
+        TrackerSyncSection(
+            tracker = "myanimelist",
+            displayName = "MyAnimeList",
+            syncService = LocalTrackerLibrarySyncService.current,
+            intervalHours = settings.malSyncIntervalHours,
+            lastSyncAt = settings.malLastSyncAt,
+            onIntervalChange = { settings.malSyncIntervalHours = it },
+            onLastSyncAt = { settings.malLastSyncAt = it },
+        )
+    }
+    if (statuses.any { it.tracker == "kitsu" && it.isLoggedIn }) {
+        TrackerSyncSection(
+            tracker = "kitsu",
+            displayName = "Kitsu",
+            syncService = LocalTrackerLibrarySyncService.current,
+            intervalHours = settings.kitsuSyncIntervalHours,
+            lastSyncAt = settings.kitsuLastSyncAt,
+            onIntervalChange = { settings.kitsuSyncIntervalHours = it },
+            onLastSyncAt = { settings.kitsuLastSyncAt = it },
+        )
+    }
+
     // Info text about credentials
     Text(
         text = "To use tracker sync, set up your OAuth app credentials in the Manage Trackers screen.",
@@ -361,6 +389,93 @@ fun TrackerSettingsPanel(
                 modifier = Modifier.size(20.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun TrackerSyncSection(
+    tracker: String,
+    displayName: String,
+    syncService: TrackerLibrarySyncService?,
+    intervalHours: Int,
+    lastSyncAt: Long,
+    onIntervalChange: (Int) -> Unit,
+    onLastSyncAt: (Long) -> Unit,
+) {
+    val toastHost = LocalToastHost.current
+    val scope = rememberCoroutineScope()
+    var syncing by remember { mutableStateOf(false) }
+
+    Spacer(Modifier.height(8.dp))
+    HeadingItem("$displayName Library Sync")
+
+    val syncOptions = arrayOf("Off", "Every 12 hours", "Daily", "Weekly")
+    val syncValues = intArrayOf(0, 12, 24, 168)
+    var intervalIndex by remember(intervalHours) {
+        mutableStateOf(syncValues.indexOf(intervalHours).coerceAtLeast(0))
+    }
+    SelectItem(
+        label = "Auto-sync",
+        options = syncOptions,
+        selectedIndex = intervalIndex,
+        onSelect = { index ->
+            intervalIndex = index
+            onIntervalChange(syncValues[index])
+        },
+    )
+
+    Text(
+        text = if (lastSyncAt > 0) {
+            "Last synced: ${SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(lastSyncAt))}"
+        } else {
+            "Never synced"
+        },
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    Button(
+        onClick = {
+            if (syncService == null) {
+                toastHost.show("$displayName sync unavailable", ToastDuration.SHORT, true)
+                return@Button
+            }
+            syncing = true
+            scope.launch {
+                val result = syncService.syncNow(tracker)
+                syncing = false
+                if (result != null) {
+                    onLastSyncAt(System.currentTimeMillis())
+                    toastHost.show(
+                        text = result.toMessage(displayName),
+                        duration = if (result.errors.isNotEmpty()) ToastDuration.LONG else ToastDuration.SHORT,
+                        isError = result.errors.isNotEmpty(),
+                        source = tracker,
+                        location = "TrackerSettingsPanel.${tracker}Sync",
+                    )
+                } else {
+                    toastHost.show(
+                        text = "$displayName sync failed",
+                        duration = ToastDuration.LONG,
+                        isError = true,
+                        source = tracker,
+                        location = "TrackerSettingsPanel.${tracker}Sync",
+                    )
+                }
+            }
+        },
+        enabled = !syncing && syncService != null,
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(6.dp),
+    ) {
+        Icon(
+            Icons.Outlined.SyncAlt,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(if (syncing) "Syncing…" else "Sync library now", style = MaterialTheme.typography.labelMedium)
     }
 }
 

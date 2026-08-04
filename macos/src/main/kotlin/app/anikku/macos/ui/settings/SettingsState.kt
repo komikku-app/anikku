@@ -7,6 +7,9 @@ import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.platform.security.MacOSSecretStore
 import app.anikku.macos.ui.theme.AnikkuTheme
 
+/** Preference key for the "New episode notifications" toggle (shared with background jobs). */
+const val KEY_NEW_EPISODE_NOTIFICATIONS = "new_episode_notifications_enabled"
+
 /**
  * Mutable settings state accessible throughout the Compose tree via CompositionLocal.
  *
@@ -70,6 +73,10 @@ class SettingsState(
         // AniList tracker sync
         private const val KEY_ANILIST_SYNC_INTERVAL_HOURS = "anilist_sync_interval_hours"
         private const val KEY_ANILIST_LAST_SYNC_AT = "anilist_last_sync_at"
+        private const val KEY_MAL_SYNC_INTERVAL_HOURS = "mal_sync_interval_hours"
+        private const val KEY_MAL_LAST_SYNC_AT = "mal_last_sync_at"
+        private const val KEY_KITSU_SYNC_INTERVAL_HOURS = "kitsu_sync_interval_hours"
+        private const val KEY_KITSU_LAST_SYNC_AT = "kitsu_last_sync_at"
 
         // Download settings
         private const val KEY_DOWNLOAD_WIFI_ONLY = "download_wifi_only"
@@ -239,6 +246,17 @@ class SettingsState(
             resumePref?.set(value)
         }
 
+    private val newEpisodeNotificationsPref = preferenceStore?.getBoolean(KEY_NEW_EPISODE_NOTIFICATIONS, true)
+    private val _newEpisodeNotifications = mutableStateOf(newEpisodeNotificationsPref?.get() ?: true)
+
+    /** Whether to fire macOS notifications for newly discovered episodes. */
+    var newEpisodeNotificationsEnabled: Boolean
+        get() = _newEpisodeNotifications.value
+        set(value) {
+            _newEpisodeNotifications.value = value
+            newEpisodeNotificationsPref?.set(value)
+        }
+
     private val skipIntroPref = preferenceStore?.getBoolean(KEY_SKIP_INTRO, false)
     private val _skipIntro = mutableStateOf(skipIntroPref?.get() ?: false)
 
@@ -314,6 +332,54 @@ class SettingsState(
         set(value) {
             _anilistLastSyncAt.value = value
             anilistLastSyncPref?.set(value)
+        }
+
+    // -------------------------------------------------------------------------
+    // MAL + Kitsu tracker sync (mirrors AniList above)
+    // -------------------------------------------------------------------------
+
+    private val malSyncIntervalPref = preferenceStore?.getInt(KEY_MAL_SYNC_INTERVAL_HOURS, 0)
+    private val _malSyncIntervalHours = mutableStateOf(sanitizeJobInterval(malSyncIntervalPref?.get() ?: 0))
+    private val malLastSyncPref = preferenceStore?.getLong(KEY_MAL_LAST_SYNC_AT, 0L)
+    private val _malLastSyncAt = mutableStateOf(malLastSyncPref?.get() ?: 0L)
+
+    /** How often to auto-sync the library with MyAnimeList (hours; 0 disables). */
+    var malSyncIntervalHours: Int
+        get() = _malSyncIntervalHours.value
+        set(value) {
+            val sanitized = sanitizeJobInterval(value)
+            _malSyncIntervalHours.value = sanitized
+            malSyncIntervalPref?.set(sanitized)
+        }
+
+    /** Epoch millis of the last successful MAL library sync (0 = never). */
+    var malLastSyncAt: Long
+        get() = _malLastSyncAt.value
+        set(value) {
+            _malLastSyncAt.value = value
+            malLastSyncPref?.set(value)
+        }
+
+    private val kitsuSyncIntervalPref = preferenceStore?.getInt(KEY_KITSU_SYNC_INTERVAL_HOURS, 0)
+    private val _kitsuSyncIntervalHours = mutableStateOf(sanitizeJobInterval(kitsuSyncIntervalPref?.get() ?: 0))
+    private val kitsuLastSyncPref = preferenceStore?.getLong(KEY_KITSU_LAST_SYNC_AT, 0L)
+    private val _kitsuLastSyncAt = mutableStateOf(kitsuLastSyncPref?.get() ?: 0L)
+
+    /** How often to auto-sync the library with Kitsu (hours; 0 disables). */
+    var kitsuSyncIntervalHours: Int
+        get() = _kitsuSyncIntervalHours.value
+        set(value) {
+            val sanitized = sanitizeJobInterval(value)
+            _kitsuSyncIntervalHours.value = sanitized
+            kitsuSyncIntervalPref?.set(sanitized)
+        }
+
+    /** Epoch millis of the last successful Kitsu library sync (0 = never). */
+    var kitsuLastSyncAt: Long
+        get() = _kitsuLastSyncAt.value
+        set(value) {
+            _kitsuLastSyncAt.value = value
+            kitsuLastSyncPref?.set(value)
         }
 
     // -------------------------------------------------------------------------

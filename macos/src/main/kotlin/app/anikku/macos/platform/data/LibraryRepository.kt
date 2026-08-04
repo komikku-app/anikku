@@ -80,6 +80,10 @@ class LibraryRepository(private val dataDir: File) {
         val lastUpdatedAt: Long = System.currentTimeMillis(),
         /** AniList media id when this entry was imported via tracker sync (null = not linked). */
         val anilistId: Long? = null,
+        /** MyAnimeList anime id when this entry was imported via MAL sync (null = not linked). */
+        val malId: Long? = null,
+        /** Kitsu anime id when this entry was imported via Kitsu sync (null = not linked). */
+        val kitsuId: Long? = null,
     )
 
     private val lock = Any()

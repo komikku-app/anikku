@@ -22,6 +22,8 @@ import app.anikku.macos.ui.screens.HistoryScreen
 import app.anikku.macos.ui.screens.LibraryScreen
 import app.anikku.macos.ui.screens.MoreScreen
 import app.anikku.macos.ui.screens.UpdatesScreen
+import app.anikku.macos.ui.screens.stats.StatsTab
+import app.anikku.macos.ui.screens.torrent.TorrentTab
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.screens.browse.GlobalSearchScreen
 import cafe.adriel.voyager.navigator.CurrentScreen
@@ -41,12 +43,14 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
  *
  * Ported from the Android HomeScreen.kt and MainActivity.kt.
  */
-/** Ordered tabs matching the View menu shortcuts (⌘1-4, ⌘5 for More). */
+/** Ordered tabs matching the View menu shortcuts (⌘1-5, ⌘6 for More). */
 internal val orderedTabs: List<Tab> = listOf(
     LibraryScreen,
     UpdatesScreen,
     HistoryScreen,
+    StatsTab,
     BrowseScreen,
+    TorrentTab,
     MoreScreen,
 )
 
@@ -73,7 +77,7 @@ fun MainWindow() {
             val sidebarToggleHandler: () -> Unit = { sidebarVisible = !sidebarVisible }
             val searchHandler: () -> Unit = {
                 tabNavigator.current = BrowseScreen
-                currentTabIndex = 3
+                currentTabIndex = 4
                 searchRequestId++
             }
             GlobalKeyboardShortcuts.onToggleSidebar = sidebarToggleHandler
@@ -94,7 +98,7 @@ fun MainWindow() {
                 orderedTabs.getOrNull(index)?.let { tab ->
                     tabNavigator.current = tab
                     currentTabIndex = index
-                    val tabNames = listOf("Library", "Updates", "History", "Browse", "More")
+                    val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "More")
                     UIActionLogger.logNavigation("MenuShortcut", tabNames.getOrElse(index) { "?" }, "tab=$index")
                 }
             }
@@ -114,7 +118,7 @@ fun MainWindow() {
                         currentTabIndex = currentTabIndex,
                         onSelectTab = { index ->
                         orderedTabs.getOrNull(index)?.let { tab ->
-                            val tabNames = listOf("Library", "Updates", "History", "Browse", "More")
+                            val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "More")
                             UIActionLogger.logNavigation("NavigationRail", tabNames.getOrElse(index) { "?" }, "tab=$index")
                             tabNavigator.current = tab
                             currentTabIndex = index
@@ -146,7 +150,7 @@ fun MainWindow() {
                     Navigator(orderedTabs[currentTabIndex]) { navigator ->
                         LaunchedEffect(currentTabIndex, searchRequestId) {
                             if (
-                                currentTabIndex == 3 &&
+                                currentTabIndex == 4 &&
                                 searchRequestId > handledSearchRequestId
                             ) {
                                 handledSearchRequestId = searchRequestId

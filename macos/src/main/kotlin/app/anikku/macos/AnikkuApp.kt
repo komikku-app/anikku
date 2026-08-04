@@ -36,12 +36,15 @@ import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.platform.library.LocalAnimeSourceMatcher
 import app.anikku.macos.platform.library.LocalLibraryAutoLinkService
+import app.anikku.macos.platform.library.LocalNewEpisodeRepository
 import app.anikku.macos.platform.library.LibraryAutoLinkService
 import app.anikku.macos.platform.preference.BookmarkStore
 import app.anikku.macos.platform.preference.LocalBookmarkStore
 import app.anikku.macos.platform.auth.AniListSyncService
 import app.anikku.macos.platform.auth.LocalAniListSyncService
+import app.anikku.macos.platform.auth.LocalTrackerLibrarySyncService
 import app.anikku.macos.platform.auth.LocalTrackerManager
+import app.anikku.macos.platform.auth.TrackerLibrarySyncService
 import app.anikku.macos.platform.auth.TrackerManager
 import app.anikku.macos.platform.auth.TrackerOAuthManager
 import app.anikku.macos.platform.auth.TrackerTokenStore
@@ -78,6 +81,34 @@ import java.awt.event.WindowAdapter
 
 internal const val IMAGE_MEMORY_CACHE_BYTES = 256L * 1024L * 1024L
 internal const val IMAGE_DISK_CACHE_BYTES = 512L * 1024L * 1024L
+
+/**
+ * Periodic tracker-sync loop shared by MAL + Kitsu. Waits one full interval
+ * between checks; a tracker that isn't logged in is skipped until the next
+ * tick. Imported/updated entries kick the auto-link pass so source-less
+ * imports become playable.
+ */
+private suspend fun periodicTrackerSync(
+    intervalHours: Int,
+    loggedIn: () -> Boolean,
+    lastSyncAt: () -> Long,
+    setLastSyncAt: (Long) -> Unit,
+    sync: suspend () -> app.anikku.macos.platform.auth.SyncOutcome,
+    onImported: () -> Unit,
+) {
+    if (intervalHours <= 0) return
+    while (true) {
+        delay(intervalHours * 3_600_000L)
+        if (!loggedIn()) continue
+        val due = lastSyncAt() == 0L ||
+            System.currentTimeMillis() - lastSyncAt() >= intervalHours * 3_600_000L
+        if (due) {
+            val result = sync()
+            if (result.errors.isEmpty()) setLastSyncAt(System.currentTimeMillis())
+            if (result.imported > 0 || result.updated > 0) onImported()
+        }
+    }
+}
 
 /**
  * The app's main window frame. Used by the player for native macOS fullscreen
@@ -359,6 +390,15 @@ fun main() = application {
             )
         }
 
+        // MAL + Kitsu sync (2-way) — same pull/push model as AniList.
+        val trackerLibrarySyncService = remember {
+            TrackerLibrarySyncService(
+                trackerManager = trackerManager,
+                libraryRepository = libraryRepository,
+                historyRepository = historyRepository,
+            )
+        }
+
         val libraryAutoLinkService = remember { app.libraryAutoLinkService }
 
         // Periodic 2-way AniList sync. Waits one full interval between checks
@@ -389,6 +429,31 @@ fun main() = application {
             }
         }
 
+        // Periodic MAL + Kitsu sync — same cadence model as AniList above.
+        // Runs the shared TrackerLibrarySyncService when the tracker is logged
+        // in and its interval is enabled; failures are silent so the next tick
+        // retries.
+        LaunchedEffect(settingsState.malSyncIntervalHours) {
+            periodicTrackerSync(
+                intervalHours = settingsState.malSyncIntervalHours,
+                loggedIn = { trackerManager.isLoggedIn("myanimelist") },
+                lastSyncAt = { settingsState.malLastSyncAt },
+                setLastSyncAt = { settingsState.malLastSyncAt = it },
+                sync = { trackerLibrarySyncService.syncNow("myanimelist") },
+                onImported = { app.applicationScope.launch { runCatching { libraryAutoLinkService.autoLink() } } },
+            )
+        }
+        LaunchedEffect(settingsState.kitsuSyncIntervalHours) {
+            periodicTrackerSync(
+                intervalHours = settingsState.kitsuSyncIntervalHours,
+                loggedIn = { trackerManager.isLoggedIn("kitsu") },
+                lastSyncAt = { settingsState.kitsuLastSyncAt },
+                setLastSyncAt = { settingsState.kitsuLastSyncAt = it },
+                sync = { trackerLibrarySyncService.syncNow("kitsu") },
+                onImported = { app.applicationScope.launch { runCatching { libraryAutoLinkService.autoLink() } } },
+            )
+        }
+
         CompositionLocalProvider(
             LocalAppWindow provides (window as? Frame),
             LocalSettingsState provides settingsState,
@@ -405,10 +470,12 @@ fun main() = application {
             LocalExtensionManager provides app.extensionManager,
             LocalAnimeSourceMatcher provides app.animeSourceMatcher,
             LocalLibraryAutoLinkService provides libraryAutoLinkService,
+            LocalNewEpisodeRepository provides app.newEpisodeRepository,
             LocalBackupManager provides app.backupManager,
             LocalToastHost provides toastHostState,
             LocalTrackerManager provides trackerManager,
             LocalAniListSyncService provides anilistSyncService,
+            LocalTrackerLibrarySyncService provides trackerLibrarySyncService,
             LocalDiscordRPC provides app.discordRPC,
             LocalGoogleDriveService provides app.googleDriveService,
             LocalSyncYomiService provides app.syncYomiService,

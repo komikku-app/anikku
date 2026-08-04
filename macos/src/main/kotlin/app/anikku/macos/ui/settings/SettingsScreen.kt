@@ -328,6 +328,20 @@ fun SettingsScreen() {
             selectedIndex = updateIntervals.indexOf(settings.libraryUpdateIntervalHours).coerceAtLeast(0),
             onSelect = { settings.libraryUpdateIntervalHours = updateIntervals[it] },
         )
+
+        var newEpisodeNotifications by remember { mutableStateOf(settings.newEpisodeNotificationsEnabled) }
+        CheckboxItem(
+            label = "New episode notifications",
+            checked = newEpisodeNotifications,
+            onClick = {
+                newEpisodeNotifications = !newEpisodeNotifications
+                settings.newEpisodeNotificationsEnabled = newEpisodeNotifications
+                toastHost.show(
+                    "New episode notifications: ${if (newEpisodeNotifications) "on" else "off"}",
+                    ToastDuration.SHORT,
+                )
+            },
+        )
         SelectItem(
             label = "Google Drive backup schedule",
             options = updateIntervalLabels,

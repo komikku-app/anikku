@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -68,6 +69,8 @@ import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.platform.library.LocalNewEpisodeRepository
+import app.anikku.macos.platform.MacOSDockManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.AnimeGrid
@@ -166,9 +169,31 @@ object LibraryTab : AnikkuScreen(), Tab {
             continueWatchingItems(historyRepo, libraryEntries)
         }
 
+        // New Episodes feed — per-anime discoveries from the background library
+        // check, newest first, grouped by anime.
+        val newEpisodeRepo = LocalNewEpisodeRepository.current
+        val feedRevision = newEpisodeRepo?.revision?.collectAsState()?.value ?: 0L
+        val newEpisodes = remember(feedRevision) {
+            newEpisodeRepo?.getAll()
+                ?.groupBy { it.animeId }
+                ?.map { (animeId, rows) ->
+                    NewEpisodeFeedItem(
+                        animeId = animeId,
+                        title = rows.first().animeTitle,
+                        thumbnailUrl = rows.first().thumbnailUrl,
+                        count = rows.size,
+                        latestEpisodeName = rows.maxByOrNull { it.episodeNumber }?.episodeName,
+                        discoveredAt = rows.maxOf { it.discoveredAt },
+                    )
+                }
+                ?.sortedByDescending { it.discoveredAt }
+                .orEmpty()
+        }
+
         LibraryContent(
             libraryAnime = filteredAnime,
             continueWatching = continueWatching,
+            newEpisodes = newEpisodes,
             categories = categories,
             selectedCategoryId = selectedCategoryId,
             progressFilter = progressFilter,
@@ -186,6 +211,24 @@ object LibraryTab : AnikkuScreen(), Tab {
             onDismissSortMenu = { showSortMenu = false },
             onCategorySelect = { selectedCategoryId = it },
             onProgressFilterChange = { progressFilter = it },
+            onNewEpisodeClick = { item ->
+                navigator.push(AnimeDetailScreen(
+                    animeId = item.animeId,
+                    sourceId = null,
+                    animeUrl = null,
+                    animeTitle = item.title,
+                    extensionManager = extensionManager,
+                ))
+            },
+            onRemoveNewEpisode = { animeId ->
+                newEpisodeRepo?.removeForAnime(animeId)
+                if (newEpisodeRepo?.count() == 0) {
+                    MacOSDockManager.setBadgeCount(0)
+                } else {
+                    newEpisodeRepo?.count()?.let { MacOSDockManager.setBadgeCount(it) }
+                }
+                toastHost.show("Removed from new episodes", ToastDuration.SHORT)
+            },
             onAnimeClick = { anime ->
                 if (anime.source == 0L && anime.url == null) {
                     // Entry imported from AniList has no streaming source — the
@@ -271,6 +314,7 @@ object LibraryTab : AnikkuScreen(), Tab {
 internal fun LibraryContent(
     libraryAnime: List<AnimeModel>,
     continueWatching: List<ContinueWatchingItem> = emptyList(),
+    newEpisodes: List<NewEpisodeFeedItem> = emptyList(),
     categories: List<CategoryEntry> = emptyList(),
     selectedCategoryId: Long? = null,
     progressFilter: LibraryProgressFilter = LibraryProgressFilter.All,
@@ -286,6 +330,8 @@ internal fun LibraryContent(
     onDismissSortMenu: () -> Unit,
     onCategorySelect: (Long?) -> Unit,
     onProgressFilterChange: (LibraryProgressFilter) -> Unit = {},
+    onNewEpisodeClick: (NewEpisodeFeedItem) -> Unit = {},
+    onRemoveNewEpisode: (Long) -> Unit = {},
     onAnimeClick: (AnimeModel) -> Unit,
     onRemoveFromLibrary: (Long) -> Unit = {},
     onRemoveFromContinueWatching: (Long) -> Unit = {},
@@ -451,6 +497,36 @@ internal fun LibraryContent(
                 )
             }
 
+            // New Episodes row — freshly discovered episodes from the background
+            // library check, most recent first.
+            if (newEpisodes.isNotEmpty()) {
+                Text(
+                    text = "New Episodes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(newEpisodes, key = { it.animeId }) { item ->
+                        NewEpisodeCard(
+                            item = item,
+                            onClick = { onNewEpisodeClick(item) },
+                            overflowItems = listOf(
+                                OverflowItem(
+                                    "Remove from new episodes",
+                                    Icons.Outlined.Delete,
+                                    { onRemoveNewEpisode(item.animeId) },
+                                ),
+                            ),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
             // Continue Watching row — in-progress episodes, most recent first
             if (continueWatching.isNotEmpty()) {
                 Text(
@@ -607,6 +683,87 @@ data class ContinueWatchingItem(
     val entry: HistoryRepository.HistoryEntry,
     val thumbnailUrl: String?,
 )
+
+/**
+ * A single anime in the New Episodes row, grouped from [NewEpisodeEntry] rows.
+ */
+data class NewEpisodeFeedItem(
+    val animeId: Long,
+    val title: String,
+    val thumbnailUrl: String?,
+    val count: Int,
+    val latestEpisodeName: String?,
+    val discoveredAt: Long,
+)
+
+@Composable
+private fun NewEpisodeCard(
+    item: NewEpisodeFeedItem,
+    onClick: () -> Unit,
+    overflowItems: List<OverflowItem>? = null,
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.width(110.dp),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column {
+            Box {
+                AnimeCoverImage(
+                    thumbnailUrl = item.thumbnailUrl,
+                    contentDescription = item.title,
+                    title = item.title,
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                )
+                if (overflowItems != null) {
+                    OverflowMenu(
+                        items = overflowItems,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                    )
+                }
+                // New-episode count badge, top-left.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        "+${item.count}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(6.dp)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = item.latestEpisodeName
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "${item.count} new episode${if (item.count == 1) "" else "s"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

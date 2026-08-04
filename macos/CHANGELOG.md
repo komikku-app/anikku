@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.0] — 2026-08-04
+
+### New Episode tracking, Watch stats, Torrents tab, MAL + Kitsu sync
+
+**New Episode tracking + notifications**
+- The background library check now feeds a **New Episodes** row at the top of
+  the Library tab: shows which followed shows gained episodes since the last
+  check (baseline-gated, so a first-ever scan never floods the feed).
+- Newly discovered episodes fire **per-anime macOS notifications** (capped, and
+  deduped against the feed) and set a **dock badge** with the feed count.
+  Notifications can be toggled off in Settings > Data & Storage
+  ("New episode notifications"); the cadence reuses the Library update
+  schedule. Clicking a feed card opens the show (auto source-linking makes
+  it playable); the 3-dot menu dismisses it from the feed.
+
+**Watch stats dashboard**
+- New **Stats** tab (and the existing Settings > Stats screen): total episodes,
+  hours watched, current + longest daily streaks, most-watched anime, and a
+  last-14-days activity bar chart — all derived from watch history.
+
+**Torrents tab**
+- New **Torrents** tab: popular + searchable catalogue from torrent-flagged
+  extensions (e.g. Nyaa), streaming through the built-in engine (bundled
+  TorrServer with WebTorrent fallback). The player now shows
+  "Fetching torrent metadata…" while a magnet is being prepared.
+
+**MyAnimeList + Kitsu tracker sync**
+- Full 2-way library sync for **MyAnimeList** and **Kitsu**, mirroring the
+  AniList model: pull imports the remote list (title-matched entries get
+  `malId`/`kitsuId` attached instead of duplicating), push writes history-derived
+  watched progress + status. Per-tracker sync controls + auto-sync intervals
+  appear in Settings > Tracking when logged in.
+- Kitsu search/update/username implemented (progress updates PATCH the library
+  entry, per Kitsu's API); MAL scrobbling already worked and now pairs with a
+  real library sync. Login needs your own app credentials (Manage Trackers >
+  MyAnimeList/Kitsu — register at myanimelist.net/apiconfig and kitsu.io).
+
+---
+
 ## [1.2.0] — 2026-08-04
 
 ### Auto source linking + playback fallback, player depth, season downloads + Library filters

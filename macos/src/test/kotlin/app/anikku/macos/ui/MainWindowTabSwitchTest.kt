@@ -29,8 +29,8 @@ class MainWindowTabSwitchTest {
     // =========================================================================
 
     @Test
-    fun `orderedTabs has 5 tabs`() {
-        assertEquals(5, orderedTabs.size)
+    fun `orderedTabs has 7 tabs`() {
+        assertEquals(7, orderedTabs.size)
     }
 
     @Test
@@ -39,8 +39,10 @@ class MainWindowTabSwitchTest {
             assertEquals("Library", orderedTabs[0].options.title)
             assertEquals("Updates", orderedTabs[1].options.title)
             assertEquals("History", orderedTabs[2].options.title)
-            assertEquals("Browse", orderedTabs[3].options.title)
-            assertEquals("More", orderedTabs[4].options.title)
+            assertEquals("Stats", orderedTabs[3].options.title)
+            assertEquals("Browse", orderedTabs[4].options.title)
+            assertEquals("Torrents", orderedTabs[5].options.title)
+            assertEquals("More", orderedTabs[6].options.title)
         }
     }
 
@@ -58,33 +60,37 @@ class MainWindowTabSwitchTest {
     // =========================================================================
 
     @Test
-    fun `renders all 5 tab labels with index 0`() {
+    fun `renders all 7 tab labels with index 0`() {
         composeTestRule.setContent {
             AnikkuTheme {
                 NavigationRailSidebar(currentTabIndex = 0, onSelectTab = {})
             }
         }
 
-        // All 5 labels should be visible
+        // All 7 labels should be visible
         composeTestRule.onNodeWithText("Library").assertIsDisplayed()
         composeTestRule.onNodeWithText("Updates").assertIsDisplayed()
         composeTestRule.onNodeWithText("History").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Stats").assertIsDisplayed()
         composeTestRule.onNodeWithText("Browse").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Torrents").assertIsDisplayed()
         composeTestRule.onNodeWithText("More").assertIsDisplayed()
     }
 
     @Test
-    fun `renders all 5 tab labels with index 4`() {
+    fun `renders all 7 tab labels with index 6`() {
         composeTestRule.setContent {
             AnikkuTheme {
-                NavigationRailSidebar(currentTabIndex = 4, onSelectTab = {})
+                NavigationRailSidebar(currentTabIndex = 6, onSelectTab = {})
             }
         }
 
         composeTestRule.onNodeWithText("Library").assertIsDisplayed()
         composeTestRule.onNodeWithText("Updates").assertIsDisplayed()
         composeTestRule.onNodeWithText("History").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Stats").assertIsDisplayed()
         composeTestRule.onNodeWithText("Browse").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Torrents").assertIsDisplayed()
         composeTestRule.onNodeWithText("More").assertIsDisplayed()
     }
 

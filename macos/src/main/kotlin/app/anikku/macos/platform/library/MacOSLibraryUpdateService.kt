@@ -24,7 +24,25 @@ data class LibraryUpdateResult(
     val scanned: Int,
     val updated: Int,
     val newlyDiscoveredEpisodes: Int,
+    val newlyDiscovered: List<NewEpisodeInfo> = emptyList(),
     val failures: Map<Long, String>,
+)
+
+/**
+ * Per-anime "gained new episodes" info for the New Episodes feed. Only set for
+ * entries that had a previous baseline ([LibraryEntry.latestEpisodeNumber] > 0)
+ * and whose latest episode number increased — a first-ever scan establishes a
+ * baseline and is not reported as a discovery.
+ */
+data class NewEpisodeInfo(
+    val animeId: Long,
+    val title: String,
+    val thumbnailUrl: String? = null,
+    val sourceId: Long = 0L,
+    val animeUrl: String? = null,
+    val latestEpisodeNumber: Double = 0.0,
+    val latestEpisodeName: String? = null,
+    val episodeCount: Int = 0,
 )
 
 /** Resolves saved library entries through installed extensions. */
@@ -41,6 +59,7 @@ class MacOSLibraryUpdateService(
         _progress.value = LibraryUpdateProgress(running = true, total = entries.size)
         var updated = 0
         var newlyDiscovered = 0
+        val newlyDiscoveredInfo = mutableListOf<NewEpisodeInfo>()
         val failures = linkedMapOf<Long, String>()
 
         try {
@@ -83,6 +102,26 @@ class MacOSLibraryUpdateService(
                     }
                     newlyDiscovered += discoveredForEntry
 
+                    // Feed-worthy discovery: only when the app already had a
+                    // baseline (previousKnown > 0) and the latest episode moved
+                    // past it. A first-ever scan establishes the baseline and
+                    // must not flood the New Episodes feed.
+                    if (previousKnown > 0.0 && latestNumber > previousKnown) {
+                        val feedCount = distinctEpisodes.count { it.episode_number.toDouble() > previousKnown }
+                        if (feedCount > 0) {
+                            newlyDiscoveredInfo += NewEpisodeInfo(
+                                animeId = entry.animeId,
+                                title = safeValue(entry.title) { details.title },
+                                thumbnailUrl = entry.thumbnailUrl,
+                                sourceId = entry.sourceId,
+                                animeUrl = entry.url,
+                                latestEpisodeNumber = latestNumber,
+                                latestEpisodeName = latest?.let { runCatching { it.name }.getOrNull() },
+                                episodeCount = feedCount,
+                            )
+                        }
+                    }
+
                     libraryRepository.add(
                         entry.copy(
                             title = safeValue(entry.title) { details.title },
@@ -116,6 +155,7 @@ class MacOSLibraryUpdateService(
             scanned = entries.size,
             updated = updated,
             newlyDiscoveredEpisodes = newlyDiscovered,
+            newlyDiscovered = newlyDiscoveredInfo,
             failures = failures,
         )
     }

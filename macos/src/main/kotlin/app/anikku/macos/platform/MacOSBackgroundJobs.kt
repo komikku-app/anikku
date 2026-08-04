@@ -3,6 +3,8 @@ package app.anikku.macos.platform
 import androidx.compose.runtime.compositionLocalOf
 import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.library.MacOSLibraryUpdateService
+import app.anikku.macos.platform.library.NewEpisodeRepository
+import app.anikku.macos.platform.library.toFeedEntries
 import app.anikku.macos.platform.notification.MacOSNotificationManager
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.platform.sync.MacOSGoogleDriveService
@@ -44,6 +46,8 @@ class MacOSBackgroundJobs(
     private val notificationManager: MacOSNotificationManager,
     private val preferenceStore: MacOSPreferenceStore,
     private val syncYomiService: MacOSSyncYomiService? = null,
+    private val newEpisodeRepository: NewEpisodeRepository? = null,
+    private val newEpisodeNotificationsEnabled: () -> Boolean = { true },
     private val clockMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val backupMutex = Mutex()
@@ -136,7 +140,27 @@ class MacOSBackgroundJobs(
     private suspend fun updateLibrary() {
         runStatus("Library update", "Checking library…") {
             val result = libraryUpdateService.updateAll()
-            if (result.newlyDiscoveredEpisodes > 0) {
+            val feed = newEpisodeRepository
+
+            // Persist genuinely-new episodes (per-anime, baseline-gated) into the
+            // New Episodes feed, notify per anime, and badge the dock.
+            if (feed != null && result.newlyDiscovered.isNotEmpty()) {
+                val addedRows = feed.addDiscovered(result.newlyDiscovered.flatMap { it.toFeedEntries() })
+                if (addedRows > 0) {
+                    if (newEpisodeNotificationsEnabled()) {
+                        result.newlyDiscovered.take(MAX_NEW_EPISODE_NOTIFICATIONS).forEach { info ->
+                            val suffix = info.latestEpisodeName?.let { ": ${it.take(40)}" } ?: ""
+                            notificationManager.showNotification(
+                                title = info.title.take(40),
+                                message = "New episode${if (info.episodeCount == 1) "" else "s"} available$suffix",
+                            )
+                        }
+                    }
+                    MacOSDockManager.setBadgeCount(feed.count())
+                }
+            } else if (result.newlyDiscoveredEpisodes > 0) {
+                // No feed store (or nothing baseline-gated) — keep the legacy
+                // single aggregate notification.
                 notificationManager.showLibraryUpdate(result.newlyDiscoveredEpisodes)
             }
             markSuccess(LAST_LIBRARY_UPDATE)
@@ -207,6 +231,7 @@ class MacOSBackgroundJobs(
     companion object {
         private const val MAX_INTERVAL_HOURS = 24 * 30
         private const val AUTOMATIC_BACKUP_RETENTION = 5
+        private const val MAX_NEW_EPISODE_NOTIFICATIONS = 3
         private const val AUTO_BACKUP_PERIODIC = "automatic-backup-periodic"
         private const val LIBRARY_UPDATE_PERIODIC = "library-update-periodic"
         private const val DRIVE_SYNC_PERIODIC = "google-drive-sync-periodic"

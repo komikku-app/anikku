@@ -21,6 +21,7 @@ import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.library.AnimeSourceMatcher
 import app.anikku.macos.platform.library.LibraryAutoLinkService
 import app.anikku.macos.platform.library.MacOSLibraryUpdateService
+import app.anikku.macos.platform.library.NewEpisodeRepository
 import app.anikku.macos.platform.migration.MacOSMigrationManager
 import app.anikku.macos.platform.network.ChromeCDPClient
 import app.anikku.macos.platform.network.MacOSCookieJar
@@ -85,6 +86,7 @@ class AnikkuApplication {
     val libraryUpdateService: MacOSLibraryUpdateService
     val animeSourceMatcher: AnimeSourceMatcher
     val libraryAutoLinkService: LibraryAutoLinkService
+    val newEpisodeRepository: NewEpisodeRepository
 
     // Phase 3: Networking
     val networkHelper: MacOSNetworkHelper
@@ -229,6 +231,11 @@ class AnikkuApplication {
             matcher = animeSourceMatcher,
         )
 
+        // 8f. New Episodes feed — per-anime discoveries surfaced in the Library
+        // tab, with notifications + dock badge when the background library
+        // check finds new episodes.
+        newEpisodeRepository = NewEpisodeRepository(storageProvider.dataDirectory)
+
         // 9. Initialize Phase 7: Advanced Features
         // 9a. Discord Rich Presence
         discordRPC = DiscordRPC(applicationScope)
@@ -268,6 +275,13 @@ class AnikkuApplication {
             notificationManager = notificationManager,
             preferenceStore = preferenceStore,
             syncYomiService = syncYomiService,
+            newEpisodeRepository = newEpisodeRepository,
+            newEpisodeNotificationsEnabled = {
+                preferenceStore.getBoolean(
+                    app.anikku.macos.ui.settings.KEY_NEW_EPISODE_NOTIFICATIONS,
+                    true,
+                ).get()
+            },
         )
 
         // 9c. Biometric Authentication (Touch ID + PIN fallback)

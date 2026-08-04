@@ -616,6 +616,7 @@ data class PlayerScreen(
         val isPaused by playerViewModel.isPaused.collectAsState()
         val volume by playerViewModel.volume.collectAsState()
         val playbackSpeed by playerViewModel.playbackSpeed.collectAsState()
+        val torrentStatus by playerViewModel.torrentStatus.collectAsState()
         val brightness by playerViewModel.brightness.collectAsState()
         val contrast by playerViewModel.contrast.collectAsState()
         val saturation by playerViewModel.saturation.collectAsState()
@@ -1389,6 +1390,7 @@ data class PlayerScreen(
             isPaused = isPaused,
             volume = volume,
             playbackSpeed = playbackSpeed,
+            torrentStatus = torrentStatus,
             brightness = brightness,
             contrast = contrast,
             saturation = saturation,
@@ -1533,6 +1535,7 @@ internal fun PlayerContent(
     isPaused: Boolean = true,
     volume: Int = 100,
     playbackSpeed: Double = 1.0,
+    torrentStatus: String? = null,
     brightness: Float = 0f,
     contrast: Float = 1f,
     saturation: Float = 1f,
@@ -2101,7 +2104,9 @@ internal fun PlayerContent(
                     )
                     Spacer(Modifier.height(20.dp))
                     Text(
-                        if (resolutionStatusText.isNotBlank()) resolutionStatusText else "Loading episode...",
+                        if (torrentStatus != null) torrentStatus
+                        else if (resolutionStatusText.isNotBlank()) resolutionStatusText
+                        else "Loading episode...",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White.copy(alpha = 0.6f),
                     )

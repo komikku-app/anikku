@@ -81,6 +81,96 @@ class MacOSLibraryUpdateServiceTest {
         assertEquals("Unavailable", library.get(20)?.title)
     }
 
+    @Test
+    fun `feed discovery is baseline-gated for established entries`(@TempDir tempDir: Path) = runBlocking {
+        val library = LibraryRepository(tempDir.toFile())
+        library.add(
+            LibraryRepository.LibraryEntry(
+                animeId = 30,
+                title = "Ongoing",
+                sourceId = 99,
+                url = "/anime/30",
+                latestEpisodeNumber = 3.0, // baseline already known
+            ),
+        )
+        val source = VaryingFakeSource(episodes = 5)
+        val service = MacOSLibraryUpdateService(library, HistoryRepository(tempDir.toFile())) {
+            if (it == 99L) source else null
+        }
+
+        val result = service.updateAll()
+
+        assertEquals(2, result.newlyDiscoveredEpisodes)
+        assertEquals(1, result.newlyDiscovered.size)
+        val info = result.newlyDiscovered.single()
+        assertEquals(30L, info.animeId)
+        assertEquals(5.0, info.latestEpisodeNumber)
+        assertEquals(2, info.episodeCount)
+    }
+
+    @Test
+    fun `feed discovery is empty on first-ever scan`(@TempDir tempDir: Path) = runBlocking {
+        val library = LibraryRepository(tempDir.toFile())
+        library.add(
+            LibraryRepository.LibraryEntry(animeId = 31, title = "New", sourceId = 99, url = "/anime/31"),
+        )
+        val source = VaryingFakeSource(episodes = 5)
+        val service = MacOSLibraryUpdateService(library, HistoryRepository(tempDir.toFile())) {
+            if (it == 99L) source else null
+        }
+
+        val result = service.updateAll()
+
+        // The aggregate still counts everything on first scan…
+        assertEquals(5, result.newlyDiscoveredEpisodes)
+        // …but the feed stays empty — a first scan only establishes the baseline.
+        assertTrue(result.newlyDiscovered.isEmpty())
+    }
+
+    @Test
+    fun `feed discovery is empty when the latest episode did not move`(@TempDir tempDir: Path) = runBlocking {
+        val library = LibraryRepository(tempDir.toFile())
+        library.add(
+            LibraryRepository.LibraryEntry(
+                animeId = 32,
+                title = "Done",
+                sourceId = 99,
+                url = "/anime/32",
+                latestEpisodeNumber = 3.0,
+            ),
+        )
+        val source = VaryingFakeSource(episodes = 3)
+        val service = MacOSLibraryUpdateService(library, HistoryRepository(tempDir.toFile())) {
+            if (it == 99L) source else null
+        }
+
+        val result = service.updateAll()
+
+        assertEquals(0, result.newlyDiscoveredEpisodes)
+        assertTrue(result.newlyDiscovered.isEmpty())
+    }
+
+    /** Source whose episode count is configurable for discovery tests. */
+    private class VaryingFakeSource(private val episodes: Int) : AnimeSource {
+        override val id: Long = 99
+        override val name: String = "Varying Source"
+
+        override suspend fun getAnimeDetails(anime: SAnime): SAnime = anime.apply {
+            title = "Updated title"
+            description = "Updated description"
+        }
+
+        override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = (1..episodes).map { number ->
+            SEpisode.create().apply {
+                url = "/episode/$number"
+                name = "Episode $number"
+                episode_number = number.toFloat()
+            }
+        }
+
+        override suspend fun getVideoList(episode: SEpisode): List<Video> = emptyList()
+    }
+
     private class FakeSource : AnimeSource {
         override val id: Long = 99
         override val name: String = "Test Source"

@@ -221,8 +221,8 @@ data class SyncOutcome(
     val remoteCount: Int = 0,
     val errors: List<String> = emptyList(),
 ) {
-    fun toMessage(): String = buildString {
-        append("AniList sync: ")
+    fun toMessage(label: String = "AniList"): String = buildString {
+        append("$label sync: ")
         val parts = mutableListOf<String>()
         if (imported > 0) parts.add("$imported imported")
         if (updated > 0) parts.add("$updated updated")

@@ -119,6 +119,10 @@ class PlayerViewModel(
     private val _playbackSpeed = MutableStateFlow(1.0)
     val playbackSpeed: StateFlow<Double> = _playbackSpeed.asStateFlow()
 
+    /** Transient torrent-streaming status ("Fetching torrent metadata…"), null when not streaming. */
+    private val _torrentStatus = MutableStateFlow<String?>(null)
+    val torrentStatus: StateFlow<String?> = _torrentStatus.asStateFlow()
+
     private val _audioTracks = MutableStateFlow<List<TrackInfo>>(emptyList())
     val audioTracks: StateFlow<List<TrackInfo>> = _audioTracks.asStateFlow()
 
@@ -790,6 +794,7 @@ class PlayerViewModel(
     ) {
         logger.info { "🧲 MAGNET: Starting torrent stream: ${magnetUrl.take(80)}..." }
         _playbackState.value = PlaybackState.LOADING
+        _torrentStatus.value = "Fetching torrent metadata…"
 
         val token = Any()
         magnetLoadToken = token
@@ -815,6 +820,7 @@ class PlayerViewModel(
                                 torrentStreamer.stop(result)
                                 return@withContext
                             }
+                            _torrentStatus.value = null
                             loadEpisodeInternal(
                                 result.httpUrl,
                                 headers,
@@ -824,6 +830,7 @@ class PlayerViewModel(
                         }
                         is TorrentStreamingResult.Failure -> {
                             if (magnetLoadToken !== token) return@withContext
+                            _torrentStatus.value = null
                             _playbackState.value = PlaybackState.ERROR
                             logger.warn { "🧲 MAGNET: Failed to start torrent stream: ${result.message}" }
                             CrashReporter.logEvent("Magnet stream failed", result.message)
@@ -833,6 +840,7 @@ class PlayerViewModel(
             } catch (e: Exception) {
                 if (magnetLoadToken !== token) return@launch
                 withContext(Dispatchers.Main) {
+                    _torrentStatus.value = null
                     _playbackState.value = PlaybackState.ERROR
                     logger.error(e) { "🧲 MAGNET: Unexpected error streaming torrent" }
                     CrashReporter.logError("MagnetError", e.message ?: "", e)

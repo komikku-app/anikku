@@ -82,6 +82,7 @@ class TrackerManager(
             when (tracker) {
                 "myanimelist" -> searchMyAnimeList(token, query)
                 "anilist" -> searchAniList(token, query)
+                "kitsu" -> searchKitsu(token, query)
                 else -> emptyList()
             }
         } catch (e: Exception) {
@@ -101,6 +102,7 @@ class TrackerManager(
             when (tracker) {
                 "myanimelist" -> updateMyAnimeList(token, remoteAnimeId, episodeNumber, status)
                 "anilist" -> updateAniList(token, remoteAnimeId, episodeNumber, status)
+                "kitsu" -> updateKitsu(token, remoteAnimeId, episodeNumber, status)
                 else -> false
             }
         } catch (e: Exception) {
@@ -253,6 +255,105 @@ class TrackerManager(
 
     // -- Internal tracker implementations ----------------------------------
 
+    /**
+     * Fetch the logged-in user's MyAnimeList animelist (all statuses).
+     * Returns null when not logged in or the request fails.
+     */
+    fun fetchMyAnimeListLibrary(): List<MalLibraryEntry>? {
+        val token = tokenStore.getTokens("myanimelist")?.accessToken ?: return null
+        return try {
+            val url = okhttp3.HttpUrl.Builder()
+                .scheme("https")
+                .host("api.myanimelist.net")
+                .addPathSegments("v2/users/@me/animelist")
+                .addQueryParameter("fields", "id,title,main_picture,num_watched_episodes,status,num_episodes")
+                .addQueryParameter("limit", "1000")
+                .addQueryParameter("status", "all")
+                .build()
+            val request = okhttp3.Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $token")
+                .build()
+            val response = httpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                response.close()
+                return emptyList()
+            }
+            val bodyStr = response.body?.string() ?: ""
+            response.close()
+
+            val result = parseMalLibrary(bodyStr)
+            logger.info { "Fetched ${result.size} MAL library entries" }
+            result
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to fetch MAL library" }
+            null
+        }
+    }
+
+    /**
+     * Fetch the logged-in user's Kitsu anime library. Kitsu tracks library
+     * entries (kind=anime) with their own ids — the id used for progress
+     * updates differs from the anime id.
+     */
+    fun fetchKitsuLibrary(): List<KitsuLibraryEntry>? {
+        val token = tokenStore.getTokens("kitsu")?.accessToken ?: return null
+        return try {
+            val userId = fetchKitsuUserId(token) ?: return null
+            val url = okhttp3.HttpUrl.Builder()
+                .scheme("https")
+                .host("kitsu.io")
+                .addPathSegments("api/edge/library-entries")
+                .addQueryParameter("filter[kind]", "anime")
+                .addQueryParameter("filter[user_id]", userId)
+                .addQueryParameter("include", "anime")
+                .addQueryParameter("page[limit]", "500")
+                .build()
+            val request = okhttp3.Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $token")
+                .build()
+            val response = httpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                response.close()
+                return emptyList()
+            }
+            val bodyStr = response.body?.string() ?: ""
+            response.close()
+            val result = parseKitsuLibrary(bodyStr)
+            logger.info { "Fetched ${result.size} Kitsu library entries" }
+            result
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to fetch Kitsu library" }
+            null
+        }
+    }
+
+    private fun fetchKitsuUserId(token: String): String? {
+        val request = okhttp3.Request.Builder()
+            .url("https://kitsu.io/api/edge/users?filter[self]=true")
+            .header("Authorization", "Bearer $token")
+            .build()
+        return try {
+            val response = httpClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                val body = response.body?.string() ?: return null
+                response.close()
+                JSONObject(body)
+                    .optJSONArray("data")
+                    ?.optJSONObject(0)
+                    ?.optString("id")
+                    ?.takeIf { it.isNotBlank() }
+            } else {
+                response.close()
+                null
+            }
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to resolve Kitsu user id" }
+            null
+        }
+    }
+
     private fun searchMyAnimeList(token: String, query: String): List<TrackerSearchResult> {
         val url = okhttp3.HttpUrl.Builder()
             .scheme("https")
@@ -321,6 +422,103 @@ class TrackerManager(
                 imageUrl = node.optJSONObject("coverImage")?.optString("medium"),
             )
         }
+    }
+
+    private fun searchKitsu(token: String, query: String): List<TrackerSearchResult> {
+        val url = okhttp3.HttpUrl.Builder()
+            .scheme("https")
+            .host("kitsu.io")
+            .addPathSegments("api/edge/anime")
+            .addQueryParameter("filter[text]", query.take(64))
+            .addQueryParameter("page[limit]", "5")
+            .build()
+        val request = okhttp3.Request.Builder()
+            .url(url)
+            .header("Authorization", "Bearer $token")
+            .build()
+
+        val response = httpClient.newCall(request).execute()
+        if (!response.isSuccessful) return emptyList()
+        val bodyStr = response.body?.string() ?: ""
+        response.close()
+
+        val data = JSONObject(bodyStr).optJSONArray("data") ?: return emptyList()
+        return (0 until data.length()).mapNotNull { i ->
+            val node = data.getJSONObject(i)
+            val attributes = node.optJSONObject("attributes") ?: return@mapNotNull null
+            val title = attributes.optString("canonicalTitle").takeIf { it.isNotBlank() }
+                ?: return@mapNotNull null
+            TrackerSearchResult(
+                id = node.getString("id"),
+                title = title,
+                imageUrl = attributes.optJSONObject("posterImage")?.optString("small"),
+            )
+        }
+    }
+
+    private fun updateKitsu(
+        token: String,
+        remoteAnimeId: String,
+        episodeNumber: Int,
+        status: String?,
+    ): Boolean {
+        // Kitsu progress updates PATCH the library-entry resource, not the
+        // anime. Resolve the entry id for (user, anime) first.
+        val userId = fetchKitsuUserId(token) ?: return false
+        val lookupUrl = okhttp3.HttpUrl.Builder()
+            .scheme("https")
+            .host("kitsu.io")
+            .addPathSegments("api/edge/library-entries")
+            .addQueryParameter("filter[user_id]", userId)
+            .addQueryParameter("filter[anime_id]", remoteAnimeId)
+            .build()
+        val lookupRequest = okhttp3.Request.Builder()
+            .url(lookupUrl)
+            .header("Authorization", "Bearer $token")
+            .build()
+        val lookupResponse = httpClient.newCall(lookupRequest).execute()
+        val entryId = try {
+            if (!lookupResponse.isSuccessful) {
+                null
+            } else {
+                val body = lookupResponse.body?.string() ?: ""
+                JSONObject(body).optJSONArray("data")?.optJSONObject(0)?.optString("id")
+            }
+        } finally {
+            lookupResponse.close()
+        }
+        if (entryId == null) return false
+
+        val kitsuStatus = when (status) {
+            "watching" -> "current"
+            "completed" -> "completed"
+            "on_hold" -> "on_hold"
+            "dropped" -> "dropped"
+            "plan_to_watch" -> "planned"
+            else -> null
+        }
+        val attributes = JSONObject().apply {
+            put("progress", episodeNumber.coerceAtLeast(0))
+            if (kitsuStatus != null) put("status", kitsuStatus)
+        }
+        val body = JSONObject().apply {
+            put("data", JSONObject().apply {
+                put("type", "libraryEntries")
+                put("id", entryId)
+                put("attributes", attributes)
+            })
+        }
+
+        val request = okhttp3.Request.Builder()
+            .url("https://kitsu.io/api/edge/library-entries/$entryId")
+            .header("Authorization", "Bearer $token")
+            .header("Content-Type", "application/vnd.api+json")
+            .patch(body.toString().toRequestBody("application/vnd.api+json".toMediaTypeOrNull()))
+            .build()
+
+        val response = httpClient.newCall(request).execute()
+        response.close()
+        return response.isSuccessful
     }
 
     private fun updateMyAnimeList(
@@ -457,6 +655,23 @@ class TrackerManager(
                         null
                     }
                 }
+                "kitsu" -> fetchKitsuUserId(accessToken)?.let { userId ->
+                    val request = okhttp3.Request.Builder()
+                        .url("https://kitsu.io/api/edge/users/$userId")
+                        .header("Authorization", "Bearer $accessToken")
+                        .build()
+                    val response = httpClient.newCall(request).execute()
+                    if (response.isSuccessful) {
+                        val body = response.body?.string() ?: return null
+                        response.close()
+                        JSONObject(body).optJSONObject("data")
+                            ?.optJSONObject("attributes")
+                            ?.optString("name")
+                    } else {
+                        response.close()
+                        null
+                    }
+                }
                 else -> null
             }
         } catch (e: Exception) {
@@ -495,6 +710,34 @@ data class AniListLibraryEntry(
 )
 
 /**
+ * A single entry from the user's MyAnimeList animelist.
+ */
+data class MalLibraryEntry(
+    val malId: Long,
+    val title: String,
+    /** MAL list status: watching, completed, on_hold, dropped, plan_to_watch. */
+    val status: String = "watching",
+    val progress: Int = 0,
+    val totalEpisodes: Int? = null,
+    val coverUrl: String? = null,
+)
+
+/**
+ * A single entry from the user's Kitsu library. Kitsu progress updates are
+ * keyed by the library-entry id (not the anime id), so both are carried.
+ */
+data class KitsuLibraryEntry(
+    val kitsuId: Long,
+    val libraryEntryId: String,
+    val title: String,
+    /** Kitsu status: current, completed, on_hold, dropped, planned. */
+    val status: String = "current",
+    val progress: Int = 0,
+    val totalEpisodes: Int? = null,
+    val coverUrl: String? = null,
+)
+
+/**
  * Result of a scrobble attempt across all logged-in trackers.
  */
 data class ScrobbleResult(
@@ -520,5 +763,70 @@ data class ScrobbleResult(
         return parts.joinToString("; ")
     }
 }
+
+internal fun parseMalLibrary(body: String): List<MalLibraryEntry> {
+    val root = runCatching { JSONObject(body) }.getOrNull() ?: return emptyList()
+    val data = root.optJSONArray("data") ?: return emptyList()
+    val result = mutableListOf<MalLibraryEntry>()
+    for (i in 0 until data.length()) {
+        val item = data.getJSONObject(i)
+        val node = item.optJSONObject("node") ?: continue
+        val listStatus = item.optJSONObject("list_status")
+        val picture = node.optJSONObject("main_picture")
+        val title = node.optString("title").takeIf { it.isNotBlank() } ?: continue
+        result += MalLibraryEntry(
+            malId = node.getLong("id"),
+            title = title,
+            status = listStatus?.optString("status") ?: "watching",
+            progress = listStatus?.optInt("num_watched_episodes", 0) ?: 0,
+            totalEpisodes = if (node.has("num_episodes") && !node.isNull("num_episodes")) {
+                node.optInt("num_episodes")
+            } else null,
+            coverUrl = picture?.optString("large")?.takeIf { it.isNotBlank() }
+                ?: picture?.optString("medium")?.takeIf { it.isNotBlank() },
+        )
+    }
+    return result
+}
+
+internal fun parseKitsuLibrary(body: String): List<KitsuLibraryEntry> {
+    val root = runCatching { JSONObject(body) }.getOrNull() ?: return emptyList()
+    val data = root.optJSONArray("data") ?: return emptyList()
+    val included = root.optJSONArray("included") ?: return emptyList()
+    val animeById = mutableMapOf<String, JSONObject>()
+    for (i in 0 until included.length()) {
+        val node = included.getJSONObject(i)
+        if (node.optString("type") == "anime") {
+            animeById[node.getString("id")] = node
+        }
+    }
+    val result = mutableListOf<KitsuLibraryEntry>()
+    for (i in 0 until data.length()) {
+        val entry = data.getJSONObject(i)
+        val attributes = entry.optJSONObject("attributes") ?: continue
+        val animeRef = entry.optJSONObject("relationships")
+            ?.optJSONObject("anime")
+            ?.optJSONObject("data")
+        val animeId = animeRef?.optString("id") ?: continue
+        val anime = animeById[animeId] ?: continue
+        val animeAttributes = anime.optJSONObject("attributes")
+        val title = animeAttributes?.optString("canonicalTitle")
+            ?.takeIf { it.isNotBlank() } ?: continue
+        val poster = animeAttributes?.optJSONObject("posterImage")
+        val kitsuId = animeId.toLongOrNull() ?: continue
+        result += KitsuLibraryEntry(
+            kitsuId = kitsuId,
+            libraryEntryId = entry.getString("id"),
+            title = title,
+            status = attributes.optString("status", "current"),
+            progress = attributes.optInt("progress", 0),
+            totalEpisodes = animeAttributes?.optInt("episodeCount", 0)?.takeIf { it > 0 },
+            coverUrl = poster?.optString("original")?.takeIf { it.isNotBlank() }
+                ?: poster?.optString("large")?.takeIf { it.isNotBlank() },
+        )
+    }
+    return result
+}
+
 
 val LocalTrackerManager = compositionLocalOf<TrackerManager?> { null }
