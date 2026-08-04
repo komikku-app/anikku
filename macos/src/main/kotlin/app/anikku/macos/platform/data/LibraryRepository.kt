@@ -78,6 +78,8 @@ class LibraryRepository(private val dataDir: File) {
         val unseenEpisodeCount: Int = 0,
         val addedAt: Long = System.currentTimeMillis(),
         val lastUpdatedAt: Long = System.currentTimeMillis(),
+        /** AniList media id when this entry was imported via tracker sync (null = not linked). */
+        val anilistId: Long? = null,
     )
 
     private val lock = Any()

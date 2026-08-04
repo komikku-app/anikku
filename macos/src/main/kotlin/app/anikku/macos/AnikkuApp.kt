@@ -3,6 +3,7 @@ package app.anikku.macos
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,8 @@ import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.platform.preference.BookmarkStore
 import app.anikku.macos.platform.preference.LocalBookmarkStore
+import app.anikku.macos.platform.auth.AniListSyncService
+import app.anikku.macos.platform.auth.LocalAniListSyncService
 import app.anikku.macos.platform.auth.LocalTrackerManager
 import app.anikku.macos.platform.auth.TrackerManager
 import app.anikku.macos.platform.auth.TrackerOAuthManager
@@ -64,6 +67,7 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Frame
@@ -71,6 +75,12 @@ import java.awt.event.WindowAdapter
 
 internal const val IMAGE_MEMORY_CACHE_BYTES = 256L * 1024L * 1024L
 internal const val IMAGE_DISK_CACHE_BYTES = 512L * 1024L * 1024L
+
+/**
+ * The app's main window frame. Used by the player for native macOS fullscreen
+ * (double-click / F key / menu) via MacOSFullScreen.toggleFullScreen.
+ */
+val LocalAppWindow = compositionLocalOf<Frame?> { null }
 
 internal fun imageDiskCacheDirectory(userHome: String = System.getProperty("user.home")): java.io.File =
     java.io.File(
@@ -338,7 +348,36 @@ fun main() = application {
             )
         }
 
+        val anilistSyncService = remember {
+            AniListSyncService(
+                trackerManager = trackerManager,
+                libraryRepository = libraryRepository,
+                historyRepository = historyRepository,
+            )
+        }
+
+        // Periodic 2-way AniList sync. Waits one full interval between checks
+        // (restarts when the setting changes); failures are silent so the next
+        // tick retries. Manual "Sync library now" lives in Settings > Tracking.
+        LaunchedEffect(settingsState.anilistSyncIntervalHours) {
+            val intervalHours = settingsState.anilistSyncIntervalHours
+            if (intervalHours <= 0) return@LaunchedEffect
+            while (true) {
+                delay(intervalHours * 3_600_000L)
+                if (!anilistSyncService.canSync()) continue
+                val due = settingsState.anilistLastSyncAt == 0L ||
+                    System.currentTimeMillis() - settingsState.anilistLastSyncAt >= intervalHours * 3_600_000L
+                if (due) {
+                    val result = anilistSyncService.syncNow()
+                    if (result.errors.isEmpty()) {
+                        settingsState.anilistLastSyncAt = System.currentTimeMillis()
+                    }
+                }
+            }
+        }
+
         CompositionLocalProvider(
+            LocalAppWindow provides (window as? Frame),
             LocalSettingsState provides settingsState,
             LocalAppLockController provides remember(app.biometricAuth) {
                 AppLockController(
@@ -354,6 +393,7 @@ fun main() = application {
             LocalBackupManager provides app.backupManager,
             LocalToastHost provides toastHostState,
             LocalTrackerManager provides trackerManager,
+            LocalAniListSyncService provides anilistSyncService,
             LocalDiscordRPC provides app.discordRPC,
             LocalGoogleDriveService provides app.googleDriveService,
             LocalSyncYomiService provides app.syncYomiService,

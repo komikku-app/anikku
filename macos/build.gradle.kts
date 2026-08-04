@@ -27,6 +27,7 @@ kotlin {
                 // Generated AppInfo.kt (version from gradle.properties).
                 srcDir(layout.buildDirectory.dir("generated/app-info/kotlin"))
                 srcDir(layout.buildDirectory.dir("generated/subtitle-defaults/kotlin"))
+                srcDir(layout.buildDirectory.dir("generated/anilist-config/kotlin"))
             }
         }
     }
@@ -96,6 +97,39 @@ val generateSubtitleDefaults by tasks.registering {
 
 tasks.named("compileKotlin") {
     dependsOn(generateSubtitleDefaults)
+}
+
+// ---- Generated AniList OAuth config (baked-in developer client) -----------
+// The developer's AniList OAuth client id/secret are baked in so login is one
+// click. Empty values (the default) fall back to manual credential entry in
+// the Manage Trackers screen, so the app works without them.
+val generateAnilistConfig by tasks.registering {
+    val clientId = project.findProperty("anilist.clientId") as? String ?: ""
+    val clientSecret = project.findProperty("anilist.clientSecret") as? String ?: ""
+    val outDir = layout.buildDirectory.dir("generated/anilist-config/kotlin").get().asFile
+    inputs.property("clientId", clientId)
+    inputs.property("clientSecret", clientSecret)
+    outputs.dir(outDir)
+    doLast {
+        val pkgDir = File(outDir, "app/anikku/macos/platform/auth")
+        pkgDir.mkdirs()
+        File(pkgDir, "AnilistConfig.kt").writeText(
+            """
+            |// Generated from gradle.properties (anilist.*). Do not edit.
+            |package app.anikku.macos.platform.auth
+            |
+            |/** Baked-in AniList OAuth client (empty = use manual entry). */
+            |object AnilistConfig {
+            |    const val CLIENT_ID: String = "${clientId.replace("\"", "\\\"")}"
+            |    const val CLIENT_SECRET: String = "${clientSecret.replace("\"", "\\\"")}"
+            |}
+            |""".trimMargin()
+        )
+    }
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(generateAnilistConfig)
 }
 
 dependencies {

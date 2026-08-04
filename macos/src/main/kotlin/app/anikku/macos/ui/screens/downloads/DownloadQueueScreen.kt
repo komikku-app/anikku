@@ -103,6 +103,14 @@ class DownloadQueueScreen : AnikkuScreen() {
                 downloadManager?.cancelAll()
                 toastHost.show("All downloads cancelled", ToastDuration.SHORT)
             },
+            onClearCompleted = {
+                val removed = downloadManager?.removeCompleted() ?: 0
+                toastHost.show(
+                    if (removed > 0) "Cleared $removed completed download${if (removed == 1) "" else "s"}"
+                    else "No completed downloads to clear",
+                    ToastDuration.SHORT,
+                )
+            },
         )
     }
 }
@@ -119,11 +127,17 @@ private fun DownloadQueueContent(
     onCancel: (Long) -> Unit,
     onRetry: (Long) -> Unit,
     onClearAll: () -> Unit,
+    onClearCompleted: () -> Unit,
 ) {
     val downloads = data.downloads
     val activeDownloads = downloads.count { it.isActive }
     val completedDownloads = downloads.count { it.status == DownloadRepository.DownloadStatus.COMPLETED }
     val errorDownloads = downloads.count { it.status == DownloadRepository.DownloadStatus.ERROR }
+    val completedBytes = downloads.filter { it.status == DownloadRepository.DownloadStatus.COMPLETED }
+        .sumOf { it.totalBytes }
+    val freeBytes = data.manager?.downloadsDirectory()?.let { dir ->
+        if (dir.exists()) dir.usableSpace else 0L
+    } ?: 0L
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -151,10 +165,27 @@ private fun DownloadQueueContent(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (completedDownloads > 0 || freeBytes > 0) {
+                        Text(
+                            text = buildString {
+                                append("${formatBytes(completedBytes)} downloaded")
+                                if (freeBytes > 0) append(" · ${formatBytes(freeBytes)} free")
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
                 }
-                if (downloads.isNotEmpty()) {
-                    TextButton(onClick = onClearAll) {
-                        Text("Clear all", style = MaterialTheme.typography.labelSmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (completedDownloads > 0) {
+                        TextButton(onClick = onClearCompleted) {
+                            Text("Clear completed", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    if (downloads.isNotEmpty()) {
+                        TextButton(onClick = onClearAll) {
+                            Text("Clear all", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }

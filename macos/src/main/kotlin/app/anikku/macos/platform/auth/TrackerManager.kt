@@ -164,6 +164,83 @@ class TrackerManager(
         logger.info { "Manual mapping cleared for \"${animeTitle.take(40)}\" on $tracker" }
     }
 
+    /**
+     * Fetch the logged-in user's AniList media list (all entries across lists).
+     * Returns null when not logged in or the request fails.
+     */
+    fun fetchAniListLibrary(): List<AniListLibraryEntry>? {
+        val token = tokenStore.getTokens("anilist")?.accessToken ?: return null
+        return try {
+            fetchAniListLibrary(token)
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to fetch AniList library" }
+            null
+        }
+    }
+
+    private fun fetchAniListLibrary(token: String): List<AniListLibraryEntry> {
+        val username = tokenStore.getUsername("anilist")?.takeIf { it.isNotBlank() }
+        val dollar = '$'
+        val listArg = if (username != null) "userName: ${dollar}user, " else ""
+        val variableJson = if (username != null) ",\"user\":\"${JSONObject.quote(username)}\"" else ""
+        val gql = """
+            {"query":"query List(${if (username != null) "${dollar}user: String, " else ""}${dollar}type: MediaType) { MediaListCollection(${listArg}type: ${dollar}type) { lists { entries { status score progress media { id status episodes title { romaji english } coverImage { extraLarge } genres description(asHtml: false) } } } } }","variables":{"type":"ANIME"$variableJson}}
+        """.trimIndent()
+
+        val request = okhttp3.Request.Builder()
+            .url("https://graphql.anilist.co")
+            .header("Authorization", "Bearer $token")
+            .post(gql.toRequestBody("application/json".toMediaTypeOrNull()))
+            .build()
+
+        val response = httpClient.newCall(request).execute()
+        if (!response.isSuccessful) {
+            response.close()
+            return emptyList()
+        }
+        val bodyStr = response.body?.string() ?: ""
+        response.close()
+
+        val root = JSONObject(bodyStr)
+        val lists = root.optJSONObject("data")
+            ?.optJSONObject("MediaListCollection")
+            ?.optJSONArray("lists") ?: return emptyList()
+
+        val result = mutableListOf<AniListLibraryEntry>()
+        for (i in 0 until lists.length()) {
+            val entries = lists.getJSONObject(i).optJSONArray("entries") ?: continue
+            for (j in 0 until entries.length()) {
+                val entry = entries.getJSONObject(j)
+                val media = entry.optJSONObject("media") ?: continue
+                val titleObj = media.optJSONObject("title")
+                val title = titleObj?.optString("english")?.takeIf { it.isNotBlank() }
+                    ?: titleObj?.optString("romaji")?.takeIf { it.isNotBlank() }
+                    ?: continue
+                val genres = media.optJSONArray("genres")?.let { array ->
+                    (0 until array.length()).map { array.getString(it) }
+                }.orEmpty()
+                val cover = media.optJSONObject("coverImage")
+                result += AniListLibraryEntry(
+                    mediaId = media.getLong("id"),
+                    title = title,
+                    status = entry.optString("status", "CURRENT"),
+                    score = entry.optInt("score", 0),
+                    progress = entry.optInt("progress", 0),
+                    totalEpisodes = if (media.has("episodes") && !media.isNull("episodes")) {
+                        media.optInt("episodes")
+                    } else null,
+                    coverUrl = (cover?.optString("extraLarge")?.takeIf { it.isNotBlank() }
+                        ?: cover?.optString("large")?.takeIf { it.isNotBlank() }),
+                    genres = genres.takeIf { it.isNotEmpty() },
+                    description = media.optString("description").takeIf { it.isNotBlank() },
+                    mediaStatus = media.optString("status").takeIf { it.isNotBlank() },
+                )
+            }
+        }
+        logger.info { "Fetched ${result.size} AniList library entries" }
+        return result
+    }
+
     // -- Internal tracker implementations ----------------------------------
 
     private fun searchMyAnimeList(token: String, query: String): List<TrackerSearchResult> {
@@ -308,8 +385,8 @@ class TrackerManager(
                 if (!isValid && stored.refreshToken.isNotEmpty()) {
                     scope.launch {
                         try {
-                            val clientId = ""
-                            val clientSecret = ""
+                            val (clientId, clientSecret) =
+                                tokenStore.getClientCredentials(status.tracker) ?: ("" to "")
                             val refreshed = oauthManager.refreshToken(
                                 tracker = status.tracker,
                                 refreshToken = stored.refreshToken,
@@ -386,6 +463,25 @@ data class TrackerSearchResult(
     val id: String,
     val title: String,
     val imageUrl: String? = null,
+)
+
+/**
+ * A single entry from the user's AniList media list, as returned by
+ * [TrackerManager.fetchAniListLibrary].
+ */
+data class AniListLibraryEntry(
+    val mediaId: Long,
+    val title: String,
+    /** AniList MediaListStatus: CURRENT, PLANNING, COMPLETED, DROPPED, PAUSED, REPEATING. */
+    val status: String = "CURRENT",
+    val score: Int = 0,
+    val progress: Int = 0,
+    val totalEpisodes: Int? = null,
+    val coverUrl: String? = null,
+    val genres: List<String>? = null,
+    val description: String? = null,
+    /** AniList MediaStatus of the anime itself: RELEASING, FINISHED, NOT_YET_RELEASED, CANCELLED, HIATUS. */
+    val mediaStatus: String? = null,
 )
 
 /**

@@ -21,11 +21,14 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
 
 - **Browse Sources** — Discover and search anime using compatible Aniyomi/Keiyoushi sources
 - **Library Management** — Organize your anime collection with categories
+- **Continue Watching** — in-progress episodes surface on the Library tab with a
+  progress bar; click to resume from where you stopped
 - **History** — watch history with live search and sort (recent, oldest, title A–Z/Z–A, episode number)
 - **Video Player** — libmpv Render API output with safe hardware decoding when available
   - Playback speed control (0.25x–4.0x)
   - Audio track selection
-  - Subtitle track selection with delay adjustment
+  - Subtitle track selection with delay adjustment, **font size + position**, and
+    **"Load subtitle file…"** from disk (`.srt`/`.ass`/`.ssa`/`.vtt`)
   - **Automatic English subtitles** — when a source serves no subtitle track,
     Anikku resolves the anime via AniList and fetches the exact episode's subs
     from Jimaku (anime-native database), cached per episode. OpenSubtitles.com
@@ -33,10 +36,19 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
     Provider keys are baked in (free tiers); users can override them in Settings.
   - **Resume playback** — position is saved continuously during playback and
     restored when you reopen an episode (pause at 10:00, exit, resume at 10:00).
+  - **Auto-play next episode** — after an episode ends, the next one loads
+    automatically (toggle in Settings → Player)
+  - **Picture-in-Picture** — always-on-top floating mini window
   - Video equalizer (brightness, contrast, saturation, gamma)
   - Screenshot capture
-  - Keyboard shortcuts (Space, ←→, ↑↓)
-- **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth
+  - Keyboard shortcuts (Space, ←→↑↓, K/J/L/F/M) + double-click fullscreen +
+    mouse-wheel volume
+- **Downloads / Offline** — queue episodes for offline playback (with the
+  source's stream headers, so protected sources work), "Download next 3",
+  pause/resume/retry, storage usage + "Clear completed" in the queue screen
+- **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth; **AniList 2-way
+  library sync** (import your lists into the Library + auto-scrobble progress
+  back; optional 12h/daily/weekly background sync)
 - **Backup & Restore** — Lossless macOS backups plus Android `.tachibk` migration import
 - **Cloud Sync** — Google Drive backup/restore and SyncYomi synchronization
 - **Discord Rich Presence** — Opt-in native Unix-socket IPC to Discord Desktop
@@ -182,9 +194,12 @@ For installation instructions, see [INSTALL.md](INSTALL.md).
 
 | Shortcut | Action |
 |---|---|
-| `Space` | Play / Pause |
-| `←` / `→` | Seek backward / forward 10s |
+| `Space` / `K` | Play / Pause |
+| `←` / `→` or `J` / `L` | Seek backward / forward 10s |
 | `↑` / `↓` | Volume up / down |
+| `M` | Mute / unmute |
+| `F` or double-click video | Toggle fullscreen |
+| Scroll wheel | Volume |
 | `⌘,` | Open Settings |
 | `⌘⇧F` | Toggle Fullscreen |
 | `⌘1`–`⌘4` | Switch tabs |

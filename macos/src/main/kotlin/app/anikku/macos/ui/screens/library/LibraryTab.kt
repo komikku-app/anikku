@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,6 +28,8 @@ import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -32,6 +37,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -46,20 +52,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.data.CATEGORY_DEFAULT_ID
 import app.anikku.macos.platform.data.CategoryEntry
+import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.LibraryRepository
+import app.anikku.macos.platform.data.LocalDownloadManager
+import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.AnimeGrid
 import app.anikku.macos.ui.components.AnimeList
+import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
+import app.anikku.macos.ui.screens.player.PlayerScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -81,7 +96,10 @@ object LibraryTab : AnikkuScreen(), Tab {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val libraryRepo = LocalLibraryRepository.current
+        val historyRepo = LocalHistoryRepository.current
         val extensionManager = LocalExtensionManager.current
+        val downloadManager = LocalDownloadManager.current
+        val toastHost = LocalToastHost.current
 
         var displayMode by remember { mutableStateOf(DisplayMode.Grid) }
         var searchQuery by remember { mutableStateOf("") }
@@ -143,8 +161,14 @@ object LibraryTab : AnikkuScreen(), Tab {
             }
         }
 
+        // In-progress episodes for the "Continue Watching" row, most recent first.
+        val continueWatching = remember(libraryRevision, libraryEntries) {
+            continueWatchingItems(historyRepo, libraryEntries)
+        }
+
         LibraryContent(
             libraryAnime = filteredAnime,
+            continueWatching = continueWatching,
             categories = categories,
             selectedCategoryId = selectedCategoryId,
             libraryCount = libraryRepo.count(),
@@ -161,15 +185,52 @@ object LibraryTab : AnikkuScreen(), Tab {
             onDismissSortMenu = { showSortMenu = false },
             onCategorySelect = { selectedCategoryId = it },
             onAnimeClick = { anime ->
-                navigator.push(AnimeDetailScreen(
-                    animeId = anime.id,
-                    sourceId = anime.source.takeIf { it != 0L },
-                    animeUrl = anime.url,
-                    animeTitle = anime.title,
-                    extensionManager = extensionManager,
-                ))
+                if (anime.source == 0L && anime.url == null) {
+                    // Entry imported from AniList has no streaming source.
+                    toastHost.show("Synced from AniList — find it via Browse to play", ToastDuration.SHORT)
+                } else {
+                    navigator.push(AnimeDetailScreen(
+                        animeId = anime.id,
+                        sourceId = anime.source.takeIf { it != 0L },
+                        animeUrl = anime.url,
+                        animeTitle = anime.title,
+                        extensionManager = extensionManager,
+                    ))
+                }
+            },
+            onContinueWatchingClick = { item ->
+                val entry = item.entry
+                if (entry.sourceId == 0L || entry.episodeUrl == null) {
+                    toastHost.show("Synced from AniList — find it via Browse to play", ToastDuration.SHORT)
+                } else {
+                    navigator.push(PlayerScreen(
+                        animeId = entry.animeId,
+                        episodeId = entry.episodeId,
+                        sourceId = entry.sourceId.takeIf { it != 0L },
+                        episodeUrl = entry.episodeUrl,
+                        animeUrl = entry.animeUrl,
+                        animeTitle = entry.animeTitle,
+                        extensionManager = extensionManager,
+                        downloadManager = downloadManager,
+                    ))
+                }
             },
         )
+    }
+
+    // In-progress episodes for the "Continue Watching" row, most recent first.
+    // Recomputed on library revision changes; history is small and read cheaply.
+    private fun continueWatchingItems(
+        historyRepo: HistoryRepository?,
+        libraryEntries: List<LibraryRepository.LibraryEntry>,
+    ): List<ContinueWatchingItem> {
+        val covers = libraryEntries.associate { it.animeId to it.thumbnailUrl }
+        return historyRepo?.getContinueWatching(limit = 12).orEmpty().map { entry ->
+            ContinueWatchingItem(
+                entry = entry,
+                thumbnailUrl = covers[entry.animeId],
+            )
+        }
     }
 
     override val options: TabOptions
@@ -185,6 +246,7 @@ object LibraryTab : AnikkuScreen(), Tab {
 @Composable
 internal fun LibraryContent(
     libraryAnime: List<AnimeModel>,
+    continueWatching: List<ContinueWatchingItem> = emptyList(),
     categories: List<CategoryEntry> = emptyList(),
     selectedCategoryId: Long? = null,
     libraryCount: Int = 0,
@@ -199,6 +261,7 @@ internal fun LibraryContent(
     onDismissSortMenu: () -> Unit,
     onCategorySelect: (Long?) -> Unit,
     onAnimeClick: (AnimeModel) -> Unit,
+    onContinueWatchingClick: (ContinueWatchingItem) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -307,6 +370,28 @@ internal fun LibraryContent(
                 )
             }
 
+            // Continue Watching row — in-progress episodes, most recent first
+            if (continueWatching.isNotEmpty()) {
+                Text(
+                    text = "Continue Watching",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(continueWatching, key = { it.entry.episodeId }) { item ->
+                        ContinueWatchingCard(
+                            item = item,
+                            onClick = { onContinueWatchingClick(item) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
             if (libraryAnime.isEmpty() && searchQuery.isBlank()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -386,6 +471,73 @@ internal fun LibraryContent(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * A single entry in the Continue Watching row: the in-progress episode plus
+ * the anime's cover (resolved from the library so it works without a source).
+ */
+data class ContinueWatchingItem(
+    val entry: HistoryRepository.HistoryEntry,
+    val thumbnailUrl: String?,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContinueWatchingCard(
+    item: ContinueWatchingItem,
+    onClick: () -> Unit,
+) {
+    val entry = item.entry
+    val fraction = if (entry.totalSeconds > 0) {
+        (entry.lastSecondSeen.toFloat() / entry.totalSeconds).coerceIn(0f, 1f)
+    } else 0f
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier.width(140.dp),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column {
+            AnimeCoverImage(
+                thumbnailUrl = item.thumbnailUrl,
+                contentDescription = entry.animeTitle,
+                title = entry.animeTitle,
+                modifier = Modifier.fillMaxWidth().height(190.dp),
+            )
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(
+                    text = entry.animeTitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = entry.episodeName.ifBlank { "Episode ${entry.episodeNumber}" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { fraction },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                )
             }
         }
     }

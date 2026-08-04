@@ -8,6 +8,8 @@ import app.anikku.macos.platform.notification.MacOSNotificationManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import eu.kanade.tachiyomi.animesource.model.Video
+import okhttp3.Headers
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
@@ -55,7 +57,7 @@ class MacOSDownloadManagerTest {
             repository = repository,
             extensionManager = extensionManager,
             storageProvider = storage,
-            resolver = { server.url("/video.mp4").toString() },
+            resolver = { Video(videoUrl = server.url("/video.mp4").toString()) },
         )
     }
 
@@ -290,6 +292,53 @@ class MacOSDownloadManagerTest {
         Unit
     }
 
+    @Test
+    fun `download sends the source video headers and persists them`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(payload)))
+
+        val headersManager = TestDownloadManager(
+            repository = repository,
+            extensionManager = extensionManager,
+            storageProvider = storage,
+            resolver = {
+                Video(
+                    videoUrl = server.url("/video.mp4").toString(),
+                    headers = Headers.headersOf(
+                        "Referer", "https://source.example/",
+                        "User-Agent", "AnikkuTest",
+                    ),
+                )
+            },
+        )
+        val entry = headersManager.enqueue(21L, 2L, "Headers", "Episode 1", 1.0, "episode-1")
+        awaitStatus(entry.id, DownloadRepository.DownloadStatus.COMPLETED)
+
+        val request = server.takeRequest()
+        assertEquals("https://source.example/", request.getHeader("Referer"))
+        assertEquals("AnikkuTest", request.getHeader("User-Agent"))
+        assertEquals(
+            "https://source.example/",
+            repository.get(entry.id)!!.headers?.get("Referer"),
+        )
+        headersManager.close()
+    }
+
+    @Test
+    fun `removeCompleted deletes completed files and entries but not active`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(payload)))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(payload)))
+
+        val first = manager.enqueue(22L, 2L, "Clear", "Episode 1", 1.0, "episode-1")
+        val second = manager.enqueue(22L, 2L, "Clear", "Episode 2", 2.0, "episode-2")
+        awaitStatus(first.id, DownloadRepository.DownloadStatus.COMPLETED)
+        awaitStatus(second.id, DownloadRepository.DownloadStatus.COMPLETED)
+
+        assertEquals(2, manager.removeCompleted())
+        assertEquals(0, repository.getAll().size)
+        assertFalse(File(repository.get(first.id)?.filePath ?: "missing").exists())
+        assertNoPartFiles()
+    }
+
     private suspend fun awaitRequestCount(expected: Int) {
         repeat(100) {
             if (server.requestCount >= expected) return
@@ -320,14 +369,14 @@ class MacOSDownloadManagerTest {
         repository: DownloadRepository,
         extensionManager: MacOSExtensionManager,
         storageProvider: MacOSStorageProvider,
-        private val resolver: suspend (DownloadRepository.DownloadEntry) -> String,
+        private val resolver: suspend (DownloadRepository.DownloadEntry) -> Video,
     ) : MacOSDownloadManager(
         repository = repository,
         extensionManager = extensionManager,
         storageProvider = storageProvider,
         notifier = MacOSNotificationManager(),
     ) {
-        override suspend fun resolveVideoUrl(entry: DownloadRepository.DownloadEntry): String = resolver(entry)
+        override suspend fun resolveVideo(entry: DownloadRepository.DownloadEntry): Video? = resolver(entry)
         override fun notifyDownloadComplete(entry: DownloadRepository.DownloadEntry) = Unit
     }
 }

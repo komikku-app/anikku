@@ -97,6 +97,27 @@ class HistoryRepository(private val dataDir: File) {
         entries.filter { it.animeId == animeId && it.episodeId == episodeId }
             .maxByOrNull { it.seenAt }
 
+    /**
+     * Entries for a "Continue Watching" row: the most recent in-progress
+     * episode per anime. An episode counts as in-progress when the user has
+     * actually advanced into it (lastSecondSeen > 0) but hasn't finished it
+     * (lastSecondSeen is more than a few seconds before the end, or the
+     * duration is unknown). Sorted by most recently watched, capped at
+     * [limit] entries.
+     */
+    @Synchronized
+    fun getContinueWatching(limit: Int = 12): List<HistoryEntry> {
+        val inProgress = entries.filter { entry ->
+            entry.lastSecondSeen > 0 &&
+                (entry.totalSeconds <= 0 || entry.lastSecondSeen < entry.totalSeconds - 5)
+        }
+        return inProgress
+            .groupBy { it.animeId }
+            .map { (_, list) -> list.maxByOrNull { it.seenAt }!! }
+            .sortedByDescending { it.seenAt }
+            .take(limit.coerceAtLeast(0))
+    }
+
     private fun loadFromFile(): MutableList<HistoryEntry> {
         if (!historyFile.exists()) return mutableListOf()
         return try {

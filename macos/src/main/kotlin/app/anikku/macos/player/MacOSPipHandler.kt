@@ -1,45 +1,44 @@
 package app.anikku.macos.player
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
-import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.rememberWindowState
+import kotlinx.coroutines.flow.collect
 
 /**
- * macOS-native Picture-in-Picture handler.
+ * Picture-in-Picture handler — a secondary always-on-top floating window.
  *
- * Creates a secondary always-on-top undecorated window for video playback,
- * mimicking the Android PiP experience. This approach is simpler than
- * integrating with AVKit's native PiP API.
+ * The PiP window renders the SAME decoded video as the main player by
+ * subscribing to [MPVSoftwareRenderer.frames]. The main surface keeps polling
+ * the renderer, so there is never more than one thread inside mpv's render
+ * context; the PiP window only receives pixel-copied snapshots.
  *
  * ## Usage
  *
  * ```kotlin
  * val pipHandler = remember { MacOSPipHandler() }
+ * pipHandler.togglePip(title, renderer)
  *
- * // Open PiP window
- * pipHandler.openPipWindow(playerViewModel)
- *
- * // Close PiP window
- * pipHandler.closePipWindow()
+ * // At the top level of the player's composition:
+ * PipWindow(pipHandler, renderer, onClose = {})
  * ```
- *
- * The PiP window is:
- * - Always on top
- * - Undecorated (no title bar)
- * - Resizable (small, ~320x240 default)
- * - Independent of the main window
- * - Closes automatically when the main app exits
  */
 class MacOSPipHandler {
 
@@ -51,40 +50,70 @@ class MacOSPipHandler {
     var pipTitle: String = ""
         private set
 
-    /** The mpv handle for the video surface in the PiP window. */
-    private var mpvHandle: com.sun.jna.Pointer? = null
+    /** The renderer whose frames the PiP window displays. */
+    private var renderer: MPVSoftwareRenderer? = null
 
     /**
      * Open the PiP window.
      *
      * @param title The title/description for the PiP window.
-     * @param handle The mpv handle for video rendering.
+     * @param renderer The software renderer to mirror.
      * @return true if the PiP window was opened.
      */
-    fun openPipWindow(title: String, handle: com.sun.jna.Pointer?): Boolean {
+    fun openPipWindow(title: String, renderer: MPVSoftwareRenderer?): Boolean {
         pipTitle = title
-        mpvHandle = handle
+        this.renderer = renderer
         isPipVisible = true
         return true
     }
 
-    /**
-     * Close the PiP window.
-     */
+    /** Close the PiP window. */
     fun closePipWindow() {
         isPipVisible = false
-        mpvHandle = null
+        renderer = null
     }
 
-    /**
-     * Toggle PiP window visibility.
-     */
-    fun togglePip(title: String, handle: com.sun.jna.Pointer?): Boolean {
+    /** Toggle PiP window visibility. */
+    fun togglePip(title: String, renderer: MPVSoftwareRenderer?): Boolean {
         if (isPipVisible) {
             closePipWindow()
             return false
-        } else {
-            return openPipWindow(title, handle)
+        }
+        return openPipWindow(title, renderer)
+    }
+}
+
+/**
+ * Displays the shared renderer's latest frame without touching the renderer
+ * itself (subscribes to [MPVSoftwareRenderer.frames]).
+ */
+@Composable
+fun PipVideoSurface(
+    renderer: MPVSoftwareRenderer?,
+    modifier: Modifier = Modifier,
+) {
+    var currentFrame by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(renderer) {
+        val source = renderer ?: return@LaunchedEffect
+        source.frames.collect { frame ->
+            currentFrame = frame
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center,
+    ) {
+        currentFrame?.let { bitmap ->
+            Image(
+                bitmap = bitmap,
+                contentDescription = "PiP video frame",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+            )
         }
     }
 }
@@ -92,17 +121,17 @@ class MacOSPipHandler {
 /**
  * Composable that renders the PiP window when [pipHandler] requests one.
  *
- * Must be placed at the top level of the composable tree (alongside the main Window).
- * The PiP window is a secondary always-on-top window.
+ * Must be placed at the top level of the player's composition tree (alongside
+ * the main Window). The PiP window is a secondary always-on-top window.
  *
  * @param pipHandler The PiP handler controlling visibility.
- * @param mpvHandle The mpv handle for video surface rendering.
+ * @param renderer The software renderer whose frames are mirrored.
  * @param onClose Called when the user closes the PiP window.
  */
 @Composable
 fun PipWindow(
     pipHandler: MacOSPipHandler,
-    mpvHandle: com.sun.jna.Pointer?,
+    renderer: MPVSoftwareRenderer?,
     onClose: () -> Unit,
 ) {
     if (pipHandler.isPipVisible) {
@@ -120,21 +149,10 @@ fun PipWindow(
             state = pipWindowState,
             alwaysOnTop = true,
         ) {
-            // Render the video surface inside the PiP window
-            // Only if mpv is available
-            if (MPVLib.isAvailable && mpvHandle != null) {
-                MPVVideoSurface(
-                    mpvHandle = mpvHandle,
-                    renderer = null,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            // Dispose effect to clean up when PiP window closes
-            DisposableEffect(Unit) {
-                onDispose {
-                    // Clean up any PiP-specific resources
-                }
-            }
+            PipVideoSurface(
+                renderer = renderer,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }

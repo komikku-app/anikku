@@ -44,6 +44,7 @@ import app.anikku.macos.ui.components.CheckboxItem
 import app.anikku.macos.ui.components.HeadingItem
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.SelectItem
+import app.anikku.macos.ui.components.SliderItem
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.crashlog.CrashLogViewerScreen
 import app.anikku.macos.ui.screens.downloads.DownloadQueueScreen
@@ -227,6 +228,32 @@ fun SettingsScreen() {
                 settings.defaultPlaybackSpeed = speedValues[it]
                 toastHost.show("Speed: ${playbackSpeedOptions[it]}", ToastDuration.SHORT)
             },
+        )
+
+        var subtitleFontSize by remember { mutableStateOf(settings.subtitleFontSize.toInt()) }
+        SliderItem(
+            label = "Subtitle font size",
+            value = subtitleFontSize,
+            valueText = "$subtitleFontSize",
+            onChange = {
+                subtitleFontSize = it
+                settings.subtitleFontSize = it.toFloat()
+            },
+            max = 160,
+            min = 20,
+        )
+
+        var subtitlePosition by remember { mutableStateOf(settings.subtitlePosition) }
+        SliderItem(
+            label = "Subtitle position",
+            value = subtitlePosition,
+            valueText = "$subtitlePosition",
+            onChange = {
+                subtitlePosition = it
+                settings.subtitlePosition = it
+            },
+            max = 150,
+            min = 0,
         )
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))

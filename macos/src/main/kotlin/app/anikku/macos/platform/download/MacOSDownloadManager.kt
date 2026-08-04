@@ -5,6 +5,7 @@ import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.notification.MacOSNotificationManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
 import eu.kanade.tachiyomi.animesource.model.SEpisode
+import eu.kanade.tachiyomi.animesource.model.Video
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.Call
+import okhttp3.Headers.Companion.toHeaders
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.IOException
@@ -184,6 +186,9 @@ open class MacOSDownloadManager(
         return entry?.filePath?.let(::safeManagedDownloadFile)
     }
 
+    /** The managed downloads directory (may not exist yet). */
+    fun downloadsDirectory(): File = File(storageProvider.downloadsDirectory, "videos")
+
     fun isDownloading(animeId: Long, episodeNumber: Double): Boolean = repository.getAll().any {
         it.animeId == animeId && it.episodeNumber == episodeNumber && it.isActive
     }
@@ -234,9 +239,21 @@ open class MacOSDownloadManager(
             refreshState()
         }
 
-        val videoUrl = resolveVideoUrl(entry)
+        val video = resolveVideo(entry)
         requireCurrentAttempt(entry.id, token)
+        val videoUrl = video?.videoUrl ?: ""
         require(videoUrl.isNotBlank()) { "Video URL is empty" }
+        // Persist the stream headers (Referer, Origin, ...) with the entry so the
+        // actual request below authenticates the same way the player does. Many
+        // sources refuse bare requests without these.
+        val videoHeaders = video?.headers?.let { headers ->
+            buildMap { for (i in 0 until headers.size) put(headers.name(i), headers.value(i)) }
+        }?.takeIf { it.isNotEmpty() }
+        if (!videoHeaders.isNullOrEmpty()) {
+            updateIfCurrent(entry.id, token) {
+                repository.update(entry.id, videoUrl = videoUrl, headers = videoHeaders)
+            }
+        }
 
         val downloadsDir = prepareDownloadsDirectory()
         val extension = extractExtension(videoUrl)
@@ -267,7 +284,15 @@ open class MacOSDownloadManager(
 
         var completed = false
         try {
-            val request = Request.Builder().url(videoUrl).get().build()
+            val request = Request.Builder().url(videoUrl).apply {
+                // Apply the stream headers captured from the source's Video. This
+                // manager uses a bare OkHttpClient (no global UA interceptor), so
+                // sources that require Referer/User-Agent would 403 without these.
+                val storedHeaders = repository.get(entry.id)?.headers
+                if (!storedHeaders.isNullOrEmpty()) {
+                    runCatching { headers(storedHeaders.toHeaders()) }
+                }
+            }.get().build()
             val call = httpClient.newCall(request)
             synchronized(downloadLock) {
                 if (attemptTokens[entry.id] != token) {
@@ -349,12 +374,45 @@ open class MacOSDownloadManager(
     }
 
     /** Testable production hook; production resolves through the loaded extension source. */
-    protected open suspend fun resolveVideoUrl(entry: DownloadRepository.DownloadEntry): String {
+    protected open suspend fun resolveVideoUrl(entry: DownloadRepository.DownloadEntry): String =
+        resolveVideo(entry)?.videoUrl
+            ?: throw IllegalStateException("No video URLs returned for episode")
+
+    /**
+     * Resolve the full [Video] for a download, preferring the source's preferred
+     * quality (same policy the player uses). The returned video carries the
+     * stream headers (Referer, Origin, ...) that many sources require.
+     */
+    protected open suspend fun resolveVideo(entry: DownloadRepository.DownloadEntry): Video? {
         val source = extensionManager.getSource(entry.sourceId)
             ?: throw IllegalStateException("Source not found for ID ${entry.sourceId}")
         val episode = SEpisode.create().apply { url = entry.episodeUrl ?: "" }
-        return source.getVideoList(episode).firstOrNull()?.videoUrl
-            ?: throw IllegalStateException("No video URLs returned for episode")
+        val videos = source.getVideoList(episode)
+        return videos.firstOrNull { it.preferred } ?: videos.firstOrNull()
+    }
+
+    /**
+     * Delete all completed downloads (files + queue entries).
+     * Returns the number of entries removed. Files outside the managed
+     * videos directory are never touched.
+     */
+    fun removeCompleted(): Int {
+        synchronized(downloadLock) {
+            val completed = repository.getCompleted()
+            var removed = 0
+            completed.forEach { entry ->
+                entry.filePath?.let { path ->
+                    safeManagedDownloadFile(path)?.let { file ->
+                        runCatching { Files.deleteIfExists(file.toPath()) }
+                            .onFailure { e -> logger.warn(e) { "Failed to delete completed download ${file.path}" } }
+                    }
+                }
+                repository.remove(entry.id)
+                removed++
+            }
+            if (removed > 0) refreshState()
+            return removed
+        }
     }
 
     private fun prepareDownloadsDirectory(): File {

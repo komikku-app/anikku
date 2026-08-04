@@ -1204,6 +1204,30 @@ class PlayerViewModel(
         }
     }
 
+    // ---- Subtitle appearance (font size / position) ------------------------
+
+    /** Set the subtitle font size (mpv sub-font-size, 20-160). */
+    fun setSubtitleFontSize(size: Float) {
+        val handle = mpvHandle ?: return
+        runCatching {
+            MPVLib.setPropertyString(handle, "sub-font-size", size.toInt().coerceIn(20, 160).toString())
+        }.onFailure { e -> logger.warn(e) { "Failed to set sub-font-size" } }
+    }
+
+    /** Set the subtitle vertical position (mpv sub-pos, 0-150). */
+    fun setSubtitlePosition(position: Int) {
+        val handle = mpvHandle ?: return
+        runCatching {
+            MPVLib.setPropertyString(handle, "sub-pos", position.coerceIn(0, 150).toString())
+        }.onFailure { e -> logger.warn(e) { "Failed to set sub-pos" } }
+    }
+
+    /** Apply the persisted subtitle appearance when an episode loads. */
+    fun applySubtitleAppearance(fontSize: Float, position: Int) {
+        setSubtitleFontSize(fontSize)
+        setSubtitlePosition(position)
+    }
+
     private fun preferenceStore(): app.anikku.macos.platform.preference.MacOSPreferenceStore? =
         runCatching {
             org.koin.core.context.GlobalContext.get()

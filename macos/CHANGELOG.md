@@ -6,6 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.1.0] — 2026-08-04
+
+### Tier-1: AniList sync, downloads, auto-play, player polish
+
+**AniList tracker — full 2-way library sync**
+- OAuth login stays one click (baked client id/secret supported via
+  `anilist.clientId`/`anilist.clientSecret` in `gradle.properties`; falls back
+  to manual credential entry when unset).
+- **Sync library now** in Settings → Tracking: imports your AniList lists
+  (Watching/Completed/Plan to Watch/Dropped) into the Library with matching
+  categories and covers.
+- **Auto-sync** (Off / 12h / Daily / Weekly) runs a pull + push cycle in the
+  background. Merge policy: progress is always the max of local and remote
+  (never loses watch progress); status follows AniList on import and is pushed
+  only for commit states (Completed/Dropped) or Watching when remote is unset.
+- Auto-scrobble (existing) + manual "Link to tracker" still work; token
+  refresh now uses the stored client credentials (was empty, so AniList
+  tokens could never refresh).
+
+**Downloads / offline**
+- **Fix: downloads now send the source's stream headers** (Referer, User-Agent
+  — many sources 403'd bare requests). The download resolves the same
+  preferred-first `Video` the player uses and persists its headers.
+- **"Download next 3"** button on the anime detail episode header (queues the
+  next N undownloaded episodes).
+- **Download queue storage summary**: downloaded size + free space, plus
+  "Clear completed" (deletes files + entries).
+
+**Auto-play next + Continue Watching**
+- Auto-play next episode is now actually wired (was a dormant setting): on
+  natural end, after 0.8s it loads the next episode. Toggle lives in Settings
+  → Player.
+- **Continue Watching row** on the Library tab: in-progress episodes (per
+  anime, most recent first) with covers and a progress bar; click resumes
+  playback.
+
+**Player polish**
+- Shortcuts: **K** play/pause, **J/L** −/+10s, **F** fullscreen, **M** mute
+  (restores previous volume). Space/arrows unchanged.
+- **Double-click video → fullscreen**; **mouse-wheel scroll → volume**.
+- **Picture-in-Picture**: PiP button in the transport controls opens an
+  always-on-top floating mini window mirroring the live playback.
+- **Subtitle appearance**: font size + vertical position sliders in the
+  player's Subtitles panel and in Settings → Player.
+- **Load subtitle file…** in the Subtitles panel (`.srt`/`.ass`/`.ssa`/`.vtt`
+  from disk).
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.0.5] — 2026-08-04
 
 ### History filter/sort + subtitle matching

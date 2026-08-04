@@ -499,6 +499,33 @@ data class AnimeDetailScreen(
                                 toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
                             }
                         },
+                        onDownloadNextN = {
+                            val dm = effectiveDownloadManager
+                            if (dm != null && sourceId != null) {
+                                val target = episodes
+                                    .filter { it.episodeNumber > 0 }
+                                    .sortedBy { it.episodeNumber }
+                                    .filter { downloadStateMap[it.episodeNumber] != true }
+                                    .take(3)
+                                if (target.isEmpty()) {
+                                    toastHost.show("Next episodes already downloaded", ToastDuration.SHORT)
+                                } else {
+                                    target.forEach { episode ->
+                                        dm.enqueue(
+                                            animeId = anime?.id ?: animeId,
+                                            sourceId = sourceId,
+                                            animeTitle = anime?.title ?: "Unknown",
+                                            episodeName = episode.name,
+                                            episodeNumber = episode.episodeNumber,
+                                            episodeUrl = episode.url,
+                                        )
+                                    }
+                                    toastHost.show("Queued next ${target.size} episode(s)", ToastDuration.SHORT)
+                                }
+                            } else {
+                                toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
+                            }
+                        },
                     )
                 }
             }
@@ -523,6 +550,7 @@ private fun AnimeDetailContent(
     onMarkAllSeen: () -> Unit = {},
     onPlayEpisode: (EpisodeModel) -> Unit,
     onDownloadEpisode: (EpisodeModel) -> Unit = {},
+    onDownloadNextN: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -654,6 +682,14 @@ private fun AnimeDetailContent(
                             Icon(Icons.Outlined.DoneAll, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Mark all seen", style = MaterialTheme.typography.labelSmall)
+                        }
+                        TextButton(
+                            onClick = onDownloadNextN,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        ) {
+                            Icon(Icons.Outlined.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Download next 3", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     Text("${episodes.size} total", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

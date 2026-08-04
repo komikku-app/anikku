@@ -26,7 +26,7 @@ See [BUILDING.md](BUILDING.md) for full build instructions.
 git clone https://github.com/komikku-app/anikku.git
 cd anikku/macos
 ./gradlew packageDmg
-# Output: build/compose/binaries/main/dmg/Anikku-1.0.2.dmg
+# Output: build/compose/binaries/main/dmg/Anikku-1.1.0.dmg
 ```
 
 There is currently no supported Homebrew formula.

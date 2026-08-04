@@ -64,6 +64,12 @@ class SettingsState(
         private const val KEY_RESUME_FROM_LAST = "resume_from_last"
         private const val KEY_SKIP_INTRO = "skip_intro"
         private const val KEY_DEFAULT_SPEED = "default_playback_speed"
+        private const val KEY_SUBTITLE_FONT_SIZE = "subtitle_font_size"
+        private const val KEY_SUBTITLE_POSITION = "subtitle_position"
+
+        // AniList tracker sync
+        private const val KEY_ANILIST_SYNC_INTERVAL_HOURS = "anilist_sync_interval_hours"
+        private const val KEY_ANILIST_LAST_SYNC_AT = "anilist_last_sync_at"
 
         // Download settings
         private const val KEY_DOWNLOAD_WIFI_ONLY = "download_wifi_only"
@@ -254,6 +260,60 @@ class SettingsState(
             val sanitized = sanitizePlaybackSpeed(value)
             _defaultSpeed.value = sanitized
             defaultSpeedPref?.set(sanitized)
+        }
+
+    private val subtitleFontSizePref = preferenceStore?.getFloat(KEY_SUBTITLE_FONT_SIZE, 55f)
+    private val _subtitleFontSize = mutableStateOf(
+        (subtitleFontSizePref?.get() ?: 55f).coerceIn(20f, 160f),
+    )
+
+    /** Subtitle font size (20-160), applied to the mpv sub-font-size property. */
+    var subtitleFontSize: Float
+        get() = _subtitleFontSize.value
+        set(value) {
+            val clamped = value.coerceIn(20f, 160f)
+            _subtitleFontSize.value = clamped
+            subtitleFontSizePref?.set(clamped)
+        }
+
+    private val subtitlePositionPref = preferenceStore?.getInt(KEY_SUBTITLE_POSITION, 100)
+    private val _subtitlePosition = mutableStateOf(
+        (subtitlePositionPref?.get() ?: 100).coerceIn(0, 150),
+    )
+
+    /** Subtitle vertical position (0-150), applied to the mpv sub-pos property. */
+    var subtitlePosition: Int
+        get() = _subtitlePosition.value
+        set(value) {
+            val clamped = value.coerceIn(0, 150)
+            _subtitlePosition.value = clamped
+            subtitlePositionPref?.set(clamped)
+        }
+
+    // -------------------------------------------------------------------------
+    // AniList tracker sync
+    // -------------------------------------------------------------------------
+
+    private val anilistSyncIntervalPref = preferenceStore?.getInt(KEY_ANILIST_SYNC_INTERVAL_HOURS, 0)
+    private val _anilistSyncIntervalHours = mutableStateOf(sanitizeJobInterval(anilistSyncIntervalPref?.get() ?: 0))
+    private val anilistLastSyncPref = preferenceStore?.getLong(KEY_ANILIST_LAST_SYNC_AT, 0L)
+    private val _anilistLastSyncAt = mutableStateOf(anilistLastSyncPref?.get() ?: 0L)
+
+    /** How often to auto-sync the library with AniList (hours; 0 disables). */
+    var anilistSyncIntervalHours: Int
+        get() = _anilistSyncIntervalHours.value
+        set(value) {
+            val sanitized = sanitizeJobInterval(value)
+            _anilistSyncIntervalHours.value = sanitized
+            anilistSyncIntervalPref?.set(sanitized)
+        }
+
+    /** Epoch millis of the last successful AniList library sync (0 = never). */
+    var anilistLastSyncAt: Long
+        get() = _anilistLastSyncAt.value
+        set(value) {
+            _anilistLastSyncAt.value = value
+            anilistLastSyncPref?.set(value)
         }
 
     // -------------------------------------------------------------------------

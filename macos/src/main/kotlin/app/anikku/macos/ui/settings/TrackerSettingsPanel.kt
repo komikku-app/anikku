@@ -32,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,13 +40,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.anikku.macos.platform.auth.AnilistConfig
+import app.anikku.macos.platform.auth.LocalAniListSyncService
 import app.anikku.macos.platform.auth.TrackerManager
 import app.anikku.macos.platform.auth.TrackerTokenStore
 import app.anikku.macos.ui.components.HeadingItem
 import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.SelectItem
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.tracker.TrackerListScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * OAuth client credentials for tracker services.
@@ -82,6 +90,7 @@ fun TrackerSettingsPanel(
 ) {
     val toastHost = LocalToastHost.current
     val navigator = LocalNavigator.current
+    val scope = rememberCoroutineScope()
     var loggingInTracker by remember { mutableStateOf<String?>(null) }
 
     // Collect login statuses reactively
@@ -98,6 +107,12 @@ fun TrackerSettingsPanel(
         }
         val clientId = creds?.first.orEmpty()
         val clientSecret = creds?.second.orEmpty()
+        // Baked-in AniList client credentials take precedence when configured
+        // (see gradle.properties anilist.clientId/clientSecret).
+        val bakedId = if (status.tracker == "anilist") AnilistConfig.CLIENT_ID else ""
+        val bakedSecret = if (status.tracker == "anilist") AnilistConfig.CLIENT_SECRET else ""
+        val effectiveClientId = bakedId.ifBlank { clientId }
+        val effectiveClientSecret = bakedSecret.ifBlank { clientSecret }
 
         TrackerCard(
             tracker = status.tracker,
@@ -105,7 +120,7 @@ fun TrackerSettingsPanel(
             isLoggedIn = status.isLoggedIn,
             username = status.username,
             isLoggingIn = loggingInTracker == status.tracker,
-            hasCredentials = clientId.isNotBlank(),
+            hasCredentials = effectiveClientId.isNotBlank(),
             onLogin = {
                 if (trackerManager == null) {
                     toastHost.show(
@@ -118,7 +133,7 @@ fun TrackerSettingsPanel(
                     return@TrackerCard
                 }
 
-                if (clientId.isBlank()) {
+                if (effectiveClientId.isBlank()) {
                     toastHost.show("${status.displayName}: Set client ID/secret in the detail screen", ToastDuration.LONG)
                     return@TrackerCard
                 }
@@ -128,8 +143,8 @@ fun TrackerSettingsPanel(
 
                 trackerManager.login(
                     tracker = status.tracker,
-                    clientId = clientId,
-                    clientSecret = clientSecret,
+                    clientId = effectiveClientId,
+                    clientSecret = effectiveClientSecret,
                 ) { success, message ->
                     loggingInTracker = null
                     toastHost.show(
@@ -154,6 +169,14 @@ fun TrackerSettingsPanel(
                 if (removed) onTrackerChanged()
             },
         )
+        if (status.tracker == "anilist" && bakedId.isNotBlank()) {
+            Text(
+                text = "Using baked-in AniList credentials — no setup needed",
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
+        }
     }
 
     if (statuses.isEmpty()) {
@@ -163,6 +186,87 @@ fun TrackerSettingsPanel(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+
+    // AniList library sync (2-way) — only meaningful when logged in.
+    val anilistLoggedIn = statuses.any { it.tracker == "anilist" && it.isLoggedIn }
+    if (anilistLoggedIn) {
+        val syncService = LocalAniListSyncService.current
+        val settings = LocalSettingsState.current
+        var syncing by remember { mutableStateOf(false) }
+
+        Spacer(Modifier.height(8.dp))
+        HeadingItem("AniList Library Sync")
+
+        val syncOptions = arrayOf("Off", "Every 12 hours", "Daily", "Weekly")
+        val syncValues = intArrayOf(0, 12, 24, 168)
+        var intervalIndex by remember(settings.anilistSyncIntervalHours) {
+            mutableStateOf(syncValues.indexOf(settings.anilistSyncIntervalHours).coerceAtLeast(0))
+        }
+        SelectItem(
+            label = "Auto-sync",
+            options = syncOptions,
+            selectedIndex = intervalIndex,
+            onSelect = { index ->
+                intervalIndex = index
+                settings.anilistSyncIntervalHours = syncValues[index]
+            },
+        )
+
+        val lastSync = settings.anilistLastSyncAt
+        Text(
+            text = if (lastSync > 0) {
+                "Last synced: ${SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(lastSync))}"
+            } else {
+                "Never synced"
+            },
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Button(
+            onClick = {
+                if (syncService == null) {
+                    toastHost.show("AniList sync unavailable", ToastDuration.SHORT, true)
+                    return@Button
+                }
+                syncing = true
+                scope.launch {
+                    val result = syncService.syncNow()
+                    syncing = false
+                    if (result != null) {
+                        settings.anilistLastSyncAt = System.currentTimeMillis()
+                        toastHost.show(
+                            text = result.toMessage(),
+                            duration = if (result.errors.isNotEmpty()) ToastDuration.LONG else ToastDuration.SHORT,
+                            isError = result.errors.isNotEmpty(),
+                            source = "anilist",
+                            location = "TrackerSettingsPanel.syncNow",
+                        )
+                    } else {
+                        toastHost.show(
+                            text = "AniList sync failed",
+                            duration = ToastDuration.LONG,
+                            isError = true,
+                            source = "anilist",
+                            location = "TrackerSettingsPanel.syncNow",
+                        )
+                    }
+                }
+            },
+            enabled = !syncing && syncService != null,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(6.dp),
+        ) {
+            Icon(
+                Icons.Outlined.SyncAlt,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(if (syncing) "Syncing…" else "Sync library now", style = MaterialTheme.typography.labelMedium)
+        }
     }
 
     // Info text about credentials

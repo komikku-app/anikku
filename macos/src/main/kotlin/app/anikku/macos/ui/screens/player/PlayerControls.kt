@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.FastRewind
 import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.outlined.PictureInPicture
+import androidx.compose.material.icons.outlined.PictureInPictureAlt
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -80,6 +82,8 @@ fun PlayerTransportControls(
     episodeCount: Int,
     volume: Int = 100,
     showVolume: Boolean = false,
+    isPipVisible: Boolean = false,
+    onTogglePip: () -> Unit = {},
     onTogglePlay: () -> Unit,
     onSeek: (Float) -> Unit,
     onSeekEnd: (Float) -> Unit,
@@ -221,6 +225,16 @@ fun PlayerTransportControls(
                 description = "Next episode",
                 enabled = currentEpisodeIndex < episodeCount - 1,
                 onClick = { onNavigateEpisode(currentEpisodeIndex + 1) },
+            )
+
+            Spacer(Modifier.width(16.dp))
+
+            // Picture-in-Picture (floating mini window)
+            TransportIconButton(
+                icon = if (isPipVisible) Icons.Outlined.PictureInPictureAlt else Icons.Outlined.PictureInPicture,
+                description = if (isPipVisible) "Close Picture-in-Picture" else "Picture-in-Picture",
+                enabled = true,
+                onClick = onTogglePip,
             )
         }
 

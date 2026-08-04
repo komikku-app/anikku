@@ -4,6 +4,10 @@ import com.sun.jna.Callback
 import com.sun.jna.Memory
 import com.sun.jna.Pointer
 import io.github.oshai.kotlinlogging.KotlinLogging
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
 import java.lang.ref.Reference
@@ -111,6 +115,15 @@ class MPVSoftwareRenderer(
      */
     @Volatile
     private var inFlightSnapshot: RenderSnapshot? = null
+
+    /**
+     * Latest decoded frame as an immutable [ImageBitmap], published only while
+     * at least one subscriber exists (the PiP window). The main player surface
+     * keeps polling [render] directly, so there is never more than one thread
+     * inside mpv_render_context_render.
+     */
+    private val _frames = MutableSharedFlow<androidx.compose.ui.graphics.ImageBitmap>(extraBufferCapacity = 1)
+    val frames: SharedFlow<androidx.compose.ui.graphics.ImageBitmap> = _frames.asSharedFlow()
 
     // -------------------------------------------------------------------------
     // Lifecycle
@@ -339,6 +352,13 @@ class MPVSoftwareRenderer(
                 Reference.reachabilityFence(snapshot.sizeParams)
                 Reference.reachabilityFence(snapshot.strideParam)
                 Reference.reachabilityFence(snapshot.formatParam)
+
+                // Broadcast a pixel-copied snapshot to PiP subscribers (if any).
+                // Converted here so subscribers can never observe the renderer's
+                // reused BufferedImage being mutated by the next frame.
+                if (_frames.subscriptionCount.value > 0) {
+                    _frames.tryEmit(snapshot.image.toComposeImageBitmap())
+                }
 
                 frameCount++
                 if (!loggedFirstFrame) {

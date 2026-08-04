@@ -43,6 +43,8 @@ class DownloadRepository(private val dataDir: File) {
         val downloadedBytes: Long = 0L,
         val createdAt: Long = System.currentTimeMillis(),
         val completedAt: Long? = null,
+        /** Stream headers from the source's Video (Referer, ...). Null-safe for legacy entries. */
+        val headers: Map<String, String>? = null,
     ) {
         val isActive: Boolean get() = status == DownloadStatus.DOWNLOADING || status == DownloadStatus.QUEUED
         val isFinished: Boolean get() = status == DownloadStatus.COMPLETED || status == DownloadStatus.ERROR
@@ -123,6 +125,7 @@ class DownloadRepository(private val dataDir: File) {
         id: Long,
         status: DownloadStatus? = null,
         videoUrl: String? = null,
+        headers: Map<String, String>? = null,
         progress: Float? = null,
         totalBytes: Long? = null,
         downloadedBytes: Long? = null,
@@ -136,6 +139,7 @@ class DownloadRepository(private val dataDir: File) {
         val updated = current.copy(
             status = status ?: current.status,
             videoUrl = videoUrl ?: current.videoUrl,
+            headers = headers ?: current.headers,
             progress = progress ?: current.progress,
             totalBytes = totalBytes ?: current.totalBytes,
             downloadedBytes = downloadedBytes ?: current.downloadedBytes,

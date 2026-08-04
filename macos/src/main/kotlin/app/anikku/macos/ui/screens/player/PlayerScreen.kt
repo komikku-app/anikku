@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
@@ -60,12 +61,16 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.anikku.macos.LocalAppWindow
 import app.anikku.macos.player.MPVLib
 import app.anikku.macos.player.MPVSoftwareRenderer
 import app.anikku.macos.player.MPVVideoSurface
+import app.anikku.macos.player.MacOSPipHandler
+import app.anikku.macos.player.PipWindow
 import app.anikku.macos.player.PlaybackState
 import app.anikku.macos.player.PlayerViewModel
 import app.anikku.macos.platform.auth.LocalTrackerManager
@@ -633,6 +638,10 @@ data class PlayerScreen(
         var hasScrobbledThisEpisode by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
 
+        // PiP floating window state — closed when the player leaves the stack.
+        val pipHandler = remember { MacOSPipHandler() }
+        val appWindow = LocalAppWindow.current
+
         // State for "Retry with different quality" functionality
         // Stores all video candidates from the source so we can iterate through them.
         var videoCandidates by remember { mutableStateOf<List<VideoCandidate>>(emptyList()) }
@@ -789,6 +798,9 @@ data class PlayerScreen(
                 // Apply any learned subtitle offset for this anime.
                 playerViewModel.applyLearnedSubtitleOffset(animeId)
 
+                // Apply persisted subtitle appearance (font size / position).
+                playerViewModel.applySubtitleAppearance(settings.subtitleFontSize, settings.subtitlePosition)
+
                 // Auto-fetch English subtitles when the source provided none.
                 // Failure is silent: playback must never be blocked by subtitle
                 // fetching, and the user can still search OpenSubtitles manually.
@@ -908,6 +920,7 @@ data class PlayerScreen(
         DisposableEffect(Unit) {
             onDispose {
                 saveCurrentPosition()
+                pipHandler.closePipWindow()
                 playerViewModel.shutdown()
             }
         }
@@ -1138,6 +1151,20 @@ data class PlayerScreen(
             }
         }
 
+        // Auto-play the next episode when the current one ends naturally. The
+        // toggle lives in Settings (Player) and defaults to on. Declared after
+        // navigateToEpisode because local functions are not hoisted; fires once
+        // per ENDED transition, so no re-entry guard is needed.
+        LaunchedEffect(playbackState) {
+            if (playbackState == PlaybackState.ENDED &&
+                settings.autoPlayNextEpisode &&
+                currentEpisodeIndex < allEpisodes.lastIndex
+            ) {
+                delay(800)
+                navigateToEpisode(currentEpisodeIndex + 1)
+            }
+        }
+
         // Native menu and Dock actions share the exact same callbacks as the
         // on-screen controls. Restore the previous handlers when this player
         // leaves the navigation stack.
@@ -1263,6 +1290,47 @@ data class PlayerScreen(
             onSeekTo = { seconds -> playerViewModel.seekTo(seconds) },
             onSeekRelative = { offset -> playerViewModel.seekRelative(offset) },
             onSetVolume = { vol -> playerViewModel.setVolume(vol) },
+            onToggleFullscreen = {
+                val frame = appWindow
+                if (frame != null) {
+                    app.anikku.macos.platform.MacOSFullScreen.toggleFullScreen(frame)
+                }
+            },
+            isPipVisible = pipHandler.isPipVisible,
+            onTogglePip = {
+                val title = currentEpisode?.name?.takeIf { it.isNotBlank() }
+                    ?: currentEpisode?.let { "Episode ${String.format("%.0f", it.episodeNumber)}" }
+                    ?: animeTitle
+                pipHandler.togglePip(title, softwareRenderer)
+            },
+            subtitleFontSize = settings.subtitleFontSize,
+            subtitlePosition = settings.subtitlePosition,
+            onFontSizeChange = { value ->
+                settings.subtitleFontSize = value
+                playerViewModel.setSubtitleFontSize(value)
+            },
+            onPositionChange = { value ->
+                settings.subtitlePosition = value
+                playerViewModel.setSubtitlePosition(value)
+            },
+            onLoadLocalSubtitle = {
+                val picker = runCatching {
+                    org.koin.core.context.GlobalContext.get()
+                        .get<app.anikku.macos.platform.storage.MacOSFilePicker>()
+                }.getOrNull()
+                val file = picker?.openFile(
+                    title = "Load Subtitle File",
+                    extensions = listOf("srt", "ass", "ssa", "vtt"),
+                    currentDir = java.io.File(System.getProperty("user.home")),
+                )
+                if (file != null) {
+                    val added = playerViewModel.addDownloadedSubtitleFile(file, file.name, "und")
+                    toastHost.show(
+                        if (added) "Subtitle loaded: ${file.name}" else "Could not load subtitle",
+                        ToastDuration.SHORT,
+                    )
+                }
+            },
             onTakeScreenshot = {
                 val result = playerViewModel.takeScreenshot()
                 if (result != null) {
@@ -1277,6 +1345,13 @@ data class PlayerScreen(
                     )
                 }
             },
+        )
+
+        // PiP window — a sibling Window composed at the top level of the player.
+        PipWindow(
+            pipHandler = pipHandler,
+            renderer = softwareRenderer,
+            onClose = {},
         )
     }
 }
@@ -1338,6 +1413,14 @@ internal fun PlayerContent(
     onSeekTo: (Double) -> Unit = {},
     onSeekRelative: (Double) -> Unit = {},
     onSetVolume: (Int) -> Unit = {},
+    onToggleFullscreen: () -> Unit = {},
+    isPipVisible: Boolean = false,
+    onTogglePip: () -> Unit = {},
+    subtitleFontSize: Float = 55f,
+    subtitlePosition: Int = 100,
+    onFontSizeChange: (Float) -> Unit = {},
+    onPositionChange: (Int) -> Unit = {},
+    onLoadLocalSubtitle: () -> Unit = {},
     onTakeScreenshot: () -> Unit = {},
 ) {
     // --- Player state ---
@@ -1360,6 +1443,10 @@ internal fun PlayerContent(
     var showEqualizerPanel by remember { mutableStateOf(false) }
     var showAspectRatioPanel by remember { mutableStateOf(false) }
     var showVideoFilterPanel by remember { mutableStateOf(false) }
+
+    // Mute state (M key): remembers the pre-mute volume so unmuting restores it.
+    var isMuted by remember { mutableStateOf(false) }
+    var lastVolume by remember { mutableIntStateOf(100) }
 
     // OpenSubtitles search state (subtitle dropdown fallback).
     var osSearching by remember { mutableStateOf(false) }
@@ -1407,7 +1494,6 @@ internal fun PlayerContent(
 
     // Keyboard shortcuts
     val canSeek = !isLive && totalSeconds > 0L
-    val interactionSource = remember { MutableInteractionSource() }
     val focusRequester = remember { FocusRequester() }
     val errorFocusRequester = remember { FocusRequester() }
     // Loading overlay (shown on top of video surface while buffering)
@@ -1697,11 +1783,26 @@ internal fun PlayerContent(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-            ) {
-                isControlsVisible = !isControlsVisible
+            .pointerInput(Unit) {
+                // Single click toggles the controls; double-click enters/exits
+                // fullscreen. detectTapGestures delays the single tap slightly
+                // to disambiguate, which is the standard trade-off.
+                detectTapGestures(
+                    onTap = { isControlsVisible = !isControlsVisible },
+                    onDoubleTap = { onToggleFullscreen() },
+                )
+            }
+            .pointerInput(Unit) {
+                // Mouse-wheel scroll adjusts volume (natural scrolling: up = louder).
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val delta = event.changes.firstOrNull()?.scrollDelta?.y ?: 0f
+                        if (delta != 0f) {
+                            onSetVolume((volume + if (delta > 0) 5 else -5).coerceIn(0, 200))
+                        }
+                    }
+                }
             }
             .focusRequester(focusRequester)
             .focusable()
@@ -1734,6 +1835,40 @@ internal fun PlayerContent(
                     }
                     event.key == Key.DirectionDown -> {
                         onSetVolume((volume - 5).coerceAtLeast(0))
+                        true
+                    }
+                    // Netflix/YouTube-style shortcuts
+                    event.key == Key.K -> {
+                        onTogglePlay()
+                        isControlsVisible = true
+                        true
+                    }
+                    event.key == Key.J && canSeek -> {
+                        onSeekRelative(-10.0)
+                        elapsedSeconds = (elapsedSeconds - 10).coerceAtLeast(0)
+                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+                        true
+                    }
+                    event.key == Key.L && canSeek -> {
+                        onSeekRelative(10.0)
+                        elapsedSeconds = (elapsedSeconds + 10).coerceAtMost(totalSeconds)
+                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+                        true
+                    }
+                    event.key == Key.F -> {
+                        onToggleFullscreen()
+                        true
+                    }
+                    event.key == Key.M -> {
+                        if (isMuted) {
+                            onSetVolume(lastVolume.coerceIn(0, 200))
+                            isMuted = false
+                        } else {
+                            lastVolume = volume
+                            onSetVolume(0)
+                            isMuted = true
+                        }
+                        isControlsVisible = true
                         true
                     }
                     else -> false
@@ -1920,6 +2055,8 @@ internal fun PlayerContent(
                 episodeCount = episodes.size,
                 volume = volume,
                 showVolume = isMPVAvailable,
+                isPipVisible = isPipVisible,
+                onTogglePip = onTogglePip,
                 onTogglePlay = onTogglePlay,
                 onSeek = { if (canSeek) seekFraction = it },
                 onSeekEnd = { fraction ->
@@ -1968,6 +2105,11 @@ internal fun PlayerContent(
                 tracks = subtitleTracks,
                 currentTrackIndex = selectedSubtitleTrack,
                 subtitleDelay = subtitleDelay,
+                subtitleFontSize = subtitleFontSize,
+                subtitlePosition = subtitlePosition,
+                onFontSizeChange = onFontSizeChange,
+                onPositionChange = onPositionChange,
+                onLoadLocalSubtitle = onLoadLocalSubtitle,
                 onTrackSelected = { playerViewModel?.selectSubtitleTrack(it) },
                 onDelayChange = { playerViewModel?.setSubtitleDelayForAnime(animeId, it) },
                 onDismiss = { showSubtitlePanel = false },

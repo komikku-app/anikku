@@ -278,6 +278,11 @@ fun PlayerSubtitleTrackPanel(
     tracks: List<app.anikku.macos.player.TrackInfo> = emptyList(),
     currentTrackIndex: Int = -1, // -1 = disabled; otherwise the mpv track ID
     subtitleDelay: Double = 0.0,
+    subtitleFontSize: Float = 55f,
+    subtitlePosition: Int = 100,
+    onFontSizeChange: (Float) -> Unit = {},
+    onPositionChange: (Int) -> Unit = {},
+    onLoadLocalSubtitle: () -> Unit = {},
     onTrackSelected: (Int) -> Unit,
     onDelayChange: (Double) -> Unit,
     onDismiss: () -> Unit,
@@ -393,6 +398,52 @@ fun PlayerSubtitleTrackPanel(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Subtitle appearance — applies to whatever track is selected
+            Text(
+                text = "Font size (${subtitleFontSize.toInt()})",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Slider(
+                value = subtitleFontSize,
+                onValueChange = onFontSizeChange,
+                valueRange = 20f..160f,
+                steps = 27,
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = "Position (${subtitlePosition})",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Slider(
+                value = subtitlePosition.toFloat(),
+                onValueChange = { onPositionChange(it.toInt()) },
+                valueRange = 0f..150f,
+                steps = 29,
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onLoadLocalSubtitle,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Load subtitle file…")
             }
 
             Spacer(Modifier.height(12.dp))
