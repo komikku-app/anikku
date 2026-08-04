@@ -98,6 +98,17 @@ class HistoryRepository(private val dataDir: File) {
             .maxByOrNull { it.seenAt }
 
     /**
+     * Resume fallback keyed by episode NUMBER rather than hashed episode id.
+     * Episode IDs are derived from source URLs, which can change between
+     * sessions (signed URLs, query params), while numbers stay stable — so
+     * resume would silently miss for those shows.
+     */
+    @Synchronized
+    fun getLatestForEpisodeNumber(animeId: Long, episodeNumber: Double): HistoryEntry? =
+        entries.filter { it.animeId == animeId && it.episodeNumber == episodeNumber }
+            .maxByOrNull { it.seenAt }
+
+    /**
      * Entries for a "Continue Watching" row: the most recent in-progress
      * episode per anime. An episode counts as in-progress when the user has
      * actually advanced into it (lastSecondSeen > 0) but hasn't finished it

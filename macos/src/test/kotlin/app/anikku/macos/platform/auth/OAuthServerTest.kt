@@ -38,6 +38,23 @@ class OAuthServerTest {
     }
 
     @Test
+    fun `redirect override reports the exact uri for strict providers`() {
+        val redirectUri = server.start(
+            port = 0,
+            callbackPath = "/callback",
+            redirectUriOverride = "http://localhost:8080/callback",
+        )
+        assertEquals("http://localhost:8080/callback", redirectUri)
+
+        // The authorize URL must carry the same exact redirect.
+        val authUrl = server.buildAuthorizationUrl(
+            authEndpoint = "https://anilist.co/api/v2/oauth/authorize",
+            clientId = "47764",
+        )
+        assertTrue(authUrl.contains("redirect_uri=http://localhost:8080/callback"))
+    }
+
+    @Test
     fun `server handles callback request with query parameters`() {
         val redirectUri = server.start(port = 0, callbackPath = "/callback")
         val port = redirectUri.substringAfter("http://127.0.0.1:").substringBefore("/").toInt()

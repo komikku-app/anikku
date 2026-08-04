@@ -76,4 +76,33 @@ class HistoryRepositoryContinueWatchingTest {
         assertEquals(5L, result[0].animeId)
         assertEquals(4L, result[1].animeId)
     }
+
+    @Test
+    fun `getLatestForEpisodeNumber finds resume position when episode id changed`() {
+        val history = repo()
+        history.add(entry(1L, 11L, seenAt = 100L, lastSecondSeen = 60L, totalSeconds = 1200L))
+        // Same anime + episode number but a different (newer) episode id — e.g.
+        // the source changed its episode URL between sessions.
+        history.add(
+            HistoryRepository.HistoryEntry(
+                animeId = 1L,
+                episodeId = 999L,
+                animeTitle = "Anime 1",
+                episodeName = "Episode 1",
+                episodeNumber = 1.0,
+                seenAt = 200L,
+                lastSecondSeen = 400L,
+                totalSeconds = 1200L,
+            ),
+        )
+
+        val byId = history.getForEpisode(1L, 11L)
+        assertEquals(60L, byId?.lastSecondSeen)
+
+        // The number fallback resolves the newest entry regardless of which
+        // hashed episode id it was stored under.
+        val byNumber = history.getLatestForEpisodeNumber(1L, 1.0)
+        assertEquals(999L, byNumber?.episodeId)
+        assertEquals(400L, byNumber?.lastSecondSeen)
+    }
 }

@@ -47,7 +47,7 @@ class TrackerOAuthManager(
     private val tokenUrlOverrides: Map<String, String> = emptyMap(),
 ) {
 
-    private val oauthConfigs = mapOf(
+    internal val oauthConfigs = mapOf(
         "myanimelist" to TrackerOAuthConfig(
             authorizeUrl = "https://myanimelist.net/v1/oauth2/authorize",
             tokenUrl = "https://myanimelist.net/v1/oauth2/token",
@@ -56,6 +56,9 @@ class TrackerOAuthManager(
         "anilist" to TrackerOAuthConfig(
             authorizeUrl = "https://anilist.co/api/v2/oauth/authorize",
             tokenUrl = "https://anilist.co/api/v2/oauth/token",
+            // AniList rejects dynamic loopback ports with "invalid_client";
+            // the registered redirect must match exactly.
+            redirectUri = "http://localhost:8080/callback",
         ),
         "kitsu" to TrackerOAuthConfig(
             authorizeUrl = "https://kitsu.io/api/oauth/authorize",
@@ -338,7 +341,22 @@ class TrackerOAuthManager(
 
         // Start server once — use the same redirect URI for auth + token exchange
         val oauthServer = OAuthServer()
-        val redirectUri = oauthServer.start(port = 0, callbackPath = callbackPath)
+        val fixedRedirect = config.redirectUri
+        val redirectUri: String = if (fixedRedirect != null) {
+            // Providers like AniList require the EXACT registered redirect (a
+            // random loopback port would be rejected as "invalid_client").
+            val fixedPort = runCatching { java.net.URI(fixedRedirect).port }.getOrDefault(8080).let {
+                if (it > 0) it else 8080
+            }
+            val fixedPath = runCatching { java.net.URI(fixedRedirect).path }.getOrDefault(callbackPath)
+            oauthServer.start(
+                port = fixedPort,
+                callbackPath = fixedPath,
+                redirectUriOverride = fixedRedirect,
+            )
+        } else {
+            oauthServer.start(port = 0, callbackPath = callbackPath)
+        }
 
         val authUrl = oauthServer.buildAuthorizationUrl(
             authEndpoint = config.authorizeUrl,
@@ -373,6 +391,8 @@ class TrackerOAuthManager(
         val authorizeUrl: String,
         val tokenUrl: String,
         val scope: String = "",
+        /** Exact loopback redirect required by providers that reject dynamic ports (AniList). */
+        val redirectUri: String? = null,
     )
 }
 

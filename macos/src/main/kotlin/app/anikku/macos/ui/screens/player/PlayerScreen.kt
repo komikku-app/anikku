@@ -778,10 +778,15 @@ data class PlayerScreen(
                 // Resume from where the user left off when enabled. The episode's
                 // lastSecondSeen is persisted in history; freshly-fetched source
                 // episodes don't carry it, so look it up by (anime, episode).
+                // Fall back to a match by episode number: hashed episode URLs can
+                // change between sessions, which would otherwise break resume
+                // for some shows.
                 val resumePosition = if (settings.resumeFromLastPosition) {
                     val episode = allEpisodes.getOrNull(currentEpisodeIndex)
                     if (episode != null) {
-                        historyRepo?.getForEpisode(animeId, episode.id)?.lastSecondSeen?.toDouble() ?: 0.0
+                        val entry = historyRepo?.getForEpisode(animeId, episode.id)
+                            ?: historyRepo?.getLatestForEpisodeNumber(animeId, episode.episodeNumber)
+                        entry?.lastSecondSeen?.toDouble() ?: 0.0
                     } else {
                         0.0
                     }

@@ -36,6 +36,9 @@ class OAuthServer(
     private var callbackFuture: CompletableFuture<Map<String, String>>? = null
     private var callbackPath: String = "/callback"
 
+    /** Effective redirect URI when a provider requires an exact fixed callback. */
+    private var effectiveRedirectUri: String? = null
+
     /** Whether the server is currently running. */
     var isRunning: Boolean = false
         private set
@@ -45,9 +48,12 @@ class OAuthServer(
      *
      * @param port The port to listen on (0 = auto-assign).
      * @param callbackPath The path for the callback (e.g., "/callback").
+     * @param redirectUriOverride When set (providers like AniList that reject
+     *   dynamic loopback ports), the server binds [port] on [host] but reports
+     *   this exact URL as the redirect — the browser reaches it via localhost.
      * @return The full redirect URI the OAuth provider should redirect to.
      */
-    fun start(port: Int = 0, callbackPath: String = "/callback"): String {
+    fun start(port: Int = 0, callbackPath: String = "/callback", redirectUriOverride: String? = null): String {
         if (isRunning) stop()
 
         this.callbackPath = callbackPath
@@ -56,7 +62,8 @@ class OAuthServer(
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, true)
         isRunning = true
 
-        val redirectUri = "http://$host:$listeningPort$callbackPath"
+        val redirectUri = redirectUriOverride ?: "http://$host:$listeningPort$callbackPath"
+        effectiveRedirectUri = redirectUriOverride
         logger.info { "OAuth server started on $redirectUri" }
         return redirectUri
     }
@@ -115,7 +122,7 @@ class OAuthServer(
         state: String? = null,
     ): String {
         val redirectUri = if (isRunning) {
-            "http://$host:$listeningPort$useCallbackPath"
+            effectiveRedirectUri ?: "http://$host:$listeningPort$useCallbackPath"
         } else {
             start(port = 0, callbackPath = useCallbackPath)
         }

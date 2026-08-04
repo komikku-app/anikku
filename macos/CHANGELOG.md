@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+---
+
+## [1.1.2] — 2026-08-04
+
+### AniList OAuth fix + reliable resume playback
+
+- **AniList login fixed**: the OAuth flow used a random loopback port
+  (`http://127.0.0.1:<random>/callback`) while AniList's registered redirect is
+  `http://localhost:8080/callback` — the mismatch was rejected as
+  `invalid_client` / "Client authentication failed". AniList now uses the exact
+  registered redirect (fixed port 8080) for both the authorize URL and the
+  token exchange.
+- **Resume playback made reliable**: history was matched only by the hashed
+  episode URL, which can change between sessions (signed URLs, query params),
+  silently breaking "continue from where I left off" for some shows. The player
+  now falls back to matching by episode number when the id lookup misses.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.1.1] — 2026-08-04
 
 ### Launch crash fix + baked AniList client

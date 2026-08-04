@@ -147,6 +147,16 @@ class TrackerOAuthManagerTest {
     }
 
     @Test
+    fun `anilist requires the exact registered redirect`() {
+        // AniList rejects dynamic loopback ports with "invalid_client" — the
+        // configured redirect must match the developer's registration exactly.
+        assertEquals(
+            "http://localhost:8080/callback",
+            manager.oauthConfigs.getValue("anilist").redirectUri,
+        )
+    }
+
+    @Test
     fun `token response correctly reports expiration`() {
         val oldToken = TokenResponse(
             accessToken = "test",
