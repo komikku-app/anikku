@@ -117,7 +117,10 @@ open class MacOSDownloadManager(
         }
     }
 
-    /** Pause an active download and discard its non-resumable partial file. */
+    /**
+     * Pause an active download, keeping the partial file so [resume] can
+     * continue from where it stopped (HTTP Range) instead of restarting.
+     */
     open fun pause(id: Long) {
         synchronized(downloadLock) {
             val entry = repository.get(id) ?: return
@@ -125,13 +128,36 @@ open class MacOSDownloadManager(
             attemptTokens.remove(id)
             activeCalls.remove(id)?.cancel()
             activeJobs.remove(id)?.cancel()
-            cleanupTemporaryFile(id, entry)
-            repository.update(id, status = DownloadRepository.DownloadStatus.PAUSED)
+            val resumePath = preservePartialForResume(id, entry)
+            repository.update(
+                id = id,
+                status = DownloadRepository.DownloadStatus.PAUSED,
+                resumePartialPath = resumePath,
+            )
             refreshState()
         }
     }
 
-    /** Resume a paused download from a fresh temporary file. */
+    /**
+     * Rename the in-flight partial file to a stable ".resume.part" name so a
+     * later [resume] can find it regardless of the attempt token.
+     */
+    private fun preservePartialForResume(id: Long, entry: DownloadRepository.DownloadEntry): String? {
+        val current = temporaryFiles.remove(id) ?: return null
+        if (!isManagedDownloadPath(current) || !current.isFile) return null
+        val finalName = entry.filePath?.substringAfterLast('/') ?: return null
+        val resumeFile = File(current.parentFile, ".$finalName.resume.part")
+        return try {
+            Files.deleteIfExists(resumeFile.toPath())
+            Files.move(current.toPath(), resumeFile.toPath())
+            resumeFile.absolutePath
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to preserve partial for resume (id=$id)" }
+            null
+        }
+    }
+
+    /** Resume a paused download, continuing from the preserved partial file. */
     open fun resume(id: Long) {
         synchronized(downloadLock) {
             val entry = repository.get(id) ?: return
@@ -313,6 +339,7 @@ open class MacOSDownloadManager(
                             progress = if (denom > 0) downloaded.toFloat() / denom else 0f,
                         )
                     }
+                    refreshState()
                 },
             ) ?: throw IOException("Manifest download failed (no playable segments)")
 
@@ -350,16 +377,39 @@ open class MacOSDownloadManager(
         if (finalFile.exists()) {
             throw IOException("Download destination already exists: ${finalFile.name}")
         }
+
+        // Resume support: a paused download preserved its partial file — reuse
+        // it and continue from its byte offset via an HTTP Range request.
+        var resumeOffset = 0L
+        entry.resumePartialPath?.takeIf { it.isNotBlank() }?.let { stored ->
+            val candidate = runCatching { File(stored) }.getOrNull()
+            if (candidate != null && candidate.isFile &&
+                !Files.isSymbolicLink(candidate.toPath()) && candidate.length() > 0
+            ) {
+                resumeOffset = candidate.length()
+            } else {
+                // Stale/invalid partial — discard it and start fresh.
+                runCatching { candidate?.delete() }
+            }
+        }
+
         synchronized(downloadLock) {
             requireCurrentAttempt(entry.id, token)
             Files.deleteIfExists(tempFile.toPath())
-            Files.createFile(tempFile.toPath())
+            if (resumeOffset > 0) {
+                // Move the preserved partial into this attempt's temp file.
+                val resumeFile = File(entry.resumePartialPath!!)
+                Files.move(resumeFile.toPath(), tempFile.toPath())
+            } else {
+                Files.createFile(tempFile.toPath())
+            }
             temporaryFiles[entry.id] = tempFile
             repository.update(
                 id = entry.id,
                 videoUrl = videoUrl,
                 filePath = finalFile.absolutePath,
                 fileName = finalFile.name,
+                resumePartialPath = DownloadRepository.CLEAR_RESUME_PARTIAL,
             )
             refreshState()
         }
@@ -373,6 +423,10 @@ open class MacOSDownloadManager(
                 val storedHeaders = repository.get(entry.id)?.headers
                 if (!storedHeaders.isNullOrEmpty()) {
                     runCatching { headers(storedHeaders.toHeaders()) }
+                }
+                // Continue a paused download from where its partial file ended.
+                if (resumeOffset > 0) {
+                    header("Range", "bytes=$resumeOffset-")
                 }
                 // Parity with the player: some CDNs reject requests with no
                 // User-Agent at all, even when the source didn't send one.
@@ -391,15 +445,26 @@ open class MacOSDownloadManager(
             }
             try {
                 call.execute().use { response ->
-                    if (!response.isSuccessful) {
+                    if (!response.isSuccessful && response.code != 206 && response.code != 416) {
                         throw IOException("Download failed: HTTP ${response.code}")
                     }
+                    if (response.code == 416) {
+                        // The source's file shrank below our partial — restart fresh.
+                        throw IOException("Download failed: HTTP 416 (source file changed)")
+                    }
                     val body = response.body ?: throw IOException("Download response has no body")
+                    // 206 = the server honoured our Range and continues at
+                    // resumeOffset; 200 = it ignored Range, so start over.
+                    val continuing = response.code == 206 && resumeOffset > 0
+                    val offset = if (continuing) resumeOffset else 0L
                     val contentLength = body.contentLength()
+                    val totalLength = if (continuing && contentLength > 0) offset + contentLength
+                    else contentLength
                     body.byteStream().use { input ->
-                        tempFile.outputStream().use { output ->
+                        java.io.FileOutputStream(tempFile, continuing).use { output ->
                             val buffer = ByteArray(BUFFER_SIZE)
-                            var totalRead = 0L
+                            var totalRead = offset
+                            var lastProgressRefresh = 0L
                             while (true) {
                                 currentCoroutineContext().ensureActive()
                                 requireCurrentAttempt(entry.id, token)
@@ -407,17 +472,36 @@ open class MacOSDownloadManager(
                                 if (bytesRead == -1) break
                                 output.write(buffer, 0, bytesRead)
                                 totalRead += bytesRead
+                                val now = System.currentTimeMillis()
+                                val shouldRefresh = now - lastProgressRefresh >= 200L
                                 updateIfCurrent(entry.id, token) {
                                     repository.update(
                                         id = entry.id,
                                         downloadedBytes = totalRead,
-                                        totalBytes = if (contentLength > 0) contentLength else totalRead,
-                                        progress = if (contentLength > 0) {
-                                            (totalRead.toDouble() / contentLength).toFloat().coerceIn(0f, 1f)
+                                        totalBytes = if (totalLength > 0) totalLength else totalRead,
+                                        progress = if (totalLength > 0) {
+                                            (totalRead.toDouble() / totalLength).toFloat().coerceIn(0f, 1f)
                                         } else 0f,
                                     )
                                 }
+                                if (shouldRefresh) {
+                                    lastProgressRefresh = now
+                                    refreshState()
+                                }
                             }
+                            // Make sure the final state is published even if the
+                            // last chunk arrived before the throttle window.
+                            updateIfCurrent(entry.id, token) {
+                                repository.update(
+                                    id = entry.id,
+                                    downloadedBytes = totalRead,
+                                    totalBytes = if (totalLength > 0) totalLength else totalRead,
+                                    progress = if (totalLength > 0) {
+                                        (totalRead.toDouble() / totalLength).toFloat().coerceIn(0f, 1f)
+                                    } else 0f,
+                                )
+                            }
+                            refreshState()
                         }
                     }
                 }
@@ -449,8 +533,14 @@ open class MacOSDownloadManager(
             // Tear down any torrent stream backing this download (the saved
             // file stays on disk and plays offline like any other download).
             torrentStream?.let { torrentCoordinator.stop(it) }
-            Files.deleteIfExists(tempFile.toPath())
-            temporaryFiles.remove(entry.id, tempFile)
+            // Only remove the temp file while it is still this attempt's
+            // in-flight file. pause() detaches the mapping before preserving
+            // the partial for resume, so a late-arriving cancellation must
+            // not delete the file the resume will continue from.
+            if (temporaryFiles.get(entry.id) == tempFile) {
+                Files.deleteIfExists(tempFile.toPath())
+                temporaryFiles.remove(entry.id, tempFile)
+            }
             if (!completed && attemptTokens[entry.id] == token &&
                 repository.get(entry.id)?.status != DownloadRepository.DownloadStatus.COMPLETED
             ) {
@@ -603,10 +693,7 @@ open class MacOSDownloadManager(
                 // Preserve the explicit pause/remove decision made by the caller.
                 return
             }
-            temporaryFiles.remove(entry.id)?.let { temporary ->
-                if (isManagedDownloadPath(temporary)) temporary.delete()
-            }
-            repository.get(entry.id)?.filePath?.let { path -> safeManagedDownloadFile(path)?.delete() }
+            cleanupDownloadFiles(entry)
             repository.update(entry.id, status = DownloadRepository.DownloadStatus.ERROR)
             refreshState()
         }

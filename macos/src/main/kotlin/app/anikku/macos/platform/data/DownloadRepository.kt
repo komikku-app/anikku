@@ -45,6 +45,11 @@ class DownloadRepository(private val dataDir: File) {
         val completedAt: Long? = null,
         /** Stream headers from the source's Video (Referer, ...). Null-safe for legacy entries. */
         val headers: Map<String, String>? = null,
+        /**
+         * Kept partial file when a download is paused, so resume() can continue
+         * from where it stopped via HTTP Range instead of restarting.
+         */
+        val resumePartialPath: String? = null,
     ) {
         val isActive: Boolean get() = status == DownloadStatus.DOWNLOADING || status == DownloadStatus.QUEUED
         val isFinished: Boolean get() = status == DownloadStatus.COMPLETED || status == DownloadStatus.ERROR
@@ -119,6 +124,10 @@ class DownloadRepository(private val dataDir: File) {
 
     /**
      * Update a download entry's state.
+     *
+     * [resumePartialPath] records a preserved partial file for pause/resume:
+     * pass a path to set it, [CLEAR_RESUME_PARTIAL] to clear it, or omit it
+     * (default null) to keep the current value.
      */
     @Synchronized
     fun update(
@@ -131,6 +140,7 @@ class DownloadRepository(private val dataDir: File) {
         downloadedBytes: Long? = null,
         filePath: String? = null,
         fileName: String? = null,
+        resumePartialPath: String? = null,
     ): DownloadEntry? {
         val index = entries.indexOfFirst { it.id == id }
         if (index < 0) return null
@@ -145,6 +155,11 @@ class DownloadRepository(private val dataDir: File) {
             downloadedBytes = downloadedBytes ?: current.downloadedBytes,
             filePath = filePath ?: current.filePath,
             fileName = fileName ?: current.fileName,
+            resumePartialPath = when (resumePartialPath) {
+                null -> current.resumePartialPath
+                CLEAR_RESUME_PARTIAL -> null
+                else -> resumePartialPath
+            },
             completedAt = if (status == DownloadStatus.COMPLETED) System.currentTimeMillis() else current.completedAt,
         )
         entries[index] = updated
@@ -211,4 +226,13 @@ class DownloadRepository(private val dataDir: File) {
 
     @Serializable
     private data class DownloadList(val entries: List<DownloadEntry>)
+
+    companion object {
+        /**
+         * Sentinel for [update]'s [resumePartialPath]: explicitly clear a
+         * recorded partial path. Default null keeps the current value; a NUL
+         * byte can never appear in a real file path.
+         */
+        const val CLEAR_RESUME_PARTIAL: String = "\u0000clear-resume-partial"
+    }
 }

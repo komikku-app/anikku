@@ -6,6 +6,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.3] — 2026-08-02
+
+### Fix: download tracker didn't update live (stuck at 0%)
+
+- **Root cause**: the chunk loop updated the repository's `downloadedBytes` /
+  `progress` on every 32 KB chunk, but never re-published the `downloads`
+  StateFlow the UI collects — the value only appeared once a status change
+  (like pause) triggered a refresh. The tracker showed 0% the whole time.
+- **Fix**: the chunk loop now re-publishes the downloads list on a ~200 ms
+  throttle (plus a final publish when the stream ends), so the percentage and
+  MB remaining tick up live in the Downloads tab. The HLS/DASH manifest path
+  got the same live-progress publish.
+
+### Fix: pause → resume restarted the download from 0%
+
+- **Root cause**: `pause()` deleted the in-flight partial file, so `resume()`
+  always started over from the beginning — even if you'd downloaded 50%.
+- **Fix**: pausing now preserves the partial file (`.name.resume.part`) and
+  records its path on the entry. Resuming reuses it and continues with an
+  HTTP `Range: bytes=<offset>-` request:
+  - `206` → append the remainder to the partial (resume works);
+  - `200` → the server ignored the Range, so the file is restarted cleanly;
+  - `416` → the source file changed and no longer covers our offset → error.
+  A cancellation race was also closed: a late-arriving cancel after pause can
+  no longer delete the preserved partial before the resume uses it.
+
+### Tests
+- New resume test: seeds a PAUSED entry with a preserved partial, serves a
+  `206 Partial Content` remainder, and asserts the resume request carried the
+  correct `Range` header, the final file equals the full content, and the
+  recorded partial is cleared. Full suite: 732 green.
+
 ## [1.4.2] — 2026-08-02
 
 ### Fix: streaming downloads saved a 12 KB text file, not the episode

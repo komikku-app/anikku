@@ -168,6 +168,49 @@ class MacOSDownloadManagerTest {
     }
 
     @Test
+    fun `resume continues from a preserved partial via HTTP range`() = runBlocking {
+        val total = ByteArray(256 * 1024) { (it % 251).toByte() }
+        val partialSize = 100 * 1024
+        val remainder = total.copyOfRange(partialSize, total.size)
+
+        // Seed the paused state directly: a PAUSED entry whose preserved
+        // partial file exists on disk and is recorded on the entry.
+        val entry = repository.enqueue(31L, 2L, "ResumeSeed", "Episode 1", 1.0, "episode-1")
+        val finalName = "ResumeSeed_E1_${entry.id}.mp4"
+        val resumeFile = File(File(storage.downloadsDirectory, "videos"), ".$finalName.resume.part")
+        resumeFile.parentFile.mkdirs()
+        resumeFile.writeBytes(total.copyOfRange(0, partialSize))
+        repository.update(
+            id = entry.id,
+            status = DownloadRepository.DownloadStatus.PAUSED,
+            filePath = File(File(storage.downloadsDirectory, "videos"), finalName).absolutePath,
+            fileName = finalName,
+            resumePartialPath = resumeFile.absolutePath,
+        )
+
+        // The server honours the Range with a 206 and only the remainder.
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(206)
+                .setHeader("Content-Range", "bytes $partialSize-${total.size - 1}/${total.size}")
+                .setBody(Buffer().write(remainder)),
+        )
+
+        manager.resume(entry.id)
+        awaitStatus(entry.id, DownloadRepository.DownloadStatus.COMPLETED)
+
+        val request = server.takeRequest()
+        assertEquals("bytes=$partialSize-", request.getHeader("Range"))
+
+        val completed = repository.get(entry.id)!!
+        assertArrayEquals(total, File(completed.filePath!!).readBytes())
+        assertEquals(total.size.toLong(), completed.downloadedBytes)
+        assertEquals(1f, completed.progress)
+        assertEquals(null, completed.resumePartialPath)
+        assertNoPartFiles()
+    }
+
+    @Test
     fun `duplicate enqueue returns existing active entry and does not overwrite`() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(payload)))
 
