@@ -34,6 +34,9 @@ import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.backup.LocalBackupManager
 import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.platform.library.LocalAnimeSourceMatcher
+import app.anikku.macos.platform.library.LocalLibraryAutoLinkService
+import app.anikku.macos.platform.library.LibraryAutoLinkService
 import app.anikku.macos.platform.preference.BookmarkStore
 import app.anikku.macos.platform.preference.LocalBookmarkStore
 import app.anikku.macos.platform.auth.AniListSyncService
@@ -356,6 +359,8 @@ fun main() = application {
             )
         }
 
+        val libraryAutoLinkService = remember { app.libraryAutoLinkService }
+
         // Periodic 2-way AniList sync. Waits one full interval between checks
         // (restarts when the setting changes); failures are silent so the next
         // tick retries. Manual "Sync library now" lives in Settings > Tracking.
@@ -371,6 +376,14 @@ fun main() = application {
                     val result = anilistSyncService.syncNow()
                     if (result.errors.isEmpty()) {
                         settingsState.anilistLastSyncAt = System.currentTimeMillis()
+                    }
+                    // Fresh tracker imports land in the library without a
+                    // streaming source; auto-link them in the background so
+                    // they become playable without manual matching.
+                    if (result.imported > 0 || result.updated > 0) {
+                        app.applicationScope.launch {
+                            runCatching { libraryAutoLinkService.autoLink() }
+                        }
                     }
                 }
             }
@@ -390,6 +403,8 @@ fun main() = application {
             LocalHistoryRepository provides historyRepository,
             LocalDownloadManager provides downloadManager,
             LocalExtensionManager provides app.extensionManager,
+            LocalAnimeSourceMatcher provides app.animeSourceMatcher,
+            LocalLibraryAutoLinkService provides libraryAutoLinkService,
             LocalBackupManager provides app.backupManager,
             LocalToastHost provides toastHostState,
             LocalTrackerManager provides trackerManager,

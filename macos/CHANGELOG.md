@@ -6,13 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
----
+## [1.2.0] — 2026-08-04
 
----
+### Auto source linking + playback fallback, player depth, season downloads + Library filters
 
----
+**Auto source linking — AniList imports become playable on their own**
+- After an AniList sync (manual or periodic), unlinked library entries are
+  automatically searched across the installed extensions and linked to the
+  best high-confidence title match — no manual source picker needed. Manual
+  "Sync library now" reports how many were linked in the result toast.
+- Opening an AniList-imported anime in the library now auto-matches a source
+  on the detail screen ("Searching for a streaming source…"); if none is
+  found, the manual "Link to a source" flow is offered as before.
+- Matching is conservative (normalized-title equality or containment) so a
+  wrong anime is never silently linked.
 
----
+**Playback fallback — a dead source no longer ends the episode**
+- When a source fails to resolve a video or mpv errors out mid-play, the
+  player automatically tries the next installed extension that has the same
+  anime (up to 2 auto-switches), relinking the library entry to the working
+  source. A "Try another source" button continues manually after that.
+- Episode matching across sources uses episode numbers (per-source episode
+  URLs differ).
+
+**Player depth**
+- Default playback speed from Settings is now actually applied on open.
+- Keyboard shortcuts: `[`/`]` speed presets, `,`/`.` subtitle-delay ±0.5s,
+  `S` screenshot (hint bar updated).
+- Screenshots now save to `~/Pictures/Anikku/` (subtitles included) and the
+  toast reports the file name.
+- Audio-delay and subtitle-delay panels gained −/+0.5s nudge buttons.
+
+**Season downloads + Library filters**
+- "Download all" button on the anime detail screen queues every episode
+  (skips blank URLs, idempotent per episode).
+- Download queue items that are finished now have a per-item Remove button
+  (deletes the local file + entry).
+- Library gained new sort modes — **Last Watched, Date Added, Progress** — and
+  a progress filter row: All / In progress / Not started / Finished. The
+  "Last Watched" sort is driven by watch history, so it updates as you watch.
 
 ---
 

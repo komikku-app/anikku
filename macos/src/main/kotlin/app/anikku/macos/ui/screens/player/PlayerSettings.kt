@@ -2,6 +2,7 @@ package app.anikku.macos.ui.screens.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -257,6 +259,34 @@ fun PlayerAudioTrackPanel(
                 ),
             )
 
+            // Quick nudge buttons for fine sync adjustments.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Nudge",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+                Spacer(Modifier.width(8.dp))
+                TextButton(
+                    onClick = {
+                        sliderDelay = (sliderDelay - 0.5f).coerceIn(-10f, 10f)
+                        onDelayChange(sliderDelay.toDouble())
+                    },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                ) {
+                    Text("-0.5s", style = MaterialTheme.typography.labelSmall)
+                }
+                TextButton(
+                    onClick = {
+                        sliderDelay = (sliderDelay + 0.5f).coerceIn(-10f, 10f)
+                        onDelayChange(sliderDelay.toDouble())
+                    },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                ) {
+                    Text("+0.5s", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+
             Spacer(Modifier.height(12.dp))
 
             OutlinedButton(
@@ -392,6 +422,35 @@ fun PlayerSubtitleTrackPanel(
                         activeTrackColor = MaterialTheme.colorScheme.primary,
                     ),
                 )
+
+                // Quick nudge buttons for fine sync adjustments (also bound to
+                // the , and . keys in the player).
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Nudge",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            sliderDelay = (sliderDelay - 0.5f).coerceIn(-10f, 10f)
+                            onDelayChange(sliderDelay.toDouble())
+                        },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                    ) {
+                        Text("-0.5s", style = MaterialTheme.typography.labelSmall)
+                    }
+                    TextButton(
+                        onClick = {
+                            sliderDelay = (sliderDelay + 0.5f).coerceIn(-10f, 10f)
+                            onDelayChange(sliderDelay.toDouble())
+                        },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                    ) {
+                        Text("+0.5s", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             } else {
                 Text(
                     text = "No subtitle tracks available",

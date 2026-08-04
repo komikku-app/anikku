@@ -6,6 +6,9 @@ import kotlinx.serialization.json.Json
 import app.anikku.macos.platform.storage.MacOSAtomicFile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 private val historyLogger = KotlinLogging.logger {}
 
@@ -37,6 +40,9 @@ class HistoryRepository(private val dataDir: File) {
     )
 
     private var entries: MutableList<HistoryEntry> = loadFromFile()
+    private val _revision = MutableStateFlow(0L)
+    /** Incremented on every mutation so UI can recompute derived data (e.g. last-watched). */
+    val revision: StateFlow<Long> = _revision.asStateFlow()
 
     fun getAll(): List<HistoryEntry> = entries.toList()
 
@@ -52,26 +58,34 @@ class HistoryRepository(private val dataDir: File) {
             entries = entries.sortedByDescending { it.seenAt }.take(500).toMutableList()
         }
         saveToFile()
+        _revision.value++
     }
 
     @Synchronized
     fun clearAll() {
         entries.clear()
         saveToFile()
+        _revision.value++
     }
 
     /** Remove one episode's history entry (same dedupe key as [add]). */
     @Synchronized
     fun removeForEpisode(animeId: Long, episodeId: Long) {
         val removed = entries.removeAll { it.animeId == animeId && it.episodeId == episodeId }
-        if (removed) saveToFile()
+        if (removed) {
+            saveToFile()
+            _revision.value++
+        }
     }
 
     /** Remove all history for an anime (clears it from Continue Watching). */
     @Synchronized
     fun removeForAnime(animeId: Long) {
         val removed = entries.removeAll { it.animeId == animeId }
-        if (removed) saveToFile()
+        if (removed) {
+            saveToFile()
+            _revision.value++
+        }
     }
 
     fun count(): Int = entries.size
@@ -91,6 +105,7 @@ class HistoryRepository(private val dataDir: File) {
             entries = previous
             throw error
         }
+        _revision.value++
     }
 
     fun getForAnime(animeId: Long): List<HistoryEntry> =

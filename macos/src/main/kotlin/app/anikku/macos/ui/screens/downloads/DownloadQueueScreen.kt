@@ -99,6 +99,11 @@ class DownloadQueueScreen : AnikkuScreen() {
                 downloadManager?.retry(id)
                 toastHost.show("Retrying download", ToastDuration.SHORT)
             },
+            onRemoveCompleted = { id ->
+                val item = downloads.find { it.id == id } ?: return@DownloadQueueContent
+                downloadManager?.cancel(id) // cancel cleans the file + removes the entry
+                toastHost.show("Removed: ${item.animeTitle}", ToastDuration.SHORT)
+            },
             onClearAll = {
                 downloadManager?.cancelAll()
                 toastHost.show("All downloads cancelled", ToastDuration.SHORT)
@@ -126,6 +131,7 @@ private fun DownloadQueueContent(
     onPauseResume: (Long) -> Unit,
     onCancel: (Long) -> Unit,
     onRetry: (Long) -> Unit,
+    onRemoveCompleted: (Long) -> Unit,
     onClearAll: () -> Unit,
     onClearCompleted: () -> Unit,
 ) {
@@ -232,6 +238,7 @@ private fun DownloadQueueContent(
                     onPauseResume = { onPauseResume(item.id) },
                     onCancel = { onCancel(item.id) },
                     onRetry = { onRetry(item.id) },
+                    onRemoveCompleted = { onRemoveCompleted(item.id) },
                 )
             }
         }
@@ -244,6 +251,7 @@ private fun DownloadItemCard(
     onPauseResume: () -> Unit,
     onCancel: () -> Unit,
     onRetry: () -> Unit,
+    onRemoveCompleted: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -334,7 +342,16 @@ private fun DownloadItemCard(
                         }
                     }
                     DownloadRepository.DownloadStatus.COMPLETED -> {
-                        // Badge shown inline with episode name above
+                        // Remove this completed download (deletes the local file).
+                        Spacer(Modifier.width(4.dp))
+                        IconButton(onClick = onRemoveCompleted, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "Remove download",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
                     }
                     DownloadRepository.DownloadStatus.ERROR -> {
                         IconButton(onClick = onRetry, modifier = Modifier.size(32.dp)) {

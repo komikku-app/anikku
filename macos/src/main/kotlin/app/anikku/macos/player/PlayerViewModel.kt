@@ -969,13 +969,22 @@ class PlayerViewModel(
     }
 
     /**
-     * Take a screenshot of the current video frame.
+     * Take a screenshot of the current video frame (subtitles included) and
+     * save it to ~/Pictures/Anikku. Returns the absolute path of the saved
+     * file, or null on failure.
      */
     fun takeScreenshot(): String? {
         val handle = mpvHandle ?: return null
         return try {
-            MPVLib.command(handle, "screenshot", "video")
-            "Screenshot captured"
+            val dir = java.io.File(System.getProperty("user.home"), "Pictures/Anikku")
+            runCatching { if (!dir.exists()) dir.mkdirs() }
+            val stamp = java.text.SimpleDateFormat("yyyy-MM-dd-HHmmss", java.util.Locale.getDefault())
+                .format(java.util.Date())
+            val file = java.io.File(dir, "Anikku-$stamp.png")
+            // "subtitles" mode captures video + rendered subtitles. The file is
+            // written synchronously, so reporting the real path is safe.
+            val result = MPVLib.command(handle, "screenshot-to-file", file.absolutePath, "subtitles")
+            if (result == 0 && file.exists()) file.absolutePath else null
         } catch (e: Exception) {
             logger.warn(e) { "Failed to take screenshot" }
             null

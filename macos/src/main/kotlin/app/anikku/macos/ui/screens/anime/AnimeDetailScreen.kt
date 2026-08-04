@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Warning
@@ -87,6 +88,7 @@ import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.extension.MacOSExtensionManager
+import app.anikku.macos.platform.library.LocalLibraryAutoLinkService
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.preference.LocalBookmarkStore
 import app.anikku.macos.ui.AnikkuScreen
@@ -137,6 +139,11 @@ private fun ensureUrlIsSet(anime: SAnime, fallbackUrl: String) {
 }
 
 /**
+ * Auto source-link state for [AnimeDetailScreen] when opened without a source.
+ */
+private enum class AutoMatchState { Idle, Searching, NotFound }
+
+/**
  * Anime detail screen — Phase 5.7.
  *
  * Displays anime information (cover, title, description, status)
@@ -182,6 +189,23 @@ data class AnimeDetailScreen(
         var anime by remember { mutableStateOf<AnimeModel?>(null) }
         var episodes by remember { mutableStateOf(emptyList<EpisodeModel>()) }
 
+        // Auto source linking: when this screen is opened without a source
+        // (AniList-imported library entry), search installed extensions for a
+        // high-confidence title match and adopt it instead of forcing the
+        // manual LinkSourceScreen flow.
+        var autoMatchState by remember { mutableStateOf(AutoMatchState.Idle) }
+        var autoLinkedSourceId by remember { mutableStateOf<Long?>(null) }
+        var autoLinkedUrl by remember { mutableStateOf<String?>(null) }
+
+        // The source actually backing this screen: either the explicit screen
+        // params or the auto-linked match.
+        val effectiveSourceId = sourceId ?: autoLinkedSourceId
+        val effectiveAnimeUrl = animeUrl ?: autoLinkedUrl
+
+        // Captured at composition — composition locals can't be read inside
+        // LaunchedEffect (its block isn't a @Composable context).
+        val autoLinkService = LocalLibraryAutoLinkService.current
+
         // Track download states per episode (keyed by episodeNumber)
         var downloadStateMap by remember { mutableStateOf(mapOf<Double, Boolean>()) }
         LaunchedEffect(downloadManager) {
@@ -198,58 +222,92 @@ data class AnimeDetailScreen(
             "animeId" to animeId, "sourceId" to sourceId, "title" to animeTitle
         ))
 
+        // Auto-match a source for source-less entries. Runs once per screen
+        // instance; on success it flips autoLinkedSourceId/Url which re-keys
+        // the load effect below.
+        LaunchedEffect(sourceId, animeId, animeTitle) {
+            if (sourceId != null) return@LaunchedEffect
+            val stored = libraryRepo?.get(animeId)
+            val storedSourceId = stored?.sourceId?.takeIf { it != 0L }
+            val storedUrl = stored?.url?.takeIf { it.isNotBlank() }
+            if (storedSourceId != null && storedUrl != null) {
+                // Already linked in the library (stale screen params) — adopt it.
+                autoLinkedSourceId = storedSourceId
+                autoLinkedUrl = storedUrl
+                return@LaunchedEffect
+            }
+            val service = autoLinkService
+            if (service == null) {
+                errorMessage = "Cannot load anime — no source or URL provided"
+                return@LaunchedEffect
+            }
+            autoMatchState = AutoMatchState.Searching
+            val match = service.autoLinkOne(animeId, animeTitle ?: "")
+            if (match != null) {
+                autoLinkedSourceId = match.sourceId
+                autoLinkedUrl = match.url
+                toastHost.show("Found source: ${match.sourceName}", ToastDuration.SHORT)
+            } else {
+                autoMatchState = AutoMatchState.NotFound
+                errorMessage = "No streaming source found for \"${animeTitle ?: "this anime"}\" — link one manually"
+            }
+        }
+
         // Fetch from source API if available
-        LaunchedEffect(sourceId, animeUrl) {
-            if (sourceId != null && animeUrl != null) {
-                val source = extensionManager?.getSource(sourceId)
-                if (source != null) {
-                    UIActionLogger.logExtension(animeTitle ?: "Unknown", "fetchDetails", "sourceId=$sourceId")
-                    try {
-                        // Fetch anime details
-                        val sAnime = SAnime.create().apply {
-                            url = animeUrl
-                            title = animeTitle ?: ""
-                        }
-                        val details = source.getAnimeDetails(sAnime)
-
-                        // Some source implementations return a new SAnime without copying
-                        // url back from the input. Ensure it's set before using.
-                        ensureUrlIsSet(details, sAnime.url)
-
-                        val sourceAnime = details.toAnimeModel(sourceId)
-
-                        // Fetch episode list
-                        val sourceEpisodes = source.getEpisodeList(sAnime)
-                        val episodeModels = sourceEpisodes.map { it.toEpisodeModel(sourceAnime.id) }
-
-                        anime = sourceAnime
-                        episodes = episodeModels
-                    } catch (e: NoClassDefFoundError) {
-                        errorMessage = "Missing dependency: ${e.message}"
-                        toastHost.show(
-                            text = "Missing dependency: ${e.message}",
-                            duration = ToastDuration.LONG,
-                            isError = true,
-                            source = sourceId?.toString(),
-                            throwable = e,
-                            location = "AnimeDetailScreen.fetchAnimeDetails",
-                        )
-                    } catch (e: Exception) {
-                        errorMessage = "${e::class.simpleName}: ${e.message}"
-                        toastHost.show(
-                            text = "Source error: ${e.message}",
-                            duration = ToastDuration.LONG,
-                            isError = true,
-                            source = sourceId?.toString(),
-                            throwable = e,
-                            location = "AnimeDetailScreen.fetchAnimeDetails",
-                        )
+        LaunchedEffect(effectiveSourceId, effectiveAnimeUrl) {
+            if (effectiveSourceId == null || effectiveAnimeUrl == null) {
+                // No source yet — the auto-match effect owns this case.
+                isLoading = false
+                return@LaunchedEffect
+            }
+            isLoading = true
+            errorMessage = null
+            val source = extensionManager?.getSource(effectiveSourceId)
+            if (source != null) {
+                UIActionLogger.logExtension(animeTitle ?: "Unknown", "fetchDetails", "sourceId=$effectiveSourceId")
+                try {
+                    // Fetch anime details
+                    val sAnime = SAnime.create().apply {
+                        url = effectiveAnimeUrl
+                        title = animeTitle ?: ""
                     }
-                } else {
-                    errorMessage = "Source not found — install this anime's extension via the Extensions tab"
+                    val details = source.getAnimeDetails(sAnime)
+
+                    // Some source implementations return a new SAnime without copying
+                    // url back from the input. Ensure it's set before using.
+                    ensureUrlIsSet(details, sAnime.url)
+
+                    val sourceAnime = details.toAnimeModel(effectiveSourceId)
+
+                    // Fetch episode list
+                    val sourceEpisodes = source.getEpisodeList(sAnime)
+                    val episodeModels = sourceEpisodes.map { it.toEpisodeModel(sourceAnime.id) }
+
+                    anime = sourceAnime
+                    episodes = episodeModels
+                } catch (e: NoClassDefFoundError) {
+                    errorMessage = "Missing dependency: ${e.message}"
+                    toastHost.show(
+                        text = "Missing dependency: ${e.message}",
+                        duration = ToastDuration.LONG,
+                        isError = true,
+                        source = effectiveSourceId?.toString(),
+                        throwable = e,
+                        location = "AnimeDetailScreen.fetchAnimeDetails",
+                    )
+                } catch (e: Exception) {
+                    errorMessage = "${e::class.simpleName}: ${e.message}"
+                    toastHost.show(
+                        text = "Source error: ${e.message}",
+                        duration = ToastDuration.LONG,
+                        isError = true,
+                        source = effectiveSourceId?.toString(),
+                        throwable = e,
+                        location = "AnimeDetailScreen.fetchAnimeDetails",
+                    )
                 }
             } else {
-                errorMessage = "Cannot load anime — no source or URL provided"
+                errorMessage = "Source not found — install this anime's extension via the Extensions tab"
             }
             isLoading = false
         }
@@ -308,7 +366,8 @@ data class AnimeDetailScreen(
                 }
 
                 errorMessage != null -> {
-                    // Show error state when source API call failed
+                    // Show error state when source API call failed or no match
+                    // was found while auto-linking.
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
@@ -351,8 +410,18 @@ data class AnimeDetailScreen(
                 }
 
                 anime == null -> {
+                    // No anime yet — auto-matching a source for a source-less
+                    // entry is in flight (or nothing to render).
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Anime not found", style = MaterialTheme.typography.bodyLarge)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Searching for a streaming source…",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
 
@@ -486,9 +555,9 @@ data class AnimeDetailScreen(
                                 PlayerScreen(
                                     animeId = anime?.id ?: animeId,
                                     episodeId = episode.id,
-                                    sourceId = sourceId,
+                                    sourceId = effectiveSourceId,
                                     episodeUrl = episode.url,
-                                    animeUrl = anime?.url ?: animeUrl,
+                                    animeUrl = anime?.url ?: effectiveAnimeUrl,
                                     animeTitle = anime?.title ?: animeTitle,
                                     extensionManager = extensionManager,
                                     downloadManager = effectiveDownloadManager,
@@ -504,14 +573,14 @@ data class AnimeDetailScreen(
                             },
                             onDownloadEpisode = { episode ->
                             val dm = effectiveDownloadManager
-                            if (dm != null && sourceId != null) {
+                            if (dm != null && effectiveSourceId != null) {
                                 val isAlready = downloadStateMap[episode.episodeNumber] == true
                                 if (isAlready) {
                                     toastHost.show("Already in downloads", ToastDuration.SHORT)
                                 } else {
                                     dm.enqueue(
                                         animeId = anime?.id ?: animeId,
-                                        sourceId = sourceId,
+                                        sourceId = effectiveSourceId,
                                         animeTitle = anime?.title ?: "Unknown",
                                         episodeName = episode.name,
                                         episodeNumber = episode.episodeNumber,
@@ -525,7 +594,7 @@ data class AnimeDetailScreen(
                         },
                         onDownloadNextN = {
                             val dm = effectiveDownloadManager
-                            if (dm != null && sourceId != null) {
+                            if (dm != null && effectiveSourceId != null) {
                                 val target = episodes
                                     .filter { it.episodeNumber > 0 }
                                     .sortedBy { it.episodeNumber }
@@ -537,7 +606,7 @@ data class AnimeDetailScreen(
                                     target.forEach { episode ->
                                         dm.enqueue(
                                             animeId = anime?.id ?: animeId,
-                                            sourceId = sourceId,
+                                            sourceId = effectiveSourceId,
                                             animeTitle = anime?.title ?: "Unknown",
                                             episodeName = episode.name,
                                             episodeNumber = episode.episodeNumber,
@@ -545,6 +614,32 @@ data class AnimeDetailScreen(
                                         )
                                     }
                                     toastHost.show("Queued next ${target.size} episode(s)", ToastDuration.SHORT)
+                                }
+                            } else {
+                                toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
+                            }
+                        },
+                        onDownloadAll = {
+                            val dm = effectiveDownloadManager
+                            if (dm != null && effectiveSourceId != null) {
+                                val target = episodes
+                                    .filter { it.episodeNumber > 0 && it.url?.isNotBlank() == true }
+                                    .sortedBy { it.episodeNumber }
+                                    .filter { downloadStateMap[it.episodeNumber] != true }
+                                if (target.isEmpty()) {
+                                    toastHost.show("All episodes already downloaded", ToastDuration.SHORT)
+                                } else {
+                                    target.forEach { episode ->
+                                        dm.enqueue(
+                                            animeId = anime?.id ?: animeId,
+                                            sourceId = effectiveSourceId,
+                                            animeTitle = anime?.title ?: "Unknown",
+                                            episodeName = episode.name,
+                                            episodeNumber = episode.episodeNumber,
+                                            episodeUrl = episode.url,
+                                        )
+                                    }
+                                    toastHost.show("Queued ${target.size} episode(s)", ToastDuration.SHORT)
                                 }
                             } else {
                                 toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
@@ -592,6 +687,7 @@ private fun AnimeDetailContent(
     onPlayEpisode: (EpisodeModel) -> Unit,
     onDownloadEpisode: (EpisodeModel) -> Unit = {},
     onDownloadNextN: () -> Unit = {},
+    onDownloadAll: () -> Unit = {},
     onRemoveFromContinueWatching: (EpisodeModel) -> Unit = {},
     onRemoveDownload: (EpisodeModel) -> Unit = {},
 ) {
@@ -733,6 +829,14 @@ private fun AnimeDetailContent(
                             Icon(Icons.Outlined.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Download next 3", style = MaterialTheme.typography.labelSmall)
+                        }
+                        TextButton(
+                            onClick = onDownloadAll,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        ) {
+                            Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Download all", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     Text("${episodes.size} total", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -40,7 +40,7 @@ class LibraryPerformanceTest {
                     libraryCount = entries.size,
                     displayMode = mode,
                     searchQuery = "",
-                    sortMode = LibraryTab.SortMode.Title,
+                    sortMode = LibrarySortMode.Title,
                     showSortMenu = false,
                     onSearchQueryChange = {},
                     onToggleDisplayMode = {

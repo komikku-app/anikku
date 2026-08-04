@@ -44,6 +44,7 @@ import app.anikku.macos.platform.auth.AnilistConfig
 import app.anikku.macos.platform.auth.LocalAniListSyncService
 import app.anikku.macos.platform.auth.TrackerManager
 import app.anikku.macos.platform.auth.TrackerTokenStore
+import app.anikku.macos.platform.library.LocalLibraryAutoLinkService
 import app.anikku.macos.ui.components.HeadingItem
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.SelectItem
@@ -193,6 +194,9 @@ fun TrackerSettingsPanel(
     if (anilistLoggedIn) {
         val syncService = LocalAniListSyncService.current
         val settings = LocalSettingsState.current
+        // Captured at composition — composition locals can't be read inside
+        // coroutine launches (their getters are @Composable).
+        val autoLinkService = LocalLibraryAutoLinkService.current
         var syncing by remember { mutableStateOf(false) }
 
         Spacer(Modifier.height(8.dp))
@@ -234,11 +238,20 @@ fun TrackerSettingsPanel(
                 syncing = true
                 scope.launch {
                     val result = syncService.syncNow()
+                    // Attach streaming sources to any source-less (AniList-imported)
+                    // entries so they become playable without the manual link flow.
+                    val autoLink = autoLinkService?.autoLink()
                     syncing = false
                     if (result != null) {
                         settings.anilistLastSyncAt = System.currentTimeMillis()
+                        val message = buildString {
+                            append(result.toMessage())
+                            if (autoLink != null && autoLink.linked > 0) {
+                                append(" · ").append(autoLink.describe())
+                            }
+                        }
                         toastHost.show(
-                            text = result.toMessage(),
+                            text = message,
                             duration = if (result.errors.isNotEmpty()) ToastDuration.LONG else ToastDuration.SHORT,
                             isError = result.errors.isNotEmpty(),
                             source = "anilist",

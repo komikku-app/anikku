@@ -77,9 +77,12 @@ import app.anikku.macos.platform.auth.LocalTrackerManager
 import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.data.LocalHistoryRepository
+import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.discord.LocalDiscordRPC
 import app.anikku.macos.platform.extension.MacOSExtensionManager
+import app.anikku.macos.platform.library.LocalAnimeSourceMatcher
+import app.anikku.macos.platform.library.SourceMatch
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.MacOSDockManager
 import app.anikku.macos.platform.media.MacOSHttpServer
@@ -442,6 +445,7 @@ data class PlayerScreen(
         episodeNumber: Double,
         httpServer: MacOSHttpServer?,
         startIndex: Int = 0,
+        resolvingSourceId: Long? = null,
         onCandidateList: (List<VideoCandidate>) -> Unit = {},
         onError: ((String) -> Unit)? = null,
         onDiagnostic: ((ErrorDiagnostic) -> Unit)? = null,
@@ -457,10 +461,13 @@ data class PlayerScreen(
             }
         }
 
-        // Priority 2: Source API — use full SEpisode with all fields populated
-        if (sourceId != null && sEpisode != null) {
+        // Priority 2: Source API — use full SEpisode with all fields populated.
+        // The source may differ from the screen's original one when the player
+        // fell back to another extension (cross-source retry).
+        val effectiveSourceId = resolvingSourceId ?: sourceId
+        if (effectiveSourceId != null && sEpisode != null) {
             val currentEpisodeUrl = try { sEpisode.url } catch (_: Exception) { null }
-            val source = extensionManager?.getSource(sourceId)
+            val source = extensionManager?.getSource(effectiveSourceId)
             if (source != null && currentEpisodeUrl != null) {
                 try {
                     val videos = source.getVideoList(sEpisode)
@@ -495,7 +502,7 @@ data class PlayerScreen(
                             }
 
                             // This URL passed all checks — use it
-                            UIActionLogger.logVideoResolution(sourceId, currentEpisodeUrl, videoUrl.take(80))
+                            UIActionLogger.logVideoResolution(effectiveSourceId, currentEpisodeUrl, videoUrl.take(80))
 
                             // Extract headers from the video object for mpv.
                             // Many sources set a Referer header that the stream server requires.
@@ -528,7 +535,7 @@ data class PlayerScreen(
                         // All videos starting from startIndex rejected
                         val rejectedCount = orderedVideos.size - startIndex
                         logger.warn { "🎬 VIDEO_URL_REJECTED: All $rejectedCount remaining candidate(s) rejected for source ${source.name} (started at index $startIndex)" }
-                        UIActionLogger.logVideoResolution(sourceId, currentEpisodeUrl, "all_candidates_rejected")
+                        UIActionLogger.logVideoResolution(effectiveSourceId, currentEpisodeUrl, "all_candidates_rejected")
                         val msg = if (startIndex > 0) {
                             "All remaining video qualities failed — try a different source"
                         } else {
@@ -537,13 +544,13 @@ data class PlayerScreen(
                         onError?.invoke(msg)
                         onDiagnostic?.invoke(ErrorDiagnostic.fromMessage(msg, source.name))
                     } else {
-                        UIActionLogger.logVideoResolution(sourceId, currentEpisodeUrl, "no_videos_found")
+                        UIActionLogger.logVideoResolution(effectiveSourceId, currentEpisodeUrl, "no_videos_found")
                         val msg = "Source returned no videos for this episode"
                         onError?.invoke(msg)
                         onDiagnostic?.invoke(ErrorDiagnostic.fromMessage(msg, source.name))
                     }
                 } catch (e: Exception) {
-                    UIActionLogger.logVideoResolution(sourceId, currentEpisodeUrl, "error: ${e::class.simpleName}: ${e.message?.take(50)}")
+                    UIActionLogger.logVideoResolution(effectiveSourceId, currentEpisodeUrl, "error: ${e::class.simpleName}: ${e.message?.take(50)}")
                     val sourceName = try { source.name } catch (_: Exception) { null }
                     val diag = ErrorDiagnostic.fromException(e, sourceName)
                     onDiagnostic?.invoke(diag)
@@ -564,6 +571,10 @@ data class PlayerScreen(
         val trackerManager = LocalTrackerManager.current
         val discordRPC = LocalDiscordRPC.current
         val settings = LocalSettingsState.current
+        // Captured at composition — composition locals can't be read inside
+        // LaunchedEffect/suspend blocks (their getters are @Composable).
+        val sourceMatcher = LocalAnimeSourceMatcher.current
+        val libraryRepository = LocalLibraryRepository.current
 
         // Subtitle fetcher (Jimaku auto-fetch + OpenSubtitles manual search).
         // Resolved from Koin; null when unavailable (failure-safe).
@@ -652,26 +663,109 @@ data class PlayerScreen(
         var isAutoRetrying by remember { mutableStateOf(false) }
         var autoRetryIndex by remember { mutableIntStateOf(0) }
 
+        // ── Cross-source fallback ───────────────────────────────────────────
+        // When an episode fails to resolve or mpv errors out, automatically
+        // retry with the next installed extension that has this anime. The
+        // active source is state so the load effect below re-runs on switch.
+        var activeSourceId by remember { mutableStateOf(sourceId) }
+        var activeAnimeUrl by remember { mutableStateOf(animeUrl) }
+        var sourceCandidates by remember { mutableStateOf<List<SourceMatch>>(emptyList()) }
+        var sourceCandidatesSearched by remember { mutableStateOf(false) }
+        var sourceFallbackIndex by remember { mutableStateOf(-1) }
+        var autoSourceAttempts by remember { mutableStateOf(0) }
+        // Episode number captured on first load — episode ids are per-source
+        // URL hashes, so a switched source must be matched by number instead.
+        var episodeNumberForSourceSwitch by remember { mutableStateOf(0.0) }
+        // Apply the user's default playback speed once per player session.
+        var defaultSpeedApplied by remember { mutableStateOf(false) }
+
+        // Auto-switch cap: never silently hop through more than this many
+        // sources; afterwards the error screen's manual button takes over.
+        val maxAutoSourceSwitches = 2
+
+        fun tryNextSource(manual: Boolean = false) {
+            if (sourceCandidatesSearched && sourceFallbackIndex >= sourceCandidates.size - 1) {
+                return // all candidates already tried
+            }
+            scope.launch {
+                if (!sourceCandidatesSearched) {
+                    sourceCandidates = sourceMatcher
+                        ?.findMatches(animeTitle, excludeSourceId = activeSourceId) ?: emptyList()
+                    sourceCandidatesSearched = true
+                    sourceFallbackIndex = -1
+                    if (sourceCandidates.isEmpty()) {
+                        toastHost.show(
+                            text = "No other source found for \"${animeTitle.take(30)}\"",
+                            duration = ToastDuration.LONG,
+                            isError = true,
+                            location = "PlayerScreen.tryNextSource",
+                        )
+                        return@launch
+                    }
+                }
+                val nextIndex = sourceFallbackIndex + 1
+                val next = sourceCandidates.getOrNull(nextIndex) ?: return@launch
+                if (!manual && autoSourceAttempts >= maxAutoSourceSwitches) return@launch
+                sourceFallbackIndex = nextIndex
+                if (!manual) autoSourceAttempts++
+
+                // Persist the working source on the library entry so future
+                // opens skip the dead one (only when the entry exists).
+                libraryRepository?.get(animeId)?.let { entry ->
+                    if (entry.sourceId != next.sourceId) {
+                        libraryRepository.add(
+                            entry.copy(
+                                sourceId = next.sourceId,
+                                url = next.url,
+                                thumbnailUrl = next.thumbnailUrl?.takeIf { it.isNotBlank() }
+                                    ?: entry.thumbnailUrl,
+                            ),
+                        )
+                    }
+                }
+                toastHost.show("Source unavailable — trying ${next.sourceName}...", ToastDuration.SHORT)
+                activeSourceId = next.sourceId
+                activeAnimeUrl = next.url
+            }
+        }
+
         UIActionLogger.logScreenOpen("PlayerScreen", mapOf(
             "animeId" to animeId, "episodeId" to episodeId, "sourceId" to sourceId
         ))
 
-        // On mount: initialize mpv and fetch episode data
+        // On mount: initialize mpv. Kept separate from the load effect below
+        // because that one re-runs on cross-source fallback — mpv must not be
+        // recreated each time the player hops to another extension.
         LaunchedEffect(Unit) {
             playerViewModel.initialize()
+        }
+
+        // Load episode data for the active source. Re-runs when the cross-source
+        // fallback switches to another extension (activeSourceId/activeAnimeUrl
+        // change); on those re-runs the episode is matched by number.
+        LaunchedEffect(activeSourceId, activeAnimeUrl) {
+            val currentSourceId = activeSourceId
+            val currentAnimeUrl = activeAnimeUrl
+
+            // Reset stale error/retry state for a fresh load.
+            videoResolutionError = null
+            videoErrorDiagnostic = null
+            resolvedVideo = null
+            isAutoRetrying = false
 
             // Step 1: Try to fetch episodes from the source
             var usedSource = false
-            if (sourceId != null && episodeUrl != null) {
+            if (currentSourceId != null && episodeUrl != null) {
+                isLoading = true
                 try {
                     resolutionStatusText = "Fetching episode list..."
-                    val source = extensionManager?.getSource(sourceId)
+                    val source = extensionManager?.getSource(currentSourceId)
                     if (source != null) {
-                                        // Use the explicit anime URL when available; fall back to deriving it
+                        // Use the explicit anime URL when available; fall back to deriving it
                         // from the episode URL only as a last resort (the heuristic is fragile
                         // and breaks for query parameters, hashed IDs, etc.).
-                        val fallbackUrl = this@PlayerScreen.animeUrl ?: run {
-                            logger.warn { "PlayerScreen: animeUrl is null for sourceId=$sourceId, deriving anime URL from episode URL. This may fail for some sources." }
+                        val fallbackUrl = currentAnimeUrl ?: run {
+                            logger.warn { "PlayerScreen: animeUrl is null for sourceId=$currentSourceId, deriving anime URL from episode URL. This may fail for some sources." }
                             episodeUrl?.substringBeforeLast("/")?.let { path ->
                                 if (path.startsWith("/") || path.startsWith("http")) path else "/$path"
                             }
@@ -684,13 +778,32 @@ data class PlayerScreen(
                         val fetchedEpisodes = source.getEpisodeList(sAnime)
                         sourceEpisodes = fetchedEpisodes
                         allEpisodes = fetchedEpisodes.map { it.toEpisodeModel(animeId) }.toMutableList()
-                        val idx = fetchedEpisodes.indexOfFirst { ep ->
-                            // Safely read episode URL — some sources return SEpisode objects
-                            // with uninitialized lateinit url fields.
-                            val epUrl = try { ep.url } catch (_: UninitializedPropertyAccessException) { null }
-                            epUrl != null && epUrl == episodeUrl
+                        val idx = if (episodeNumberForSourceSwitch > 0.0) {
+                            // Fallback re-load: find by episode number (ids are per-source hashes)
+                            val exact = fetchedEpisodes.indexOfFirst { ep ->
+                                runCatching { ep.episode_number.toDouble() }.getOrDefault(-1.0) == episodeNumberForSourceSwitch
+                            }
+                            if (exact >= 0) exact else fetchedEpisodes.indices.minByOrNull { index ->
+                                kotlin.math.abs(
+                                    runCatching { fetchedEpisodes[index].episode_number.toDouble() }.getOrDefault(0.0) -
+                                        episodeNumberForSourceSwitch,
+                                )
+                            } ?: -1
+                        } else {
+                            fetchedEpisodes.indexOfFirst { ep ->
+                                // Safely read episode URL — some sources return SEpisode objects
+                                // with uninitialized lateinit url fields.
+                                val epUrl = try { ep.url } catch (_: UninitializedPropertyAccessException) { null }
+                                epUrl != null && epUrl == episodeUrl
+                            }
                         }
-                        if (idx >= 0) currentEpisodeIndex = idx
+                        if (idx >= 0) {
+                            currentEpisodeIndex = idx
+                            if (episodeNumberForSourceSwitch <= 0.0) {
+                                episodeNumberForSourceSwitch = runCatching { fetchedEpisodes[idx].episode_number.toDouble() }
+                                    .getOrDefault(0.0)
+                            }
+                        }
                         usedSource = true
                     }
                 } catch (e: Exception) {
@@ -698,7 +811,7 @@ data class PlayerScreen(
                         text = "Failed to fetch episodes: ${e.message?.take(60)}",
                         duration = ToastDuration.LONG,
                         isError = true,
-                        source = sourceId?.toString(),
+                        source = currentSourceId.toString(),
                         throwable = e,
                         location = "PlayerScreen.LaunchedEffect.fetchEpisodes",
                     )
@@ -710,15 +823,16 @@ data class PlayerScreen(
 
             // Step 3: Resolve video URL — use the full SEpisode with all fields populated
             isResolvingVideo = true
-            val sourceName = extensionManager?.getSource(sourceId ?: 0)?.name ?: "source"
+            val sourceName = extensionManager?.getSource(currentSourceId ?: 0)?.name ?: "source"
             resolutionStatusText = "Resolving video from \"$sourceName\"..."
-            
+
             val currentSEpisode = sourceEpisodes.getOrNull(currentEpisodeIndex)
             val resolved = resolveVideoUrl(
                 sEpisode = currentSEpisode,
                 episodeNumber = currentEpisodeNumber,
                 httpServer = httpServer,
                 startIndex = 0,
+                resolvingSourceId = currentSourceId,
                 onCandidateList = { candidates ->
                     videoCandidates = candidates
                 },
@@ -728,7 +842,7 @@ data class PlayerScreen(
                         text = msg,
                         duration = ToastDuration.LONG,
                         isError = true,
-                        source = sourceId?.toString(),
+                        source = currentSourceId.toString(),
                         location = "PlayerScreen.resolveVideoUrl",
                     )
                 },
@@ -757,9 +871,10 @@ data class PlayerScreen(
                 isLoading = false
                 resolutionStatusText = ""
             } else {
-                // Video resolution failed
+                // Video resolution failed — try the next source that has this anime
                 isLoading = false
                 resolutionStatusText = ""
+                tryNextSource(manual = false)
             }
         }
 
@@ -805,6 +920,14 @@ data class PlayerScreen(
 
                 // Apply persisted subtitle appearance (font size / position).
                 playerViewModel.applySubtitleAppearance(settings.subtitleFontSize, settings.subtitlePosition)
+
+                // Apply the user's default playback speed once per session
+                // (persisted in Settings > Player). Quality retries keep the
+                // user's in-session speed since the flag stays set.
+                if (!defaultSpeedApplied && settings.defaultPlaybackSpeed != 1.0f) {
+                    playerViewModel.setSpeed(settings.defaultPlaybackSpeed.toDouble())
+                    defaultSpeedApplied = true
+                }
 
                 // Auto-fetch English subtitles when the source provided none.
                 // Failure is silent: playback must never be blocked by subtitle
@@ -1013,6 +1136,7 @@ data class PlayerScreen(
                     episodeNumber = episodeNumber,
                     httpServer = httpServer,
                     startIndex = startIndex,
+                    resolvingSourceId = activeSourceId,
                     onCandidateList = { candidates ->
                         videoCandidates = candidates
                     },
@@ -1022,7 +1146,7 @@ data class PlayerScreen(
                             text = msg,
                             duration = ToastDuration.LONG,
                             isError = true,
-                            source = sourceId?.toString(),
+                            source = activeSourceId?.toString(),
                             location = "PlayerScreen.resolveAndPlay",
                         )
                     },
@@ -1222,9 +1346,11 @@ data class PlayerScreen(
                         toastHost.show("Trying $qualityHint (${nextIndex + 1}/$total)...", ToastDuration.SHORT)
                         resolveAndPlay(startIndex = nextIndex)
                     } else {
-                        // All qualities exhausted
+                        // All qualities exhausted — try the next source that
+                        // has this anime (cross-source fallback).
                         isAutoRetrying = false
                         videoResolutionError = "All $autoRetryIndex quality option(s) failed — try a different source"
+                        tryNextSource(manual = false)
                     }
                 }
                 playbackState == PlaybackState.PLAYING || playbackState == PlaybackState.ENDED -> {
@@ -1233,6 +1359,14 @@ data class PlayerScreen(
                 }
             }
         }
+
+        // Cross-source fallback button availability: shown on the error screen
+        // while other extensions might still have this anime.
+        val hasNextSource = !isLoading && !isResolvingVideo && (
+            (sourceCandidates.isNotEmpty() && sourceFallbackIndex < sourceCandidates.size - 1) ||
+                (!sourceCandidatesSearched && LocalAnimeSourceMatcher.current != null)
+            )
+        val nextSourceName = sourceCandidates.getOrNull(sourceFallbackIndex + 1)?.sourceName
 
         PlayerContent(
             playerViewModel = playerViewModel,
@@ -1283,6 +1417,21 @@ data class PlayerScreen(
             hasNextQuality = lastAttemptedIndex >= 0 && lastAttemptedIndex + 1 < videoCandidates.size,
             nextQualityLabel = videoCandidates.getOrNull(lastAttemptedIndex + 1)
                 ?.label?.takeIf { it.isNotBlank() } ?: "next quality",
+            hasNextSource = hasNextSource,
+            nextSourceName = nextSourceName,
+            onTryNextSource = { tryNextSource(manual = true) },
+            onSpeedStep = { dir ->
+                val presets = listOf(0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
+                val current = playbackSpeed
+                val base = presets.withIndex().minByOrNull { kotlin.math.abs(it.value - current) }?.index ?: 2
+                val target = presets[(base + dir).coerceIn(0, presets.lastIndex)]
+                playerViewModel.setSpeed(target)
+                toastHost.show("Speed ${target}x", ToastDuration.SHORT)
+            },
+            onSubtitleDelayNudge = { delta ->
+                playerViewModel.setSubtitleDelayForAnime(animeId, subtitleDelay + delta)
+                toastHost.show("Subtitle delay ${subtitleDelay + delta}s", ToastDuration.SHORT)
+            },
             onLinkToTracker = {
                 navigator.push(
                     TrackerSearchScreen(
@@ -1339,7 +1488,7 @@ data class PlayerScreen(
             onTakeScreenshot = {
                 val result = playerViewModel.takeScreenshot()
                 if (result != null) {
-                    toastHost.show("Screenshot captured", ToastDuration.SHORT)
+                    toastHost.show("Screenshot saved to Pictures/Anikku/${result.substringAfterLast('/')}", ToastDuration.SHORT)
                 } else {
                     toastHost.show(
                         text = "Screenshot failed",
@@ -1408,6 +1557,11 @@ internal fun PlayerContent(
     hasNextQuality: Boolean = false,
     nextQualityLabel: String? = null,
     isAutoRetrying: Boolean = false,
+    hasNextSource: Boolean = false,
+    nextSourceName: String? = null,
+    onTryNextSource: () -> Unit = {},
+    onSpeedStep: (Int) -> Unit = {},
+    onSubtitleDelayNudge: (Double) -> Unit = {},
     onLinkToTracker: () -> Unit = {},
     onBack: () -> Unit,
     onRetry: () -> Unit = {},
@@ -1746,6 +1900,37 @@ internal fun PlayerContent(
                         )
                     }
 
+                    // Try another source (cross-source fallback) — shown when
+                    // quality retries failed or ran out and other extensions
+                    // may have this anime.
+                    if (hasNextSource) {
+                        Spacer(Modifier.height(12.dp))
+                        Surface(
+                            onClick = onTryNextSource,
+                            shape = MaterialTheme.shapes.small,
+                            color = Color(0xFF02A9FF).copy(alpha = 0.15f),
+                            tonalElevation = 0.dp,
+                            modifier = Modifier.height(36.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                            ) {
+                                Text(
+                                    "🔄",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "Try another source${nextSourceName?.let { ": $it" } ?: ""}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF02A9FF),
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
+
                     // Link to Tracker button
                     Spacer(Modifier.height(16.dp))
                     Surface(
@@ -1873,6 +2058,31 @@ internal fun PlayerContent(
                             onSetVolume(0)
                             isMuted = true
                         }
+                        isControlsVisible = true
+                        true
+                    }
+                    event.key == Key.LeftBracket -> {
+                        onSpeedStep(-1)
+                        isControlsVisible = true
+                        true
+                    }
+                    event.key == Key.RightBracket -> {
+                        onSpeedStep(1)
+                        isControlsVisible = true
+                        true
+                    }
+                    event.key == Key.Comma -> {
+                        onSubtitleDelayNudge(-0.5)
+                        isControlsVisible = true
+                        true
+                    }
+                    event.key == Key.Period -> {
+                        onSubtitleDelayNudge(0.5)
+                        isControlsVisible = true
+                        true
+                    }
+                    event.key == Key.S -> {
+                        onTakeScreenshot()
                         isControlsVisible = true
                         true
                     }
@@ -2088,7 +2298,7 @@ internal fun PlayerContent(
             enter = fadeIn(), exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = (if (isMPVAvailable) 180 else 120).dp),
         ) {
-            Text("SPACE play/pause · ←→ seek · ↑↓ volume", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.4f))
+            Text("SPACE play/pause · ←→ seek · ↑↓ volume · [ ] speed · , . subs · S shot", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.4f))
         }
 
         // === Settings panel overlays ===

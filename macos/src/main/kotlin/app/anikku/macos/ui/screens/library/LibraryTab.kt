@@ -77,7 +77,6 @@ import app.anikku.macos.ui.components.OverflowItem
 import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
-import app.anikku.macos.ui.screens.link.LinkSourceScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.player.PlayerScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -95,8 +94,6 @@ object LibraryTab : AnikkuScreen(), Tab {
 
     enum class DisplayMode { Grid, List }
 
-    enum class SortMode { Title, Status, LastUpdated }
-
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -108,13 +105,16 @@ object LibraryTab : AnikkuScreen(), Tab {
 
         var displayMode by remember { mutableStateOf(DisplayMode.Grid) }
         var searchQuery by remember { mutableStateOf("") }
-        var sortMode by remember { mutableStateOf(SortMode.Title) }
+        var sortMode by remember { mutableStateOf(LibrarySortMode.Title) }
         var showSortMenu by remember { mutableStateOf(false) }
         var selectedCategoryId by remember { mutableStateOf<Long?>(null) } // null = All
+        var progressFilter by remember { mutableStateOf(LibraryProgressFilter.All) }
 
         // Observe repository mutations from favorites, restore, and background
         // updates instead of retaining a one-time snapshot for the tab's life.
         val libraryRevision by libraryRepo.revision.collectAsState()
+        // History has no Flow; its revision signal drives last-watched/progress.
+        val historyRevision = historyRepo?.revision?.collectAsState()?.value ?: 0L
         val libraryEntries = remember(libraryRevision) { libraryRepo.getAll() }
         val categories = remember(libraryRevision) { libraryRepo.getCategories() }
 
@@ -136,38 +136,33 @@ object LibraryTab : AnikkuScreen(), Tab {
                 )
             }
         }
+        val allAnimeById = remember(allAnime) { allAnime.associateBy { it.id } }
 
-        // Filter by category + search query, then sort
-        val filteredAnime = remember(allAnime, searchQuery, sortMode, selectedCategoryId) {
-            var filtered = allAnime
+        // Latest history entry per anime — drives the Last Watched sort and the
+        // progress filter. Recomputed when either repo changes.
+        val latestByAnime = remember(libraryRevision, historyRevision) {
+            latestHistoryByAnime(historyRepo?.getAll().orEmpty())
+        }
 
-            // Filter by category
-            if (selectedCategoryId != null) {
-                val categoryEntryIds = libraryEntries
-                    .filter { it.categoryId == selectedCategoryId }
-                    .map { it.animeId }
-                    .toSet()
-                filtered = filtered.filter { it.id in categoryEntryIds }
-            }
-
-            // Filter by search
-            if (searchQuery.isNotBlank()) {
-                filtered = filtered.filter {
-                    it.title.contains(searchQuery, ignoreCase = true) ||
-                        it.author?.contains(searchQuery, ignoreCase = true) == true ||
-                        it.genre?.any { g -> g.contains(searchQuery, ignoreCase = true) } == true
-                }
-            }
-
-            when (sortMode) {
-                SortMode.Title -> filtered.sortedBy { it.title }
-                SortMode.Status -> filtered.sortedBy { it.status }
-                SortMode.LastUpdated -> filtered.sortedByDescending { it.coverLastModified }
-            }
+        // Filter by category + search query + progress, then sort (pure helper).
+        val filteredEntries = remember(
+            libraryEntries, searchQuery, selectedCategoryId, sortMode, progressFilter, latestByAnime,
+        ) {
+            filterAndSortLibrary(
+                entries = libraryEntries,
+                query = searchQuery,
+                categoryId = selectedCategoryId,
+                sortMode = sortMode,
+                progressFilter = progressFilter,
+                latestByAnime = latestByAnime,
+            )
+        }
+        val filteredAnime = remember(filteredEntries) {
+            filteredEntries.mapNotNull { allAnimeById[it.animeId] }
         }
 
         // In-progress episodes for the "Continue Watching" row, most recent first.
-        val continueWatching = remember(libraryRevision, libraryEntries) {
+        val continueWatching = remember(libraryRevision, historyRevision, libraryEntries) {
             continueWatchingItems(historyRepo, libraryEntries)
         }
 
@@ -176,6 +171,7 @@ object LibraryTab : AnikkuScreen(), Tab {
             continueWatching = continueWatching,
             categories = categories,
             selectedCategoryId = selectedCategoryId,
+            progressFilter = progressFilter,
             libraryCount = libraryRepo.count(),
             displayMode = displayMode,
             searchQuery = searchQuery,
@@ -189,12 +185,19 @@ object LibraryTab : AnikkuScreen(), Tab {
             onToggleSortMenu = { showSortMenu = !showSortMenu },
             onDismissSortMenu = { showSortMenu = false },
             onCategorySelect = { selectedCategoryId = it },
+            onProgressFilterChange = { progressFilter = it },
             onAnimeClick = { anime ->
                 if (anime.source == 0L && anime.url == null) {
-                    // Entry imported from AniList has no streaming source — let
-                    // the user link it to an extension so it becomes playable.
-                    val anilistId = libraryEntries.firstOrNull { it.animeId == anime.id }?.anilistId
-                    navigator.push(LinkSourceScreen(animeId = anime.id, animeTitle = anime.title, anilistId = anilistId))
+                    // Entry imported from AniList has no streaming source — the
+                    // detail screen auto-matches one; if none is found, it offers
+                    // the manual LinkSourceScreen flow from its error state.
+                    navigator.push(AnimeDetailScreen(
+                        animeId = anime.id,
+                        sourceId = null,
+                        animeUrl = null,
+                        animeTitle = anime.title,
+                        extensionManager = extensionManager,
+                    ))
                 } else {
                     navigator.push(AnimeDetailScreen(
                         animeId = anime.id,
@@ -216,8 +219,13 @@ object LibraryTab : AnikkuScreen(), Tab {
             onContinueWatchingClick = { item ->
                 val entry = item.entry
                 if (entry.sourceId == 0L || entry.episodeUrl == null) {
-                    val anilistId = libraryEntries.firstOrNull { it.animeId == entry.animeId }?.anilistId
-                    navigator.push(LinkSourceScreen(animeId = entry.animeId, animeTitle = entry.animeTitle, anilistId = anilistId))
+                    navigator.push(AnimeDetailScreen(
+                        animeId = entry.animeId,
+                        sourceId = null,
+                        animeUrl = null,
+                        animeTitle = entry.animeTitle,
+                        extensionManager = extensionManager,
+                    ))
                 } else {
                     navigator.push(PlayerScreen(
                         animeId = entry.animeId,
@@ -265,17 +273,19 @@ internal fun LibraryContent(
     continueWatching: List<ContinueWatchingItem> = emptyList(),
     categories: List<CategoryEntry> = emptyList(),
     selectedCategoryId: Long? = null,
+    progressFilter: LibraryProgressFilter = LibraryProgressFilter.All,
     libraryCount: Int = 0,
     displayMode: LibraryTab.DisplayMode,
     searchQuery: String,
-    sortMode: LibraryTab.SortMode,
+    sortMode: LibrarySortMode,
     showSortMenu: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onToggleDisplayMode: () -> Unit,
-    onSortModeChange: (LibraryTab.SortMode) -> Unit,
+    onSortModeChange: (LibrarySortMode) -> Unit,
     onToggleSortMenu: () -> Unit,
     onDismissSortMenu: () -> Unit,
     onCategorySelect: (Long?) -> Unit,
+    onProgressFilterChange: (LibraryProgressFilter) -> Unit = {},
     onAnimeClick: (AnimeModel) -> Unit,
     onRemoveFromLibrary: (Long) -> Unit = {},
     onRemoveFromContinueWatching: (Long) -> Unit = {},
@@ -301,25 +311,49 @@ internal fun LibraryContent(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Title") },
-                                onClick = { onSortModeChange(LibraryTab.SortMode.Title); onDismissSortMenu() },
+                                onClick = { onSortModeChange(LibrarySortMode.Title); onDismissSortMenu() },
                                 leadingIcon = {
-                                    if (sortMode == LibraryTab.SortMode.Title)
+                                    if (sortMode == LibrarySortMode.Title)
                                         Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text("Status") },
-                                onClick = { onSortModeChange(LibraryTab.SortMode.Status); onDismissSortMenu() },
+                                onClick = { onSortModeChange(LibrarySortMode.Status); onDismissSortMenu() },
                                 leadingIcon = {
-                                    if (sortMode == LibraryTab.SortMode.Status)
+                                    if (sortMode == LibrarySortMode.Status)
                                         Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text("Last Updated") },
-                                onClick = { onSortModeChange(LibraryTab.SortMode.LastUpdated); onDismissSortMenu() },
+                                onClick = { onSortModeChange(LibrarySortMode.LastUpdated); onDismissSortMenu() },
                                 leadingIcon = {
-                                    if (sortMode == LibraryTab.SortMode.LastUpdated)
+                                    if (sortMode == LibrarySortMode.LastUpdated)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Last Watched") },
+                                onClick = { onSortModeChange(LibrarySortMode.LastWatched); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.LastWatched)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Date Added") },
+                                onClick = { onSortModeChange(LibrarySortMode.DateAdded); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.DateAdded)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Progress") },
+                                onClick = { onSortModeChange(LibrarySortMode.Progress); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.Progress)
                                         Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                                 },
                             )
@@ -371,6 +405,35 @@ internal fun LibraryContent(
                             )
                         }
                     }
+                }
+            }
+
+            // Watch-progress filter chips
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                LibraryProgressFilter.entries.forEach { filter ->
+                    FilterChip(
+                        selected = progressFilter == filter,
+                        onClick = { onProgressFilterChange(filter) },
+                        label = {
+                            Text(
+                                when (filter) {
+                                    LibraryProgressFilter.All -> "All"
+                                    LibraryProgressFilter.InProgress -> "In progress"
+                                    LibraryProgressFilter.NotStarted -> "Not started"
+                                    LibraryProgressFilter.Finished -> "Finished"
+                                },
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        ),
+                    )
                 }
             }
 

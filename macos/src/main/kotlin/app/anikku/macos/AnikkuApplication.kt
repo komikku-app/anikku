@@ -18,6 +18,8 @@ import app.anikku.macos.platform.logging.CrashReporter
 import app.anikku.macos.platform.logging.MacOSLogger
 import app.anikku.macos.platform.logging.TerminalErrorLogger
 import app.anikku.macos.platform.logging.UIActionLogger
+import app.anikku.macos.platform.library.AnimeSourceMatcher
+import app.anikku.macos.platform.library.LibraryAutoLinkService
 import app.anikku.macos.platform.library.MacOSLibraryUpdateService
 import app.anikku.macos.platform.migration.MacOSMigrationManager
 import app.anikku.macos.platform.network.ChromeCDPClient
@@ -39,6 +41,7 @@ import app.anikku.macos.platform.sync.MacOSSyncYomiService
 import app.anikku.macos.platform.update.AppInfo
 import app.anikku.macos.platform.update.AppUpdateChecker
 import app.anikku.macos.platform.update.SparkleUpdater
+import eu.kanade.tachiyomi.source.CatalogueSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,6 +83,8 @@ class AnikkuApplication {
     val downloadRepository: DownloadRepository
     val backupManager: MacOSBackupManager
     val libraryUpdateService: MacOSLibraryUpdateService
+    val animeSourceMatcher: AnimeSourceMatcher
+    val libraryAutoLinkService: LibraryAutoLinkService
 
     // Phase 3: Networking
     val networkHelper: MacOSNetworkHelper
@@ -207,6 +212,21 @@ class AnikkuApplication {
             libraryRepository = libraryRepository,
             historyRepository = historyRepository,
             sourceResolver = extensionManager::getSource,
+        )
+
+        // 8e. Source matcher + auto-link service — attach streaming sources to
+        // tracker-imported library entries that have none yet (runs after
+        // AniList sync and on detail-screen open).
+        animeSourceMatcher = AnimeSourceMatcher(
+            sourcesProvider = {
+                extensionManager.installedExtensionsFlow.value
+                    .flatMap { ext -> ext.sources.filterIsInstance<CatalogueSource>() }
+                    .distinctBy { it.id }
+            },
+        )
+        libraryAutoLinkService = LibraryAutoLinkService(
+            libraryRepository = libraryRepository,
+            matcher = animeSourceMatcher,
         )
 
         // 9. Initialize Phase 7: Advanced Features
