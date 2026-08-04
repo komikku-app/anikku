@@ -2,7 +2,6 @@ package app.anikku.macos.ui.screens.torrent
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,18 +26,22 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.dp
+import app.anikku.macos.platform.anilist.AniListAnime
+import app.anikku.macos.platform.anilist.AniListSearchClient
+import app.anikku.macos.platform.anilist.LocalAniListSearchClient
 import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.platform.torrent.NyaaTorrentParser
+import app.anikku.macos.platform.torrent.TorrentAnimeGrouper
+import app.anikku.macos.platform.torrent.TorrentGroup
+import app.anikku.macos.platform.torrent.TorrentRelease
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeGrid
-import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
-import app.anikku.macos.ui.screens.models.toAnimeModel
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -46,30 +49,41 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
+import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.source.CatalogueSource
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /**
  * Torrents tab — discovers anime from torrent-flagged extensions (e.g. the
  * Nyaa.si source) and streams them through the app's torrent engine (bundled
  * TorrServer with a WebTorrent fallback).
  *
- * Selecting a result opens the anime detail screen; playing an episode hands
- * the magnet link to the player, which routes it through
- * TorrentStreamingCoordinator → local HTTP URL → mpv.
+ * Nyaa returns one result PER RELEASE (each file is its own row), so instead
+ * of showing a flat list of single episodes the tab parses every filename,
+ * groups releases by anime, and matches the top groups against the public
+ * AniList API for a canonical title/cover. Clicking a group opens
+ * [TorrentAnimeScreen] — seasons → ordered episodes → magnet → player.
  */
 object TorrentTab : AnikkuScreen(), Tab {
 
     override val key: ScreenKey = uniqueScreenKey
+
+    /** How many Nyaa result pages a search folds in (long series span pages). */
+    private const val MAX_SEARCH_PAGES = 3
+
+    /** How many groups get an AniList match attempt (one GraphQL call each). */
+    private const val MAX_MATCHED_GROUPS = 8
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val extensionManager = LocalExtensionManager.current
-        val scope = rememberCoroutineScope()
+        val anilistClient = LocalAniListSearchClient.current
 
         val installedExtensions by remember(extensionManager) {
             extensionManager?.installedExtensionsFlow
@@ -88,11 +102,17 @@ object TorrentTab : AnikkuScreen(), Tab {
                 .sortedBy { it.name }
         }
 
-        var popular by remember { mutableStateOf<List<AnimeModel>>(emptyList()) }
-        var searchResults by remember { mutableStateOf<List<AnimeModel>?>(null) } // null = showing popular
+        var groups by remember { mutableStateOf<List<TorrentGroup>>(emptyList()) }
+        var anilistMatches by remember { mutableStateOf<Map<String, AniListAnime?>>(emptyMap()) }
         var searchQuery by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(true) }
         var loadError by remember { mutableStateOf<String?>(null) }
+
+        // Session cache of AniList lookups keyed by normalized title, so
+        // re-searching the same anime doesn't hit GraphQL again. Concurrent
+        // map because match lookups run on the IO dispatcher.
+        val matchCache = remember { ConcurrentHashMap<String, AniListAnime>() }
+        val noMatchSentinel = remember { AniListAnime(id = -1, romajiTitle = "") }
 
         // Load the torrent source's popular catalogue on mount / source change.
         val activeSource = torrentSources.firstOrNull()
@@ -104,8 +124,8 @@ object TorrentTab : AnikkuScreen(), Tab {
                 val page = kotlinx.coroutines.withTimeout(20_000L) {
                     source.getPopularAnime(page = 1)
                 }
-                // IDs are URL hashes — dedupe so LazyGrid keys never collide.
-                popular = page.animes.mapNotNull { it.toAnimeModelSafe(source.id) }.distinctBy { it.id }
+                val releases = page.animes.mapNotNull { it.toTorrentRelease() }
+                groups = TorrentAnimeGrouper.group(releases)
             } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
                 loadError = "Timed out loading the torrent catalogue"
             } catch (e: Throwable) {
@@ -118,11 +138,12 @@ object TorrentTab : AnikkuScreen(), Tab {
             isLoading = false
         }
 
-        // Debounced search across the torrent source.
+        // Debounced search across the torrent source. Nyaa paginates its
+        // results, and a long series' episodes span many pages — fold in up to
+        // MAX_SEARCH_PAGES pages so the grouped anime menu isn't truncated.
         androidx.compose.runtime.LaunchedEffect(searchQuery, activeSource?.id) {
             val source = activeSource
             if (searchQuery.isBlank()) {
-                searchResults = null
                 return@LaunchedEffect
             }
             if (source == null) return@LaunchedEffect
@@ -130,10 +151,18 @@ object TorrentTab : AnikkuScreen(), Tab {
             isLoading = true
             loadError = null
             try {
-                val page = kotlinx.coroutines.withTimeout(20_000L) {
-                    source.getSearchAnime(page = 1, query = searchQuery, filters = AnimeFilterList())
+                val releases = mutableListOf<TorrentRelease>()
+                var pageNumber = 1
+                var hasNext = true
+                while (pageNumber <= MAX_SEARCH_PAGES && hasNext) {
+                    val page = kotlinx.coroutines.withTimeout(20_000L) {
+                        source.getSearchAnime(page = pageNumber, query = searchQuery, filters = AnimeFilterList())
+                    }
+                    releases += page.animes.mapNotNull { it.toTorrentRelease() }
+                    hasNext = page.hasNextPage
+                    pageNumber++
                 }
-                searchResults = page.animes.mapNotNull { it.toAnimeModelSafe(source.id) }.distinctBy { it.id }
+                groups = TorrentAnimeGrouper.group(releases)
             } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
                 loadError = "Search timed out"
             } catch (e: Throwable) {
@@ -142,6 +171,62 @@ object TorrentTab : AnikkuScreen(), Tab {
             }
             isLoading = false
         }
+
+        // Best-effort AniList enrichment for the top groups: canonical title,
+        // cover art, synopsis. Failures are silent — the grouped results still
+        // work from the parsed Nyaa titles alone.
+        androidx.compose.runtime.LaunchedEffect(groups) {
+            val client = anilistClient ?: return@LaunchedEffect
+            val top = groups.take(MAX_MATCHED_GROUPS)
+            if (top.isEmpty()) return@LaunchedEffect
+
+            val matches = coroutineScope {
+                top.map { group ->
+                    async {
+                        val key = group.normalizedKey
+                        matchCache[key] ?: runCatching {
+                            val candidates = client.searchAnime(group.displayTitle)
+                            AniListSearchClient.pickBest(group.displayTitle, candidates)
+                        }.getOrNull().also { match ->
+                            matchCache[key] = match ?: noMatchSentinel
+                        }
+                    }
+                }.map { it.await() }
+            }
+
+            val updated = anilistMatches.toMutableMap()
+            top.zip(matches) { group, match ->
+                if (match !== noMatchSentinel) {
+                    updated[group.normalizedKey] = match
+                } else {
+                    updated[group.normalizedKey] = null
+                }
+            }
+            anilistMatches = updated
+        }
+
+        // Grouped display models: one synthetic AnimeModel per TorrentGroup so
+        // the existing AnimeGrid renders them (cover = AniList match).
+        val grouped = remember(groups, anilistMatches, activeSource?.id) {
+            groups.map { group ->
+                val match = anilistMatches[group.normalizedKey]
+                val firstPageUrl = group.seasons.firstOrNull()?.episodes?.firstOrNull()?.best?.pageUrl
+                    ?: group.batches.firstOrNull()?.pageUrl
+                    ?: group.other.firstOrNull()?.pageUrl
+                val model = AnimeModel(
+                    id = group.normalizedKey.hashCode().toLong().let { if (it == 0L) 1L else it },
+                    title = group.displayTitle,
+                    source = activeSource?.id ?: 0L,
+                    description = "${group.totalReleases} releases",
+                    genre = listOf("Torrent"),
+                    thumbnailUrl = match?.coverUrl,
+                    url = firstPageUrl,
+                    favorite = false,
+                )
+                group to model
+            }
+        }
+        val displayModels = grouped.map { it.second }
 
         Scaffold(
             topBar = {
@@ -202,40 +287,49 @@ object TorrentTab : AnikkuScreen(), Tab {
                                         CircularProgressIndicator()
                                         Spacer(Modifier.height(12.dp))
                                         Text(
-                                            if (searchResults != null || searchQuery.isNotBlank()) "Searching torrents…" else "Loading torrents…",
+                                            if (searchQuery.isNotBlank()) "Searching torrents…" else "Loading torrents…",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                 }
+                            } else if (displayModels.isEmpty()) {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        loadError ?: if (searchQuery.isNotBlank()) "No torrents found" else "No torrents available",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 32.dp),
+                                    )
+                                }
                             } else {
-                                val shown = searchResults ?: popular
-                                if (shown.isEmpty()) {
-                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Text(
-                                            loadError ?: if (searchQuery.isNotBlank()) "No torrents found" else "No torrents available",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(horizontal = 32.dp),
-                                        )
-                                    }
-                                } else {
-                                    AnimeGrid(
-                                        items = shown,
-                                        onClick = { anime ->
+                                AnimeGrid(
+                                    items = displayModels,
+                                    onClick = { anime ->
+                                        val group = grouped.getOrNull(displayModels.indexOf(anime))?.first
+                                        if (group != null) {
                                             navigator.push(
-                                                AnimeDetailScreen(
-                                                    animeId = anime.id,
-                                                    sourceId = anime.source.takeIf { it != 0L },
-                                                    animeUrl = anime.url,
-                                                    animeTitle = anime.title,
+                                                TorrentAnimeScreen(
+                                                    displayTitle = group.displayTitle,
+                                                    group = group,
+                                                    anilistMatch = anilistMatches[group.normalizedKey],
+                                                    sourceId = activeSource?.id ?: 0L,
                                                     extensionManager = extensionManager,
                                                 ),
                                             )
-                                        },
-                                        getSubtitle = { it.title.takeIf { t -> t != "" } },
-                                    )
-                                }
+                                        }
+                                    },
+                                    getSubtitle = { anime ->
+                                        grouped.getOrNull(displayModels.indexOf(anime))?.first?.let { group ->
+                                            buildString {
+                                                append("${group.episodeCount} episodes")
+                                                if (group.seasonCount > 1) {
+                                                    append(" · ${group.seasonCount} seasons")
+                                                }
+                                            }
+                                        }
+                                    },
+                                )
                             }
                         }
                     }
@@ -252,10 +346,19 @@ object TorrentTab : AnikkuScreen(), Tab {
             icon = rememberVectorPainter(Icons.Outlined.Download),
         )
 
-    /** Lateinit-safe conversion of a torrent source's SAnime. */
-    private fun eu.kanade.tachiyomi.animesource.model.SAnime.toAnimeModelSafe(sourceId: Long): AnimeModel? {
+    /** Lateinit-safe conversion of a torrent source's SAnime row into a release. */
+    private fun SAnime.toTorrentRelease(): TorrentRelease? {
         val safeUrl = runCatching { url }.getOrNull()?.takeIf { it.isNotBlank() } ?: return null
         val safeTitle = runCatching { title }.getOrNull()?.takeIf { it.isNotBlank() } ?: return null
-        return toAnimeModel(sourceId).copy(url = safeUrl, title = safeTitle)
+        // Rows without a magnet can't play — skip them rather than surfacing
+        // dead entries in the grouped menu.
+        val magnet = author?.takeIf { it.isNotBlank() } ?: return null
+        return TorrentRelease(
+            magnetUrl = magnet,
+            pageUrl = safeUrl,
+            rawTitle = safeTitle,
+            parsed = NyaaTorrentParser.parse(safeTitle),
+            sizeSeeders = description ?: "",
+        )
     }
 }

@@ -44,6 +44,8 @@ import app.anikku.macos.platform.auth.AniListSyncService
 import app.anikku.macos.platform.auth.LocalAniListSyncService
 import app.anikku.macos.platform.auth.LocalTrackerLibrarySyncService
 import app.anikku.macos.platform.auth.LocalTrackerManager
+import app.anikku.macos.platform.anilist.AniListSearchClient
+import app.anikku.macos.platform.anilist.LocalAniListSearchClient
 import app.anikku.macos.platform.auth.TrackerLibrarySyncService
 import app.anikku.macos.platform.auth.TrackerManager
 import app.anikku.macos.platform.auth.TrackerOAuthManager
@@ -401,6 +403,10 @@ fun main() = application {
 
         val libraryAutoLinkService = remember { app.libraryAutoLinkService }
 
+        // Public (unauthenticated) AniList search — used by the Torrents tab to
+        // resolve grouped Nyaa titles to canonical anime entries.
+        val anilistSearchClient = remember { AniListSearchClient(app.networkHelper.client) }
+
         // Periodic 2-way AniList sync. Waits one full interval between checks
         // (restarts when the setting changes); failures are silent so the next
         // tick retries. Manual "Sync library now" lives in Settings > Tracking.
@@ -474,6 +480,7 @@ fun main() = application {
             LocalBackupManager provides app.backupManager,
             LocalToastHost provides toastHostState,
             LocalTrackerManager provides trackerManager,
+            LocalAniListSearchClient provides anilistSearchClient,
             LocalAniListSyncService provides anilistSyncService,
             LocalTrackerLibrarySyncService provides trackerLibrarySyncService,
             LocalDiscordRPC provides app.discordRPC,

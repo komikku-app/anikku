@@ -774,6 +774,12 @@ data class PlayerScreen(
                         val resolvedAnimeUrl = fallbackUrl ?: ""
                         val sAnime = eu.kanade.tachiyomi.animesource.model.SAnime.create().apply {
                             url = resolvedAnimeUrl
+                            // Some sources (e.g. the Nyaa torrent extension) read anime.title
+                            // inside getEpisodeList — leave it unset and they throw
+                            // UninitializedPropertyAccessException ("lateinit property title
+                            // has not been initialized"), which surfaced as "Failed to fetch
+                            // episodes" when playing from the Torrents tab.
+                            title = this@PlayerScreen.animeTitle ?: "Unknown"
                         }
                         resolutionStatusText = "Loading episodes from \"${source.name}\"..."
                         val fetchedEpisodes = source.getEpisodeList(sAnime)

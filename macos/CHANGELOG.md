@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.3] — 2026-08-02
+
+### Fix: torrent episodes wouldn't play ("failed to fetch episodes: lateinit property title has not been initialized")
+
+- **Root cause**: the player's load effect built the request anime with only its
+  URL set. The Nyaa extension reads `anime.title` inside `getEpisodeList`
+  (it becomes the episode name), so the unset Kotlin `lateinit` property threw
+  `UninitializedPropertyAccessException` and playback died with the toast above
+  — the episode list rendered on the detail screen, but the player's own
+  re-fetch crashed.
+- **Fix**: the player now sets `title` on the request anime (falls back to
+  "Unknown"), matching what the detail screen already did. Torrent magnets now
+  play from both the Torrents tab and the Nyaa Browse extension.
+
+### New: grouped torrent browsing (Nyaa → AniList → seasons/episodes)
+
+Searching Nyaa returns one result per release file, so "Death Note" used to
+show dozens of single-episode cards. The Torrents tab now:
+
+- **Parses every torrent filename** (group tag, quality, `S01E05`/`Season 2`/
+  `2nd Season`, `Ep. 12`, `01-24` and `01 ~ 37` batch ranges, `v2`
+  suffixes, file extensions, multi-title rows, fansub descriptors).
+- **Groups releases by anime** (all seasons of one show fold into a single
+  group) and sorts groups by how active they are.
+- **Matches the top groups against AniList's public API** (no login needed) for
+  canonical title, cover art, year/format, and synopsis — best-effort; unmatched
+  titles still work from their parsed names.
+- **Opens a per-anime menu**: header (cover + synopsis), each season as a
+  section, one row per episode playing the best-quality release (4K > 1080p >
+  720p > 480p), with the other releases of that episode one tap away. Batch
+  releases and unparseable entries get their own sections, so nothing is hidden.
+- Clicking any row streams the magnet through the existing TorrServer/WebTorrent
+  engine as before.
+
+### Tests
+- 31 new tests: Nyaa filename parser (16), torrent grouping (8), AniList public
+  search client (8, MockWebServer). Full suite: 695 green.
+
 ## [1.3.2] — 2026-08-04
 
 ### Fix: Browse/Extensions crash ("Companion") from an incompatible extension
