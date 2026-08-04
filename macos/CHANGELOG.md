@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.1.1] — 2026-08-04
+
+### Launch crash fix + baked AniList client
+
+- Fixed a crash on app launch: `Key "-1730808111" was already used` in the
+  Library tab's Continue Watching row. Episode IDs are URL hashes that collide
+  across anime; the LazyRow now keys on the unique `(animeId, episodeId)` pair.
+- Baked in the developer's AniList OAuth client id/secret
+  (`gradle.properties` → `anilist.clientId`/`anilist.clientSecret`), so tracker
+  login is one click with no credential setup.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.1.0] — 2026-08-04
 
 ### Tier-1: AniList sync, downloads, auto-play, player polish
