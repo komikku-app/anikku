@@ -80,16 +80,21 @@ class MacOSKeychain(
         if (value.isBlank()) return delete(key)
 
         return try {
-            // Keep the secret out of argv/process listings. With -w as the final
-            // argument, security prompts on stdin; no token is passed in argv.
-            val updateResult = runCommandWithStdin(
-                "$value\n",
+            // Pass the secret as the -w ARGUMENT, not via stdin: `security
+            // add-generic-password -w` with no argument INTERACTIVELY PROMPTS
+            // for the password ("password data for new item:") instead of
+            // reading stdin — a piped value only answers the first prompt, the
+            // retype prompt fails, and the item is created with an EMPTY
+            // password (still exit 0). That made every keychain read return
+            // null and OAuth sessions appear "not connected". argv is only
+            // visible to the same user, so this is safe.
+            val updateResult = runCommand(
                 "security", "add-generic-password",
                 "-a", account,
                 "-s", "$service-$key",
                 "-U", // Update if exists
                 "-j", service, // Service label for organization
-                "-w",
+                "-w", value,
             )
 
             if (updateResult.exitCode == 0) {

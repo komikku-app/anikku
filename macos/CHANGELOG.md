@@ -10,6 +10,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+---
+
+## [1.1.4] — 2026-08-04
+
+### Keychain write bug fixed — OAuth sessions now actually persist
+
+- Root cause of "logged in but app says not connected": `MacOSKeychain.store`
+  passed the secret to `security add-generic-password` via **stdin** with a
+  trailing `-w`. On macOS that makes `security` INTERACTIVELY PROMPT for the
+  password ("password data for new item:") — the piped value only answers the
+  first prompt, the retype prompt fails, and the keychain item is created with
+  an **EMPTY password** while still exiting 0 (the app logged "stored (1846
+  chars)" and believed it succeeded). Reads then returned null, so login
+  statuses stayed "Not connected" and sessions never survived a restart.
+- Secrets are now passed as the `-w` argument (verified round-trip via
+  `security find-generic-password -w`). This fixes persistence for AniList
+  tokens AND the same latent bug in every other keychain write (proxy
+  password, subtitle credential overrides, Google Drive / SyncYomi tokens,
+  app-lock PIN hash).
+- Note: entries written by earlier builds stored empty values — re-do the
+  affected action once (e.g. AniList login) to store the real secret.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.1.3] — 2026-08-04
 
 ### AniList OAuth callback fixed (Safari "can't connect to server")
