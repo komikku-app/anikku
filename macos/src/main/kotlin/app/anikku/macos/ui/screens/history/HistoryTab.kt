@@ -186,7 +186,10 @@ private fun HistoryContent(
 
             items(
                 items = history,
-                key = { it.id },
+                // episodeId alone is a URL hash and can collide across anime,
+                // which makes LazyColumn throw "Key was already used". The
+                // (animeId, episodeId) pair is unique per history entry.
+                key = { it.animeId to it.id },
             ) { entry ->
                 HistoryItem(entry = entry, onClick = { onAnimeClick(entry) })
             }

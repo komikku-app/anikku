@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.4] — 2026-08-04
+
+### Crash fixes
+
+- Fixed History crash: `Key "-1730808111" was already used` when scrolling.
+  Episode IDs are URL hashes that can collide across anime; the list now keys
+  on the unique `(animeId, episodeId)` pair.
+- Fixed "layouts are not part of the same hierarchy" crash when opening video
+  settings (Subtitles) during playback. The root-level `SelectionContainer`
+  made every `Text` selectable, including inside popups and the player's
+  animated panels; a press across layout roots crashed Compose's selection
+  manager. Copy actions already use explicit clipboard buttons, so the
+  container was removed.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.0.3] — 2026-08-04
 
 ### Season-aware subtitle matching

@@ -22,7 +22,6 @@ import app.anikku.macos.ui.screens.browse.BrowseTab
 import app.anikku.macos.ui.screens.onboarding.OnboardingScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.text.selection.SelectionContainer
 import app.anikku.macos.ui.MainWindow
 import app.anikku.macos.ui.TabSwitchHandler
 import app.anikku.macos.platform.data.LibraryRepository
@@ -365,7 +364,13 @@ fun main() = application {
                 isAmoledOLED = settingsState.isAmoledOLED,
                 isDarkOverride = settingsState.themeMode,
             ) {
-                SelectionContainer {
+                // NOTE: no root-level SelectionContainer. Wrapping the whole app
+                // made every Text selectable — including inside popups (settings
+                // DropdownMenu) and the player's animated panels — which crashes
+                // with "layouts are not part of the same hierarchy" when a press
+                // lands on text across layout roots (SelectionManager
+                // convertToContainerCoordinates). Copy actions use explicit
+                // clipboard buttons instead.
                 Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
                     if (showOnboarding) {
                         OnboardingScreen(
@@ -405,7 +410,6 @@ fun main() = application {
                         autoCheck = autoCheckUpdates,
                     )
                 }
-                } // End SelectionContainer
             }
         }
     }
