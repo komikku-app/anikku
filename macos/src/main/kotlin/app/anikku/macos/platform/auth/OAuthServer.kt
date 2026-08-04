@@ -46,11 +46,16 @@ class OAuthServer(
     /**
      * Start the OAuth callback server.
      *
-     * @param port The port to listen on (0 = auto-assign).
+     * NOTE: NanoHTTPD binds the port given to its CONSTRUCTOR, not this
+     * argument — [port] here only documents intent and is used to build the
+     * default redirect URI when no [redirectUriOverride] is given. To listen on
+     * a specific port, construct with [OAuthServer][OAuthServer]`(port = …)`.
+     *
+     * @param port The port to listen on (0 = auto-assign; matches the constructor).
      * @param callbackPath The path for the callback (e.g., "/callback").
      * @param redirectUriOverride When set (providers like AniList that reject
-     *   dynamic loopback ports), the server binds [port] on [host] but reports
-     *   this exact URL as the redirect — the browser reaches it via localhost.
+     *   dynamic loopback ports), the server reports this exact URL as the
+     *   redirect — the browser reaches it via localhost.
      * @return The full redirect URI the OAuth provider should redirect to.
      */
     fun start(port: Int = 0, callbackPath: String = "/callback", redirectUriOverride: String? = null): String {

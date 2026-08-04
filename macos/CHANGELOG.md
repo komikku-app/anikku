@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+---
+
+## [1.1.3] — 2026-08-04
+
+### AniList OAuth callback fixed (Safari "can't connect to server")
+
+- The authorize step worked, but the callback redirect (`localhost:8080/callback`)
+  hit a dead port: NanoHTTPD binds the port from its **constructor**, not the
+  `start()` argument, so the server was actually listening on a random port
+  while the redirect claimed 8080. The server is now constructed with port 8080
+  to match AniList's registered redirect.
+- OAuth callback timeout raised from 120s to 300s so a slow authorize-page read
+  doesn't shut the server down before the redirect lands.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.1.2] — 2026-08-04
 
 ### AniList OAuth fix + reliable resume playback

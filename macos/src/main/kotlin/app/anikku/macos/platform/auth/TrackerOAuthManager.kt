@@ -269,7 +269,7 @@ class TrackerOAuthManager(
         tracker: String,
         clientId: String,
         callbackPath: String = "/callback",
-        timeout: Long = 120,
+        timeout: Long = 300,
         unit: TimeUnit = TimeUnit.SECONDS,
     ): String? {
         val config = oauthConfigs[tracker] ?: run {
@@ -331,7 +331,7 @@ class TrackerOAuthManager(
         clientSecret: String,
         codeVerifier: String? = null,
         callbackPath: String = "/callback",
-        timeout: Long = 120,
+        timeout: Long = 300,
         unit: TimeUnit = TimeUnit.SECONDS,
     ): TokenResponse? {
         val config = oauthConfigs[tracker] ?: run {
@@ -339,18 +339,19 @@ class TrackerOAuthManager(
             return null
         }
 
-        // Start server once — use the same redirect URI for auth + token exchange
-        val oauthServer = OAuthServer()
+        // Start server once — use the same redirect URI for auth + token exchange.
+        // IMPORTANT: NanoHTTPD binds the port from its CONSTRUCTOR (the start()
+        // argument is not used for the socket), so the fixed redirect requires
+        // constructing the server with that port.
         val fixedRedirect = config.redirectUri
+        val fixedPort = fixedRedirect?.let {
+            runCatching { java.net.URI(it).port }.getOrDefault(8080).let { p -> if (p > 0) p else 8080 }
+        }
+        val oauthServer = if (fixedPort != null) OAuthServer(port = fixedPort) else OAuthServer()
         val redirectUri: String = if (fixedRedirect != null) {
-            // Providers like AniList require the EXACT registered redirect (a
-            // random loopback port would be rejected as "invalid_client").
-            val fixedPort = runCatching { java.net.URI(fixedRedirect).port }.getOrDefault(8080).let {
-                if (it > 0) it else 8080
-            }
             val fixedPath = runCatching { java.net.URI(fixedRedirect).path }.getOrDefault(callbackPath)
             oauthServer.start(
-                port = fixedPort,
+                port = fixedPort ?: 8080,
                 callbackPath = fixedPath,
                 redirectUriOverride = fixedRedirect,
             )

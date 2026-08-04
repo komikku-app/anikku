@@ -55,6 +55,16 @@ class OAuthServerTest {
     }
 
     @Test
+    fun `reported redirect port always matches the actually bound port`() {
+        // Regression: NanoHTTPD binds the CONSTRUCTOR port, not start()'s
+        // argument — if the reported redirect doesn't match the real socket,
+        // the browser's callback hits a dead port ("Safari can't connect").
+        val redirectUri = server.start(port = 0, callbackPath = "/callback")
+        val reportedPort = redirectUri.substringAfter("http://127.0.0.1:").substringBefore("/").toInt()
+        assertEquals(server.listeningPort, reportedPort)
+    }
+
+    @Test
     fun `server handles callback request with query parameters`() {
         val redirectUri = server.start(port = 0, callbackPath = "/callback")
         val port = redirectUri.substringAfter("http://127.0.0.1:").substringBefore("/").toInt()
