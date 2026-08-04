@@ -382,7 +382,9 @@ internal fun LibraryContent(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(continueWatching, key = { it.entry.episodeId }) { item ->
+                    // Episode IDs are URL hashes that can collide across anime,
+                    // so key on the unique (animeId, episodeId) pair.
+                    items(continueWatching, key = { it.entry.animeId to it.entry.episodeId }) { item ->
                         ContinueWatchingCard(
                             item = item,
                             onClick = { onContinueWatchingClick(item) },
