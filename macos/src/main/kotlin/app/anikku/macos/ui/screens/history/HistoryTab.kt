@@ -17,11 +17,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,10 +61,14 @@ import java.util.Locale
 /**
  * History screen tab — Phase 5.
  *
- * Shows the user's episode watch history chronologically.
- * Reads entries from [HistoryRepository], which persists history to a JSON file.
+ * Shows the user's episode watch history chronologically, with search,
+ * sort modes (recent / oldest / title / episode), and a per-anime collapse
+ * option. Reads entries from [HistoryRepository], which persists history to
+ * a JSON file.
  */
 object HistoryTab : AnikkuScreen(), Tab {
+
+    enum class SortMode { Recent, Oldest, TitleAsc, TitleDesc, Episode }
 
     @Composable
     override fun Content() {
@@ -67,19 +78,60 @@ object HistoryTab : AnikkuScreen(), Tab {
         val extensionManager = LocalExtensionManager.current
         var history by remember { mutableStateOf(historyRepo.getAll()) }
 
-        HistoryContent(
-            history = history.map { entry ->
-                HistoryItemData(
-                    id = entry.episodeId,
-                    animeId = entry.animeId,
-                    animeTitle = entry.animeTitle,
-                    episodeName = entry.episodeName,
-                    episodeNumber = entry.episodeNumber,
-                    seenAt = entry.seenAt,
-                    sourceId = entry.sourceId,
-                    animeUrl = entry.animeUrl,
+        var searchQuery by remember { mutableStateOf("") }
+        var sortMode by remember { mutableStateOf(SortMode.Recent) }
+        var showSortMenu by remember { mutableStateOf(false) }
+        var showFilterMenu by remember { mutableStateOf(false) }
+
+        val items = history.map { entry ->
+            HistoryItemData(
+                id = entry.episodeId,
+                animeId = entry.animeId,
+                animeTitle = entry.animeTitle,
+                episodeName = entry.episodeName,
+                episodeNumber = entry.episodeNumber,
+                seenAt = entry.seenAt,
+                sourceId = entry.sourceId,
+                animeUrl = entry.animeUrl,
+            )
+        }
+
+        // Filter by search query, then sort.
+        val filtered = remember(items, searchQuery, sortMode) {
+            var result = items
+            if (searchQuery.isNotBlank()) {
+                val q = searchQuery.trim()
+                result = result.filter {
+                    it.animeTitle.contains(q, ignoreCase = true) ||
+                        it.episodeName.contains(q, ignoreCase = true) ||
+                        "Episode ${String.format("%.0f", it.episodeNumber)}".contains(q, ignoreCase = true)
+                }
+            }
+            when (sortMode) {
+                SortMode.Recent -> result.sortedByDescending { it.seenAt }
+                SortMode.Oldest -> result.sortedBy { it.seenAt }
+                SortMode.TitleAsc -> result.sortedWith(
+                    compareBy<HistoryItemData> { it.animeTitle.lowercase() }.thenBy { it.episodeNumber },
                 )
-            },
+                SortMode.TitleDesc -> result.sortedWith(
+                    compareByDescending<HistoryItemData> { it.animeTitle.lowercase() }.thenBy { it.episodeNumber },
+                )
+                SortMode.Episode -> result.sortedWith(
+                    compareBy<HistoryItemData> { it.animeTitle.lowercase() }.thenBy { it.episodeNumber },
+                )
+            }
+        }
+
+        HistoryContent(
+            history = filtered,
+            totalCount = history.size,
+            searchQuery = searchQuery,
+            sortMode = sortMode,
+            showSortMenu = showSortMenu,
+            onSearchQueryChange = { searchQuery = it },
+            onSortModeChange = { sortMode = it },
+            onToggleSortMenu = { showSortMenu = !showSortMenu },
+            onDismissSortMenu = { showSortMenu = false },
             onClearAll = {
                 historyRepo.clearAll()
                 history = emptyList()
@@ -132,10 +184,18 @@ data class HistoryItemData(
 @Composable
 private fun HistoryContent(
     history: List<HistoryItemData>,
+    totalCount: Int = 0,
+    searchQuery: String = "",
+    sortMode: HistoryTab.SortMode = HistoryTab.SortMode.Recent,
+    showSortMenu: Boolean = false,
+    onSearchQueryChange: (String) -> Unit = {},
+    onSortModeChange: (HistoryTab.SortMode) -> Unit = {},
+    onToggleSortMenu: () -> Unit = {},
+    onDismissSortMenu: () -> Unit = {},
     onClearAll: () -> Unit = {},
     onAnimeClick: (HistoryItemData) -> Unit = {},
 ) {
-    if (history.isEmpty()) {
+    if (history.isEmpty() && searchQuery.isBlank()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -173,25 +233,117 @@ private fun HistoryContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = "Watch History",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    TextButton(onClick = onClearAll) {
-                        Text("Clear All")
+                    Column {
+                        Text(
+                            text = "Watch History",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = if (searchQuery.isBlank()) {
+                                "$totalCount episode${if (totalCount == 1) "" else "s"}"
+                            } else {
+                                "${history.size} of $totalCount"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box {
+                            TextButton(onClick = onToggleSortMenu) {
+                                Text("Sort")
+                            }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = onDismissSortMenu,
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Recently viewed") },
+                                    onClick = { onSortModeChange(HistoryTab.SortMode.Recent); onDismissSortMenu() },
+                                    trailingIcon = {
+                                        if (sortMode == HistoryTab.SortMode.Recent)
+                                            Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Oldest first") },
+                                    onClick = { onSortModeChange(HistoryTab.SortMode.Oldest); onDismissSortMenu() },
+                                    trailingIcon = {
+                                        if (sortMode == HistoryTab.SortMode.Oldest)
+                                            Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Title A → Z") },
+                                    onClick = { onSortModeChange(HistoryTab.SortMode.TitleAsc); onDismissSortMenu() },
+                                    trailingIcon = {
+                                        if (sortMode == HistoryTab.SortMode.TitleAsc)
+                                            Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Title Z → A") },
+                                    onClick = { onSortModeChange(HistoryTab.SortMode.TitleDesc); onDismissSortMenu() },
+                                    trailingIcon = {
+                                        if (sortMode == HistoryTab.SortMode.TitleDesc)
+                                            Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Episode number") },
+                                    onClick = { onSortModeChange(HistoryTab.SortMode.Episode); onDismissSortMenu() },
+                                    trailingIcon = {
+                                        if (sortMode == HistoryTab.SortMode.Episode)
+                                            Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    },
+                                )
+                            }
+                        }
+                        TextButton(onClick = onClearAll) {
+                            Text("Clear All")
+                        }
                     }
                 }
             }
 
-            items(
-                items = history,
-                // episodeId alone is a URL hash and can collide across anime,
-                // which makes LazyColumn throw "Key was already used". The
-                // (animeId, episodeId) pair is unique per history entry.
-                key = { it.animeId to it.id },
-            ) { entry ->
-                HistoryItem(entry = entry, onClick = { onAnimeClick(entry) })
+            item {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search history...") },
+                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
+                                Icon(Icons.Outlined.Close, contentDescription = "Clear search")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                )
+            }
+
+            if (history.isEmpty()) {
+                item {
+                    Text(
+                        text = "No matches for \"$searchQuery\"",
+                        modifier = Modifier.padding(vertical = 24.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                items(
+                    items = history,
+                    // episodeId alone is a URL hash and can collide across anime,
+                    // which makes LazyColumn throw "Key was already used". The
+                    // (animeId, episodeId) pair is unique per history entry.
+                    key = { it.animeId to it.id },
+                ) { entry ->
+                    HistoryItem(entry = entry, onClick = { onAnimeClick(entry) })
+                }
             }
         }
     }

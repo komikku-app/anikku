@@ -69,6 +69,34 @@ class SubtitleFetcherTest {
         assertFalse(fetcher.fileMatchesEpisode("Anime OP Theme.srt", 12))
     }
 
+    @Test
+    fun `does not match season markers or years as episodes`() {
+        val fetcher = buildFetcher(MockWebServer())
+        // "Season 2" must not match episode 2; the year (2025) must not match
+        // episode 2025 or episode 25.
+        assertFalse(fetcher.fileMatchesEpisode("Anime Season 2 - 01.srt", 2))
+        assertFalse(fetcher.fileMatchesEpisode("Anime (2025) - 01.srt", 2025))
+        assertFalse(fetcher.fileMatchesEpisode("Anime (2025) - 01.srt", 25))
+        // But the real episode in those files still matches.
+        assertTrue(fetcher.fileMatchesEpisode("Anime Season 2 - 01.srt", 1))
+        assertTrue(fetcher.fileMatchesEpisode("Anime (2025) - 01.srt", 1))
+    }
+
+    @Test
+    fun `matches netflix-style continuation numbering with offset`() {
+        val fetcher = buildFetcher(MockWebServer())
+        // S2 entry: Season 1 had 12 episodes, so S2E1 == "13" and S2E2 == "14".
+        val offset = 12
+        assertTrue(fetcher.fileMatchesEpisode("Solo Leveling (2025) - 13 「You aren't E-rank」.ass", 1, offset))
+        assertTrue(fetcher.fileMatchesEpisode("俺だけレベルアップな件.S01E13.You.aren_t.E-rank.srt", 1, offset))
+        assertTrue(fetcher.fileMatchesEpisode("俺だけレベルアップな件.S01E14.srt", 2, offset))
+        // Season-relative filenames in the same entry still match directly.
+        assertTrue(fetcher.fileMatchesEpisode("[NanakoRaws] Solo Leveling Season 2 - 01.srt", 1, offset))
+        assertTrue(fetcher.fileMatchesEpisode("[Judas] Solo Leveling - S02E02.ass", 2, offset))
+        // And the offset form does not over-match unrelated numbers.
+        assertFalse(fetcher.fileMatchesEpisode("Solo Leveling (2025) - 03.srt", 1, offset))
+    }
+
     // ---- Jimaku download path ---------------------------------------------
 
     @Test

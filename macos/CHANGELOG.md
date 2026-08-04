@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.5] — 2026-08-04
+
+### History filter/sort + subtitle matching
+
+- **History filters**: search box (title / episode) plus a Sort menu —
+  Recently viewed, Oldest first, Title A→Z, Title Z→A, Episode number.
+  Result count updates live; empty-search shows "no matches".
+- **Season-aware subtitle matching tightened**: the episode matcher now
+  understands Netflix-style continuation numbering — S2E1 (app reports "1")
+  also matches files named "13" when Season 1 had 12 episodes (offset derived
+  from AniList). It also stops false positives: "Season 2" markers and years
+  like "(2025)" are no longer treated as episode numbers.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.0.4] — 2026-08-04
 
 ### Crash fixes

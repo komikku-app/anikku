@@ -21,6 +21,7 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
 
 - **Browse Sources** — Discover and search anime using compatible Aniyomi/Keiyoushi sources
 - **Library Management** — Organize your anime collection with categories
+- **History** — watch history with live search and sort (recent, oldest, title A–Z/Z–A, episode number)
 - **Video Player** — libmpv Render API output with safe hardware decoding when available
   - Playback speed control (0.25x–4.0x)
   - Audio track selection

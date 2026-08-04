@@ -143,11 +143,16 @@ class SubtitleFetcher(
                 logger.debug { "SUB: Jimaku not configured — skipping auto-fetch" }
                 return@withContext null
             }
-            val anilistId = resolveAniListId(animeTitle, episodeNumber) ?: run {
+            val season = resolveAniListSeason(animeTitle, episodeNumber) ?: run {
                 logger.warn { "SUB: AniList lookup failed for '$animeTitle'" }
                 return@withContext null
             }
-            val candidates = searchJimaku(credentials, anilistId, episodeNumber)
+            val candidates = searchJimaku(
+                credentials = credentials,
+                anilistId = season.id,
+                episodeNumber = episodeNumber,
+                absoluteOffset = season.absoluteOffset,
+            )
                 .filter { it.isEnglish }
                 .sortedWith(compareByDescending<SubtitleCandidate> { it.language == "en" }.thenBy { it.title })
             val best = candidates.firstOrNull() ?: return@withContext null
@@ -211,7 +216,17 @@ class SubtitleFetcher(
      * Season 2 media, not Season 1). Falls back to the top search result when
      * episode ranges are unknown or [episodeNumber] is not positive.
      */
-    fun resolveAniListId(title: String, episodeNumber: Double = 0.0): Int? {
+    fun resolveAniListId(title: String, episodeNumber: Double = 0.0): Int? =
+        resolveAniListSeason(title, episodeNumber)?.id
+
+    /**
+     * Like [resolveAniListId] but also returns the total episode count of the
+     * seasons ranked before the matched one. This "absolute offset" lets the
+     * episode matcher treat Netflix-style continuation numbering (S2 ep 1 ==
+     * "13" when Season 1 had 12 episodes) as a match for the season-relative
+     * episode number the app reports.
+     */
+    internal fun resolveAniListSeason(title: String, episodeNumber: Double = 0.0): AniListSeason? {
         val cleanTitle = title.trim().take(80)
         if (cleanTitle.isEmpty()) return null
 
@@ -257,10 +272,27 @@ class SubtitleFetcher(
             }
             if (candidates.isEmpty()) return null
 
-            logger.info { "SUB: AniList resolved '$title' (ep=${episodeNumber.toInt()}) -> id=${pickSeasonMatch(candidates, episodeNumber)}" }
-            return pickSeasonMatch(candidates, episodeNumber)
+            val matchedId = pickSeasonMatch(candidates, episodeNumber) ?: return null
+            val matchedIndex = candidates.indexOfFirst { it.id == matchedId }
+            // Absolute offset = total episodes of full seasons ranked before the
+            // matched season (excludes 1-2 episode movies/specials). This lets
+            // Netflix-style continuation numbering match season-relative episodes.
+            val offset = candidates.take(matchedIndex)
+                .filter { (it.episodes ?: 0) >= 5 }
+                .sumOf { it.episodes ?: 0 }
+
+            logger.info {
+                "SUB: AniList resolved '$title' (ep=${episodeNumber.toInt()}) -> id=$matchedId offset=$offset"
+            }
+            return AniListSeason(id = matchedId, absoluteOffset = offset)
         }
     }
+
+    /** Resolved AniList season: media ID plus prior-seasons episode offset. */
+    internal data class AniListSeason(
+        val id: Int,
+        val absoluteOffset: Int,
+    )
 
     /**
      * Pick the AniList media that best matches the requested episode.
@@ -303,6 +335,7 @@ class SubtitleFetcher(
         credentials: SubtitleCredentials,
         anilistId: Int,
         episodeNumber: Double,
+        absoluteOffset: Int = 0,
     ): List<SubtitleCandidate> {
         if (!credentials.jimakuConfigured) return emptyList()
         val episode = episodeNumber.toInt().coerceAtLeast(1)
@@ -331,7 +364,7 @@ class SubtitleFetcher(
             val files = listEntryFiles(credentials, entryId)
             for (file in files) {
                 val name = file.jsonObject["name"]?.jsonPrimitive?.content ?: continue
-                if (!fileMatchesEpisode(name, episode)) continue
+                if (!fileMatchesEpisode(name, episode, absoluteOffset)) continue
                 val url = file.jsonObject["url"]?.jsonPrimitive?.content ?: continue
                 val language = file.jsonObject["language"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: "und"
                 results += SubtitleCandidate(
@@ -367,20 +400,49 @@ class SubtitleFetcher(
         }
     }
 
-    /** Match a subtitle file name against an episode number (E12, 12, #12...). */
-    internal fun fileMatchesEpisode(filename: String, episode: Int): Boolean {
+    /** Match a subtitle file name against an episode number.
+     *
+     * Handles the real-world filename styles found on Jimaku:
+     * - `S01E13` / `s1e13` (season-relative, authoritative)
+     * - `E13` / `ep 13` / `episode 13` / `#13`
+     * - bare standalone numbers (`- 13 -`, `13「…」`, `.13.`)
+     *
+     * [absoluteOffset] lets a season-relative episode (app reports S2E1 as "1")
+     * also match continuation-numbered files (`13` = 1 + 12 prior episodes),
+     * which Netflix-style releases use.
+     *
+     * Bare numbers are guarded against false positives: a number preceded by
+     * "season" is a season marker (not an episode), and 4-digit years are
+     * ignored.
+     */
+    internal fun fileMatchesEpisode(filename: String, episode: Int, absoluteOffset: Int = 0): Boolean {
         val lower = filename.lowercase()
-        // "S1E12" / "ep12" / "episode 12" / "- 12 -" / "#12"
-        val patterns = listOf(
-            Regex("""e(?:p(?:isode)?)?[ ._-]*(\d+)"""),
-            Regex("""(?:^|\s|[._-])0*(\d+)(?:\s|$|[._-])"""),
-            Regex("""#0*(\d+)"""),
+        val targets = mutableSetOf(episode)
+        if (absoluteOffset > 0) targets += episode + absoluteOffset
+
+        // Authoritative forms: S01E13 / ep13 / episode 13 / #13
+        val authoritative = listOf(
+            Regex("""s\d{1,2}\s*e(?:p(?:isode)?)?[ ._-]*(\d{1,4})"""),
+            Regex("""(?:^|[^\w])e(?:p(?:isode)?)?[ ._-]*(\d{1,4})\b"""),
+            Regex("""#\s*(\d{1,4})\b"""),
         )
-        for (pattern in patterns) {
+        for (pattern in authoritative) {
             for (match in pattern.findAll(lower)) {
                 val value = match.groupValues.getOrNull(1)?.toIntOrNull() ?: continue
-                if (value == episode) return true
+                if (value in targets) return true
             }
+        }
+
+        // Bare standalone numbers bounded by separators.
+        val bare = Regex("""(^|[\s._\-\[(「])0*(\d{1,3})(?=$|[\s._\-)\]」])""")
+        for (match in bare.findAll(lower)) {
+            val value = match.groupValues.getOrNull(2)?.toIntOrNull() ?: continue
+            // "Season 2" — the number is a season, not an episode.
+            val before = lower.substring(0, match.range.first).trimEnd()
+            if (before.endsWith("season")) continue
+            // 4-digit years like (2025) are never episodes.
+            if (value in 1000..2999) continue
+            if (value in targets) return true
         }
         return false
     }
