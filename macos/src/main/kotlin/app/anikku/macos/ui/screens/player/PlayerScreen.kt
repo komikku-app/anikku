@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -153,6 +155,13 @@ data class PlayerScreen(
     val animeTitle: String? = null,
     val extensionManager: MacOSExtensionManager? = null,
     val downloadManager: MacOSDownloadManager? = null,
+    /**
+     * Episode metadata from the caller (Downloads tab / Local collection) used
+     * when the source fetch produces nothing usable — seeds a synthetic episode
+     * so local-file playback, resume, and history still work.
+     */
+    val episodeNumber: Double? = null,
+    val episodeName: String? = null,
 ) : AnikkuScreen() {
 
     override val key: ScreenKey = uniqueScreenKey
@@ -450,6 +459,27 @@ data class PlayerScreen(
         onError: ((String) -> Unit)? = null,
         onDiagnostic: ((ErrorDiagnostic) -> Unit)? = null,
     ): ResolveResult? {
+        // Priority 0: a local file path handed directly by the caller (Local
+        // collection, or a download played without a source). Served through
+        // the HTTP server — mpv cannot reliably load file:// URLs on every
+        // macOS configuration.
+        val localPath = episodeUrl?.takeIf { url ->
+            !url.startsWith("http://", ignoreCase = true) &&
+                !url.startsWith("https://", ignoreCase = true) &&
+                !url.startsWith("magnet:", ignoreCase = true)
+        }
+        val localFile = localPath?.let { runCatching { java.io.File(it) }.getOrNull() }?.takeIf { it.isFile }
+        if (localFile != null && httpServer != null && httpServer.isRunning) {
+            val streamUrl = httpServer.getStreamUrl(localFile)
+            if (streamUrl != null) {
+                return ResolveResult(
+                    url = streamUrl,
+                    headers = mapOf("User-Agent" to MPVLib.DEFAULT_USER_AGENT),
+                    qualityLabel = localFile.name,
+                )
+            }
+        }
+
         // Priority 1: Local download
         if (downloadManager != null && episodeNumber > 0) {
             val localFile = downloadManager.getLocalFile(animeId, episodeNumber)
@@ -585,6 +615,15 @@ data class PlayerScreen(
             }.getOrNull()
         }
 
+        // AniSkip intro/outro skip times. Resolved from Koin; null when
+        // unavailable (failure-safe) — skipping is best-effort.
+        val aniSkipClient = remember {
+            runCatching {
+                org.koin.core.context.GlobalContext.get()
+                    .get<app.anikku.macos.platform.player.AniSkipClient>()
+            }.getOrNull()
+        }
+
         // Initialize the player view model (Phase 6)
         val playerViewModel = remember { PlayerViewModel() }
 
@@ -594,6 +633,11 @@ data class PlayerScreen(
         val httpServer = remember {
             val videosDir = downloadManager?.let { dm ->
                 dm.getLocalFile(animeId, 1.0)?.parentFile
+            } ?: episodeUrl?.let { url ->
+                // Local collection: serve the episode's own folder so arbitrary
+                // local files can stream through the same HTTP pipeline.
+                runCatching { java.io.File(url).absoluteFile.parentFile }
+                    .getOrNull()?.takeIf { it.isDirectory }
             } ?: File(System.getProperty("user.home"), "Library/Application Support/Anikku/downloads/videos")
             MacOSHttpServer(
                 downloadsDir = videosDir,
@@ -649,6 +693,13 @@ data class PlayerScreen(
         var videoErrorDiagnostic by remember { mutableStateOf<ErrorDiagnostic?>(null) }
         var hasScrobbledThisEpisode by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+
+        // Intro/outro skip windows for the current episode (AniSkip), plus a
+        // per-episode guard so auto-skip only fires once.
+        var skipIntervals by remember {
+            mutableStateOf<List<app.anikku.macos.platform.player.SkipInterval>>(emptyList())
+        }
+        var skippedIntroThisEpisode by remember { mutableStateOf(false) }
 
         // PiP floating window state — closed when the player leaves the stack.
         val pipHandler = remember { MacOSPipHandler() }
@@ -825,6 +876,38 @@ data class PlayerScreen(
                 }
             }
 
+            // Caller-provided episode metadata (Downloads tab / Local collection):
+            // when the source fetch produced nothing usable (no source, or the
+            // episode URL no longer matches), seed a synthetic episode so
+            // local-file resolution, resume, and history still work.
+            val episodeNumberOverride = this@PlayerScreen.episodeNumber
+            if (episodeNumberOverride != null && (allEpisodes.isEmpty() || currentEpisodeIndex < 0)) {
+                val num = episodeNumberOverride
+                val name = this@PlayerScreen.episodeName ?: "Episode ${num.toInt()}"
+                val url = episodeUrl ?: ""
+                val synthetic = EpisodeModel(
+                    id = episodeId,
+                    animeId = animeId,
+                    name = name,
+                    episodeNumber = num,
+                    url = url,
+                    seen = false,
+                    bookmark = false,
+                    dateUpload = 0L,
+                    scanlator = null,
+                )
+                allEpisodes = mutableListOf(synthetic)
+                sourceEpisodes = listOf(
+                    SEpisode.create().apply {
+                        this.url = url
+                        this.name = name
+                        episode_number = num.toFloat()
+                    },
+                )
+                currentEpisodeIndex = 0
+                episodeNumberForSourceSwitch = num
+            }
+
             // Step 2: Determine starting episode number for local-file check
             val currentEpisodeNumber = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0
 
@@ -955,6 +1038,39 @@ data class PlayerScreen(
                         }
                     }
                 }
+
+                // Fetch intro/outro skip windows (AniSkip) for this episode.
+                // The API is keyed by MAL ID, resolved via the subtitle
+                // fetcher's AniList lookup. Best-effort: any failure just
+                // leaves skipIntervals empty (no button, no auto-skip).
+                val skipClient = aniSkipClient
+                val skipResolver = subtitleFetcher
+                if (skipClient != null && skipResolver != null) {
+                    val title = animeTitle?.takeIf { it.isNotBlank() }
+                    val episodeNumber = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0
+                    if (title != null && episodeNumber > 0) {
+                        val malId = skipResolver.resolveAniListMalId(title, episodeNumber)
+                        skipIntervals = if (malId != null) {
+                            skipClient.fetchSkipTimes(malId, episodeNumber.toInt())
+                        } else {
+                            emptyList()
+                        }
+                        skippedIntroThisEpisode = false
+                    }
+                }
+            }
+        }
+
+        // Auto-skip the intro when the setting is on: as soon as playback
+        // enters an OP window, seek past it once per episode. The manual skip
+        // button (always shown during OP/ED/recap) lives in the player UI.
+        LaunchedEffect(currentPosition, skipIntervals, playbackState) {
+            if (!settings.skipIntro || skippedIntroThisEpisode || skipIntervals.isEmpty()) return@LaunchedEffect
+            if (playbackState != PlaybackState.PLAYING) return@LaunchedEffect
+            val intro = skipIntervals.firstOrNull { it.isIntro } ?: return@LaunchedEffect
+            if (currentPosition >= intro.startTime && currentPosition < intro.endTime) {
+                skippedIntroThisEpisode = true
+                playerViewModel.seekTo(intro.endTime)
             }
         }
 
@@ -1397,6 +1513,7 @@ data class PlayerScreen(
             volume = volume,
             playbackSpeed = playbackSpeed,
             torrentStatus = torrentStatus,
+            skipIntervals = skipIntervals,
             brightness = brightness,
             contrast = contrast,
             saturation = saturation,
@@ -1542,6 +1659,7 @@ internal fun PlayerContent(
     volume: Int = 100,
     playbackSpeed: Double = 1.0,
     torrentStatus: String? = null,
+    skipIntervals: List<app.anikku.macos.platform.player.SkipInterval> = emptyList(),
     brightness: Float = 0f,
     contrast: Float = 1f,
     saturation: Float = 1f,
@@ -2301,6 +2419,46 @@ internal fun PlayerContent(
                 },
                 onNavigateEpisode = onNavigateEpisode,
             )
+        }
+
+        // === Skip intro/outro button (AniSkip) ===
+        // Shown while playback is inside an OP/ED/recap window; hidden during
+        // the last 8s of the window so it doesn't linger after the song ends.
+        val activeSkip = skipIntervals.firstOrNull { interval ->
+            currentPosition >= interval.startTime &&
+                currentPosition < interval.endTime &&
+                (interval.endTime - currentPosition) > 8.0
+        }
+        if (activeSkip != null && !showLoadingOverlay) {
+            val remaining = (activeSkip.endTime - currentPosition).toInt().coerceAtLeast(0)
+            val minutes = remaining / 60
+            val seconds = (remaining % 60).toString().padStart(2, '0')
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color.White.copy(alpha = 0.92f),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 170.dp)
+                    .clickable { onSeekTo(activeSkip.endTime) },
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                ) {
+                    Icon(
+                        Icons.Outlined.FastForward,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Skip ${activeSkip.label} ($minutes:$seconds)",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.Black,
+                    )
+                }
+            }
         }
 
         // === Keyboard shortcut hint ===

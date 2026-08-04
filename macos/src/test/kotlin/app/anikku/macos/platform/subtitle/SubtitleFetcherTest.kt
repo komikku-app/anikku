@@ -152,7 +152,7 @@ class SubtitleFetcherTest {
     // ---- Season-aware AniList selection ------------------------------------
 
     private fun media(id: Int, episodes: Int?): SubtitleFetcher.Media =
-        SubtitleFetcher.Media(id = id, episodes = episodes)
+        SubtitleFetcher.Media(id = id, malId = null, episodes = episodes)
 
     @Test
     fun `picks season whose episode range covers the requested episode`() {

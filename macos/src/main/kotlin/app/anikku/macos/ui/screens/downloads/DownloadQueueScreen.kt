@@ -120,13 +120,13 @@ class DownloadQueueScreen : AnikkuScreen() {
     }
 }
 
-private data class DownloadQueueData(
+internal data class DownloadQueueData(
     val downloads: List<DownloadRepository.DownloadEntry>,
     val manager: MacOSDownloadManager?,
 )
 
 @Composable
-private fun DownloadQueueContent(
+internal fun DownloadQueueContent(
     data: DownloadQueueData,
     onPauseResume: (Long) -> Unit,
     onCancel: (Long) -> Unit,
@@ -134,6 +134,7 @@ private fun DownloadQueueContent(
     onRemoveCompleted: (Long) -> Unit,
     onClearAll: () -> Unit,
     onClearCompleted: () -> Unit,
+    onPlay: (DownloadRepository.DownloadEntry) -> Unit = {},
 ) {
     val downloads = data.downloads
     val activeDownloads = downloads.count { it.isActive }
@@ -239,6 +240,7 @@ private fun DownloadQueueContent(
                     onCancel = { onCancel(item.id) },
                     onRetry = { onRetry(item.id) },
                     onRemoveCompleted = { onRemoveCompleted(item.id) },
+                    onPlay = { onPlay(item) },
                 )
             }
         }
@@ -252,6 +254,7 @@ private fun DownloadItemCard(
     onCancel: () -> Unit,
     onRetry: () -> Unit,
     onRemoveCompleted: () -> Unit,
+    onPlay: () -> Unit = {},
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -342,6 +345,16 @@ private fun DownloadItemCard(
                         }
                     }
                     DownloadRepository.DownloadStatus.COMPLETED -> {
+                        // Play the downloaded file (resolves via the player's
+                        // local-file path by animeId + episodeNumber).
+                        IconButton(onClick = onPlay, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = Icons.Outlined.PlayArrow,
+                                contentDescription = "Play",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                         // Remove this completed download (deletes the local file).
                         Spacer(Modifier.width(4.dp))
                         IconButton(onClick = onRemoveCompleted, modifier = Modifier.size(32.dp)) {

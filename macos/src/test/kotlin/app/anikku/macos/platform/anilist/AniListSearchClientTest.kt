@@ -138,4 +138,157 @@ class AniListSearchClientTest {
         val naruto = AniListAnime(id = 3, romajiTitle = "Naruto")
         assertNull(AniListSearchClient.pickBest("Death Note", listOf(naruto)))
     }
+
+    // ---- Airing schedule ----------------------------------------------------
+
+    private val airingFixture = """
+        {
+          "data": {
+            "Page": {
+              "airingSchedules": [
+                {
+                  "id": 1,
+                  "episode": 12,
+                  "airingAt": 1760000000,
+                  "media": {
+                    "id": 100,
+                    "episodes": 24,
+                    "seasonYear": 2026,
+                    "format": "TV",
+                    "title": { "romaji": "Frieren", "english": "Frieren: Beyond Journey's End" },
+                    "coverImage": { "medium": "https://x/med.jpg", "large": "https://x/large.jpg" }
+                  }
+                },
+                {
+                  "id": 2,
+                  "episode": 5,
+                  "airingAt": 1760003600,
+                  "media": {
+                    "id": 101,
+                    "episodes": null,
+                    "seasonYear": null,
+                    "format": "TV",
+                    "title": { "romaji": "Dandadan", "english": null },
+                    "coverImage": { "medium": null, "large": null }
+                  }
+                }
+              ]
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `parses airing schedule entries`() = runBlocking {
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody(airingFixture))
+
+        val episodes = client.airingThisWeek(nowEpochSeconds = 1_000_000_000L)
+
+        assertEquals(2, episodes.size)
+        val first = episodes[0]
+        assertEquals(12, first.episode)
+        assertEquals(1760000000L, first.airingAt)
+        assertEquals("Frieren", first.media.romajiTitle)
+        assertEquals(24, first.media.episodes)
+    }
+
+    @Test
+    fun `airing schedule sends now and end window variables`() = runBlocking {
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody(airingFixture))
+
+        client.airingThisWeek(nowEpochSeconds = 1_000_000_000L)
+
+        val body = mockServer.takeRequest().body.readUtf8()
+        assertTrue(body.contains("\"now\":1000000000"))
+        assertTrue(body.contains("\"end\":"))
+    }
+
+    // ---- Trending / seasonal ------------------------------------------------
+
+    private val mediaListFixture = """
+        {
+          "data": {
+            "Page": {
+              "media": [
+                { "id": 200, "title": { "romaji": "Solo Leveling", "english": null }, "coverImage": { "large": "https://x/l2.jpg" } },
+                { "id": 201, "title": { "romaji": "One Piece", "english": null }, "coverImage": { "large": null } }
+              ]
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `trending parses media list`() = runBlocking {
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody(mediaListFixture))
+
+        val results = client.trending(perPage = 2)
+
+        assertEquals(2, results.size)
+        assertEquals("Solo Leveling", results[0].romajiTitle)
+        assertEquals("https://x/l2.jpg", results[0].coverUrl)
+        assertTrue(mockServer.takeRequest().body.readUtf8().contains("TRENDING_DESC"))
+    }
+
+    @Test
+    fun `seasonal sends season and year variables`() = runBlocking {
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody(mediaListFixture))
+
+        client.seasonal(season = "SUMMER", year = 2026)
+
+        val body = mockServer.takeRequest().body.readUtf8()
+        assertTrue(body.contains("\"season\":\"SUMMER\""))
+        assertTrue(body.contains("\"year\":2026"))
+        assertTrue(body.contains("POPULARITY_DESC"))
+    }
+
+    // ---- Recommendations ----------------------------------------------------
+
+    private val mediaListUserFixture = """
+        {
+          "data": {
+            "Page": {
+              "mediaList": [
+                { "mediaId": 100 },
+                { "mediaId": 101 }
+              ]
+            }
+          }
+        }
+    """.trimIndent()
+
+    private val recommendationsFixture = """
+        {
+          "data": {
+            "Page": {
+              "recommendations": [
+                { "mediaRecommendation": { "id": 300, "title": { "romaji": "Mushoku Tensei", "english": null }, "coverImage": { "large": null } } }
+              ]
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `recommendations requires a username`() = runBlocking {
+        assertTrue(client.recommendationsFor(userName = null).isEmpty())
+        assertTrue(client.recommendationsFor(userName = "   ").isEmpty())
+        assertEquals(0, mockServer.requestCount)
+    }
+
+    @Test
+    fun `recommendations fetches user list then recommendations`() = runBlocking {
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody(mediaListUserFixture))
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody(recommendationsFixture))
+
+        val results = client.recommendationsFor(userName = "ernest")
+
+        assertEquals(1, results.size)
+        assertEquals("Mushoku Tensei", results[0].romajiTitle)
+
+        val first = mockServer.takeRequest().body.readUtf8()
+        assertTrue(first.contains("\"userName\":\"ernest\""))
+        val second = mockServer.takeRequest().body.readUtf8()
+        assertTrue(second.contains("mediaId_in"))
+    }
 }

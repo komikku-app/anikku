@@ -37,6 +37,7 @@ import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.platform.library.LocalAnimeSourceMatcher
 import app.anikku.macos.platform.library.LocalLibraryAutoLinkService
 import app.anikku.macos.platform.library.LocalNewEpisodeRepository
+import app.anikku.macos.platform.local.LocalLocalLibraryRepository
 import app.anikku.macos.platform.library.LibraryAutoLinkService
 import app.anikku.macos.platform.preference.BookmarkStore
 import app.anikku.macos.platform.preference.LocalBookmarkStore
@@ -275,7 +276,7 @@ fun main() = application {
             app.onShutdown()
             exitApplication()
         }
-        val onSettings = { TabSwitchHandler.switchTo(4) }
+        val onSettings = { TabSwitchHandler.switchTo(8) }
         val onOpenBackup = {
             val parentFrame = window as? Frame
             val fileChooser = java.awt.FileDialog(parentFrame, "Restore Backup", java.awt.FileDialog.LOAD)
@@ -352,8 +353,8 @@ fun main() = application {
 
         // MainWindow owns the sidebar/search callbacks because their state is
         // composable-local. These two callbacks are application-wide.
-        GlobalKeyboardShortcuts.onOpenSettings = { TabSwitchHandler.switchTo(4) }
-        GlobalKeyboardShortcuts.onNewSource = { TabSwitchHandler.switchTo(3) }
+        GlobalKeyboardShortcuts.onOpenSettings = { TabSwitchHandler.switchTo(8) }
+        GlobalKeyboardShortcuts.onNewSource = { TabSwitchHandler.switchTo(4) }
 
         // Phase 5.6: Wire extension manager to BrowseTab
         BrowseTab.setExtensionManager(app.extensionManager)
@@ -473,6 +474,7 @@ fun main() = application {
             LocalLibraryRepository provides libraryRepository,
             LocalHistoryRepository provides historyRepository,
             LocalDownloadManager provides downloadManager,
+            LocalLocalLibraryRepository provides app.localLibraryRepository,
             LocalExtensionManager provides app.extensionManager,
             LocalAnimeSourceMatcher provides app.animeSourceMatcher,
             LocalLibraryAutoLinkService provides libraryAutoLinkService,

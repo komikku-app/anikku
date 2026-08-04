@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
@@ -52,6 +55,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +74,10 @@ import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.platform.library.LocalNewEpisodeRepository
+import app.anikku.macos.platform.local.LocalAnimeGroup
+import app.anikku.macos.platform.local.LocalFolderScanner
+import app.anikku.macos.platform.local.LocalLocalLibraryRepository
+import app.anikku.macos.platform.local.LocalVideoGrouper
 import app.anikku.macos.platform.MacOSDockManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
@@ -80,12 +88,16 @@ import app.anikku.macos.ui.components.OverflowItem
 import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
+import app.anikku.macos.ui.screens.local.LocalAnimeScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.player.PlayerScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Library screen tab — Phase 5.
@@ -190,10 +202,19 @@ object LibraryTab : AnikkuScreen(), Tab {
                 .orEmpty()
         }
 
+        // Local video collection — folder-imported files grouped by anime.
+        val localLibraryRepo = LocalLocalLibraryRepository.current
+        val localRevision = localLibraryRepo?.revision?.collectAsState()?.value ?: 0L
+        val localGroups = remember(localRevision) {
+            localLibraryRepo?.getAll()?.let { LocalVideoGrouper.group(it) }.orEmpty()
+        }
+        val scope = rememberCoroutineScope()
+
         LibraryContent(
             libraryAnime = filteredAnime,
             continueWatching = continueWatching,
             newEpisodes = newEpisodes,
+            localGroups = localGroups,
             categories = categories,
             selectedCategoryId = selectedCategoryId,
             progressFilter = progressFilter,
@@ -219,6 +240,43 @@ object LibraryTab : AnikkuScreen(), Tab {
                     animeTitle = item.title,
                     extensionManager = extensionManager,
                 ))
+            },
+            onAddLocalFolder = {
+                val picker = runCatching {
+                    org.koin.core.context.GlobalContext.get()
+                        .get<app.anikku.macos.platform.storage.MacOSFilePicker>()
+                }.getOrNull()
+                if (picker == null) {
+                    toastHost.show("Folder picker unavailable", ToastDuration.SHORT, isError = true)
+                    return@LibraryContent
+                }
+                val folder = picker.openDirectory(title = "Add video folder")
+                if (folder != null) {
+                    toastHost.show("Scanning \"${folder.name}\"…", ToastDuration.SHORT)
+                    scope.launch(Dispatchers.IO) {
+                        val scanned = LocalFolderScanner.scan(folder)
+                        localLibraryRepo?.add(scanned)
+                        withContext(Dispatchers.Main) {
+                            toastHost.show(
+                                if (scanned.isNotEmpty()) {
+                                    "Added ${scanned.size} episode${if (scanned.size == 1) "" else "s"} from ${folder.name}"
+                                } else {
+                                    "No videos found in \"${folder.name}\""
+                                },
+                                ToastDuration.LONG,
+                            )
+                        }
+                    }
+                }
+            },
+            onLocalGroupClick = { group ->
+                navigator.push(
+                    LocalAnimeScreen(
+                        displayTitle = group.displayTitle,
+                        group = group,
+                        onRemoveAnime = { localLibraryRepo?.removeAnime(group.normalizedKey.hashCode().toLong()) },
+                    ),
+                )
             },
             onRemoveNewEpisode = { animeId ->
                 newEpisodeRepo?.removeForAnime(animeId)
@@ -315,6 +373,7 @@ internal fun LibraryContent(
     libraryAnime: List<AnimeModel>,
     continueWatching: List<ContinueWatchingItem> = emptyList(),
     newEpisodes: List<NewEpisodeFeedItem> = emptyList(),
+    localGroups: List<LocalAnimeGroup> = emptyList(),
     categories: List<CategoryEntry> = emptyList(),
     selectedCategoryId: Long? = null,
     progressFilter: LibraryProgressFilter = LibraryProgressFilter.All,
@@ -332,6 +391,8 @@ internal fun LibraryContent(
     onProgressFilterChange: (LibraryProgressFilter) -> Unit = {},
     onNewEpisodeClick: (NewEpisodeFeedItem) -> Unit = {},
     onRemoveNewEpisode: (Long) -> Unit = {},
+    onAddLocalFolder: () -> Unit = {},
+    onLocalGroupClick: (LocalAnimeGroup) -> Unit = {},
     onAnimeClick: (AnimeModel) -> Unit,
     onRemoveFromLibrary: (Long) -> Unit = {},
     onRemoveFromContinueWatching: (Long) -> Unit = {},
@@ -344,6 +405,14 @@ internal fun LibraryContent(
                     Text("Library")
                 },
                 actions = {
+                    // Import a folder of video files into the local collection.
+                    IconButton(onClick = onAddLocalFolder) {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = "Add local video folder",
+                        )
+                    }
+
                     Box {
                         IconButton(onClick = onToggleSortMenu) {
                             Icon(
@@ -522,6 +591,25 @@ internal fun LibraryContent(
                                 ),
                             ),
                         )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Local videos row — folder-imported files, grouped by anime.
+            if (localGroups.isNotEmpty()) {
+                Text(
+                    text = "Local Videos",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(localGroups, key = { it.normalizedKey }) { group ->
+                        LocalAnimeCard(group = group, onClick = { onLocalGroupClick(group) })
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -829,5 +917,45 @@ private fun ContinueWatchingCard(
                 )
             }
         }
+    }
+}
+
+/**
+ * Card for a folder-imported anime in the Library's "Local Videos" row.
+ * Cover falls back to the title initials (local files have no art).
+ */
+@Composable
+private fun LocalAnimeCard(group: LocalAnimeGroup, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(150.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+    ) {
+        AnimeCoverImage(
+            thumbnailUrl = null,
+            contentDescription = group.displayTitle,
+            title = group.displayTitle,
+            modifier = Modifier
+                .width(150.dp)
+                .aspectRatio(3f / 4f)
+                .clip(RoundedCornerShape(8.dp)),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = group.displayTitle,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = buildString {
+                append("${group.episodeCount} episodes")
+                if (group.seasonCount > 1) append(" · ${group.seasonCount} seasons")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

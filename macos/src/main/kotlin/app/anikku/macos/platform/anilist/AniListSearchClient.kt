@@ -7,13 +7,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -39,6 +40,16 @@ data class AniListAnime(
     /** Best display title: English when present, otherwise romaji. */
     val displayName: String get() = englishTitle?.takeIf { it.isNotBlank() } ?: romajiTitle
 }
+
+/**
+ * One scheduled airing of an anime episode (AniList airingSchedules entry).
+ */
+data class AiringEpisode(
+    val media: AniListAnime,
+    val episode: Int,
+    /** Epoch seconds when the episode airs. */
+    val airingAt: Long,
+)
 
 /**
  * Composition local for UI access, mirroring `LocalTrackerManager` /
@@ -69,15 +80,102 @@ class AniListSearchClient(
     suspend fun searchAnime(query: String, perPage: Int = 8): List<AniListAnime> {
         val clean = query.trim().take(80)
         if (clean.isEmpty()) return emptyList()
+        val data = graphQL(
+            SEARCH_QUERY,
+            buildJsonObject {
+                put("search", JsonPrimitive(clean))
+                put("perPage", JsonPrimitive(perPage))
+            },
+        ) ?: return emptyList()
+        val media = data["Page"]?.jsonObject?.get("media") as? JsonArray ?: return emptyList()
+        return media.mapNotNull { el -> parseMedia(el.jsonObject) }
+    }
 
-        return withContext(Dispatchers.IO) {
+    /**
+     * Anime airing within the next ~8 days, sorted by air time ascending.
+     * Powers the Discover tab's schedule section.
+     */
+    suspend fun airingThisWeek(
+        nowEpochSeconds: Long = System.currentTimeMillis() / 1000,
+        perPage: Int = 75,
+    ): List<AiringEpisode> {
+        val data = graphQL(
+            AIRING_QUERY,
+            buildJsonObject {
+                put("now", JsonPrimitive(nowEpochSeconds))
+                put("end", JsonPrimitive(nowEpochSeconds + 8 * 24 * 3600))
+                put("perPage", JsonPrimitive(perPage))
+            },
+        ) ?: return emptyList()
+        val schedules = data["Page"]?.jsonObject?.get("airingSchedules") as? JsonArray ?: return emptyList()
+        return schedules.mapNotNull { el ->
+            val obj = el.jsonObject
+            val media = parseMedia(obj["media"]?.jsonObject ?: return@mapNotNull null) ?: return@mapNotNull null
+            val episode = obj["episode"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
+            val airingAt = obj["airingAt"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            AiringEpisode(media = media, episode = episode, airingAt = airingAt)
+        }
+    }
+
+    /** Trending-now anime (by AniList's TRENDING_DESC sort). */
+    suspend fun trending(perPage: Int = 24): List<AniListAnime> {
+        val data = graphQL(MEDIA_LIST_QUERY("TRENDING_DESC"), buildJsonObject {
+            put("perPage", JsonPrimitive(perPage))
+        }) ?: return emptyList()
+        return parseMediaPage(data)
+    }
+
+    /**
+     * The current seasonal chart (most popular first). [season] is one of
+     * WINTER/SPRING/SUMMER/FALL, [year] the 4-digit season year.
+     */
+    suspend fun seasonal(season: String, year: Int, perPage: Int = 24): List<AniListAnime> {
+        val data = graphQL(MEDIA_LIST_QUERY("POPULARITY_DESC"), buildJsonObject {
+            put("season", JsonPrimitive(season))
+            put("year", JsonPrimitive(year))
+            put("perPage", JsonPrimitive(perPage))
+        }) ?: return emptyList()
+        return parseMediaPage(data)
+    }
+
+    /**
+     * "Because you watched…" — takes the user's highest-scored anime (by
+     * [userName]) and returns AniList's recommendations for those titles.
+     * Empty when no username is provided or the user has no scored entries.
+     */
+    suspend fun recommendationsFor(userName: String?, perPage: Int = 20): List<AniListAnime> {
+        if (userName.isNullOrBlank()) return emptyList()
+        val listData = graphQL(MEDIA_LIST_USER_QUERY, buildJsonObject {
+            put("userName", JsonPrimitive(userName))
+            put("perPage", JsonPrimitive(15))
+        }) ?: return emptyList()
+        val ids = (listData["Page"]?.jsonObject?.get("mediaList") as? JsonArray)
+            ?.mapNotNull { it.jsonObject["mediaId"]?.jsonPrimitive?.intOrNull }
+            ?: return emptyList()
+        if (ids.isEmpty()) return emptyList()
+
+        val recData = graphQL(RECOMMENDATIONS_QUERY, buildJsonObject {
+            put("ids", JsonArray(ids.map { JsonPrimitive(it) }))
+            put("perPage", JsonPrimitive(perPage))
+        }) ?: return emptyList()
+        val recs = recData["Page"]?.jsonObject?.get("recommendations") as? JsonArray ?: return emptyList()
+        return recs.mapNotNull { el ->
+            parseMedia(el.jsonObject["mediaRecommendation"]?.jsonObject ?: return@mapNotNull null)
+        }
+    }
+
+    private fun parseMediaPage(data: JsonObject): List<AniListAnime> {
+        val media = data["Page"]?.jsonObject?.get("media") as? JsonArray ?: return emptyList()
+        return media.mapNotNull { el -> parseMedia(el.jsonObject) }
+    }
+
+    /** POST a GraphQL query and return the `data` object, or null on any failure. */
+    private suspend fun graphQL(query: String, variables: JsonObject): JsonObject? =
+        withContext(Dispatchers.IO) {
             try {
                 val payload = buildJsonObject {
-                    put("query", JsonPrimitive(SEARCH_QUERY))
-                    put("variables", buildJsonObject {
-                        put("search", JsonPrimitive(clean))
-                        put("perPage", JsonPrimitive(perPage))
-                    })
+                    put("query", JsonPrimitive(query))
+                    put("variables", variables)
                 }
                 val request = Request.Builder()
                     .url(endpoint)
@@ -86,18 +184,14 @@ class AniListSearchClient(
                     .build()
 
                 httpClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@use emptyList()
-                    val body = response.body?.string().orEmpty()
-                    val root = json.parseToJsonElement(body).jsonObject
-                    val media = root["data"]?.jsonObject?.get("Page")?.jsonObject?.get("media") as? JsonArray
-                        ?: return@use emptyList()
-                    media.mapNotNull { el -> parseMedia(el.jsonObject) }
+                    if (!response.isSuccessful) return@use null
+                    json.parseToJsonElement(response.body?.string().orEmpty())
+                        .jsonObject["data"]?.jsonObject
                 }
             } catch (_: Exception) {
-                emptyList()
+                null
             }
         }
-    }
 
     private fun parseMedia(obj: JsonObject): AniListAnime? {
         val id = obj["id"]?.jsonPrimitive?.intOrNull ?: return null
@@ -127,6 +221,69 @@ class AniListSearchClient(
                   seasonYear
                   format
                   description
+                  title { romaji english native }
+                  coverImage { medium large }
+                }
+              }
+            }
+        """.trimIndent()
+
+        private val AIRING_QUERY = """
+            query (${'$'}now: Int, ${'$'}end: Int, ${'$'}perPage: Int) {
+              Page(page: 1, perPage: ${'$'}perPage) {
+                airingSchedules(airingAt_greater: ${'$'}now, airingAt_lesser: ${'$'}end, sort: TIME) {
+                  id
+                  episode
+                  airingAt
+                  media {
+                    id
+                    episodes
+                    seasonYear
+                    format
+                    title { romaji english native }
+                    coverImage { medium large }
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+
+        private val MEDIA_LIST_USER_QUERY = """
+            query (${'$'}userName: String, ${'$'}perPage: Int) {
+              Page(page: 1, perPage: ${'$'}perPage) {
+                mediaList(userName: ${'$'}userName, type: ANIME, sort: SCORE_DESC) {
+                  mediaId
+                }
+              }
+            }
+        """.trimIndent()
+
+        private val RECOMMENDATIONS_QUERY = """
+            query (${'$'}ids: [Int], ${'$'}perPage: Int) {
+              Page(page: 1, perPage: ${'$'}perPage) {
+                recommendations(mediaId_in: ${'$'}ids, sort: RATING_DESC) {
+                  mediaRecommendation {
+                    id
+                    episodes
+                    seasonYear
+                    format
+                    title { romaji english native }
+                    coverImage { medium large }
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+
+        /** media list query for trending / seasonal charts. */
+        private fun MEDIA_LIST_QUERY(sort: String): String = """
+            query (${'$'}season: MediaSeason, ${'$'}year: Int, ${'$'}perPage: Int) {
+              Page(page: 1, perPage: ${'$'}perPage) {
+                media(season: ${'$'}season, seasonYear: ${'$'}year, sort: $sort, type: ANIME) {
+                  id
+                  episodes
+                  seasonYear
+                  format
                   title { romaji english native }
                   coverImage { medium large }
                 }

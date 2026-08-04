@@ -22,6 +22,8 @@ import app.anikku.macos.ui.screens.HistoryScreen
 import app.anikku.macos.ui.screens.LibraryScreen
 import app.anikku.macos.ui.screens.MoreScreen
 import app.anikku.macos.ui.screens.UpdatesScreen
+import app.anikku.macos.ui.screens.discover.DiscoverTab
+import app.anikku.macos.ui.screens.downloads.DownloadsTab
 import app.anikku.macos.ui.screens.stats.StatsTab
 import app.anikku.macos.ui.screens.torrent.TorrentTab
 import app.anikku.macos.platform.extension.LocalExtensionManager
@@ -43,7 +45,7 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
  *
  * Ported from the Android HomeScreen.kt and MainActivity.kt.
  */
-/** Ordered tabs matching the View menu shortcuts (⌘1-5, ⌘6 for More). */
+/** Ordered tabs matching the View menu shortcuts (⌘1-9). */
 internal val orderedTabs: List<Tab> = listOf(
     LibraryScreen,
     UpdatesScreen,
@@ -51,6 +53,8 @@ internal val orderedTabs: List<Tab> = listOf(
     StatsTab,
     BrowseScreen,
     TorrentTab,
+    DownloadsTab,
+    DiscoverTab,
     MoreScreen,
 )
 
@@ -98,7 +102,7 @@ fun MainWindow() {
                 orderedTabs.getOrNull(index)?.let { tab ->
                     tabNavigator.current = tab
                     currentTabIndex = index
-                    val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "More")
+                    val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "Downloads", "Discover", "More")
                     UIActionLogger.logNavigation("MenuShortcut", tabNames.getOrElse(index) { "?" }, "tab=$index")
                 }
             }
@@ -118,7 +122,7 @@ fun MainWindow() {
                         currentTabIndex = currentTabIndex,
                         onSelectTab = { index ->
                         orderedTabs.getOrNull(index)?.let { tab ->
-                            val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "More")
+                            val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "Downloads", "Discover", "More")
                             UIActionLogger.logNavigation("NavigationRail", tabNames.getOrElse(index) { "?" }, "tab=$index")
                             tabNavigator.current = tab
                             currentTabIndex = index

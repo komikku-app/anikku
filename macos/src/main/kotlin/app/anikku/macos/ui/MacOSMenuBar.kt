@@ -226,8 +226,23 @@ fun create(
             add(MenuItem("History", MenuShortcut(KeyEvent.VK_3, false)).also {
                 it.addActionListener { TabSwitchHandler.switchTo(2) }
             })
-            add(MenuItem("Browse", MenuShortcut(KeyEvent.VK_4, false)).also {
+            add(MenuItem("Stats", MenuShortcut(KeyEvent.VK_4, false)).also {
                 it.addActionListener { TabSwitchHandler.switchTo(3) }
+            })
+            add(MenuItem("Browse", MenuShortcut(KeyEvent.VK_5, false)).also {
+                it.addActionListener { TabSwitchHandler.switchTo(4) }
+            })
+            add(MenuItem("Torrents", MenuShortcut(KeyEvent.VK_6, false)).also {
+                it.addActionListener { TabSwitchHandler.switchTo(5) }
+            })
+            add(MenuItem("Downloads", MenuShortcut(KeyEvent.VK_7, false)).also {
+                it.addActionListener { TabSwitchHandler.switchTo(6) }
+            })
+            add(MenuItem("Discover", MenuShortcut(KeyEvent.VK_8, false)).also {
+                it.addActionListener { TabSwitchHandler.switchTo(7) }
+            })
+            add(MenuItem("More", MenuShortcut(KeyEvent.VK_9, false)).also {
+                it.addActionListener { TabSwitchHandler.switchTo(8) }
             })
             addSeparator()
             add(MenuItem("Toggle Sidebar", MenuShortcut(KeyEvent.VK_S, false)).also {

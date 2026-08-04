@@ -5,6 +5,7 @@ import app.anikku.macos.platform.BackgroundTaskScheduler
 import app.anikku.macos.platform.MacOSBackgroundJobs
 import app.anikku.macos.platform.MacOSDockManager
 import app.anikku.macos.platform.auth.TrackerOAuthManager
+import app.anikku.macos.platform.auth.TrackerTokenStore
 import app.anikku.macos.platform.database.MacOSDatabaseDriver
 import app.anikku.macos.platform.discord.DiscordRPC
 import app.anikku.macos.platform.extension.MacOSExtensionManager
@@ -18,8 +19,10 @@ import app.anikku.macos.platform.network.MacOSNetworkHelper
 import app.anikku.macos.platform.network.UserAgentInterceptor
 import okhttp3.brotli.BrotliInterceptor
 import app.anikku.macos.platform.notification.MacOSNotificationManager
+import app.anikku.macos.platform.player.AniSkipClient
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.platform.security.MacOSBiometricAuth
+import app.anikku.macos.platform.security.MacOSKeychain
 import app.anikku.macos.platform.storage.MacOSFilePicker
 import app.anikku.macos.platform.storage.MacOSStorageProvider
 import app.anikku.macos.platform.subtitle.SubtitleCredentialStore
@@ -64,6 +67,9 @@ fun platformModule(app: AnikkuApplication) = module {
     // Phase 3.5: Subtitle fetching (Jimaku + OpenSubtitles)
     single<SubtitleCredentialStore> { app.subtitleCredentialStore }
     single<SubtitleFetcher> { app.subtitleFetcher }
+
+    // Phase 3.5: Intro/outro skip times (AniSkip — free, no key)
+    single<AniSkipClient> { AniSkipClient(app.networkHelper.client) }
 
     // Phase 3: Extension system
     single<MacOSExtensionManager> { app.extensionManager }
@@ -126,6 +132,11 @@ fun platformModule(app: AnikkuApplication) = module {
 
     // Phase 7.1: Tracker Sync
     single<TrackerOAuthManager> { TrackerOAuthManager(app.networkHelper.client) }
+    // Token store (Keychain-backed) — the Discover tab reads the AniList
+    // username for "Because you watched" recommendations.
+    single<TrackerTokenStore> {
+        TrackerTokenStore(get<MacOSPreferenceStore>(), MacOSKeychain(service = "anikku", account = "anikku-app"))
+    }
 
     // Phase 7.2: Google Drive Sync
     single<GoogleDriveRestClient> { GoogleDriveRestClient(app.networkHelper.client) }

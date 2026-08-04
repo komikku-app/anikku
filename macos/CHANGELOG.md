@@ -6,6 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.0] — 2026-08-02
+
+### New: Skip intro/outro (AniSkip)
+
+- The player now fetches real intro/outro/recap skip windows from the free
+  AniSkip API (keyed by the MyAnimeList ID, resolved automatically from the
+  episode via AniList — no login or API key needed).
+- A **Skip Intro / Skip Outro / Skip Recap** button appears while playback is
+  inside a skip window (with a live countdown) and seeks past it on click.
+- The existing **"Skip intro"** setting now means auto-skip: with it on, intros
+  are skipped automatically once per episode (outros never auto-skip).
+- Works identically for stream, torrent, download, and local playback.
+
+### New: Downloads tab
+
+- In-app downloads now have their own sidebar tab (Library, Updates, History,
+  Stats, Browse, Torrents, **Downloads**, Discover, More — ⌘7) instead of being
+  buried under Settings > Downloads.
+- Completed downloads get a **Play** button; pause/resume/retry/clear-all work
+  exactly like before (the Settings screen still shows the same queue).
+- Playback resolves the downloaded file locally (no re-fetch), falling back to
+  the source stream if the file was deleted.
+
+### New: Local video collection
+
+- **Add Folder…** in the Library toolbar imports any folder of video files.
+  Filenames are parsed with the same release-name parser as torrents
+  ("Show - 01 (1080p).mkv", "Show S01E05.mkv", batch ranges) and grouped into
+  anime with all seasons/episodes.
+- A **Local Videos** row appears in the Library; opening a show lists every
+  episode by file, with sizes, and plays it offline through the local HTTP
+  server — with full resume, history, and tracker progress sync.
+- Remove an anime from the collection with the trash action on its screen.
+
+### New: Airing schedule + Discover feed
+
+- **Discover** tab (⌘8): an **Airing This Week** schedule from AniList's public
+  API — every show airing in the next week grouped by day, with live
+  "in 3h 24m" countdowns for today's episodes.
+- **Trending Now** and **Current Season** charts, plus **Because You Watched…**
+  recommendations when you're logged into AniList.
+- Tapping any entry opens the anime detail screen, which auto-finds it in your
+  installed sources so you can play it immediately.
+
+### Tests
+- 29 new tests (AniSkip client, local repo/scanner/grouper, Discover season
+  math, AniList schedule/trending/seasonal/recommendations). Full suite: 724 green.
+
 ## [1.3.3] — 2026-08-02
 
 ### Fix: torrent episodes wouldn't play ("failed to fetch episodes: lateinit property title has not been initialized")

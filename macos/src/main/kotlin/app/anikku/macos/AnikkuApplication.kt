@@ -7,6 +7,7 @@ import app.anikku.macos.platform.BackgroundTaskScheduler
 import app.anikku.macos.platform.MacOSBackgroundJobs
 import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.data.LibraryRepository
+import app.anikku.macos.platform.local.LocalLibraryRepository
 import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
@@ -87,6 +88,7 @@ class AnikkuApplication {
     val animeSourceMatcher: AnimeSourceMatcher
     val libraryAutoLinkService: LibraryAutoLinkService
     val newEpisodeRepository: NewEpisodeRepository
+    val localLibraryRepository: LocalLibraryRepository
 
     // Phase 3: Networking
     val networkHelper: MacOSNetworkHelper
@@ -198,6 +200,9 @@ class AnikkuApplication {
         // 8b. Initialize library and history repos
         libraryRepository = LibraryRepository(storageProvider.dataDirectory)
         historyRepository = HistoryRepository(storageProvider.dataDirectory)
+
+        // 8b2. Local video collection (folder-imported files)
+        localLibraryRepository = LocalLibraryRepository(storageProvider.dataDirectory)
 
         // 8c. Initialize download repository (Phase 5.10)
         downloadRepository = DownloadRepository(storageProvider.dataDirectory)

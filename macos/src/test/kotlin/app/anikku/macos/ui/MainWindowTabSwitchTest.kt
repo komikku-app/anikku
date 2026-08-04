@@ -15,8 +15,8 @@ import org.junit.Test
  * [NavigationRailSidebar].
  *
  * Verifies that:
- * - The 5 primary tabs are correctly ordered by title
- * - NavigationRailSidebar renders all 5 tab labels
+ * - The 9 primary tabs are correctly ordered by title
+ * - NavigationRailSidebar renders all 9 tab labels
  * - NavigationRailSidebar renders without crashing at boundary index values
  */
 class MainWindowTabSwitchTest {
@@ -24,25 +24,25 @@ class MainWindowTabSwitchTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val expectedTabTitles = listOf(
+        "Library", "Updates", "History", "Stats", "Browse", "Torrents", "Downloads", "Discover", "More",
+    )
+
     // =========================================================================
     // orderedTabs — Structural tests (resolved via Compose for @Composable getter)
     // =========================================================================
 
     @Test
-    fun `orderedTabs has 7 tabs`() {
-        assertEquals(7, orderedTabs.size)
+    fun `orderedTabs has 9 tabs`() {
+        assertEquals(9, orderedTabs.size)
     }
 
     @Test
     fun `orderedTabs are in correct order`() {
         composeTestRule.setContent {
-            assertEquals("Library", orderedTabs[0].options.title)
-            assertEquals("Updates", orderedTabs[1].options.title)
-            assertEquals("History", orderedTabs[2].options.title)
-            assertEquals("Stats", orderedTabs[3].options.title)
-            assertEquals("Browse", orderedTabs[4].options.title)
-            assertEquals("Torrents", orderedTabs[5].options.title)
-            assertEquals("More", orderedTabs[6].options.title)
+            expectedTabTitles.forEachIndexed { index, title ->
+                assertEquals(title, orderedTabs[index].options.title)
+            }
         }
     }
 
@@ -60,38 +60,30 @@ class MainWindowTabSwitchTest {
     // =========================================================================
 
     @Test
-    fun `renders all 7 tab labels with index 0`() {
+    fun `renders all 9 tab labels with index 0`() {
         composeTestRule.setContent {
             AnikkuTheme {
                 NavigationRailSidebar(currentTabIndex = 0, onSelectTab = {})
             }
         }
 
-        // All 7 labels should be visible
-        composeTestRule.onNodeWithText("Library").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Updates").assertIsDisplayed()
-        composeTestRule.onNodeWithText("History").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Stats").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Browse").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Torrents").assertIsDisplayed()
-        composeTestRule.onNodeWithText("More").assertIsDisplayed()
+        // All 9 labels should be visible
+        expectedTabTitles.forEach { title ->
+            composeTestRule.onNodeWithText(title).assertIsDisplayed()
+        }
     }
 
     @Test
-    fun `renders all 7 tab labels with index 6`() {
+    fun `renders all 9 tab labels with index 8`() {
         composeTestRule.setContent {
             AnikkuTheme {
-                NavigationRailSidebar(currentTabIndex = 6, onSelectTab = {})
+                NavigationRailSidebar(currentTabIndex = 8, onSelectTab = {})
             }
         }
 
-        composeTestRule.onNodeWithText("Library").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Updates").assertIsDisplayed()
-        composeTestRule.onNodeWithText("History").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Stats").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Browse").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Torrents").assertIsDisplayed()
-        composeTestRule.onNodeWithText("More").assertIsDisplayed()
+        expectedTabTitles.forEach { title ->
+            composeTestRule.onNodeWithText(title).assertIsDisplayed()
+        }
     }
 
     @Test
@@ -112,12 +104,12 @@ class MainWindowTabSwitchTest {
     fun `renders with different currentTabIndex without crash`() {
         composeTestRule.setContent {
             AnikkuTheme {
-                NavigationRailSidebar(currentTabIndex = 3, onSelectTab = {})
+                NavigationRailSidebar(currentTabIndex = 7, onSelectTab = {})
             }
         }
 
-        composeTestRule.onNodeWithText("History").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Browse").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Discover").assertIsDisplayed()
+        composeTestRule.onNodeWithText("More").assertIsDisplayed()
     }
 
     @Test

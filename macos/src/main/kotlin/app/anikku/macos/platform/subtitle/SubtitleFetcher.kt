@@ -204,8 +204,8 @@ class SubtitleFetcher(
 
     // ---- AniList title resolution ----------------------------------------
 
-    /** A single AniList search result (id + episode count). */
-    data class Media(val id: Int?, val episodes: Int?)
+    /** A single AniList search result (id + MAL id + episode count). */
+    data class Media(val id: Int?, val malId: Int?, val episodes: Int?)
 
     /**
      * Resolve a free-text anime title to an AniList media ID.
@@ -218,6 +218,14 @@ class SubtitleFetcher(
      */
     fun resolveAniListId(title: String, episodeNumber: Double = 0.0): Int? =
         resolveAniListSeason(title, episodeNumber)?.id
+
+    /**
+     * Resolve a free-text anime title to its MyAnimeList ID (via the matched
+     * AniList media's `idMal`). Used by the AniSkip client, whose skip-times
+     * API is keyed by MAL ID. Null when unresolved.
+     */
+    fun resolveAniListMalId(title: String, episodeNumber: Double = 0.0): Int? =
+        resolveAniListSeason(title, episodeNumber)?.malId
 
     /**
      * Like [resolveAniListId] but also returns the total episode count of the
@@ -235,6 +243,7 @@ class SubtitleFetcher(
               Page(page: 1, perPage: 5) {
                 media(search: ${'$'}search, type: ANIME) {
                   id
+                  idMal
                   episodes
                   title { romaji english native }
                 }
@@ -267,6 +276,7 @@ class SubtitleFetcher(
                 val obj = el.jsonObject
                 Media(
                     id = obj["id"]?.jsonPrimitive?.intOrNull,
+                    malId = obj["idMal"]?.jsonPrimitive?.intOrNull,
                     episodes = obj["episodes"]?.jsonPrimitive?.intOrNull,
                 )
             }
@@ -280,17 +290,19 @@ class SubtitleFetcher(
             val offset = candidates.take(matchedIndex)
                 .filter { (it.episodes ?: 0) >= 5 }
                 .sumOf { it.episodes ?: 0 }
+            val matched = candidates.getOrNull(matchedIndex)
 
             logger.info {
                 "SUB: AniList resolved '$title' (ep=${episodeNumber.toInt()}) -> id=$matchedId offset=$offset"
             }
-            return AniListSeason(id = matchedId, absoluteOffset = offset)
+            return AniListSeason(id = matchedId, malId = matched?.malId, absoluteOffset = offset)
         }
     }
 
-    /** Resolved AniList season: media ID plus prior-seasons episode offset. */
+    /** Resolved AniList season: media ID, MAL ID, plus prior-seasons episode offset. */
     internal data class AniListSeason(
         val id: Int,
+        val malId: Int?,
         val absoluteOffset: Int,
     )
 
@@ -315,17 +327,13 @@ class SubtitleFetcher(
         if (requested <= 0) return candidates.firstOrNull()?.id
 
         // Pass 1: top-ranked match unless it clearly can't cover the episode.
-        candidates.firstOrNull { (_, eps) ->
-            eps == null || eps >= requested
-        }?.id?.let { return it }
+        candidates.firstOrNull { it.episodes == null || it.episodes >= requested }?.id?.let { return it }
 
         // Pass 2: any later candidate whose completed range covers the episode.
-        candidates.firstOrNull { (_, eps) ->
-            eps != null && eps >= requested
-        }?.id?.let { return it }
+        candidates.firstOrNull { it.episodes != null && it.episodes >= requested }?.id?.let { return it }
 
         // Fallback: first with a known range, then top result.
-        return candidates.firstOrNull { (_, eps) -> eps != null }?.id
+        return candidates.firstOrNull { it.episodes != null }?.id
             ?: candidates.firstOrNull()?.id
     }
 
