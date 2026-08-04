@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.2] — 2026-08-04
+
+### Fix: Browse/Extensions crash ("Companion") from an incompatible extension
+
+- **Root cause**: the prebuilt Miruro extension was compiled against a Kotlin
+  build of org.json and accesses `JSONObject.NULL` as
+  `JSONObject$Companion.getNULL()`. The app's bundled org.json (stock JSON-java)
+  has no such companion, so the extension threw `NoSuchFieldError: Companion`
+  while the Browse tab was health-checking installed sources — an uncaught
+  Error that crashed the app.
+- **Fix**: org.json is now vendored into the app (public-domain JSON-java
+  20231013) with a small Kotlin-companion shim (`JSONObject$Companion.getNULL()`
+  returning the real `NULL` sentinel), so Miruro (and any future extension using
+  the Kotlin org.json API) works. Verified against the packaged runtime's module
+  set: `JSONObject.Companion.getNULL()` resolves and returns `JSONObject.NULL`.
+- **Hardening**: the Browse-tab source health check now catches `Throwable`, so
+  an incompatible or broken extension shows "Incompatible/Error" instead of
+  killing the app.
+
+---
+
 ## [1.3.1] — 2026-08-04
 
 ### Fix: Torrents tab crash ("java/net/http/HttpClient")

@@ -138,16 +138,20 @@ object SourceHealthChecker {
             val result = HealthResult(Health.FAILING, "Timeout", "Request timed out after ${TIMEOUT_MS}ms")
             setResult(sourceId, result)
             result
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Extension code runs in a separate classloader and can throw Errors
+            // (NoClassDefFoundError, NoSuchFieldError, …) when the extension was
+            // compiled against libraries newer/different than the app bundles.
+            // Never let that crash the app — mark the source unhealthy instead.
             val msg = e.message ?: ""
             val category = when {
-                msg.contains("Unable to resolve", ignoreCase = true) ||
-                    e is java.net.UnknownHostException -> "DNS"
-                e is java.net.SocketTimeoutException -> "Timeout"
+                e is java.net.UnknownHostException -> "DNS"
                 e is javax.net.ssl.SSLException -> "SSL"
+                msg.contains("NoClassDefFoundError") ||
+                    msg.contains("NoSuchFieldError") ||
+                    msg.contains("NoSuchMethodError") -> "Incompatible"
                 msg.contains("403") || msg.contains("forbidden", ignoreCase = true) -> "403"
                 msg.contains("404") || msg.contains("not found", ignoreCase = true) -> "404"
-                msg.contains("5") && (msg.contains("server") || msg.contains("gateway")) -> "5xx"
                 msg.contains("cloudflare", ignoreCase = true) ||
                     msg.contains("cf-", ignoreCase = true) -> "Cloudflare"
                 else -> "Error"

@@ -204,8 +204,9 @@ dependencies {
     implementation(libs.jna.core)
     implementation(libs.jna.platform)
 
-    // JSON processing
-    implementation(libs.org.json)
+    // JSON processing — org.json is vendored at src/main/java/org/json (public
+    // domain) with a Kotlin-companion shim (JSONObject$Companion.getNULL()) so
+    // prebuilt keiyoushi extensions compiled against a Kotlin org.json work.
 
     // Jackson — required by many keiyoushi extensions for JSON parsing
     implementation("com.fasterxml.jackson.core:jackson-core:2.17.2")

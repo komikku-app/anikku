@@ -23,7 +23,6 @@ jna = "5.14.0"
 junit = "5.10.5"
 mockwebserver = "5.1.0"
 okhttp-tls = "5.1.0"
-orgjson = "20231013"
 
 [libraries]
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -60,9 +59,6 @@ nanohttpd = { module = "org.nanohttpd:nanohttpd", version = "2.3.1" }
 # JNA - Java Native Access (macOS native API calls)
 jna-core = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
-
-# JSON processing
-org-json = { module = "org.json:json", version.ref = "orgjson" }
 
 # OkHttp MockWebServer for testing
 mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "mockwebserver" }
