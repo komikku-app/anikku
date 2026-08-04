@@ -60,6 +60,20 @@ class HistoryRepository(private val dataDir: File) {
         saveToFile()
     }
 
+    /** Remove one episode's history entry (same dedupe key as [add]). */
+    @Synchronized
+    fun removeForEpisode(animeId: Long, episodeId: Long) {
+        val removed = entries.removeAll { it.animeId == animeId && it.episodeId == episodeId }
+        if (removed) saveToFile()
+    }
+
+    /** Remove all history for an anime (clears it from Continue Watching). */
+    @Synchronized
+    fun removeForAnime(animeId: Long) {
+        val removed = entries.removeAll { it.animeId == animeId }
+        if (removed) saveToFile()
+    }
+
     fun count(): Int = entries.size
 
     /** Replaces persisted history for transactional backup restore. */

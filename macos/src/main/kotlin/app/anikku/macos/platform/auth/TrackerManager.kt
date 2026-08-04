@@ -178,14 +178,24 @@ class TrackerManager(
         }
     }
 
-    private fun fetchAniListLibrary(token: String): List<AniListLibraryEntry> {
-        val username = tokenStore.getUsername("anilist")?.takeIf { it.isNotBlank() }
+    /**
+     * Build the GraphQL payload for the user's media list. Extracted for
+     * testability — the username must be single-quoted (JSONObject.quote adds
+     * the surrounding quotes itself; wrapping them again produced invalid JSON
+     * that AniList rejected with "No query or mutation provided").
+     */
+    internal fun buildAniListLibraryQuery(username: String?): String {
         val dollar = '$'
         val listArg = if (username != null) "userName: ${dollar}user, " else ""
-        val variableJson = if (username != null) ",\"user\":\"${JSONObject.quote(username)}\"" else ""
-        val gql = """
+        val variableJson = if (username != null) ",\"user\":${JSONObject.quote(username)}" else ""
+        return """
             {"query":"query List(${if (username != null) "${dollar}user: String, " else ""}${dollar}type: MediaType) { MediaListCollection(${listArg}type: ${dollar}type) { lists { entries { status score progress media { id status episodes title { romaji english } coverImage { extraLarge } genres description(asHtml: false) } } } } }","variables":{"type":"ANIME"$variableJson}}
         """.trimIndent()
+    }
+
+    private fun fetchAniListLibrary(token: String): List<AniListLibraryEntry> {
+        val username = tokenStore.getUsername("anilist")?.takeIf { it.isNotBlank() }
+        val gql = buildAniListLibraryQuery(username)
 
         val request = okhttp3.Request.Builder()
             .url("https://graphql.anilist.co")

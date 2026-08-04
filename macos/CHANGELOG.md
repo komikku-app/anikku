@@ -12,6 +12,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+---
+
+## [1.1.5] — 2026-08-04
+
+### AniList sync fixed + 3-dot remove menus
+
+**AniList library sync actually works now**
+- The GraphQL request body had a **double-quoted username** (`JSONObject.quote`
+  already adds quotes; the template wrapped them again), producing invalid JSON
+  that AniList rejected with "No query or mutation provided" — sync silently
+  imported nothing. Query construction is now a tested pure function
+  (`TrackerManager.buildAniListLibraryQuery`).
+- "Sync library now" (Settings → Tracking) now imports your AniList lists into
+  the Library with covers + categories; auto-sync (12h/daily/weekly) pushes
+  progress back.
+
+**3-dot (⋯) remove menus across the app**
+- **Library** grid cards + list rows: Remove from library, Remove from continue
+  watching.
+- **Continue Watching** row cards: Remove from continue watching, Remove from
+  library.
+- **History** entries: Delete from history, Remove from library.
+- **Episode** rows (anime detail): Remove from continue watching, Remove download.
+- History gained `removeForEpisode`/`removeForAnime`; a shared `OverflowMenu`
+  component drives all of them.
+- Rebuilt the DMG (ad-hoc signed; Developer ID/notarization still not applied).
+
 ## [1.1.4] — 2026-08-04
 
 ### Keychain write bug fixed — OAuth sessions now actually persist

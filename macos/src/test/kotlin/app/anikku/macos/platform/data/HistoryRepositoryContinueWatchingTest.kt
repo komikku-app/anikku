@@ -1,6 +1,7 @@
 package app.anikku.macos.platform.data
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
@@ -104,5 +105,21 @@ class HistoryRepositoryContinueWatchingTest {
         val byNumber = history.getLatestForEpisodeNumber(1L, 1.0)
         assertEquals(999L, byNumber?.episodeId)
         assertEquals(400L, byNumber?.lastSecondSeen)
+    }
+
+    @Test
+    fun `removeForEpisode and removeForAnime delete history`() {
+        val history = repo()
+        history.add(entry(1L, 11L, seenAt = 100L, lastSecondSeen = 60L, totalSeconds = 1200L))
+        history.add(entry(1L, 12L, seenAt = 200L, lastSecondSeen = 30L, totalSeconds = 1200L))
+        history.add(entry(2L, 21L, seenAt = 300L, lastSecondSeen = 90L, totalSeconds = 1200L))
+
+        history.removeForEpisode(1L, 11L)
+        assertEquals(2, history.count())
+        assertNull(history.getForEpisode(1L, 11L))
+
+        history.removeForAnime(1L)
+        assertEquals(1, history.count())
+        assertEquals(2L, history.getAll().single().animeId)
     }
 }

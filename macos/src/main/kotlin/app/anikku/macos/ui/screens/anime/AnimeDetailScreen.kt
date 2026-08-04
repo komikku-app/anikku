@@ -35,6 +35,8 @@ import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -80,6 +82,7 @@ import app.anikku.macos.platform.auth.LocalTrackerManager
 import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
+import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.extension.MacOSExtensionManager
@@ -88,6 +91,8 @@ import app.anikku.macos.platform.preference.LocalBookmarkStore
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.OverflowItem
+import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.models.EpisodeModel
@@ -161,6 +166,7 @@ data class AnimeDetailScreen(
         val toastHost = LocalToastHost.current
         val bookmarkStore = LocalBookmarkStore.current
         val libraryRepo = LocalLibraryRepository.current
+        val historyRepo = LocalHistoryRepository.current
         val trackerManager = LocalTrackerManager.current
         val effectiveDownloadManager = downloadManager ?: LocalDownloadManager.current
         val focusRequester = remember { FocusRequester() }
@@ -526,6 +532,23 @@ data class AnimeDetailScreen(
                                 toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
                             }
                         },
+                        onRemoveFromContinueWatching = { episode ->
+                            historyRepo?.removeForEpisode(anime?.id ?: animeId, episode.id)
+                            toastHost.show("Removed from continue watching", ToastDuration.SHORT)
+                        },
+                        onRemoveDownload = { episode ->
+                            val dm = effectiveDownloadManager
+                            if (dm != null) {
+                                val ids = dm.downloads.value
+                                    .filter { it.animeId == (anime?.id ?: animeId) && it.episodeNumber == episode.episodeNumber }
+                                    .map { it.id }
+                                ids.forEach { dm.cancel(it) }
+                                toastHost.show(
+                                    if (ids.isNotEmpty()) "Download removed" else "Not downloaded",
+                                    ToastDuration.SHORT,
+                                )
+                            }
+                        },
                     )
                 }
             }
@@ -551,6 +574,8 @@ private fun AnimeDetailContent(
     onPlayEpisode: (EpisodeModel) -> Unit,
     onDownloadEpisode: (EpisodeModel) -> Unit = {},
     onDownloadNextN: () -> Unit = {},
+    onRemoveFromContinueWatching: (EpisodeModel) -> Unit = {},
+    onRemoveDownload: (EpisodeModel) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -702,6 +727,18 @@ private fun AnimeDetailContent(
                     onClick = { onPlayEpisode(episode) },
                     onToggleBookmark = { onToggleBookmark(episode.id) },
                     onDownload = { onDownloadEpisode(episode) },
+                    overflowItems = listOf(
+                        OverflowItem(
+                            "Remove from continue watching",
+                            Icons.Outlined.History,
+                            { onRemoveFromContinueWatching(episode) },
+                        ),
+                        OverflowItem(
+                            "Remove download",
+                            Icons.Outlined.Delete,
+                            { onRemoveDownload(episode) },
+                        ),
+                    ),
                 )
             }
 
@@ -833,6 +870,7 @@ private fun EpisodeItem(
     onClick: () -> Unit,
     onToggleBookmark: () -> Unit = {},
     onDownload: () -> Unit = {},
+    overflowItems: List<OverflowItem>? = null,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
@@ -873,6 +911,13 @@ private fun EpisodeItem(
                     contentDescription = if (episode.bookmark) "Remove bookmark" else "Bookmark episode",
                     tint = if (episode.bookmark) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.size(18.dp),
+                )
+            }
+
+            if (overflowItems != null) {
+                OverflowMenu(
+                    items = overflowItems,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
             }
 

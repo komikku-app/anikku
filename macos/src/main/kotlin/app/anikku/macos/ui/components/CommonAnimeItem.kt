@@ -50,6 +50,7 @@ fun AnimeGridCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     badge: (@Composable RowScope.() -> Unit)? = null,
+    overflowItems: List<OverflowItem>? = null,
 ) {
     Card(
         modifier = modifier
@@ -94,6 +95,13 @@ fun AnimeGridCard(
                         content = badge,
                     )
                 }
+
+                if (overflowItems != null) {
+                    OverflowMenu(
+                        items = overflowItems,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                    )
+                }
             }
 
             // Title + metadata
@@ -131,6 +139,7 @@ fun AnimeListItem(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
+    overflowItems: List<OverflowItem>? = null,
 ) {
     Row(
         modifier = modifier
@@ -170,6 +179,13 @@ fun AnimeListItem(
             }
         }
 
+        if (overflowItems != null) {
+            OverflowMenu(
+                items = overflowItems,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         if (trailing != null) {
             Spacer(Modifier.width(8.dp))
             Row(content = trailing)
@@ -188,6 +204,7 @@ fun AnimeGrid(
     minCardWidth: androidx.compose.ui.unit.Dp = 150.dp,
     getSubtitle: ((AnimeModel) -> String?)? = null,
     getBadge: (@Composable RowScope.(AnimeModel) -> Unit)? = null,
+    getOverflow: ((AnimeModel) -> List<OverflowItem>)? = null,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = minCardWidth),
@@ -206,6 +223,7 @@ fun AnimeGrid(
                 onClick = { onClick(anime) },
                 subtitle = getSubtitle?.invoke(anime),
                 badge = getBadge?.let { { it(anime) } },
+                overflowItems = getOverflow?.invoke(anime),
             )
         }
     }
@@ -221,6 +239,7 @@ fun AnimeList(
     modifier: Modifier = Modifier,
     getSubtitle: ((AnimeModel) -> String?)? = null,
     getTrailing: (@Composable RowScope.(AnimeModel) -> Unit)? = null,
+    getOverflow: ((AnimeModel) -> List<OverflowItem>)? = null,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -236,6 +255,7 @@ fun AnimeList(
                 onClick = { onClick(anime) },
                 subtitle = getSubtitle?.invoke(anime),
                 trailing = getTrailing?.let { { it(anime) } },
+                overflowItems = getOverflow?.invoke(anime),
             )
         }
     }

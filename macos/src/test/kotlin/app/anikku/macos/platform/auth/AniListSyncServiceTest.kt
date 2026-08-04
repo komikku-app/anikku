@@ -12,6 +12,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -104,9 +105,20 @@ class AniListSyncServiceTest {
     private class LastCallInterceptor : Interceptor {
         var statusCode: Int = 200
         var responseBody: String = "{}"
+        var lastRequestBody: String? = null
+        var lastRequestUrl: String? = null
+        var lastBodyClass: String? = null
 
         override fun intercept(chain: Interceptor.Chain): Response {
             val request = chain.request()
+            // Capture the outgoing body so tests can validate the payload.
+            lastRequestUrl = request.url.toString()
+            lastBodyClass = request.body?.javaClass?.name
+            lastRequestBody = request.body?.let { body ->
+                val buffer = okio.Buffer()
+                body.writeTo(buffer)
+                buffer.readUtf8()
+            }
             return Response.Builder()
                 .request(request)
                 .protocol(Protocol.HTTP_1_1)
@@ -229,6 +241,21 @@ class AniListSyncServiceTest {
         val interceptor = LastCallInterceptor().apply { statusCode = 500 }
         val manager = buildManager(interceptor)
         assertEquals(emptyList<AniListLibraryEntry>(), manager.fetchAniListLibrary() ?: emptyList<AniListLibraryEntry>())
+    }
+
+    @Test
+    fun `anilist library query is well-formed JSON with proper quoting`() {
+        // Regression: the username was double-quoted (JSONObject.quote adds the
+        // surrounding quotes itself; the old code wrapped them again), producing
+        // invalid JSON that AniList rejected with "No query or mutation provided"
+        // — sync silently imported nothing.
+        val manager = buildManager(LastCallInterceptor())
+        val body = manager.buildAniListLibraryQuery("ErnestHysa")
+
+        val json = org.json.JSONObject(body) // throws if invalid JSON (the regression)
+        assertTrue(json.getString("query").contains("MediaListCollection"))
+        assertEquals("ANIME", json.getJSONObject("variables").getString("type"))
+        assertEquals("ErnestHysa", json.getJSONObject("variables").getString("user"))
     }
 
     @Test

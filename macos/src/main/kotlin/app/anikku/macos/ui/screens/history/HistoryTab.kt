@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
@@ -45,9 +46,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.LocalHistoryRepository
+import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.OverflowItem
+import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -74,6 +78,7 @@ object HistoryTab : AnikkuScreen(), Tab {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val toastHost = LocalToastHost.current
+        val libraryRepo = LocalLibraryRepository.current
         val historyRepo = LocalHistoryRepository.current
         val extensionManager = LocalExtensionManager.current
         var history by remember { mutableStateOf(historyRepo.getAll()) }
@@ -158,6 +163,19 @@ object HistoryTab : AnikkuScreen(), Tab {
                     )
                 }
             },
+            onDeleteEntry = { item ->
+                historyRepo.removeForEpisode(item.animeId, item.id)
+                history = historyRepo.getAll()
+                toastHost.show("Removed from history", ToastDuration.SHORT)
+            },
+            onRemoveFromLibrary = { item ->
+                if (libraryRepo != null && libraryRepo.isInLibrary(item.animeId)) {
+                    libraryRepo.remove(item.animeId)
+                    toastHost.show("Removed from library", ToastDuration.SHORT)
+                } else {
+                    toastHost.show("Not in library", ToastDuration.SHORT)
+                }
+            },
         )
     }
 
@@ -194,6 +212,8 @@ private fun HistoryContent(
     onDismissSortMenu: () -> Unit = {},
     onClearAll: () -> Unit = {},
     onAnimeClick: (HistoryItemData) -> Unit = {},
+    onDeleteEntry: (HistoryItemData) -> Unit = {},
+    onRemoveFromLibrary: (HistoryItemData) -> Unit = {},
 ) {
     if (history.isEmpty() && searchQuery.isBlank()) {
         Box(
@@ -342,7 +362,22 @@ private fun HistoryContent(
                     // (animeId, episodeId) pair is unique per history entry.
                     key = { it.animeId to it.id },
                 ) { entry ->
-                    HistoryItem(entry = entry, onClick = { onAnimeClick(entry) })
+                    HistoryItem(
+                        entry = entry,
+                        onClick = { onAnimeClick(entry) },
+                        overflowItems = listOf(
+                            OverflowItem(
+                                "Delete from history",
+                                Icons.Outlined.Delete,
+                                { onDeleteEntry(entry) },
+                            ),
+                            OverflowItem(
+                                "Remove from library",
+                                Icons.Outlined.History,
+                                { onRemoveFromLibrary(entry) },
+                            ),
+                        ),
+                    )
                 }
             }
         }
@@ -353,6 +388,7 @@ private fun HistoryContent(
 private fun HistoryItem(
     entry: HistoryItemData,
     onClick: () -> Unit = {},
+    overflowItems: List<OverflowItem>? = null,
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy 'at' HH:mm", Locale.getDefault()) }
 
@@ -408,6 +444,13 @@ private fun HistoryItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     )
                 }
+            }
+
+            if (overflowItems != null) {
+                OverflowMenu(
+                    items = overflowItems,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

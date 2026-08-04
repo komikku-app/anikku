@@ -26,7 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,6 +73,8 @@ import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.AnimeGrid
 import app.anikku.macos.ui.components.AnimeList
 import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.OverflowItem
+import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
@@ -198,6 +202,14 @@ object LibraryTab : AnikkuScreen(), Tab {
                     ))
                 }
             },
+            onRemoveFromLibrary = { animeId ->
+                libraryRepo.remove(animeId)
+                toastHost.show("Removed from library", ToastDuration.SHORT)
+            },
+            onRemoveFromContinueWatching = { animeId ->
+                historyRepo?.removeForAnime(animeId)
+                toastHost.show("Removed from continue watching", ToastDuration.SHORT)
+            },
             onContinueWatchingClick = { item ->
                 val entry = item.entry
                 if (entry.sourceId == 0L || entry.episodeUrl == null) {
@@ -261,6 +273,8 @@ internal fun LibraryContent(
     onDismissSortMenu: () -> Unit,
     onCategorySelect: (Long?) -> Unit,
     onAnimeClick: (AnimeModel) -> Unit,
+    onRemoveFromLibrary: (Long) -> Unit = {},
+    onRemoveFromContinueWatching: (Long) -> Unit = {},
     onContinueWatchingClick: (ContinueWatchingItem) -> Unit = {},
 ) {
     Scaffold(
@@ -388,6 +402,18 @@ internal fun LibraryContent(
                         ContinueWatchingCard(
                             item = item,
                             onClick = { onContinueWatchingClick(item) },
+                            overflowItems = listOf(
+                                OverflowItem(
+                                    "Remove from continue watching",
+                                    Icons.Outlined.History,
+                                    { onRemoveFromContinueWatching(item.entry.animeId) },
+                                ),
+                                OverflowItem(
+                                    "Remove from library",
+                                    Icons.Outlined.Delete,
+                                    { onRemoveFromLibrary(item.entry.animeId) },
+                                ),
+                            ),
                         )
                     }
                 }
@@ -455,6 +481,20 @@ internal fun LibraryContent(
                                         else -> "Unknown"
                                     }
                                 },
+                                getOverflow = { anime ->
+                                    listOf(
+                                        OverflowItem(
+                                            "Remove from library",
+                                            Icons.Outlined.Delete,
+                                            { onRemoveFromLibrary(anime.id) },
+                                        ),
+                                        OverflowItem(
+                                            "Remove from continue watching",
+                                            Icons.Outlined.History,
+                                            { onRemoveFromContinueWatching(anime.id) },
+                                        ),
+                                    )
+                                },
                             )
                         }
                         LibraryTab.DisplayMode.List -> {
@@ -468,6 +508,20 @@ internal fun LibraryContent(
                                         2 -> "Completed"
                                         else -> null
                                     }
+                                },
+                                getOverflow = { anime ->
+                                    listOf(
+                                        OverflowItem(
+                                            "Remove from library",
+                                            Icons.Outlined.Delete,
+                                            { onRemoveFromLibrary(anime.id) },
+                                        ),
+                                        OverflowItem(
+                                            "Remove from continue watching",
+                                            Icons.Outlined.History,
+                                            { onRemoveFromContinueWatching(anime.id) },
+                                        ),
+                                    )
                                 },
                             )
                         }
@@ -492,6 +546,7 @@ data class ContinueWatchingItem(
 private fun ContinueWatchingCard(
     item: ContinueWatchingItem,
     onClick: () -> Unit,
+    overflowItems: List<OverflowItem>? = null,
 ) {
     val entry = item.entry
     val fraction = if (entry.totalSeconds > 0) {
@@ -509,12 +564,20 @@ private fun ContinueWatchingCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column {
-            AnimeCoverImage(
-                thumbnailUrl = item.thumbnailUrl,
-                contentDescription = entry.animeTitle,
-                title = entry.animeTitle,
-                modifier = Modifier.fillMaxWidth().height(190.dp),
-            )
+            Box {
+                AnimeCoverImage(
+                    thumbnailUrl = item.thumbnailUrl,
+                    contentDescription = entry.animeTitle,
+                    title = entry.animeTitle,
+                    modifier = Modifier.fillMaxWidth().height(190.dp),
+                )
+                if (overflowItems != null) {
+                    OverflowMenu(
+                        items = overflowItems,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                    )
+                }
+            }
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(
                     text = entry.animeTitle,
