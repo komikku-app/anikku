@@ -4,6 +4,9 @@ import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.notification.MacOSNotificationManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
+import app.anikku.macos.player.MPVLib
+import app.anikku.macos.player.TorrentStreamingCoordinator
+import app.anikku.macos.player.TorrentStreamingResult
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -57,6 +60,13 @@ open class MacOSDownloadManager(
     private val activeCalls = ConcurrentHashMap<Long, Call>()
     private val temporaryFiles = ConcurrentHashMap<Long, File>()
     private val attemptTokens = ConcurrentHashMap<Long, String>()
+    /**
+     * Torrent engine for magnet downloads (TorrServer with WebTorrent fallback).
+     * A second TorrServer instance (while the player streams) falls back to
+     * WebTorrent automatically — both backends produce a local HTTP URL the
+     * regular download loop can fetch.
+     */
+    private val torrentCoordinator = TorrentStreamingCoordinator()
     @Volatile
     private var closed = false
     private val _downloads = MutableStateFlow(repository.getAll())
@@ -255,8 +265,28 @@ open class MacOSDownloadManager(
             }
         }
 
+        // Torrent episodes resolve to magnet links, which have no HTTP URL to
+        // fetch directly. Route them through the torrent engine (TorrServer /
+        // WebTorrent) — it produces a local HTTP stream we download from like
+        // any other URL, then tear the torrent down when done.
+        var torrentStream: TorrentStreamingResult.Success? = null
+        val effectiveUrl = if (videoUrl.startsWith("magnet:", ignoreCase = true)) {
+            when (val result = torrentCoordinator.start(videoUrl)) {
+                is TorrentStreamingResult.Success -> {
+                    torrentStream = result
+                    result.httpUrl
+                }
+                is TorrentStreamingResult.Failure ->
+                    throw IOException("Torrent download failed: ${result.message}")
+            }
+        } else {
+            videoUrl
+        }
+        require(effectiveUrl.startsWith("http://", ignoreCase = true) ||
+            effectiveUrl.startsWith("https://", ignoreCase = true)) { "Unsupported video URL scheme" }
+
         val downloadsDir = prepareDownloadsDirectory()
-        val extension = extractExtension(videoUrl)
+        val extension = extractExtension(effectiveUrl)
         val safeBase = sanitizeFileName("${entry.animeTitle}_E${String.format("%.0f", entry.episodeNumber)}")
         val finalFile = File(downloadsDir, "${safeBase}_${entry.id}$extension")
         val tempFile = File(downloadsDir, ".${finalFile.name}.$token.part")
@@ -284,13 +314,19 @@ open class MacOSDownloadManager(
 
         var completed = false
         try {
-            val request = Request.Builder().url(videoUrl).apply {
+            val request = Request.Builder().url(effectiveUrl).apply {
                 // Apply the stream headers captured from the source's Video. This
                 // manager uses a bare OkHttpClient (no global UA interceptor), so
                 // sources that require Referer/User-Agent would 403 without these.
                 val storedHeaders = repository.get(entry.id)?.headers
                 if (!storedHeaders.isNullOrEmpty()) {
                     runCatching { headers(storedHeaders.toHeaders()) }
+                }
+                // Parity with the player: some CDNs reject requests with no
+                // User-Agent at all, even when the source didn't send one.
+                val headers = repository.get(entry.id)?.headers
+                if (headers.isNullOrEmpty() || headers.none { it.key.equals("User-Agent", ignoreCase = true) }) {
+                    header("User-Agent", MPVLib.DEFAULT_USER_AGENT)
                 }
             }.get().build()
             val call = httpClient.newCall(request)
@@ -358,6 +394,9 @@ open class MacOSDownloadManager(
                 "Download complete: ${entry.animeTitle} - ${entry.episodeName} (${formatSize(finalFile.length())})"
             }
         } finally {
+            // Tear down any torrent stream backing this download (the saved
+            // file stays on disk and plays offline like any other download).
+            torrentStream?.let { torrentCoordinator.stop(it) }
             Files.deleteIfExists(tempFile.toPath())
             temporaryFiles.remove(entry.id, tempFile)
             if (!completed && attemptTokens[entry.id] == token &&

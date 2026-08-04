@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.1] — 2026-08-02
+
+### Fix: downloads failed instantly (all attempts were torrent episodes)
+
+- **Root cause**: the Nyaa/torrent sources resolve every episode to a `magnet:`
+  link, but the download manager tried to fetch it with OkHttp, which rejected
+  the scheme (`Expected URL scheme 'http' or 'https' but was 'magnet'`) —
+  every download errored immediately, and retry failed the same way.
+- **Fix**: magnet downloads now route through the torrent engine (bundled
+  TorrServer, WebTorrent fallback): the engine produces a local HTTP stream
+  that the normal download loop saves with live progress, then the torrent is
+  torn down — the file stays on disk and plays offline like any download.
+  Verified end-to-end with a real magnet (TorrServer stream → 200 → bytes
+  flowing → clean stop).
+- **Also**: downloads of stream URLs now send a fallback User-Agent (parity
+  with the player) so CDNs that reject header-less requests stop 403ing.
+
+### Fix: Picture-in-Picture icon toggled but no window appeared
+
+- **Root cause**: `MacOSPipHandler.isPipVisible` was a plain field — flipping
+  it never invalidated Compose, so the `PipWindow` composable never re-entered
+  composition (the icon changed via a stale param, the window never existed).
+- **Fix**: it's now backed by Compose state; toggling opens/closes the PiP
+  window for real.
+
+### Fix: skip-intro button never appeared for some episodes
+
+- Hardened the AniSkip fetch (try/catch + diagnostic log) and, for torrent
+  playback, the title is now cleaned before the AniList lookup
+  ("[SubsPlease] Frieren - 01 (1080p) [ABC]" → "Frieren"), which previously
+  made the MAL-ID resolution fail for anything watched through the Torrents
+  tab's detail flow. If a show genuinely has no AniSkip data, the button stays
+  hidden by design (per-episode times are real, never hardcoded).
+
 ## [1.4.0] — 2026-08-02
 
 ### New: Skip intro/outro (AniSkip)

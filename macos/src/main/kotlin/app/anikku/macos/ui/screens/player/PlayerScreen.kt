@@ -1042,20 +1042,38 @@ data class PlayerScreen(
                 // Fetch intro/outro skip windows (AniSkip) for this episode.
                 // The API is keyed by MAL ID, resolved via the subtitle
                 // fetcher's AniList lookup. Best-effort: any failure just
-                // leaves skipIntervals empty (no button, no auto-skip).
+                // leaves skipIntervals empty (no button, no auto-skip) — and
+                // must never kill this effect.
                 val skipClient = aniSkipClient
                 val skipResolver = subtitleFetcher
                 if (skipClient != null && skipResolver != null) {
-                    val title = animeTitle?.takeIf { it.isNotBlank() }
-                    val episodeNumber = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0
-                    if (title != null && episodeNumber > 0) {
-                        val malId = skipResolver.resolveAniListMalId(title, episodeNumber)
-                        skipIntervals = if (malId != null) {
-                            skipClient.fetchSkipTimes(malId, episodeNumber.toInt())
-                        } else {
-                            emptyList()
+                    try {
+                        val rawTitle = animeTitle?.takeIf { it.isNotBlank() }
+                        // Torrent playback passes the raw Nyaa filename (e.g.
+                        // "[SubsPlease] Frieren - 01 (1080p) [ABC123]") — strip
+                        // the release noise so the AniList title search can
+                        // resolve a MAL ID at all.
+                        val title = rawTitle?.let { raw ->
+                            app.anikku.macos.platform.torrent.NyaaTorrentParser.parse(raw).title
+                                .takeIf { it.isNotBlank() } ?: raw
                         }
-                        skippedIntroThisEpisode = false
+                        val episodeNumber = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0
+                        if (title != null && episodeNumber > 0) {
+                            val malId = skipResolver.resolveAniListMalId(title, episodeNumber)
+                            skipIntervals = if (malId != null) {
+                                skipClient.fetchSkipTimes(malId, episodeNumber.toInt())
+                            } else {
+                                emptyList()
+                            }
+                            skippedIntroThisEpisode = false
+                            logger.info {
+                                "SKIP: '${title.take(40)}' ep=${episodeNumber.toInt()} malId=$malId -> " +
+                                    "${skipIntervals.size} interval(s)"
+                            }
+                        }
+                    } catch (e: Exception) {
+                        skipIntervals = emptyList()
+                        logger.warn(e) { "SKIP: intro/outro fetch failed for '${animeTitle}'" }
                     }
                 }
             }

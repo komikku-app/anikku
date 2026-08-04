@@ -42,8 +42,15 @@ import kotlinx.coroutines.flow.collect
  */
 class MacOSPipHandler {
 
-    /** Whether the PiP window is currently visible. */
-    var isPipVisible: Boolean = false
+    /**
+     * Whether the PiP window is currently visible.
+     *
+     * Backed by Compose state (not a plain field) so [PipWindow]'s
+     * `if (pipHandler.isPipVisible)` read invalidates composition when the
+     * player toggles it — otherwise the icon flipped but the window never
+     * entered composition.
+     */
+    var isPipVisible: Boolean by mutableStateOf(false)
         private set
 
     /** The current PiP window title. */
