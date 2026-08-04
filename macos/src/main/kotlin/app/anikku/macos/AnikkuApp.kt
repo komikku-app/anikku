@@ -164,7 +164,11 @@ fun main() = application {
 
     Window(
         onCloseRequest = {
-            app.onShutdown()
+            // A shutdown step must never block quitting — if any resource
+            // teardown throws (Discord RPC, Sparkle, TorrServer...), the close
+            // request would die before exitApplication() and the window would
+            // stay stuck open. Exit unconditionally.
+            runCatching { app.onShutdown() }
             exitApplication()
         },
         title = "Anikku",
@@ -273,7 +277,7 @@ fun main() = application {
 
         // Set up the macOS native menu bar via java.awt
         val onQuit = {
-            app.onShutdown()
+            runCatching { app.onShutdown() }
             exitApplication()
         }
         val onSettings = { TabSwitchHandler.switchTo(8) }

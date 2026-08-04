@@ -286,6 +286,58 @@ open class MacOSDownloadManager(
             effectiveUrl.startsWith("https://", ignoreCase = true)) { "Unsupported video URL scheme" }
 
         val downloadsDir = prepareDownloadsDirectory()
+
+        // HLS/DASH manifests can't be saved raw — the result would be a text
+        // playlist, not the episode. Download every segment and write a local
+        // playlist instead.
+        if (isManifestUrl(effectiveUrl)) {
+            val manifestDir = File(
+                downloadsDir,
+                "${sanitizeFileName("${entry.animeTitle}_E${String.format("%.0f", entry.episodeNumber)}")}_${entry.id}",
+            )
+            if (manifestDir.exists() || !manifestDir.mkdirs()) {
+                throw IOException("Could not create manifest download directory")
+            }
+            val manifestHeaders = repository.get(entry.id)?.headers
+            val result = HlsDashDownloader(httpClient).download(
+                manifestUrl = effectiveUrl,
+                headers = manifestHeaders,
+                targetDir = manifestDir,
+                onProgress = { downloaded, total ->
+                    updateIfCurrent(entry.id, token) {
+                        val denom = total.coerceAtLeast(downloaded)
+                        repository.update(
+                            id = entry.id,
+                            downloadedBytes = downloaded.toLong(),
+                            totalBytes = denom.toLong(),
+                            progress = if (denom > 0) downloaded.toFloat() / denom else 0f,
+                        )
+                    }
+                },
+            ) ?: throw IOException("Manifest download failed (no playable segments)")
+
+            val playlistFile = result.playlistFile
+            synchronized(downloadLock) {
+                requireCurrentAttempt(entry.id, token)
+                repository.update(
+                    id = entry.id,
+                    status = DownloadRepository.DownloadStatus.COMPLETED,
+                    progress = 1f,
+                    filePath = playlistFile.absolutePath,
+                    fileName = playlistFile.name,
+                    totalBytes = manifestDir.listFiles()?.sumOf { runCatching { it.length() }.getOrDefault(0L) }
+                        ?: playlistFile.length(),
+                    downloadedBytes = playlistFile.length(),
+                )
+                refreshState()
+            }
+            runCatching { notifyDownloadComplete(entry) }
+            logger.info {
+                "Download complete (manifest): ${entry.animeTitle} - ${entry.episodeName} (${manifestDir.absolutePath})"
+            }
+            return
+        }
+
         val extension = extractExtension(effectiveUrl)
         val safeBase = sanitizeFileName("${entry.animeTitle}_E${String.format("%.0f", entry.episodeNumber)}")
         val finalFile = File(downloadsDir, "${safeBase}_${entry.id}$extension")
@@ -421,13 +473,21 @@ open class MacOSDownloadManager(
      * Resolve the full [Video] for a download, preferring the source's preferred
      * quality (same policy the player uses). The returned video carries the
      * stream headers (Referer, Origin, ...) that many sources require.
+     *
+     * Prefers DIRECT media URLs over HLS/DASH manifests: saving a manifest raw
+     * yields a text playlist, not the episode. Sources that only expose a
+     * manifest are still handled — executeDownload routes them through
+     * [HlsDashDownloader].
      */
     protected open suspend fun resolveVideo(entry: DownloadRepository.DownloadEntry): Video? {
         val source = extensionManager.getSource(entry.sourceId)
             ?: throw IllegalStateException("Source not found for ID ${entry.sourceId}")
         val episode = SEpisode.create().apply { url = entry.episodeUrl ?: "" }
         val videos = source.getVideoList(episode)
-        return videos.firstOrNull { it.preferred } ?: videos.firstOrNull()
+        return videos.firstOrNull { it.preferred && !isManifestUrl(it.videoUrl ?: "") }
+            ?: videos.firstOrNull { !isManifestUrl(it.videoUrl ?: "") }
+            ?: videos.firstOrNull { it.preferred }
+            ?: videos.firstOrNull()
     }
 
     /**

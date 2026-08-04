@@ -6,6 +6,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.2] — 2026-08-02
+
+### Fix: streaming downloads saved a 12 KB text file, not the episode
+
+- **Root cause**: most streaming sources expose HLS/DASH manifests (`.m3u8` /
+  `.mpd`), and the download manager saved the manifest URL's response raw — a
+  small text playlist, not the video. Logged as "Download complete (12.7 KB)"
+  and the file wouldn't play ("couldn't resolve video URL").
+- **Fix**: the download manager now (1) prefers a source's direct media URL
+  (`.mkv`/`.mp4`/…) over a manifest when both are offered, and (2) when a
+  manifest is all a source provides, downloads it properly:
+  - **HLS**: follows the master playlist → picks the highest-bandwidth variant →
+    downloads every segment (plus AES-128 keys and fMP4 init segments) →
+    writes a local playlist.
+  - **DASH**: parses the MPD, picks the best video representation, downloads the
+    init + all numbered segments → writes a local playlist.
+  - Verified end-to-end with a real episode: the download manager produced a
+    genuine 78 MB Matroska file, and the DASH path decoded a full 23:46 episode
+    (1080p AV1 10-bit) and the HLS path a 1080p stream — both via mpv.
+
+### Fix: player arrows (←/→ and J/L) sometimes didn't seek
+
+- Seeking was gated on `totalSeconds > 0`, so the keys did nothing during the
+  first moments of playback before mpv reported the duration.
+- Clicking player control buttons also stole keyboard focus, after which the
+  arrows stopped working until the video was clicked again. Clicking the video
+  now returns focus to the player, and absolute seeking works immediately.
+
+### Fix: window X (close) sometimes didn't quit the app
+
+- `onCloseRequest` ran `app.onShutdown()` and only then `exitApplication()` —
+  if any teardown step threw (Discord RPC, Sparkle, TorrServer…), the close
+  request died and the window stayed stuck. Shutdown is now best-effort and
+  the app always exits (Dock/⌘Q quit fixed the same way).
+
+### Tests
+- 5 new HlsDashDownloader tests (MockWebServer: HLS master/variant/segments,
+  encrypted keys, DASH fMP4, token-directory resolution, manifest detection).
+  Full suite: 729 green.
+
 ## [1.4.1] — 2026-08-02
 
 ### Fix: downloads failed instantly (all attempts were torrent episodes)

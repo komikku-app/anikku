@@ -1797,7 +1797,11 @@ internal fun PlayerContent(
     }
 
     // Keyboard shortcuts
-    val canSeek = !isLive && totalSeconds > 0L
+    // Seeking is allowed whenever the video isn't live. The keyboard seek
+    // (arrows / J / L) issues an absolute mpv seek, which works before the
+    // duration is known — gating on totalSeconds here made the arrows dead
+    // during the first moments of playback ("sometimes arrows don't work").
+    val canSeek = !isLive
     val focusRequester = remember { FocusRequester() }
     val errorFocusRequester = remember { FocusRequester() }
     // Loading overlay (shown on top of video surface while buffering)
@@ -2123,7 +2127,14 @@ internal fun PlayerContent(
                 // fullscreen. detectTapGestures delays the single tap slightly
                 // to disambiguate, which is the standard trade-off.
                 detectTapGestures(
-                    onTap = { isControlsVisible = !isControlsVisible },
+                    onTap = {
+                        isControlsVisible = !isControlsVisible
+                        // Clicking the video returns keyboard focus to the
+                        // player — control buttons (pause, next-episode, …)
+                        // steal focus, after which the arrows stop seeking
+                        // until the video is clicked again.
+                        focusRequester.requestFocus()
+                    },
                     onDoubleTap = { onToggleFullscreen() },
                 )
             }
@@ -2155,13 +2166,13 @@ internal fun PlayerContent(
                     event.key == Key.DirectionLeft && canSeek -> {
                         onSeekRelative(-10.0)
                         elapsedSeconds = (elapsedSeconds - 10).coerceAtLeast(0)
-                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+                        seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
                     event.key == Key.DirectionRight && canSeek -> {
                         onSeekRelative(10.0)
                         elapsedSeconds = (elapsedSeconds + 10).coerceAtMost(totalSeconds)
-                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+                        seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
                     event.key == Key.DirectionUp -> {
@@ -2181,13 +2192,13 @@ internal fun PlayerContent(
                     event.key == Key.J && canSeek -> {
                         onSeekRelative(-10.0)
                         elapsedSeconds = (elapsedSeconds - 10).coerceAtLeast(0)
-                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+                        seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
                     event.key == Key.L && canSeek -> {
                         onSeekRelative(10.0)
                         elapsedSeconds = (elapsedSeconds + 10).coerceAtMost(totalSeconds)
-                        seekFraction = (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+                        seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
                     event.key == Key.F -> {
