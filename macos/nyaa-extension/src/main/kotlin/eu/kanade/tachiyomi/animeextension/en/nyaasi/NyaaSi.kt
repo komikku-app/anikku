@@ -59,26 +59,39 @@ class NyaaSi : AnimeCatalogueSource {
 
     /**
      * Fetch and parse an HTML document from the given URL.
-     * Uses the built-in Java HttpClient (JDK 17+) with a 15-second timeout.
+     *
+     * Uses java.net.HttpURLConnection (java.base) rather than the JDK's
+     * java.net.http client: the packaged macOS runtime is a minimized jlink
+     * image that does NOT include the java.net.http module, so referencing
+     * java.net.http.HttpClient throws NoClassDefFoundError in the packaged app
+     * (seen when opening the Torrents tab). HttpURLConnection is always
+     * available and handles redirects + timeouts the same way.
      */
     private fun fetchDocument(url: String): Document {
-        val client = java.net.http.HttpClient.newBuilder()
-            .connectTimeout(java.time.Duration.ofSeconds(15))
-            .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
-            .build()
-
-        val request = java.net.http.HttpRequest.newBuilder()
-            .uri(java.net.URI.create(url))
-            .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")
-            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-            .header("Accept-Language", "en-US,en;q=0.9")
-            .timeout(java.time.Duration.ofSeconds(15))
-            .GET()
-            .build()
-
-        val response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
-        return Jsoup.parse(response.body(), url)
+        val connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 15_000
+            instanceFollowRedirects = true
+            requestMethod = "GET"
+            setRequestProperty(
+                "User-Agent",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+            )
+            setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+            setRequestProperty("Accept-Language", "en-US,en;q=0.9")
+        }
+        try {
+            val stream = connection.inputStream
+            return try {
+                // Nyaa serves UTF-8; Jsoup reads the charset from the content type.
+                Jsoup.parse(stream, "UTF-8", url)
+            } finally {
+                stream.close()
+            }
+        } finally {
+            connection.disconnect()
+        }
     }
 
     // ── Popular Anime (browse default) ──────────────────────────────

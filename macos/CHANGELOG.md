@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.1] — 2026-08-04
+
+### Fix: Torrents tab crash ("java/net/http/HttpClient")
+
+- **Root cause**: the packaged app's Java runtime is a minimized jlink image
+  that does not include the `java.net.http` module. The Nyaa torrent extension
+  used `java.net.http.HttpClient`, so opening the Torrents tab threw
+  `NoClassDefFoundError: java/net/http/HttpClient` — which crashed the app.
+- **Fix**: the Nyaa extension now fetches pages with `java.net.HttpURLConnection`
+  (java.base — always present). Verified against the packaged runtime's exact
+  module set: the extension loads and returns Nyaa search/popular results.
+  The new extension jar is deployed automatically to your extensions folder.
+- **Hardening**: the Torrents tab (and search) now catch `Throwable` around
+  extension calls, so a failing extension shows an error message instead of
+  killing the app. Also applied to the extension's popular/search loaders.
+
+---
+
 ## [1.3.0] — 2026-08-04
 
 ### New Episode tracking, Watch stats, Torrents tab, MAL + Kitsu sync

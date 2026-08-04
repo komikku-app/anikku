@@ -106,7 +106,13 @@ object TorrentTab : AnikkuScreen(), Tab {
                 }
                 // IDs are URL hashes — dedupe so LazyGrid keys never collide.
                 popular = page.animes.mapNotNull { it.toAnimeModelSafe(source.id) }.distinctBy { it.id }
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                loadError = "Timed out loading the torrent catalogue"
+            } catch (e: Throwable) {
+                // Extension code runs in a separate classloader and can throw
+                // Errors (e.g. NoClassDefFoundError when the packaged runtime
+                // lacks a module the extension uses). Never let that crash the
+                // app — degrade to an error message instead.
                 loadError = "Could not load torrent catalogue: ${e.message?.take(80)}"
             }
             isLoading = false
@@ -128,7 +134,10 @@ object TorrentTab : AnikkuScreen(), Tab {
                     source.getSearchAnime(page = 1, query = searchQuery, filters = AnimeFilterList())
                 }
                 searchResults = page.animes.mapNotNull { it.toAnimeModelSafe(source.id) }.distinctBy { it.id }
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                loadError = "Search timed out"
+            } catch (e: Throwable) {
+                // Same classloader-Error hardening as the popular load above.
                 loadError = "Search failed: ${e.message?.take(80)}"
             }
             isLoading = false
