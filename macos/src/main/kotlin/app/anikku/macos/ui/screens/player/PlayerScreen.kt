@@ -104,8 +104,10 @@ import app.anikku.macos.platform.MacOSNowPlayingHandler
 import app.anikku.macos.platform.MacOSShareUtil
 import app.anikku.macos.platform.media.MacOSHttpServer
 import app.anikku.macos.platform.watch.LocalWatchTogetherServer
+import app.anikku.macos.platform.watch.LocalWatchTogetherTunnel
 import app.anikku.macos.platform.watch.WatchTogetherSession
 import app.anikku.macos.platform.watch.WtCodes
+import app.anikku.macos.platform.watch.WtLinks
 import app.anikku.macos.platform.watch.WtMessage
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.MacOSMenuBarFactory
@@ -648,6 +650,7 @@ data class PlayerScreen(
         // Watch Together — LAN sync room. Player-scoped: the session (and any
         // room it hosts) lives and dies with this player screen.
         val watchTogetherServer = LocalWatchTogetherServer.current
+        val watchTunnel = LocalWatchTogetherTunnel.current
         val watchSession = remember { WatchTogetherSession() }
         DisposableEffect(Unit) {
             onDispose { watchSession.close() }
@@ -655,7 +658,7 @@ data class PlayerScreen(
         val roomRole by watchSession.role.collectAsState()
         val roomCode by watchSession.roomCode.collectAsState()
         val roomMemberCount by watchSession.memberCount.collectAsState()
-        val roomLanUrl by watchSession.lanUrl.collectAsState()
+        val roomJoinUrl by watchSession.joinUrl.collectAsState()
         val watchStatus by watchSession.status.collectAsState()
         var showWatchDialog by remember { mutableStateOf(false) }
         var joinCodeInput by remember { mutableStateOf("") }
@@ -890,9 +893,11 @@ data class PlayerScreen(
             )
         }
 
-        // Host: create a room around the current episode's media. Guests reach
-        // local files / streams through the room server (LAN); magnet streams
-        // are announced without media so guests open the episode themselves.
+        // Host: create a room around the current episode's media. When the
+        // bundled tunnel is available the room is exposed to the internet
+        // (anyone with the share link can join); otherwise it stays on the
+        // LAN. Magnet streams are announced without media so guests open the
+        // episode themselves.
         fun startWatchRoom() {
             val server = watchTogetherServer
             if (server == null) {
@@ -915,25 +920,36 @@ data class PlayerScreen(
                     WatchTogetherSession.MediaSpec.Local(File(episodeUrl!!))
                 else -> WatchTogetherSession.MediaSpec.Magnet
             }
-            val started = watchSession.startRoom(
-                episode = WtMessage.Episode(
-                    title = animeTitle,
-                    name = allEpisodes.getOrNull(currentEpisodeIndex)?.name ?: "",
-                    number = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0,
-                    kind = if (mediaSpec is WatchTogetherSession.MediaSpec.Magnet) "magnet" else "direct",
-                    duration = duration,
-                ),
-                media = mediaSpec,
-                server = server,
+            val episode = WtMessage.Episode(
+                title = animeTitle,
+                name = allEpisodes.getOrNull(currentEpisodeIndex)?.name ?: "",
+                number = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0,
+                kind = if (mediaSpec is WatchTogetherSession.MediaSpec.Magnet) "magnet" else "direct",
+                duration = duration,
             )
-            if (started) {
-                watchSession.beginHostSync {
-                    WatchTogetherSession.SyncSnapshot(
-                        pos = currentPosition,
-                        playing = !isPaused,
-                        rate = playbackSpeed,
-                        duration = duration,
-                    )
+            val tunnel = watchTunnel
+            if (tunnel != null && !tunnel.isRunning) {
+                watchSession.status.value = "Preparing internet hosting…"
+            }
+            scope.launch {
+                // The tunnel needs the room server's port, so bring the server
+                // up first (idempotent) before asking cloudflared for a URL.
+                if (tunnel != null) server.startServer()
+                val tunnelUrl = tunnel?.start(server.actualPort)
+                val started = watchSession.startRoom(episode, mediaSpec, server, tunnelUrl = tunnelUrl)
+                if (started && tunnel != null && tunnelUrl == null) {
+                    watchSession.status.value =
+                        "Internet hosting unavailable — this room works on the same network only."
+                }
+                if (started) {
+                    watchSession.beginHostSync {
+                        WatchTogetherSession.SyncSnapshot(
+                            pos = currentPosition,
+                            playing = !isPaused,
+                            rate = playbackSpeed,
+                            duration = duration,
+                        )
+                    }
                 }
             }
         }
@@ -1992,16 +2008,19 @@ data class PlayerScreen(
                 code = roomCode,
                 memberCount = roomMemberCount,
                 memberNames = watchSession.memberNames.collectAsState().value,
-                lanUrl = roomLanUrl,
+                joinUrl = roomJoinUrl,
                 status = watchStatus,
                 joinCode = joinCodeInput,
                 yourName = yourName,
                 onYourNameChange = { yourName = it; watchSession.rename(it) },
-                onJoinCodeChange = { joinCodeInput = it.uppercase().take(6) },
+                onJoinCodeChange = { input ->
+                    // Room codes are capped and uppercased; pasted links pass through.
+                    joinCodeInput = if (input.contains("/")) input.take(256) else input.uppercase().take(6)
+                },
                 onStartRoom = { startWatchRoom() },
                 onJoin = {
-                    val code = joinCodeInput.trim()
-                    if (WtCodes.isValid(code)) watchSession.joinRoom(code)
+                    val input = joinCodeInput.trim()
+                    if (WtCodes.isValid(input) || WtLinks.isJoinable(input)) watchSession.joinRoom(input)
                 },
                 onCopy = { text ->
                     MacOSShareUtil.copyToClipboard(text)
@@ -3127,7 +3146,7 @@ private fun WatchTogetherDialog(
     code: String?,
     memberCount: Int,
     memberNames: List<String>,
-    lanUrl: String?,
+    joinUrl: String?,
     status: String?,
     joinCode: String,
     yourName: String,
@@ -3162,13 +3181,13 @@ private fun WatchTogetherDialog(
                         OutlinedTextField(
                             value = joinCode,
                             onValueChange = onJoinCodeChange,
-                            label = { Text("Room code") },
+                            label = { Text("Room code or link") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            "Friends on the same network join with the code — or open the browser link in a browser.",
+                            "Paste the share link to join from anywhere — or enter the code to find the room on your network.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -3196,7 +3215,7 @@ private fun WatchTogetherDialog(
                                 TextButton(onClick = { onCopy(it) }) { Text("Copy code") }
                             }
                         }
-                        lanUrl?.let {
+                        joinUrl?.let {
                             Spacer(Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
@@ -3220,7 +3239,9 @@ private fun WatchTogetherDialog(
                 WatchTogetherSession.Role.NONE -> Row {
                     Button(onClick = onStartRoom) { Text("Start a room") }
                     Spacer(Modifier.width(10.dp))
-                    Button(onClick = onJoin, enabled = WtCodes.isValid(joinCode)) { Text("Join") }
+                    Button(onClick = onJoin, enabled = WtCodes.isValid(joinCode.trim()) || WtLinks.isJoinable(joinCode)) {
+                        Text("Join")
+                    }
                 }
                 else -> TextButton(onClick = onLeave) { Text("Leave room") }
             }

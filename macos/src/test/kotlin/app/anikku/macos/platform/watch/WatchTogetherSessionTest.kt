@@ -217,6 +217,82 @@ class WatchTogetherSessionTest {
     }
 
     // -----------------------------------------------------------------------
+    // Internet rooms — shared links and the Cloudflare tunnel base
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `guest joins a room through a shared link`() {
+        val hostCtrl = RecordingController(isPaused = false)
+        val host = session("Host", hostCtrl)
+        val guest = session("Bob", RecordingController())
+
+        host.startRoom(episode(title = "Frieren"), WatchTogetherSession.MediaSpec.Url("http://example.com/v.mp4"), server)
+        val code = host.roomCode.value ?: fail("room did not start")
+        // The link form of a room — over plain http the join goes through ws at the given port.
+        guest.joinRoom("http://127.0.0.1:${server.actualPort}/room/$code")
+
+        awaitValue(flow = host.memberCount) { it == 2 }
+        guest.sendControl(WtMessage.Pause())
+        hostCtrl.awaitCall { it == "togglePause" }
+    }
+
+    @Test
+    fun `tunnel-hosted room shares the public media and join urls`() {
+        val host = session("Host", RecordingController())
+        var pushed: WtMessage.Episode? = null
+        val guest = session("Bob", RecordingController())
+        guest.onEpisode = { pushed = it }
+
+        host.startRoom(
+            episode(title = "Frieren"),
+            WatchTogetherSession.MediaSpec.Url("http://example.com/v.mp4"),
+            server,
+            tunnelUrl = "https://anime-night-2026.trycloudflare.com",
+        )
+        val code = host.roomCode.value ?: fail("room did not start")
+        assertEquals("https://anime-night-2026.trycloudflare.com/room/$code", host.joinUrl.value)
+
+        guest.joinRoomAt("127.0.0.1", server.actualPort, code)
+        val deadline = System.currentTimeMillis() + 5_000
+        while (pushed == null && System.currentTimeMillis() < deadline) Thread.sleep(20)
+        val episode = pushed ?: fail("guest never received the episode")
+        assertEquals("Frieren", episode.title)
+        assertTrue(episode.mediaUrl!!.startsWith("https://anime-night-2026.trycloudflare.com/media/$code/"))
+    }
+
+    @Test
+    fun `room media updates keep the tunnel base in the shared url`() {
+        val host = session("Host", RecordingController())
+        var pushed: WtMessage.Episode? = null
+        val guest = session("Bob", RecordingController())
+        guest.onEpisode = { pushed = it }
+
+        host.startRoom(
+            episode(),
+            WatchTogetherSession.MediaSpec.Url("http://example.com/v1.mp4"),
+            server,
+            tunnelUrl = "https://anime-night-2026.trycloudflare.com",
+        )
+        val code = host.roomCode.value ?: fail("room did not start")
+        guest.joinRoomAt("127.0.0.1", server.actualPort, code)
+        // Consume the join-time episode replay before the update arrives.
+        val replayDeadline = System.currentTimeMillis() + 5_000
+        while (pushed == null && System.currentTimeMillis() < replayDeadline) Thread.sleep(20)
+        pushed = null
+
+        host.updateRoomMedia(
+            episode(title = "Frieren"),
+            WatchTogetherSession.MediaSpec.Url("http://example.com/v2.mp4"),
+            server,
+        )
+        val updateDeadline = System.currentTimeMillis() + 5_000
+        while (pushed == null && System.currentTimeMillis() < updateDeadline) Thread.sleep(20)
+        val updated = pushed ?: fail("guest never received the updated episode")
+        assertEquals("Frieren", updated.title)
+        assertTrue(updated.mediaUrl!!.startsWith("https://anime-night-2026.trycloudflare.com/media/$code/"))
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 

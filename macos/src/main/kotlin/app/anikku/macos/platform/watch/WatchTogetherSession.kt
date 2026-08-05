@@ -65,8 +65,11 @@ class WatchTogetherSession(
     val memberCount = MutableStateFlow(0)
     /** Member display names, in join order (best-effort; empty when unknown). */
     val memberNames = MutableStateFlow<List<String>>(emptyList())
-    /** Browser-join URL shown in the room dialog. */
-    val lanUrl = MutableStateFlow<String?>(null)
+    /**
+     * Browser-join URL shown in the room dialog: the public tunnel link when
+     * the room is hosted over the internet, the LAN URL otherwise.
+     */
+    val joinUrl = MutableStateFlow<String?>(null)
     /** User-facing status/error text. */
     val status = MutableStateFlow<String?>(null)
 
@@ -80,6 +83,14 @@ class WatchTogetherSession(
     private var server: WatchTogetherServer? = null
     private var beacon: WatchTogetherDiscovery.Beacon? = null
     private var syncJob: Job? = null
+
+    /**
+     * Public tunnel base (`https://<name>.trycloudflare.com`) the room is
+     * hosted through, or null for a LAN-only room. Guests anywhere reach the
+     * room server (sync + media) through this base.
+     */
+    @Volatile
+    private var tunnelBase: String? = null
 
     @Volatile
     private var sessionName: String = sessionName
@@ -122,10 +133,22 @@ class WatchTogetherSession(
     @Volatile
     private var roomClosedNotified = false
 
-    /** Host: create a room for the current episode and join it as member 1. */
-    fun startRoom(episode: WtMessage.Episode, media: MediaSpec, server: WatchTogetherServer): Boolean {
+    /**
+     * Host: create a room for the current episode and join it as member 1.
+     *
+     * @param tunnelUrl public tunnel base (`https://…trycloudflare.com`) when
+     *   the room should be reachable from the internet, or null for a
+     *   LAN-only room (the default; same-network guests use UDP discovery).
+     */
+    fun startRoom(
+        episode: WtMessage.Episode,
+        media: MediaSpec,
+        server: WatchTogetherServer,
+        tunnelUrl: String? = null,
+    ): Boolean {
         if (role.value != Role.NONE) return false
         val lanIp = LanAddresses.siteLocalIPv4() ?: "127.0.0.1"
+        val base = tunnelUrl?.trimEnd('/')
 
         val handle = toHandle(media)
         val info = server.createRoom(episode, handle) ?: run {
@@ -133,22 +156,34 @@ class WatchTogetherSession(
             return false
         }
 
-        // Guests reach the media through the room server on the host's LAN IP.
+        // Guests reach the media through the room server — over the public
+        // tunnel when one is up, otherwise on the host's LAN IP.
         val finalEpisode = if (handle != null) {
-            episode.copy(mediaUrl = "http://$lanIp:${server.actualPort}/media/${info.code}/${handle.id}")
+            episode.copy(
+                mediaUrl = if (base != null) {
+                    "$base/media/${info.code}/${handle.id}"
+                } else {
+                    "http://$lanIp:${server.actualPort}/media/${info.code}/${handle.id}"
+                },
+            )
         } else {
             episode
         }
         server.room(info.code)?.episode = finalEpisode
 
         this.server = server
+        this.tunnelBase = base
         role.value = Role.HOST
         roomCode.value = info.code
-        lanUrl.value = "http://$lanIp:${server.actualPort}/room/${info.code}"
+        joinUrl.value = if (base != null) {
+            "$base/room/${info.code}"
+        } else {
+            "http://$lanIp:${server.actualPort}/room/${info.code}"
+        }
         status.value = null
 
         // The host is member 1 — connect through the same client path as guests.
-        connect("127.0.0.1", server.actualPort, info.code)
+        connect("ws://127.0.0.1:${server.actualPort}/room/${info.code}")
         beacon = WatchTogetherDiscovery.advertise(
             code = info.code,
             tcpPort = server.actualPort,
@@ -165,8 +200,15 @@ class WatchTogetherSession(
         val handle = toHandle(media)
         server.room(code)?.media = handle
         val lanIp = LanAddresses.siteLocalIPv4() ?: "127.0.0.1"
+        val base = tunnelBase?.trimEnd('/')
         val finalEpisode = if (handle != null) {
-            episode.copy(mediaUrl = "http://$lanIp:${server.actualPort}/media/$code/${handle.id}")
+            episode.copy(
+                mediaUrl = if (base != null) {
+                    "$base/media/$code/${handle.id}"
+                } else {
+                    "http://$lanIp:${server.actualPort}/media/$code/${handle.id}"
+                },
+            )
         } else {
             episode
         }
@@ -187,9 +229,19 @@ class WatchTogetherSession(
         MediaSpec.Magnet -> null
     }
 
-    /** Guest: discover the host on the LAN and join [code]. */
-    fun joinRoom(code: String, discoveryTimeoutMs: Long = 5_000) {
+    /**
+     * Guest: join a room. Accepts either a shared room link (e.g.
+     * `https://<tunnel>/room/<CODE>` — joins directly, works across the
+     * internet) or a bare code (discovered on the LAN via UDP beacon).
+     */
+    fun joinRoom(input: String, discoveryTimeoutMs: Long = 5_000) {
         if (role.value != Role.NONE) return
+        WtLinks.parse(input)?.let { link ->
+            status.value = null
+            joinRoomAt(link.host, link.port, link.code, useTls = link.secure)
+            return
+        }
+        val code = input.trim()
         status.value = "Looking for room $code on the network…"
         scope.launch {
             val found = WatchTogetherDiscovery.findHost(code, discoveryTimeoutMs)
@@ -206,17 +258,22 @@ class WatchTogetherSession(
         }
     }
 
-    /** Guest: join a room at an explicit host address (fallback when discovery fails). */
-    fun joinRoomAt(host: String, port: Int, code: String) {
+    /**
+     * Guest: join a room at an explicit host address (LAN discovery result,
+     * or a shared-link target). [useTls] selects wss over ws (tunnel links).
+     */
+    fun joinRoomAt(host: String, port: Int, code: String, useTls: Boolean = false) {
         if (role.value != Role.NONE) return
         this.server = null
+        this.tunnelBase = null
         roomClosedNotified = false
         hasSyncBaseline = false
         joinPosition = 0.0
         role.value = Role.GUEST
         roomCode.value = code
         status.value = null
-        connect(host, port, code)
+        val scheme = if (useTls) "wss" else "ws"
+        connect("$scheme://$host:$port/room/$code")
     }
 
     /** Leave the room (host: also closes it and stops the beacon). */
@@ -235,7 +292,7 @@ class WatchTogetherSession(
         roomCode.value = null
         memberCount.value = 0
         memberNames.value = emptyList()
-        lanUrl.value = null
+        joinUrl.value = null
         roomClosedNotified = false
     }
 
@@ -297,8 +354,7 @@ class WatchTogetherSession(
     // Internal
     // -----------------------------------------------------------------------
 
-    private fun connect(host: String, port: Int, code: String) {
-        val url = "ws://$host:$port/room/$code"
+    private fun connect(url: String) {
         val request = Request.Builder().url(url).build()
         webSocket = httpClient.newWebSocket(request, listener)
     }
@@ -345,7 +401,7 @@ class WatchTogetherSession(
                         roomCode.value = null
                         memberCount.value = 0
                         memberNames.value = emptyList()
-                        lanUrl.value = null
+                        joinUrl.value = null
                         this@WatchTogetherSession.webSocket = null
                     }
                 }
@@ -366,7 +422,7 @@ class WatchTogetherSession(
                 roomCode.value = null
                 memberCount.value = 0
                 memberNames.value = emptyList()
-                lanUrl.value = null
+                joinUrl.value = null
                 beacon?.shutdown()
                 beacon = null
             }
@@ -378,7 +434,7 @@ class WatchTogetherSession(
                 roomCode.value = null
                 memberCount.value = 0
                 memberNames.value = emptyList()
-                lanUrl.value = null
+                joinUrl.value = null
             }
         }
     }

@@ -113,6 +113,9 @@ class WatchTogetherServerTest {
         val ok = get("http://127.0.0.1:${server.actualPort}/room/${info.code}")
         assertEquals(200, ok.first)
         assertTrue(ok.second.contains("Watch Together"))
+        // The page mirrors the page scheme (wss on https) so tunnel-hosted
+        // rooms don't hit mixed-content blocks in the browser.
+        assertTrue(ok.second.contains("location.protocol === 'https:' ? 'wss://' : 'ws://'"))
 
         val missing = get("http://127.0.0.1:${server.actualPort}/room/ZZZ999")
         assertEquals(404, missing.first)

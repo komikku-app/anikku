@@ -269,7 +269,7 @@ tasks.register<Test>("quickTest") {
 tasks.register("quickCheck") {
     description = "Compile the app, run deterministic tests, and validate updater configuration"
     group = "verification"
-    dependsOn("quickTest", "validateSparkleConfiguration", "validateTorrServerConfiguration")
+    dependsOn("quickTest", "validateSparkleConfiguration", "validateTorrServerConfiguration", "validateCloudflaredConfiguration")
 }
 
 tasks.register<Test>("performancePlaybackTest") {
@@ -585,13 +585,89 @@ tasks.register<Test>("nativeTorrServerTest") {
     testLogging { events("passed", "failed", "skipped") }
 }
 
+// Pinned Cloudflare tunnel helper. Distribution builds fetch the cloudflared
+// binary for the build machine's architecture, verify it, and stage it so
+// Watch Together rooms can be exposed to the internet with zero user setup.
+val cloudflaredVersion = "2026.7.3"
+val cloudflaredArchitecture = when (System.getProperty("os.arch").lowercase()) {
+    "aarch64", "arm64" -> "arm64"
+    else -> "amd64"
+}
+val cloudflaredChecksums = mapOf(
+    // SHA-256 of the released cloudflared-darwin-<arch>.tgz assets
+    "arm64" to "90c5a4f914d705fd70c135dba6d80b1791d254b08d6d4136301941f88330dd09",
+    "amd64" to "70d1c8684fa6d14b5843787ec8d1ea8e18b23650e424f4ea43d849a506487c3b",
+)
+val cloudflaredBinaryName = "cloudflared-darwin-$cloudflaredArchitecture"
+val cloudflaredBinary = layout.buildDirectory.file("cloudflared/$cloudflaredBinaryName")
+
+tasks.register("validateCloudflaredConfiguration") {
+    description = "Validate the pinned cloudflared release metadata without downloading it"
+    group = "verification"
+    doLast {
+        val checksum = cloudflaredChecksums.getValue(cloudflaredArchitecture)
+        require(Regex("[0-9a-f]{64}").matches(checksum)) { "Invalid cloudflared SHA-256" }
+        val uri = URI("https://github.com/cloudflare/cloudflared/releases/download/$cloudflaredVersion/cloudflared-darwin-$cloudflaredArchitecture.tgz")
+        require(uri.scheme == "https" && uri.host == "github.com") { "cloudflared download must use GitHub HTTPS" }
+        logger.lifecycle("cloudflared configuration valid: $cloudflaredVersion $cloudflaredArchitecture")
+    }
+}
+
+tasks.register("downloadCloudflared") {
+    description = "Download, verify and extract the pinned native cloudflared helper"
+    group = "distribution"
+    dependsOn("validateCloudflaredConfiguration")
+    inputs.property("version", cloudflaredVersion)
+    inputs.property("architecture", cloudflaredArchitecture)
+    inputs.property("sha256", cloudflaredChecksums.getValue(cloudflaredArchitecture))
+    outputs.file(cloudflaredBinary)
+    outputs.upToDateWhen {
+        val target = cloudflaredBinary.get().asFile
+        target.isFile && target.canExecute()
+    }
+
+    doLast {
+        val target = cloudflaredBinary.get().asFile
+        if (target.isFile && target.canExecute()) {
+            logger.lifecycle("Using cached ${target.name}")
+            return@doLast
+        }
+
+        target.parentFile.mkdirs()
+        val archive = File(target.parentFile, "cloudflared-darwin-$cloudflaredArchitecture.tgz")
+        val uri = URI("https://github.com/cloudflare/cloudflared/releases/download/$cloudflaredVersion/cloudflared-darwin-$cloudflaredArchitecture.tgz")
+        logger.lifecycle("Downloading $uri")
+        uri.toURL().openStream().use { input ->
+            archive.outputStream().buffered().use(input::copyTo)
+        }
+        val actual = sha256(archive)
+        val expected = cloudflaredChecksums.getValue(cloudflaredArchitecture)
+        if (actual != expected) {
+            archive.delete()
+            throw GradleException("cloudflared checksum mismatch: expected $expected, got $actual")
+        }
+        // The release asset is a gzipped tarball containing a single executable
+        // named "cloudflared"; unpack it and rename to the architecture-specific
+        // name. System tar handles the gzip+tar in one pass.
+        val extracted = File(target.parentFile, "cloudflared")
+        extracted.delete()
+        project.exec {
+            commandLine("tar", "-xzf", archive.absolutePath, "-C", target.parentFile.absolutePath)
+        }
+        archive.delete()
+        require(extracted.isFile) { "Extracted cloudflared binary is missing" }
+        check(extracted.renameTo(target)) { "Unable to move extracted cloudflared binary" }
+        check(target.setExecutable(true, false)) { "Unable to make ${target.name} executable" }
+    }
+}
+
 // Compose Desktop only consumes app resources from common/, <os>/, or
 // <os>-<arch>/ below appResourcesRootDir. Keep the checked-in native binaries
 // in their existing layout and create the expected hierarchy as a build output.
 val prepareNativeAppResources by tasks.registering(Sync::class) {
     description = "Stage native libraries for Compose Desktop packaging"
     group = "distribution"
-    dependsOn("buildSparkleHelper", "buildBiometricHelper", "downloadTorrServer")
+    dependsOn("buildSparkleHelper", "buildBiometricHelper", "downloadTorrServer", "downloadCloudflared")
 
     from("src/main/resources/dist") {
         into("common")
@@ -610,6 +686,11 @@ val prepareNativeAppResources by tasks.registering(Sync::class) {
     from(layout.buildDirectory.dir("torrserver")) {
         into("common/TorrServer")
         include("TorrServer-darwin-*")
+        filePermissions { unix("rwxr-xr-x") }
+    }
+    from(layout.buildDirectory.dir("cloudflared")) {
+        into("common/Cloudflared")
+        include("cloudflared-darwin-*")
         filePermissions { unix("rwxr-xr-x") }
     }
     from("THIRD_PARTY_NOTICES.md") {
@@ -768,6 +849,8 @@ val repairPackagedNativePermissions = tasks.register("repairPackagedNativePermis
         }
         val torrServer = File(resources, "TorrServer/$torrServerBinaryName")
         require(torrServer.isFile && torrServer.canExecute()) { "Packaged TorrServer is not executable" }
+        val cloudflared = File(resources, "Cloudflared/$cloudflaredBinaryName")
+        require(cloudflared.isFile && cloudflared.canExecute()) { "Packaged cloudflared is not executable" }
         logger.lifecycle("Restored executable permissions on ${nativeFiles.size} packaged native payload(s)")
     }
 }

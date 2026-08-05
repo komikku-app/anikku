@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.8.0] — 2026-08-05
+
+### Watch Together — over the internet, zero setup
+
+**Hosting a room now works anywhere**
+- Rooms are exposed to the internet through a bundled Cloudflare tunnel
+  (`cloudflared` ships inside the app — no accounts, no domains, no port
+  forwarding, nothing to install). Guests across the world join through a
+  share link: `https://<tunnel>/room/<CODE>`.
+- The share link is shown right in the room dialog — copy it to anyone,
+  browser or Anikku guest, anywhere.
+- Same-network behavior is untouched: LAN discovery by code still works, and
+  if the tunnel can't start (offline, binary unavailable) rooms silently fall
+  back to the exact same local flow as before.
+
+**Joining is link-first**
+- The room dialog accepts a full share link or a bare code; links join
+  directly (TLS), codes still find the room on your network.
+
+**Under the hood**
+- The browser join page now mirrors the page scheme (wss over https), so
+  tunnel-hosted browser guests aren't blocked by mixed-content rules.
+- The tunnel is pinned and checksum-verified at build time like the other
+  bundled native helpers; the process is watched and torn down at quit.
+
 ## [1.7.0] — 2026-08-05
 
 ### The polish release

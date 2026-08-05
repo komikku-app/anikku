@@ -6,7 +6,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
- * Wire protocol for Watch Together rooms (LAN, JSON over WebSocket).
+ * Wire protocol for Watch Together rooms (JSON over WebSocket — LAN, or over
+ * the internet through the bundled Cloudflare tunnel).
  *
  * Messages are relayed verbatim to every other room member; the server only
  * inspects [Episode] (stored so late joiners receive the current media) and
@@ -97,4 +98,46 @@ object WtCodes {
     }
 
     fun isValid(code: String): Boolean = code.length == CODE_LENGTH && code.all { it in ALPHABET }
+}
+
+/**
+ * Parsing for shared room links — the internet way to join a room.
+ *
+ * A host exposing its room through the Cloudflare tunnel shares
+ * `https://<tunnel>/room/<CODE>`; a guest pastes that link (or the bare code,
+ * which still means LAN discovery). Links carry the host, so no UDP discovery
+ * is needed: https/wss links join over a TLS WebSocket, http/ws over plain.
+ */
+object WtLinks {
+
+    /** A join target extracted from a shared link. */
+    data class JoinTarget(
+        val secure: Boolean,
+        val host: String,
+        val port: Int,
+        val code: String,
+    )
+
+    private val LINK_REGEX = Regex(
+        "^(https?|wss?)://([^/:]+)(?::(\\d+))?/room/([A-Za-z0-9]{6})/?$",
+    )
+
+    fun parse(input: String): JoinTarget? {
+        val match = LINK_REGEX.matchEntire(input.trim()) ?: return null
+        val scheme = match.groupValues[1]
+        val host = match.groupValues[2]
+        val portText = match.groupValues[3]
+        val code = match.groupValues[4].uppercase()
+        if (!WtCodes.isValid(code)) return null
+        val secure = scheme == "https" || scheme == "wss"
+        val port = when {
+            portText.isNotEmpty() -> portText.toIntOrNull() ?: return null
+            secure -> 443
+            else -> 80
+        }
+        return JoinTarget(secure, host, port, code)
+    }
+
+    /** Whether [input] is a full join link (vs. a bare code for LAN discovery). */
+    fun isJoinable(input: String): Boolean = parse(input) != null
 }

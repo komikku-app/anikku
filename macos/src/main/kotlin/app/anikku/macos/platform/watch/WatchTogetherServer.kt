@@ -546,7 +546,9 @@ private val JOIN_PAGE = """
 <div id="status"></div>
 <script>
 var code = location.pathname.split('/').pop();
-var ws = new WebSocket('ws://' + location.host + '/room/' + code);
+// The page is served over https through the Cloudflare tunnel — browsers block
+// ws:// on an https page as mixed content, so mirror the page's scheme.
+var ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/room/' + code);
 var v = document.getElementById('v');
 var info = document.getElementById('info');
 var statusEl = document.getElementById('status');

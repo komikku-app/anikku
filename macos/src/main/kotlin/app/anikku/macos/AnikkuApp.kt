@@ -36,6 +36,7 @@ import app.anikku.macos.platform.update.AppInfo
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.watch.LocalWatchTogetherServer
+import app.anikku.macos.platform.watch.LocalWatchTogetherTunnel
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.backup.LocalBackupManager
@@ -555,6 +556,7 @@ fun main() = application {
             LocalSyncYomiService provides app.syncYomiService,
             LocalBackgroundJobs provides app.backgroundJobs,
             LocalWatchTogetherServer provides app.watchTogetherServer,
+            LocalWatchTogetherTunnel provides app.watchTogetherTunnel,
         ) {
             AnikkuTheme(
                 theme = settingsState.theme,

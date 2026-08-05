@@ -9,6 +9,7 @@ import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.local.LocalLibraryRepository
 import app.anikku.macos.platform.watch.WatchTogetherServer
+import app.anikku.macos.platform.watch.WatchTogetherTunnel
 import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
@@ -114,6 +115,12 @@ class AnikkuApplication {
 
     /** LAN Watch Together room server — starts on demand, stopped at shutdown. */
     val watchTogetherServer: WatchTogetherServer = WatchTogetherServer()
+
+    /**
+     * Cloudflare tunnel for internet Watch Together rooms — starts lazily on
+     * the first room, stopped at shutdown. Null URL means LAN-only rooms.
+     */
+    val watchTogetherTunnel: WatchTogetherTunnel = WatchTogetherTunnel()
 
     private val shutdownStarted = AtomicBoolean(false)
 
@@ -447,8 +454,10 @@ class AnikkuApplication {
         // Phase 7.6: Notifications
         notificationManager.shutdown()
 
-        // LAN Watch Together rooms — drop members and unbind the port.
+        // Watch Together rooms — drop members and unbind the port; the
+        // internet tunnel dies with the process.
         watchTogetherServer.stopServer()
+        watchTogetherTunnel.stop()
 
         storageManager.close()
         applicationScope.cancel()

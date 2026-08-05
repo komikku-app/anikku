@@ -53,4 +53,53 @@ class WatchTogetherProtocolTest {
         assertTrue(!WtCodes.isValid("ABCDE0")) // 0 excluded
         assertTrue(!WtCodes.isValid("ABCDEI")) // I excluded
     }
+
+    // -----------------------------------------------------------------------
+    // WtLinks — shared room links (internet joins)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `parses a shared tunnel link to a TLS join target`() {
+        val target = WtLinks.parse("https://anime-night-2026.trycloudflare.com/room/ABC234")
+        assertEquals(
+            WtLinks.JoinTarget(secure = true, host = "anime-night-2026.trycloudflare.com", port = 443, code = "ABC234"),
+            target,
+        )
+        assertTrue(WtLinks.isJoinable("https://anime-night-2026.trycloudflare.com/room/ABC234"))
+    }
+
+    @Test
+    fun `parses plain http links with explicit ports as ws joins`() {
+        val target = WtLinks.parse("http://192.168.1.10:18234/room/abc234")
+        assertEquals(
+            WtLinks.JoinTarget(secure = false, host = "192.168.1.10", port = 18234, code = "ABC234"),
+            target,
+        )
+    }
+
+    @Test
+    fun `accepts wss and ws schemes and a trailing slash`() {
+        val wss = WtLinks.parse("wss://host.example/room/ABC234/")
+        assertTrue(wss != null && wss.secure && wss.port == 443)
+        val ws = WtLinks.parse("ws://host.example/room/ABC234")
+        assertTrue(ws != null && !ws.secure && ws.port == 80)
+        assertEquals(8080, WtLinks.parse("ws://host.example:8080/room/ABC234")?.port)
+    }
+
+    @Test
+    fun `rejects malformed links and invalid codes`() {
+        assertNull(WtLinks.parse("https://host.example/room/ABC23")) // too short
+        assertNull(WtLinks.parse("https://host.example/room/ABC23I")) // I excluded
+        assertNull(WtLinks.parse("https://host.example/room/ABCDE0")) // 0 excluded
+        assertNull(WtLinks.parse("https://host.example/room/ABC234/extra"))
+        assertNull(WtLinks.parse("https://host.example/room/ABC234?x=1"))
+        assertNull(WtLinks.parse("not a link"))
+        assertNull(WtLinks.parse(""))
+    }
+
+    @Test
+    fun `a bare code is not a link - it means LAN discovery`() {
+        assertNull(WtLinks.parse("ABC234"))
+        assertTrue(!WtLinks.isJoinable("ABC234"))
+    }
 }
