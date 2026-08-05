@@ -663,6 +663,8 @@ data class PlayerScreen(
         val watchStatus by watchSession.status.collectAsState()
         var showWatchDialog by remember { mutableStateOf(false) }
         var joinCodeInput by remember { mutableStateOf("") }
+        // Your display name in the room — editable in the dialog, sent on join.
+        var yourName by remember { mutableStateOf(watchSession.name) }
         // Confirmation shown before the host leaves with guests in the room.
         var confirmLeaveRoom by remember { mutableStateOf(false) }
         // Last saved GIF clip, shown in a confirmation dialog.
@@ -764,8 +766,12 @@ data class PlayerScreen(
                             ToastDuration.LONG,
                         )
                     } else if (url != lastRoomMediaUrl) {
+                        // The very first load as a guest starts where the host
+                        // is (the server replays the host's last sync on join);
+                        // episode changes mid-room start from 0.
+                        val startAt = if (lastRoomMediaUrl == null) watchSession.joinStartPosition else 0.0
                         lastRoomMediaUrl = url
-                        playerViewModel.loadEpisode(url)
+                        playerViewModel.loadEpisode(url, startPosition = startAt)
                     }
                 }
             }
@@ -925,7 +931,14 @@ data class PlayerScreen(
                 server = server,
             )
             if (started) {
-                watchSession.beginHostSync { Triple(currentPosition, !isPaused, playbackSpeed) }
+                watchSession.beginHostSync {
+                    WatchTogetherSession.SyncSnapshot(
+                        pos = currentPosition,
+                        playing = !isPaused,
+                        rate = playbackSpeed,
+                        duration = duration,
+                    )
+                }
             }
         }
 
@@ -1984,6 +1997,8 @@ data class PlayerScreen(
                 lanUrl = roomLanUrl,
                 status = watchStatus,
                 joinCode = joinCodeInput,
+                yourName = yourName,
+                onYourNameChange = { yourName = it; watchSession.rename(it) },
                 onJoinCodeChange = { joinCodeInput = it.uppercase().take(6) },
                 onStartRoom = { startWatchRoom() },
                 onJoin = {
@@ -3095,6 +3110,8 @@ private fun WatchTogetherDialog(
     lanUrl: String?,
     status: String?,
     joinCode: String,
+    yourName: String,
+    onYourNameChange: (String) -> Unit,
     onJoinCodeChange: (String) -> Unit,
     onStartRoom: () -> Unit,
     onJoin: () -> Unit,
@@ -3107,6 +3124,15 @@ private fun WatchTogetherDialog(
         title = { Text(if (role == WatchTogetherSession.Role.NONE) "Watch Together" else "Room ${code ?: ""}") },
         text = {
             Column {
+                // Your name — shown to everyone in the room (emojis welcome).
+                OutlinedTextField(
+                    value = yourName,
+                    onValueChange = onYourNameChange,
+                    label = { Text("Your name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
                 when (role) {
                     WatchTogetherSession.Role.NONE -> {
                         status?.let {

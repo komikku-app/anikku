@@ -33,11 +33,23 @@ private val logger = KotlinLogging.logger {}
  * the player) receive incoming control messages and episode updates.
  */
 class WatchTogetherSession(
-    private val httpClient: OkHttpClient = OkHttpClient(),
+    httpClient: OkHttpClient = defaultHttpClient(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val localActionGuardMillis: Long = 800L,
     sessionName: String = System.getProperty("user.name", "Anikku"),
 ) : AutoCloseable {
+
+    companion object {
+        /**
+         * The server's websocket read loop times out when a member sends
+         * nothing (NanoHTTPD's socket SO_TIMEOUT) — OkHttp PINGs keep the
+         * connection alive for members who are only watching.
+         */
+        private fun defaultHttpClient(): OkHttpClient =
+            OkHttpClient.Builder().pingInterval(15, java.util.concurrent.TimeUnit.SECONDS).build()
+    }
+
+    private val httpClient: OkHttpClient = httpClient
 
     enum class Role { NONE, HOST, GUEST }
 
@@ -68,7 +80,32 @@ class WatchTogetherSession(
     private var server: WatchTogetherServer? = null
     private var beacon: WatchTogetherDiscovery.Beacon? = null
     private var syncJob: Job? = null
-    private val sessionName: String = sessionName
+
+    @Volatile
+    private var sessionName: String = sessionName
+
+    /** The name this member is known by in the room (may change via [rename]). */
+    val name: String get() = sessionName
+
+    /**
+     * The host position captured by the FIRST sync received after joining —
+     * the "you're here, not at 0:00" anchor. The player uses it as the start
+     * position for the very first episode load as a guest.
+     */
+    @Volatile
+    private var joinPosition = 0.0
+    val joinStartPosition: Double get() = joinPosition
+
+    /**
+     * Change the display name shown to other members. Sent immediately if the
+     * room is connected; the server re-broadcasts the member list.
+     */
+    fun rename(name: String) {
+        val clean = name.trim().take(24)
+        if (clean.isEmpty() || clean == sessionName) return
+        sessionName = clean
+        sendRaw(WtMessage.Hello(clean))
+    }
 
     /**
      * When the user acted locally (play/pause/seek), their own relayed action
@@ -175,6 +212,7 @@ class WatchTogetherSession(
         this.server = null
         roomClosedNotified = false
         hasSyncBaseline = false
+        joinPosition = 0.0
         role.value = Role.GUEST
         roomCode.value = code
         status.value = null
@@ -219,16 +257,32 @@ class WatchTogetherSession(
         runCatching { socket.send(WtProtocol.encode(message)) }
     }
 
+    /** A snapshot of the host's playback state, broadcast once per second. */
+    data class SyncSnapshot(
+        val pos: Double,
+        val playing: Boolean,
+        val rate: Double,
+        /** Host's media length in seconds; guests use it as a timeline fallback. */
+        val duration: Double,
+    )
+
     /**
      * Host: start broadcasting the player's position once per second so
      * guests reconcile drift. [provider] is polled on the session's scope.
      */
-    fun beginHostSync(provider: () -> Triple<Double, Boolean, Double>) {
+    fun beginHostSync(provider: () -> SyncSnapshot) {
         syncJob?.cancel()
         syncJob = scope.launch {
             while (isActive && role.value == Role.HOST) {
-                val (pos, playing, rate) = provider()
-                sendRaw(WtMessage.Sync(pos = pos, playing = playing, rate = rate))
+                val snapshot = provider()
+                sendRaw(
+                    WtMessage.Sync(
+                        pos = snapshot.pos,
+                        playing = snapshot.playing,
+                        rate = snapshot.rate,
+                        duration = snapshot.duration,
+                    ),
+                )
                 delay(1_000)
             }
         }
@@ -265,6 +319,12 @@ class WatchTogetherSession(
                 }
                 is WtMessage.Sync -> {
                     if (role.value == Role.NONE) return@onMessage
+                    // The first sync after joining (replayed by the server on
+                    // open) anchors the guest's start position, so their very
+                    // first load can begin where the host is, not at 0:00.
+                    if (role.value == Role.GUEST && !hasSyncBaseline) {
+                        joinPosition = message.pos
+                    }
                     val now = System.nanoTime()
                     val recentlyActedLocally = now - lastLocalActionNanos < localActionGuardNanos
                     if (hasSyncBaseline && recentlyActedLocally) {

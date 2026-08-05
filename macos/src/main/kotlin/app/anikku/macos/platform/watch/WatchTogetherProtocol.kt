@@ -36,10 +36,20 @@ sealed class WtMessage {
     @SerialName("seek")
     data class Seek(val pos: Double, val by: String = "") : WtMessage()
 
-    /** Periodic host position broadcast; guests reconcile drift against it. */
+    /**
+     * Periodic host position broadcast; guests reconcile drift against it.
+     * [duration] is the host's known media length (seconds, -1 when unknown)
+     * so guests can render a usable timeline even when their own stream has
+     * no duration metadata.
+     */
     @Serializable
     @SerialName("sync")
-    data class Sync(val pos: Double, val playing: Boolean, val rate: Double = 1.0) : WtMessage()
+    data class Sync(
+        val pos: Double,
+        val playing: Boolean,
+        val rate: Double = 1.0,
+        val duration: Double = -1.0,
+    ) : WtMessage()
 
     /** Current media identity. Host sends it; the server keeps the latest for late joiners. */
     @Serializable

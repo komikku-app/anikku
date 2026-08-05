@@ -208,8 +208,13 @@ private fun PipControls(viewModel: PlayerViewModel) {
 
     Surface(color = Color(0xFF141414)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+            // The slider MUST declare valueRange: without it material3 clamps
+            // the value into the default 0..1 range, so a 5-minute position
+            // renders a FULL bar and dragging only seeks within 0-1 seconds.
+            val sliderMax = duration.toFloat().coerceAtLeast(1f)
             Slider(
-                value = position.toFloat().coerceIn(0f, duration.toFloat().coerceAtLeast(1f)),
+                value = position.toFloat().coerceIn(0f, sliderMax),
+                valueRange = 0f..sliderMax,
                 onValueChange = { viewModel.seekTo(it.toDouble()) },
                 enabled = duration > 0,
                 modifier = Modifier.fillMaxWidth().height(24.dp),

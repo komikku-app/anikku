@@ -56,6 +56,13 @@ class WatchTogetherServer(
         var episode: WtMessage.Episode? = null
         @Volatile
         var media: MediaHandle? = null
+        /**
+         * The most recent host [WtMessage.Sync] seen in this room. Replayed to
+         * late joiners (before the episode) so they start exactly where the
+         * host is instead of at 0:00 until the next 1 Hz tick.
+         */
+        @Volatile
+        var lastSync: WtMessage.Sync? = null
     }
 
     private val rooms = ConcurrentHashMap<String, Room>()
@@ -68,7 +75,13 @@ class WatchTogetherServer(
     fun startServer(): Boolean {
         if (isRunning) return true
         return try {
-            start(NanoHTTPD.SOCKET_READ_TIMEOUT, true)
+            // NanoHTTPD applies this timeout as Socket.setSoTimeout on EVERY
+            // accepted connection, and the websocket read loop only counts
+            // INCOMING frames as activity — with the default 5s, any member
+            // who goes quiet (a guest who's just watching) gets dropped after
+            // 5 seconds. Clients heartbeat every ~15s, so 120s is a generous
+            // dead-peer window without ever killing a healthy watcher.
+            start(120_000, true)
             isRunning = true
             logger.info { "Watch Together server listening on port $actualPort" }
             true
@@ -177,6 +190,12 @@ class WatchTogetherServer(
 
         override fun onOpen() {
             room.members.add(this)
+            // Late joiners first get the current position/play state, THEN the
+            // media — so the guest's player can jump straight to the host's
+            // spot once the file loads instead of flashing from 0:00.
+            room.lastSync?.let { sync ->
+                runCatching { send(WtProtocol.encode(sync)) }
+            }
             // Late joiners immediately receive the current media.
             room.episode?.let { episode ->
                 runCatching { send(WtProtocol.encode(episode)) }
@@ -202,6 +221,10 @@ class WatchTogetherServer(
                 }
                 is WtMessage.Episode -> {
                     room.episode = message // keep late joiners in sync
+                    relay(text)
+                }
+                is WtMessage.Sync -> {
+                    room.lastSync = message // replay to late joiners on open
                     relay(text)
                 }
                 else -> relay(text)
@@ -476,56 +499,243 @@ private val JOIN_PAGE = """
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Anikku — Watch Together</title>
 <style>
-  html,body{height:100%;margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,sans-serif}
-  video{width:100%;height:calc(100% - 52px);background:#000}
-  #bar{height:52px;display:flex;gap:10px;align-items:center;justify-content:center;font-size:14px}
-  button{background:#1c1c1e;color:#eee;border:1px solid #3a3a3c;border-radius:8px;padding:8px 20px;cursor:pointer;font-size:14px}
-  button:hover{background:#2c2c2e}
-  #info{opacity:.7}
+  html,body{height:100%;margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}
+  #stage{height:100%;display:flex;flex-direction:column}
+  video{width:100%;flex:1;background:#000;min-height:0}
+  #bar{height:54px;display:flex;gap:8px;align-items:center;justify-content:center;padding:0 10px;font-size:14px;flex-wrap:nowrap}
+  #bar button{background:#1c1c1e;color:#eee;border:1px solid #3a3a3c;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px;min-width:44px;white-space:nowrap}
+  #bar button:hover{background:#2c2c2e}
+  #playBtn{min-width:56px}
+  #scrub{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+  input[type=range]{flex:1;accent-color:#6c5ce7;height:26px;min-width:0;margin:0}
+  #time{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;opacity:.8}
+  #info{opacity:.7;font-size:12px;text-align:center;padding:4px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #nameModal{position:fixed;inset:0;background:rgba(0,0,0,.74);display:none;align-items:center;justify-content:center;z-index:10}
+  #nameCard{background:#161618;border:1px solid #2c2c2e;border-radius:14px;padding:20px;width:min(330px,88vw);position:relative;box-sizing:border-box}
+  #nameCard h2{margin:0 0 4px;font-size:17px}
+  #nameCard p{margin:0 0 14px;font-size:13px;opacity:.65;line-height:1.4}
+  #nameCard input{width:100%;box-sizing:border-box;background:#1c1c1e;color:#eee;border:1px solid #3a3a3c;border-radius:8px;padding:10px;font-size:15px}
+  #closeName{position:absolute;top:6px;right:10px;background:none;border:none;color:#999;font-size:18px;cursor:pointer;padding:6px;line-height:1}
+  #saveName{width:100%;margin-top:12px;background:#6c5ce7;border:none;color:#fff;border-radius:8px;padding:10px;font-size:15px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #status{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#1c1c1e;border:1px solid #3a3a3c;padding:6px 14px;border-radius:999px;font-size:12px;z-index:5;display:none;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
-<video id="v" controls playsinline></video>
-<div id="bar">
-  <button onclick="send({type:'play'})">&#9654; Play</button>
-  <button onclick="send({type:'pause'})">&#10074;&#10074; Pause</button>
-  <span id="info">Connecting&#8230;</span>
+<div id="stage">
+  <video id="v" playsinline webkit-playsinline preload="auto"></video>
+  <div id="bar">
+    <button id="playBtn" onclick="togglePlay()">&#9654;</button>
+    <button onclick="skip(-10)">-10</button>
+    <button onclick="skip(10)">+10</button>
+    <div id="scrub">
+      <input type="range" id="seekBar" min="0" max="1" step="0.1" value="0" disabled oninput="onScrub()" onchange="onScrubEnd()">
+      <span id="time">0:00</span>
+    </div>
+  </div>
+  <div id="info">Connecting&#8230;</div>
 </div>
+<div id="nameModal">
+  <div id="nameCard">
+    <button id="closeName" onclick="closeNamePrompt()" aria-label="Close">&#10005;</button>
+    <h2>What should we call you?</h2>
+    <p>Pick a name for this watch party — anything works, even emojis. Close to keep a random one.</p>
+    <input id="nameInput" maxlength="20" autocomplete="off">
+    <button id="saveName" onclick="saveName()"></button>
+  </div>
+</div>
+<div id="status"></div>
 <script>
 var code = location.pathname.split('/').pop();
 var ws = new WebSocket('ws://' + location.host + '/room/' + code);
 var v = document.getElementById('v');
 var info = document.getElementById('info');
-var hasBaseline = false;
-var lastUser = 0; // ms of the last USER-initiated action
+var statusEl = document.getElementById('status');
+var seekBar = document.getElementById('seekBar');
+var timeEl = document.getElementById('time');
+var playBtn = document.getElementById('playBtn');
+
+// Random name assigned immediately on load; the prompt offers to replace it.
+var NAMES = ['Sakura','Neko','Senpai','Kami','Kaze','Hoshi','Tama','Rin','Yuki','Momo','Kuro','Aki','Kira','Sora','Hana'];
+function randomName() { return NAMES[Math.floor(Math.random() * NAMES.length)] + (10 + Math.floor(Math.random() * 90)); }
+var myName = randomName();
+
+var hasBaseline = false;   // first sync applied (either the join replay or a live tick)
+var lastUser = 0;          // ms of the last USER-initiated action (syncs back off for 800ms)
+var pendingSeek = null;    // position to apply once the video has metadata
+var mediaReady = false;    // loadedmetadata seen at least once
+var fallbackDuration = 0;  // host-reported duration; survives unknown stream duration
+var scrubbing = false;
+
 function send(m) { if (ws.readyState === 1) ws.send(JSON.stringify(m)); }
 function userAction() { lastUser = Date.now(); }
-ws.onopen = function () { send({type:'hello', name:'Browser'}); };
+// Heartbeat: the server drops sockets that send no frames for a while, and a
+// watching guest is otherwise silent — a JSON ping every 15s keeps us alive.
+setInterval(function () { send({type: 'ping'}); }, 15000);
+
+function fmt(s) {
+  s = Math.max(0, Math.floor(s || 0));
+  var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return (h ? h + ':' + ('0' + m).slice(-2) : m) + ':' + ('0' + sec).slice(-2);
+}
+
+function knownDuration() {
+  if (isFinite(v.duration) && v.duration > 0) return v.duration;
+  return fallbackDuration;
+}
+
+// Seek only when the video can take it; before metadata browsers silently
+// drop currentTime assignments, so queue the latest target instead.
+function applySeek(pos) {
+  if (!isFinite(pos) || pos < 0) return;
+  var dur = knownDuration();
+  if (mediaReady && dur > 0) {
+    v.currentTime = Math.min(pos, dur - 0.05);
+  } else {
+    pendingSeek = pos;
+  }
+}
+
+// Some engines (notably WKWebView) discard a seek issued while the media is
+// still coming up, so retry until the position actually sticks.
+function applyPendingSeek() {
+  if (pendingSeek == null) return;
+  if (!mediaReady || knownDuration() <= 0) return;
+  var target = pendingSeek;
+  var tries = 0;
+  (function trySeek() {
+    var dur = knownDuration();
+    v.currentTime = Math.min(target, dur - 0.05);
+    setTimeout(function () {
+      if (Math.abs(v.currentTime - target) > 0.3 && tries++ < 8) {
+        trySeek(); // position was reset — push it again
+      } else {
+        pendingSeek = null;
+        syncSeekBar();
+      }
+    }, 250);
+  })();
+}
+
+function syncSeekBar() {
+  var dur = knownDuration();
+  if (dur > 0) {
+    seekBar.max = dur;
+    seekBar.disabled = false;
+    if (!scrubbing) seekBar.value = v.currentTime;
+    timeEl.textContent = fmt(v.currentTime) + ' / ' + fmt(dur);
+  } else {
+    seekBar.max = 1;
+    seekBar.disabled = true;
+    timeEl.textContent = fmt(v.currentTime);
+  }
+}
+
+function togglePlay() {
+  if (v.paused) {
+    userAction(); send({type: 'play'});
+    v.play().catch(function () {});
+    applyPendingSeek();
+  } else {
+    userAction(); send({type: 'pause'}); v.pause();
+  }
+}
+
+function skip(delta) {
+  var target = (v.currentTime || 0) + delta;
+  var dur = knownDuration();
+  if (dur > 0) target = Math.min(Math.max(0, target), dur - 0.05);
+  userAction();
+  applySeek(target);
+  send({type: 'seek', pos: target});
+  syncSeekBar();
+}
+
+function onScrub() {
+  scrubbing = true;
+  timeEl.textContent = fmt(parseFloat(seekBar.value)) + ' / ' + fmt(parseFloat(seekBar.max));
+}
+function onScrubEnd() {
+  scrubbing = false;
+  var pos = parseFloat(seekBar.value);
+  userAction();
+  applySeek(pos);
+  send({type: 'seek', pos: pos});
+  syncSeekBar();
+}
+
+function flashStatus(text) {
+  statusEl.textContent = text;
+  statusEl.style.display = 'block';
+  clearTimeout(flashStatus._t);
+  flashStatus._t = setTimeout(function () { statusEl.style.display = 'none'; }, 4000);
+}
+
+ws.onopen = function () {
+  send({type: 'hello', name: myName});
+  document.getElementById('nameInput').value = myName;
+  document.getElementById('saveName').textContent = 'Join as ' + myName;
+  document.getElementById('nameModal').style.display = 'flex';
+  document.getElementById('nameInput').focus();
+};
+function closeNamePrompt() { document.getElementById('nameModal').style.display = 'none'; }
+function saveName() {
+  var name = document.getElementById('nameInput').value.trim().slice(0, 20);
+  if (name) { myName = name; send({type: 'hello', name: myName}); }
+  closeNamePrompt();
+  flashStatus('Joining as ' + myName);
+}
+document.getElementById('nameInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); saveName(); }
+  if (e.key === 'Escape') { e.preventDefault(); closeNamePrompt(); }
+});
+
 ws.onmessage = function (e) {
   var m; try { m = JSON.parse(e.data); } catch (err) { return; }
-  if (m.type === 'episode' && m.mediaUrl && v.src !== m.mediaUrl) v.src = m.mediaUrl;
-  if (m.type === 'play') { userAction(); v.play(); }
-  if (m.type === 'pause') { userAction(); v.pause(); }
-  if (m.type === 'seek') { userAction(); v.currentTime = m.pos; }
+  if (m.type === 'episode' && m.mediaUrl && v.src !== m.mediaUrl) {
+    // New media: wait for its metadata before applying any position, and let
+    // the next sync act as a fresh baseline for the new episode.
+    pendingSeek = null;
+    hasBaseline = false;
+    v.src = m.mediaUrl;
+  } else if (m.type === 'episode' && !m.mediaUrl) {
+    flashStatus('The host is playing a torrent — no stream to join here');
+  }
   if (m.type === 'sync') {
-    // First sync is the baseline; afterwards a sync that arrives right after
-    // the user's own action must not fight it (their action was already sent).
+    if (m.duration > 0) fallbackDuration = m.duration;
+    // First sync is the baseline; afterwards a sync arriving right after the
+    // user's own action must not fight it (their action was already sent).
     if (hasBaseline && Date.now() - lastUser < 800) return;
     hasBaseline = true;
-    if (Math.abs(v.currentTime - m.pos) > 0.75) v.currentTime = m.pos;
-    if (m.playing && v.paused) v.play();
+    if (Math.abs((v.currentTime || 0) - m.pos) > 0.75) applySeek(m.pos);
+    if (m.playing && v.paused) v.play().catch(function () {});
     if (!m.playing && !v.paused) v.pause();
+    syncSeekBar();
   }
+  if (m.type === 'play') { userAction(); v.play().catch(function () {}); }
+  if (m.type === 'pause') { userAction(); v.pause(); }
+  if (m.type === 'seek') { userAction(); applySeek(m.pos); }
   if (m.type === 'members') {
-    info.textContent = (m.names && m.names.length ? m.names.join(', ') + ' &middot; ' : '') + m.count + ' watching &middot; room ' + code;
+    info.textContent = (m.names && m.names.length ? m.names.join(', ') + ' \u00b7 ' : '') + m.count + ' watching \u00b7 room ' + code;
   }
+  if (m.type === 'room_closed') flashStatus(m.reason || 'The host closed the room');
 };
-// Only echo USER-initiated events (e.isTrusted) — programmatic changes from
-// sync would otherwise echo back and loop.
-v.addEventListener('play', function (e) { if (e.isTrusted) { userAction(); send({type:'play'}); } });
-v.addEventListener('pause', function (e) { if (e.isTrusted) { userAction(); send({type:'pause'}); } });
-v.addEventListener('seeked', function (e) { if (e.isTrusted) { userAction(); send({type:'seek', pos: v.currentTime}); } });
-ws.onclose = function () { info.textContent = 'Disconnected'; };
+
+v.addEventListener('loadedmetadata', function () {
+  mediaReady = true;
+  applyPendingSeek();
+  syncSeekBar();
+});
+v.addEventListener('canplay', applyPendingSeek);
+v.addEventListener('durationchange', syncSeekBar);
+v.addEventListener('timeupdate', function () { if (!scrubbing) syncSeekBar(); });
+// Play/pause button icon follows the video. NOTE: no "echo user events" here
+// — the custom controls send explicitly, and trusting media-event flags is
+// unreliable across engines (some webviews mark programmatic play/pause/seek
+// events as user-initiated, which would echo syncs back as a message storm).
+v.addEventListener('play', function () { playBtn.innerHTML = '&#10074;&#10074;'; });
+v.addEventListener('pause', function () { playBtn.innerHTML = '&#9654;'; });
+v.addEventListener('error', function () { flashStatus('Could not load the video stream'); });
+ws.onclose = function () { info.textContent = 'Disconnected'; flashStatus('Disconnected'); };
 </script>
 </body>
 </html>

@@ -84,6 +84,30 @@ class WatchTogetherServerTest {
     }
 
     @Test
+    fun `late joiner receives the stored sync before the episode`() {
+        val mediaUrl = "http://192.168.1.10:18234/media/ABC123/m1"
+        val info = server.createRoom(episode(mediaUrl = mediaUrl), null)!!
+        val host = connect(info.code)
+        host.awaitOpen()
+        host.awaitMembers(1)
+        // Drain the stored episode the host got on open.
+        assertEquals(episode(mediaUrl = mediaUrl), host.awaitMessage())
+
+        // The host's position broadcast is stored by the server…
+        host.send(WtProtocol.encode(WtMessage.Sync(pos = 600.0, playing = false, rate = 1.0, duration = 1440.0)))
+        val storedDeadline = System.currentTimeMillis() + 5_000
+        while (server.room(info.code)?.lastSync == null && System.currentTimeMillis() < storedDeadline) Thread.sleep(20)
+        assertNotNull(server.room(info.code)?.lastSync)
+
+        // …and replayed to the late joiner BEFORE the media, so the guest can
+        // start exactly where the host is instead of flashing from 0:00.
+        val guest = connect(info.code)
+        guest.awaitOpen()
+        assertEquals(WtMessage.Sync(pos = 600.0, playing = false, rate = 1.0, duration = 1440.0), guest.awaitMessage())
+        assertEquals(episode(mediaUrl = mediaUrl), guest.awaitMessage())
+    }
+
+    @Test
     fun `browser join page is served for existing rooms only`() {
         val info = server.createRoom(episode(), null)!!
         val ok = get("http://127.0.0.1:${server.actualPort}/room/${info.code}")

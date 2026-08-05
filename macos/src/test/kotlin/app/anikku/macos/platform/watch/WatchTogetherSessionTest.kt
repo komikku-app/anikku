@@ -2,6 +2,7 @@ package app.anikku.macos.platform.watch
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.fail
@@ -79,7 +80,7 @@ class WatchTogetherSessionTest {
         host.startRoom(episode(), WatchTogetherSession.MediaSpec.Url("http://example.com/v.mp4"), server)
         val code = host.roomCode.value ?: fail("room did not start")
         guest.joinRoomAt("127.0.0.1", server.actualPort, code)
-        host.beginHostSync { Triple(hostCtrl.position, !hostCtrl.isPaused, hostCtrl.rate) }
+        host.beginHostSync { WatchTogetherSession.SyncSnapshot(hostCtrl.position, !hostCtrl.isPaused, hostCtrl.rate, 1440.0) }
 
         // The baseline sync (and subsequent drift corrections) seek the guest.
         guestCtrl.awaitCall { it.startsWith("seek:100.0") }
@@ -105,7 +106,7 @@ class WatchTogetherSessionTest {
         host.startRoom(episode(), WatchTogetherSession.MediaSpec.Url("http://example.com/v.mp4"), server)
         val code = host.roomCode.value ?: fail("room did not start")
         guest.joinRoomAt("127.0.0.1", server.actualPort, code)
-        host.beginHostSync { Triple(50.0, true, 1.0) } // always "playing"
+        host.beginHostSync { WatchTogetherSession.SyncSnapshot(50.0, true, 1.0, 1440.0) } // always "playing"
 
         // Baseline sync applies (guest starts paused → sync says playing → resume).
         guestCtrl.awaitCall { it == "togglePause" }
@@ -170,6 +171,49 @@ class WatchTogetherSessionTest {
 
         awaitValue(flow = guest.role) { it == WatchTogetherSession.Role.NONE }
         assertEquals("The host closed the room", guest.status.value)
+    }
+
+    @Test
+    fun `guest captures the host position from the join-time sync replay`() {
+        val hostCtrl = RecordingController(position = 600.0)
+        val guestCtrl = RecordingController()
+        val host = session("Host", hostCtrl)
+        val guest = session("Bob", guestCtrl)
+
+        host.startRoom(episode(), WatchTogetherSession.MediaSpec.Url("http://example.com/v.mp4"), server)
+        val code = host.roomCode.value ?: fail("room did not start")
+        // The host is paused at 10:00 and already broadcasting when the guest joins.
+        host.beginHostSync { WatchTogetherSession.SyncSnapshot(600.0, false, 1.0, 1440.0) }
+
+        // Wait until the server stored the host's broadcast for replay.
+        val storedDeadline = System.currentTimeMillis() + 5_000
+        while (server.room(code)?.lastSync == null && System.currentTimeMillis() < storedDeadline) Thread.sleep(20)
+        assertNotNull(server.room(code)?.lastSync)
+
+        guest.joinRoomAt("127.0.0.1", server.actualPort, code)
+
+        // The join-time sync anchors the guest's start position…
+        val anchorDeadline = System.currentTimeMillis() + 5_000
+        while (guest.joinStartPosition == 0.0 && System.currentTimeMillis() < anchorDeadline) Thread.sleep(20)
+        assertEquals(600.0, guest.joinStartPosition)
+        // …and is applied like any baseline sync (seek straight to 10:00).
+        guestCtrl.awaitCall { it == "seek:600.0" }
+    }
+
+    @Test
+    fun `renaming broadcasts the new name to the other members`() {
+        val host = session("Host", RecordingController())
+        val guest = session("Bob", RecordingController())
+
+        host.startRoom(episode(), WatchTogetherSession.MediaSpec.Url("http://example.com/v.mp4"), server)
+        val code = host.roomCode.value ?: fail("room did not start")
+        guest.joinRoomAt("127.0.0.1", server.actualPort, code)
+
+        awaitValue(flow = host.memberNames) { it.contains("Bob") }
+        // Emojis are welcome in names.
+        guest.rename("Sakura\uD83D\uDC31")
+        awaitValue(flow = host.memberNames) { it.contains("Sakura\uD83D\uDC31") }
+        assertFalse(host.memberNames.value.contains("Bob"))
     }
 
     // -----------------------------------------------------------------------

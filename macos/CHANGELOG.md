@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.6.1] — 2026-08-05
+
+### Watch Together — real sync, real guests
+
+- **Join where the host is**: the room server now replays the host's current
+  position + play state to every new member the instant they join, so a guest
+  lands exactly at the host's spot instead of flashing from 0:00. The macOS
+  app guest also starts its first load at that position.
+- **Guests stay connected**: the server's per-socket read timeout (5s) was
+  silently killing any member who stopped sending — a guest who's just
+  watching got disconnected seconds after joining. Timeout raised to 120s and
+  both clients heartbeat (OkHttp pings / browser JSON ping) — the room stays
+  alive for the whole watch.
+- **Working browser controls**: the join page got custom play/pause, ±10s
+  skip buttons and a seek slider backed by the host's real duration (sent in
+  every sync), so the timeline works even when the stream itself reports no
+  duration. Seeks are queued until the video metadata loads and retried until
+  they stick (browsers silently drop early seeks).
+- **Name popup on join**: opening the link assigns a random name instantly,
+  then prompts for your own (any name, emojis welcome); ✕/Esc keeps the
+  random one. The macOS dialog has a name field too.
+- **No more message storms**: the browser page no longer echoes media events
+  back as play/pause/seek (some engines mark programmatic events as
+  user-initiated, which looped the room at 1 Hz).
+
+### PiP window
+
+- Seek slider fixed: it now spans the full episode duration with the current
+  position as the thumb, so you can click/drag anywhere ahead to skip there
+  (previously the bar always rendered full and dragging only sought within
+  0–1 seconds).
+
+
 ## [1.6.0] — 2026-08-02
 
 ### Polish: tab state & window persistence
