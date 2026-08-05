@@ -160,4 +160,7 @@ fun platformModule(app: AnikkuApplication) = module {
 
     // Phase 9.6: macOS Dock Integration
     single { MacOSDockManager }
+
+    // Watch Together — LAN room server
+    single { app.watchTogetherServer }
 }

@@ -8,6 +8,7 @@ import app.anikku.macos.platform.MacOSBackgroundJobs
 import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.local.LocalLibraryRepository
+import app.anikku.macos.platform.watch.WatchTogetherServer
 import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
@@ -110,6 +111,9 @@ class AnikkuApplication {
     val biometricAuth: MacOSBiometricAuth
     val appUpdateChecker: AppUpdateChecker
     val sparkleUpdater: SparkleUpdater
+
+    /** LAN Watch Together room server — starts on demand, stopped at shutdown. */
+    val watchTogetherServer: WatchTogetherServer = WatchTogetherServer()
 
     private val shutdownStarted = AtomicBoolean(false)
 
@@ -442,6 +446,10 @@ class AnikkuApplication {
 
         // Phase 7.6: Notifications
         notificationManager.shutdown()
+
+        // LAN Watch Together rooms — drop members and unbind the port.
+        watchTogetherServer.stopServer()
+
         storageManager.close()
         applicationScope.cancel()
 

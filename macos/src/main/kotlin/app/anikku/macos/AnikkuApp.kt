@@ -29,6 +29,7 @@ import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
+import app.anikku.macos.platform.watch.LocalWatchTogetherServer
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.backup.LocalBackupManager
@@ -493,6 +494,7 @@ fun main() = application {
             LocalGoogleDriveService provides app.googleDriveService,
             LocalSyncYomiService provides app.syncYomiService,
             LocalBackgroundJobs provides app.backgroundJobs,
+            LocalWatchTogetherServer provides app.watchTogetherServer,
         ) {
             AnikkuTheme(
                 theme = settingsState.theme,

@@ -6,6 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.5.0] — 2026-08-02
+
+### New: media keys + Now Playing (macOS-native)
+
+- Playback is controllable from the keyboard's media keys, AirPods remote, and
+  the Control Center / lock screen — play, pause, toggle, next/previous
+  episode, and seek.
+- The Now Playing widget shows "Anime — Ep N" with the artist, live position
+  (updated ~2s) and correct play/pause state; it clears when you leave the
+  player.
+- Built on the public MediaPlayer framework via a new JNA Objective-C block
+  bridge (`MPRemoteCommandCenter` + `MPNowPlayingInfoCenter`) — no private
+  frameworks, no accessibility permissions.
+
+### New: screenshot + 5-second GIF clip capture
+
+- New GIF button in the player top bar (and the `G` key) captures the last
+  ~5 seconds of playback as an animated GIF: decoded frames are downscaled to
+  480px and assembled with javax.imageio — no external tools. Saved to
+  `~/Pictures/Anikku/Anikku-Clip-<stamp>.gif`, with Open/Share buttons.
+- The existing PNG screenshot button (camera icon / `S`) is unchanged.
+
+### New: Watch Together rooms (LAN)
+
+- Start a room from the player — guests on the same network join with a
+  6-character code (auto-discovered via UDP beacon, no configuration).
+- Play/pause/seek stay in sync for everyone; the host broadcasts its position
+  once per second and guests reconcile drift. Anyone can control.
+- The host's episode streams to guests through the room server — local
+  downloads/files play directly, online streams are proxied with byte-range
+  support — and a browser page at `http://<host>:18234/room/<code>` works for
+  friends without the app (mp4/HLS; MKV/torrents need the app).
+- Room code + watcher count show as a chip in the player top bar.
+
+### Tests
+- 19 new tests: animated-GIF writer/recorder, Watch Together protocol
+  round-trips, room server (relay, membership, late-joiner episode push,
+  unknown-room rejection, join page, local-file ranges, upstream proxy with
+  Range/header passthrough), UDP discovery, and the Now Playing bridge
+  lifecycle. Full suite: 749 green.
+
 ## [1.4.3] — 2026-08-02
 
 ### Fix: download tracker didn't update live (stuck at 0%)

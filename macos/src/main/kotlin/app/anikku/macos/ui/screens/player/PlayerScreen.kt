@@ -26,8 +26,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.Gif
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,8 +40,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -87,7 +93,13 @@ import app.anikku.macos.platform.library.LocalAnimeSourceMatcher
 import app.anikku.macos.platform.library.SourceMatch
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.MacOSDockManager
+import app.anikku.macos.platform.MacOSNowPlayingHandler
+import app.anikku.macos.platform.MacOSShareUtil
 import app.anikku.macos.platform.media.MacOSHttpServer
+import app.anikku.macos.platform.watch.LocalWatchTogetherServer
+import app.anikku.macos.platform.watch.WatchTogetherSession
+import app.anikku.macos.platform.watch.WtCodes
+import app.anikku.macos.platform.watch.WtMessage
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.MacOSMenuBarFactory
 import app.anikku.macos.ui.components.LocalToastHost
@@ -109,6 +121,7 @@ import eu.kanade.tachiyomi.animesource.model.Track
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -627,6 +640,23 @@ data class PlayerScreen(
         // Initialize the player view model (Phase 6)
         val playerViewModel = remember { PlayerViewModel() }
 
+        // Watch Together — LAN sync room. Player-scoped: the session (and any
+        // room it hosts) lives and dies with this player screen.
+        val watchTogetherServer = LocalWatchTogetherServer.current
+        val watchSession = remember { WatchTogetherSession() }
+        DisposableEffect(Unit) {
+            onDispose { watchSession.close() }
+        }
+        val roomRole by watchSession.role.collectAsState()
+        val roomCode by watchSession.roomCode.collectAsState()
+        val roomMemberCount by watchSession.memberCount.collectAsState()
+        val roomLanUrl by watchSession.lanUrl.collectAsState()
+        val watchStatus by watchSession.status.collectAsState()
+        var showWatchDialog by remember { mutableStateOf(false) }
+        var joinCodeInput by remember { mutableStateOf("") }
+        // Last saved GIF clip, shown in a confirmation dialog.
+        var clipSavedFile by remember { mutableStateOf<File?>(null) }
+
         // Create and manage the local HTTP server for serving downloaded files
         // Derive the downloads directory from the first completed download's parent dir,
         // or fall back to a reasonable default.
@@ -693,6 +723,128 @@ data class PlayerScreen(
         var videoErrorDiagnostic by remember { mutableStateOf<ErrorDiagnostic?>(null) }
         var hasScrobbledThisEpisode by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+
+        // Watch Together — incoming control messages + guest episode auto-load.
+        LaunchedEffect(watchSession) {
+            var lastRoomMediaUrl: String? = null
+            watchSession.onControl = { message ->
+                when (message) {
+                    is WtMessage.Sync -> {
+                        if (message.playing != !isPaused) playerViewModel.togglePause()
+                        if (kotlin.math.abs(message.pos - currentPosition) > 0.75) {
+                            playerViewModel.seekTo(message.pos)
+                        }
+                        if (kotlin.math.abs(message.rate - playbackSpeed) > 0.05) {
+                            playerViewModel.setSpeed(message.rate)
+                        }
+                    }
+                    is WtMessage.Play -> if (isPaused) playerViewModel.togglePause()
+                    is WtMessage.Pause -> if (!isPaused) playerViewModel.togglePause()
+                    is WtMessage.Seek -> playerViewModel.seekTo(message.pos)
+                    else -> Unit
+                }
+            }
+            watchSession.onEpisode = { episode ->
+                if (watchSession.role.value == WatchTogetherSession.Role.GUEST) {
+                    val url = episode.mediaUrl
+                    if (url.isNullOrBlank()) {
+                        toastHost.show(
+                            "Host is streaming a torrent — open the episode in Anikku to join",
+                            ToastDuration.LONG,
+                        )
+                    } else if (url != lastRoomMediaUrl) {
+                        lastRoomMediaUrl = url
+                        playerViewModel.loadEpisode(url)
+                    }
+                }
+            }
+        }
+
+        // Now Playing — publish metadata to Control Center ~every 2s while an
+        // episode is actually loaded; clear it while idle/error.
+        LaunchedEffect(playerViewModel, isPaused, playbackState, duration, currentEpisodeIndex) {
+            var lastPush = 0L
+            while (isActive) {
+                if (playbackState != PlaybackState.IDLE && playbackState != PlaybackState.ERROR && duration > 0) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastPush >= 2_000L) {
+                        val episodeLabel = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber
+                            ?: (episodeNumber ?: 0.0)
+                        MacOSNowPlayingHandler.updateNowPlaying(
+                            title = "$animeTitle — Ep ${String.format("%.0f", episodeLabel)}",
+                            artist = animeTitle,
+                            durationSeconds = duration,
+                            elapsedSeconds = currentPosition,
+                            playing = !isPaused,
+                            rate = playbackSpeed,
+                        )
+                        lastPush = now
+                    }
+                } else {
+                    MacOSNowPlayingHandler.clearNowPlaying()
+                }
+                delay(1000)
+            }
+        }
+
+        // Host: keep the room's media in sync when the episode/stream changes.
+        LaunchedEffect(resolvedVideo, currentEpisodeIndex, watchSession) {
+            val video = resolvedVideo ?: return@LaunchedEffect
+            if (watchSession.role.value != WatchTogetherSession.Role.HOST) return@LaunchedEffect
+            val server = watchTogetherServer ?: return@LaunchedEffect
+            watchSession.updateRoomMedia(
+                episode = WtMessage.Episode(
+                    title = animeTitle,
+                    name = allEpisodes.getOrNull(currentEpisodeIndex)?.name ?: "",
+                    number = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0,
+                    kind = "direct",
+                    duration = duration,
+                ),
+                media = WatchTogetherSession.MediaSpec.Url(video.url, video.headers),
+                server = server,
+            )
+        }
+
+        // Host: create a room around the current episode's media. Guests reach
+        // local files / streams through the room server (LAN); magnet streams
+        // are announced without media so guests open the episode themselves.
+        fun startWatchRoom() {
+            val server = watchTogetherServer
+            if (server == null) {
+                toastHost.show(
+                    text = "Watch Together is unavailable",
+                    duration = ToastDuration.SHORT,
+                    isError = true,
+                    source = sourceId?.toString(),
+                    location = "PlayerScreen.startWatchRoom",
+                )
+                return
+            }
+            val mediaSpec = when {
+                resolvedVideo?.url != null ->
+                    WatchTogetherSession.MediaSpec.Url(resolvedVideo!!.url, resolvedVideo?.headers)
+                episodeUrl != null &&
+                    !episodeUrl!!.startsWith("http", ignoreCase = true) &&
+                    !episodeUrl!!.startsWith("magnet", ignoreCase = true) &&
+                    runCatching { File(episodeUrl!!).isFile }.getOrDefault(false) ->
+                    WatchTogetherSession.MediaSpec.Local(File(episodeUrl!!))
+                else -> WatchTogetherSession.MediaSpec.Magnet
+            }
+            val started = watchSession.startRoom(
+                episode = WtMessage.Episode(
+                    title = animeTitle,
+                    name = allEpisodes.getOrNull(currentEpisodeIndex)?.name ?: "",
+                    number = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0,
+                    kind = if (mediaSpec is WatchTogetherSession.MediaSpec.Magnet) "magnet" else "direct",
+                    duration = duration,
+                ),
+                media = mediaSpec,
+                server = server,
+            )
+            if (started) {
+                watchSession.beginHostSync { Triple(currentPosition, !isPaused, playbackSpeed) }
+            }
+        }
 
         // Intro/outro skip windows for the current episode (AniSkip), plus a
         // per-episode guard so auto-skip only fires once.
@@ -1437,11 +1589,18 @@ data class PlayerScreen(
 
         // Native menu and Dock actions share the exact same callbacks as the
         // on-screen controls. Restore the previous handlers when this player
-        // leaves the navigation stack.
+        // leaves the navigation stack. Media keys (MPRemoteCommandCenter) are
+        // registered the same way — active only while a player is open.
         DisposableEffect(playerViewModel, currentEpisodeIndex, allEpisodes, volume) {
             val previousMenuHandler = MacOSMenuBarFactory.onPlaybackAction
             val previousDockPlayPause = MacOSDockManager.onPlayPause
             val previousDockNext = MacOSDockManager.onNextEpisode
+            val previousNpTgl = MacOSNowPlayingHandler.onTogglePlayPause
+            val previousNpPlay = MacOSNowPlayingHandler.onPlay
+            val previousNpPause = MacOSNowPlayingHandler.onPause
+            val previousNpNext = MacOSNowPlayingHandler.onNextTrack
+            val previousNpPrev = MacOSNowPlayingHandler.onPreviousTrack
+            val previousNpSeek = MacOSNowPlayingHandler.onSeekTo
             val menuHandler: (MacOSMenuBarFactory.PlaybackAction) -> Unit = { action ->
                 when (action) {
                     MacOSMenuBarFactory.PlaybackAction.PLAY_PAUSE -> playerViewModel.togglePause()
@@ -1456,6 +1615,13 @@ data class PlayerScreen(
             MacOSMenuBarFactory.onPlaybackAction = menuHandler
             MacOSDockManager.setPlayPauseCallback(dockPlayPause)
             MacOSDockManager.setNextEpisodeCallback(dockNext)
+            MacOSNowPlayingHandler.onTogglePlayPause = { playerViewModel.togglePause() }
+            MacOSNowPlayingHandler.onPlay = { if (playerViewModel.isPaused.value) playerViewModel.togglePause() }
+            MacOSNowPlayingHandler.onPause = { if (!playerViewModel.isPaused.value) playerViewModel.togglePause() }
+            MacOSNowPlayingHandler.onNextTrack = { navigateToEpisode(currentEpisodeIndex + 1) }
+            MacOSNowPlayingHandler.onPreviousTrack = { navigateToEpisode(currentEpisodeIndex - 1) }
+            MacOSNowPlayingHandler.onSeekTo = { playerViewModel.seekTo(it) }
+            MacOSNowPlayingHandler.registerCommands()
             onDispose {
                 if (MacOSMenuBarFactory.onPlaybackAction === menuHandler) {
                     MacOSMenuBarFactory.onPlaybackAction = previousMenuHandler
@@ -1466,6 +1632,14 @@ data class PlayerScreen(
                 if (MacOSDockManager.onNextEpisode === dockNext) {
                     MacOSDockManager.setNextEpisodeCallback(previousDockNext)
                 }
+                MacOSNowPlayingHandler.onTogglePlayPause = previousNpTgl
+                MacOSNowPlayingHandler.onPlay = previousNpPlay
+                MacOSNowPlayingHandler.onPause = previousNpPause
+                MacOSNowPlayingHandler.onNextTrack = previousNpNext
+                MacOSNowPlayingHandler.onPreviousTrack = previousNpPrev
+                MacOSNowPlayingHandler.onSeekTo = previousNpSeek
+                MacOSNowPlayingHandler.unregisterCommands()
+                MacOSNowPlayingHandler.clearNowPlaying()
             }
         }
 
@@ -1583,9 +1757,26 @@ data class PlayerScreen(
                 )
             },
             onNavigateEpisode = ::navigateToEpisode,
-            onTogglePlay = { playerViewModel.togglePause() },
-            onSeekTo = { seconds -> playerViewModel.seekTo(seconds) },
-            onSeekRelative = { offset -> playerViewModel.seekRelative(offset) },
+            onTogglePlay = {
+                // User-initiated transport actions are also broadcast to the
+                // Watch Together room (remote actions call the VM directly).
+                if (roomRole != WatchTogetherSession.Role.NONE) {
+                    watchSession.sendControl(if (isPaused) WtMessage.Play() else WtMessage.Pause())
+                }
+                playerViewModel.togglePause()
+            },
+            onSeekTo = { seconds ->
+                if (roomRole != WatchTogetherSession.Role.NONE) {
+                    watchSession.sendControl(WtMessage.Seek(seconds))
+                }
+                playerViewModel.seekTo(seconds)
+            },
+            onSeekRelative = { offset ->
+                if (roomRole != WatchTogetherSession.Role.NONE) {
+                    watchSession.sendControl(WtMessage.Seek((currentPosition + offset).coerceAtLeast(0.0)))
+                }
+                playerViewModel.seekRelative(offset)
+            },
             onSetVolume = { vol -> playerViewModel.setVolume(vol) },
             onToggleFullscreen = {
                 val frame = appWindow
@@ -1642,6 +1833,19 @@ data class PlayerScreen(
                     )
                 }
             },
+            onCaptureClip = {
+                val result = playerViewModel.captureClip()
+                if (result != null) {
+                    clipSavedFile = File(result)
+                } else {
+                    toastHost.show(
+                        "Clip needs a few seconds of playback first",
+                        ToastDuration.SHORT,
+                    )
+                }
+            },
+            onWatchTogether = { showWatchDialog = true },
+            roomStatus = roomCode?.let { "● $it · $roomMemberCount" },
         )
 
         // PiP window — a sibling Window composed at the top level of the player.
@@ -1650,6 +1854,64 @@ data class PlayerScreen(
             renderer = softwareRenderer,
             onClose = {},
         )
+
+        // "Clip saved" confirmation — Open/Share the GIF.
+        clipSavedFile?.let { file ->
+            AlertDialog(
+                onDismissRequest = { clipSavedFile = null },
+                title = { Text("Clip saved") },
+                text = {
+                    Column {
+                        Text("Saved to ~/Pictures/Anikku/${file.name}", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            file.absolutePath,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                confirmButton = {
+                    Row {
+                        TextButton(onClick = {
+                            runCatching { java.awt.Desktop.getDesktop().open(file) }
+                            clipSavedFile = null
+                        }) { Text("Open") }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            MacOSShareUtil.shareFile(file)
+                            clipSavedFile = null
+                        }) { Text("Share") }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { clipSavedFile = null }) { Text("Close") }
+                },
+            )
+        }
+
+        // Watch Together — start/join/status dialog.
+        if (showWatchDialog) {
+            WatchTogetherDialog(
+                role = roomRole,
+                code = roomCode,
+                memberCount = roomMemberCount,
+                lanUrl = roomLanUrl,
+                status = watchStatus,
+                joinCode = joinCodeInput,
+                onJoinCodeChange = { joinCodeInput = it.uppercase().take(6) },
+                onStartRoom = { startWatchRoom() },
+                onJoin = {
+                    val code = joinCodeInput.trim()
+                    if (WtCodes.isValid(code)) watchSession.joinRoom(code)
+                },
+                onLeave = {
+                    watchSession.leave()
+                    showWatchDialog = false
+                },
+                onDismiss = { showWatchDialog = false },
+            )
+        }
     }
 }
 
@@ -1726,6 +1988,10 @@ internal fun PlayerContent(
     onPositionChange: (Int) -> Unit = {},
     onLoadLocalSubtitle: () -> Unit = {},
     onTakeScreenshot: () -> Unit = {},
+    onCaptureClip: () -> Unit = {},
+    onWatchTogether: () -> Unit = {},
+    /** Active Watch Together room chip text (e.g. "● ANIK-4G7K · 3"), or null when inactive. */
+    roomStatus: String? = null,
 ) {
     // --- Player state ---
     // mpv's observed pause property is authoritative. Keeping a second
@@ -2242,6 +2508,11 @@ internal fun PlayerContent(
                         isControlsVisible = true
                         true
                     }
+                    event.key == Key.G -> {
+                        onCaptureClip()
+                        isControlsVisible = true
+                        true
+                    }
                     else -> false
                 }
             },
@@ -2374,6 +2645,26 @@ internal fun PlayerContent(
                     }
                 },
                 actions = {
+                    if (roomStatus != null) {
+                        Surface(
+                            onClick = onWatchTogether,
+                            shape = RoundedCornerShape(14.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            ) {
+                                Text(
+                                    roomStatus,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color.White,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    TransportIconButton(icon = Icons.Outlined.Groups, description = "Watch Together", onClick = onWatchTogether)
                     Box {
                         TransportIconButton(icon = Icons.Outlined.Settings, description = "Settings", onClick = { showSettingsMenu = true })
                         DropdownMenu(expanded = showSettingsMenu, onDismissRequest = { showSettingsMenu = false }) {
@@ -2392,6 +2683,7 @@ internal fun PlayerContent(
                     }
                     if (isMPVAvailable) {
                         TransportIconButton(icon = Icons.Outlined.CameraAlt, description = "Take screenshot", onClick = onTakeScreenshot)
+                        TransportIconButton(icon = Icons.Outlined.Gif, description = "Save 5s GIF clip", onClick = onCaptureClip)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent, navigationIconContentColor = Color.White),
@@ -2584,4 +2876,76 @@ internal fun PlayerContent(
             PlayerVideoFilterPanel(currentRotation = videoRotation, isHflip = isHflip, isVflip = isVflip, onRotationChange = { playerViewModel?.setVideoRotation(it) }, onToggleHflip = { playerViewModel?.toggleHflip() }, onToggleVflip = { playerViewModel?.toggleVflip() }, onDismiss = { showVideoFilterPanel = false })
         }
     }
+}
+
+/**
+ * Watch Together dialog — start a room (host) or join by code (guest), then
+ * show the live room status (code, member count, browser URL).
+ */
+@Composable
+private fun WatchTogetherDialog(
+    role: WatchTogetherSession.Role,
+    code: String?,
+    memberCount: Int,
+    lanUrl: String?,
+    status: String?,
+    joinCode: String,
+    onJoinCodeChange: (String) -> Unit,
+    onStartRoom: () -> Unit,
+    onJoin: () -> Unit,
+    onLeave: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (role == WatchTogetherSession.Role.NONE) "Watch Together" else "Room ${code ?: ""}") },
+        text = {
+            Column {
+                when (role) {
+                    WatchTogetherSession.Role.NONE -> {
+                        status?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        OutlinedTextField(
+                            value = joinCode,
+                            onValueChange = onJoinCodeChange,
+                            label = { Text("Room code") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "Friends on the same network join with the code — or open the browser link in a browser.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    WatchTogetherSession.Role.HOST -> {
+                        Text("$memberCount watching with you", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(6.dp))
+                        lanUrl?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    WatchTogetherSession.Role.GUEST -> {
+                        Text("Joined — $memberCount watching with you", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            when (role) {
+                WatchTogetherSession.Role.NONE -> Row {
+                    Button(onClick = onStartRoom) { Text("Start a room") }
+                    Spacer(Modifier.width(10.dp))
+                    Button(onClick = onJoin, enabled = WtCodes.isValid(joinCode)) { Text("Join") }
+                }
+                else -> TextButton(onClick = onLeave) { Text("Leave room") }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+    )
 }

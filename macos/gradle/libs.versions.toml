@@ -55,6 +55,7 @@ disklrucache = { module = "com.jakewharton:disklrucache", version.ref = "disklru
 
 # NanoHTTPd — embedded HTTP server for local video streaming (Phase 6.6)
 nanohttpd = { module = "org.nanohttpd:nanohttpd", version = "2.3.1" }
+nanohttpd-websocket = { module = "org.nanohttpd:nanohttpd-websocket", version = "2.3.1" }
 
 # JNA - Java Native Access (macOS native API calls)
 jna-core = { module = "net.java.dev.jna:jna", version.ref = "jna" }

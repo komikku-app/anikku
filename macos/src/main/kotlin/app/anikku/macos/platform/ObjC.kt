@@ -1,6 +1,7 @@
 package app.anikku.macos.platform
 
 import com.sun.jna.Function
+import com.sun.jna.Memory
 import com.sun.jna.NativeLibrary
 import com.sun.jna.Pointer
 
@@ -95,5 +96,84 @@ object ObjC {
     /** objc_msgSend(id, SEL, int64) -> long — for selectors taking an NSInteger arg and returning one */
     fun objc_msgSend_long(receiver: Pointer, selector: Pointer, arg: Long): Long {
         return msgSend.invoke(Long::class.java, arrayOf(receiver, selector, arg)) as Long
+    }
+
+    /** objc_msgSend(id, SEL, double) -> id — for NSNumber factory methods. */
+    fun objc_msgSend(receiver: Pointer, selector: Pointer, arg: Double): Pointer {
+        return msgSend.invoke(Pointer::class.java, arrayOf(receiver, selector, arg)) as Pointer
+    }
+
+    /** objc_msgSend(id, SEL) -> double — for selectors returning NSTimeInterval/CGFloat. */
+    fun objc_msgSend_double(receiver: Pointer, selector: Pointer): Double {
+        return msgSend.invoke(Double::class.java, arrayOf(receiver, selector)) as Double
+    }
+
+    /** objc_msgSend(id, SEL, const id[], const id[], NSUInteger) -> id — NSDictionary factories. */
+    fun objc_msgSend(
+        receiver: Pointer,
+        selector: Pointer,
+        objects: Array<Pointer>,
+        keys: Array<Pointer>,
+        count: Long,
+    ): Pointer {
+        return msgSend.invoke(Pointer::class.java, arrayOf(receiver, selector, objects, keys, count)) as Pointer
+    }
+
+    // -----------------------------------------------------------------------
+    // Objective-C blocks
+    // -----------------------------------------------------------------------
+
+    /** Size of a 64-bit Block_literal_1: isa(8) + flags(4) + reserved(4) + invoke(8) + descriptor(8). */
+    private const val BLOCK_LITERAL_SIZE = 32L
+
+    /** Size of a Block_descriptor_1 struct (reserved + size). */
+    private const val BLOCK_DESCRIPTOR_SIZE = 16L
+
+    /** `_NSConcreteStackBlock` class pointer, resolved from the process's loaded libraries. */
+    private val concreteStackBlock: Pointer by lazy {
+        val candidates = listOf("_NSConcreteStackBlock", "__NSConcreteStackBlock")
+        for (name in candidates) {
+            runCatching { return@lazy lib.getGlobalVariableAddress(name) }
+        }
+        // Not reachable through libobjc's dependency chain — load libSystem directly.
+        val system = runCatching { NativeLibrary.getInstance("System") }
+            .getOrElse { NativeLibrary.getInstance("/usr/lib/libSystem.B.dylib") }
+        val name = candidates.firstOrNull { candidate ->
+            runCatching { system.getGlobalVariableAddress(candidate) }.isSuccess
+        } ?: throw UnsatisfiedLinkError("_NSConcreteStackBlock not found")
+        system.getGlobalVariableAddress(name)
+    }
+
+    /**
+     * Shared no-capture block descriptor. IMPORTANT: the `size` field is the
+     * TOTAL size of the block literal (header + captures), which [BLOCK_LITERAL_SIZE]
+     * for a capture-less block — not the descriptor's own size. `_Block_copy`
+     * memmoves exactly this many bytes, so a wrong value leaves the copied
+     * block's invoke/descriptor fields as uninitialized garbage and crashes
+     * inside `_Block_release`/the handler later.
+     */
+    private val blockDescriptor: Memory by lazy {
+        Memory(BLOCK_DESCRIPTOR_SIZE).apply {
+            setLong(0, 0L) // reserved
+            setLong(8, BLOCK_LITERAL_SIZE) // total block size (header only, no captures)
+        }
+    }
+
+    /**
+     * Allocate an Objective-C block literal with the given invoke function
+     * pointer. The block has no captured variables (flags = 0), so the ObjC
+     * runtime copies it with a plain memcpy — no copy/dispose helpers needed.
+     *
+     * Callers MUST retain the returned [Memory] (and the JNA [Callback] whose
+     * function pointer backs [invoke]) for the block's lifetime.
+     */
+    fun createBlock(invoke: Pointer): Memory {
+        val block = Memory(BLOCK_LITERAL_SIZE)
+        block.setPointer(0, concreteStackBlock) // isa
+        block.setInt(8, 0) // flags: no captures, no copy/dispose, no signature
+        block.setInt(12, 0) // reserved
+        block.setPointer(16, invoke)
+        block.setPointer(24, blockDescriptor)
+        return block
     }
 }

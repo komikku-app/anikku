@@ -4,10 +4,13 @@ import app.anikku.macos.platform.logging.CrashReporter
 import com.sun.jna.Pointer
 import eu.kanade.tachiyomi.animesource.model.Track
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +49,12 @@ class PlayerViewModel(
     /** Expose renderer reactively for the video surface composable. */
     private val _renderer = MutableStateFlow<MPVSoftwareRenderer?>(null)
     val renderer: StateFlow<MPVSoftwareRenderer?> = _renderer.asStateFlow()
+
+    /** Ring buffer of the last few seconds of decoded frames for GIF clips. */
+    private val gifRecorder = GifClipRecorder()
+
+    /** Collects [MPVSoftwareRenderer.frames] into [gifRecorder]. */
+    private var clipRecorderJob: Job? = null
 
     /** Event loop for processing mpv events. */
     private var eventLoop: MPVEventLoop? = null
@@ -225,6 +234,10 @@ class PlayerViewModel(
             } else {
                 logger.warn { "🚀 MPV_RENDER: software render context creation FAILED — video will not render" }
             }
+
+            // Collect decoded frames for GIF clip capture (renderer may appear
+            // asynchronously; the collector subscribes whenever it does).
+            startClipRecorder()
 
             // Request VIDEO_RECONFIG events explicitly as a belt-and-suspenders measure.
             MPVLib.requestEvent(handle, MPVLib.MPV_EVENT_VIDEO_RECONFIG, true)
@@ -558,6 +571,8 @@ class PlayerViewModel(
             subtitleLoadJob,
         )
         nativeJobs.forEach { it.cancel() }
+        clipRecorderJob?.cancel()
+        clipRecorderJob = null
         // These jobs may be inside short JNA calls. Wait for them to leave the
         // current mpv handle before its native memory is destroyed.
         runBlocking { nativeJobs.forEach { it.join() } }
@@ -856,6 +871,7 @@ class PlayerViewModel(
         private const val SUBTITLE_DISCOVERY_DELAY_MS = 200L
         private const val RESUME_SEEK_DELAY_MS = 800L // let the demuxer settle before resume-seek
         private const val DEFAULT_SUBTITLE_LANGUAGE = "eng"
+        private const val MIN_CLIP_FRAMES = 5
 
         /**
          * During replacement, mpv can deliver an END_FILE for the previous
@@ -995,6 +1011,61 @@ class PlayerViewModel(
             if (result == 0 && file.exists()) file.absolutePath else null
         } catch (e: Exception) {
             logger.warn(e) { "Failed to take screenshot" }
+            null
+        }
+    }
+
+    /**
+     * Subscribe to the renderer's decoded-frame stream and feed it into the
+     * GIF clip ring buffer. One collector per renderer; re-subscribes when a
+     * new renderer appears (e.g. after a video reconfig).
+     */
+    private fun startClipRecorder() {
+        clipRecorderJob?.cancel()
+        clipRecorderJob = scope.launch {
+            var framesJob: Job? = null
+            _renderer.collect { renderer ->
+                if (renderer != null) {
+                    framesJob?.cancel()
+                    framesJob = scope.launch {
+                        try {
+                            renderer.frames.collect { frame ->
+                                currentCoroutineContext().ensureActive()
+                                gifRecorder.onFrame(frame)
+                            }
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (e: Exception) {
+                            logger.warn(e) { "Clip frame collection stopped" }
+                        }
+                    }
+                } else {
+                    framesJob?.cancel()
+                    framesJob = null
+                }
+            }
+        }
+    }
+
+    /**
+     * Assemble the last few seconds of buffered frames into an animated GIF
+     * and save it to ~/Pictures/Anikku. Returns the absolute path, or null
+     * when fewer than [MIN_CLIP_FRAMES] frames are buffered (playback just
+     * started) or the write fails.
+     */
+    fun captureClip(): String? {
+        val frames = gifRecorder.snap()
+        if (frames.size < MIN_CLIP_FRAMES) return null
+        return try {
+            val dir = java.io.File(System.getProperty("user.home"), "Pictures/Anikku")
+            runCatching { if (!dir.exists()) dir.mkdirs() }
+            val stamp = java.text.SimpleDateFormat("yyyy-MM-dd-HHmmss", java.util.Locale.getDefault())
+                .format(java.util.Date())
+            val file = java.io.File(dir, "Anikku-Clip-$stamp.gif")
+            GifSequenceWriter.write(file, frames, delayMs = 1000 / gifRecorder.fps)
+            if (file.exists()) file.absolutePath else null
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to capture GIF clip" }
             null
         }
     }

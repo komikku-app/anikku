@@ -199,6 +199,8 @@ dependencies {
 
     // NanoHTTPd — embedded HTTP server for local video streaming
     implementation(libs.nanohttpd)
+    // NanoHTTPd WebSocket — Watch Together room sync
+    implementation(libs.nanohttpd.websocket)
 
     // JNA - Java Native Access for macOS native API calls
     implementation(libs.jna.core)
