@@ -1,3 +1,9 @@
+## v1.8.4 — settings layout fixed
+
+- The settings screen was rendering its rows on top of each other — squashed,
+  text over text. Every section now lays out correctly; collapse/expand and
+  search still work.
+
 ## v1.8.3 — fullscreen for browser guests
 
 - The join page (phone or desktop) has a fullscreen button — maximize the

@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.8.4] — 2026-08-06
+
+### Fixes — Settings screen layout
+
+- Settings sections were drawing their rows on top of each other (squashed,
+  text over text): each section's items were all laid out at the same
+  position instead of stacking. Every row now renders in its own place —
+  collapse/expand on section headers and search still work.
+
 ## [1.8.3] — 2026-08-05
 
 ### Browser guests get fullscreen

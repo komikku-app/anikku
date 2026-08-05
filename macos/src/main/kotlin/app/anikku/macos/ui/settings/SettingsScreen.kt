@@ -24,8 +24,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.animation.animateContentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -589,7 +589,16 @@ private fun SettingsSection(
     var expanded by remember { mutableStateOf(true) }
     if (!matches && searchQuery.isNotBlank()) return
     HeadingItem(title, onClick = { expanded = !expanded })
-    AnimatedVisibility(visible = expanded || searchQuery.isNotBlank()) {
-        content()
+    // NOTE: AnimatedVisibility must NOT be used here. Inside the scrollable
+    // Column its SubcomposeLayout places every child at the same offset, so a
+    // section's rows stack on top of each other (text over text — the "squashed
+    // settings" bug). animateContentSize keeps the collapse animation while
+    // laying children out normally.
+    Column(
+        modifier = Modifier.animateContentSize(),
+    ) {
+        if (expanded || searchQuery.isNotBlank()) {
+            content()
+        }
     }
 }

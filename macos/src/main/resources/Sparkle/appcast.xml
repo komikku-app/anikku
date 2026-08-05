@@ -40,7 +40,21 @@
     
     
     
+    
     <item>
+      <title>Version 1.8.4</title>
+      <sparkle:version>1.8.4</sparkle:version>
+      <sparkle:shortVersionString>1.8.4</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 23:58:19 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.8.4/Anikku-1.8.4.dmg"
+        sparkle:edSignature="JTCI+ozmCKHqaMHBqGm3ii6rZYXksYlCyzjKbWvvqEqx5hQSSyYTZCXGcQ/cl6Ab8/9pe6vCGOnhz1S1AVJ6DQ=="
+        length="235441097"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.8.4
+      </sparkle:releaseNotesLink>
+    </item><item>
       <title>Version 1.8.3</title>
       <sparkle:version>1.8.3</sparkle:version>
       <sparkle:shortVersionString>1.8.3</sparkle:shortVersionString>
