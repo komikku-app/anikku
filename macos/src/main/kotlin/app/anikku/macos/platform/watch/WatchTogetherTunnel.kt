@@ -34,6 +34,8 @@ class WatchTogetherTunnel(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val bundledBinDirectory: File? = packagedBinDirectory(),
     private val binDirectory: File? = null,
+    /** Exact binary path override (native E2E tests point at the build-time helper). */
+    private val binary: File? = null,
 ) : AutoCloseable {
 
     enum class Status { STOPPED, STARTING, RUNNING, ERROR }
@@ -169,6 +171,7 @@ class WatchTogetherTunnel(
     }
 
     private fun findTunnelBinary(): File? {
+        binary?.takeIf { it.isFile && it.canExecute() }?.let { return it }
         val architecture = normalizedArchitecture()
         val names = listOf(
             "cloudflared-darwin-$architecture",

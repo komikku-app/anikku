@@ -11,8 +11,10 @@ import okio.IOException
 import java.io.File
 import java.io.FileInputStream
 import java.io.FilterInputStream
+import java.io.OutputStream
 import java.net.ServerSocket
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -158,7 +160,7 @@ class WatchTogetherServer(
                 if (!rooms.containsKey(code)) {
                     textResponse(Response.Status.NOT_FOUND, "Room not found", method)
                 } else {
-                    super.serve(session)
+                    serveWebSocketHandshake(session)
                 }
             }
             uri == "/health" -> textResponse(Response.Status.OK, "ok", method)
@@ -167,6 +169,71 @@ class WatchTogetherServer(
             else -> textResponse(Response.Status.NOT_FOUND, "Not found", method)
         }
     }
+
+    /**
+     * Serve the WebSocket handshake with a standards-compliant 101. NanoWSD's
+     * built-in handshake writes `Content-Length: 0` on the 101, which RFC 7230
+     * forbids — loopback clients ignore it, but Cloudflare's edge treats it as
+     * end-of-response and drops tunneled (internet) room connections right
+     * after the handshake. We write the 101 ourselves (no Content-Length),
+     * then hand the socket to NanoWSD's frame reader via [adoptSocket].
+     */
+    private fun serveWebSocketHandshake(session: IHTTPSession): Response {
+        val headers = session.headers
+        val version = headers.entries.firstOrNull { it.key.equals("sec-websocket-version", ignoreCase = true) }?.value
+        val key = headers.entries.firstOrNull { it.key.equals("sec-websocket-key", ignoreCase = true) }?.value
+        if (version != "13") return textResponse(Response.Status.BAD_REQUEST, "Invalid Websocket-Version", session.method)
+        if (key.isNullOrBlank()) return textResponse(Response.Status.BAD_REQUEST, "Missing Websocket-Key", session.method)
+        val socket = openWebSocket(session)
+        return object : Response(Response.Status.SWITCH_PROTOCOL, "text/plain", null, 0L) {
+            override fun send(outputStream: OutputStream) {
+                val header = buildString {
+                    append("HTTP/1.1 101 Switching Protocols\r\n")
+                    append("Date: ").append(gmtDate()).append("\r\n")
+                    append("Upgrade: websocket\r\n")
+                    append("Connection: Upgrade\r\n")
+                    append("Sec-WebSocket-Accept: ").append(secWebSocketAcceptKey(key)).append("\r\n")
+                    append("\r\n")
+                }
+                outputStream.write(header.toByteArray(StandardCharsets.UTF_8))
+                outputStream.flush()
+                adoptSocket(socket, outputStream)
+            }
+        }
+    }
+
+    /**
+     * Replicate what NanoWSD's internal `WebSocket$1.send()` does after the
+     * handshake response: adopt the socket's output stream, mark the socket
+     * OPEN, notify `onOpen()`, and run the frame reader (which blocks until
+     * the connection closes). Uses reflection because `out`, `state`,
+     * `onOpen` and `readWebsocket` are private/package-private to NanoWSD.
+     * Stable for nanohttpd-websocket 2.3.1 (pinned in build.gradle.kts);
+     * upgrading the library fails loudly with a ReflectiveOperationException.
+     */
+    private fun adoptSocket(socket: NanoWSD.WebSocket, outputStream: OutputStream) {
+        val wsClass = NanoWSD.WebSocket::class.java
+        runCatching {
+            wsClass.getDeclaredField("out").apply { isAccessible = true }.set(socket, outputStream)
+            wsClass.getDeclaredField("state").apply { isAccessible = true }.set(socket, NanoWSD.State.OPEN)
+            wsClass.getDeclaredMethod("onOpen").apply { isAccessible = true }.invoke(socket)
+            wsClass.getDeclaredMethod("readWebsocket").apply { isAccessible = true }.invoke(socket)
+        }.onFailure { e ->
+            logger.warn(e) { "NanoWSD socket handoff failed — websocket session will not work" }
+        }
+    }
+
+    /** RFC 6455 Sec-WebSocket-Accept: base64(SHA-1(key + GUID)). */
+    private fun secWebSocketAcceptKey(key: String): String {
+        val sha1 = MessageDigest.getInstance("SHA-1")
+            .digest((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").toByteArray(Charsets.ISO_8859_1))
+        return java.util.Base64.getEncoder().encodeToString(sha1)
+    }
+
+    private fun gmtDate(): String =
+        java.text.SimpleDateFormat("E, d MMM yyyy HH:mm:ss 'GMT'", java.util.Locale.US)
+            .apply { timeZone = java.util.TimeZone.getTimeZone("GMT") }
+            .format(java.util.Date())
 
     override fun openWebSocket(handshake: IHTTPSession): WebSocket {
         val code = handshake.uri.removePrefix("/room/").trim('/')

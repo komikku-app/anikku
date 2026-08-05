@@ -661,6 +661,18 @@ tasks.register("downloadCloudflared") {
     }
 }
 
+tasks.register<Test>("nativeWatchTogetherE2ETest") {
+    description = "Full internet Watch Together E2E through a real Cloudflare tunnel (needs network)"
+    group = "verification"
+    dependsOn("downloadCloudflared", "compileTestKotlin")
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    include("**/WatchTogetherInternetE2ETest.class")
+    systemProperty("anikku.test.cloudflared.bin", cloudflaredBinary.get().asFile.absolutePath)
+    testLogging { events("passed", "failed", "skipped"); showStandardStreams = true }
+}
+
 // Compose Desktop only consumes app resources from common/, <os>/, or
 // <os>-<arch>/ below appResourcesRootDir. Keep the checked-in native binaries
 // in their existing layout and create the expected hierarchy as a build output.

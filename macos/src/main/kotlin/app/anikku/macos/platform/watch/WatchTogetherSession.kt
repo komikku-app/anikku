@@ -92,6 +92,16 @@ class WatchTogetherSession(
     @Volatile
     private var tunnelBase: String? = null
 
+    /**
+     * The tunnel owned by the CURRENT room, if any. One tunnel per room: the
+     * caller starts it (spawning a fresh cloudflared process and URL) before
+     * [startRoom], it is stored here, and [leave] drops it — so every new
+     * room gets a new Cloudflare quick tunnel generation, and ending the
+     * room kills it.
+     */
+    @Volatile
+    private var roomTunnel: WatchTogetherTunnel? = null
+
     @Volatile
     private var sessionName: String = sessionName
 
@@ -139,12 +149,17 @@ class WatchTogetherSession(
      * @param tunnelUrl public tunnel base (`https://…trycloudflare.com`) when
      *   the room should be reachable from the internet, or null for a
      *   LAN-only room (the default; same-network guests use UDP discovery).
+     * @param tunnel the tunnel instance backing [tunnelUrl]. When a room is
+     *   actually hosted through it, [leave] drops the tunnel so the next room
+     *   starts a fresh generation. Pass null (or no tunnel) in tests that
+     *   inject [tunnelUrl] directly.
      */
     fun startRoom(
         episode: WtMessage.Episode,
         media: MediaSpec,
         server: WatchTogetherServer,
         tunnelUrl: String? = null,
+        tunnel: WatchTogetherTunnel? = null,
     ): Boolean {
         if (role.value != Role.NONE) return false
         val lanIp = LanAddresses.siteLocalIPv4() ?: "127.0.0.1"
@@ -153,6 +168,9 @@ class WatchTogetherSession(
         val handle = toHandle(media)
         val info = server.createRoom(episode, handle) ?: run {
             status.value = "Could not start the room server"
+            // The caller may have already brought a tunnel up for this room —
+            // don't leak it when the room itself cannot exist.
+            tunnel?.stop()
             return false
         }
 
@@ -173,6 +191,7 @@ class WatchTogetherSession(
 
         this.server = server
         this.tunnelBase = base
+        this.roomTunnel = if (base != null) tunnel else null
         role.value = Role.HOST
         roomCode.value = info.code
         joinUrl.value = if (base != null) {
@@ -276,7 +295,7 @@ class WatchTogetherSession(
         connect("$scheme://$host:$port/room/$code")
     }
 
-    /** Leave the room (host: also closes it and stops the beacon). */
+    /** Leave the room (host: also closes it and stops the beacon + tunnel). */
     fun leave() {
         syncJob?.cancel()
         syncJob = null
@@ -288,6 +307,10 @@ class WatchTogetherSession(
             roomCode.value?.let { server.closeRoom(it) }
             this.server = null
         }
+        // The room's tunnel dies with it — the next room gets a fresh URL.
+        roomTunnel?.stop()
+        roomTunnel = null
+        tunnelBase = null
         role.value = Role.NONE
         roomCode.value = null
         memberCount.value = 0

@@ -934,9 +934,17 @@ data class PlayerScreen(
             scope.launch {
                 // The tunnel needs the room server's port, so bring the server
                 // up first (idempotent) before asking cloudflared for a URL.
+                // Each room gets a fresh tunnel generation; the session drops
+                // it when the room ends.
                 if (tunnel != null) server.startServer()
                 val tunnelUrl = tunnel?.start(server.actualPort)
-                val started = watchSession.startRoom(episode, mediaSpec, server, tunnelUrl = tunnelUrl)
+                val started = watchSession.startRoom(
+                    episode = episode,
+                    media = mediaSpec,
+                    server = server,
+                    tunnelUrl = tunnelUrl,
+                    tunnel = tunnel,
+                )
                 if (started && tunnel != null && tunnelUrl == null) {
                     watchSession.status.value =
                         "Internet hosting unavailable — this room works on the same network only."
