@@ -1,3 +1,12 @@
+## v1.8.2 — browser guests can finally see the video
+
+**Fixes the black screen on Android/browser guests**
+- HLS streams (what most anime sources serve) now play in the browser —
+  bundled hls.js + playlists routed through the tunnel so segments load
+  with the host's headers
+- If the host plays a format browsers can't decode (MKV/HEVC), the join
+  page says so clearly — join from the Anikku app to watch those
+
 ## v1.8.1 — internet Watch Together fixed
 
 **This is the fix that makes cross-network rooms actually work**

@@ -885,7 +885,7 @@ data class PlayerScreen(
                     title = animeTitle,
                     name = allEpisodes.getOrNull(currentEpisodeIndex)?.name ?: "",
                     number = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0,
-                    kind = "direct",
+                    kind = mediaKind(WatchTogetherSession.MediaSpec.Url(video.url, video.headers)),
                     duration = duration,
                 ),
                 media = WatchTogetherSession.MediaSpec.Url(video.url, video.headers),
@@ -924,7 +924,7 @@ data class PlayerScreen(
                 title = animeTitle,
                 name = allEpisodes.getOrNull(currentEpisodeIndex)?.name ?: "",
                 number = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0,
-                kind = if (mediaSpec is WatchTogetherSession.MediaSpec.Magnet) "magnet" else "direct",
+                kind = mediaKind(mediaSpec),
                 duration = duration,
             )
             val tunnel = watchTunnel
@@ -3142,6 +3142,17 @@ internal fun PlayerContent(
             KeyboardShortcutsDialog(onDismiss = { showShortcutsDialog = false })
         }
     }
+}
+
+/**
+ * Watch Together media kind announced to guests. HLS (m3u8) streams are
+ * flagged so the browser join page plays them through hls.js — bare <video>
+ * elements can't decode HLS on most browsers (Android Chrome included).
+ */
+private fun mediaKind(media: WatchTogetherSession.MediaSpec): String = when {
+    media is WatchTogetherSession.MediaSpec.Magnet -> "magnet"
+    (media as? WatchTogetherSession.MediaSpec.Url)?.url?.contains(".m3u8", ignoreCase = true) == true -> "hls"
+    else -> "direct"
 }
 
 /**

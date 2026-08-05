@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.8.2] — 2026-08-05
+
+### Fixes — black video on browser guests (Android)
+
+- **HLS streams now play in the browser.** Most anime sources serve HLS
+  (m3u8), which no browser `<video>` element can play natively — guests saw
+  a black screen with dead controls. The join page now plays HLS through
+  hls.js (bundled in the app, no CDN), and the room server **rewrites HLS
+  playlists** so every segment/key is fetched through the tunnel with the
+  host's headers + CORS instead of the source CDN.
+- **Clear error instead of silence** when the host plays a format browsers
+  can't decode (MKV/HEVC): the join page says so and points to the Anikku
+  app, which plays anything.
+- Direct MP4 streams are untouched (native playback, as before).
+
 ## [1.8.1] — 2026-08-05
 
 ### Fixes — internet Watch Together actually works now

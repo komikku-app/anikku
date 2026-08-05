@@ -5,8 +5,10 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -169,6 +171,137 @@ class WatchTogetherServerTest {
         } finally {
             upstream.shutdown()
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // HLS playlists — rewritten so browsers can play them through the proxy
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `rewrites absolute and relative hls references through the proxy`() {
+        val rewritten = server.rewriteHlsPlaylist(
+            """
+            #EXTM3U
+            #EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=1280x720
+            https://cdn.example/hd/media.m3u8
+            #EXT-X-STREAM-INF:BANDWIDTH=400000
+            ../sd/media.m3u8
+            """.trimIndent() + "\n",
+            playlistUrl = "https://cdn.example/show/1/master.m3u8",
+            mediaPath = "/media/ABC234/m1",
+        )
+        val lines = rewritten.lines()
+        assertEquals("#EXTM3U", lines[0])
+        assertEquals("#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=1280x720", lines[1])
+        // Absolute reference — proxied as-is.
+        assertEquals(
+            "/media/ABC234/m1?u=${java.net.URLEncoder.encode("https://cdn.example/hd/media.m3u8", "UTF-8")}",
+            lines[2],
+        )
+        // Relative reference — resolved against the playlist URL first
+        // (../ from /show/1/ resolves to /show/).
+        assertEquals(
+            "/media/ABC234/m1?u=${java.net.URLEncoder.encode("https://cdn.example/show/sd/media.m3u8", "UTF-8")}",
+            lines[4],
+        )
+    }
+
+    @Test
+    fun `rewrites encryption key and map uris inside hls tags`() {
+        val rewritten = server.rewriteHlsPlaylist(
+            """
+            #EXTM3U
+            #EXT-X-KEY:METHOD=AES-128,URI="key.bin",IV=0x1234
+            #EXT-X-MAP:URI="init.mp4"
+            #EXTINF:6.0,
+            seg1.ts
+            """.trimIndent() + "\n",
+            playlistUrl = "https://cdn.example/show/1/media.m3u8",
+            mediaPath = "/media/ABC234/m1",
+        )
+        val lines = rewritten.lines()
+        val keyLine = lines.first { it.startsWith("#EXT-X-KEY:") }
+        assertTrue(keyLine.contains("/media/ABC234/m1?u="), "key URI must be proxied: $keyLine")
+        assertTrue(keyLine.contains("key.bin"), "key target must survive: $keyLine")
+        val mapLine = lines.first { it.startsWith("#EXT-X-MAP:") }
+        assertTrue(mapLine.contains("/media/ABC234/m1?u="), "map URI must be proxied: $mapLine")
+        assertEquals(
+            "/media/ABC234/m1?u=${java.net.URLEncoder.encode("https://cdn.example/show/1/seg1.ts", "UTF-8")}",
+            lines[4],
+        )
+    }
+
+    @Test
+    fun `proxies an hls playlist end to end with segments looped back through the proxy`() {
+        val payload = "SEGMENT-BYTES-0123456789"
+        val upstream = MockWebServer()
+        upstream.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                return when (request.path) {
+                    "/master.m3u8" -> MockResponse()
+                        .setHeader("Content-Type", "application/vnd.apple.mpegurl")
+                        .setBody("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000\nmedia.m3u8\n")
+                    "/media.m3u8" -> MockResponse()
+                        .setHeader("Content-Type", "application/vnd.apple.mpegurl")
+                        .setBody("#EXTM3U\n#EXTINF:6.0,\nseg1.ts\n")
+                    "/seg1.ts" -> {
+                        if (request.getHeader("X-Token") != "room-secret") {
+                            return MockResponse().setResponseCode(403).setBody("forbidden")
+                        }
+                        MockResponse().setHeader("Content-Type", "video/mp2t").setBody(payload)
+                    }
+                    else -> MockResponse().setResponseCode(404).setBody("nope")
+                }
+            }
+        }
+        upstream.start(0)
+        try {
+            val info = server.createRoom(
+                episode(),
+                WatchTogetherServer.MediaHandle(
+                    id = "hls1",
+                    upstreamUrl = upstream.url("/master.m3u8").toString(),
+                    upstreamHeaders = mapOf("X-Token" to "room-secret"),
+                ),
+            )!!
+            val base = "http://127.0.0.1:${server.actualPort}/media/${info.code}/hls1"
+
+            // 1. The master playlist comes back rewritten — segments must go
+            //    through the proxy, never straight to the source CDN.
+            val master = get(base)
+            assertEquals(200, master.first)
+            assertTrue(master.second.startsWith("#EXTM3U"))
+            assertTrue(
+                master.second.contains("/media/${info.code}/hls1?u="),
+                "master playlist must reference the proxy: ${master.second}",
+            )
+            assertTrue(!master.second.contains("\nmedia.m3u8\n"), "bare source refs must be rewritten")
+
+            // 2. Fetch the media playlist through the proxy (the rewritten ref,
+            //    which is relative to the room server's host).
+            val origin = "http://127.0.0.1:${server.actualPort}"
+            val mediaUrl = master.second.lineSequence().first { it.contains("?u=") }
+            val media = get(origin + mediaUrl)
+            assertEquals(200, media.first)
+            assertTrue(media.second.contains("/media/${info.code}/hls1?u="), "media playlist must reference the proxy too")
+
+            // 3. Fetch the segment through the proxy — the host's header is
+            //    injected (the upstream 403s without it) and bytes survive.
+            val segUrl = media.second.lineSequence().first { it.contains("?u=") }
+            val segment = get(origin + segUrl)
+            assertEquals(200, segment.first)
+            assertEquals(payload, segment.third.toString(Charsets.UTF_8))
+        } finally {
+            upstream.shutdown()
+        }
+    }
+
+    @Test
+    fun `serves the bundled hls js for browser hls playback`() {
+        val js = get("http://127.0.0.1:${server.actualPort}/hls.min.js")
+        assertEquals(200, js.first)
+        assertTrue(js.second.contains("Hls"), "hls.js payload must be served")
+        assertTrue(js.second.contains("isSupported"), "hls.js API must be present")
     }
 
     // -----------------------------------------------------------------------

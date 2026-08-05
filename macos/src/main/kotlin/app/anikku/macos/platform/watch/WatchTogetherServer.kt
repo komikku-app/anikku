@@ -164,6 +164,7 @@ class WatchTogetherServer(
                 }
             }
             uri == "/health" -> textResponse(Response.Status.OK, "ok", method)
+            uri == "/hls.min.js" -> serveHlsJs(method)
             uri.startsWith("/room/") -> joinPage(uri, method)
             uri.startsWith("/media/") -> serveMedia(uri, session, method)
             else -> textResponse(Response.Status.NOT_FOUND, "Not found", method)
@@ -331,10 +332,16 @@ class WatchTogetherServer(
         if (parts.size != 2) return textResponse(Response.Status.NOT_FOUND, "Not found", method)
         val (code, id) = parts
         val media = rooms[code]?.media ?: return textResponse(Response.Status.NOT_FOUND, "Media not found", method)
-        if (media.id != id) return textResponse(Response.Status.NOT_FOUND, "Media not found", method)
+        if (media.id != id.substringBefore('?')) return textResponse(Response.Status.NOT_FOUND, "Media not found", method)
 
+        // HLS playlists served through this route are rewritten so every
+        // referenced segment/playlist/key is fetched back through the proxy
+        // (?u=<upstream target>) — browsers can't reach the source's CDN
+        // directly (no host headers, no CORS).
+        val mediaPath = "/media/$code/${id.substringBefore('?')}"
+        val upstream = session.parms?.get("u") ?: media.upstreamUrl
         val response = media.localFile?.let { serveLocalFile(it, session, method) }
-            ?: media.upstreamUrl?.let { serveProxy(it, media.upstreamHeaders, session, method) }
+            ?: upstream?.let { serveProxy(it, media.upstreamHeaders, session, method, mediaPath) }
             ?: textResponse(Response.Status.NOT_FOUND, "Media not found", method)
         response.addHeader("Access-Control-Allow-Origin", "*")
         response.addHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
@@ -378,12 +385,19 @@ class WatchTogetherServer(
         return response
     }
 
-    /** Stream an upstream http(s) URL, passing the client's Range header through. */
+    /**
+     * Stream an upstream http(s) URL, passing the client's Range header
+     * through. HLS playlists (m3u8) are rewritten in full so browsers can
+     * actually play them: Android Chrome and most desktop browsers cannot
+     * fetch the source's segments directly (cross-origin + missing host
+     * headers), so every reference is redirected back through the proxy.
+     */
     private fun serveProxy(
         upstreamUrl: String,
         upstreamHeaders: Map<String, String>?,
         session: IHTTPSession,
         method: Method,
+        mediaPath: String,
     ): Response {
         return try {
             val request = Request.Builder().url(upstreamUrl).apply {
@@ -400,9 +414,26 @@ class WatchTogetherServer(
                 upstream.close()
                 return newFixedLengthResponse(status, mime, "")
             }
+            val bodyStream = body?.byteStream() ?: return textResponse(Response.Status.INTERNAL_ERROR, "No body", method)
+
+            // Sniff the stream head for HLS (some sources serve playlists with
+            // neither a m3u8 URL nor a proper content type). Pushback lets us
+            // restore the prefix when the payload is NOT a playlist.
+            val sniff = java.io.PushbackInputStream(bodyStream, 16)
+            val prefix = ByteArray(16)
+            val prefixLen = sniff.read(prefix)
+            if (isHlsPlaylist(upstreamUrl, mime, prefix, prefixLen)) {
+                val text = String(prefix, 0, maxOf(prefixLen, 0), StandardCharsets.UTF_8) +
+                    sniff.readBytes().toString(StandardCharsets.UTF_8)
+                upstream.close()
+                val rewritten = rewriteHlsPlaylist(text, upstreamUrl, mediaPath)
+                return newFixedLengthResponse(status, HLS_MIME, rewritten)
+                    .also { it.addHeader("Access-Control-Allow-Origin", "*") }
+            }
+            if (prefixLen > 0) sniff.unread(prefix, 0, prefixLen)
 
             // Close the OkHttp response when NanoHTTPD finishes with the stream.
-            val stream = object : FilterInputStream(body!!.byteStream()) {
+            val stream = object : FilterInputStream(sniff) {
                 override fun close() {
                     runCatching { super.close() }
                     runCatching { upstream.close() }
@@ -427,8 +458,67 @@ class WatchTogetherServer(
         }
     }
 
+    private fun isHlsPlaylist(upstreamUrl: String, mime: String, prefix: ByteArray, prefixLen: Int): Boolean {
+        if (upstreamUrl.contains(".m3u8", ignoreCase = true)) return true
+        if (mime.contains("mpegurl", ignoreCase = true)) return true
+        // Some sources serve HLS without a m3u8 URL or proper content type —
+        // sniff the "#EXTM3U" magic at the start of the payload.
+        return prefixLen >= 7 && String(prefix, 0, 7, StandardCharsets.UTF_8) == "#EXTM3U"
+    }
+
+    /**
+     * Rewrite an HLS playlist so every referenced resource (media playlists,
+     * segments, keys, maps) is fetched through the room proxy instead of the
+     * source CDN. Absolute and relative references are both supported; the
+     * rewritten URL encodes the fully-resolved upstream target in `?u=`.
+     */
+    internal fun rewriteHlsPlaylist(playlist: String, playlistUrl: String, mediaPath: String): String {
+        val base = java.net.URI(playlistUrl)
+        return buildString {
+            playlist.lineSequence().forEach { line ->
+                val trimmed = line.trim()
+                when {
+                    trimmed.startsWith("#EXT-X-KEY:") || trimmed.startsWith("#EXT-X-MAP:") -> {
+                        // Tags carrying URI="..." attributes (encryption keys, fMP4 maps).
+                        append(HLS_TAG_URI.replace(trimmed) { match ->
+                            val absolute = base.resolve(match.groupValues[1]).toString()
+                            "\"${proxyMediaUrl(mediaPath, absolute)}\""
+                        })
+                    }
+                    trimmed.isEmpty() || trimmed.startsWith("#") -> append(line)
+                    else -> {
+                        val absolute = base.resolve(trimmed).toString()
+                        append(proxyMediaUrl(mediaPath, absolute))
+                    }
+                }
+                append('\n')
+            }
+        }
+    }
+
+    /** `/media/<code>/<id>?u=<encoded upstream target>` — the proxy loop-back URL. */
+    private fun proxyMediaUrl(mediaPath: String, target: String): String =
+        "$mediaPath?u=${java.net.URLEncoder.encode(target, StandardCharsets.UTF_8)}"
+
     private fun headerValue(session: IHTTPSession, name: String): String? =
         session.headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+    /** Serve the bundled hls.js (browser HLS playback for the join page). */
+    private fun serveHlsJs(method: Method): Response {
+        val bytes = runCatching {
+            javaClass.classLoader?.getResourceAsStream("hls.min.js")?.use { it.readBytes() }
+        }.getOrNull()
+        if (bytes == null || bytes.size == 0) return textResponse(Response.Status.NOT_FOUND, "Not found", method)
+        val response = if (method == Method.HEAD) {
+            newFixedLengthResponse(Response.Status.OK, "application/javascript", "")
+        } else {
+            newFixedLengthResponse(Response.Status.OK, "application/javascript", java.io.ByteArrayInputStream(bytes), bytes.size.toLong())
+        }
+        response.addHeader("Content-Length", bytes.size.toString())
+        response.addHeader("Access-Control-Allow-Origin", "*")
+        response.addHeader("Cache-Control", "public, max-age=86400")
+        return response
+    }
 
     private fun rangeNotSatisfiable(fileLength: Long): Response =
         newFixedLengthResponse(Response.Status.RANGE_NOT_SATISFIABLE, "text/plain; charset=utf-8", "")
@@ -544,6 +634,12 @@ class WatchTogetherServer(
     companion object {
         const val DEFAULT_PORT = 18234
 
+        /** HLS playlist content type (m3u8). */
+        internal const val HLS_MIME = "application/vnd.apple.mpegurl"
+
+        /** URI="..." attributes inside HLS tags (encryption keys, fMP4 maps). */
+        private val HLS_TAG_URI = Regex("URI=\"([^\"]+)\"")
+
         /**
          * Prefer the well-known port, falling back to an ephemeral one when
          * it's already taken. The beacon advertises the actual port.
@@ -611,6 +707,7 @@ private val JOIN_PAGE = """
   </div>
 </div>
 <div id="status"></div>
+<script src="/hls.min.js"></script>
 <script>
 var code = location.pathname.split('/').pop();
 // The page is served over https through the Cloudflare tunnel — browsers block
@@ -634,6 +731,29 @@ var pendingSeek = null;    // position to apply once the video has metadata
 var mediaReady = false;    // loadedmetadata seen at least once
 var fallbackDuration = 0;  // host-reported duration; survives unknown stream duration
 var scrubbing = false;
+var currentMedia = null;   // mediaUrl currently attached to the player
+var hls = null;            // hls.js instance for HLS streams
+var nativeRetriedHls = false;
+
+// HLS (m3u8) can't play in a bare <video> on most browsers — route it through
+// hls.js (MSE) instead. Segments are fetched through the room proxy (the
+// playlist is rewritten server-side), so the host's headers + CORS apply.
+function setVideoSource(url, kind) {
+  if (hls) { hls.destroy(); hls = null; }
+  nativeRetriedHls = false;
+  var wantsHls = window.Hls && Hls.isSupported() &&
+    (kind === 'hls' || /\.m3u8($|\?)/i.test(url) || /mpegurl/i.test(url));
+  if (wantsHls) {
+    hls = new Hls({ enableWorker: true, maxBufferLength: 30 });
+    hls.loadSource(url);
+    hls.attachMedia(v);
+    hls.on(Hls.Events.ERROR, function (evt, data) {
+      if (data && data.fatal) flashStatus('Stream error: ' + (data.details || 'unknown'));
+    });
+  } else {
+    v.src = url;
+  }
+}
 
 function send(m) { if (ws.readyState === 1) ws.send(JSON.stringify(m)); }
 function userAction() { lastUser = Date.now(); }
@@ -760,12 +880,13 @@ document.getElementById('nameInput').addEventListener('keydown', function (e) {
 
 ws.onmessage = function (e) {
   var m; try { m = JSON.parse(e.data); } catch (err) { return; }
-  if (m.type === 'episode' && m.mediaUrl && v.src !== m.mediaUrl) {
+  if (m.type === 'episode' && m.mediaUrl && currentMedia !== m.mediaUrl) {
     // New media: wait for its metadata before applying any position, and let
     // the next sync act as a fresh baseline for the new episode.
     pendingSeek = null;
     hasBaseline = false;
-    v.src = m.mediaUrl;
+    currentMedia = m.mediaUrl;
+    setVideoSource(m.mediaUrl, m.kind);
   } else if (m.type === 'episode' && !m.mediaUrl) {
     flashStatus('The host is playing a torrent — no stream to join here');
   }
@@ -803,7 +924,16 @@ v.addEventListener('timeupdate', function () { if (!scrubbing) syncSeekBar(); })
 // events as user-initiated, which would echo syncs back as a message storm).
 v.addEventListener('play', function () { playBtn.innerHTML = '&#10074;&#10074;'; });
 v.addEventListener('pause', function () { playBtn.innerHTML = '&#9654;'; });
-v.addEventListener('error', function () { flashStatus('Could not load the video stream'); });
+v.addEventListener('error', function () {
+  // Some sources deliver HLS without a m3u8-looking URL or content type —
+  // retry once through hls.js before declaring the format unplayable.
+  if (window.Hls && Hls.isSupported() && !hls && currentMedia && !nativeRetriedHls) {
+    nativeRetriedHls = true;
+    setVideoSource(currentMedia, 'hls');
+    return;
+  }
+  flashStatus('Could not play this stream — the host may be playing a format browsers can\'t play (MKV/HEVC). Join from the Anikku app instead.');
+});
 ws.onclose = function () { info.textContent = 'Disconnected'; flashStatus('Disconnected'); };
 </script>
 </body>
