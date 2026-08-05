@@ -19,7 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,13 +66,25 @@ class OnboardingScreen(
         val totalSteps = 5
 
         Surface(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Skip — the app is fully usable without onboarding; never
+                // force a new user through five informational screens.
+                TextButton(
+                    onClick = onComplete,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp),
+                ) {
+                    Text("Skip")
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
                 // Step indicator dots
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -114,7 +126,7 @@ class OnboardingScreen(
                         when (currentStep) {
                             0 -> StepWelcome()
                             1 -> StepAppearance()
-                            2 -> StepStorage()
+                            2 -> StepSources()
                             3 -> StepTips()
                             4 -> StepReady()
                         }
@@ -163,6 +175,7 @@ class OnboardingScreen(
                             Text("Get Started!")
                         }
                     }
+                }
                 }
             }
         }
@@ -218,23 +231,23 @@ private fun StepAppearance() {
 }
 
 @Composable
-private fun StepStorage() {
+private fun StepSources() {
     Icon(
-        imageVector = Icons.Outlined.Folder,
+        imageVector = Icons.Outlined.Extension,
         contentDescription = null,
         modifier = Modifier.size(64.dp),
         tint = MaterialTheme.colorScheme.primary,
     )
     Spacer(Modifier.height(24.dp))
     Text(
-        text = "Download Location",
+        text = "Add Sources",
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
     )
     Spacer(Modifier.height(12.dp))
     Text(
-        text = "Episodes will be saved to:\n~/Library/Application Support/Anikku/downloads/\n\nYou can change this location anytime in Settings.\nFor now, the default location works great.",
+        text = "Anime comes from extensions (sources) you install from the Browse tab — like streaming sites and torrent trackers.\n\nA default source repository is pre-installed, so you can start watching right away.\n\nDownloads are saved to ~/Library/Application Support/Anikku/downloads/ — changeable anytime in Settings.",
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
@@ -259,12 +272,12 @@ private fun StepTips() {
     Spacer(Modifier.height(16.dp))
 
     val tips = listOf(
-        "⌘1–⌘5 — Switch tabs (Library / Updates / History / Browse / More)",
-        "Space — Play / Pause (when watching an episode)",
-        "← → — Seek backward / forward (10 seconds)",
-        "⌘, — Open Settings",
-        "⌘F — Toggle Full Screen in player",
-        "Right-click an anime — Quick actions menu",
+        "⌘1–⌘9 — Switch tabs (Library / Updates / History / Stats / Browse / Torrents / Downloads / Discover / More)",
+        "Space — Play / Pause in the player",
+        "← → — Seek backward / forward 10 seconds",
+        "↑ ↓ — Volume · [ ] — Speed · , . — Subtitle delay",
+        "F — Full screen · M — Mute · S — Screenshot · G — GIF clip",
+        "⌘, — Settings · ⌘F — Global search",
     )
 
     tips.forEach { tip ->

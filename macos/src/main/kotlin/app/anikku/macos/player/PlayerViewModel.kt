@@ -32,6 +32,8 @@ private val logger = KotlinLogging.logger {}
  */
 class PlayerViewModel(
     private val torrentStreamer: TorrentStreamingCoordinator = TorrentStreamingCoordinator(),
+    /** GIF clip length in seconds (from Settings when constructed by the player). */
+    clipSeconds: Int = 5,
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -51,7 +53,17 @@ class PlayerViewModel(
     val renderer: StateFlow<MPVSoftwareRenderer?> = _renderer.asStateFlow()
 
     /** Ring buffer of the last few seconds of decoded frames for GIF clips. */
-    private val gifRecorder = GifClipRecorder()
+    private val gifRecorder = GifClipRecorder(seconds = clipSeconds)
+
+    /** Async clip-capture progress — assembling happens off the UI thread. */
+    sealed interface ClipCaptureState {
+        data object Idle : ClipCaptureState
+        data object Capturing : ClipCaptureState
+        data class Done(val path: String) : ClipCaptureState
+        data class Failed(val message: String) : ClipCaptureState
+    }
+    private val _clipCaptureState = MutableStateFlow<ClipCaptureState>(ClipCaptureState.Idle)
+    val clipCaptureState: StateFlow<ClipCaptureState> = _clipCaptureState.asStateFlow()
 
     /** Collects [MPVSoftwareRenderer.frames] into [gifRecorder]. */
     private var clipRecorderJob: Job? = null
@@ -1049,24 +1061,34 @@ class PlayerViewModel(
 
     /**
      * Assemble the last few seconds of buffered frames into an animated GIF
-     * and save it to ~/Pictures/Anikku. Returns the absolute path, or null
-     * when fewer than [MIN_CLIP_FRAMES] frames are buffered (playback just
-     * started) or the write fails.
+     * and save it to ~/Pictures/Anikku. Runs off the UI thread; progress is
+     * reported via [clipCaptureState].
      */
-    fun captureClip(): String? {
-        val frames = gifRecorder.snap()
-        if (frames.size < MIN_CLIP_FRAMES) return null
-        return try {
-            val dir = java.io.File(System.getProperty("user.home"), "Pictures/Anikku")
-            runCatching { if (!dir.exists()) dir.mkdirs() }
-            val stamp = java.text.SimpleDateFormat("yyyy-MM-dd-HHmmss", java.util.Locale.getDefault())
-                .format(java.util.Date())
-            val file = java.io.File(dir, "Anikku-Clip-$stamp.gif")
-            GifSequenceWriter.write(file, frames, delayMs = 1000 / gifRecorder.fps)
-            if (file.exists()) file.absolutePath else null
-        } catch (e: Exception) {
-            logger.warn(e) { "Failed to capture GIF clip" }
-            null
+    fun captureClip() {
+        if (_clipCaptureState.value is ClipCaptureState.Capturing) return
+        _clipCaptureState.value = ClipCaptureState.Capturing
+        scope.launch {
+            val frames = gifRecorder.snap()
+            if (frames.size < MIN_CLIP_FRAMES) {
+                _clipCaptureState.value = ClipCaptureState.Failed("Clip needs a few seconds of playback first")
+                return@launch
+            }
+            try {
+                val dir = java.io.File(System.getProperty("user.home"), "Pictures/Anikku")
+                runCatching { if (!dir.exists()) dir.mkdirs() }
+                val stamp = java.text.SimpleDateFormat("yyyy-MM-dd-HHmmss", java.util.Locale.getDefault())
+                    .format(java.util.Date())
+                val file = java.io.File(dir, "Anikku-Clip-$stamp.gif")
+                GifSequenceWriter.write(file, frames, delayMs = 1000 / gifRecorder.fps)
+                if (file.exists()) {
+                    _clipCaptureState.value = ClipCaptureState.Done(file.absolutePath)
+                } else {
+                    _clipCaptureState.value = ClipCaptureState.Failed("Clip could not be written")
+                }
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to capture GIF clip" }
+                _clipCaptureState.value = ClipCaptureState.Failed("Clip capture failed")
+            }
         }
     }
 

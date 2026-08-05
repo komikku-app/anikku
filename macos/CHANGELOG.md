@@ -6,6 +6,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.6.0] — 2026-08-02
+
+### Polish: tab state & window persistence
+
+- Switching tabs no longer destroys anything: every tab keeps its search,
+  filters, scroll position and pushed screens, and Discover/Torrents load once
+  at startup instead of re-fetching on every switch (all 9 tabs stay composed).
+- Window size and position are remembered across launches.
+
+### Polish: first-run & empty states
+
+- Onboarding gains a Skip button, accurate shortcut tips (⌘1–⌘9, F/G/S/M…),
+  and a real "Add Sources" step (replacing the placeholder storage screen).
+- Every empty state now leads somewhere: Library → Browse sources, Downloads →
+  Find something to watch, Browse/Torrents → Open Extensions.
+- Discover got a proper empty state, and Discover/Torrents/AnimeDetail errors
+  now have Retry buttons.
+
+### Polish: player feel
+
+- Buffering mid-playback shows a spinner; volume changes show a transient OSD.
+- Updated shortcut hint bar; new keyboard-shortcuts reference dialog (`?` in
+  the player and Help > Keyboard Shortcuts…).
+- End-of-episode shows Replay / Next episode; Esc exits fullscreen or goes back.
+- The window title follows the playing episode.
+
+### Polish: PiP controls
+
+- The PiP window now has its own play/pause, seek slider and mute — fully
+  controllable while another app is frontmost.
+
+### Polish: Now Playing + capture
+
+- The anime cover shows in Control Center's Now Playing widget.
+- GIF clip length is settable (3/5/10s in Settings) and capture runs off the
+  UI thread with a "Capturing…" indicator (no more freeze).
+
+### Polish: visual consistency
+
+- History, Updates and Downloads rows now show cover art (with initials
+  fallback, including on failed image loads).
+- Hover tooltips on all player icon buttons; AnimeDetail share moved to ⌘E
+  (⌘S belongs to the sidebar).
+
+### Polish: downloads power tools
+
+- Search in the Downloads tab, Pause all / Resume all batch actions, and a
+  working Play button from Settings > View Downloads.
+
+### Polish: settings cleanup
+
+- Removed 5 dead toggles and "Download on Wi-Fi only" (a desktop app).
+- Settings sections are collapsible with a search field that filters and
+  auto-expands matches.
+
+### Watch Together: real sync + richer UX
+
+- **Fixed**: pause/play/seek now actually propagate to everyone. Two root
+  causes: guests never had their role set (so their actions were silently
+  dropped — the big one), and the host's periodic sync could fight a just-made
+  action. Guests now join as real members and a local-action guard prevents
+  stale sync from undoing your pause/seek.
+- Member names are shown in the room dialog, with Copy code / Copy link
+  buttons; guests see "The host closed the room" instead of a silent
+  disconnect; the host gets a warning before ending a room with watchers.
+
+### Tests
+- New end-to-end Watch Together session tests (pause propagation, seek relay,
+  baseline sync, stale-sync guard, member names, host-leave notice) — the
+  guard test caught the guest-role bug. Full suite: 755 green.
+
 ## [1.5.0] — 2026-08-02
 
 ### New: media keys + Now Playing (macOS-native)

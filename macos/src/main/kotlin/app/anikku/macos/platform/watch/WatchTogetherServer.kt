@@ -83,8 +83,12 @@ class WatchTogetherServer(
     fun stopServer() {
         if (!isRunning) return
         try {
+            val message = WtProtocol.encode(WtMessage.RoomClosed("The host closed the room"))
             rooms.values.forEach { room ->
-                room.members.forEach { member -> runCatching { member.close(CloseCode.NormalClosure, "server stopping", false) } }
+                room.members.forEach { member ->
+                    runCatching { member.send(message) }
+                    runCatching { member.close(CloseCode.NormalClosure, "server stopping", false) }
+                }
             }
             rooms.clear()
             stop()
@@ -110,6 +114,15 @@ class WatchTogetherServer(
 
     fun closeRoom(code: String) {
         val room = rooms.remove(code) ?: return
+        // Tell the remaining members before the sockets close, so guests see
+        // "host closed the room" instead of a silent disconnect.
+        val message = WtProtocol.encode(WtMessage.RoomClosed())
+        room.members.forEach { member ->
+            runCatching { member.send(message) }
+        }
+        // Give the announcement a moment to flush before the sockets close,
+        // so guests see "host closed the room" instead of a connection failure.
+        Thread.sleep(150)
         room.members.forEach { member ->
             runCatching { member.close(CloseCode.NormalClosure, "room closed", false) }
         }
@@ -181,7 +194,12 @@ class WatchTogetherServer(
             val message = WtProtocol.decode(text) ?: return
             when (message) {
                 // Join-time metadata — recorded but not relayed to others.
-                is WtMessage.Hello -> memberName = message.name
+                is WtMessage.Hello -> {
+                    if (message.name.isNotBlank() && message.name != memberName) {
+                        memberName = message.name
+                        broadcastMembers()
+                    }
+                }
                 is WtMessage.Episode -> {
                     room.episode = message // keep late joiners in sync
                     relay(text)
@@ -206,8 +224,8 @@ class WatchTogetherServer(
         }
 
         private fun broadcastMembers() {
-            val count = room.members.size
-            val message = WtProtocol.encode(WtMessage.Members(count))
+            val names = room.members.map { it.memberName }.filter { it.isNotBlank() }
+            val message = WtProtocol.encode(WtMessage.Members(room.members.size, names))
             room.members.forEach { member ->
                 runCatching { member.send(message) }
             }
@@ -478,26 +496,35 @@ var code = location.pathname.split('/').pop();
 var ws = new WebSocket('ws://' + location.host + '/room/' + code);
 var v = document.getElementById('v');
 var info = document.getElementById('info');
+var hasBaseline = false;
+var lastUser = 0; // ms of the last USER-initiated action
 function send(m) { if (ws.readyState === 1) ws.send(JSON.stringify(m)); }
+function userAction() { lastUser = Date.now(); }
 ws.onopen = function () { send({type:'hello', name:'Browser'}); };
 ws.onmessage = function (e) {
   var m; try { m = JSON.parse(e.data); } catch (err) { return; }
   if (m.type === 'episode' && m.mediaUrl && v.src !== m.mediaUrl) v.src = m.mediaUrl;
-  if (m.type === 'play') v.play();
-  if (m.type === 'pause') v.pause();
-  if (m.type === 'seek') v.currentTime = m.pos;
+  if (m.type === 'play') { userAction(); v.play(); }
+  if (m.type === 'pause') { userAction(); v.pause(); }
+  if (m.type === 'seek') { userAction(); v.currentTime = m.pos; }
   if (m.type === 'sync') {
-    if (Math.abs(v.currentTime - m.pos) > 1) v.currentTime = m.pos;
+    // First sync is the baseline; afterwards a sync that arrives right after
+    // the user's own action must not fight it (their action was already sent).
+    if (hasBaseline && Date.now() - lastUser < 800) return;
+    hasBaseline = true;
+    if (Math.abs(v.currentTime - m.pos) > 0.75) v.currentTime = m.pos;
     if (m.playing && v.paused) v.play();
     if (!m.playing && !v.paused) v.pause();
   }
-  if (m.type === 'members') info.textContent = m.count + ' watching &middot; room ' + code;
+  if (m.type === 'members') {
+    info.textContent = (m.names && m.names.length ? m.names.join(', ') + ' &middot; ' : '') + m.count + ' watching &middot; room ' + code;
+  }
 };
 // Only echo USER-initiated events (e.isTrusted) — programmatic changes from
 // sync would otherwise echo back and loop.
-v.addEventListener('play', function (e) { if (e.isTrusted) send({type:'play'}); });
-v.addEventListener('pause', function (e) { if (e.isTrusted) send({type:'pause'}); });
-v.addEventListener('seeked', function (e) { if (e.isTrusted) send({type:'seek', pos: v.currentTime}); });
+v.addEventListener('play', function (e) { if (e.isTrusted) { userAction(); send({type:'play'}); } });
+v.addEventListener('pause', function (e) { if (e.isTrusted) { userAction(); send({type:'pause'}); } });
+v.addEventListener('seeked', function (e) { if (e.isTrusted) { userAction(); send({type:'seek', pos: v.currentTime}); } });
 ws.onclose = function () { info.textContent = 'Disconnected'; };
 </script>
 </body>

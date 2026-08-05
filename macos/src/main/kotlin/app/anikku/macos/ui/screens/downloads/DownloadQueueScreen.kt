@@ -25,12 +25,14 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.PauseCircle
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +52,10 @@ import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.ui.AnikkuScreen
+import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.LocalNavigator
+import app.anikku.macos.ui.screens.player.PlayerScreen
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OfflineBadge
 import app.anikku.macos.ui.components.ToastDuration
@@ -70,6 +77,7 @@ class DownloadQueueScreen : AnikkuScreen() {
     override fun Content() {
         val downloadManager = LocalDownloadManager.current
         val toastHost = LocalToastHost.current
+        var searchQuery by remember { mutableStateOf("") }
 
         // Collect real download data
         val downloads by if (downloadManager != null) {
@@ -79,6 +87,9 @@ class DownloadQueueScreen : AnikkuScreen() {
         }
 
         val data = DownloadQueueData(downloads, downloadManager)
+        // Navigator is optional — compose tests render this screen without one.
+        // (Reading .currentOrThrow would throw mid-composition when absent.)
+        val navigator = LocalNavigator.current
 
         DownloadQueueContent(
             data = data,
@@ -116,6 +127,25 @@ class DownloadQueueScreen : AnikkuScreen() {
                     ToastDuration.SHORT,
                 )
             },
+            onPauseAll = { downloadManager?.pauseAll() },
+            onResumeAll = { downloadManager?.resumeAll() },
+            onSearchQueryChange = { searchQuery = it },
+            onPlay = { item ->
+                navigator?.push(
+                    PlayerScreen(
+                        animeId = item.animeId,
+                        episodeId = (item.episodeUrl ?: item.filePath ?: item.id.toString())
+                            .hashCode().toLong().let { if (it == 0L) 1L else it },
+                        sourceId = item.sourceId.takeIf { it != 0L },
+                        episodeUrl = item.episodeUrl,
+                        animeTitle = item.animeTitle,
+                        episodeNumber = item.episodeNumber,
+                        episodeName = item.episodeName,
+                        downloadManager = downloadManager,
+                        coverUrl = item.coverUrl,
+                    ),
+                )
+            },
         )
     }
 }
@@ -135,8 +165,22 @@ internal fun DownloadQueueContent(
     onClearAll: () -> Unit,
     onClearCompleted: () -> Unit,
     onPlay: (DownloadRepository.DownloadEntry) -> Unit = {},
+    /** CTA shown in the empty state (e.g. jump to Browse). Null hides the button. */
+    onBrowse: (() -> Unit)? = null,
+    onPauseAll: () -> Unit = {},
+    onResumeAll: () -> Unit = {},
+    onSearchQueryChange: (String) -> Unit = {},
 ) {
-    val downloads = data.downloads
+    val allDownloads = data.downloads
+    var searchQuery by remember { mutableStateOf("") }
+    val downloads = if (searchQuery.isBlank()) {
+        allDownloads
+    } else {
+        allDownloads.filter {
+            it.animeTitle.contains(searchQuery, ignoreCase = true) ||
+                it.episodeName.contains(searchQuery, ignoreCase = true)
+        }
+    }
     val activeDownloads = downloads.count { it.isActive }
     val completedDownloads = downloads.count { it.status == DownloadRepository.DownloadStatus.COMPLETED }
     val errorDownloads = downloads.count { it.status == DownloadRepository.DownloadStatus.ERROR }
@@ -151,6 +195,15 @@ internal fun DownloadQueueContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { onSearchQueryChange(it) },
+                label = { Text("Search downloads") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         item {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
@@ -184,6 +237,16 @@ internal fun DownloadQueueContent(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (downloads.any { it.isActive }) {
+                        TextButton(onClick = onPauseAll) {
+                            Text("Pause all", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    if (downloads.any { it.status == DownloadRepository.DownloadStatus.PAUSED }) {
+                        TextButton(onClick = onResumeAll) {
+                            Text("Resume all", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
                     if (completedDownloads > 0) {
                         TextButton(onClick = onClearCompleted) {
                             Text("Clear completed", style = MaterialTheme.typography.labelSmall)
@@ -226,6 +289,10 @@ internal fun DownloadQueueContent(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
+                        if (onBrowse != null) {
+                            Spacer(Modifier.height(16.dp))
+                            Button(onClick = onBrowse) { Text("Find something to watch") }
+                        }
                     }
                 }
             }
@@ -272,21 +339,15 @@ private fun DownloadItemCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Cover placeholder
-                Box(
+                // Cover (falls back to initials when no URL is known).
+                AnimeCoverImage(
+                    thumbnailUrl = item.coverUrl,
+                    contentDescription = item.animeTitle,
+                    title = item.animeTitle,
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = item.animeTitle.take(2).uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                        .clip(RoundedCornerShape(4.dp)),
+                )
 
                 Spacer(Modifier.width(12.dp))
 

@@ -48,6 +48,7 @@ import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.screens.browse.ExtensionsScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -220,6 +221,11 @@ object BrowseTab : AnikkuScreen(), Tab {
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             )
+                            Spacer(Modifier.height(14.dp))
+                            val navigator = LocalNavigator.currentOrThrow
+                            Button(onClick = { navigator.push(ExtensionsScreen()) }) {
+                                Text("Open Extensions")
+                            }
                         }
                     }
                 }

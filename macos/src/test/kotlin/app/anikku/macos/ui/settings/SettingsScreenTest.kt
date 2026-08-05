@@ -166,7 +166,7 @@ class SettingsScreenTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `renders Show category tabs checkbox`() {
+    fun `renders the settings search field`() {
         composeTestRule.setContent {
             AnikkuTheme {
                 WithNavigator {
@@ -175,20 +175,7 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Show category tabs").assertIsDisplayed()
-    }
-
-    @Test
-    fun `renders Show number of items checkbox`() {
-        composeTestRule.setContent {
-            AnikkuTheme {
-                WithNavigator {
-                    SettingsScreen()
-                }
-            }
-        }
-
-        composeTestRule.onNodeWithText("Show number of items").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Search settings").assertIsDisplayed()
     }
 
     @Test

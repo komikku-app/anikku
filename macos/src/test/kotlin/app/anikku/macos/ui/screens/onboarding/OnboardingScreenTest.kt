@@ -49,7 +49,7 @@ class OnboardingScreenTest {
         composeRule.onNodeWithText("Continue").performClick()
 
         // Step 2: Storage
-        composeRule.onNodeWithText("Download Location").assertIsDisplayed()
+        composeRule.onNodeWithText("Add Sources").assertIsDisplayed()
         composeRule.onNodeWithText("Continue").performClick()
 
         // Step 3: Tips
@@ -69,7 +69,7 @@ class OnboardingScreenTest {
         // Advance to step 2
         composeRule.onNodeWithText("Continue").performClick()
         composeRule.onNodeWithText("Continue").performClick()
-        composeRule.onNodeWithText("Download Location").assertIsDisplayed()
+        composeRule.onNodeWithText("Add Sources").assertIsDisplayed()
 
         // Go back
         composeRule.onNodeWithText("Back").performClick()
@@ -104,7 +104,7 @@ class OnboardingScreenTest {
 
         composeRule.onNodeWithText("Quick Tips").assertIsDisplayed()
         composeRule.onNodeWithText("Back").performClick()
-        composeRule.onNodeWithText("Download Location").assertIsDisplayed()
+        composeRule.onNodeWithText("Add Sources").assertIsDisplayed()
         assert(changedSteps == listOf(2))
     }
 

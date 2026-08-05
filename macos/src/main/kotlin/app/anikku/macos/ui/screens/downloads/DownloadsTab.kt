@@ -70,6 +70,7 @@ object DownloadsTab : AnikkuScreen(), Tab {
             Box(Modifier.fillMaxSize().padding(padding)) {
                 DownloadQueueContent(
                     data = data,
+                    onBrowse = { app.anikku.macos.ui.TabSwitchHandler.switchTo(4) },
                     onPauseResume = { id ->
                         val item = downloads.find { it.id == id } ?: return@DownloadQueueContent
                         if (item.status == DownloadRepository.DownloadStatus.PAUSED) {

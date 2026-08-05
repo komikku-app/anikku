@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,8 @@ import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Gif
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.VolumeOff
+import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
@@ -39,6 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -102,6 +106,7 @@ import app.anikku.macos.platform.watch.WtCodes
 import app.anikku.macos.platform.watch.WtMessage
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.MacOSMenuBarFactory
+import app.anikku.macos.ui.components.KeyboardShortcutsDialog
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OfflineBadge
 import app.anikku.macos.ui.components.OfflineCheckmarkAnimation
@@ -175,6 +180,8 @@ data class PlayerScreen(
      */
     val episodeNumber: Double? = null,
     val episodeName: String? = null,
+    /** Cover image URL — shown in Control Center's Now Playing widget. */
+    val coverUrl: String? = null,
 ) : AnikkuScreen() {
 
     override val key: ScreenKey = uniqueScreenKey
@@ -638,7 +645,9 @@ data class PlayerScreen(
         }
 
         // Initialize the player view model (Phase 6)
-        val playerViewModel = remember { PlayerViewModel() }
+        val playerViewModel = remember {
+            PlayerViewModel(clipSeconds = settings.clipCaptureSeconds)
+        }
 
         // Watch Together — LAN sync room. Player-scoped: the session (and any
         // room it hosts) lives and dies with this player screen.
@@ -654,6 +663,8 @@ data class PlayerScreen(
         val watchStatus by watchSession.status.collectAsState()
         var showWatchDialog by remember { mutableStateOf(false) }
         var joinCodeInput by remember { mutableStateOf("") }
+        // Confirmation shown before the host leaves with guests in the room.
+        var confirmLeaveRoom by remember { mutableStateOf(false) }
         // Last saved GIF clip, shown in a confirmation dialog.
         var clipSavedFile by remember { mutableStateOf<File?>(null) }
 
@@ -731,7 +742,7 @@ data class PlayerScreen(
                 when (message) {
                     is WtMessage.Sync -> {
                         if (message.playing != !isPaused) playerViewModel.togglePause()
-                        if (kotlin.math.abs(message.pos - currentPosition) > 0.75) {
+                        if (kotlin.math.abs(message.pos - currentPosition) > 0.5) {
                             playerViewModel.seekTo(message.pos)
                         }
                         if (kotlin.math.abs(message.rate - playbackSpeed) > 0.05) {
@@ -760,8 +771,71 @@ data class PlayerScreen(
             }
         }
 
+        // Clip capture progress — assembling happens off the UI thread.
+        val clipState by playerViewModel.clipCaptureState.collectAsState()
+        LaunchedEffect(clipState) {
+            when (val state = clipState) {
+                is PlayerViewModel.ClipCaptureState.Capturing ->
+                    toastHost.show("Capturing clip…", ToastDuration.SHORT)
+                is PlayerViewModel.ClipCaptureState.Done ->
+                    clipSavedFile = File(state.path)
+                is PlayerViewModel.ClipCaptureState.Failed ->
+                    toastHost.show(
+                        text = state.message,
+                        duration = ToastDuration.SHORT,
+                        isError = true,
+                        source = sourceId?.toString(),
+                        location = "PlayerScreen.captureClip",
+                    )
+                else -> Unit
+            }
+        }
+
+        // Watch Together — surface session status (join failures, "host closed
+        // the room") as toasts so they're visible outside the dialog too.
+        var lastWatchStatus by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(watchStatus) {
+            val current = watchStatus
+            if (current != null && current != lastWatchStatus) {
+                toastHost.show(
+                    text = current,
+                    duration = ToastDuration.LONG,
+                    isError = current.contains("closed", ignoreCase = true) ||
+                        current.contains("Could not", ignoreCase = true) ||
+                        current.contains("failed", ignoreCase = true),
+                    source = sourceId?.toString(),
+                    location = "PlayerScreen.watchSession",
+                )
+            }
+            lastWatchStatus = current
+        }
+
         // Now Playing — publish metadata to Control Center ~every 2s while an
         // episode is actually loaded; clear it while idle/error.
+        // The anime cover is downloaded once to a cache file and attached as
+        // artwork (best-effort; Control Center falls back to no art).
+        val windowRef = LocalAppWindow.current
+        var artworkPath by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(coverUrl) {
+            artworkPath = null
+            val url = coverUrl ?: return@LaunchedEffect
+            val cacheDir = File(System.getProperty("user.home"), "Library/Application Support/Anikku/cache/nowplaying")
+            runCatching { cacheDir.mkdirs() }
+            val file = File(cacheDir, "${url.hashCode()}.img")
+            if (file.isFile && file.length() > 0) {
+                artworkPath = file.absolutePath
+                return@LaunchedEffect
+            }
+            runCatching {
+                val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 8_000
+                connection.readTimeout = 8_000
+                connection.setRequestProperty("User-Agent", MPVLib.DEFAULT_USER_AGENT)
+                connection.inputStream.use { input -> file.outputStream().use { input.copyTo(it) } }
+                connection.disconnect()
+                if (file.length() > 0) artworkPath = file.absolutePath
+            }
+        }
         LaunchedEffect(playerViewModel, isPaused, playbackState, duration, currentEpisodeIndex) {
             var lastPush = 0L
             while (isActive) {
@@ -770,21 +844,30 @@ data class PlayerScreen(
                     if (now - lastPush >= 2_000L) {
                         val episodeLabel = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber
                             ?: (episodeNumber ?: 0.0)
+                        val playingTitle = "$animeTitle — Ep ${String.format("%.0f", episodeLabel)}"
                         MacOSNowPlayingHandler.updateNowPlaying(
-                            title = "$animeTitle — Ep ${String.format("%.0f", episodeLabel)}",
+                            title = playingTitle,
                             artist = animeTitle,
                             durationSeconds = duration,
                             elapsedSeconds = currentPosition,
                             playing = !isPaused,
                             rate = playbackSpeed,
+                            artworkPath = artworkPath,
                         )
+                                        // The window title follows the playing episode.
+                        windowRef?.title = playingTitle
                         lastPush = now
                     }
                 } else {
                     MacOSNowPlayingHandler.clearNowPlaying()
+                    windowRef?.title = "Anikku"
                 }
                 delay(1000)
             }
+        }
+        // Restore the window title when the player leaves the stack.
+        DisposableEffect(Unit) {
+            onDispose { windowRef?.title = "Anikku" }
         }
 
         // Host: keep the room's media in sync when the episode/stream changes.
@@ -843,6 +926,15 @@ data class PlayerScreen(
             )
             if (started) {
                 watchSession.beginHostSync { Triple(currentPosition, !isPaused, playbackSpeed) }
+            }
+        }
+
+        // Back/Esc: warn the host before ending a room that has guests in it.
+        fun requestBack() {
+            if (roomRole == WatchTogetherSession.Role.HOST && roomMemberCount > 1) {
+                confirmLeaveRoom = true
+            } else {
+                navigator.pop()
             }
         }
 
@@ -1300,6 +1392,7 @@ data class PlayerScreen(
                     watchDuration = position,
                     lastSecondSeen = position,
                     totalSeconds = total,
+                    coverUrl = this@PlayerScreen.coverUrl,
                 )
             )
         }
@@ -1726,7 +1819,7 @@ data class PlayerScreen(
             videoQualityResolution = videoQualityResolution,
             videoQualityLabel = videoQualityLabel,
             isLoading = isLoading,
-            onBack = { navigator.pop() },
+            onBack = { requestBack() },
             onRetry = { retryLoad() },
             onRetryNext = { retryWithNextQuality() },
             onRetryAll = { retryAllQualities() },
@@ -1833,17 +1926,7 @@ data class PlayerScreen(
                     )
                 }
             },
-            onCaptureClip = {
-                val result = playerViewModel.captureClip()
-                if (result != null) {
-                    clipSavedFile = File(result)
-                } else {
-                    toastHost.show(
-                        "Clip needs a few seconds of playback first",
-                        ToastDuration.SHORT,
-                    )
-                }
-            },
+            onCaptureClip = { playerViewModel.captureClip() },
             onWatchTogether = { showWatchDialog = true },
             roomStatus = roomCode?.let { "● $it · $roomMemberCount" },
         )
@@ -1852,6 +1935,7 @@ data class PlayerScreen(
         PipWindow(
             pipHandler = pipHandler,
             renderer = softwareRenderer,
+            viewModel = playerViewModel,
             onClose = {},
         )
 
@@ -1896,6 +1980,7 @@ data class PlayerScreen(
                 role = roomRole,
                 code = roomCode,
                 memberCount = roomMemberCount,
+                memberNames = watchSession.memberNames.collectAsState().value,
                 lanUrl = roomLanUrl,
                 status = watchStatus,
                 joinCode = joinCodeInput,
@@ -1905,11 +1990,34 @@ data class PlayerScreen(
                     val code = joinCodeInput.trim()
                     if (WtCodes.isValid(code)) watchSession.joinRoom(code)
                 },
+                onCopy = { text ->
+                    MacOSShareUtil.copyToClipboard(text)
+                    toastHost.show("Copied to clipboard", ToastDuration.SHORT)
+                },
                 onLeave = {
                     watchSession.leave()
                     showWatchDialog = false
                 },
                 onDismiss = { showWatchDialog = false },
+            )
+        }
+
+        // Host leaving with guests in the room — confirm before ending it.
+        if (confirmLeaveRoom) {
+            AlertDialog(
+                onDismissRequest = { confirmLeaveRoom = false },
+                title = { Text("End the room?") },
+                text = { Text("$roomMemberCount people are watching with you. Leaving ends the room for everyone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmLeaveRoom = false
+                        watchSession.leave()
+                        navigator.pop()
+                    }) { Text("End room & leave") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmLeaveRoom = false }) { Text("Stay") }
+                },
             )
         }
     }
@@ -2006,6 +2114,7 @@ internal fun PlayerContent(
     var seekFraction by remember { mutableFloatStateOf(0f) }
 
     // Settings panel visibility
+    var showShortcutsDialog by remember { mutableStateOf(false) }
     var showSettingsMenu by remember { mutableStateOf(false) }
     var showSpeedPanel by remember { mutableStateOf(false) }
     var showAudioPanel by remember { mutableStateOf(false) }
@@ -2017,6 +2126,19 @@ internal fun PlayerContent(
     // Mute state (M key): remembers the pre-mute volume so unmuting restores it.
     var isMuted by remember { mutableStateOf(false) }
     var lastVolume by remember { mutableIntStateOf(100) }
+
+    // Volume OSD — transient feedback when volume changes via keys/wheel,
+    // so adjusting with the controls hidden never feels dead.
+    var volumeOsdVisible by remember { mutableStateOf(false) }
+    var isFirstVolume by remember { mutableStateOf(true) }
+    LaunchedEffect(volume) {
+        if (!isFirstVolume) {
+            volumeOsdVisible = true
+            delay(900)
+            volumeOsdVisible = false
+        }
+        isFirstVolume = false
+    }
 
     // OpenSubtitles search state (subtitle dropdown fallback).
     var osSearching by remember { mutableStateOf(false) }
@@ -2071,7 +2193,9 @@ internal fun PlayerContent(
     val focusRequester = remember { FocusRequester() }
     val errorFocusRequester = remember { FocusRequester() }
     // Loading overlay (shown on top of video surface while buffering)
-    val showLoadingOverlay = isLoading || isResolvingVideo
+    // Mid-playback buffering (paused-for-cache) shows a spinner too — a
+    // frozen frame with no feedback reads as a hang.
+    val showLoadingOverlay = isLoading || isResolvingVideo || playbackState == PlaybackState.BUFFERING
 
     // Show error state when video URL resolution failed, mpv reported an error,
     // or we are not still resolving it. Do NOT check playbackState == IDLE here
@@ -2513,6 +2637,19 @@ internal fun PlayerContent(
                         isControlsVisible = true
                         true
                     }
+                    event.key == Key.Slash -> {
+                        showShortcutsDialog = true
+                        isControlsVisible = true
+                        true
+                    }
+                    event.key == Key.Escape -> {
+                        if (playerViewModel?.isFullscreen?.value == true) {
+                            onToggleFullscreen()
+                        } else {
+                            onBack()
+                        }
+                        true
+                    }
                     else -> false
                 }
             },
@@ -2788,7 +2925,11 @@ internal fun PlayerContent(
             enter = fadeIn(), exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = (if (isMPVAvailable) 180 else 120).dp),
         ) {
-            Text("SPACE play/pause · ←→ seek · ↑↓ volume · [ ] speed · , . subs · S shot", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.4f))
+            Text(
+                "SPACE play · ←→ seek · ↑↓ vol · [ ] speed · , . subs · F fullscreen · M mute · S shot · G clip · ? shortcuts",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.4f),
+            )
         }
 
         // === Settings panel overlays ===
@@ -2875,24 +3016,89 @@ internal fun PlayerContent(
         AnimatedVisibility(visible = showVideoFilterPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerVideoFilterPanel(currentRotation = videoRotation, isHflip = isHflip, isVflip = isVflip, onRotationChange = { playerViewModel?.setVideoRotation(it) }, onToggleHflip = { playerViewModel?.toggleHflip() }, onToggleVflip = { playerViewModel?.toggleVflip() }, onDismiss = { showVideoFilterPanel = false })
         }
+
+        // End-of-episode prompt — replay or continue instead of a dead end.
+        if (playbackState == PlaybackState.ENDED && !showLoadingOverlay) {
+            Surface(
+                onClick = {},
+                shape = RoundedCornerShape(16.dp),
+                color = Color.Black.copy(alpha = 0.65f),
+                modifier = Modifier.align(Alignment.Center),
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 20.dp),
+                ) {
+                    Text("Episode ended", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(onClick = {
+                            playerViewModel?.seekTo(0.0)
+                            playerViewModel?.togglePause()
+                        }) { Text("Replay") }
+                        if (currentEpisodeIndex < episodes.lastIndex) {
+                            Button(onClick = { onNavigateEpisode(currentEpisodeIndex + 1) }) {
+                                Text("Next episode")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Volume OSD overlay (top center, below the title bar).
+        AnimatedVisibility(
+            visible = volumeOsdVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 64.dp),
+        ) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.Black.copy(alpha = 0.65f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    Icon(
+                        imageVector = if (volume == 0) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("$volume", style = MaterialTheme.typography.labelLarge, color = Color.White)
+                    Spacer(Modifier.width(10.dp))
+                    LinearProgressIndicator(
+                        progress = { (volume / 200f).coerceIn(0f, 1f) },
+                        modifier = Modifier.width(120.dp).height(6.dp),
+                    )
+                }
+            }
+        }
+
+        // Keyboard shortcuts reference (? key).
+        if (showShortcutsDialog) {
+            KeyboardShortcutsDialog(onDismiss = { showShortcutsDialog = false })
+        }
     }
 }
 
 /**
  * Watch Together dialog — start a room (host) or join by code (guest), then
- * show the live room status (code, member count, browser URL).
+ * show the live room status (code, member names, browser URL, copy actions).
  */
 @Composable
 private fun WatchTogetherDialog(
     role: WatchTogetherSession.Role,
     code: String?,
     memberCount: Int,
+    memberNames: List<String>,
     lanUrl: String?,
     status: String?,
     joinCode: String,
     onJoinCodeChange: (String) -> Unit,
     onStartRoom: () -> Unit,
     onJoin: () -> Unit,
+    onCopy: (String) -> Unit,
     onLeave: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -2921,15 +3127,44 @@ private fun WatchTogetherDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    WatchTogetherSession.Role.HOST -> {
-                        Text("$memberCount watching with you", style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.height(6.dp))
-                        lanUrl?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
+                    WatchTogetherSession.Role.HOST,
                     WatchTogetherSession.Role.GUEST -> {
-                        Text("Joined — $memberCount watching with you", style = MaterialTheme.typography.bodyMedium)
+                        val watchers = buildList {
+                            add("You")
+                            addAll(memberNames.filter { it.isNotBlank() }.distinct())
+                        }.distinct()
+                        Text(
+                            if (watchers.size > 1) "${watchers.joinToString(", ")} watching" else "Just you watching",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        code?.let {
+                            Spacer(Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                TextButton(onClick = { onCopy(it) }) { Text("Copy code") }
+                            }
+                        }
+                        lanUrl?.let {
+                            Spacer(Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                TextButton(onClick = { onCopy(it) }) { Text("Copy link") }
+                            }
+                        }
                     }
                 }
             }

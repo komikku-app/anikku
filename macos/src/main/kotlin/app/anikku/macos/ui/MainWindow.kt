@@ -1,6 +1,10 @@
 package app.anikku.macos.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRailItem
@@ -14,9 +18,12 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.zIndex
 import app.anikku.macos.platform.logging.UIActionLogger
-import app.anikku.macos.ui.components.AnimatedTabFade
 import app.anikku.macos.ui.screens.BrowseScreen
 import app.anikku.macos.ui.screens.HistoryScreen
 import app.anikku.macos.ui.screens.LibraryScreen
@@ -30,7 +37,6 @@ import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.screens.browse.GlobalSearchScreen
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 
@@ -131,37 +137,66 @@ fun MainWindow() {
                     )
                 }
 
-                // Tab content with saveable-state-safe fade transition.
-                // Each tab gets its own nested Navigator so that non-Tab screens
-                // pushed from inside the tab (e.g. ExtensionsScreen, AnimeDetailScreen,
-                // SourceBrowseScreen) go to the inner navigator's stack instead of
-                // polluting the TabNavigator's stack. This prevents the
-                // ClassCastException in tabNavigator.current which internally does
-                // navigator.items.last() as Tab.
-                AnimatedTabFade(contentKey = orderedTabs[currentTabIndex].key) {
-                    // Each tab gets its own nested Navigator so that non-Tab screens
-                    // pushed from inside the tab (e.g. ExtensionsScreen, AnimeDetailScreen,
-                    // SourceBrowseScreen) go to the inner navigator's stack instead of
-                    // polluting the TabNavigator's stack. This prevents the
-                    // ClassCastException in tabNavigator.current which internally does
-                    // navigator.items.last() as Tab.
-                    //
-                    // IMPORTANT: Use CurrentScreen() here, NOT CurrentTab().
-                    // CurrentScreen() renders whatever is on top of the inner Navigator's
-                    // stack — initially the tab content, but also any pushed screens.
-                    // CurrentTab() always renders the tab content and ignores pushes,
-                    // making navigation "appear to do nothing."
-                    Navigator(orderedTabs[currentTabIndex]) { navigator ->
-                        LaunchedEffect(currentTabIndex, searchRequestId) {
-                            if (
-                                currentTabIndex == 4 &&
-                                searchRequestId > handledSearchRequestId
-                            ) {
-                                handledSearchRequestId = searchRequestId
-                                navigator.push(GlobalSearchScreen(extensionManager = extensionManager))
+                // Tab content — all tabs stay composed so switching preserves
+                // every tab's UI state (search/filter/scroll), inner navigator
+                // stacks, and fetched data (Discover/Torrent load once at
+                // startup instead of re-fetching on every switch). The active
+                // tab is visible with a short fade; hidden tabs are kept alive
+                // but inert (alpha 0 + input consumed).
+                Box {
+                    val tabNavigators = remember { mutableMapOf<Int, Navigator>() }
+                    orderedTabs.forEachIndexed { index, tab ->
+                        val isCurrent = index == currentTabIndex
+                        val alpha by animateFloatAsState(
+                            targetValue = if (isCurrent) 1f else 0f,
+                            animationSpec = tween(durationMillis = 200),
+                            label = "tab-fade-$index",
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(if (isCurrent) 1f else 0f)
+                                .graphicsLayer { this.alpha = alpha }
+                                .then(
+                                    if (isCurrent) {
+                                        Modifier
+                                    } else {
+                                        Modifier.pointerInput(tab) {
+                                            // Keep-alive tabs must not swallow
+                                            // clicks meant for the active tab.
+                                            awaitPointerEventScope {
+                                                while (true) {
+                                                    awaitPointerEvent().changes.forEach { it.consume() }
+                                                }
+                                            }
+                                        }
+                                    },
+                                ),
+                        ) {
+                            // Each tab gets its own nested Navigator so that
+                            // non-Tab screens pushed from inside the tab (e.g.
+                            // ExtensionsScreen, AnimeDetailScreen,
+                            // SourceBrowseScreen) go to the inner navigator's
+                            // stack instead of polluting the TabNavigator's.
+                            //
+                            // IMPORTANT: Use CurrentScreen() here, NOT
+                            // CurrentTab(). CurrentScreen() renders whatever is
+                            // on top of the inner Navigator's stack — initially
+                            // the tab content, but also any pushed screens.
+                            Navigator(tab) { navigator ->
+                                tabNavigators[index] = navigator
+                                LaunchedEffect(currentTabIndex, searchRequestId) {
+                                    if (
+                                        index == 4 &&
+                                        searchRequestId > handledSearchRequestId
+                                    ) {
+                                        handledSearchRequestId = searchRequestId
+                                        navigator.push(GlobalSearchScreen(extensionManager = extensionManager))
+                                    }
+                                }
+                                CurrentScreen()
                             }
                         }
-                        CurrentScreen()
                     }
                 }
             }

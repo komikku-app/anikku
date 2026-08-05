@@ -13,6 +13,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
+
+import androidx.compose.material3.Button
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +47,7 @@ import app.anikku.macos.ui.components.AnimeGrid
 import app.anikku.macos.ui.screens.models.AnimeModel
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
+import app.anikku.macos.ui.screens.browse.ExtensionsScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -116,7 +120,8 @@ object TorrentTab : AnikkuScreen(), Tab {
 
         // Load the torrent source's popular catalogue on mount / source change.
         val activeSource = torrentSources.firstOrNull()
-        androidx.compose.runtime.LaunchedEffect(activeSource?.id) {
+        var retryToken by remember { mutableIntStateOf(0) }
+        androidx.compose.runtime.LaunchedEffect(activeSource?.id, retryToken) {
             val source = activeSource ?: return@LaunchedEffect
             isLoading = true
             loadError = null
@@ -266,6 +271,11 @@ object TorrentTab : AnikkuScreen(), Tab {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(horizontal = 32.dp),
                             )
+                            Spacer(Modifier.height(14.dp))
+                            val navigator = LocalNavigator.currentOrThrow
+                            Button(onClick = { navigator.push(ExtensionsScreen()) }) {
+                                Text("Open Extensions")
+                            }
                         }
                     }
 
@@ -295,12 +305,25 @@ object TorrentTab : AnikkuScreen(), Tab {
                                 }
                             } else if (displayModels.isEmpty()) {
                                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text(
+                                    if (loadError != null) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                loadError ?: "Nothing here",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.padding(horizontal = 32.dp),
+                                            )
+                                            Spacer(Modifier.height(14.dp))
+                                            Button(onClick = { retryToken++ }) { Text("Retry") }
+                                        }
+                                    } else {
+                                        Text(
                                         loadError ?: if (searchQuery.isNotBlank()) "No torrents found" else "No torrents available",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(horizontal = 32.dp),
                                     )
+                                }
                                 }
                             } else {
                                 AnimeGrid(

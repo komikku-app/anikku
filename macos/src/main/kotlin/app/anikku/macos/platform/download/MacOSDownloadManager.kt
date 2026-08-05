@@ -91,6 +91,7 @@ open class MacOSDownloadManager(
         episodeName: String,
         episodeNumber: Double,
         episodeUrl: String?,
+        coverUrl: String? = null,
     ): DownloadRepository.DownloadEntry {
         synchronized(downloadLock) {
             check(!closed) { "Download manager is closed" }
@@ -110,6 +111,7 @@ open class MacOSDownloadManager(
                 episodeName = episodeName,
                 episodeNumber = episodeNumber,
                 episodeUrl = episodeUrl,
+                coverUrl = coverUrl,
             )
             refreshState()
             processDownload(entry)
@@ -197,6 +199,19 @@ open class MacOSDownloadManager(
             }
             refreshState()
         }
+    }
+
+    /** Pause every active download (partials are preserved for resume). */
+    fun pauseAll() {
+        repository.getActive().map { it.id }.forEach(::pause)
+    }
+
+    /** Resume every paused download. */
+    fun resumeAll() {
+        repository.getAll()
+            .filter { it.status == DownloadRepository.DownloadStatus.PAUSED }
+            .map { it.id }
+            .forEach(::resume)
     }
 
     /** Retry an errored download using a fresh temporary file. */

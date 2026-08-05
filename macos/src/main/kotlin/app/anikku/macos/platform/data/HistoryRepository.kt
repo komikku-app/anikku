@@ -37,6 +37,8 @@ class HistoryRepository(private val dataDir: File) {
         val watchDuration: Long = 0L,
         val lastSecondSeen: Long = 0L,
         val totalSeconds: Long = 0L,
+        /** Cover image URL for list rows (best-effort; null for legacy entries). */
+        val coverUrl: String? = null,
     )
 
     private var entries: MutableList<HistoryEntry> = loadFromFile()

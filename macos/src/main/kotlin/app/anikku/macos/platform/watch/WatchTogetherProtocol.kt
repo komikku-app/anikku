@@ -55,10 +55,15 @@ sealed class WtMessage {
         val duration: Double = 0.0,
     ) : WtMessage()
 
-    /** Member count after join/leave; sent by the server. */
+    /** Member count + names after join/leave; sent by the server. */
     @Serializable
     @SerialName("members")
-    data class Members(val count: Int) : WtMessage()
+    data class Members(val count: Int, val names: List<String> = emptyList()) : WtMessage()
+
+    /** Sent by the server just before a room closes (host left / app shutdown). */
+    @Serializable
+    @SerialName("room_closed")
+    data class RoomClosed(val reason: String = "The host closed the room") : WtMessage()
 }
 
 /** JSON codec shared by the server, the app client and the browser join page. */

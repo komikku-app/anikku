@@ -35,6 +35,8 @@ private val logger = KotlinLogging.logger {}
 class WatchTogetherSession(
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val localActionGuardMillis: Long = 800L,
+    sessionName: String = System.getProperty("user.name", "Anikku"),
 ) : AutoCloseable {
 
     enum class Role { NONE, HOST, GUEST }
@@ -49,6 +51,8 @@ class WatchTogetherSession(
     val role = MutableStateFlow(Role.NONE)
     val roomCode = MutableStateFlow<String?>(null)
     val memberCount = MutableStateFlow(0)
+    /** Member display names, in join order (best-effort; empty when unknown). */
+    val memberNames = MutableStateFlow<List<String>>(emptyList())
     /** Browser-join URL shown in the room dialog. */
     val lanUrl = MutableStateFlow<String?>(null)
     /** User-facing status/error text. */
@@ -64,7 +68,22 @@ class WatchTogetherSession(
     private var server: WatchTogetherServer? = null
     private var beacon: WatchTogetherDiscovery.Beacon? = null
     private var syncJob: Job? = null
-    private var sessionName: String = System.getProperty("user.name", "Anikku")
+    private val sessionName: String = sessionName
+
+    /**
+     * When the user acted locally (play/pause/seek), their own relayed action
+     * converges everyone — a stale host [WtMessage.Sync] arriving right after
+     * would otherwise fight it (e.g. a pause gets undone by a sync sent before
+     * the pause was processed). Sync positions are skipped within this window.
+     */
+    private val localActionGuardNanos = localActionGuardMillis * 1_000_000L
+    @Volatile
+    private var lastLocalActionNanos = 0L
+    @Volatile
+    private var hasSyncBaseline = false
+    /** True once the server announced the room is closing — keep that status over connection teardown noise. */
+    @Volatile
+    private var roomClosedNotified = false
 
     /** Host: create a room for the current episode and join it as member 1. */
     fun startRoom(episode: WtMessage.Episode, media: MediaSpec, server: WatchTogetherServer): Boolean {
@@ -154,6 +173,9 @@ class WatchTogetherSession(
     fun joinRoomAt(host: String, port: Int, code: String) {
         if (role.value != Role.NONE) return
         this.server = null
+        roomClosedNotified = false
+        hasSyncBaseline = false
+        role.value = Role.GUEST
         roomCode.value = code
         status.value = null
         connect(host, port, code)
@@ -174,13 +196,25 @@ class WatchTogetherSession(
         role.value = Role.NONE
         roomCode.value = null
         memberCount.value = 0
+        memberNames.value = emptyList()
         lanUrl.value = null
-        onEpisode?.let {} // keep callback; player decides
+        roomClosedNotified = false
     }
 
-    /** Broadcast a control message (play/pause/seek/sync) to the room. */
+    /**
+     * Broadcast a user-initiated control message (play/pause/seek). Marks a
+     * local action so a stale incoming [WtMessage.Sync] cannot fight it.
+     */
     fun sendControl(message: WtMessage) {
         if (role.value == Role.NONE) return
+        if (message is WtMessage.Play || message is WtMessage.Pause || message is WtMessage.Seek) {
+            lastLocalActionNanos = System.nanoTime()
+        }
+        sendRaw(message)
+    }
+
+    /** Internal send — the host's periodic Sync must NOT count as a local action. */
+    private fun sendRaw(message: WtMessage) {
         val socket = webSocket ?: return
         runCatching { socket.send(WtProtocol.encode(message)) }
     }
@@ -194,7 +228,7 @@ class WatchTogetherSession(
         syncJob = scope.launch {
             while (isActive && role.value == Role.HOST) {
                 val (pos, playing, rate) = provider()
-                sendControl(WtMessage.Sync(pos = pos, playing = playing, rate = rate))
+                sendRaw(WtMessage.Sync(pos = pos, playing = playing, rate = rate))
                 delay(1_000)
             }
         }
@@ -225,7 +259,36 @@ class WatchTogetherSession(
                 is WtMessage.Episode -> {
                     if (role.value != Role.NONE) onEpisode?.invoke(message)
                 }
-                is WtMessage.Members -> memberCount.value = message.count
+                is WtMessage.Members -> {
+                    memberCount.value = message.count
+                    memberNames.value = message.names
+                }
+                is WtMessage.Sync -> {
+                    if (role.value == Role.NONE) return@onMessage
+                    val now = System.nanoTime()
+                    val recentlyActedLocally = now - lastLocalActionNanos < localActionGuardNanos
+                    if (hasSyncBaseline && recentlyActedLocally) {
+                        // The local action was already relayed and will converge
+                        // everyone; a sync snapshot from before it was processed
+                        // must not override the user's just-made choice.
+                        return@onMessage
+                    }
+                    hasSyncBaseline = true
+                    onControl?.invoke(message)
+                }
+                is WtMessage.RoomClosed -> {
+                    if (role.value != Role.NONE) {
+                        logger.info { "Watch Together: ${message.reason}" }
+                        roomClosedNotified = true
+                        status.value = message.reason
+                        role.value = Role.NONE
+                        roomCode.value = null
+                        memberCount.value = 0
+                        memberNames.value = emptyList()
+                        lanUrl.value = null
+                        this@WatchTogetherSession.webSocket = null
+                    }
+                }
                 is WtMessage.Hello -> Unit // reserved for a future member list
                 else -> message?.let { onControl?.invoke(it) }
             }
@@ -234,10 +297,15 @@ class WatchTogetherSession(
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             if (role.value != Role.NONE) {
                 logger.warn(t) { "Watch Together connection failed" }
-                status.value = "Connection failed — is the host reachable?"
+                // A RoomClosed announcement is already the answer — don't let
+                // the socket teardown that follows overwrite it.
+                if (!roomClosedNotified) {
+                    status.value = "Connection failed — is the host reachable?"
+                }
                 role.value = Role.NONE
                 roomCode.value = null
                 memberCount.value = 0
+                memberNames.value = emptyList()
                 lanUrl.value = null
                 beacon?.shutdown()
                 beacon = null
@@ -249,6 +317,7 @@ class WatchTogetherSession(
                 role.value = Role.NONE
                 roomCode.value = null
                 memberCount.value = 0
+                memberNames.value = emptyList()
                 lanUrl.value = null
             }
         }

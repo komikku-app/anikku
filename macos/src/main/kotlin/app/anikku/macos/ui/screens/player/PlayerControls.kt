@@ -24,6 +24,11 @@ import androidx.compose.material.icons.outlined.PictureInPicture
 import androidx.compose.material.icons.outlined.PictureInPictureAlt
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material3.Icon
+import androidx.compose.material3.rememberTooltipState
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -279,23 +284,30 @@ fun PlayerTransportControls(
  * Small circular icon button for transport controls.
  */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun TransportIconButton(
     icon: ImageVector,
     description: String,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.size(40.dp),
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+        state = rememberTooltipState(),
+        tooltip = { PlainTooltip { Text(description) } },
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = description,
-            tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f),
-            modifier = Modifier.size(24.dp),
-        )
+        IconButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = description,
+                tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f),
+                modifier = Modifier.size(24.dp),
+            )
+        }
     }
 }
 

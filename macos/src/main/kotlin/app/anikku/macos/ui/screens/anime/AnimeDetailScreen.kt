@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -59,6 +60,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -254,7 +256,8 @@ data class AnimeDetailScreen(
         }
 
         // Fetch from source API if available
-        LaunchedEffect(effectiveSourceId, effectiveAnimeUrl) {
+        var fetchRetryToken by remember { mutableIntStateOf(0) }
+        LaunchedEffect(effectiveSourceId, effectiveAnimeUrl, fetchRetryToken) {
             if (effectiveSourceId == null || effectiveAnimeUrl == null) {
                 // No source yet — the auto-match effect owns this case.
                 isLoading = false
@@ -324,7 +327,7 @@ data class AnimeDetailScreen(
                 .focusable()
                 .onKeyEvent { event ->
                     if (event.type == KeyEventType.KeyDown &&
-                        event.key == Key.S &&
+                        event.key == Key.E &&
                         event.isMetaPressed
                     ) {
                         val url = anime?.url
@@ -404,6 +407,12 @@ data class AnimeDetailScreen(
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                                 Spacer(Modifier.width(4.dp))
                                 Text("Go back")
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(onClick = { fetchRetryToken++ }) {
+                                Icon(Icons.Outlined.Refresh, contentDescription = null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Retry")
                             }
                         }
                     }
@@ -561,6 +570,7 @@ data class AnimeDetailScreen(
                                     animeTitle = anime?.title ?: animeTitle,
                                     extensionManager = extensionManager,
                                     downloadManager = effectiveDownloadManager,
+                                    coverUrl = anime?.thumbnailUrl,
                                 )
                             )
                         },
@@ -585,6 +595,7 @@ data class AnimeDetailScreen(
                                         episodeName = episode.name,
                                         episodeNumber = episode.episodeNumber,
                                         episodeUrl = episode.url,
+                                        coverUrl = anime?.thumbnailUrl,
                                     )
                                     toastHost.show("Queued: ${episode.name}", ToastDuration.SHORT)
                                 }
@@ -611,6 +622,7 @@ data class AnimeDetailScreen(
                                             episodeName = episode.name,
                                             episodeNumber = episode.episodeNumber,
                                             episodeUrl = episode.url,
+                                        coverUrl = anime?.thumbnailUrl,
                                         )
                                     }
                                     toastHost.show("Queued next ${target.size} episode(s)", ToastDuration.SHORT)
@@ -637,6 +649,7 @@ data class AnimeDetailScreen(
                                             episodeName = episode.name,
                                             episodeNumber = episode.episodeNumber,
                                             episodeUrl = episode.url,
+                                        coverUrl = anime?.thumbnailUrl,
                                         )
                                     }
                                     toastHost.show("Queued ${target.size} episode(s)", ToastDuration.SHORT)

@@ -43,6 +43,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+
+import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -675,6 +677,10 @@ internal fun LibraryContent(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = { app.anikku.macos.ui.TabSwitchHandler.switchTo(4) }) {
+                            Text("Browse sources")
+                        }
                     }
                 }
             } else if (libraryAnime.isEmpty() && searchQuery.isNotBlank()) {

@@ -7,18 +7,22 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.window.WindowPosition
+import kotlin.math.roundToInt
 import app.anikku.macos.ui.MacOSMenuBarFactory
 import app.anikku.macos.platform.MacOSDockManager
 import app.anikku.macos.platform.BackgroundJobConfiguration
 import app.anikku.macos.platform.LocalBackgroundJobs
 import app.anikku.macos.ui.GlobalKeyboardShortcuts
 import app.anikku.macos.ui.components.AboutDialog
+import app.anikku.macos.ui.components.KeyboardShortcutsDialog
 import app.anikku.macos.ui.screens.browse.BrowseTab
 import app.anikku.macos.ui.screens.onboarding.OnboardingScreen
 import androidx.compose.foundation.layout.Box
@@ -78,6 +82,8 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Frame
@@ -159,9 +165,37 @@ fun main() = application {
     }
     val app = AnikkuApplication()
 
+    // Window size/position persist across launches via preferences.
+    val windowPrefs = app.preferenceStore
+    val savedWidth = windowPrefs.getInt("window_width", 0).get()
+    val savedHeight = windowPrefs.getInt("window_height", 0).get()
+    val savedX = windowPrefs.getInt("window_x", Int.MIN_VALUE).get()
+    val savedY = windowPrefs.getInt("window_y", Int.MIN_VALUE).get()
     val windowState = rememberWindowState(
-        size = DpSize(1280.dp, 800.dp),
+        size = if (savedWidth > 0 && savedHeight > 0) {
+            DpSize(savedWidth.dp, savedHeight.dp)
+        } else {
+            DpSize(1280.dp, 800.dp)
+        },
+        position = if (savedX != Int.MIN_VALUE && savedY != Int.MIN_VALUE) {
+            WindowPosition(savedX.dp, savedY.dp)
+        } else {
+            WindowPosition.PlatformDefault
+        },
     )
+    // Debounced save of the window bounds (position + size).
+    LaunchedEffect(windowState) {
+        snapshotFlow { windowState.position to windowState.size }
+            .debounce(500)
+            .collect { (position, size) ->
+                if (position.isSpecified) {
+                    windowPrefs.getInt("window_x", Int.MIN_VALUE).set(position.x.value.roundToInt())
+                    windowPrefs.getInt("window_y", Int.MIN_VALUE).set(position.y.value.roundToInt())
+                }
+                windowPrefs.getInt("window_width", 0).set(size.width.value.roundToInt())
+                windowPrefs.getInt("window_height", 0).set(size.height.value.roundToInt())
+            }
+    }
 
     Window(
         onCloseRequest = {
@@ -360,6 +394,13 @@ fun main() = application {
         // composable-local. These two callbacks are application-wide.
         GlobalKeyboardShortcuts.onOpenSettings = { TabSwitchHandler.switchTo(8) }
         GlobalKeyboardShortcuts.onNewSource = { TabSwitchHandler.switchTo(4) }
+
+        // Help > Keyboard Shortcuts… opens an app-level reference dialog.
+        var showShortcutsDialog by remember { mutableStateOf(false) }
+        GlobalKeyboardShortcuts.onShowShortcuts = { showShortcutsDialog = true }
+        if (showShortcutsDialog) {
+            KeyboardShortcutsDialog(onDismiss = { showShortcutsDialog = false })
+        }
 
         // Phase 5.6: Wire extension manager to BrowseTab
         BrowseTab.setExtensionManager(app.extensionManager)

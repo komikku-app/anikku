@@ -69,6 +69,7 @@ class SettingsState(
         private const val KEY_DEFAULT_SPEED = "default_playback_speed"
         private const val KEY_SUBTITLE_FONT_SIZE = "subtitle_font_size"
         private const val KEY_SUBTITLE_POSITION = "subtitle_position"
+        private const val KEY_CLIP_CAPTURE_SECONDS = "player_clip_capture_seconds"
 
         // AniList tracker sync
         private const val KEY_ANILIST_SYNC_INTERVAL_HOURS = "anilist_sync_interval_hours"
@@ -292,6 +293,20 @@ class SettingsState(
             val clamped = value.coerceIn(20f, 160f)
             _subtitleFontSize.value = clamped
             subtitleFontSizePref?.set(clamped)
+        }
+
+    private val clipCaptureSecondsPref = preferenceStore?.getInt(KEY_CLIP_CAPTURE_SECONDS, 5)
+    private val _clipCaptureSeconds = mutableStateOf(
+        (clipCaptureSecondsPref?.get() ?: 5).coerceIn(3, 10),
+    )
+
+    /** GIF clip length in seconds (3/5/10); applies when the player opens. */
+    var clipCaptureSeconds: Int
+        get() = _clipCaptureSeconds.value
+        set(value) {
+            val clamped = value.coerceIn(3, 10)
+            _clipCaptureSeconds.value = clamped
+            clipCaptureSecondsPref?.set(clamped)
         }
 
     private val subtitlePositionPref = preferenceStore?.getInt(KEY_SUBTITLE_POSITION, 100)

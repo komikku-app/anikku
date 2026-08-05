@@ -68,6 +68,7 @@ object MacOSNowPlayingHandler {
     private var mediaItemTitle: Pointer? = null
     private var mediaItemArtist: Pointer? = null
     private var mediaItemDuration: Pointer? = null
+    private var mediaItemArtwork: Pointer? = null
     private var nowPlayingElapsed: Pointer? = null
     private var nowPlayingRate: Pointer? = null
 
@@ -97,6 +98,7 @@ object MacOSNowPlayingHandler {
             mediaItemTitle = symbol("MPMediaItemPropertyTitle")
             mediaItemArtist = symbol("MPMediaItemPropertyArtist")
             mediaItemDuration = symbol("MPMediaItemPropertyPlaybackDuration")
+            mediaItemArtwork = symbol("MPMediaItemPropertyArtwork")
             nowPlayingElapsed = symbol("MPNowPlayingInfoPropertyElapsedPlaybackTime")
             nowPlayingRate = symbol("MPNowPlayingInfoPropertyPlaybackRate")
             available = true
@@ -180,22 +182,52 @@ object MacOSNowPlayingHandler {
         elapsedSeconds: Double,
         playing: Boolean,
         rate: Double,
+        artworkPath: String? = null,
     ) {
         if (!available || title.isNullOrBlank()) return
         try {
             val center = nowPlayingInfoCenter()
             val elapsed = elapsedSeconds.coerceIn(0.0, durationSeconds.coerceAtLeast(0.0))
-            val dict = buildDictionary(
+            val pairs = mutableListOf<Pair<Pointer, Pointer>>(
                 mediaItemTitle!! to nsString(title),
                 mediaItemArtist!! to nsString(artist ?: ""),
                 mediaItemDuration!! to nsNumber(durationSeconds.coerceAtLeast(0.0)),
                 nowPlayingElapsed!! to nsNumber(elapsed),
                 nowPlayingRate!! to nsNumber(if (playing) rate.coerceAtLeast(0.0) else 0.0),
             )
+            artworkPath?.takeIf { java.io.File(it).isFile }?.let { path ->
+                nsImage(path)?.let { image ->
+                    val artwork = mpArtwork(image)
+                    if (artwork != null && Pointer.nativeValue(artwork) != 0L) {
+                        pairs += mediaItemArtwork!! to artwork
+                    }
+                }
+            }
+            val dict = buildDictionary(*pairs.toTypedArray())
             ObjC.objc_msgSend_void(center, sel("setNowPlayingInfo:"), dict)
         } catch (e: Throwable) {
             logger.warn(e) { "Failed to update Now Playing info" }
         }
+    }
+
+    /** Load an NSImage from a file path, or null. */
+    private fun nsImage(path: String): Pointer? {
+        val cls = ObjC.objc_getClass("NSImage")
+        val alloced = ObjC.objc_msgSend(cls, sel("alloc"))
+        if (Pointer.nativeValue(alloced) == 0L) return null
+        return ObjC.objc_msgSend_str(alloced, sel("initWithContentsOfFile:"), path)
+    }
+
+    /**
+     * MPMediaItemArtwork from an NSImage. `initWithImage:` is deprecated since
+     * macOS 13 but still functional — the modern block-based initializer is
+     * not reachable through the JNA ObjC bridge (struct-by-value CGSize).
+     */
+    private fun mpArtwork(image: Pointer): Pointer? {
+        val cls = ObjC.objc_getClass("MPMediaItemArtwork")
+        val alloced = ObjC.objc_msgSend(cls, sel("alloc"))
+        if (Pointer.nativeValue(alloced) == 0L) return null
+        return ObjC.objc_msgSend(alloced, sel("initWithImage:"), image)
     }
 
     /** Remove the app from Now Playing (call when the player closes). */

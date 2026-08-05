@@ -49,9 +49,13 @@ import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.OverflowItem
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.OverflowMenu
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -98,6 +102,7 @@ object HistoryTab : AnikkuScreen(), Tab {
                 seenAt = entry.seenAt,
                 sourceId = entry.sourceId,
                 animeUrl = entry.animeUrl,
+                coverUrl = entry.coverUrl,
             )
         }
 
@@ -197,6 +202,7 @@ data class HistoryItemData(
     val seenAt: Long,
     val sourceId: Long = 0L,
     val animeUrl: String? = null,
+    val coverUrl: String? = null,
 )
 
 @Composable
@@ -406,21 +412,15 @@ private fun HistoryItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Cover placeholder
-            Box(
+            // Cover (falls back to initials when no URL is known).
+            AnimeCoverImage(
+                thumbnailUrl = entry.coverUrl,
+                contentDescription = entry.animeTitle,
+                title = entry.animeTitle,
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = entry.animeTitle.take(2).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .clip(RoundedCornerShape(6.dp)),
+            )
 
             Spacer(Modifier.width(12.dp))
 

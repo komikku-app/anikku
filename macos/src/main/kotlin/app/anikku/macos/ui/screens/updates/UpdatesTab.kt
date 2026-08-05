@@ -44,7 +44,9 @@ import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.LocalBackgroundJobs
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -93,6 +95,7 @@ object UpdatesTab : AnikkuScreen(), Tab {
                             seenAt = libEntry.lastUpdatedAt,
                             sourceId = libEntry.sourceId,
                             isNew = libEntry.unseenEpisodeCount > 0,
+                            thumbnailUrl = libEntry.thumbnailUrl,
                         )
                     }
                     val lastWatched = historyEntries
@@ -107,6 +110,7 @@ object UpdatesTab : AnikkuScreen(), Tab {
                             episodeNumber = lastWatched.episodeNumber,
                             seenAt = lastWatched.seenAt,
                             sourceId = libEntry.sourceId,
+                            thumbnailUrl = libEntry.thumbnailUrl,
                         )
                     } else {
                         UpdateItemData(
@@ -178,6 +182,7 @@ data class UpdateItemData(
     val seenAt: Long,
     val sourceId: Long = 0L,
     val isNew: Boolean = false,
+    val thumbnailUrl: String? = null,
 )
 
 @Composable
@@ -286,21 +291,15 @@ private fun UpdatesItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Cover placeholder
-            Box(
+            // Cover (falls back to initials when no URL is known).
+            AnimeCoverImage(
+                thumbnailUrl = update.thumbnailUrl,
+                contentDescription = update.animeTitle,
+                title = update.animeTitle,
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = update.animeTitle.take(2).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .clip(RoundedCornerShape(6.dp)),
+            )
 
             Spacer(Modifier.width(12.dp))
 

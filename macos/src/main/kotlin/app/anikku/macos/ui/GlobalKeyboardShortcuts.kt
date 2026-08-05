@@ -40,6 +40,9 @@ object GlobalKeyboardShortcuts {
     /** Callback for triggering a new source browse. */
     var onNewSource: (() -> Unit)? = null
 
+    /** Callback for opening the keyboard-shortcuts dialog (Help menu). */
+    var onShowShortcuts: (() -> Unit)? = null
+
     /**
      * Initialize all global shortcut callbacks.
      *

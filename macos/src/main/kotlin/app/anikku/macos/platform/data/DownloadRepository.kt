@@ -50,6 +50,8 @@ class DownloadRepository(private val dataDir: File) {
          * from where it stopped via HTTP Range instead of restarting.
          */
         val resumePartialPath: String? = null,
+        /** Cover image URL for list rows (best-effort). */
+        val coverUrl: String? = null,
     ) {
         val isActive: Boolean get() = status == DownloadStatus.DOWNLOADING || status == DownloadStatus.QUEUED
         val isFinished: Boolean get() = status == DownloadStatus.COMPLETED || status == DownloadStatus.ERROR
@@ -106,6 +108,7 @@ class DownloadRepository(private val dataDir: File) {
         episodeName: String,
         episodeNumber: Double,
         episodeUrl: String?,
+        coverUrl: String? = null,
     ): DownloadEntry {
         val entry = DownloadEntry(
             id = nextId++,
@@ -116,6 +119,7 @@ class DownloadRepository(private val dataDir: File) {
             episodeNumber = episodeNumber,
             episodeUrl = episodeUrl,
             status = DownloadStatus.QUEUED,
+            coverUrl = coverUrl,
         )
         entries.add(entry)
         saveToFile()

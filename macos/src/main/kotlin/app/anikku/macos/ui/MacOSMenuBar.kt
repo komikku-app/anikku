@@ -301,6 +301,9 @@ fun create(
     // ---------------------------------------------------------------------------
     private fun helpMenu(): Menu {
         return Menu("Help").apply {
+            add(MenuItem("Keyboard Shortcuts...").also {
+                it.addActionListener { app.anikku.macos.ui.GlobalKeyboardShortcuts.onShowShortcuts?.invoke() }
+            })
             add(MenuItem("Anikku Help").also {
                 it.addActionListener { openHelpDocs() }
             })

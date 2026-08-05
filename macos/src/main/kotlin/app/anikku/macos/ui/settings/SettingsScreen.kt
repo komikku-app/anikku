@@ -25,6 +25,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -84,12 +86,24 @@ fun SettingsScreen() {
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
         )
 
-        HorizontalDivider()
+        // Search — filters sections and auto-expands matches.
+        var searchQuery by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Search settings") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
 
         // =====================================================================
         // Appearance
         // =====================================================================
-        HeadingItem("Appearance")
+        SettingsSection(title = "Appearance", searchQuery = searchQuery) {
 
         // Theme selector
         val themeNames = remember { AnikkuTheme.allThemes.map { it.displayName }.toTypedArray() }
@@ -121,67 +135,19 @@ fun SettingsScreen() {
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
+        }
         // =====================================================================
         // Library
         // =====================================================================
-        HeadingItem("Library")
+        SettingsSection(title = "Library", searchQuery = searchQuery) {
 
-        var showCategoryTabs by remember { mutableStateOf(true) }
-        CheckboxItem(
-            label = "Show category tabs",
-            checked = showCategoryTabs,
-            onClick = {
-                showCategoryTabs = !showCategoryTabs
-                toastHost.show("Category tabs: ${if (showCategoryTabs) "on" else "off"}", ToastDuration.SHORT)
-            },
-        )
+        // Dead toggles removed (1.6.0): they were never persisted or read.
 
-        var showEpisodeCount by remember { mutableStateOf(false) }
-        CheckboxItem(
-            label = "Show number of items",
-            checked = showEpisodeCount,
-            onClick = {
-                showEpisodeCount = !showEpisodeCount
-                toastHost.show("Item count: ${if (showEpisodeCount) "on" else "off"}", ToastDuration.SHORT)
-            },
-        )
-
-        var downloadBadge by remember { mutableStateOf(true) }
-        CheckboxItem(
-            label = "Show download badge",
-            checked = downloadBadge,
-            onClick = {
-                downloadBadge = !downloadBadge
-                toastHost.show("Download badge: ${if (downloadBadge) "on" else "off"}", ToastDuration.SHORT)
-            },
-        )
-
-        var localBadge by remember { mutableStateOf(true) }
-        CheckboxItem(
-            label = "Show local badge",
-            checked = localBadge,
-            onClick = {
-                localBadge = !localBadge
-                toastHost.show("Local badge: ${if (localBadge) "on" else "off"}", ToastDuration.SHORT)
-            },
-        )
-
-        var languageBadge by remember { mutableStateOf(true) }
-        CheckboxItem(
-            label = "Show language badge",
-            checked = languageBadge,
-            onClick = {
-                languageBadge = !languageBadge
-                toastHost.show("Language badge: ${if (languageBadge) "on" else "off"}", ToastDuration.SHORT)
-            },
-        )
-
-        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
-
+        }
         // =====================================================================
         // Player
         // =====================================================================
-        HeadingItem("Player")
+        SettingsSection(title = "Player", searchQuery = searchQuery) {
 
         var autoPlay by remember { mutableStateOf(settings.autoPlayNextEpisode) }
         CheckboxItem(
@@ -265,21 +231,11 @@ fun SettingsScreen() {
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
+        }
         // =====================================================================
         // Downloads
         // =====================================================================
-        HeadingItem("Downloads")
-
-        var downloadOnWifiOnly by remember { mutableStateOf(settings.downloadOnWifiOnly) }
-        CheckboxItem(
-            label = "Download on Wi-Fi only",
-            checked = downloadOnWifiOnly,
-            onClick = {
-                downloadOnWifiOnly = !downloadOnWifiOnly
-                settings.downloadOnWifiOnly = downloadOnWifiOnly
-                toastHost.show("Wi-Fi only: ${if (downloadOnWifiOnly) "on" else "off"}", ToastDuration.SHORT)
-            },
-        )
+        SettingsSection(title = "Downloads", searchQuery = searchQuery) {
 
         var simultaneousDownloads by remember { mutableStateOf(settings.simultaneousDownloads) }
         SelectItem(
@@ -306,10 +262,11 @@ fun SettingsScreen() {
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
+        }
         // =====================================================================
         // Data & Storage
         // =====================================================================
-        HeadingItem("Data & Storage")
+        SettingsSection(title = "Data & Storage", searchQuery = searchQuery) {
 
         val backupIntervals = intArrayOf(0, 6, 12, 24, 48, 168)
         val backupIntervalLabels = arrayOf("Off", "Every 6 hours", "Every 12 hours", "Daily", "Every 2 days", "Weekly")
@@ -412,10 +369,11 @@ fun SettingsScreen() {
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
+        }
         // =====================================================================
         // Connections
         // =====================================================================
-        HeadingItem("Connections")
+        SettingsSection(title = "Connections", searchQuery = searchQuery) {
         SyncYomiSettingsPanel()
         val discordRPC = LocalDiscordRPC.current
         CheckboxItem(
@@ -434,11 +392,12 @@ fun SettingsScreen() {
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
+        }
         // =====================================================================
         // Statistics
         // =====================================================================
         val statsNav = LocalNavigator.currentOrThrow
-        HeadingItem("Statistics")
+        SettingsSection(title = "Statistics", searchQuery = searchQuery) {
 
         NavCard(
             icon = { Icon(Icons.Outlined.BarChart, contentDescription = null, modifier = Modifier.size(24.dp)) },
@@ -449,11 +408,12 @@ fun SettingsScreen() {
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
+        }
         // =====================================================================
         // Diagnostics
         // =====================================================================
         val diagNav = LocalNavigator.currentOrThrow
-        HeadingItem("Diagnostics")
+        SettingsSection(title = "Diagnostics", searchQuery = searchQuery) {
 
         NavCard(
             icon = { Icon(Icons.Outlined.Warning, contentDescription = null, modifier = Modifier.size(24.dp)) },
@@ -464,10 +424,11 @@ fun SettingsScreen() {
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
+        }
         // =====================================================================
         // About
         // =====================================================================
-        HeadingItem("About")
+        SettingsSection(title = "About", searchQuery = searchQuery) {
 
         Column(
             modifier = Modifier
@@ -502,6 +463,7 @@ fun SettingsScreen() {
             )
         }
     }
+}
 }
 
 /**
@@ -563,5 +525,25 @@ private fun NavCard(
                 modifier = Modifier.size(20.dp),
             )
         }
+        }
+    }
+
+
+/**
+ * Collapsible settings section. Searching auto-expands matching sections and
+ * hides the rest.
+ */
+@Composable
+private fun SettingsSection(
+    title: String,
+    searchQuery: String,
+    content: @Composable () -> Unit,
+) {
+    val matches = searchQuery.isBlank() || title.contains(searchQuery, ignoreCase = true)
+    var expanded by remember { mutableStateOf(true) }
+    if (!matches && searchQuery.isNotBlank()) return
+    HeadingItem(title, onClick = { expanded = !expanded })
+    AnimatedVisibility(visible = expanded || searchQuery.isNotBlank()) {
+        content()
     }
 }

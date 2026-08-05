@@ -3,7 +3,27 @@ package app.anikku.macos.player
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.VolumeOff
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -133,12 +153,15 @@ fun PipVideoSurface(
  *
  * @param pipHandler The PiP handler controlling visibility.
  * @param renderer The software renderer whose frames are mirrored.
+ * @param viewModel The active player — drives the PiP controls (play/pause,
+ * seek, mute) so the window is fully controllable while another app is front.
  * @param onClose Called when the user closes the PiP window.
  */
 @Composable
 fun PipWindow(
     pipHandler: MacOSPipHandler,
     renderer: MPVSoftwareRenderer?,
+    viewModel: PlayerViewModel? = null,
     onClose: () -> Unit,
 ) {
     if (pipHandler.isPipVisible) {
@@ -156,10 +179,91 @@ fun PipWindow(
             state = pipWindowState,
             alwaysOnTop = true,
         ) {
-            PipVideoSurface(
-                renderer = renderer,
-                modifier = Modifier.fillMaxSize(),
-            )
+            Column(Modifier.fillMaxSize()) {
+                PipVideoSurface(
+                    renderer = renderer,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+                if (viewModel != null) {
+                    PipControls(viewModel)
+                }
+            }
         }
     }
+}
+
+/**
+ * Bottom control bar for the PiP window — play/pause, a seek slider and mute.
+ * Reads the player's live flows directly (same process), so it keeps working
+ * when the main window is in the background.
+ */
+@Composable
+private fun PipControls(viewModel: PlayerViewModel) {
+    val isPaused by viewModel.isPaused.collectAsState()
+    val position by viewModel.currentPosition.collectAsState()
+    val duration by viewModel.duration.collectAsState()
+    val volume by viewModel.volume.collectAsState()
+    var isMuted by remember { mutableStateOf(false) }
+    var lastVolume by remember { mutableIntStateOf(100) }
+
+    Surface(color = Color(0xFF141414)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+            Slider(
+                value = position.toFloat().coerceIn(0f, duration.toFloat().coerceAtLeast(1f)),
+                onValueChange = { viewModel.seekTo(it.toDouble()) },
+                enabled = duration > 0,
+                modifier = Modifier.fillMaxWidth().height(24.dp),
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                IconButton(
+                    onClick = { viewModel.togglePause() },
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        imageVector = if (isPaused) Icons.Outlined.PlayCircle else Icons.Outlined.PauseCircle,
+                        contentDescription = if (isPaused) "Play" else "Pause",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Text(
+                    formatTime(position) + " / " + formatTime(duration),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = {
+                        if (isMuted) {
+                            viewModel.setVolume(lastVolume.coerceIn(0, 200))
+                            isMuted = false
+                        } else {
+                            lastVolume = volume
+                            viewModel.setVolume(0)
+                            isMuted = true
+                        }
+                    },
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        imageVector = if (isMuted || volume == 0) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp,
+                        contentDescription = if (isMuted) "Unmute" else "Mute",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatTime(seconds: Double): String {
+    val total = seconds.toLong().coerceAtLeast(0L)
+    val h = total / 3600
+    val m = (total % 3600) / 60
+    val s = total % 60
+    return if (h > 0) String.format("%d:%02d:%02d", h, m, s) else String.format("%d:%02d", m, s)
 }

@@ -23,7 +23,8 @@ class WatchTogetherProtocolTest {
                 kind = "direct",
                 duration = 1440.0,
             ),
-            WtMessage.Members(count = 3),
+            WtMessage.Members(count = 3, names = listOf("Ernest", "Bob")),
+            WtMessage.RoomClosed(reason = "The host closed the room"),
         )
 
         for (message in messages) {

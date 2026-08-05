@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
 
 /**
  * Displays an anime cover image loaded from [thumbnailUrl] using Coil 3.
@@ -33,14 +33,19 @@ fun AnimeCoverImage(
     title: String = "",
 ) {
     if (!thumbnailUrl.isNullOrBlank()) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = thumbnailUrl,
             contentDescription = contentDescription,
             modifier = modifier,
             contentScale = ContentScale.Crop,
             clipToBounds = true,
-            placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceContainerHighest),
-            error = ColorPainter(MaterialTheme.colorScheme.errorContainer),
+            loading = {
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHighest))
+            },
+            error = {
+                // Failed loads fall back to initials instead of a blank box.
+                AnimeCoverFallback(title = title, modifier = Modifier.fillMaxSize())
+            },
         )
     } else {
         AnimeCoverFallback(
