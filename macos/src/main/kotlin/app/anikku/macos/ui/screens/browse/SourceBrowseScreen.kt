@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
@@ -139,8 +140,8 @@ data class SourceBrowseScreen(
                 animeList = page.animes.map { it.toAnimeModel(sourceId) }
                 UIActionLogger.logExtension(sourceName, "popularResults", "count=${animeList.size}")
             } catch (e: NoClassDefFoundError) {
-                errorMessage = "Missing JVM dependency: ${e.message}. " +
-                    "This source needs a JVM-compatible build. Try building from source with: ./gradlew buildKeiyoushiExtension"
+                errorMessage = "This source needs an updated version of its extension. " +
+                    "Check the Extensions tab for updates, or reinstall it."
                 toastHost.show(
                     text = "Missing dependency for $sourceName",
                     duration = app.anikku.macos.ui.components.ToastDuration.LONG,
@@ -152,7 +153,7 @@ data class SourceBrowseScreen(
             } catch (e: Exception) {
                 errorMessage = formatError(e)
                 toastHost.show(
-                    text = "$sourceName: ${e::class.simpleName} — ${e.message?.take(80)}",
+                    text = "$sourceName: ${formatError(e)}",
                     duration = app.anikku.macos.ui.components.ToastDuration.LONG,
                     isError = true,
                     source = sourceName,
@@ -632,15 +633,22 @@ data class SourceBrowseScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                )
+                                Spacer(Modifier.height(16.dp))
                                 Text(
                                     "No results for \"$searchQuery\"",
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                Spacer(Modifier.height(4.dp))
+                                Spacer(Modifier.height(8.dp))
                                 Text(
                                     "Try a different search term",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 )
                             }
@@ -653,11 +661,26 @@ data class SourceBrowseScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                "No anime found",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Outlined.VideoLibrary,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "No anime found",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Try a different keyword or another source",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                )
+                            }
                         }
                         return@Box
                     }

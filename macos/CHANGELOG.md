@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.7.0] — 2026-08-05
+
+### The polish release
+
+**Fixes**
+- Downloads search now actually filters the queue (typing did nothing).
+- History and Updates refresh live while the app stays open — no more
+  restarting to see what you just watched.
+- Episode selector in the player is windowed for long series: no more
+  overflow on One Piece-length shows, and pills are finally clickable.
+- About screens show the real version instead of a hardcoded "1.0.0".
+- The "⋯" menu on library cards is visible in light mode again.
+- Errors no longer leak raw exception text / gradle commands / "demo mode"
+  language; failed downloads say why.
+
+**Onboarding is real setup now**
+- Pick a color scheme and Light/Dark/Auto on the Appearance step — applied
+  instantly, not just described.
+- The Sources step shows your live installed-source count and jumps straight
+  to Browse.
+
+**Discoverability**
+- Anime pages: ⌘D library · ⌘E share · ⌘⇧C copy URL · ⌘⇧O open in browser
+  (previously advertised but not wired).
+- The app restores your last tab on launch.
+- "What's New" dialog after every update — release notes ship in the app.
+- Tooltips on every icon-only row button (downloads, episodes, queue).
+- Playback menu greys out when no video is open.
+
+**Features surfaced**
+- "Download on Wi-Fi only" setting (existed, had no UI).
+- Episode rows show real download state: queued / downloading with progress
+  bar / paused / done / error.
+- Folder scans show live progress with a Cancel button.
+- Library section in Settings is no longer an empty shell; settings search
+  matches setting names, not just section headings.
+- Consistent empty states across source browse and the source filter.
+
+**Housekeeping**
+- Dead code removed (mock data moved to tests, unused i18n/scroll components,
+  duplicate imports), emoji replaced with proper icons, mobile "tap" wording
+  replaced with desktop copy.
+
 ## [1.6.1] — 2026-08-05
 
 ### Watch Together — real sync, real guests

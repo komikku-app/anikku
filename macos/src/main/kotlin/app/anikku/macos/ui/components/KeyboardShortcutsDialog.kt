@@ -30,6 +30,12 @@ fun KeyboardShortcutsDialog(onDismiss: () -> Unit) {
             "⌘S" to "Toggle sidebar",
             "⌘F" to "Global search",
         ),
+        "Anime details" to listOf(
+            "⌘D" to "Add to / remove from library",
+            "⌘E" to "Share",
+            "⌘⇧C" to "Copy URL",
+            "⌘⇧O" to "Open in browser",
+        ),
         "Player" to listOf(
             "Space / K" to "Play / pause",
             "← → / J L" to "Seek ±10s",

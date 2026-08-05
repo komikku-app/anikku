@@ -331,7 +331,7 @@ class AnimeDetailScreenTest {
         }
 
         // Without sourceId/animeUrl, the screen shows an error state
-        composeTestRule.onNodeWithText("Cannot load anime — no source or URL provided")
+        composeTestRule.onNodeWithText("This anime isn't linked to a source yet — link one to see its episodes")
             .assertIsDisplayed()
     }
 
@@ -352,7 +352,7 @@ class AnimeDetailScreenTest {
 
         // Wait for LaunchedEffect to complete and error state to appear
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Cannot load anime — no source or URL provided")
+        composeTestRule.onNodeWithText("This anime isn't linked to a source yet — link one to see its episodes")
             .assertIsDisplayed()
     }
 
@@ -363,7 +363,7 @@ class AnimeDetailScreenTest {
         }
 
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Cannot load anime — no source or URL provided")
+        composeTestRule.onNodeWithText("This anime isn't linked to a source yet — link one to see its episodes")
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("Go back").assertIsDisplayed()
     }

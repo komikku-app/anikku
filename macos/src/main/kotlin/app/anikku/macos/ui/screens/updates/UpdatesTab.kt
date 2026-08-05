@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,7 +47,6 @@ import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.LocalToastHost
-import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -75,7 +75,8 @@ object UpdatesTab : AnikkuScreen(), Tab {
 
         val libraryRevision by libraryRepo.revision.collectAsState()
         val libraryEntries = remember(libraryRevision) { libraryRepo.getAll() }
-        val historyEntries = remember { historyRepo.getAll() }
+        val historyRevision by historyRepo.revision.collectAsState()
+        val historyEntries = remember(historyRevision) { historyRepo.getAll() }
 
         // Build update list from library + history
         val updates = remember(libraryEntries, historyEntries) {
@@ -258,6 +259,24 @@ private fun UpdatesContent(
                         IconButton(onClick = onRefresh) {
                             Icon(Icons.Outlined.Refresh, contentDescription = "Check library for updates")
                         }
+                    }
+                }
+                // Live progress while the background library check runs.
+                if (isRefreshing) {
+                    LinearProgressIndicator(
+                        progress = { 0.5f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp)),
+                    )
+                    statusMessage?.takeIf(String::isNotBlank)?.let { message ->
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            message,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }

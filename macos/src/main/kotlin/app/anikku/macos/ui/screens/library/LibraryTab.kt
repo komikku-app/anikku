@@ -45,11 +45,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -62,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -212,6 +215,11 @@ object LibraryTab : AnikkuScreen(), Tab {
         }
         val scope = rememberCoroutineScope()
 
+        // Active folder scan — live progress + cancel.
+        var scanningFolderName by remember { mutableStateOf<String?>(null) }
+        var scanProgress by remember { mutableStateOf(0) }
+        var scanCancelled by remember { mutableStateOf(false) }
+
         LibraryContent(
             libraryAnime = filteredAnime,
             continueWatching = continueWatching,
@@ -254,23 +262,39 @@ object LibraryTab : AnikkuScreen(), Tab {
                 }
                 val folder = picker.openDirectory(title = "Add video folder")
                 if (folder != null) {
-                    toastHost.show("Scanning \"${folder.name}\"…", ToastDuration.SHORT)
-                    scope.launch(Dispatchers.IO) {
-                        val scanned = LocalFolderScanner.scan(folder)
-                        localLibraryRepo?.add(scanned)
-                        withContext(Dispatchers.Main) {
-                            toastHost.show(
-                                if (scanned.isNotEmpty()) {
-                                    "Added ${scanned.size} episode${if (scanned.size == 1) "" else "s"} from ${folder.name}"
-                                } else {
-                                    "No videos found in \"${folder.name}\""
-                                },
-                                ToastDuration.LONG,
+                    if (scanningFolderName != null) {
+                        toastHost.show("A scan is already running", ToastDuration.SHORT)
+                    } else {
+                        scanningFolderName = folder.name
+                        scanProgress = 0
+                        scanCancelled = false
+                        scope.launch(Dispatchers.IO) {
+                            val scanned = LocalFolderScanner.scan(
+                                folder,
+                                onProgress = { found -> scanProgress = found },
+                                isCancelled = { scanCancelled },
                             )
+                            val wasCancelled = scanCancelled
+                            localLibraryRepo?.add(scanned)
+                            withContext(Dispatchers.Main) {
+                                scanningFolderName = null
+                                toastHost.show(
+                                    when {
+                                        wasCancelled -> "Scan cancelled — added ${scanned.size} so far"
+                                        scanned.isNotEmpty() ->
+                                            "Added ${scanned.size} episode${if (scanned.size == 1) "" else "s"} from ${folder.name}"
+                                        else -> "No videos found in \"${folder.name}\""
+                                    },
+                                    ToastDuration.LONG,
+                                )
+                            }
                         }
                     }
                 }
             },
+            scanningFolderName = scanningFolderName,
+            scanProgress = scanProgress,
+            onCancelScan = { scanCancelled = true },
             onLocalGroupClick = { group ->
                 navigator.push(
                     LocalAnimeScreen(
@@ -394,6 +418,9 @@ internal fun LibraryContent(
     onNewEpisodeClick: (NewEpisodeFeedItem) -> Unit = {},
     onRemoveNewEpisode: (Long) -> Unit = {},
     onAddLocalFolder: () -> Unit = {},
+    scanningFolderName: String? = null,
+    scanProgress: Int = 0,
+    onCancelScan: () -> Unit = {},
     onLocalGroupClick: (LocalAnimeGroup) -> Unit = {},
     onAnimeClick: (AnimeModel) -> Unit,
     onRemoveFromLibrary: (Long) -> Unit = {},
@@ -551,6 +578,33 @@ internal fun LibraryContent(
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         ),
                     )
+                }
+            }
+
+            // Active folder scan — live progress + cancel instead of a silent toast.
+            if (scanningFolderName != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Scanning \"$scanningFolderName\"…",
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        if (scanProgress > 0) {
+                            Text(
+                                "$scanProgress episode${if (scanProgress == 1) "" else "s"} found",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    TextButton(onClick = onCancelScan) { Text("Cancel") }
                 }
             }
 
@@ -817,6 +871,7 @@ private fun NewEpisodeCard(
                 if (overflowItems != null) {
                     OverflowMenu(
                         items = overflowItems,
+                        tint = Color.White, // over the cover image scrim
                         modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
                     )
                 }
@@ -892,6 +947,7 @@ private fun ContinueWatchingCard(
                 if (overflowItems != null) {
                     OverflowMenu(
                         items = overflowItems,
+                        tint = Color.White, // over the cover image scrim
                         modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
                     )
                 }

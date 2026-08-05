@@ -44,6 +44,18 @@ object MacOSMenuBarFactory {
     /** Callback for save backup (set by AnikkuApp). */
     var onSaveBackup: (() -> Unit)? = null
 
+    /** Playback menu items — enabled only while a player is open. */
+    private val playbackItems: MutableList<MenuItem> = mutableListOf()
+
+    /**
+     * Enables/disables the Playback menu items. The player registers its
+     * [onPlaybackAction] handler on open and unregisters on close; without a
+     * player the items are inert, so they're greyed out instead of no-oping.
+     */
+    fun setPlaybackEnabled(enabled: Boolean) {
+        playbackItems.forEach { it.isEnabled = enabled }
+    }
+
     enum class PlaybackAction { PLAY_PAUSE, SKIP_FORWARD, SKIP_BACKWARD, VOLUME_UP, VOLUME_DOWN }
 
     /**
@@ -261,19 +273,24 @@ fun create(
         return Menu("Playback").apply {
             add(MenuItem("Play / Pause").also {
                 it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.PLAY_PAUSE) }
+                playbackItems += it
             })
             add(MenuItem("Skip Forward").also {
                 it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.SKIP_FORWARD) }
+                playbackItems += it
             })
             add(MenuItem("Skip Backward").also {
                 it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.SKIP_BACKWARD) }
+                playbackItems += it
             })
             addSeparator()
             add(MenuItem("Volume Up").also {
                 it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.VOLUME_UP) }
+                playbackItems += it
             })
             add(MenuItem("Volume Down").also {
                 it.addActionListener { onPlaybackAction?.invoke(PlaybackAction.VOLUME_DOWN) }
+                playbackItems += it
             })
         }
     }

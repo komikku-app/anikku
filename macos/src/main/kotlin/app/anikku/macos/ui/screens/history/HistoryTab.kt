@@ -33,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,11 +52,8 @@ import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.LocalToastHost
-import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.OverflowItem
-import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.OverflowMenu
-import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -85,7 +83,10 @@ object HistoryTab : AnikkuScreen(), Tab {
         val libraryRepo = LocalLibraryRepository.current
         val historyRepo = LocalHistoryRepository.current
         val extensionManager = LocalExtensionManager.current
-        var history by remember { mutableStateOf(historyRepo.getAll()) }
+        // Revision-driven like Library/Stats: the repo bumps a revision on every
+        // mutation, so history stays live even though this tab is keep-alive.
+        val historyRevision by historyRepo.revision.collectAsState()
+        val history = remember(historyRevision) { historyRepo.getAll() }
 
         var searchQuery by remember { mutableStateOf("") }
         var sortMode by remember { mutableStateOf(SortMode.Recent) }
@@ -144,7 +145,6 @@ object HistoryTab : AnikkuScreen(), Tab {
             onDismissSortMenu = { showSortMenu = false },
             onClearAll = {
                 historyRepo.clearAll()
-                history = emptyList()
                 toastHost.show("History cleared", ToastDuration.SHORT)
             },
             onAnimeClick = { item ->
@@ -170,7 +170,6 @@ object HistoryTab : AnikkuScreen(), Tab {
             },
             onDeleteEntry = { item ->
                 historyRepo.removeForEpisode(item.animeId, item.id)
-                history = historyRepo.getAll()
                 toastHost.show("Removed from history", ToastDuration.SHORT)
             },
             onRemoveFromLibrary = { item ->

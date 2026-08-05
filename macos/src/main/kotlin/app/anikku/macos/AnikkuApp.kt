@@ -23,6 +23,7 @@ import app.anikku.macos.platform.LocalBackgroundJobs
 import app.anikku.macos.ui.GlobalKeyboardShortcuts
 import app.anikku.macos.ui.components.AboutDialog
 import app.anikku.macos.ui.components.KeyboardShortcutsDialog
+import app.anikku.macos.ui.components.WhatsNewDialog
 import app.anikku.macos.ui.screens.browse.BrowseTab
 import app.anikku.macos.ui.screens.onboarding.OnboardingScreen
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import app.anikku.macos.ui.MainWindow
 import app.anikku.macos.ui.TabSwitchHandler
 import app.anikku.macos.platform.data.LibraryRepository
 import app.anikku.macos.platform.data.HistoryRepository
+import app.anikku.macos.platform.update.AppInfo
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.watch.LocalWatchTogetherServer
@@ -310,6 +312,23 @@ fun main() = application {
             mutableStateOf(!onboardingCompletePref.get())
         }
 
+        // Last active tab — restore it on launch, persist on every switch.
+        val lastTabPref = remember { app.preferenceStore.getInt("last_tab_index", 0) }
+        // Set by the onboarding "Browse sources" CTA while MainWindow is not
+        // yet composed (TabSwitchHandler has no listener then); consumed as
+        // MainWindow's initial tab.
+        var pendingInitialTab by remember { mutableStateOf(-1) }
+
+        // "What's New" — shown once per version after an update, never on a
+        // brand-new install (onboarding completion stamps last_launched_version).
+        var showWhatsNew by remember {
+            mutableStateOf(
+                onboardingCompletePref.get() &&
+                    app.preferenceStore.getString("last_launched_version", "").get() !=
+                    AppInfo.VERSION,
+            )
+        }
+
         // Set up the macOS native menu bar via java.awt
         val onQuit = {
             runCatching { app.onShutdown() }
@@ -557,8 +576,11 @@ fun main() = application {
                             onComplete = {
                                 onboardingCompletePref.set(true)
                                 onboardingStepPref.set(0)
+                                app.preferenceStore.getString("last_launched_version", "")
+                                    .set(AppInfo.VERSION)
                                 showOnboarding = false
                             },
+                            onBrowseSources = { pendingInitialTab = 4 },
                         ).Content()
                     } else if (isLocked && settingsState.appLockEnabled) {
                         AppLockScreen(
@@ -575,7 +597,13 @@ fun main() = application {
                             onUnlocked = { isLocked = false },
                         )
                     } else {
-                        MainWindow()
+                        MainWindow(
+                            initialTabIndex = if (pendingInitialTab >= 0) pendingInitialTab else lastTabPref.get(),
+                            onTabIndexChange = { index ->
+                                pendingInitialTab = -1
+                                lastTabPref.set(index)
+                            },
+                        )
                     }
                     ToastHost(state = toastHostState)
                 }
@@ -586,6 +614,16 @@ fun main() = application {
                         updateChecker = app.appUpdateChecker,
                         sparkleUpdater = app.sparkleUpdater,
                         autoCheck = autoCheckUpdates,
+                    )
+                }
+
+                if (showWhatsNew) {
+                    WhatsNewDialog(
+                        onDismiss = {
+                            app.preferenceStore.getString("last_launched_version", "")
+                                .set(AppInfo.VERSION)
+                            showWhatsNew = false
+                        },
                     )
                 }
             }

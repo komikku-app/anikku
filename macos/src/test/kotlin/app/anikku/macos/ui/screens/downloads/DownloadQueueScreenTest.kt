@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import app.anikku.macos.fakes.FakeMacOSDownloadManager
@@ -230,5 +231,64 @@ class DownloadQueueScreenTest {
         }
 
         composeTestRule.onNodeWithText("Resumed: Spy x Family").assertIsDisplayed()
+    }
+
+    // -----------------------------------------------------------------------
+    // Search filtering
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `search query filters the download list`() {
+        composeTestRule.setContent {
+            val fakeManager = rememberWithEntries()
+            CompositionLocalProvider(
+                LocalDownloadManager provides fakeManager,
+            ) {
+                AnikkuTheme {
+                    DownloadQueueContent(
+                        data = DownloadQueueData(testEntries, fakeManager),
+                        searchQuery = "attack",
+                        onSearchQueryChange = {},
+                        onPauseResume = {},
+                        onCancel = {},
+                        onRetry = {},
+                        onRemoveCompleted = {},
+                        onClearAll = {},
+                        onClearCompleted = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Attack on Titan").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Jujutsu Kaisen").assertCountEquals(0)
+    }
+
+    @Test
+    fun `blank search query shows every download`() {
+        composeTestRule.setContent {
+            val fakeManager = rememberWithEntries()
+            CompositionLocalProvider(
+                LocalDownloadManager provides fakeManager,
+            ) {
+                AnikkuTheme {
+                    DownloadQueueContent(
+                        data = DownloadQueueData(testEntries, fakeManager),
+                        searchQuery = "",
+                        onSearchQueryChange = {},
+                        onPauseResume = {},
+                        onCancel = {},
+                        onRetry = {},
+                        onRemoveCompleted = {},
+                        onClearAll = {},
+                        onClearCompleted = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Attack on Titan").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Jujutsu Kaisen").assertIsDisplayed()
+        composeTestRule.onNodeWithText("One Piece").assertIsDisplayed()
     }
 }

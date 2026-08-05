@@ -154,7 +154,7 @@ fun AboutDialog(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = "Version 1.0.0",
+                    text = "Version ${app.anikku.macos.platform.update.AppInfo.VERSION}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

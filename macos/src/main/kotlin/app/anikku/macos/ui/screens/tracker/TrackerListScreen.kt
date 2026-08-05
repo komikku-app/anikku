@@ -204,7 +204,7 @@ class TrackerListScreen : AnikkuScreen() {
                             fontWeight = FontWeight.SemiBold,
                         )
                         Spacer(Modifier.height(8.dp))
-                        InfoStep("1.", "Tap a tracker to open its login page")
+                        InfoStep("1.", "Click a tracker to open its login page")
                         InfoStep(
                             "2.",
                             "Authorize Anikku in your browser — you'll be redirected back to the app automatically"

@@ -103,7 +103,11 @@ fun SettingsScreen() {
         // =====================================================================
         // Appearance
         // =====================================================================
-        SettingsSection(title = "Appearance", searchQuery = searchQuery) {
+        SettingsSection(
+            title = "Appearance",
+            searchQuery = searchQuery,
+            searchLabels = listOf("Theme", "AMOLED black"),
+        ) {
 
         // Theme selector
         val themeNames = remember { AnikkuTheme.allThemes.map { it.displayName }.toTypedArray() }
@@ -139,15 +143,35 @@ fun SettingsScreen() {
         // =====================================================================
         // Library
         // =====================================================================
-        SettingsSection(title = "Library", searchQuery = searchQuery) {
+        SettingsSection(
+            title = "Library",
+            searchQuery = searchQuery,
+            searchLabels = listOf("Library update schedule"),
+        ) {
 
-        // Dead toggles removed (1.6.0): they were never persisted or read.
+        val updateIntervals = intArrayOf(0, 1, 2, 4, 6, 12, 24)
+        val updateIntervalLabels = arrayOf("Off", "Hourly", "Every 2 hours", "Every 4 hours", "Every 6 hours", "Every 12 hours", "Daily")
+        SelectItem(
+            label = "Library update schedule",
+            options = updateIntervalLabels,
+            selectedIndex = updateIntervals.indexOf(settings.libraryUpdateIntervalHours).coerceAtLeast(0),
+            onSelect = { settings.libraryUpdateIntervalHours = updateIntervals[it] },
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
         }
         // =====================================================================
         // Player
         // =====================================================================
-        SettingsSection(title = "Player", searchQuery = searchQuery) {
+        SettingsSection(
+            title = "Player",
+            searchQuery = searchQuery,
+            searchLabels = listOf(
+                "Auto-play next episode", "Resume from last position", "Skip intro (when available)",
+                "Default playback speed", "Subtitle font size", "Subtitle position", "App lock", "PIN", "Touch ID",
+            ),
+        ) {
 
         var autoPlay by remember { mutableStateOf(settings.autoPlayNextEpisode) }
         CheckboxItem(
@@ -235,7 +259,11 @@ fun SettingsScreen() {
         // =====================================================================
         // Downloads
         // =====================================================================
-        SettingsSection(title = "Downloads", searchQuery = searchQuery) {
+        SettingsSection(
+            title = "Downloads",
+            searchQuery = searchQuery,
+            searchLabels = listOf("Simultaneous downloads", "Download on Wi-Fi only", "View Downloads"),
+        ) {
 
         var simultaneousDownloads by remember { mutableStateOf(settings.simultaneousDownloads) }
         SelectItem(
@@ -246,6 +274,17 @@ fun SettingsScreen() {
                 simultaneousDownloads = it + 1
                 settings.simultaneousDownloads = simultaneousDownloads
                 toastHost.show("Downloads: ${simultaneousDownloads} simultaneous", ToastDuration.SHORT)
+            },
+        )
+
+        var wifiOnly by remember { mutableStateOf(settings.downloadOnWifiOnly) }
+        CheckboxItem(
+            label = "Download on Wi-Fi only",
+            checked = wifiOnly,
+            onClick = {
+                wifiOnly = !wifiOnly
+                settings.downloadOnWifiOnly = wifiOnly
+                toastHost.show("Wi-Fi only: ${if (wifiOnly) "on" else "off"}", ToastDuration.SHORT)
             },
         )
 
@@ -266,7 +305,14 @@ fun SettingsScreen() {
         // =====================================================================
         // Data & Storage
         // =====================================================================
-        SettingsSection(title = "Data & Storage", searchQuery = searchQuery) {
+        SettingsSection(
+            title = "Data & Storage",
+            searchQuery = searchQuery,
+            searchLabels = listOf(
+                "Automatic local backups", "New episode notifications", "Google Drive backup schedule",
+                "Backup & Restore", "Proxy", "Chrome", "Subtitles", "Jimaku", "OpenSubtitles",
+            ),
+        ) {
 
         val backupIntervals = intArrayOf(0, 6, 12, 24, 48, 168)
         val backupIntervalLabels = arrayOf("Off", "Every 6 hours", "Every 12 hours", "Daily", "Every 2 days", "Weekly")
@@ -279,13 +325,6 @@ fun SettingsScreen() {
 
         val updateIntervals = intArrayOf(0, 1, 2, 4, 6, 12, 24)
         val updateIntervalLabels = arrayOf("Off", "Hourly", "Every 2 hours", "Every 4 hours", "Every 6 hours", "Every 12 hours", "Daily")
-        SelectItem(
-            label = "Library update schedule",
-            options = updateIntervalLabels,
-            selectedIndex = updateIntervals.indexOf(settings.libraryUpdateIntervalHours).coerceAtLeast(0),
-            onSelect = { settings.libraryUpdateIntervalHours = updateIntervals[it] },
-        )
-
         var newEpisodeNotifications by remember { mutableStateOf(settings.newEpisodeNotificationsEnabled) }
         CheckboxItem(
             label = "New episode notifications",
@@ -373,7 +412,11 @@ fun SettingsScreen() {
         // =====================================================================
         // Connections
         // =====================================================================
-        SettingsSection(title = "Connections", searchQuery = searchQuery) {
+        SettingsSection(
+            title = "Connections",
+            searchQuery = searchQuery,
+            searchLabels = listOf("SyncYomi", "Discord Rich Presence"),
+        ) {
         SyncYomiSettingsPanel()
         val discordRPC = LocalDiscordRPC.current
         CheckboxItem(
@@ -441,7 +484,7 @@ fun SettingsScreen() {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Version 1.0.0",
+                text = "Version ${app.anikku.macos.platform.update.AppInfo.VERSION}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -537,9 +580,12 @@ private fun NavCard(
 private fun SettingsSection(
     title: String,
     searchQuery: String,
+    searchLabels: List<String> = emptyList(),
     content: @Composable () -> Unit,
 ) {
-    val matches = searchQuery.isBlank() || title.contains(searchQuery, ignoreCase = true)
+    val matches = searchQuery.isBlank() ||
+        title.contains(searchQuery, ignoreCase = true) ||
+        searchLabels.any { it.contains(searchQuery, ignoreCase = true) }
     var expanded by remember { mutableStateOf(true) }
     if (!matches && searchQuery.isNotBlank()) return
     HeadingItem(title, onClick = { expanded = !expanded })

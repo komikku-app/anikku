@@ -1,6 +1,8 @@
 package app.anikku.macos.ui.screens.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -40,15 +44,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.settings.LocalSettingsState
+import app.anikku.macos.ui.settings.SettingsState
+import app.anikku.macos.ui.settings.ThemeMode
+import app.anikku.macos.ui.theme.AnikkuTheme
+import app.anikku.macos.ui.theme.getThemeColorScheme
 
 /**
- * Onboarding screen shown on first launch (Phase 5.12).
+ * Onboarding screen shown on first launch.
  *
  * Guides the user through:
  * 1. Welcome — App introduction
- * 2. Appearance — Choose theme preference
- * 3. Storage — Choose download directory (placeholder)
+ * 2. Appearance — Choose color scheme + light/dark mode (applied instantly)
+ * 3. Sources — See installed sources / jump to Browse
  * 4. Tips — Keyboard shortcuts and features overview
  * 5. Done — Mark onboarding as complete and proceed
  *
@@ -58,12 +68,14 @@ class OnboardingScreen(
     private val onComplete: () -> Unit,
     private val initialStep: Int = 0,
     private val onStepChanged: (Int) -> Unit = {},
+    private val onBrowseSources: () -> Unit = {},
 ) : AnikkuScreen() {
 
     @Composable
     override fun Content() {
         var currentStep by remember { mutableIntStateOf(initialStep.coerceIn(0, 4)) }
         val totalSteps = 5
+        val settings = LocalSettingsState.current
 
         Surface(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -125,8 +137,13 @@ class OnboardingScreen(
                     ) {
                         when (currentStep) {
                             0 -> StepWelcome()
-                            1 -> StepAppearance()
-                            2 -> StepSources()
+                            1 -> StepAppearance(settings)
+                            2 -> StepSources(
+                                onBrowseSources = {
+                                    onComplete()
+                                    onBrowseSources()
+                                },
+                            )
                             3 -> StepTips()
                             4 -> StepReady()
                         }
@@ -207,7 +224,7 @@ private fun StepWelcome() {
 }
 
 @Composable
-private fun StepAppearance() {
+private fun StepAppearance(settings: SettingsState) {
     Icon(
         imageVector = Icons.Outlined.Palette,
         contentDescription = null,
@@ -223,15 +240,84 @@ private fun StepAppearance() {
     )
     Spacer(Modifier.height(12.dp))
     Text(
-        text = "Anikku follows your macOS appearance setting by default.\nYou can switch between Light, Dark, or System theme anytime from Settings.\n\nThere are 18+ handcrafted color schemes to choose from — find your favorite!",
+        text = "Pick a color scheme and whether Anikku follows your macOS appearance. You can change all of this anytime from Settings.",
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
     )
+    Spacer(Modifier.height(28.dp))
+
+    // Color scheme swatches — tapping one applies it instantly.
+    val presets = listOf(
+        AnikkuTheme.Theme.DEFAULT,
+        AnikkuTheme.Theme.MONET,
+        AnikkuTheme.Theme.SAPPHIRE,
+        AnikkuTheme.Theme.MIDNIGHT_DUSK,
+        AnikkuTheme.Theme.NORD,
+        AnikkuTheme.Theme.MOCHA,
+        AnikkuTheme.Theme.GREEN_APPLE,
+        AnikkuTheme.Theme.LAVENDER,
+    )
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        presets.forEach { theme ->
+            val selected = settings.theme == theme
+            val swatchColor = getThemeColorScheme(
+                theme = theme,
+                isAmoledOLED = false,
+            ).primary
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(swatchColor)
+                        .border(
+                            width = if (selected) 3.dp else 1.dp,
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            },
+                            shape = CircleShape,
+                        )
+                        .clickable { settings.theme = theme },
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = theme.displayName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+
+    Spacer(Modifier.height(28.dp))
+
+    // Light / Dark / System — follows macOS by default.
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val modes = listOf(
+            ThemeMode.SYSTEM to "Auto",
+            ThemeMode.LIGHT to "Light",
+            ThemeMode.DARK to "Dark",
+        )
+        modes.forEach { (mode, label) ->
+            FilterChip(
+                selected = settings.themeMode == mode,
+                onClick = { settings.themeMode = mode },
+                label = { Text(label) },
+            )
+        }
+    }
 }
 
 @Composable
-private fun StepSources() {
+private fun StepSources(onBrowseSources: () -> Unit) {
     Icon(
         imageVector = Icons.Outlined.Extension,
         contentDescription = null,
@@ -247,11 +333,29 @@ private fun StepSources() {
     )
     Spacer(Modifier.height(12.dp))
     Text(
-        text = "Anime comes from extensions (sources) you install from the Browse tab — like streaming sites and torrent trackers.\n\nA default source repository is pre-installed, so you can start watching right away.\n\nDownloads are saved to ~/Library/Application Support/Anikku/downloads/ — changeable anytime in Settings.",
+        text = "Anime comes from extensions (sources) you install from the Browse tab — like streaming sites and torrent trackers.\n\nDownloads are saved automatically to Anikku's data folder, so you can watch offline anytime.",
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
     )
+    Spacer(Modifier.height(24.dp))
+
+    val extensionManager = LocalExtensionManager.current
+    val installedCount = extensionManager?.installedExtensionsFlow?.collectAsState()?.value?.size ?: 0
+    Text(
+        text = if (installedCount > 0) {
+            "$installedCount source${if (installedCount == 1) "" else "s"} ready to use"
+        } else {
+            "No sources installed yet — add them from the Browse tab"
+        },
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = TextAlign.Center,
+    )
+    Spacer(Modifier.height(16.dp))
+    Button(onClick = onBrowseSources, shape = RoundedCornerShape(12.dp)) {
+        Text("Browse sources")
+    }
 }
 
 @Composable
@@ -272,12 +376,12 @@ private fun StepTips() {
     Spacer(Modifier.height(16.dp))
 
     val tips = listOf(
-        "⌘1–⌘9 — Switch tabs (Library / Updates / History / Stats / Browse / Torrents / Downloads / Discover / More)",
+        "⌘1–⌘9 — Switch tabs",
         "Space — Play / Pause in the player",
-        "← → — Seek backward / forward 10 seconds",
-        "↑ ↓ — Volume · [ ] — Speed · , . — Subtitle delay",
+        "← → — Seek ±10s · ↑ ↓ — Volume · [ ] — Speed · , . — Subtitle delay",
         "F — Full screen · M — Mute · S — Screenshot · G — GIF clip",
-        "⌘, — Settings · ⌘F — Global search",
+        "⌘, — Settings · ⌘S — Sidebar · ⌘F — Global search",
+        "⌘D / ⌘E / ⌘⇧C / ⌘⇧O — Library / Share / Copy / Open on anime pages",
     )
 
     tips.forEach { tip ->

@@ -131,7 +131,7 @@ object DiscoverTab : AnikkuScreen(), Tab {
                     recommendations = recsDeferred.await()
                 }
             } catch (e: Exception) {
-                loadError = "Could not load Discover: ${e.message?.take(60)}"
+                loadError = "Could not load Discover — check your connection and try again"
             }
             isLoading = false
         }

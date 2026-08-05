@@ -68,4 +68,42 @@ class PlayerControlsTest {
             assertTrue(speed in 0.25f..4.0f)
         }
     }
+
+    // ========================================================================
+    // Episode pill windowing (visiblePillRange)
+    // ========================================================================
+
+    @Test
+    fun `short series render every pill unwindowed`() {
+        assertEquals(0 until 5, visiblePillRange(current = 2, count = 5))
+        assertEquals(0 until 61, visiblePillRange(current = 30, count = 61))
+    }
+
+    @Test
+    fun `long series window around the current episode`() {
+        val range = visiblePillRange(current = 50, count = 100)
+        assertEquals(61, range.count()) // 30 either side + current
+        assertEquals(20, range.first)
+        assertEquals(80, range.last)
+    }
+
+    @Test
+    fun `window clamps at the series start and end`() {
+        // At the start the window extends forward only: 0..30 plus the "… N" jump pill.
+        assertEquals(0, visiblePillRange(current = 0, count = 100).first)
+        assertEquals(31, visiblePillRange(current = 0, count = 100).count())
+
+        val tail = visiblePillRange(current = 99, count = 100)
+        assertEquals(69, tail.first)
+        assertEquals(99, tail.last)
+        assertEquals(31, tail.count())
+    }
+
+    @Test
+    fun `current episode is always inside the window`() {
+        listOf(0, 1, 47, 61, 62, 99).forEach { current ->
+            val range = visiblePillRange(current = current, count = 100)
+            assertTrue(current in range, "current=$current should be in $range")
+        }
+    }
 }

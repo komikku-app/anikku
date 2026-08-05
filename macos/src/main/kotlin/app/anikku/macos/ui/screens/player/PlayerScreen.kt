@@ -29,6 +29,9 @@ import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Gif
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.VolumeOff
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Refresh
@@ -278,13 +281,6 @@ data class PlayerScreen(
         }
     }
 
-    /**
-     * Result of resolving a video for an episode — includes the resolution and
-     * which candidate was selected so the caller can track what was tried.
-     * @property url The video URL to play
-     * @property headers Optional HTTP headers (Referer, User-Agent, etc.) needed by mpv
-     * @property candidateIndex The index in the [VideoCandidate] list that was selected
-     */
     /**
      * Diagnostic error classification that tells the user WHY the video
      * resolution failed in plain English, with a suggestion for how to
@@ -1719,6 +1715,7 @@ data class PlayerScreen(
             val dockPlayPause: () -> Unit = { playerViewModel.togglePause() }
             val dockNext: () -> Unit = { navigateToEpisode(currentEpisodeIndex + 1) }
             MacOSMenuBarFactory.onPlaybackAction = menuHandler
+            MacOSMenuBarFactory.setPlaybackEnabled(true)
             MacOSDockManager.setPlayPauseCallback(dockPlayPause)
             MacOSDockManager.setNextEpisodeCallback(dockNext)
             MacOSNowPlayingHandler.onTogglePlayPause = { playerViewModel.togglePause() }
@@ -1746,6 +1743,7 @@ data class PlayerScreen(
                 MacOSNowPlayingHandler.onSeekTo = previousNpSeek
                 MacOSNowPlayingHandler.unregisterCommands()
                 MacOSNowPlayingHandler.clearNowPlaying()
+                MacOSMenuBarFactory.setPlaybackEnabled(false)
             }
         }
 
@@ -2314,12 +2312,23 @@ internal fun PlayerContent(
                     modifier = Modifier.padding(horizontal = 32.dp),
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    "💡 ${videoErrorDiagnostic?.suggestion ?: "Check logs (~/Library/Application Support/Anikku/logs/actions.log) for details."}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF4ECCA3).copy(alpha = 0.5f),
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 32.dp),
-                )
+                ) {
+                    Icon(
+                        Icons.Outlined.Lightbulb,
+                        contentDescription = null,
+                        tint = Color(0xFF4ECCA3).copy(alpha = 0.5f),
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        videoErrorDiagnostic?.suggestion ?: "Check logs (~/Library/Application Support/Anikku/logs/actions.log) for details.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF4ECCA3).copy(alpha = 0.5f),
+                    )
+                }
                 videoErrorDiagnostic?.let { diag ->
                     Spacer(Modifier.height(12.dp))
                     // Category badge
@@ -2432,10 +2441,11 @@ internal fun PlayerContent(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(start = 16.dp, end = 16.dp),
                             ) {
-                                Text(
-                                    "▶",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF1A73E8),
+                                Icon(
+                                    Icons.Outlined.PlayArrow,
+                                    contentDescription = null,
+                                    tint = Color(0xFF1A73E8),
+                                    modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text(
@@ -2470,9 +2480,11 @@ internal fun PlayerContent(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(start = 16.dp, end = 16.dp),
                             ) {
-                                Text(
-                                    "🔄",
-                                    style = MaterialTheme.typography.bodySmall,
+                                Icon(
+                                    Icons.Outlined.Refresh,
+                                    contentDescription = null,
+                                    tint = Color(0xFF02A9FF),
+                                    modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text(
@@ -2498,9 +2510,11 @@ internal fun PlayerContent(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp),
                         ) {
-                            Text(
-                                "🔗",
-                                style = MaterialTheme.typography.bodySmall,
+                            Icon(
+                                Icons.Outlined.Link,
+                                contentDescription = null,
+                                tint = Color(0xFF02A9FF),
+                                modifier = Modifier.size(16.dp),
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
@@ -2828,7 +2842,13 @@ internal fun PlayerContent(
                             DropdownMenuItem(text = { Text("Video Filters") }, onClick = { showSettingsMenu = false; showVideoFilterPanel = true })
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
                             DropdownMenuItem(
-                                text = { Text("🔗  Link to Tracker", fontWeight = FontWeight.Medium) },
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Outlined.Link, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Link to Tracker", fontWeight = FontWeight.Medium)
+                                    }
+                                },
                                 onClick = { showSettingsMenu = false; onLinkToTracker() },
                             )
                         }

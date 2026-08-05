@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import app.anikku.macos.platform.data.DownloadRepository
@@ -49,6 +50,10 @@ object DownloadsTab : AnikkuScreen(), Tab {
         val toastHost = LocalToastHost.current
         val extensionManager = LocalExtensionManager.current
 
+        // Search state lives here (the tab is keep-alive) so the filter
+        // survives tab switches and actually feeds the queue list.
+        var searchQuery by remember { mutableStateOf("") }
+
         val downloads by if (downloadManager != null) {
             downloadManager.downloads.collectAsState()
         } else {
@@ -70,6 +75,8 @@ object DownloadsTab : AnikkuScreen(), Tab {
             Box(Modifier.fillMaxSize().padding(padding)) {
                 DownloadQueueContent(
                     data = data,
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
                     onBrowse = { app.anikku.macos.ui.TabSwitchHandler.switchTo(4) },
                     onPauseResume = { id ->
                         val item = downloads.find { it.id == id } ?: return@DownloadQueueContent

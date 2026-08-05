@@ -99,6 +99,7 @@ fun AnimeGridCard(
                 if (overflowItems != null) {
                     OverflowMenu(
                         items = overflowItems,
+                        tint = Color.White, // over the cover image scrim
                         modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
                     )
                 }

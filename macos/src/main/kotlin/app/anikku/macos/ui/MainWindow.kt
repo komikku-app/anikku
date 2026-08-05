@@ -65,9 +65,13 @@ internal val orderedTabs: List<Tab> = listOf(
 )
 
 @Composable
-fun MainWindow() {
+fun MainWindow(
+    initialTabIndex: Int = 0,
+    onTabIndexChange: (Int) -> Unit = {},
+) {
+    val initialIndex = initialTabIndex.coerceIn(orderedTabs.indices)
     TabNavigator(
-        tab = LibraryScreen,
+        tab = orderedTabs[initialIndex],
         key = "MainWindowTabs",
     ) { tabNavigator ->
         // Track current tab index via state — updated ONLY in event
@@ -76,7 +80,7 @@ fun MainWindow() {
         // getter internally casts navigator.items.last() as Tab, which
         // throws ClassCastException when a non-Tab screen like
         // AnimeDetailScreen is on the tab's inner navigator stack.
-        var currentTabIndex by remember { mutableStateOf(0) }
+        var currentTabIndex by remember { mutableStateOf(initialIndex) }
         var sidebarVisible by remember { mutableStateOf(true) }
         var searchRequestId by remember { mutableLongStateOf(0L) }
         var handledSearchRequestId by remember { mutableLongStateOf(0L) }
@@ -88,6 +92,7 @@ fun MainWindow() {
             val searchHandler: () -> Unit = {
                 tabNavigator.current = BrowseScreen
                 currentTabIndex = 4
+                onTabIndexChange(4)
                 searchRequestId++
             }
             GlobalKeyboardShortcuts.onToggleSidebar = sidebarToggleHandler
@@ -108,6 +113,7 @@ fun MainWindow() {
                 orderedTabs.getOrNull(index)?.let { tab ->
                     tabNavigator.current = tab
                     currentTabIndex = index
+                    onTabIndexChange(index)
                     val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "Downloads", "Discover", "More")
                     UIActionLogger.logNavigation("MenuShortcut", tabNames.getOrElse(index) { "?" }, "tab=$index")
                 }
@@ -132,6 +138,7 @@ fun MainWindow() {
                             UIActionLogger.logNavigation("NavigationRail", tabNames.getOrElse(index) { "?" }, "tab=$index")
                             tabNavigator.current = tab
                             currentTabIndex = index
+                            onTabIndexChange(index)
                         }
                         },
                     )

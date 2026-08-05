@@ -245,27 +245,27 @@ fun PlayerTransportControls(
 
         Spacer(Modifier.height(12.dp))
 
-        // Episode pill selector
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            for (index in 0 until episodeCount) {
-                val isSelected = index == currentEpisodeIndex
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 2.dp)
-                        .size(
-                            width = if (isSelected) 24.dp else 8.dp,
-                            height = 4.dp,
-                        )
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.primary
-                            else Color.White.copy(alpha = 0.3f),
-                        )
-                        .clickable { onNavigateEpisode(index) },
-                )
+        // Episode pill selector — windowed so long series (100+ episodes)
+        // never overflow the window: a ±30 window plus "1 …" / "… N" jump pills.
+        if (episodeCount > 0) {
+            val pillRange = visiblePillRange(currentEpisodeIndex, episodeCount)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                if (pillRange.first > 0) {
+                    EpisodePill(isSelected = false) { onNavigateEpisode(0) }
+                    PillGap()
+                }
+                for (index in pillRange) {
+                    EpisodePill(isSelected = index == currentEpisodeIndex) {
+                        onNavigateEpisode(index)
+                    }
+                }
+                if (pillRange.last < episodeCount - 1) {
+                    PillGap()
+                    EpisodePill(isSelected = false) { onNavigateEpisode(episodeCount - 1) }
+                }
             }
         }
 
@@ -278,6 +278,49 @@ fun PlayerTransportControls(
             )
         }
     }
+}
+
+/**
+ * Window of episode pills to render around [current] — long series get a
+ * ±[window] window plus "1 …" / "… N" jump pills, so the row never overflows.
+ */
+internal fun visiblePillRange(current: Int, count: Int, window: Int = 30): IntRange {
+    require(count > 0) { "count must be positive" }
+    val clamped = current.coerceIn(0, count - 1)
+    if (count <= window * 2 + 1) return 0 until count
+    return maxOf(0, clamped - window) until minOf(count, clamped + window + 1)
+}
+
+/**
+ * Small single episode pill in the transport controls. Min width 12dp so the
+ * target stays clickable (the old 8dp pill was effectively unhittable).
+ */
+@Composable
+private fun EpisodePill(
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 3.dp)
+            .size(width = if (isSelected) 24.dp else 12.dp, height = 6.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary
+                else Color.White.copy(alpha = 0.3f),
+            )
+            .clickable(onClick = onClick),
+    )
+}
+
+@Composable
+private fun PillGap() {
+    Text(
+        text = "…",
+        style = MaterialTheme.typography.labelSmall,
+        color = Color.White.copy(alpha = 0.5f),
+        modifier = Modifier.padding(horizontal = 2.dp),
+    )
 }
 
 /**

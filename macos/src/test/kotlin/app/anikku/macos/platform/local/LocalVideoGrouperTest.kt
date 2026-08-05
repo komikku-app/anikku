@@ -138,4 +138,41 @@ class LocalFolderScannerTest {
         assertEquals(0, LocalFolderScanner.scan(tempDir.toFile(), maxDepth = 2).size)
         assertEquals(1, LocalFolderScanner.scan(tempDir.toFile(), maxDepth = 5).size)
     }
+
+    @Test
+    fun `reports progress as episodes are found`() {
+        Files.write(tempDir.resolve("Death Note - 01.mkv"), ByteArray(10))
+        Files.write(tempDir.resolve("Death Note - 02.mkv"), ByteArray(10))
+        Files.write(tempDir.resolve("Frieren - 01.mkv"), ByteArray(10))
+
+        val progress = mutableListOf<Int>()
+        val entries = LocalFolderScanner.scan(
+            tempDir.toFile(),
+            onProgress = { found -> progress.add(found) },
+        )
+
+        assertEquals(3, entries.size)
+        // Progress reports each newly-found episode: 1, 2, 3.
+        assertEquals(listOf(1, 2, 3), progress)
+    }
+
+    @Test
+    fun `cancellation stops the scan early`() {
+        // A cancellation flag flips after the first file is found.
+        var cancel = false
+        Files.write(tempDir.resolve("Death Note - 01.mkv"), ByteArray(10))
+        Files.write(tempDir.resolve("Death Note - 02.mkv"), ByteArray(10))
+        Files.write(tempDir.resolve("Death Note - 03.mkv"), ByteArray(10))
+
+        val entries = LocalFolderScanner.scan(
+            tempDir.toFile(),
+            onProgress = { cancel = true },
+            isCancelled = { cancel },
+        )
+
+        // isCancelled is polled per entry — the first file is found (setting
+        // the flag), then the walk stops before the second.
+        assertEquals(1, entries.size)
+        assertTrue(cancel)
+    }
 }

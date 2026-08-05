@@ -232,63 +232,6 @@ fun SliderItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SelectItem(
-    label: String,
-    options: Array<out Any?>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-    ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth()
-                .padding(
-                    horizontal = SettingsItemsPaddings.Horizontal,
-                    vertical = SettingsItemsPaddings.Vertical,
-                ),
-            label = { Text(text = label) },
-            value = options[selectedIndex].toString(),
-            onValueChange = {},
-            enabled = false,
-            readOnly = true,
-            singleLine = true,
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(
-                    expanded = expanded,
-                )
-            },
-            colors = ExposedDropdownMenuDefaults.textFieldColors(
-                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        )
-
-        ExposedDropdownMenu(
-            modifier = Modifier.exposedDropdownSize(),
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            options.forEachIndexed { index, text ->
-                DropdownMenuItem(
-                    text = { Text(text.toString()) },
-                    onClick = {
-                        onSelect(index)
-                        expanded = false
-                    },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun <T> SelectItem(
     label: String,
     options: Array<T>,

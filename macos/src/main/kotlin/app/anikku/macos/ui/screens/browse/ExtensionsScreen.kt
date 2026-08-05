@@ -323,7 +323,7 @@ data class ExtensionsScreen(
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "These extensions are not trusted by the app. Review them and tap Trust to enable.",
+                            "These extensions are not trusted by the app. Review them and click Trust to enable.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

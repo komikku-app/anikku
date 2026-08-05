@@ -452,7 +452,7 @@ private fun CrashLogsTab(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "Tap a log to view its contents",
+                        text = "Click a log to view its contents",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     )

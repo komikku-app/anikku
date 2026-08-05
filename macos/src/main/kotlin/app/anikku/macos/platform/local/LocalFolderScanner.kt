@@ -19,23 +19,43 @@ object LocalFolderScanner {
     /**
      * Recursively scan [folder] (up to [maxDepth] levels) for video files.
      * Never throws; unreadable entries are skipped.
+     *
+     * [onProgress] is invoked with the number of episodes found so far (for
+     * UI feedback). [isCancelled] is polled during the walk; when it returns
+     * true the scan stops early and returns what was found so far.
      */
-    fun scan(folder: File, maxDepth: Int = 3): List<LocalVideoEntry> {
+    fun scan(
+        folder: File,
+        maxDepth: Int = 3,
+        onProgress: (found: Int) -> Unit = {},
+        isCancelled: () -> Boolean = { false },
+    ): List<LocalVideoEntry> {
         if (!folder.isDirectory) return emptyList()
         val found = mutableListOf<LocalVideoEntry>()
-        walk(folder, 0, maxDepth, found)
+        walk(folder, 0, maxDepth, found, onProgress, isCancelled)
         return found
     }
 
-    private fun walk(dir: File, depth: Int, maxDepth: Int, out: MutableList<LocalVideoEntry>) {
-        if (depth > maxDepth) return
+    private fun walk(
+        dir: File,
+        depth: Int,
+        maxDepth: Int,
+        out: MutableList<LocalVideoEntry>,
+        onProgress: (Int) -> Unit,
+        isCancelled: () -> Boolean,
+    ) {
+        if (depth > maxDepth || isCancelled()) return
         val children = runCatching { dir.listFiles() }.getOrNull() ?: return
         for (child in children.sortedBy { it.name.lowercase(Locale.ROOT) }) {
+            if (isCancelled()) return
             if (child.name.startsWith(".")) continue
             if (child.isDirectory) {
-                walk(child, depth + 1, maxDepth, out)
+                walk(child, depth + 1, maxDepth, out, onProgress, isCancelled)
             } else if (child.isFile && isVideoFile(child.name)) {
-                toEntry(child)?.let { out.add(it) }
+                toEntry(child)?.let {
+                    out.add(it)
+                    onProgress(out.size)
+                }
             }
         }
     }

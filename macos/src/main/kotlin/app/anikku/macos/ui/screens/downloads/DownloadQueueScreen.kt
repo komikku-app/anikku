@@ -28,13 +28,18 @@ import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,8 +50,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
@@ -129,6 +137,7 @@ class DownloadQueueScreen : AnikkuScreen() {
             },
             onPauseAll = { downloadManager?.pauseAll() },
             onResumeAll = { downloadManager?.resumeAll() },
+            searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
             onPlay = { item ->
                 navigator?.push(
@@ -169,10 +178,10 @@ internal fun DownloadQueueContent(
     onBrowse: (() -> Unit)? = null,
     onPauseAll: () -> Unit = {},
     onResumeAll: () -> Unit = {},
+    searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
 ) {
     val allDownloads = data.downloads
-    var searchQuery by remember { mutableStateOf("") }
     val downloads = if (searchQuery.isBlank()) {
         allDownloads
     } else {
@@ -249,12 +258,12 @@ internal fun DownloadQueueContent(
                     }
                     if (completedDownloads > 0) {
                         TextButton(onClick = onClearCompleted) {
-                            Text("Clear completed", style = MaterialTheme.typography.labelSmall)
+                            Text("Clear Completed", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     if (downloads.isNotEmpty()) {
                         TextButton(onClick = onClearAll) {
-                            Text("Clear all", style = MaterialTheme.typography.labelSmall)
+                            Text("Clear All", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
@@ -285,7 +294,7 @@ internal fun DownloadQueueContent(
                         Spacer(Modifier.height(8.dp))
                         Text(
                             if (data.manager == null) "Download manager not initialized"
-                            else "Tap the download button on any episode to save for offline viewing",
+                            else "Click the download button on any episode to save it for offline viewing",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
@@ -386,69 +395,59 @@ private fun DownloadItemCard(
                 when (item.status) {
                     DownloadRepository.DownloadStatus.QUEUED,
                     DownloadRepository.DownloadStatus.DOWNLOADING -> {
-                        IconButton(onClick = onPauseResume, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = Icons.Outlined.PauseCircle,
-                                contentDescription = "Pause",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        RowIconButton(
+                            icon = Icons.Outlined.PauseCircle,
+                            description = "Pause",
+                            tint = MaterialTheme.colorScheme.primary,
+                            onClick = onPauseResume,
+                        )
                     }
                     DownloadRepository.DownloadStatus.PAUSED -> {
-                        IconButton(onClick = onPauseResume, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = Icons.Outlined.PlayArrow,
-                                contentDescription = "Resume",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        RowIconButton(
+                            icon = Icons.Outlined.PlayArrow,
+                            description = "Resume",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = onPauseResume,
+                        )
                     }
                     DownloadRepository.DownloadStatus.COMPLETED -> {
                         // Play the downloaded file (resolves via the player's
                         // local-file path by animeId + episodeNumber).
-                        IconButton(onClick = onPlay, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = Icons.Outlined.PlayArrow,
-                                contentDescription = "Play",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        RowIconButton(
+                            icon = Icons.Outlined.PlayArrow,
+                            description = "Play",
+                            tint = MaterialTheme.colorScheme.primary,
+                            onClick = onPlay,
+                        )
                         // Remove this completed download (deletes the local file).
                         Spacer(Modifier.width(4.dp))
-                        IconButton(onClick = onRemoveCompleted, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = "Remove download",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
+                        RowIconButton(
+                            icon = Icons.Outlined.Delete,
+                            description = "Remove download",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            iconSize = 18.dp,
+                            onClick = onRemoveCompleted,
+                        )
                     }
                     DownloadRepository.DownloadStatus.ERROR -> {
-                        IconButton(onClick = onRetry, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = Icons.Outlined.Replay,
-                                contentDescription = "Retry",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        RowIconButton(
+                            icon = Icons.Outlined.Replay,
+                            description = "Retry",
+                            tint = MaterialTheme.colorScheme.error,
+                            onClick = onRetry,
+                        )
                     }
                 }
 
                 if (item.status != DownloadRepository.DownloadStatus.COMPLETED) {
                     Spacer(Modifier.width(4.dp))
-                    IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = "Cancel",
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
+                    RowIconButton(
+                        icon = Icons.Outlined.Delete,
+                        description = "Cancel",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                        iconSize = 18.dp,
+                        onClick = onCancel,
+                    )
                 }
             }
 
@@ -507,6 +506,35 @@ private fun DownloadItemCard(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Small icon button for download rows — same TooltipBox idiom as the player
+ * transport controls, so hover reveals the action name.
+ */
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun RowIconButton(
+    icon: ImageVector,
+    description: String,
+    tint: Color,
+    iconSize: Dp = 20.dp,
+    onClick: () -> Unit,
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+        state = rememberTooltipState(),
+        tooltip = { PlainTooltip { Text(description) } },
+    ) {
+        IconButton(onClick = onClick, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = icon,
+                contentDescription = description,
+                tint = tint,
+                modifier = Modifier.size(iconSize),
+            )
         }
     }
 }

@@ -38,8 +38,12 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.DownloadDone
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -49,6 +53,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -74,6 +79,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
@@ -208,14 +214,15 @@ data class AnimeDetailScreen(
         // LaunchedEffect (its block isn't a @Composable context).
         val autoLinkService = LocalLibraryAutoLinkService.current
 
-        // Track download states per episode (keyed by episodeNumber)
-        var downloadStateMap by remember { mutableStateOf(mapOf<Double, Boolean>()) }
+        // Track download states per episode (keyed by episodeNumber) — full
+        // entries so rows can show queued / progress / error states.
+        var downloadStateMap by remember { mutableStateOf(mapOf<Double, DownloadRepository.DownloadEntry>()) }
         LaunchedEffect(downloadManager) {
             if (effectiveDownloadManager != null) {
                 effectiveDownloadManager.downloads.collect { downloads ->
-                    downloadStateMap = downloads.filter { it.animeId == animeId }.associate {
-                        it.episodeNumber to (it.isActive || it.status == DownloadRepository.DownloadStatus.COMPLETED)
-                    }
+                    downloadStateMap = downloads
+                        .filter { it.animeId == animeId }
+                        .associateBy { it.episodeNumber }
                 }
             }
         }
@@ -240,7 +247,7 @@ data class AnimeDetailScreen(
             }
             val service = autoLinkService
             if (service == null) {
-                errorMessage = "Cannot load anime — no source or URL provided"
+                errorMessage = "This anime isn't linked to a source yet — link one to see its episodes"
                 return@LaunchedEffect
             }
             autoMatchState = AutoMatchState.Searching
@@ -289,9 +296,9 @@ data class AnimeDetailScreen(
                     anime = sourceAnime
                     episodes = episodeModels
                 } catch (e: NoClassDefFoundError) {
-                    errorMessage = "Missing dependency: ${e.message}"
+                    errorMessage = "This source needs its extension installed — install it from the Extensions tab"
                     toastHost.show(
-                        text = "Missing dependency: ${e.message}",
+                        text = "Missing source extension — install it from the Extensions tab",
                         duration = ToastDuration.LONG,
                         isError = true,
                         source = effectiveSourceId?.toString(),
@@ -299,9 +306,9 @@ data class AnimeDetailScreen(
                         location = "AnimeDetailScreen.fetchAnimeDetails",
                     )
                 } catch (e: Exception) {
-                    errorMessage = "${e::class.simpleName}: ${e.message}"
+                    errorMessage = "Couldn't load anime details — check your connection and try again"
                     toastHost.show(
-                        text = "Source error: ${e.message}",
+                        text = "Couldn't load anime details",
                         duration = ToastDuration.LONG,
                         isError = true,
                         source = effectiveSourceId?.toString(),
@@ -320,38 +327,121 @@ data class AnimeDetailScreen(
             focusRequester.requestFocus()
         }
 
+        // Shortcut actions (⌘D favorite, ⌘⇧C copy URL, ⌘⇧O browser) — shared
+        // between the onKeyEvent handler and the top-bar buttons below so the
+        // advertised shortcuts always match the buttons.
+        val toggleFavoriteAction: () -> Unit = {
+            val currentAnime = anime
+            if (currentAnime != null) {
+                val isNowFavorite = !currentAnime.favorite
+                anime = currentAnime.copy(favorite = isNowFavorite)
+                if (isNowFavorite) {
+                    libraryRepo.add(
+                        LibraryRepository.LibraryEntry(
+                            animeId = currentAnime.id,
+                            title = currentAnime.title,
+                            sourceId = sourceId ?: currentAnime.source,
+                            url = currentAnime.url,
+                            thumbnailUrl = currentAnime.thumbnailUrl,
+                            author = currentAnime.author,
+                            artist = currentAnime.artist,
+                            description = currentAnime.description,
+                            genre = currentAnime.genre,
+                            status = currentAnime.status,
+                        )
+                    )
+                    toastHost.show("Added to library", ToastDuration.SHORT)
+                } else {
+                    libraryRepo.remove(currentAnime.id)
+                    toastHost.show("Removed from library", ToastDuration.SHORT)
+                }
+            }
+        }
+        val copyUrlAction: () -> Unit = {
+            val url = anime?.url
+            if (url != null) {
+                try {
+                    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                    clipboard.setContents(StringSelection(url), null)
+                    toastHost.show("URL copied to clipboard", ToastDuration.SHORT)
+                } catch (_: Exception) {
+                    toastHost.show(
+                        text = "Could not copy URL",
+                        duration = ToastDuration.SHORT,
+                        isError = true,
+                        source = sourceId?.toString(),
+                        location = "AnimeDetailScreen.copyUrl",
+                    )
+                }
+            } else toastHost.show("No URL available", ToastDuration.SHORT)
+        }
+        val openInBrowserAction: () -> Unit = {
+            val url = anime?.url
+            if (url != null) {
+                try {
+                    Desktop.getDesktop().browse(URI(url))
+                } catch (_: Exception) {
+                    toastHost.show(
+                        text = "Could not open browser",
+                        duration = ToastDuration.SHORT,
+                        isError = true,
+                        source = sourceId?.toString(),
+                        location = "AnimeDetailScreen.openInBrowser",
+                    )
+                }
+            } else toastHost.show("No URL available", ToastDuration.SHORT)
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .focusRequester(focusRequester)
                 .focusable()
                 .onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyDown &&
-                        event.key == Key.E &&
-                        event.isMetaPressed
-                    ) {
-                        val url = anime?.url
-                        if (url != null) {
-                            val shared = MacOSShareUtil.shareUrl(
-                                title = "Anikku",
-                                text = url,
-                                description = "${anime?.title} — URL copied to clipboard",
-                            )
-                            if (shared) {
-                                toastHost.show("URL ready to share", ToastDuration.SHORT)
-                            } else {
-                                toastHost.show(
-                                    text = "Could not share",
-                                    duration = ToastDuration.SHORT,
-                                    isError = true,
-                                    source = sourceId?.toString(),
-                                    location = "AnimeDetailScreen.share",
-                                )
+                    if (event.type == KeyEventType.KeyDown && event.isMetaPressed) {
+                        when (event.key) {
+                            Key.E -> {
+                                val url = anime?.url
+                                if (url != null) {
+                                    val shared = MacOSShareUtil.shareUrl(
+                                        title = "Anikku",
+                                        text = url,
+                                        description = "${anime?.title} — URL copied to clipboard",
+                                    )
+                                    if (shared) {
+                                        toastHost.show("URL ready to share", ToastDuration.SHORT)
+                                    } else {
+                                        toastHost.show(
+                                            text = "Could not share",
+                                            duration = ToastDuration.SHORT,
+                                            isError = true,
+                                            source = sourceId?.toString(),
+                                            location = "AnimeDetailScreen.share",
+                                        )
+                                    }
+                                } else {
+                                    toastHost.show("No URL available", ToastDuration.SHORT)
+                                }
+                                true
                             }
-                        } else {
-                            toastHost.show("No URL available", ToastDuration.SHORT)
+                            Key.D -> {
+                                toggleFavoriteAction()
+                                true
+                            }
+                            Key.C -> if (event.isShiftPressed) {
+                                copyUrlAction()
+                                true
+                            } else {
+                                false
+                            }
+                            Key.O -> if (event.isShiftPressed) {
+                                openInBrowserAction()
+                                true
+                            } else {
+                                false
+                            }
+                            else -> false
                         }
-                        true
                     } else {
                         false
                     }
@@ -438,35 +528,9 @@ data class AnimeDetailScreen(
                     AnimeDetailContent(
                         anime = anime!!,
                         episodes = episodes,
-                        usingFallback = false,
+                        downloadStates = downloadStateMap,
                         isFavorite = anime?.favorite ?: false,
-                        onToggleFavorite = {
-                            val currentAnime = anime
-                            if (currentAnime != null) {
-                                val isNowFavorite = !currentAnime.favorite
-                                anime = currentAnime.copy(favorite = isNowFavorite)
-                                if (isNowFavorite) {
-                                    libraryRepo.add(
-                                        LibraryRepository.LibraryEntry(
-                                            animeId = currentAnime.id,
-                                            title = currentAnime.title,
-                                            sourceId = sourceId ?: currentAnime.source,
-                                            url = currentAnime.url,
-                                            thumbnailUrl = currentAnime.thumbnailUrl,
-                                            author = currentAnime.author,
-                                            artist = currentAnime.artist,
-                                            description = currentAnime.description,
-                                            genre = currentAnime.genre,
-                                            status = currentAnime.status,
-                                        )
-                                    )
-                                    toastHost.show("Added to library", ToastDuration.SHORT)
-                                } else {
-                                    libraryRepo.remove(currentAnime.id)
-                                    toastHost.show("Removed from library", ToastDuration.SHORT)
-                                }
-                            }
-                        },
+                        onToggleFavorite = toggleFavoriteAction,
                         onToggleBookmark = { episodeId ->
                             val newState = bookmarkStore.toggleBookmark(episodeId)
                             episodes = episodes.map { ep ->
@@ -524,40 +588,8 @@ data class AnimeDetailScreen(
                                 )
                             } else toastHost.show("No URL available", ToastDuration.SHORT)
                         },
-                        onCopyUrl = {
-                            val url = anime?.url
-                            if (url != null) {
-                                try {
-                                    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-                                    clipboard.setContents(StringSelection(url), null)
-                                    toastHost.show("URL copied to clipboard", ToastDuration.SHORT)
-                                } catch (_: Exception) {
-                                    toastHost.show(
-                                        text = "Could not copy URL",
-                                        duration = ToastDuration.SHORT,
-                                        isError = true,
-                                        source = sourceId?.toString(),
-                                        location = "AnimeDetailScreen.copyUrl",
-                                    )
-                                }
-                            } else toastHost.show("No URL available", ToastDuration.SHORT)
-                        },
-                        onOpenInBrowser = {
-                            val url = anime?.url
-                            if (url != null) {
-                                try {
-                                    Desktop.getDesktop().browse(URI(url))
-                                } catch (_: Exception) {
-                                    toastHost.show(
-                                        text = "Could not open browser",
-                                        duration = ToastDuration.SHORT,
-                                        isError = true,
-                                        source = sourceId?.toString(),
-                                        location = "AnimeDetailScreen.openInBrowser",
-                                    )
-                                }
-                            } else toastHost.show("No URL available", ToastDuration.SHORT)
-                        },
+                        onCopyUrl = copyUrlAction,
+                        onOpenInBrowser = openInBrowserAction,
                         onBack = { navigator.pop() },
                         onPlayEpisode = { episode ->
                             navigator.push(
@@ -584,7 +616,7 @@ data class AnimeDetailScreen(
                             onDownloadEpisode = { episode ->
                             val dm = effectiveDownloadManager
                             if (dm != null && effectiveSourceId != null) {
-                                val isAlready = downloadStateMap[episode.episodeNumber] == true
+                            val isAlready = downloadStateMap.containsKey(episode.episodeNumber)
                                 if (isAlready) {
                                     toastHost.show("Already in downloads", ToastDuration.SHORT)
                                 } else {
@@ -600,7 +632,12 @@ data class AnimeDetailScreen(
                                     toastHost.show("Queued: ${episode.name}", ToastDuration.SHORT)
                                 }
                             } else {
-                                toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
+                                val reason = when {
+                                    effectiveSourceId == null -> "No streaming source available"
+                                    dm == null -> "Download manager not initialized"
+                                    else -> "Download not available"
+                                }
+                                toastHost.show(reason, ToastDuration.SHORT)
                             }
                         },
                         onDownloadNextN = {
@@ -609,7 +646,7 @@ data class AnimeDetailScreen(
                                 val target = episodes
                                     .filter { it.episodeNumber > 0 }
                                     .sortedBy { it.episodeNumber }
-                                    .filter { downloadStateMap[it.episodeNumber] != true }
+                                    .filter { !downloadStateMap.containsKey(it.episodeNumber) }
                                     .take(3)
                                 if (target.isEmpty()) {
                                     toastHost.show("Next episodes already downloaded", ToastDuration.SHORT)
@@ -628,7 +665,12 @@ data class AnimeDetailScreen(
                                     toastHost.show("Queued next ${target.size} episode(s)", ToastDuration.SHORT)
                                 }
                             } else {
-                                toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
+                                val reason = when {
+                                    effectiveSourceId == null -> "No streaming source available"
+                                    dm == null -> "Download manager not initialized"
+                                    else -> "Download not available"
+                                }
+                                toastHost.show(reason, ToastDuration.SHORT)
                             }
                         },
                         onDownloadAll = {
@@ -637,7 +679,7 @@ data class AnimeDetailScreen(
                                 val target = episodes
                                     .filter { it.episodeNumber > 0 && it.url?.isNotBlank() == true }
                                     .sortedBy { it.episodeNumber }
-                                    .filter { downloadStateMap[it.episodeNumber] != true }
+                                    .filter { !downloadStateMap.containsKey(it.episodeNumber) }
                                 if (target.isEmpty()) {
                                     toastHost.show("All episodes already downloaded", ToastDuration.SHORT)
                                 } else {
@@ -655,7 +697,12 @@ data class AnimeDetailScreen(
                                     toastHost.show("Queued ${target.size} episode(s)", ToastDuration.SHORT)
                                 }
                             } else {
-                                toastHost.show("Download not available in demo mode", ToastDuration.SHORT)
+                                val reason = when {
+                                    effectiveSourceId == null -> "No streaming source available"
+                                    dm == null -> "Download manager not initialized"
+                                    else -> "Download not available"
+                                }
+                                toastHost.show(reason, ToastDuration.SHORT)
                             }
                         },
                         onRemoveFromContinueWatching = { episode ->
@@ -687,7 +734,7 @@ data class AnimeDetailScreen(
 private fun AnimeDetailContent(
     anime: AnimeModel,
     episodes: List<EpisodeModel>,
-    usingFallback: Boolean = false,
+    downloadStates: Map<Double, DownloadRepository.DownloadEntry> = emptyMap(),
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     onToggleBookmark: (Long) -> Unit,
@@ -714,13 +761,6 @@ private fun AnimeDetailContent(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        if (usingFallback) {
-                            Text(
-                                "Demo mode",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
-                        }
                     }
                 },
                 navigationIcon = {
@@ -749,7 +789,7 @@ private fun AnimeDetailContent(
                         }
                     }
                     TooltipArea(
-                        tooltip = { TooltipContent("Share  (⌘S)") },
+                        tooltip = { TooltipContent("Share  (⌘E)") },
                         delayMillis = 500,
                         tooltipPlacement = TooltipPlacement.CursorPoint(
                             alignment = Alignment.BottomEnd,
@@ -857,11 +897,14 @@ private fun AnimeDetailContent(
             }
 
             items(items = episodes, key = { it.id }) { episode ->
+                val download = downloadStates[episode.episodeNumber]
                 EpisodeItem(
                     episode = episode,
                     onClick = { onPlayEpisode(episode) },
                     onToggleBookmark = { onToggleBookmark(episode.id) },
                     onDownload = { onDownloadEpisode(episode) },
+                    downloadStatus = download?.status,
+                    downloadProgress = download?.progress ?: 0f,
                     overflowItems = listOf(
                         OverflowItem(
                             "Remove from continue watching",
@@ -980,7 +1023,7 @@ private fun AnimeInfoHeader(
 
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onLinkToTracker, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
-                Text("🔗", style = MaterialTheme.typography.bodyMedium)
+                Icon(Icons.Outlined.Link, contentDescription = null)
                 Spacer(Modifier.width(4.dp))
                 Text("Link to Tracker")
             }
@@ -999,12 +1042,15 @@ private fun TooltipContent(text: String) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EpisodeItem(
     episode: EpisodeModel,
     onClick: () -> Unit,
     onToggleBookmark: () -> Unit = {},
     onDownload: () -> Unit = {},
+    downloadStatus: DownloadRepository.DownloadStatus? = null,
+    downloadProgress: Float = 0f,
     overflowItems: List<OverflowItem>? = null,
 ) {
     Card(
@@ -1030,23 +1076,92 @@ private fun EpisodeItem(
                 Text(episode.name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
 
-            // Download button
-            IconButton(onClick = onDownload, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.CloudDownload,
-                    contentDescription = "Download episode",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp),
-                )
+            // Download button — reflects the real download state (queued,
+            // downloading with progress, paused, done, error).
+            val downloadDescription = when (downloadStatus) {
+                DownloadRepository.DownloadStatus.QUEUED -> "Queued"
+                DownloadRepository.DownloadStatus.DOWNLOADING -> "Downloading"
+                DownloadRepository.DownloadStatus.PAUSED -> "Paused"
+                DownloadRepository.DownloadStatus.COMPLETED -> "Downloaded"
+                DownloadRepository.DownloadStatus.ERROR -> "Download failed — click to retry"
+                null -> "Download episode"
+            }
+            TooltipArea(
+                tooltip = { TooltipContent(downloadDescription) },
+                delayMillis = 500,
+                tooltipPlacement = TooltipPlacement.CursorPoint(
+                    alignment = Alignment.BottomEnd,
+                    offset = DpOffset(8.dp, 8.dp),
+                ),
+            ) {
+                IconButton(onClick = onDownload, modifier = Modifier.size(32.dp)) {
+                    when (downloadStatus) {
+                        DownloadRepository.DownloadStatus.QUEUED ->
+                            Icon(
+                                imageVector = Icons.Outlined.Schedule,
+                                contentDescription = downloadDescription,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        DownloadRepository.DownloadStatus.DOWNLOADING ->
+                            Icon(
+                                imageVector = Icons.Outlined.CloudDownload,
+                                contentDescription = downloadDescription,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        DownloadRepository.DownloadStatus.PAUSED ->
+                            Icon(
+                                imageVector = Icons.Outlined.PauseCircle,
+                                contentDescription = downloadDescription,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        DownloadRepository.DownloadStatus.COMPLETED ->
+                            Icon(
+                                imageVector = Icons.Outlined.DownloadDone,
+                                contentDescription = downloadDescription,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        DownloadRepository.DownloadStatus.ERROR ->
+                            Icon(
+                                imageVector = Icons.Outlined.ErrorOutline,
+                                contentDescription = downloadDescription,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        null ->
+                            Icon(
+                                imageVector = Icons.Outlined.CloudDownload,
+                                contentDescription = downloadDescription,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(18.dp),
+                            )
+                    }
+                }
             }
 
-            IconButton(onClick = onToggleBookmark, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    imageVector = if (episode.bookmark) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = if (episode.bookmark) "Remove bookmark" else "Bookmark episode",
-                    tint = if (episode.bookmark) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp),
-                )
+            TooltipArea(
+                tooltip = {
+                    TooltipContent(
+                        if (episode.bookmark) "Remove bookmark" else "Bookmark episode",
+                    )
+                },
+                delayMillis = 500,
+                tooltipPlacement = TooltipPlacement.CursorPoint(
+                    alignment = Alignment.BottomEnd,
+                    offset = DpOffset(8.dp, 8.dp),
+                ),
+            ) {
+                IconButton(onClick = onToggleBookmark, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = if (episode.bookmark) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = if (episode.bookmark) "Remove bookmark" else "Bookmark episode",
+                        tint = if (episode.bookmark) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
 
             if (overflowItems != null) {
@@ -1060,6 +1175,22 @@ private fun EpisodeItem(
                 Spacer(Modifier.width(4.dp))
                 Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(MaterialTheme.colorScheme.primary))
             }
+        }
+
+        // Live progress while this episode is downloading.
+        if (downloadStatus == DownloadRepository.DownloadStatus.DOWNLOADING) {
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { downloadProgress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            )
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
