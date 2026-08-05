@@ -36,6 +36,9 @@ A native macOS desktop port is in development! Built with [Compose Multiplatform
 - **mpv-based video player** with hardware acceleration (videotoolbox)
 - **Extension source support** — 58 pre-installed extension JARs, 33 verified end-to-end
 - **Chrome CDP Cloudflare bypass** — Auto-solves WAF challenges for extension sources
+- **Watch Together** — synced watch parties with friends across the internet
+  via a bundled Cloudflare tunnel (no accounts, no servers); browser guests
+  get fullscreen + HLS playback
 - **Tracker synchronization** — MAL, AniList, Kitsu via OAuth
 - **Discord Rich Presence**
 - **Touch ID / PIN Lock**

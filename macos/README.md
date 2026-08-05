@@ -46,6 +46,12 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
 - **Downloads / Offline** — queue episodes for offline playback (with the
   source's stream headers, so protected sources work), "Download next 3",
   pause/resume/retry, storage usage + "Clear completed" in the queue screen
+- **Watch Together** — synced watch parties. Host a room, share the link or
+  code, and friends (browser or Anikku app) join in perfect sync — on the
+  same network with zero setup, or **across the internet** through a bundled
+  Cloudflare tunnel (no accounts, no servers, no port forwarding). Each room
+  gets its own fresh tunnel link, dropped when the room ends. Browser guests
+  get fullscreen, HLS playback, and a live sync bar.
 - **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth; **AniList 2-way
   library sync** (import your lists into the Library + auto-scrobble progress
   back; optional 12h/daily/weekly background sync)
