@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.8.1] — 2026-08-05
+
+### Fixes — internet Watch Together actually works now
+
+- **WebSocket handshake over the tunnel fixed.** The room server's 101
+  response carried `Content-Length: 0`, which RFC 7230 forbids on 1xx —
+  Cloudflare's edge treated it as end-of-response and dropped every
+  tunneled WebSocket connection right after the handshake. Guests (browser
+  or app) connected and immediately got "Disconnected". The server now
+  serves a clean 101, verified end-to-end through a real Cloudflare tunnel.
+- **One fresh tunnel per room.** Each new room spawns its own cloudflared
+  tunnel (new random URL); ending the room drops it. Re-hosting the same
+  episode generates a new tunnel every time.
+
 ## [1.8.0] — 2026-08-05
 
 ### Watch Together — over the internet, zero setup

@@ -1,3 +1,11 @@
+## v1.8.1 — internet Watch Together fixed
+
+**This is the fix that makes cross-network rooms actually work**
+- Guests (browser or app) were connecting and instantly getting
+  "Disconnected" — a handshake incompatibility with the tunnel. Fixed
+  and verified through a real Cloudflare tunnel end-to-end.
+- Each room now gets its own fresh tunnel link; ending the room drops it.
+
 ## v1.8.0 — Watch Together goes worldwide
 
 **Watch together from anywhere**
