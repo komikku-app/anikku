@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.8.3] — 2026-08-05
+
+### Browser guests get fullscreen
+
+- The join page (phones, tablets, desktops) has a fullscreen button — the
+  whole player goes fullscreen so the custom controls stay visible. iOS
+  Safari falls back to its native video player. Exit via the button or Esc.
+
 ## [1.8.2] — 2026-08-05
 
 ### Fixes — black video on browser guests (Android)

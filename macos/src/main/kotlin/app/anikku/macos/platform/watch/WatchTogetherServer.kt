@@ -672,6 +672,7 @@ private val JOIN_PAGE = """
   #scrub{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
   input[type=range]{flex:1;accent-color:#6c5ce7;height:26px;min-width:0;margin:0}
   #time{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;opacity:.8}
+  #stage:fullscreen,#stage:-webkit-full-screen{width:100%;height:100%;background:#000}
   #info{opacity:.7;font-size:12px;text-align:center;padding:4px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #nameModal{position:fixed;inset:0;background:rgba(0,0,0,.74);display:none;align-items:center;justify-content:center;z-index:10}
   #nameCard{background:#161618;border:1px solid #2c2c2e;border-radius:14px;padding:20px;width:min(330px,88vw);position:relative;box-sizing:border-box}
@@ -694,6 +695,7 @@ private val JOIN_PAGE = """
       <input type="range" id="seekBar" min="0" max="1" step="0.1" value="0" disabled oninput="onScrub()" onchange="onScrubEnd()">
       <span id="time">0:00</span>
     </div>
+    <button id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">&#x26F6;</button>
   </div>
   <div id="info">Connecting&#8230;</div>
 </div>
@@ -719,6 +721,7 @@ var statusEl = document.getElementById('status');
 var seekBar = document.getElementById('seekBar');
 var timeEl = document.getElementById('time');
 var playBtn = document.getElementById('playBtn');
+var fsBtn = document.getElementById('fsBtn');
 
 // Random name assigned immediately on load; the prompt offers to replace it.
 var NAMES = ['Sakura','Neko','Senpai','Kami','Kaze','Hoshi','Tama','Rin','Yuki','Momo','Kuro','Aki','Kira','Sora','Hana'];
@@ -828,6 +831,26 @@ function togglePlay() {
     userAction(); send({type: 'pause'}); v.pause();
   }
 }
+
+// Fullscreen — stage-level so the custom controls stay visible on phones;
+// iOS Safari falls back to its native video player.
+function toggleFullscreen() {
+  var stage = document.getElementById('stage');
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (stage.requestFullscreen) stage.requestFullscreen().catch(function () {});
+    else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen().catch(function () {});
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+}
+function syncFsBtn() {
+  var active = document.fullscreenElement || document.webkitFullscreenElement;
+  fsBtn.innerHTML = active ? '&#10005;' : '&#x26F6;';
+}
+document.addEventListener('fullscreenchange', syncFsBtn);
+document.addEventListener('webkitfullscreenchange', syncFsBtn);
 
 function skip(delta) {
   var target = (v.currentTime || 0) + delta;

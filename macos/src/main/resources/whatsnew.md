@@ -1,3 +1,8 @@
+## v1.8.3 — fullscreen for browser guests
+
+- The join page (phone or desktop) has a fullscreen button — maximize the
+  watch party player on any device
+
 ## v1.8.2 — browser guests can finally see the video
 
 **Fixes the black screen on Android/browser guests**

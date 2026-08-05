@@ -118,6 +118,9 @@ class WatchTogetherServerTest {
         // The page mirrors the page scheme (wss on https) so tunnel-hosted
         // rooms don't hit mixed-content blocks in the browser.
         assertTrue(ok.second.contains("location.protocol === 'https:' ? 'wss://' : 'ws://'"))
+        // Fullscreen button for phone/desktop guests.
+        assertTrue(ok.second.contains("id=\"fsBtn\""))
+        assertTrue(ok.second.contains("toggleFullscreen"))
 
         val missing = get("http://127.0.0.1:${server.actualPort}/room/ZZZ999")
         assertEquals(404, missing.first)
