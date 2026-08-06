@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.9.1] — 2026-08-06
+
+### Fixes
+
+- **Crash on playback start fixed** — the Now Playing artwork loader passed a
+  C string where AppKit expected an NSString object, dereferencing garbage
+  and aborting the JVM the moment a cover image existed. This is the crash
+  some of you hit when streaming from an anime page.
+- **Back navigation everywhere** — every pushed screen now has a visible back
+  button (Downloads, Extensions got proper top bars), Escape / ⌘[ work from
+  any screen regardless of focus, and the View menu has "Go Back" (⌘[).
+- **Settings → Downloads trap fixed** — re-selecting the current tab in the
+  sidebar now returns to the tab's root, so Settings → View Downloads →
+  More brings you back to Settings instead of being stuck on the downloads
+  screen.
+
 ## [1.9.0] — 2026-08-06
 
 ### Native-feel UX

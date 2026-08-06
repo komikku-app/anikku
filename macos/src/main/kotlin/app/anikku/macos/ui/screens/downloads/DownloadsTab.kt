@@ -23,6 +23,7 @@ import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.ScreenScaffold
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.player.PlayerScreen
@@ -62,16 +63,7 @@ object DownloadsTab : AnikkuScreen(), Tab {
 
         val data = DownloadQueueData(downloads, downloadManager)
 
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Downloads") },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                )
-            },
-        ) { padding ->
+        ScreenScaffold(title = "Downloads") { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
                 DownloadQueueContent(
                     data = data,

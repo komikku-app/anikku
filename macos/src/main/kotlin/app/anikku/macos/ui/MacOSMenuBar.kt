@@ -257,6 +257,9 @@ fun create(
                 it.addActionListener { TabSwitchHandler.switchTo(8) }
             })
             addSeparator()
+            add(MenuItem("Go Back", MenuShortcut(KeyEvent.VK_OPEN_BRACKET, false)).also {
+                it.addActionListener { GlobalKeyboardShortcuts.onEscapeBack?.invoke() }
+            })
             add(MenuItem("Toggle Sidebar", MenuShortcut(KeyEvent.VK_S, false)).also {
                 it.addActionListener { GlobalKeyboardShortcuts.onToggleSidebar?.invoke() }
             })

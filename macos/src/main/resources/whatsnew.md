@@ -1,3 +1,13 @@
+## v1.9.1 — crash fix + back navigation
+
+- Fixed the crash when starting playback from an anime page (Now Playing
+  artwork loaded an image incorrectly)
+- Every screen has a visible back button now — Downloads and Extensions got
+  proper top bars
+- Escape / ⌘[ go back from anywhere, and View ▸ Go Back (⌘[) works too
+- Re-clicking the current tab in the sidebar returns you to that tab's home —
+  no more getting stuck on the Downloads screen from Settings
+
 ## v1.9.0 — the big polish update
 
 - Escape / ⌘[ goes back from any screen — no more clicking arrows

@@ -103,6 +103,18 @@ fun MainWindow(
         var searchRequestId by remember { mutableLongStateOf(0L) }
         var handledSearchRequestId by remember { mutableLongStateOf(0L) }
         val extensionManager = LocalExtensionManager.current
+        // Each tab's inner Navigator (declared before the rail so both the
+        // rail handler and the back handlers can reach it).
+        val tabNavigators = remember { mutableMapOf<Int, Navigator>() }
+
+        /** Pop the current tab's pushed screen (if any). Player keeps its own Escape. */
+        fun navigateBack(): Boolean {
+            val navigator = tabNavigators[currentTabIndex] ?: return false
+            if (!navigator.canPop) return false
+            if (navigator.lastItemOrNull is PlayerScreen) return false
+            navigator.pop()
+            return true
+        }
 
         // Bridge the native View > Toggle Sidebar action to the Compose rail.
         DisposableEffect(tabNavigator) {
@@ -132,15 +144,30 @@ fun MainWindow(
         DisposableEffect(tabNavigator) {
             TabSwitchHandler.onSwitchTab = { index ->
                 orderedTabs.getOrNull(index)?.let { tab ->
-                    tabNavigator.current = tab
-                    currentTabIndex = index
-                    onTabIndexChange(index)
+                    // Re-selecting the current tab returns to its root — the
+                    // desktop convention (Settings → Downloads → ⌘8 → Settings).
+                    if (index == currentTabIndex) {
+                        tabNavigators[index]?.popUntilRoot()
+                    } else {
+                        tabNavigator.current = tab
+                        currentTabIndex = index
+                        onTabIndexChange(index)
+                    }
                     val tabNames = TAB_NAMES
                     UIActionLogger.logNavigation("MenuShortcut", tabNames.getOrElse(index) { "?" }, "tab=$index")
                 }
             }
             onDispose {
                 TabSwitchHandler.onSwitchTab = null
+            }
+        }
+
+        // Window-level back: Escape / ⌘[ (AWT dispatcher registered in
+        // AnikkuApp) call this when the main window owns the key event.
+        DisposableEffect(tabNavigators) {
+            GlobalKeyboardShortcuts.onEscapeBack = ::navigateBack
+            onDispose {
+                GlobalKeyboardShortcuts.onEscapeBack = null
             }
         }
 
@@ -157,9 +184,16 @@ fun MainWindow(
                         orderedTabs.getOrNull(index)?.let { tab ->
                             val tabNames = TAB_NAMES
                             UIActionLogger.logNavigation("NavigationRail", tabNames.getOrElse(index) { "?" }, "tab=$index")
-                            tabNavigator.current = tab
-                            currentTabIndex = index
-                            onTabIndexChange(index)
+                            // Re-selecting the current tab returns to its root —
+                            // Settings → Downloads → More brings you back to
+                            // Settings instead of re-showing the downloads screen.
+                            if (index == currentTabIndex) {
+                                tabNavigators[index]?.popUntilRoot()
+                            } else {
+                                tabNavigator.current = tab
+                                currentTabIndex = index
+                                onTabIndexChange(index)
+                            }
                         }
                         },
                     )
@@ -171,7 +205,6 @@ fun MainWindow(
                 // startup instead of re-fetching on every switch). The active
                 // tab is visible with a short fade; hidden tabs are kept alive
                 // but inert (alpha 0 + input consumed).
-                val tabNavigators = remember { mutableMapOf<Int, Navigator>() }
 
                 // anikku:// deep links (Watch Together join-page "Open in
                 // Anikku"): push the player for the linked episode onto the
@@ -212,17 +245,16 @@ fun MainWindow(
                             // Desktop back navigation: Escape or ⌘[ pops the
                             // current tab's pushed screen. The player owns its
                             // own Escape handling (exit fullscreen / back), so
-                            // pass the event through when it's on top.
+                            // pass the event through when it's on top. (The
+                            // AWT dispatcher in AnikkuApp normally handles
+                            // this first; this Compose path covers focus cases
+                            // the dispatcher can't see.)
                             if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                             val isBack =
                                 (!event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed && event.key == Key.Escape) ||
                                     (event.isMetaPressed && event.key == Key.LeftBracket)
                             if (!isBack) return@onPreviewKeyEvent false
-                            val navigator = tabNavigators[currentTabIndex]
-                            if (navigator == null || !navigator.canPop) return@onPreviewKeyEvent false
-                            if (navigator.lastItemOrNull is PlayerScreen) return@onPreviewKeyEvent false
-                            navigator.pop()
-                            true
+                            navigateBack()
                         },
                 ) {
                     orderedTabs.forEachIndexed { index, tab ->

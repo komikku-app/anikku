@@ -225,6 +225,37 @@ fun main() = application {
             mutableStateOf(settingsState.appLockEnabled && app.biometricAuth.isPinSet)
         }
 
+        // Window-level back navigation: Escape / ⌘[. Registered as an AWT key
+        // dispatcher so it works regardless of Compose focus. It defers when
+        // the player is on top (MainWindow.navigateBack returns false) so the
+        // player's own Escape handling still wins, and it ignores key events
+        // aimed at other windows (dialogs) — those keep their own Escape.
+        DisposableEffect(window) {
+            val manager = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
+            val dispatcher = java.awt.KeyEventDispatcher { event ->
+                if (event.id != java.awt.event.KeyEvent.KEY_PRESSED) return@KeyEventDispatcher false
+                val isEscape = event.keyCode == java.awt.event.KeyEvent.VK_ESCAPE &&
+                    event.modifiersEx and (
+                        java.awt.event.InputEvent.CTRL_DOWN_MASK or
+                            java.awt.event.InputEvent.META_DOWN_MASK or
+                            java.awt.event.InputEvent.ALT_DOWN_MASK
+                        ) == 0
+                val isCmdBracket = event.keyCode == java.awt.event.KeyEvent.VK_OPEN_BRACKET &&
+                    event.modifiersEx and java.awt.event.InputEvent.META_DOWN_MASK != 0
+                if (!isEscape && !isCmdBracket) return@KeyEventDispatcher false
+                val source = event.component
+                if (source != null) {
+                    val ancestor = javax.swing.SwingUtilities.getWindowAncestor(source)
+                    if (ancestor != null && ancestor !== window) return@KeyEventDispatcher false
+                }
+                GlobalKeyboardShortcuts.onEscapeBack?.invoke() == true
+            }
+            manager.addKeyEventDispatcher(dispatcher)
+            onDispose {
+                manager.removeKeyEventDispatcher(dispatcher)
+            }
+        }
+
         DisposableEffect(window, settingsState) {
             val focusListener = object : WindowAdapter() {
                 override fun windowGainedFocus(event: java.awt.event.WindowEvent?) {

@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.ScreenScaffold
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.settings.LocalSettingsState
@@ -123,17 +124,15 @@ data class ExtensionsScreen(
             }
         }
 
+        ScreenScaffold(
+            title = "Extensions",
+            onBack = { navigator.pop() },
+        ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                Text(
-                    text = "Extensions",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(4.dp))
                 Text(
                     text = "Install source extensions to browse and watch anime.",
                     style = MaterialTheme.typography.bodySmall,
@@ -541,6 +540,7 @@ data class ExtensionsScreen(
                     }
                 }
             }
+        }
         }
     }
 }

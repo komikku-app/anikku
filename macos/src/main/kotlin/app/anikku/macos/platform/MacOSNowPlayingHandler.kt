@@ -210,12 +210,23 @@ object MacOSNowPlayingHandler {
         }
     }
 
-    /** Load an NSImage from a file path, or null. */
+    /**
+     * Load an NSImage from a file path, or null.
+     *
+     * NOTE: `initWithContentsOfFile:` takes an NSString * (id), NOT a C
+     * string. Passing a `const char*` (what objc_msgSend_str marshals) makes
+     * AppKit interpret the path bytes as an ObjC object — a NULL/garbage isa
+     * dereference that crashes the JVM (seen in production as a SIGSEGV inside
+     * -[NSImage initWithContentsOfFile:] on the AWT thread). Always build a
+     * real NSString first.
+     */
     private fun nsImage(path: String): Pointer? {
         val cls = ObjC.objc_getClass("NSImage")
         val alloced = ObjC.objc_msgSend(cls, sel("alloc"))
         if (Pointer.nativeValue(alloced) == 0L) return null
-        return ObjC.objc_msgSend_str(alloced, sel("initWithContentsOfFile:"), path)
+        val pathString = nsString(path)
+        if (Pointer.nativeValue(pathString) == 0L) return null
+        return ObjC.objc_msgSend(alloced, sel("initWithContentsOfFile:"), pathString)
     }
 
     /**

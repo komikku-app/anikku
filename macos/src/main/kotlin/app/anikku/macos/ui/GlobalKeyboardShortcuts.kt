@@ -31,6 +31,13 @@ object GlobalKeyboardShortcuts {
     /** Callback for toggling the sidebar visibility. */
     var onToggleSidebar: (() -> Unit)? = null
 
+    /**
+     * Window-level back (Escape / ⌘[). Returns true when the event was
+     * handled (a pushed screen was popped); false lets it through to the
+     * focused component (e.g. the player's own Escape handling).
+     */
+    var onEscapeBack: (() -> Boolean)? = null
+
     /** Callback for opening search. */
     var onOpenSearch: (() -> Unit)? = null
 

@@ -29,6 +29,7 @@ fun KeyboardShortcutsDialog(onDismiss: () -> Unit) {
             "⌘," to "Settings",
             "⌘S" to "Toggle sidebar",
             "⌘F" to "Global search",
+            "Esc / ⌘[" to "Go back (any screen)",
         ),
         "Anime details" to listOf(
             "⌘D" to "Add to / remove from library",

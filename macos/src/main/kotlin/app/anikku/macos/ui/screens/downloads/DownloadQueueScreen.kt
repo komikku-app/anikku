@@ -65,6 +65,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import app.anikku.macos.ui.screens.player.PlayerScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.EmptyState
+import app.anikku.macos.ui.components.ScreenScaffold
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OfflineBadge
 import app.anikku.macos.ui.components.ToastDuration
@@ -100,16 +101,21 @@ class DownloadQueueScreen : AnikkuScreen() {
         // (Reading .currentOrThrow would throw mid-composition when absent.)
         val navigator = LocalNavigator.current
 
-        DownloadQueueContent(
-            data = data,
-            onPauseResume = { id ->
-                val item = downloads.find { it.id == id } ?: return@DownloadQueueContent
-                if (item.status == DownloadRepository.DownloadStatus.PAUSED) {
-                    downloadManager?.resume(id)
-                } else if (item.status == DownloadRepository.DownloadStatus.DOWNLOADING) {
-                    downloadManager?.pause(id)
-                }
-            },
+        ScreenScaffold(
+            title = "Downloads",
+            onBack = { navigator?.pop() },
+        ) { padding ->
+            DownloadQueueContent(
+                data = data,
+                modifier = Modifier.padding(padding),
+                onPauseResume = { id ->
+                    val item = downloads.find { it.id == id } ?: return@DownloadQueueContent
+                    if (item.status == DownloadRepository.DownloadStatus.PAUSED) {
+                        downloadManager?.resume(id)
+                    } else if (item.status == DownloadRepository.DownloadStatus.DOWNLOADING) {
+                        downloadManager?.pause(id)
+                    }
+                },
             onCancel = { id ->
                 val item = downloads.find { it.id == id } ?: return@DownloadQueueContent
                 downloadManager?.cancel(id)
@@ -157,6 +163,7 @@ class DownloadQueueScreen : AnikkuScreen() {
                 )
             },
         )
+        }
     }
 }
 
@@ -181,6 +188,7 @@ internal fun DownloadQueueContent(
     onResumeAll: () -> Unit = {},
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     val allDownloads = data.downloads
     val downloads = if (searchQuery.isBlank()) {
@@ -201,7 +209,7 @@ internal fun DownloadQueueContent(
     } ?: 0L
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -221,11 +229,6 @@ internal fun DownloadQueueContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
-                    Text(
-                        text = "Downloads",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
                     Text(
                         text = buildString {
                             if (activeDownloads > 0) append("$activeDownloads active · ")
