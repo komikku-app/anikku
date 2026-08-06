@@ -160,6 +160,9 @@ class AnikkuApplication {
         // 4. Initialize preferences (JSON file-backed)
         val prefsFile = File(storageProvider.dataDirectory, "preferences.json")
         preferenceStore = MacOSPreferenceStore(prefsFile)
+        // Extension preferences (per-source settings) persist through the
+        // android.* stubs via this bridge — see AndroidPrefsBridge.
+        android.content.AndroidPrefsBridge.store = preferenceStore
 
         // 4b. Run idempotent platform migrations before services read state.
         migrationManager = MacOSMigrationManager(

@@ -41,6 +41,9 @@ object GlobalKeyboardShortcuts {
     /** Callback for opening search. */
     var onOpenSearch: (() -> Unit)? = null
 
+    /** Callback for opening the ⌘K command palette. */
+    var onOpenPalette: (() -> Unit)? = null
+
     /** Callback for opening settings. */
     var onOpenSettings: (() -> Unit)? = null
 
@@ -76,6 +79,7 @@ object GlobalKeyboardShortcuts {
     fun reset() {
         onToggleSidebar = null
         onOpenSearch = null
+        onOpenPalette = null
         onOpenSettings = null
         onNewSource = null
     }

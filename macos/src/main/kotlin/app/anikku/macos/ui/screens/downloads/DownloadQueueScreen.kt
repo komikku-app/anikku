@@ -1,5 +1,8 @@
 package app.anikku.macos.ui.screens.downloads
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -135,12 +138,27 @@ class DownloadQueueScreen : AnikkuScreen() {
                 toastHost.show("All downloads cancelled", ToastDuration.SHORT)
             },
             onClearCompleted = {
-                val removed = downloadManager?.removeCompleted() ?: 0
-                toastHost.show(
-                    if (removed > 0) "Cleared $removed completed download${if (removed == 1) "" else "s"}"
-                    else "No completed downloads to clear",
-                    ToastDuration.SHORT,
-                )
+                val removed = downloadManager?.removeCompletedToTrash().orEmpty()
+                if (removed.isEmpty()) {
+                    toastHost.show("No completed downloads to clear", ToastDuration.SHORT)
+                } else {
+                    toastHost.show(
+                        "Cleared ${removed.size} completed download${if (removed.size == 1) "" else "s"}",
+                        ToastDuration.LONG,
+                        actionLabel = "Undo",
+                        onAction = {
+                            downloadManager?.restoreTrashed(removed)
+                            toastHost.show("Downloads restored", ToastDuration.SHORT)
+                        },
+                    )
+                    // Files are physically gone once the undo window closes.
+                    downloadManager?.let { dm ->
+                        kotlinx.coroutines.GlobalScope.launch {
+                            kotlinx.coroutines.delay(10_000)
+                            dm.purgeDownloadTrash()
+                        }
+                    }
+                }
             },
             onPauseAll = { downloadManager?.pauseAll() },
             onResumeAll = { downloadManager?.resumeAll() },

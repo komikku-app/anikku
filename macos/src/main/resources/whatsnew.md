@@ -1,3 +1,18 @@
+## v1.10.0 — sources you can trust
+
+- Browse sorts working sources first, greys out dead ones, and shows a
+  Recommended row of known-good sources; re-check health anytime
+- Onboarding recommends real sources — tap Browse to open one directly
+- The app now responds instantly after launch (health checks wait for Browse)
+- Cloudflare bypass fixed after a force-quit (stale Chrome cleanup)
+- ⌘K command palette — jump to any tab, screen or setting by typing
+- Undo for Clear History, Clear Completed downloads and Backup delete
+- History rows with missing titles show the episode name instead of ", , 01"
+- Empty states everywhere, with a next action on every tab
+- Watch Together rooms have live chat (app and browser)
+- Per-source settings gear on installed extensions — values actually save now
+- Player: pick an audio output device (DAC/headphones/HDMI), remembered
+
 ## v1.9.2 — one consistent look
 
 - Watch Stats opened from Settings has a back arrow now

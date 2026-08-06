@@ -184,6 +184,20 @@ class DownloadRepository(private val dataDir: File) {
         saveToFile()
     }
 
+    /**
+     * Re-insert previously removed entries (undo) without disturbing the rest
+     * of the queue. Duplicates by id are replaced.
+     */
+    @Synchronized
+    fun restore(restoredEntries: List<DownloadEntry>) {
+        restoredEntries.forEach { entry ->
+            entries.removeAll { it.id == entry.id }
+            entries.add(entry)
+        }
+        nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
+        saveToFile()
+    }
+
     /** Replaces persisted queue metadata, preserving stable backup IDs. */
     @Synchronized
     fun replaceAll(restored: List<DownloadEntry>) {

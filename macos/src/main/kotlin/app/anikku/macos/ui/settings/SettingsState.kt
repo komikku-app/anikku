@@ -86,6 +86,7 @@ class SettingsState(
         private const val KEY_SUBTITLE_FONT_SIZE = "subtitle_font_size"
         private const val KEY_SUBTITLE_POSITION = "subtitle_position"
         private const val KEY_CLIP_CAPTURE_SECONDS = "player_clip_capture_seconds"
+        private const val KEY_AUDIO_DEVICE = "audio_device"
 
         // AniList tracker sync
         private const val KEY_ANILIST_SYNC_INTERVAL_HOURS = "anilist_sync_interval_hours"
@@ -352,6 +353,7 @@ class SettingsState(
 
     private val volumePref = preferenceStore?.getInt(KEY_VOLUME, 100)
     private val _volume = mutableStateOf((volumePref?.get() ?: 100).coerceIn(0, 200))
+    private val _audioDevice = mutableStateOf(preferenceStore?.getString(KEY_AUDIO_DEVICE, "")?.get() ?: "")
 
     /**
      * Last used volume (0-200, mpv scale). Saved whenever the player volume
@@ -363,6 +365,19 @@ class SettingsState(
             val clamped = value.coerceIn(0, 200)
             _volume.value = clamped
             volumePref?.set(clamped)
+        }
+
+    private val audioDevicePref = preferenceStore?.getString(KEY_AUDIO_DEVICE, "")
+
+    /**
+     * Last chosen mpv audio output device name ("" = system default).
+     * Applied at player start; changed from the player's settings menu.
+     */
+    var audioDevice: String
+        get() = _audioDevice.value
+        set(value) {
+            _audioDevice.value = value
+            audioDevicePref?.set(value)
         }
 
     private val preferredQualityPref = preferenceStore?.getString(KEY_PREFERRED_QUALITY, "")

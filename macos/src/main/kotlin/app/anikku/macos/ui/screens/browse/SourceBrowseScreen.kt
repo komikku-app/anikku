@@ -55,6 +55,7 @@ import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.components.AnimeCoverImage
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.models.toAnimeModel
@@ -627,61 +628,20 @@ data class SourceBrowseScreen(
                     }
 
                     if (hasSearched && animeList.isEmpty()) {
-                        // No search results
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Search,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                Text(
-                                    "No results for \"$searchQuery\"",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Try a different search term",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
-                            }
-                        }
+                        EmptyState(
+                            icon = Icons.Outlined.Search,
+                            title = "No results for \"$searchQuery\"",
+                            hint = "Try a different search term",
+                        )
                         return@Box
                     }
 
                     if (animeList.isEmpty() && !isShowingSearchResults) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Outlined.VideoLibrary,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                Text(
-                                    "No anime found",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Try a different keyword or another source",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
-                            }
-                        }
+                        EmptyState(
+                            icon = Icons.Outlined.VideoLibrary,
+                            title = "No anime found",
+                            hint = "Try a different keyword or another source",
+                        )
                         return@Box
                     }
 

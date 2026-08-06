@@ -1,6 +1,7 @@
 package app.anikku.macos.platform.download
 
 import app.anikku.macos.platform.data.DownloadRepository
+import app.anikku.macos.platform.data.DownloadRepository.DownloadEntry
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.notification.MacOSNotificationManager
 import app.anikku.macos.platform.storage.MacOSStorageProvider
@@ -627,6 +628,62 @@ open class MacOSDownloadManager(
             }
             if (removed > 0) refreshState()
             return removed
+        }
+    }
+
+    /**
+     * Like [removeCompleted], but moves each file to a `.trash` subdir instead
+     * of deleting it, so the UI can offer an undo. Returns the removed entries
+     * (with their original paths) for [restoreTrashed]. Callers should purge
+     * the trash with [purgeDownloadTrash] once the undo window closes.
+     */
+    fun removeCompletedToTrash(): List<DownloadEntry> {
+        synchronized(downloadLock) {
+            val completed = repository.getCompleted()
+            val trashDir = File(File(storageProvider.downloadsDirectory, "videos"), ".trash")
+            completed.forEach { entry ->
+                entry.filePath?.let { path ->
+                    safeManagedDownloadFile(path)?.let { file ->
+                        runCatching {
+                            trashDir.mkdirs()
+                            val target = File(trashDir, file.name)
+                            if (target.exists()) target.delete()
+                            file.renameTo(target)
+                        }.onFailure { e ->
+                            logger.warn(e) { "Failed to trash completed download ${file.path}" }
+                        }
+                    }
+                }
+                repository.remove(entry.id)
+            }
+            if (completed.isNotEmpty()) refreshState()
+            return completed
+        }
+    }
+
+    /** Move trashed files back and re-insert the entries (undo). */
+    fun restoreTrashed(entries: List<DownloadEntry>) {
+        synchronized(downloadLock) {
+            val trashDir = File(File(storageProvider.downloadsDirectory, "videos"), ".trash")
+            entries.forEach { entry ->
+                entry.filePath?.let { path ->
+                    val original = File(path)
+                    val trashed = File(trashDir, original.name)
+                    if (!original.exists() && trashed.exists()) {
+                        runCatching { trashed.renameTo(original) }
+                    }
+                }
+                repository.restore(listOf(entry))
+            }
+            refreshState()
+        }
+    }
+
+    /** Delete everything in the download trash (undo window expired). */
+    fun purgeDownloadTrash() {
+        runCatching {
+            val trashDir = File(File(storageProvider.downloadsDirectory, "videos"), ".trash")
+            trashDir.listFiles()?.forEach { it.delete() }
         }
     }
 

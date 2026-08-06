@@ -174,25 +174,13 @@ object DiscoverTab : AnikkuScreen(), Tab {
                     }
 
                     loadError != null && schedule.isEmpty() && trending.isEmpty() -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Outlined.CloudOff,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                Text(
-                                    loadError ?: "Nothing to show",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 32.dp),
-                                )
-                                Spacer(Modifier.height(14.dp))
-                                Button(onClick = { retryToken++ }) { Text("Retry") }
-                            }
-                        }
+                        EmptyState(
+                            icon = Icons.Outlined.CloudOff,
+                            title = loadError ?: "Nothing to show",
+                            hint = "AniList couldn't be reached right now",
+                            actionLabel = "Retry",
+                            onAction = { retryToken++ },
+                        )
                     }
 
                     schedule.isEmpty() && trending.isEmpty() && seasonalList.isEmpty() && recommendations.isEmpty() -> {

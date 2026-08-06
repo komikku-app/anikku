@@ -87,6 +87,9 @@ class WatchTogetherSession(
     /** A member shared a new episode (guest auto-load path). */
     var onEpisode: ((WtMessage.Episode) -> Unit)? = null
 
+    /** Room chat lines, in arrival order (server-stamped sender + time). */
+    val chatMessages = MutableStateFlow<List<WtMessage.Chat>>(emptyList())
+
     private var webSocket: WebSocket? = null
     private var server: WatchTogetherServer? = null
     private var beacon: WatchTogetherDiscovery.Beacon? = null
@@ -360,6 +363,14 @@ class WatchTogetherSession(
         sendRaw(WtMessage.Speed(rate = rate.coerceIn(0.25, 4.0), by = sessionName))
     }
 
+    /** Any member: send a chat line. The server stamps the sender + time. */
+    fun sendChat(text: String) {
+        if (role.value == Role.NONE) return
+        val body = text.trim()
+        if (body.isEmpty()) return
+        sendRaw(WtMessage.Chat(text = body.take(500)))
+    }
+
     /** Internal send — the host's periodic Sync must NOT count as a local action. */
     private fun sendRaw(message: WtMessage) {
         val socket = webSocket ?: return
@@ -461,10 +472,14 @@ class WatchTogetherSession(
                         hostName.value = null
                         controlsLocked.value = false
                         joinUrl.value = null
+                        chatMessages.value = emptyList()
                         this@WatchTogetherSession.webSocket = null
                     }
                 }
                 is WtMessage.Hello -> Unit // reserved for a future member list
+                is WtMessage.Chat -> {
+                    chatMessages.value = (chatMessages.value + message).takeLast(200)
+                }
                 else -> message?.let { onControl?.invoke(it) }
             }
         }

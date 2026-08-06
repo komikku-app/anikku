@@ -933,7 +933,7 @@ private fun ContinueWatchingCard(
             }
             Column(modifier = Modifier.padding(6.dp)) {
                 Text(
-                    text = entry.animeTitle,
+                    text = entry.animeTitle.ifBlank { entry.episodeName.ifBlank { "Episode ${entry.episodeNumber}" } },
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,

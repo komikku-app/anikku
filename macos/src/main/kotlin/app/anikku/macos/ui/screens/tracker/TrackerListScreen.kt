@@ -53,6 +53,7 @@ import app.anikku.macos.platform.auth.TrackerTokenStore
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.components.EmptyState
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -120,27 +121,11 @@ class TrackerListScreen : AnikkuScreen() {
                 Spacer(Modifier.height(4.dp))
 
                 if (statuses.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Outlined.Info,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text = "No trackers available",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    EmptyState(
+                        icon = Icons.Outlined.Info,
+                        title = "No trackers available",
+                        hint = "Connect a tracker in Settings > Tracking to sync your progress",
+                    )
                 }
 
                 statuses.forEach { status ->

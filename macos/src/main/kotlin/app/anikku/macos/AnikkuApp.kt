@@ -242,11 +242,17 @@ fun main() = application {
                         ) == 0
                 val isCmdBracket = event.keyCode == java.awt.event.KeyEvent.VK_OPEN_BRACKET &&
                     event.modifiersEx and java.awt.event.InputEvent.META_DOWN_MASK != 0
-                if (!isEscape && !isCmdBracket) return@KeyEventDispatcher false
+                val isCmdK = event.keyCode == java.awt.event.KeyEvent.VK_K &&
+                    event.modifiersEx and java.awt.event.InputEvent.META_DOWN_MASK != 0
+                if (!isEscape && !isCmdBracket && !isCmdK) return@KeyEventDispatcher false
                 val source = event.component
                 if (source != null) {
                     val ancestor = javax.swing.SwingUtilities.getWindowAncestor(source)
                     if (ancestor != null && ancestor !== window) return@KeyEventDispatcher false
+                }
+                if (isCmdK) {
+                    GlobalKeyboardShortcuts.onOpenPalette?.invoke()
+                    return@KeyEventDispatcher true
                 }
                 GlobalKeyboardShortcuts.onEscapeBack?.invoke() == true
             }
@@ -256,9 +262,24 @@ fun main() = application {
             }
         }
 
+        // One-time 30s grace after launch: the first focus-triggered due-job
+        // sweep (library update hits every entry's source over the network)
+        // waits, so startup input is never starved. Later focuses run at once.
+        var startupFocusGraceDone by remember { mutableStateOf(false) }
+        val backgroundJobs = app.backgroundJobs
+
         DisposableEffect(window, settingsState) {
             val focusListener = object : WindowAdapter() {
                 override fun windowGainedFocus(event: java.awt.event.WindowEvent?) {
+                    if (!startupFocusGraceDone) {
+                        startupFocusGraceDone = true
+                        app.applicationScope.launch {
+                            delay(30_000)
+                            backgroundJobs.onAppFocused()
+                        }
+                    } else {
+                        backgroundJobs.onAppFocused()
+                    }
                     app.onAppFocused(enableDiscord = settingsState.discordRichPresenceEnabled)
                 }
 
@@ -270,7 +291,19 @@ fun main() = application {
                 }
             }
             window.addWindowFocusListener(focusListener)
-            if (window.isFocused) app.onAppFocused(enableDiscord = settingsState.discordRichPresenceEnabled)
+            if (window.isFocused) {
+                // Same one-time grace as the listener path.
+                if (!startupFocusGraceDone) {
+                    startupFocusGraceDone = true
+                    app.applicationScope.launch {
+                        delay(30_000)
+                        backgroundJobs.onAppFocused()
+                    }
+                } else {
+                    backgroundJobs.onAppFocused()
+                }
+                app.onAppFocused(enableDiscord = settingsState.discordRichPresenceEnabled)
+            }
             onDispose {
                 window.removeWindowFocusListener(focusListener)
                 app.onAppBlurred()
@@ -359,6 +392,9 @@ fun main() = application {
         // yet composed (TabSwitchHandler has no listener then); consumed as
         // MainWindow's initial tab.
         var pendingInitialTab by remember { mutableStateOf(-1) }
+        // Set by onboarding's recommended-source "Browse" chips; consumed by
+        // MainWindow once the Browse tab is active (pushes SourceBrowseScreen).
+        var pendingBrowseSource by remember { mutableStateOf<Pair<Long, String>?>(null) }
 
         // "What's New" — shown once per version after an update, never on a
         // brand-new install (onboarding completion stamps last_launched_version).
@@ -624,6 +660,15 @@ fun main() = application {
                                 showOnboarding = false
                             },
                             onBrowseSources = { pendingInitialTab = 4 },
+                            onOpenSource = { sourceId, sourceName ->
+                                onboardingCompletePref.set(true)
+                                onboardingStepPref.set(0)
+                                app.preferenceStore.getString("last_launched_version", "")
+                                    .set(AppInfo.VERSION)
+                                showOnboarding = false
+                                pendingBrowseSource = sourceId to sourceName
+                                pendingInitialTab = 4
+                            },
                         ).Content()
                     } else if (isLocked && settingsState.appLockEnabled) {
                         AppLockScreen(
@@ -646,6 +691,8 @@ fun main() = application {
                                 pendingInitialTab = -1
                                 lastTabPref.set(index)
                             },
+                            pendingBrowseSource = pendingBrowseSource,
+                            onPendingBrowseSourceConsumed = { pendingBrowseSource = null },
                         )
                     }
                     ToastHost(state = toastHostState)

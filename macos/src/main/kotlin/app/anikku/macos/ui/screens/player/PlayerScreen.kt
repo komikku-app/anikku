@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -658,6 +661,8 @@ data class PlayerScreen(
                 clipSeconds = settings.clipCaptureSeconds,
                 initialVolume = settings.volume,
                 onVolumeChanged = { settings.volume = it },
+                initialAudioDevice = settings.audioDevice,
+                onAudioDeviceChanged = { settings.audioDevice = it },
                 screenshotDirectory = settings.screenshotDirectory,
                 screenshotFormat = settings.screenshotFormat,
             )
@@ -741,7 +746,9 @@ data class PlayerScreen(
         var allEpisodes by remember { mutableStateOf<MutableList<EpisodeModel>>(mutableListOf()) }
         var sourceEpisodes by remember { mutableStateOf<List<SEpisode>>(emptyList()) }
         var currentEpisodeIndex by remember { mutableIntStateOf(0) }
-        var animeTitle by remember { mutableStateOf(this@PlayerScreen.animeTitle ?: "Unknown") }
+        var animeTitle by remember {
+            mutableStateOf(this@PlayerScreen.animeTitle?.takeIf { it.isNotBlank() } ?: "Unknown")
+        }
         var resolvedVideo by remember { mutableStateOf<VideoResolution?>(null) }
         var videoQualityResolution by remember { mutableStateOf<Int?>(null) }
         var videoQualityLabel by remember { mutableStateOf<String?>(null) }
@@ -2123,6 +2130,8 @@ data class PlayerScreen(
                     showWatchDialog = false
                 },
                 onDismiss = { showWatchDialog = false },
+                chatMessages = watchSession.chatMessages.collectAsState().value,
+                onSendChat = { text -> watchSession.sendChat(text) },
             )
         }
 
@@ -2247,6 +2256,7 @@ internal fun PlayerContent(
     var showSpeedPanel by remember { mutableStateOf(false) }
     var showQualityPanel by remember { mutableStateOf(false) }
     var showAudioPanel by remember { mutableStateOf(false) }
+    var showAudioDevicePanel by remember { mutableStateOf(false) }
     var showSubtitlePanel by remember { mutableStateOf(false) }
     var showEqualizerPanel by remember { mutableStateOf(false) }
     var showAspectRatioPanel by remember { mutableStateOf(false) }
@@ -2953,6 +2963,7 @@ internal fun PlayerContent(
                             DropdownMenuItem(text = { Text("Playback Speed") }, onClick = { showSettingsMenu = false; showSpeedPanel = true })
                             DropdownMenuItem(text = { Text("Quality") }, onClick = { showSettingsMenu = false; showQualityPanel = true })
                             DropdownMenuItem(text = { Text("Audio Track") }, onClick = { showSettingsMenu = false; showAudioPanel = true })
+                            DropdownMenuItem(text = { Text("Audio Device") }, onClick = { showSettingsMenu = false; showAudioDevicePanel = true })
                             DropdownMenuItem(text = { Text("Subtitles") }, onClick = { showSettingsMenu = false; showSubtitlePanel = true })
                             DropdownMenuItem(text = { Text("Equalizer") }, onClick = { showSettingsMenu = false; showEqualizerPanel = true })
                             DropdownMenuItem(text = { Text("Aspect Ratio") }, onClick = { showSettingsMenu = false; showAspectRatioPanel = true })
@@ -3113,6 +3124,14 @@ internal fun PlayerContent(
         }
         AnimatedVisibility(visible = showAudioPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerAudioTrackPanel(tracks = audioTracks, currentTrackIndex = selectedAudioTrack, audioDelay = audioDelay, onTrackSelected = { playerViewModel?.selectAudioTrack(it) }, onDelayChange = { playerViewModel?.setAudioDelay(it) }, onDismiss = { showAudioPanel = false })
+            AnimatedVisibility(visible = showAudioDevicePanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
+                PlayerAudioDevicePanel(
+                    devices = playerViewModel?.audioDevices?.collectAsState()?.value.orEmpty(),
+                    currentDevice = playerViewModel?.audioDevice?.collectAsState()?.value,
+                    onDeviceSelected = { name -> playerViewModel?.setAudioDevice(name) },
+                    onDismiss = { showAudioDevicePanel = false },
+                )
+            }
         }
         AnimatedVisibility(visible = showSubtitlePanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerSubtitleTrackPanel(
@@ -3286,7 +3305,10 @@ private fun WatchTogetherDialog(
     onKickMember: (String) -> Unit,
     onLeave: () -> Unit,
     onDismiss: () -> Unit,
+    chatMessages: List<WtMessage.Chat> = emptyList(),
+    onSendChat: (String) -> Unit = {},
 ) {
+    var chatInput by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (role == WatchTogetherSession.Role.NONE) "Watch Together" else "Room ${code ?: ""}") },
@@ -3400,6 +3422,69 @@ private fun WatchTogetherDialog(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 TextButton(onClick = { onCopy(it) }) { Text("Copy link") }
+                            }
+                        }
+
+                        // Room chat — everyone in the room sees every line.
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Chat",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .verticalScroll(rememberScrollState())
+                                .padding(8.dp),
+                        ) {
+                            if (chatMessages.isEmpty()) {
+                                Text(
+                                    "No messages yet — say hi!",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                )
+                            } else {
+                                chatMessages.forEach { chat ->
+                                    Text(
+                                        buildString {
+                                            append(chat.by.ifBlank { "Guest" })
+                                            append(": ")
+                                            append(chat.text)
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = chatInput,
+                                onValueChange = { chatInput = it },
+                                modifier = Modifier.weight(1f),
+                                placeholder = { Text("Message…") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    val body = chatInput.trim()
+                                    if (body.isNotEmpty()) {
+                                        onSendChat(body)
+                                        chatInput = ""
+                                    }
+                                },
+                                enabled = chatInput.isNotBlank(),
+                            ) {
+                                Text("Send")
                             }
                         }
                     }

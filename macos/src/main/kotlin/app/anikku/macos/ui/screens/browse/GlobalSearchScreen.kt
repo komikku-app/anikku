@@ -61,6 +61,7 @@ import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.models.toAnimeModel
@@ -399,33 +400,11 @@ data class GlobalSearchScreen(
                         }
                         return@Column
                     }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Outlined.SearchOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                "No results for \"$searchQuery\"",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "Try a different search term or check your spelling",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            )
-                        }
-                    }
+                    EmptyState(
+                        icon = Icons.Outlined.SearchOff,
+                        title = "No results for \"$searchQuery\"",
+                        hint = "Try a different search term or check your spelling",
+                    )
                     return@Column
                 }
 

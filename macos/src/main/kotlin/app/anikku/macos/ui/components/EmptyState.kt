@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,6 +35,8 @@ fun EmptyState(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    actionEnabled: Boolean = true,
+    actionLoading: Boolean = false,
 ) {
     Box(
         modifier = modifier.fillMaxSize().padding(32.dp),
@@ -64,7 +68,14 @@ fun EmptyState(
             }
             if (actionLabel != null && onAction != null) {
                 Spacer(Modifier.height(16.dp))
-                Button(onClick = onAction) {
+                Button(onClick = onAction, enabled = actionEnabled) {
+                    if (actionLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
                     Text(actionLabel)
                 }
             }

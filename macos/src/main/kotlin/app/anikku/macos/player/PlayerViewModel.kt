@@ -39,6 +39,10 @@ class PlayerViewModel(
     // Called whenever the user changes volume, so the caller can persist it.
     // (private val: plain ctor params are not visible inside member functions.)
     private val onVolumeChanged: ((Int) -> Unit)? = null,
+    // Called whenever the user switches the audio output device (persist it).
+    private val onAudioDeviceChanged: ((String) -> Unit)? = null,
+    // Persisted audio output device name ("" = system default) applied at start.
+    private val initialAudioDevice: String = "",
     // Screenshot/GIF-clip output directory; empty = default ~/Pictures/Anikku.
     private val screenshotDirectory: String = "",
     // Screenshot file format: "png" or "jpg".
@@ -159,6 +163,13 @@ class PlayerViewModel(
     private val _subtitleTracks = MutableStateFlow<List<TrackInfo>>(emptyList())
     val subtitleTracks: StateFlow<List<TrackInfo>> = _subtitleTracks.asStateFlow()
 
+    private val _audioDevices = MutableStateFlow<List<AudioDevice>>(emptyList())
+    val audioDevices: StateFlow<List<AudioDevice>> = _audioDevices.asStateFlow()
+
+    /** Currently selected output device name, or null for the system default. */
+    private val _audioDevice = MutableStateFlow<String?>(null)
+    val audioDevice: StateFlow<String?> = _audioDevice.asStateFlow()
+
     private val _selectedAudioTrack = MutableStateFlow(-1)
     val selectedAudioTrack: StateFlow<Int> = _selectedAudioTrack.asStateFlow()
 
@@ -248,6 +259,10 @@ class PlayerViewModel(
 
             // Apply the persisted last-used volume (mpv defaults to 100).
             setVolume(initialVolume)
+        // Restore the user's audio output device (empty = system default).
+        if (initialAudioDevice.isNotBlank()) {
+            runCatching { MPVLib.setPropertyString(handle, "audio-device", initialAudioDevice) }
+        }
 
             // Create software render context
             val renderer = MPVSoftwareRenderer(handle)
@@ -1154,9 +1169,47 @@ class PlayerViewModel(
             _subtitleTracks.value = nativeTracks.filter { it.type == "sub" }
             _selectedAudioTrack.value = MPVLib.getPropertyInt(handle, "aid", -1)
             _selectedSubtitleTrack.value = MPVLib.getPropertyInt(handle, "sid", -1)
+            // Audio output devices ride along — cheap indexed reads.
+            refreshAudioDevices()
         } catch (e: Exception) {
             logger.debug(e) { "Failed to parse track list" }
         }
+    }
+
+    /**
+     * Enumerate mpv's audio output devices (`audio-device-list`, indexed the
+     * same way as track-list) and read the current selection.
+     */
+    fun refreshAudioDevices() {
+        val handle = mpvHandle ?: return
+        try {
+            val devices = buildList {
+                for (index in 0 until MAX_TRACK_LIST_ENTRIES) {
+                    val name = MPVLib.getPropertyString(handle, "audio-device-list/$index/name") ?: break
+                    add(
+                        AudioDevice(
+                            name = name,
+                            description = MPVLib.getPropertyString(handle, "audio-device-list/$index/description")
+                                ?: name,
+                        ),
+                    )
+                }
+            }
+            _audioDevices.value = devices
+            _audioDevice.value = MPVLib.getPropertyString(handle, "audio-device")
+        } catch (e: Exception) {
+            logger.debug(e) { "Failed to enumerate audio devices" }
+        }
+    }
+
+    /** Switch the mpv audio output device (empty name = system default). */
+    fun setAudioDevice(name: String) {
+        val handle = mpvHandle ?: return
+        runCatching {
+            MPVLib.setPropertyString(handle, "audio-device", name)
+        }
+        _audioDevice.value = name
+        onAudioDeviceChanged?.invoke(name)
     }
 
     /** Add source-provided subtitle URLs after the current media is loaded. */
@@ -1644,6 +1697,12 @@ class PlayerViewModel(
 /**
  * Information about an audio or subtitle track.
  */
+/** An mpv audio output device (from `audio-device-list`). */
+data class AudioDevice(
+    val name: String,
+    val description: String = "",
+)
+
 data class TrackInfo(
     val id: Int,
     val title: String,

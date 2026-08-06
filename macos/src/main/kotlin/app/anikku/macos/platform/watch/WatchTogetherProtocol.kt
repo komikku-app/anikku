@@ -100,6 +100,19 @@ sealed class WtMessage {
     @Serializable
     @SerialName("room_closed")
     data class RoomClosed(val reason: String = "The host closed the room") : WtMessage()
+
+    /**
+     * Room chat. Clients send with [text] only; the server stamps [by] (the
+     * sender's Hello name — never trusted from the client) and [ts] before
+     * relaying to everyone, and keeps a short buffer for late joiners.
+     */
+    @Serializable
+    @SerialName("chat")
+    data class Chat(
+        val text: String = "",
+        val by: String = "",
+        val ts: Long = 0L,
+    ) : WtMessage()
 }
 
 /** JSON codec shared by the server, the app client and the browser join page. */

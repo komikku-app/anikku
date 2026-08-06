@@ -56,6 +56,7 @@ import app.anikku.macos.platform.auth.TrackerSearchResult
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.components.EmptyState
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -203,34 +204,12 @@ data class TrackerSearchScreen(
                 }
 
                 if (searchedTrackers.isEmpty() && !isSearching) {
-                    // Show a helpful message when no trackers are connected
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Outlined.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text = "Search for an anime to link with your trackers",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "Connect at least one tracker in Settings > Tracking first.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            )
-                        }
-                    }
+                    EmptyState(
+                        icon = Icons.Outlined.Search,
+                        title = "Search for an anime to link with your trackers",
+                        hint = "Connect at least one tracker in Settings > Tracking first.",
+                        modifier = Modifier.weight(1f),
+                    )
                 } else if (!isSearching) {
                     // ── Results ─────────────────────────────────────────
                     LazyColumn(

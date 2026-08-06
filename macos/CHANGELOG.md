@@ -6,6 +6,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.10.0] — 2026-08-06
+
+### Sources you can trust
+
+- **Browse shows what works** — sources are sorted with working ones first,
+  dead ones are greyed out with the failure reason, and a **Recommended** row
+  lists the fleet-verified sources (Animexin, Lmanime, SubsPlease, Mkissa,
+  OppaiStream, Anikoto, Nyaa.si, …) for one-tap browsing.
+- **Onboarding recommends real sources** — the Add Sources step lists the
+  same curated sources with live health dots; Browse opens the source
+  directly, Install pulls any missing one from the repo.
+- **Re-check health button** in the Browse header forces a fresh sweep.
+
+### Feels faster at launch
+
+- Source health checks no longer fire at startup — they run only when the
+  Browse tab is actually open, so the app accepts clicks immediately.
+- The first-focus library update waits 30s after launch instead of competing
+  with startup.
+- **Cloudflare bypass fixed** — orphaned headless-Chrome instances from a
+  force-quit used to block the CDP profile lock, making every bypass time out
+  (15s × 3). The app now cleans up stale processes and profile locks first.
+
+### Navigation & safety
+
+- **⌘K command palette** — jump to any tab, screen or setting by typing
+  (Edit ▸ Go to…, ↑↓ + Enter to run, Esc to close).
+- **Undo toasts** — Clear History, Clear Completed downloads and Backup
+  delete all offer a 4-second Undo (backups/downloads go to a trash folder
+  first and are purged after the window closes).
+- History rows from sources that never set a title no longer show
+  ", , Episode 01" — they fall back to the episode name everywhere
+  (History, Continue Watching, covers, search).
+- **Empty states everywhere** — Updates, Torrents, Browse/History search
+  misses, Global Search, Source Browse, Extensions, Trackers, Anime detail
+  episodes and Discover errors all use the shared empty-state card with a
+  next-action button.
+
+### Watch Together chat
+
+- Rooms now have **live chat** — app and browser guests can talk while
+  watching (💬 button in the browser join page). The server stamps sender
+  names and times; late joiners receive recent messages.
+
+### Per-source settings
+
+- Extensions that store preferences (quality, filters, API keys…) get a
+  **Settings gear** on their Installed card — values now persist through the
+  app's preference store instead of a no-op stub.
+
+### Player
+
+- **Audio Device** menu item in the player settings — pick any mpv output
+  device (DAC, AirPods, HDMI…) or return to the system default; the choice
+  is remembered.
+
 ## [1.9.2] — 2026-08-06
 
 ### Consistency polish

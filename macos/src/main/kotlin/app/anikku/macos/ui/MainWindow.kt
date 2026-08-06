@@ -33,6 +33,18 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.zIndex
 import app.anikku.macos.platform.logging.UIActionLogger
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Warning
 import app.anikku.macos.ui.screens.BrowseScreen
 import app.anikku.macos.ui.screens.HistoryScreen
 import app.anikku.macos.ui.screens.LibraryScreen
@@ -44,9 +56,19 @@ import app.anikku.macos.ui.screens.stats.StatsTab
 import app.anikku.macos.ui.screens.torrent.TorrentTab
 import app.anikku.macos.platform.MacOSDeepLinkHandler
 import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.platform.extension.MacOSExtensionManager
+import app.anikku.macos.ui.components.CommandPaletteDialog
+import app.anikku.macos.ui.components.PaletteAction
+import app.anikku.macos.ui.screens.browse.ExtensionsScreen
+import app.anikku.macos.ui.screens.crashlog.CrashLogViewerScreen
+import app.anikku.macos.ui.screens.downloads.DownloadQueueScreen
+import app.anikku.macos.ui.screens.stats.StatsScreen
 import app.anikku.macos.ui.screens.browse.GlobalSearchScreen
+import app.anikku.macos.ui.screens.browse.SourceBrowseScreen
+import app.anikku.macos.ui.screens.browse.SourceHealthChecker
 import app.anikku.macos.ui.screens.player.PlayerScreen
 import app.anikku.macos.ui.settings.LocalSettingsState
+import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -85,6 +107,8 @@ internal val orderedTabs: List<Tab> = listOf(
 fun MainWindow(
     initialTabIndex: Int = 0,
     onTabIndexChange: (Int) -> Unit = {},
+    pendingBrowseSource: Pair<Long, String>? = null,
+    onPendingBrowseSourceConsumed: () -> Unit = {},
 ) {
     val initialIndex = initialTabIndex.coerceIn(orderedTabs.indices)
     TabNavigator(
@@ -116,6 +140,38 @@ fun MainWindow(
             return true
         }
 
+        /**
+         * Tab activation hook: gates expensive per-tab work. Health checks for
+         * the 60+ installed sources only run once the Browse tab is actually
+         * on screen — otherwise the network burst stalls startup input.
+         */
+        fun onTabActivated(index: Int) {
+            SourceHealthChecker.setChecksEnabled(index == 4)
+        }
+
+        // Reflect the restored initial tab.
+        LaunchedEffect(Unit) {
+            onTabActivated(initialIndex)
+        }
+
+        // Onboarding "open this source" jump: when the Browse tab is active
+        // and a target is pending, push that source's browser once.
+        LaunchedEffect(currentTabIndex, pendingBrowseSource) {
+            val target = pendingBrowseSource ?: return@LaunchedEffect
+            if (currentTabIndex != 4) return@LaunchedEffect
+            val navigator = tabNavigators[4] ?: return@LaunchedEffect
+            if (navigator.lastItemOrNull is SourceBrowseScreen) return@LaunchedEffect
+            navigator.push(
+                SourceBrowseScreen(
+                    sourceId = target.first,
+                    sourceName = target.second,
+                    extensionManager = extensionManager,
+                )
+            )
+            UIActionLogger.logNavigation("Onboarding", "SourceBrowse", "sourceId=${target.first}")
+            onPendingBrowseSourceConsumed()
+        }
+
         // Bridge the native View > Toggle Sidebar action to the Compose rail.
         DisposableEffect(tabNavigator) {
             val sidebarToggleHandler: () -> Unit = {
@@ -125,6 +181,7 @@ fun MainWindow(
             val searchHandler: () -> Unit = {
                 tabNavigator.current = BrowseScreen
                 currentTabIndex = 4
+                onTabActivated(4)
                 onTabIndexChange(4)
                 searchRequestId++
             }
@@ -144,6 +201,7 @@ fun MainWindow(
         DisposableEffect(tabNavigator) {
             TabSwitchHandler.onSwitchTab = { index ->
                 orderedTabs.getOrNull(index)?.let { tab ->
+                    onTabActivated(index)
                     // Re-selecting the current tab returns to its root — the
                     // desktop convention (Settings → Downloads → ⌘8 → Settings).
                     if (index == currentTabIndex) {
@@ -184,6 +242,7 @@ fun MainWindow(
                         orderedTabs.getOrNull(index)?.let { tab ->
                             val tabNames = TAB_NAMES
                             UIActionLogger.logNavigation("NavigationRail", tabNames.getOrElse(index) { "?" }, "tab=$index")
+                            onTabActivated(index)
                             // Re-selecting the current tab returns to its root —
                             // Settings → Downloads → More brings you back to
                             // Settings instead of re-showing the downloads screen.
@@ -317,7 +376,92 @@ fun MainWindow(
                 }
             }
         }
+
+        // ⌘K command palette — jump to any tab or pushed screen by typing.
+        var showCommandPalette by remember { mutableStateOf(false) }
+        DisposableEffect(Unit) {
+            val paletteHandler: () -> Unit = { showCommandPalette = true }
+            GlobalKeyboardShortcuts.onOpenPalette = paletteHandler
+            onDispose {
+                if (GlobalKeyboardShortcuts.onOpenPalette === paletteHandler) {
+                    GlobalKeyboardShortcuts.onOpenPalette = null
+                }
+            }
+        }
+        if (showCommandPalette) {
+            CommandPaletteDialog(
+                actions = rememberPaletteActions(tabNavigators, extensionManager),
+                onClose = { showCommandPalette = false },
+            )
+        }
     }
+}
+
+/**
+ * The ⌘K palette's action index. Tabs switch through [TabSwitchHandler];
+ * pushed screens are pushed onto the target tab's inner navigator, so the
+ * palette lands you on the exact screen without navigating by hand.
+ */
+@Composable
+private fun rememberPaletteActions(
+    tabNavigators: MutableMap<Int, Navigator>,
+    extensionManager: MacOSExtensionManager?,
+): List<PaletteAction> = remember(tabNavigators, extensionManager) {
+    fun switchTo(index: Int) = TabSwitchHandler.switchTo(index)
+
+    fun pushOn(index: Int, screen: Screen) {
+        tabNavigators[index]?.push(screen)
+    }
+
+    listOf(
+        PaletteAction("Library", "Tab ⌘1", keywords = listOf("library", "tab"), icon = Icons.Outlined.Book) {
+            switchTo(0)
+        },
+        PaletteAction("Updates", "Tab ⌘2", keywords = listOf("updates", "new episodes"), icon = Icons.Outlined.Refresh) {
+            switchTo(1)
+        },
+        PaletteAction("History", "Tab ⌘3", keywords = listOf("history", "watched"), icon = Icons.Outlined.History) {
+            switchTo(2)
+        },
+        PaletteAction("Watch Stats", "Tab ⌘4 · also in Settings", keywords = listOf("stats", "statistics"), icon = Icons.Outlined.BarChart) {
+            switchTo(3)
+        },
+        PaletteAction("Browse", "Tab ⌘5", keywords = listOf("browse", "sources"), icon = Icons.Outlined.Explore) {
+            switchTo(4)
+        },
+        PaletteAction("Torrents", "Tab ⌘6", keywords = listOf("torrents", "nyaa"), icon = Icons.Outlined.Download) {
+            switchTo(5)
+        },
+        PaletteAction("Downloads", "Tab ⌘7", keywords = listOf("downloads", "queue"), icon = Icons.Outlined.CloudDownload) {
+            switchTo(6)
+        },
+        PaletteAction("Discover", "Tab ⌘8", keywords = listOf("discover", "trending", "seasonal"), icon = Icons.Outlined.Explore) {
+            switchTo(7)
+        },
+        PaletteAction("Settings", "Tab ⌘9", keywords = listOf("settings", "more", "preferences"), icon = Icons.Outlined.Settings) {
+            switchTo(8)
+        },
+        PaletteAction("Global Search", "Search every source (⌘F)", keywords = listOf("search", "global"), icon = Icons.Outlined.Search) {
+            switchTo(4)
+            pushOn(4, GlobalSearchScreen(extensionManager = extensionManager))
+        },
+        PaletteAction("Extensions", "Install and manage sources", keywords = listOf("extensions", "sources", "install"), icon = Icons.Outlined.Extension) {
+            switchTo(4)
+            pushOn(4, ExtensionsScreen(extensionManager = extensionManager))
+        },
+        PaletteAction("View Downloads", "Settings → queue", keywords = listOf("downloads", "queue", "settings"), icon = Icons.Outlined.CloudDownload) {
+            switchTo(8)
+            pushOn(8, DownloadQueueScreen())
+        },
+        PaletteAction("Watch Statistics", "Settings → stats", keywords = listOf("stats", "statistics", "settings"), icon = Icons.Outlined.BarChart) {
+            switchTo(8)
+            pushOn(8, StatsScreen())
+        },
+        PaletteAction("Crash & Error Logs", "Settings → diagnostics", keywords = listOf("crash", "logs", "errors", "settings"), icon = Icons.Outlined.Warning) {
+            switchTo(8)
+            pushOn(8, CrashLogViewerScreen())
+        },
+    )
 }
 
 /**

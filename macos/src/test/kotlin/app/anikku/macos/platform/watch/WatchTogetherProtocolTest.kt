@@ -25,6 +25,7 @@ class WatchTogetherProtocolTest {
             ),
             WtMessage.Members(count = 3, names = listOf("Ernest", "Bob")),
             WtMessage.RoomClosed(reason = "The host closed the room"),
+            WtMessage.Chat(text = "hello room", by = "Ernest", ts = 1234L),
         )
 
         for (message in messages) {

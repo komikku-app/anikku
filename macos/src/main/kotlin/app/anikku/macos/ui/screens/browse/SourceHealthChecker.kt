@@ -63,6 +63,28 @@ object SourceHealthChecker {
     /** Public read-only flow of the complete health map. */
     val healthFlow: StateFlow<Map<Long, HealthResult>> = _healthFlow.asStateFlow()
 
+    /** Bumped by [requestRecheckAll] so badges re-run their check on demand. */
+    private val _recheckVersion = MutableStateFlow(0)
+
+    /** Public read-only version of the recheck counter. */
+    val recheckVersion: StateFlow<Int> = _recheckVersion.asStateFlow()
+
+    /**
+     * Gate for network health checks. Disabled until the Browse tab is first
+     * shown — otherwise the 60+ installed sources each fire a check (and a
+     * Cloudflare bypass attempt for dead ones) at startup, which stalls input
+     * for the first minute. Set via [setChecksEnabled] when Browse activates.
+     */
+    private val _checksEnabled = MutableStateFlow(false)
+
+    /** Public read-only gate state. */
+    val checksEnabled: StateFlow<Boolean> = _checksEnabled.asStateFlow()
+
+    /** Enable/disable health-check execution (Browse tab activity). */
+    fun setChecksEnabled(enabled: Boolean) {
+        _checksEnabled.value = enabled
+    }
+
     // Per-source reactive flows so composables can observe individual sources
     private val sourceFlows = mutableMapOf<Long, MutableStateFlow<HealthResult>>()
 
@@ -184,6 +206,16 @@ object SourceHealthChecker {
         sourceFlows.values.forEach { it.value = HealthResult(Health.UNKNOWN) }
         sourceFlows.clear()
     }
+
+    /**
+     * Clear the cache AND bump the recheck version so every mounted
+     * [SourceHealthBadge] re-runs its check immediately. Used by the
+     * "Re-check health" affordance in Browse.
+     */
+    fun requestRecheckAll() {
+        clearCache()
+        _recheckVersion.value++
+    }
 }
 
 /**
@@ -207,10 +239,15 @@ fun SourceHealthBadge(
 ) {
     // Collect from reactive state flow — updates automatically when health check completes
     val healthResult by SourceHealthChecker.observeHealth(source.id).collectAsState()
+    val recheckVersion by SourceHealthChecker.recheckVersion.collectAsState()
+    val checksEnabled by SourceHealthChecker.checksEnabled.collectAsState()
 
-    // Trigger health check once per source per session
-    LaunchedEffect(source.id) {
-        SourceHealthChecker.checkHealth(source)
+    // Trigger health check once per source per session (re-runs on manual
+    // recheck). Gated on the Browse tab being active — see [setChecksEnabled].
+    LaunchedEffect(source.id, recheckVersion, checksEnabled) {
+        if (checksEnabled) {
+            SourceHealthChecker.checkHealth(source)
+        }
     }
 
     val color = when (healthResult.status) {

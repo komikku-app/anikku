@@ -65,6 +65,8 @@ import app.anikku.macos.platform.sync.LocalGoogleDriveService
 import app.anikku.macos.ui.components.HeadingItem
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.components.EmptyState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -261,11 +263,42 @@ fun BackupRestorePanel(
                         confirmDeleteFile = null
                         if (file != null) {
                             scope.launch {
-                                withContext(Dispatchers.IO) {
-                                    file.delete()
+                                // Move to a trash subdir instead of deleting, so
+                                // the toast can offer an undo; purged 10s later.
+                                val trashDir = File(backupsDir, ".trash")
+                                val movedTo = withContext(Dispatchers.IO) {
+                                    runCatching {
+                                        trashDir.mkdirs()
+                                        val target = File(trashDir, file.name)
+                                        if (target.exists()) target.delete()
+                                        file.renameTo(target)
+                                        target
+                                    }.getOrNull()
                                 }
                                 scanBackups()
-                                toastHost.show("Backup deleted", ToastDuration.SHORT)
+                                if (movedTo != null && movedTo.exists()) {
+                                    toastHost.show(
+                                        "Backup deleted",
+                                        ToastDuration.LONG,
+                                        actionLabel = "Undo",
+                                        onAction = {
+                                            scope.launch {
+                                                withContext(Dispatchers.IO) {
+                                                    if (movedTo.exists()) movedTo.renameTo(file)
+                                                }
+                                                scanBackups()
+                                                toastHost.show("Backup restored", ToastDuration.SHORT)
+                                            }
+                                        },
+                                    )
+                                    // Purge the trashed copy once the undo window closes.
+                                    scope.launch {
+                                        delay(10_000)
+                                        if (movedTo.exists()) movedTo.delete()
+                                    }
+                                } else {
+                                    toastHost.show("Backup deleted", ToastDuration.SHORT)
+                                }
                             }
                         }
                     },
@@ -420,32 +453,11 @@ fun BackupRestorePanel(
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
             }
         } else if (backupEntries.isEmpty()) {
-            // Empty state
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Outlined.Backup,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "No backups yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Create your first backup to protect your library.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    )
-                }
-            }
+            EmptyState(
+                icon = Icons.Outlined.Backup,
+                title = "No backups yet",
+                hint = "Create your first backup to protect your library.",
+            )
         } else {
             backupEntries.forEach { entry ->
                 BackupEntryCard(

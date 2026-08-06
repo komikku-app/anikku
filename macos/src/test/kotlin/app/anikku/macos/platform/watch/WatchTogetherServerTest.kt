@@ -110,6 +110,37 @@ class WatchTogetherServerTest {
     }
 
     @Test
+    fun `chat is stamped by the server and replayed to late joiners`() {
+        val info = server.createRoom(episode(), null)!!
+        val host = connect(info.code)
+        host.awaitOpen()
+        host.awaitMembers(1)
+        // Drain the stored episode the host got on open.
+        assertEquals(episode(), host.awaitMessage())
+
+        // The server stamps the sender (from their Hello name, never the wire).
+        host.send(WtProtocol.encode(WtMessage.Hello("Ernest")))
+        Thread.sleep(150)
+        host.send(WtProtocol.encode(WtMessage.Chat(text = "hello room")))
+        val stamped = host.awaitMessage() as WtMessage.Chat
+        assertEquals("hello room", stamped.text)
+        assertEquals("Ernest", stamped.by)
+        assertTrue(stamped.ts > 0)
+
+        // Chat goes to everyone in the room, including the sender.
+        assertEquals(null, host.pollMessage(300))
+
+        // A late joiner receives the stored episode AND the chat history.
+        val guest = connect(info.code)
+        guest.awaitOpen()
+        guest.awaitMembers(2)
+        assertEquals(episode(), guest.awaitMessage())
+        val replayed = guest.awaitMessage() as WtMessage.Chat
+        assertEquals("hello room", replayed.text)
+        assertEquals("Ernest", replayed.by)
+    }
+
+    @Test
     fun `browser join page is served for existing rooms only`() {
         val info = server.createRoom(episode(), null)!!
         val ok = get("http://127.0.0.1:${server.actualPort}/room/${info.code}")

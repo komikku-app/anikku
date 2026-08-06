@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -55,11 +56,14 @@ import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.ScreenScaffold
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.components.EmptyState
+import app.anikku.macos.ui.screens.browse.SourceSettingsDialog
 import app.anikku.macos.ui.settings.LocalSettingsState
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.extension.model.InstallStep
 import kotlinx.coroutines.launch
@@ -100,6 +104,7 @@ data class ExtensionsScreen(
         var hasAutoFetched by remember { mutableStateOf(false) }
         var installingPkg by remember { mutableStateOf<String?>(null) }
         var installProgress by remember { mutableStateOf(0f) }
+        var settingsForExtension by remember { mutableStateOf<Extension.Installed?>(null) }
         val toastHost = LocalToastHost.current
 
         // Auto-fetch available extensions from default repo on first load
@@ -168,14 +173,19 @@ data class ExtensionsScreen(
                     // Installed extensions
                     if (installedExtensions.isEmpty()) {
                         item {
-                            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text("No extensions installed", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
+                            EmptyState(
+                                icon = Icons.Outlined.Extension,
+                                title = "No extensions installed",
+                                hint = "Extensions from the repo tab appear here",
+                            )
                         }
                     } else {
                         items(installedExtensions, key = { it.pkgName }) { ext ->
                             InstalledExtensionCard(
                                 extension = ext,
+                                onSettings = if (ext.sources.any { it is ConfigurableAnimeSource }) {
+                                    { settingsForExtension = ext }
+                                } else null,
                                 onRemove = {
                                                     UIActionLogger.logExtension(ext.name, "remove", ext.pkgName)
                                 extensionManager?.removeExtension(ext)
@@ -269,22 +279,11 @@ data class ExtensionsScreen(
                         }
                     } else if (availableExtensions.isEmpty() && !isFetching) {
                         item {
-                            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        "No extensions available",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(
-                                        "Make sure the repo URL points to an index.min.json file. " +
-                                            "For the best experience, use a pre-converted JAR repo.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    )
-                                }
-                            }
+                            EmptyState(
+                                icon = Icons.Outlined.Extension,
+                                title = "No extensions available",
+                                hint = "Make sure the repo URL points to an index.min.json file. For the best experience, use a pre-converted JAR repo.",
+                            )
                         }
                     } else {
                         items(availableExtensions, key = { it.pkgName }) { ext ->
@@ -542,6 +541,14 @@ data class ExtensionsScreen(
             }
         }
         }
+
+        // Per-source settings sheet (gear icon on installed cards).
+        settingsForExtension?.let { ext ->
+            SourceSettingsDialog(
+                extension = ext,
+                onClose = { settingsForExtension = null },
+            )
+        }
     }
 }
 
@@ -549,6 +556,7 @@ data class ExtensionsScreen(
 private fun InstalledExtensionCard(
     extension: Extension.Installed,
     onRemove: () -> Unit,
+    onSettings: (() -> Unit)? = null,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -601,6 +609,15 @@ private fun InstalledExtensionCard(
                             )
                         }
                     }
+                }
+            }
+            if (onSettings != null) {
+                IconButton(onClick = onSettings) {
+                    Icon(
+                        Icons.Outlined.Settings,
+                        contentDescription = "Source settings",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
             IconButton(onClick = onRemove) {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,21 +36,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ScreenScaffold
+import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.screens.browse.KnownGoodSources
+import app.anikku.macos.ui.screens.browse.SourceHealthBadge
 import app.anikku.macos.ui.settings.LocalSettingsState
 import app.anikku.macos.ui.settings.SettingsState
 import app.anikku.macos.ui.settings.ThemeMode
 import app.anikku.macos.ui.theme.AnikkuTheme
 import app.anikku.macos.ui.theme.getThemeColorScheme
+import eu.kanade.tachiyomi.extension.model.Extension
+import eu.kanade.tachiyomi.extension.model.InstallStep
+import eu.kanade.tachiyomi.source.Source
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Onboarding screen shown on first launch.
@@ -67,6 +83,7 @@ class OnboardingScreen(
     private val initialStep: Int = 0,
     private val onStepChanged: (Int) -> Unit = {},
     private val onBrowseSources: () -> Unit = {},
+    private val onOpenSource: (sourceId: Long, sourceName: String) -> Unit = { _, _ -> },
 ) : AnikkuScreen() {
 
     @Composable
@@ -146,6 +163,7 @@ class OnboardingScreen(
                                     onComplete()
                                     onBrowseSources()
                                 },
+                                onOpenSource = onOpenSource,
                             )
                             3 -> StepTips()
                             4 -> StepReady()
@@ -297,7 +315,10 @@ private fun StepAppearance(settings: SettingsState) {
 }
 
 @Composable
-private fun StepSources(onBrowseSources: () -> Unit) {
+private fun StepSources(
+    onBrowseSources: () -> Unit,
+    onOpenSource: (Long, String) -> Unit,
+) {
     Icon(
         imageVector = Icons.Outlined.Extension,
         contentDescription = null,
@@ -314,7 +335,143 @@ private fun StepSources(onBrowseSources: () -> Unit) {
     Spacer(Modifier.height(24.dp))
 
     val extensionManager = LocalExtensionManager.current
-    val installedCount = extensionManager?.installedExtensionsFlow?.collectAsState()?.value?.size ?: 0
+    val scope = rememberCoroutineScope()
+    val toastHost = LocalToastHost.current
+    val installedExtensions by (extensionManager?.installedExtensionsFlow?.collectAsState()
+        ?: remember { mutableStateOf(emptyList()) })
+    val installedPkgs = remember(installedExtensions) {
+        installedExtensions.mapTo(mutableSetOf()) { it.pkgName }
+    }
+    val firstSourceByPkg = remember(installedExtensions) {
+        val map = mutableMapOf<String, Source>()
+        installedExtensions.forEach { ext ->
+            val src = ext.sources.filterIsInstance<Source>().firstOrNull()
+            if (src != null) map.putIfAbsent(ext.pkgName, src)
+        }
+        map
+    }
+    var installingPkg by remember { mutableStateOf<String?>(null) }
+
+    // Curated fleet-verified sources — browse them right away, or install
+    // any that were removed. This is the one place a new user learns which
+    // of the 60+ bundled extensions are actually worth trying first.
+    Text(
+        text = "Recommended — known to work",
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(6.dp))
+    KnownGoodSources.RECOMMENDED.forEach { rec ->
+        val installed = rec.pkgName in installedPkgs
+        val source = firstSourceByPkg[rec.pkgName]
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (installed && source != null) {
+                    SourceHealthBadge(source = source)
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = rec.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            when {
+                installed && source != null -> {
+                    Button(
+                        onClick = { onOpenSource(source.id, source.name) },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Text("Browse", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+                installingPkg == rec.pkgName -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                }
+                else -> {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                installingPkg = rec.pkgName
+                                try {
+                                    val manager = extensionManager
+                                        ?: throw IllegalStateException("Extension manager unavailable")
+                                    val avail = manager
+                                        .findAvailableExtensions(ONBOARDING_REPO_URL, force = false)
+                                        .firstOrNull { it.pkgName == rec.pkgName }
+                                    if (avail == null) {
+                                        toastHost.show(
+                                            "\"${rec.displayName}\" isn't in the extension repo yet",
+                                            ToastDuration.LONG,
+                                            isError = true,
+                                        )
+                                    } else {
+                                        UIActionLogger.logExtension(rec.pkgName, "install (onboarding)", rec.pkgName)
+                                        manager.installExtension(avail) { step ->
+                                            if (step is InstallStep.Error) {
+                                                toastHost.show(
+                                                    text = step.message,
+                                                    duration = ToastDuration.LONG,
+                                                    isError = true,
+                                                    source = rec.pkgName,
+                                                    location = "Onboarding.installExtension",
+                                                )
+                                            }
+                                        }
+                                        // First installs land untrusted — trust + reload so
+                                        // the source is actually usable.
+                                        var untrusted: Extension.Untrusted? = null
+                                        repeat(30) {
+                                            untrusted = manager.untrustedExtensionsFlow.value
+                                                .firstOrNull { it.pkgName == rec.pkgName }
+                                            if (untrusted != null) return@repeat
+                                            delay(100)
+                                        }
+                                        if (untrusted != null) manager.trustExtension(untrusted)
+                                        toastHost.show("Installed ${rec.displayName}", ToastDuration.SHORT)
+                                    }
+                                } catch (e: Exception) {
+                                    toastHost.show(
+                                        "Install failed: ${e.message ?: "Unknown error"}",
+                                        ToastDuration.LONG,
+                                        isError = true,
+                                    )
+                                } finally {
+                                    installingPkg = null
+                                }
+                            }
+                        },
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                    ) {
+                        Text("Install", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+
+    val installedCount = installedExtensions.size
     Text(
         text = if (installedCount > 0) {
             "$installedCount source${if (installedCount == 1) "" else "s"} ready to use"
@@ -330,6 +487,9 @@ private fun StepSources(onBrowseSources: () -> Unit) {
         Text("Browse sources")
     }
 }
+
+/** Repo used to fetch a recommended extension that isn't bundled/installed. */
+private const val ONBOARDING_REPO_URL = "https://raw.githubusercontent.com/ErnestHysa/anikku-extensions-jar/main/"
 
 @Composable
 private fun StepTips() {

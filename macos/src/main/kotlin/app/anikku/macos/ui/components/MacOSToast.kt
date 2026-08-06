@@ -9,11 +9,15 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +53,8 @@ internal data class ToastMessage(
     val source: String? = null,
     val throwable: Throwable? = null,
     val location: String? = null,
+    val actionLabel: String? = null,
+    val onAction: (() -> Unit)? = null,
 )
 
 /**
@@ -89,6 +95,8 @@ class ToastHostState {
         source: String? = null,
         throwable: Throwable? = null,
         location: String? = null,
+        actionLabel: String? = null,
+        onAction: (() -> Unit)? = null,
     ) {
         if (isError) {
             TerminalErrorLogger.logUiError(
@@ -106,6 +114,8 @@ class ToastHostState {
             source = source,
             throwable = throwable,
             location = location,
+            actionLabel = actionLabel,
+            onAction = onAction,
         )
     }
 
@@ -201,7 +211,11 @@ fun ToastHost(
             label = "toast",
         ) { visibleToast ->
             if (visibleToast != null) {
-                MacOSToastContent(text = visibleToast.text)
+                MacOSToastContent(
+                    text = visibleToast.text,
+                    actionLabel = visibleToast.actionLabel,
+                    onAction = visibleToast.onAction,
+                )
             }
         }
     }
@@ -216,6 +230,8 @@ fun ToastHost(
 @Composable
 private fun MacOSToastContent(
     text: String,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = Modifier
@@ -224,14 +240,30 @@ private fun MacOSToastContent(
         color = MaterialTheme.colorScheme.inverseSurface,
         shadowElevation = 6.dp,
     ) {
-        Text(
-            text = text,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.inverseOnSurface,
-            fontWeight = FontWeight.Medium,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = text,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+                fontWeight = FontWeight.Medium,
+            )
+            if (actionLabel != null && onAction != null) {
+                TextButton(onClick = onAction) {
+                    Text(
+                        text = actionLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.inversePrimary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+            }
+        }
     }
 }

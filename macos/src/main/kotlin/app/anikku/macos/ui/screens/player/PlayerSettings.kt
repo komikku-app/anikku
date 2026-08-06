@@ -35,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.anikku.macos.player.AudioDevice
 import app.anikku.macos.player.TrackInfo
 
 /**
@@ -252,6 +254,93 @@ fun PlayerQualityPanel(
  * Audio track selector panel.
  * Allows switching between available audio tracks.
  */
+@Composable
+fun PlayerAudioDevicePanel(
+    devices: List<AudioDevice> = emptyList(),
+    currentDevice: String? = null,
+    onDeviceSelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Text(
+                text = "Audio Device",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            if (devices.isEmpty()) {
+                Text(
+                    text = "No audio devices reported — using the system default",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                // "auto" = system default, then every enumerated device.
+                val options = buildList {
+                    add(AudioDevice(name = "", description = "System default"))
+                    addAll(devices)
+                }
+                options.forEach { device ->
+                    val isSelected = (device.name == currentDevice) ||
+                        (device.name.isEmpty() && currentDevice.isNullOrBlank())
+                    OutlinedButton(
+                        onClick = {
+                            onDeviceSelected(device.name)
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = if (isSelected) {
+                            ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            )
+                        } else {
+                            ButtonDefaults.outlinedButtonColors()
+                        },
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = device.name.ifBlank { "System default" },
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            )
+                            if (device.description.isNotBlank() && device.name != device.description) {
+                                Text(
+                                    text = device.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text("Done")
+            }
+        }
+    }
+}
+
 @Composable
 fun PlayerAudioTrackPanel(
     tracks: List<TrackInfo> = emptyList(),

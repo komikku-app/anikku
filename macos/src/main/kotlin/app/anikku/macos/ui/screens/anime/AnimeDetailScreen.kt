@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Share
@@ -105,6 +106,7 @@ import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OverflowItem
 import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.settings.LocalSettingsState
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.models.EpisodeModel
@@ -946,9 +948,11 @@ private fun AnimeDetailContent(
 
             if (episodes.isEmpty()) {
                 item(key = "no_episodes") {
-                    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No episodes available", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    EmptyState(
+                        icon = Icons.Outlined.PlayCircle,
+                        title = "No episodes available",
+                        hint = "The source returned no episodes — try another source or check back later",
+                    )
                 }
             }
         }

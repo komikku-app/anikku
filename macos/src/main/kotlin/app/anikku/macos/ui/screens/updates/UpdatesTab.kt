@@ -47,6 +47,7 @@ import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.ErrorBanner
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.components.ErrorType
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
@@ -215,46 +216,21 @@ private fun UpdatesContent(
     }
 
     if (updates.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Outlined.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+        EmptyState(
+            icon = Icons.Outlined.Refresh,
+            title = "No recent updates",
+            hint = buildString {
+                statusMessage?.takeIf(String::isNotBlank)?.let { append(it).append("\n") }
+                append(
+                    if (libraryCount > 0) "New episodes of your anime will show up here"
+                    else "Add anime to your library to track updates"
                 )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "No recent updates",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = onRefresh, enabled = !isRefreshing && libraryCount > 0) {
-                    if (isRefreshing) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
-                    } else {
-                        Icon(Icons.Outlined.Refresh, contentDescription = null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text(if (isRefreshing) "Checking…" else "Check Now")
-                }
-                statusMessage?.takeIf(String::isNotBlank)?.let { message ->
-                    Spacer(Modifier.height(8.dp))
-                    Text(message, style = MaterialTheme.typography.bodySmall)
-                }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    if (libraryCount > 0) "New episodes of your anime will show up here" else "Add anime to your library to track updates",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-            }
-        }
+            },
+            actionLabel = if (isRefreshing) "Checking…" else "Check Now",
+            onAction = onRefresh,
+            actionEnabled = !isRefreshing && libraryCount > 0,
+            actionLoading = isRefreshing,
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

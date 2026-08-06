@@ -73,6 +73,11 @@ class WatchTogetherServer(
          */
         @Volatile
         var lastSync: WtMessage.Sync? = null
+        /**
+         * Recent chat messages (server-stamped sender + timestamp). Replayed
+         * to late joiners so they land in an ongoing conversation.
+         */
+        val messages = CopyOnWriteArrayList<WtMessage.Chat>()
     }
 
     private val rooms = ConcurrentHashMap<String, Room>()
@@ -284,6 +289,10 @@ class WatchTogetherServer(
             if (room.locked) {
                 runCatching { send(WtProtocol.encode(WtMessage.Lock(locked = true))) }
             }
+            // Late joiners land in the ongoing conversation.
+            room.messages.forEach { chat ->
+                runCatching { send(WtProtocol.encode(chat)) }
+            }
             broadcastMembers()
         }
 
@@ -338,6 +347,27 @@ class WatchTogetherServer(
                     // While locked, only the host may control playback.
                     if (room.locked && this !== room.hostSocket) return
                     relay(text)
+                }
+                is WtMessage.Chat -> {
+                    // Chat is server-stamped (sender name is never trusted from
+                    // the wire) and broadcast to EVERYONE — including the
+                    // sender, so clients render exactly what the room saw and
+                    // never echo their own message locally.
+                    val body = message.text.trim().take(500)
+                    if (body.isEmpty()) return
+                    val chat = WtMessage.Chat(
+                        text = body,
+                        by = memberName.ifBlank { "Guest" },
+                        ts = System.currentTimeMillis(),
+                    )
+                    room.messages.add(chat)
+                    while (room.messages.size > MAX_CHAT_BUFFER) {
+                        room.messages.removeAt(0)
+                    }
+                    val encoded = WtProtocol.encode(chat)
+                    room.members.forEach { member ->
+                        runCatching { member.send(encoded) }
+                    }
                 }
                 else -> relay(text)
             }
@@ -677,6 +707,8 @@ class WatchTogetherServer(
     }
 
     companion object {
+        /** How many chat lines a room keeps for late joiners. */
+        private const val MAX_CHAT_BUFFER = 100
         const val DEFAULT_PORT = 18234
 
         /** HLS playlist content type (m3u8). */
@@ -731,6 +763,16 @@ private val JOIN_PAGE = """
   #nameCard input{width:100%;box-sizing:border-box;background:#1c1c1e;color:#eee;border:1px solid #3a3a3c;border-radius:8px;padding:10px;font-size:15px}
   #closeName{position:absolute;top:6px;right:10px;background:none;border:none;color:#999;font-size:18px;cursor:pointer;padding:6px;line-height:1}
   #saveName{width:100%;margin-top:12px;background:#6c5ce7;border:none;color:#fff;border-radius:8px;padding:10px;font-size:15px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #chatWrap{position:fixed;left:10px;bottom:62px;width:min(300px,78vw);background:rgba(20,20,22,.94);border:1px solid #2c2c2e;border-radius:12px;z-index:6;display:none;flex-direction:column;max-height:44vh;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  #chatMsgs{overflow-y:auto;padding:8px 10px;font-size:12.5px;line-height:1.45;flex:1;min-height:60px;max-height:36vh;word-break:break-word}
+  #chatMsgs div{margin-bottom:4px}
+  #chatMsgs .by{opacity:.55;margin-right:5px}
+  #chatMsgs .mine .by{color:#a58fff}
+  #chatInputRow{display:flex;gap:6px;padding:8px;border-top:1px solid #2c2c2e}
+  #chatInput{flex:1;background:#1c1c1e;color:#eee;border:1px solid #3a3a3c;border-radius:8px;padding:7px 9px;font-size:13px;min-width:0}
+  #chatSendBtn{background:#6c5ce7;border:none;color:#fff;border-radius:8px;padding:0 12px;cursor:pointer;font-size:13px}
+  #chatSendBtn:disabled{opacity:.4;cursor:default}
+  #chatEmpty{opacity:.5;font-size:12px}
   #status{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#1c1c1e;border:1px solid #3a3a3c;padding:6px 14px;border-radius:999px;font-size:12px;z-index:5;display:none;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
@@ -748,9 +790,17 @@ private val JOIN_PAGE = """
     </div>
     <button id="speedBtn" onclick="cycleSpeed()" title="Playback speed">1.0x</button>
     <button id="deepLinkBtn" onclick="openInApp()">Open in Anikku</button>
+    <button id="chatBtn" onclick="toggleChat()" title="Chat">&#128172;</button>
     <button id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">&#x26F6;</button>
   </div>
   <div id="info">Connecting&#8230;</div>
+</div>
+<div id="chatWrap">
+  <div id="chatMsgs"><div id="chatEmpty">No messages yet &#8212; say hi!</div></div>
+  <div id="chatInputRow">
+    <input id="chatInput" maxlength="500" placeholder="Message&#8230;" autocomplete="off">
+    <button id="chatSendBtn" onclick="sendChat()" disabled>Send</button>
+  </div>
 </div>
 <div id="nameModal">
   <div id="nameCard">
@@ -938,6 +988,37 @@ function syncFsBtn() {
 document.addEventListener('fullscreenchange', syncFsBtn);
 document.addEventListener('webkitfullscreenchange', syncFsBtn);
 
+function toggleChat() {
+  var w = document.getElementById('chatWrap');
+  w.style.display = (w.style.display === 'none' || w.style.display === '') ? 'flex' : 'none';
+}
+function appendChat(m) {
+  var box = document.getElementById('chatMsgs');
+  var empty = document.getElementById('chatEmpty');
+  if (empty) empty.remove();
+  var div = document.createElement('div');
+  if (m.by && m.by === myName) div.className = 'mine';
+  var by = document.createElement('span'); by.className = 'by';
+  by.textContent = (m.by || 'Guest') + ':';
+  var tx = document.createElement('span'); tx.textContent = m.text || '';
+  div.appendChild(by); div.appendChild(tx);
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function sendChat() {
+  var inp = document.getElementById('chatInput');
+  var t = (inp.value || '').trim();
+  if (!t) return;
+  send({type: 'chat', text: t});
+  inp.value = '';
+  inp.focus();
+}
+document.getElementById('chatInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') sendChat();
+});
+document.getElementById('chatInput').addEventListener('input', function () {
+  document.getElementById('chatSendBtn').disabled = !(this.value || '').trim();
+});
 function skip(delta) {
   var target = (v.currentTime || 0) + delta;
   var dur = knownDuration();
@@ -1020,6 +1101,7 @@ ws.onmessage = function (e) {
   if (m.type === 'seek' && !locked) { userAction(); applySeek(m.pos); }
   if (m.type === 'speed') { userAction(); setSpeed(m.rate); }
   if (m.type === 'lock') { locked = m.locked; applyLock(); }
+  if (m.type === 'chat') { appendChat(m); }
   if (m.type === 'members') {
     var line = (m.names && m.names.length ? m.names.join(', ') + ' \u00b7 ' : '') + m.count + ' watching \u00b7 room ' + code;
     if (m.hostName) line += ' \u00b7 host: ' + m.hostName;

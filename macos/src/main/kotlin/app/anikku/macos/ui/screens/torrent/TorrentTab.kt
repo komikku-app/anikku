@@ -359,26 +359,24 @@ object TorrentTab : AnikkuScreen(), Tab {
                                     }
                                 }
                             } else if (displayModels.isEmpty()) {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    if (loadError != null) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                loadError ?: "Nothing here",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.padding(horizontal = 32.dp),
-                                            )
-                                            Spacer(Modifier.height(14.dp))
-                                            Button(onClick = { retryToken++ }) { Text("Retry") }
-                                        }
-                                    } else {
-                                        Text(
-                                        loadError ?: if (searchQuery.isNotBlank()) "No torrents found" else "No torrents available",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(horizontal = 32.dp),
+                                if (loadError != null) {
+                                    EmptyState(
+                                        icon = Icons.Outlined.Search,
+                                        title = loadError ?: "Nothing here",
+                                        hint = "The source couldn't be reached right now",
+                                        actionLabel = "Retry",
+                                        onAction = { retryToken++ },
                                     )
-                                }
+                                } else {
+                                    EmptyState(
+                                        icon = Icons.Outlined.Search,
+                                        title = if (searchQuery.isNotBlank()) "No torrents found" else "No torrents available",
+                                        hint = if (searchQuery.isNotBlank()) {
+                                            "Try a different search term"
+                                        } else {
+                                            "Search Nyaa or another torrent source for anime"
+                                        },
+                                    )
                                 }
                             } else {
                                 AnimeGrid(

@@ -277,6 +277,7 @@ object ChromeCDPClient {
 
         // Launch a new Chrome instance
         return try {
+            cleanupStaleProfile()
             val (process, port) = launchChromeWithPort()
             chromeProcess = process
             chromePort = port
@@ -337,6 +338,36 @@ object ChromeCDPClient {
         val edgePath = "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
         if (File(edgePath).isFile) return File(edgePath)
         return File(standardPath)
+    }
+
+    /**
+     * Clear anything that would stop a fresh Chrome launch from binding its
+     * profile. A force-quit of the app (or a crash) leaves the persistent
+     * Chrome instance + its Singleton* lock files behind; every subsequent
+     * launch then fails to acquire the profile and never prints the DevTools
+     * port, so `launchChromeWithPort` times out after 15s.
+     *
+     * Only runs when our own tracked process is dead, so a healthy instance
+     * is never disturbed. Kills orphaned processes that still reference the
+     * profile dir, then removes the stale lock files.
+     */
+    private fun cleanupStaleProfile() {
+        if (chromeProcess?.isAlive == true) return
+        try {
+            val profileName = "anikku-chrome-cdp-profile"
+            ProcessHandle.allProcesses().forEach { ph ->
+                val cmd = ph.info().commandLine().orElse("")
+                if (cmd.contains(profileName)) {
+                    try { ph.destroyForcibly() } catch (_: Exception) {}
+                }
+            }
+            val profileDir = File(System.getProperty("java.io.tmpdir"), profileName)
+            profileDir.listFiles()
+                ?.filter { it.name.startsWith("Singleton") }
+                ?.forEach { runCatching { it.delete() } }
+        } catch (_: Exception) {
+            // Best-effort cleanup — the launch below may still work.
+        }
     }
 
     /**

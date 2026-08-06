@@ -119,7 +119,7 @@ object HistoryTab : AnikkuScreen(), Tab {
             if (searchQuery.isNotBlank()) {
                 val q = searchQuery.trim()
                 result = result.filter {
-                    it.animeTitle.contains(q, ignoreCase = true) ||
+                    displayTitle(it).contains(q, ignoreCase = true) ||
                         it.episodeName.contains(q, ignoreCase = true) ||
                         "Episode ${String.format("%.0f", it.episodeNumber)}".contains(q, ignoreCase = true)
                 }
@@ -150,8 +150,18 @@ object HistoryTab : AnikkuScreen(), Tab {
             onToggleSortMenu = { showSortMenu = !showSortMenu },
             onDismissSortMenu = { showSortMenu = false },
             onClearAll = {
+                // Snapshot before wiping so the toast can offer a real undo.
+                val snapshot = historyRepo.getAll()
                 historyRepo.clearAll()
-                toastHost.show("History cleared", ToastDuration.SHORT)
+                toastHost.show(
+                    "History cleared",
+                    ToastDuration.LONG,
+                    actionLabel = "Undo",
+                    onAction = {
+                        historyRepo.replaceAll(snapshot)
+                        toastHost.show("History restored", ToastDuration.SHORT)
+                    },
+                )
             },
             onAnimeClick = { item ->
                 if (item.sourceId != 0L && !item.animeUrl.isNullOrBlank()) {
@@ -239,6 +249,16 @@ data class HistoryItemData(
     val episodeUrl: String? = null,
     val coverUrl: String? = null,
 )
+
+/**
+ * Title shown for a history row. Sources that never set an anime title
+ * produce blank entries (the old ", , Episode 01" rows) — fall back to the
+ * episode name, then a plain episode label.
+ */
+private fun displayTitle(entry: HistoryItemData): String =
+    entry.animeTitle.ifBlank {
+        entry.episodeName.ifBlank { "Episode ${String.format("%.0f", entry.episodeNumber)}" }
+    }
 
 @Composable
 private fun HistoryContent(
@@ -369,11 +389,10 @@ private fun HistoryContent(
 
             if (history.isEmpty()) {
                 item {
-                    Text(
-                        text = "No matches for \"$searchQuery\"",
-                        modifier = Modifier.padding(vertical = 24.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    EmptyState(
+                        icon = Icons.Outlined.Search,
+                        title = "No matches for \"$searchQuery\"",
+                        hint = "Try a different title or episode number",
                     )
                 }
             } else {
@@ -433,8 +452,8 @@ private fun HistoryItem(
             // Cover (falls back to initials when no URL is known).
             AnimeCoverImage(
                 thumbnailUrl = entry.coverUrl,
-                contentDescription = entry.animeTitle,
-                title = entry.animeTitle,
+                contentDescription = displayTitle(entry),
+                title = displayTitle(entry),
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(6.dp)),
@@ -444,7 +463,7 @@ private fun HistoryItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = entry.animeTitle,
+                    text = displayTitle(entry),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,

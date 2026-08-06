@@ -200,6 +200,9 @@ fun create(
             add(MenuItem("Find…", MenuShortcut(KeyEvent.VK_F, false)).also {
                 it.addActionListener { GlobalKeyboardShortcuts.onOpenSearch?.invoke() }
             })
+            add(MenuItem("Go to…", MenuShortcut(KeyEvent.VK_K, false)).also {
+                it.addActionListener { GlobalKeyboardShortcuts.onOpenPalette?.invoke() }
+            })
         }
     }
 
