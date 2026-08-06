@@ -1,5 +1,8 @@
 package app.anikku.macos.ui.screens.player
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,10 +23,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -42,16 +50,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.anikku.macos.player.AudioDevice
 import app.anikku.macos.platform.watch.WtMessage
+import app.anikku.macos.platform.watch.wtImageDataUrl
 import app.anikku.macos.player.TrackInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Player settings panels (Phase 5.8).
@@ -264,24 +281,49 @@ fun PlayerQualityPanel(
 }
 
 /**
- * Audio track selector panel.
- * Allows switching between available audio tracks.
+ * Standalone room chat panel.
+ *
+ * Always reachable from the player's chat icon; [enabled] is false until a
+ * Watch Together room has at least one other person in it — history stays
+ * viewable, but typing/attaching is locked until then.
  */
 @Composable
 fun PlayerChatPanel(
     messages: List<WtMessage.Chat> = emptyList(),
     yourName: String = "",
     memberCount: Int = 0,
+    enabled: Boolean = false,
+    screenshotFile: java.io.File? = null,
+    clipFile: java.io.File? = null,
     onSend: (String) -> Unit,
+    onSendImage: (String, String) -> Unit = { _, _ -> },
     onDismiss: () -> Unit,
 ) {
     var input by remember { mutableStateOf("") }
+    var showEmojiPicker by remember { mutableStateOf(false) }
+    var showAttachMenu by remember { mutableStateOf(false) }
+    var attachError by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     // Follow the conversation — scroll to the newest line.
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    // Attach a capture (screenshot / GIF clip) off the UI thread; images over
+    // ~2 MB are refused with an inline note.
+    fun sendImage(file: java.io.File) {
+        scope.launch {
+            val dataUrl = withContext(Dispatchers.IO) { wtImageDataUrl(file) }
+            if (dataUrl == null) {
+                attachError = "That file is too large for chat (max ~2 MB)"
+            } else {
+                attachError = null
+                onSendImage(dataUrl, file.name)
+            }
         }
     }
 
@@ -323,6 +365,20 @@ fun PlayerChatPanel(
 
             Spacer(Modifier.height(10.dp))
 
+            // While nobody is in a room the chat is view-only; say why.
+            if (!enabled) {
+                Text(
+                    text = if (memberCount <= 1) {
+                        "Start or join a Watch Together room to chat"
+                    } else {
+                        "Waiting for someone else to join…"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             if (messages.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxWidth().height(80.dp),
@@ -341,27 +397,78 @@ fun PlayerChatPanel(
                         .fillMaxWidth()
                         .weight(1f, fill = false)
                         .heightIn(min = 80.dp, max = 300.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    items(messages, key = { "${it.ts}_${it.by}_${it.text.hashCode()}" }) { chat ->
+                    items(messages, key = { "${it.ts}_${it.by}_${it.text.hashCode()}_${it.image.hashCode()}" }) { chat ->
                         val mine = chat.by == yourName && yourName.isNotBlank()
                         Column {
-                            Text(
-                                text = buildString {
-                                    append(chat.by.ifBlank { "Guest" })
-                                    if (mine) append("  (you)")
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (mine) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
-                            Text(
-                                text = chat.text,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = buildString {
+                                        append(chat.by.ifBlank { "Guest" })
+                                        if (mine) append("  (you)")
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (mine) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (mine) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = chatTime(chat.ts),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                                )
+                            }
+                            if (chat.image.isNotBlank()) {
+                                ChatImage(dataUrl = chat.image, name = chat.name)
+                            }
+                            if (chat.text.isNotBlank()) {
+                                Text(
+                                    text = chat.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            attachError?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Spacer(Modifier.height(4.dp))
+            }
+
+            if (showEmojiPicker) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        CHAT_EMOJIS.chunked(8).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                row.forEach { emoji ->
+                                    Text(
+                                        text = emoji,
+                                        fontSize = 18.sp,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable { input += emoji }
+                                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -370,12 +477,49 @@ fun PlayerChatPanel(
             Spacer(Modifier.height(12.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { showEmojiPicker = !showEmojiPicker }, enabled = enabled) {
+                    Icon(
+                        Icons.Outlined.SentimentSatisfied,
+                        contentDescription = "Emoji",
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Box {
+                    IconButton(onClick = { showAttachMenu = true }, enabled = enabled) {
+                        Icon(
+                            Icons.Outlined.AttachFile,
+                            contentDescription = "Attach screenshot or GIF",
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    DropdownMenu(expanded = showAttachMenu, onDismissRequest = { showAttachMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Send last screenshot") },
+                            enabled = screenshotFile != null,
+                            onClick = {
+                                showAttachMenu = false
+                                screenshotFile?.let { sendImage(it) }
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Send last GIF clip") },
+                            enabled = clipFile != null,
+                            onClick = {
+                                showAttachMenu = false
+                                clipFile?.let { sendImage(it) }
+                            },
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Message…") },
+                    placeholder = {
+                        Text(if (enabled) "Message…" else "Join a room to start chatting…")
+                    },
                     singleLine = true,
+                    enabled = enabled,
                     shape = RoundedCornerShape(10.dp),
                 )
                 Spacer(Modifier.width(8.dp))
@@ -387,7 +531,7 @@ fun PlayerChatPanel(
                             input = ""
                         }
                     },
-                    enabled = input.isNotBlank(),
+                    enabled = enabled && input.isNotBlank(),
                 ) {
                     Text("Send")
                 }
@@ -395,6 +539,52 @@ fun PlayerChatPanel(
         }
     }
 }
+
+/** HH:mm wall-clock for a chat timestamp. */
+private fun chatTime(ts: Long): String = runCatching {
+    java.time.Instant.ofEpochMilli(ts)
+        .atZone(java.time.ZoneId.systemDefault())
+        .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+}.getOrDefault("")
+
+/** Inline chat image thumbnail (data URL over the room websocket). */
+@Composable
+private fun ChatImage(dataUrl: String, name: String) {
+    val bitmap = remember(dataUrl) {
+        runCatching {
+            val encoded = dataUrl.substringAfter(",")
+            org.jetbrains.skia.Image
+                .makeFromEncoded(java.util.Base64.getDecoder().decode(encoded))
+                .toComposeImageBitmap()
+        }.getOrNull()
+    }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = name.ifBlank { "Chat image" },
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .widthIn(max = 280.dp)
+                .heightIn(max = 200.dp)
+                .clip(RoundedCornerShape(10.dp)),
+            contentScale = ContentScale.Fit,
+        )
+    } else {
+        Text(
+            text = name.ifBlank { "Image (failed to decode)" },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Small emoji palette for the chat input. */
+private val CHAT_EMOJIS = listOf(
+    "🙂", "😄", "😂", "😅", "😭", "😍", "🥰", "😎",
+    "🤔", "😴", "😮", "😱", "🤯", "🥳", "😇", "🤡",
+    "👻", "💀", "👀", "👍", "👎", "👏", "🙏", "💪",
+    "❤️", "💔", "🔥", "✨", "🎉", "🍿", "🎬", "✅",
+)
 
 @Composable
 fun PlayerAudioDevicePanel(

@@ -116,6 +116,7 @@ import app.anikku.macos.platform.media.MacOSHttpServer
 import app.anikku.macos.platform.watch.LocalWatchTogetherServer
 import app.anikku.macos.platform.watch.LocalWatchTogetherTunnel
 import app.anikku.macos.platform.watch.WatchTogetherSession
+import app.anikku.macos.platform.watch.wtImageDataUrl
 import app.anikku.macos.platform.watch.WtCodes
 import app.anikku.macos.platform.watch.WtLinks
 import app.anikku.macos.platform.watch.WtMessage
@@ -128,6 +129,7 @@ import app.anikku.macos.ui.components.OfflineCheckmarkAnimation
 import app.anikku.macos.ui.components.PlaybackStateBadge
 import app.anikku.macos.ui.components.VideoQualityBadge
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.components.ToastHostState
 import app.anikku.macos.ui.screens.models.EpisodeModel
 import app.anikku.macos.ui.screens.models.toEpisodeModel
 import app.anikku.macos.ui.screens.tracker.TrackerSearchScreen
@@ -696,6 +698,8 @@ data class PlayerScreen(
         var confirmLeaveRoom by remember { mutableStateOf(false) }
         // Last saved GIF clip, shown in a confirmation dialog.
         var clipSavedFile by remember { mutableStateOf<File?>(null) }
+        var lastScreenshotFile by remember { mutableStateOf<File?>(null) }
+        var screenshotSavedFile by remember { mutableStateOf<File?>(null) }
 
         // Create and manage the local HTTP server for serving downloaded files
         // Derive the downloads directory from the first completed download's parent dir,
@@ -2036,7 +2040,8 @@ data class PlayerScreen(
             onTakeScreenshot = {
                 val result = playerViewModel.takeScreenshot()
                 if (result != null) {
-                    toastHost.show("Screenshot saved to Pictures/Anikku/${result.substringAfterLast('/')}", ToastDuration.SHORT)
+                    lastScreenshotFile = File(result)
+                    screenshotSavedFile = File(result)
                 } else {
                     toastHost.show(
                         text = "Screenshot failed",
@@ -2052,7 +2057,11 @@ data class PlayerScreen(
             chatMessages = chatMessages,
             chatYourName = yourName,
             chatMemberCount = roomMemberCount,
+            chatEnabled = roomRole != WatchTogetherSession.Role.NONE && roomMemberCount > 1,
+            chatScreenshotFile = lastScreenshotFile,
+            chatClipFile = clipSavedFile,
             onSendChat = { text -> watchSession.sendChat(text) },
+            onSendChatImage = { dataUrl, name -> watchSession.sendChatImage(dataUrl, name) },
             roomStatus = roomCode?.let { "● $it · $roomMemberCount" },
         )
 
@@ -2064,40 +2073,10 @@ data class PlayerScreen(
             onClose = {},
         )
 
-        // "Clip saved" confirmation — Open/Share the GIF.
-        clipSavedFile?.let { file ->
-            AlertDialog(
-                onDismissRequest = { clipSavedFile = null },
-                title = { Text("Clip saved") },
-                text = {
-                    Column {
-                        Text("Saved to ~/Pictures/Anikku/${file.name}", style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            file.absolutePath,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
-                confirmButton = {
-                    Row {
-                        TextButton(onClick = {
-                            runCatching { java.awt.Desktop.getDesktop().open(file) }
-                            clipSavedFile = null
-                        }) { Text("Open") }
-                        Spacer(Modifier.width(8.dp))
-                        TextButton(onClick = {
-                            MacOSShareUtil.shareFile(file)
-                            clipSavedFile = null
-                        }) { Text("Share") }
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { clipSavedFile = null }) { Text("Close") }
-                },
-            )
-        }
+        // Capture confirmation — Open / Copy / Share / Send to room chat.
+        // The GIF clip dialog ships the same actions as screenshots.
+        screenshotSavedFile?.let { file -> CaptureSavedDialog(file, "Screenshot saved", roomRole, watchSession, toastHost) { screenshotSavedFile = null } }
+        clipSavedFile?.let { file -> CaptureSavedDialog(file, "Clip saved", roomRole, watchSession, toastHost) { clipSavedFile = null } }
 
         // Watch Together — start/join/status dialog.
         if (showWatchDialog) {
@@ -2244,13 +2223,21 @@ internal fun PlayerContent(
     onWatchTogether: () -> Unit = {},
     /** Active Watch Together room chip text (e.g. "● ANIK-4G7K · 3"), or null when inactive. */
     roomStatus: String? = null,
-    /** Room chat lines (server-stamped) — shown once a Watch Together room exists. */
+    /** Room chat lines (server-stamped) — the chat icon is always visible in the player. */
     chatMessages: List<WtMessage.Chat> = emptyList(),
     /** Your display name in the room (for "you" highlighting). */
     chatYourName: String = "",
     /** Current room member count. */
     chatMemberCount: Int = 0,
+    /** True when a room exists AND at least one other person is in it (chat becomes writable). */
+    chatEnabled: Boolean = false,
+    /** Last screenshot taken in this player session (for attaching to chat). */
+    chatScreenshotFile: java.io.File? = null,
+    /** Last GIF clip saved in this player session (for attaching to chat). */
+    chatClipFile: java.io.File? = null,
     onSendChat: (String) -> Unit = {},
+    /** Send an image (data URL + file name) to the room chat. */
+    onSendChatImage: (String, String) -> Unit = { _, _ -> },
 ) {
     // --- Player state ---
     // mpv's observed pause property is authoritative. Keeping a second
@@ -2984,10 +2971,11 @@ internal fun PlayerContent(
                         Spacer(Modifier.width(6.dp))
                     }
                     TransportIconButton(icon = Icons.Outlined.Groups, description = "Watch Together", onClick = onWatchTogether)
-                    if (chatMessages.isNotEmpty() || chatMemberCount > 0) {
-                        Box {
-                            TransportIconButton(icon = Icons.Outlined.Chat, description = "Chat", onClick = { showChatPanel = !showChatPanel })
-                            if (chatUnread > 0) {
+                    // Chat is permanent in the player — it turns writable once a
+                    // room has another person in it, but it's always viewable.
+                    Box {
+                        TransportIconButton(icon = Icons.Outlined.Chat, description = "Chat", onClick = { showChatPanel = !showChatPanel })
+                        if (chatUnread > 0) {
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
@@ -3007,7 +2995,6 @@ internal fun PlayerContent(
                                 }
                             }
                         }
-                    }
                     Box {
                         TransportIconButton(icon = Icons.Outlined.Settings, description = "Settings", onClick = { showSettingsMenu = true })
                         DropdownMenu(expanded = showSettingsMenu, onDismissRequest = { showSettingsMenu = false }) {
@@ -3173,25 +3160,34 @@ internal fun PlayerContent(
                 onDismiss = { showSpeedPanel = false },
             )
         }
+        // Each overlay must be a SIBLING AnimatedVisibility — nesting one panel
+        // inside another's visibility scope hides it whenever the parent is
+        // closed (the chat panel shipped nested inside the audio panel in
+        // 1.11.0, so the host's chat never rendered: the scrim appeared but
+        // the panel stayed invisible).
         AnimatedVisibility(visible = showAudioPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerAudioTrackPanel(tracks = audioTracks, currentTrackIndex = selectedAudioTrack, audioDelay = audioDelay, onTrackSelected = { playerViewModel?.selectAudioTrack(it) }, onDelayChange = { playerViewModel?.setAudioDelay(it) }, onDismiss = { showAudioPanel = false })
-            AnimatedVisibility(visible = showAudioDevicePanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
-                PlayerAudioDevicePanel(
-                    devices = playerViewModel?.audioDevices?.collectAsState()?.value.orEmpty(),
-                    currentDevice = playerViewModel?.audioDevice?.collectAsState()?.value,
-                    onDeviceSelected = { name -> playerViewModel?.setAudioDevice(name) },
-                    onDismiss = { showAudioDevicePanel = false },
-                )
-            }
-            AnimatedVisibility(visible = showChatPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
-                PlayerChatPanel(
-                    messages = chatMessages,
-                    yourName = chatYourName,
-                    memberCount = chatMemberCount,
-                    onSend = { text -> onSendChat(text) },
-                    onDismiss = { showChatPanel = false },
-                )
-            }
+        }
+        AnimatedVisibility(visible = showAudioDevicePanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
+            PlayerAudioDevicePanel(
+                devices = playerViewModel?.audioDevices?.collectAsState()?.value.orEmpty(),
+                currentDevice = playerViewModel?.audioDevice?.collectAsState()?.value,
+                onDeviceSelected = { name -> playerViewModel?.setAudioDevice(name) },
+                onDismiss = { showAudioDevicePanel = false },
+            )
+        }
+        AnimatedVisibility(visible = showChatPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
+            PlayerChatPanel(
+                messages = chatMessages,
+                yourName = chatYourName,
+                memberCount = chatMemberCount,
+                enabled = chatEnabled,
+                screenshotFile = chatScreenshotFile,
+                clipFile = chatClipFile,
+                onSend = { text -> onSendChat(text) },
+                onSendImage = { dataUrl, name -> onSendChatImage(dataUrl, name) },
+                onDismiss = { showChatPanel = false },
+            )
         }
         AnimatedVisibility(visible = showSubtitlePanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerSubtitleTrackPanel(
@@ -3496,6 +3492,79 @@ private fun WatchTogetherDialog(
                     }
                 }
                 else -> TextButton(onClick = onLeave) { Text("Leave room") }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+    )
+}
+
+/**
+ * Post-capture dialog for screenshots and GIF clips: open the file, copy it
+ * to the clipboard, share it through the macOS Share sheet (AirDrop,
+ * Messages, Mail…) and — when a Watch Together room is active — send the
+ * image straight into the room chat.
+ */
+@Composable
+private fun CaptureSavedDialog(
+    file: File,
+    title: String,
+    roomRole: WatchTogetherSession.Role,
+    session: WatchTogetherSession,
+    toastHost: ToastHostState,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                Text("Saved to ~/Pictures/Anikku/${file.name}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    file.absolutePath,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            Row {
+                TextButton(onClick = {
+                    runCatching { java.awt.Desktop.getDesktop().open(file) }
+                    onDismiss()
+                }) { Text("Open") }
+                Spacer(Modifier.width(8.dp))
+                TextButton(onClick = {
+                    if (MacOSShareUtil.copyFileToClipboard(file)) {
+                        toastHost.show("Copied to clipboard — paste it anywhere", ToastDuration.SHORT)
+                    }
+                    onDismiss()
+                }) { Text("Copy") }
+                Spacer(Modifier.width(8.dp))
+                TextButton(onClick = {
+                    MacOSShareUtil.shareFile(file)
+                    onDismiss()
+                }) { Text("Share…") }
+                if (roomRole != WatchTogetherSession.Role.NONE) {
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        val dataUrl = wtImageDataUrl(file)
+                        if (dataUrl == null) {
+                            toastHost.show(
+                                text = "Too large for chat (max ~2 MB)",
+                                duration = ToastDuration.SHORT,
+                                isError = true,
+                                location = "PlayerScreen.CaptureSavedDialog",
+                            )
+                        } else {
+                            session.sendChatImage(dataUrl, file.name)
+                            toastHost.show("Sent to room chat", ToastDuration.SHORT)
+                        }
+                        onDismiss()
+                    }) { Text("Send to chat") }
+                }
             }
         },
         dismissButton = {

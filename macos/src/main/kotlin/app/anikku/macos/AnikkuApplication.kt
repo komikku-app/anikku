@@ -542,4 +542,49 @@ class AnikkuApplication {
         TerminalErrorLogger.printShutdownSummary()
     }
 
+    /**
+     * Window-close path for the app's X button.
+     *
+     * A synchronous shutdown can wedge the EDT: a Watch Together member on a
+     * slow tunnel has no socket WRITE timeout, so a stalled `member.close()`
+     * can block `stopServer()` indefinitely and the X button feels dead.
+     * Teardown therefore runs on a background thread while the window closes
+     * instantly; a watchdog force-exits the process if teardown ever exceeds
+     * its budget, so the app can never linger as a windowless zombie.
+     */
+    fun runShutdownAsync() {
+        val done = java.util.concurrent.CountDownLatch(1)
+        Thread({
+            try {
+                onShutdown()
+            } finally {
+                done.countDown()
+            }
+        }, "anikku-shutdown").apply {
+            // Non-daemon: the JVM waits for normal teardown to finish, so
+            // child processes (TorrServer, Chrome, cloudflared) are always
+            // cleaned up in the healthy path.
+            isDaemon = false
+            start()
+        }
+        Thread({
+            if (!done.await(SHUTDOWN_WATCHDOG_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                // Teardown is wedged — kill child processes without waiting
+                // and force-exit so the app is gone no matter what.
+                runCatching { watchTogetherTunnel.forceKill() }
+                runCatching { torrentServerBridge.forceKill() }
+                runCatching { ChromeCDPClient.forceKill() }
+                System.exit(1)
+            }
+        }, "anikku-shutdown-watchdog").apply {
+            isDaemon = true
+            start()
+        }
+    }
+
+    private companion object {
+        /** Hard budget for background teardown before the watchdog force-exits. */
+        const val SHUTDOWN_WATCHDOG_MS = 12_000L
+    }
+
 }

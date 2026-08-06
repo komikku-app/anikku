@@ -253,6 +253,14 @@ object ChromeCDPClient {
         }
     }
 
+    /**
+     * Emergency kill without waiting or locking — used by the shutdown
+     * watchdog when a normal [shutdown] is wedged.
+     */
+    fun forceKill() {
+        runCatching { chromeProcess?.destroyForcibly() }
+    }
+
     // ── Persistent Chrome lifecycle ────────────────────────────────────
 
     /**

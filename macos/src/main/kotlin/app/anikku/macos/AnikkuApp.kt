@@ -200,11 +200,11 @@ fun main() = application {
 
     Window(
         onCloseRequest = {
-            // A shutdown step must never block quitting — if any resource
-            // teardown throws (Discord RPC, Sparkle, TorrServer...), the close
-            // request would die before exitApplication() and the window would
-            // stay stuck open. Exit unconditionally.
-            runCatching { app.onShutdown() }
+            // The window closes instantly; resource teardown (TorrServer,
+            // Chrome, Watch Together sockets, tunnel...) runs in the
+            // background with a hard watchdog — a stalled socket must never
+            // trap the user behind the X button.
+            app.runShutdownAsync()
             exitApplication()
         },
         title = "Anikku",

@@ -354,11 +354,16 @@ class WatchTogetherServer(
                     // sender, so clients render exactly what the room saw and
                     // never echo their own message locally.
                     val body = message.text.trim().take(500)
-                    if (body.isEmpty()) return
+                    val image = message.image
+                        .takeIf { it.length <= WtMessage.MAX_CHAT_IMAGE_BASE64 }
+                        .orEmpty()
+                    if (body.isEmpty() && image.isEmpty()) return
                     val chat = WtMessage.Chat(
                         text = body,
                         by = memberName.ifBlank { "Guest" },
                         ts = System.currentTimeMillis(),
+                        image = image,
+                        name = message.name.trim().take(80),
                     )
                     room.messages.add(chat)
                     while (room.messages.size > MAX_CHAT_BUFFER) {
@@ -773,6 +778,12 @@ private val JOIN_PAGE = """
   #chatSendBtn{background:#6c5ce7;border:none;color:#fff;border-radius:8px;padding:0 12px;cursor:pointer;font-size:13px}
   #chatSendBtn:disabled{opacity:.4;cursor:default}
   #chatEmpty{opacity:.5;font-size:12px}
+  #chatMsgs .time{opacity:.4;font-size:10px;margin-left:6px}
+  #chatMsgs img{max-width:100%;max-height:220px;border-radius:8px;margin-top:4px;display:block}
+  #chatEmojiBtn{background:#1c1c1e;border:1px solid #3a3a3c;border-radius:8px;color:#eee;font-size:15px;cursor:pointer;padding:0 9px;flex:0 0 auto}
+  #emojiStrip{display:none;flex-wrap:wrap;gap:2px;padding:6px 8px;border-bottom:1px solid #2c2c2e;max-height:120px;overflow-y:auto}
+  #emojiStrip button{background:none;border:none;font-size:17px;cursor:pointer;padding:2px 5px;border-radius:6px}
+  #emojiStrip button:hover{background:#2c2c2e}
   #chatBtnWrap{position:relative;display:inline-block}
   #chatBadge{position:absolute;top:-4px;right:-4px;background:#e5484d;color:#fff;border-radius:999px;font-size:10px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;box-sizing:border-box;display:none}
   @media (max-width:640px){
@@ -780,6 +791,8 @@ private val JOIN_PAGE = """
     #chatMsgs{max-height:60vh;font-size:13.5px;line-height:1.5}
     #chatInput{font-size:16px;padding:9px 10px}
     #chatSendBtn{font-size:15px;padding:0 16px}
+    #chatEmojiBtn{font-size:18px;padding:0 12px}
+    #emojiStrip button{font-size:20px}
     #bar{flex-wrap:wrap;height:auto;padding:6px 8px;gap:6px}
     #bar button{padding:7px 10px;font-size:13px;min-width:38px}
     #scrub{min-width:100%;order:10}
@@ -808,7 +821,9 @@ private val JOIN_PAGE = """
 </div>
 <div id="chatWrap">
   <div id="chatMsgs"><div id="chatEmpty">No messages yet &#8212; say hi!</div></div>
+  <div id="emojiStrip"></div>
   <div id="chatInputRow">
+    <button id="chatEmojiBtn" onclick="toggleEmoji()" title="Emoji">&#128578;</button>
     <input id="chatInput" maxlength="500" placeholder="Message&#8230;" autocomplete="off">
     <button id="chatSendBtn" onclick="sendChat()" disabled>Send</button>
   </div>
@@ -1028,10 +1043,46 @@ function appendChat(m) {
   if (m.by && m.by === myName) div.className = 'mine';
   var by = document.createElement('span'); by.className = 'by';
   by.textContent = (m.by || 'Guest') + ':';
-  var tx = document.createElement('span'); tx.textContent = m.text || '';
-  div.appendChild(by); div.appendChild(tx);
+  div.appendChild(by);
+  var tm = document.createElement('span'); tm.className = 'time';
+  tm.textContent = fmtTime(m.ts);
+  div.appendChild(tm);
+  if (m.image) {
+    var img = document.createElement('img');
+    img.src = m.image;
+    img.alt = m.name || 'image';
+    div.appendChild(img);
+  }
+  if (m.text) {
+    var tx = document.createElement('span'); tx.textContent = m.text;
+    div.appendChild(tx);
+  }
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
+}
+function fmtTime(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+  } catch (e) { return ''; }
+}
+var CHAT_EMOJIS = ['\u{1F642}','\u{1F604}','\u{1F602}','\u{1F605}','\u{1F62D}','\u{1F60D}','\u{1F970}','\u{1F60E}','\u{1F914}','\u{1F634}','\u{1F62E}','\u{1F631}','\u{1F92F}','\u{1F973}','\u{1F607}','\u{1F921}','\u{1F47B}','\u{1F480}','\u{1F440}','\u{1F44D}','\u{1F44E}','\u{1F44F}','\u{1F64F}','\u{1F4AA}','\u2764\uFE0F','\u{1F494}','\u{1F525}','\u2728','\u{1F389}','\u{1F37F}','\u{1F3AC}','\u2705'];
+(function buildEmojiStrip() {
+  var strip = document.getElementById('emojiStrip');
+  CHAT_EMOJIS.forEach(function (e) {
+    var b = document.createElement('button');
+    b.textContent = e;
+    b.onclick = function () {
+      var inp = document.getElementById('chatInput');
+      inp.value = (inp.value || '') + e;
+      inp.focus();
+      document.getElementById('chatSendBtn').disabled = false;
+    };
+    strip.appendChild(b);
+  });
+})();
+function toggleEmoji() {
+  var strip = document.getElementById('emojiStrip');
+  strip.style.display = (strip.style.display === 'flex') ? 'none' : 'flex';
 }
 function sendChat() {
   var inp = document.getElementById('chatInput');

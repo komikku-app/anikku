@@ -371,6 +371,13 @@ class WatchTogetherSession(
         sendRaw(WtMessage.Chat(text = body.take(500)))
     }
 
+    /** Any member: send an attached image (base64 data URL + file name). */
+    fun sendChatImage(dataUrl: String, name: String) {
+        if (role.value == Role.NONE) return
+        if (dataUrl.isBlank() || dataUrl.length > WtMessage.MAX_CHAT_IMAGE_BASE64) return
+        sendRaw(WtMessage.Chat(text = "", image = dataUrl, name = name.take(80)))
+    }
+
     /** Internal send — the host's periodic Sync must NOT count as a local action. */
     private fun sendRaw(message: WtMessage) {
         val socket = webSocket ?: return

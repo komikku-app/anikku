@@ -1,3 +1,16 @@
+## v1.12.0 — chat is home, images included
+
+- Chat is now permanent in the player — the 💬 icon is always there. Until
+  someone else joins your room it's read-only; the moment they do, type away
+- Fixed: chat panel never appeared on the hosting Mac (overlay nesting bug)
+- Timestamps on every message, in the app and on the browser join page
+- 🙂 emoji picker in the chat input (app + join page)
+- Attach your screenshots and GIF clips to the chat — everyone in the room
+  sees them, on any device
+- Share captures out of the app: Copy, Share… (AirDrop/Messages/Mail) and
+  Send to chat from the capture dialog
+- The X button can't get stuck anymore — quitting always closes the window
+
 ## v1.11.0 — chat, its own thing
 
 - Once a Watch Together room is live, a chat icon appears next to Watch

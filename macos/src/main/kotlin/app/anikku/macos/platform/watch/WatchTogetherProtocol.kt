@@ -102,9 +102,10 @@ sealed class WtMessage {
     data class RoomClosed(val reason: String = "The host closed the room") : WtMessage()
 
     /**
-     * Room chat. Clients send with [text] only; the server stamps [by] (the
-     * sender's Hello name — never trusted from the client) and [ts] before
-     * relaying to everyone, and keeps a short buffer for late joiners.
+     * Room chat. Clients send with [text] (and optionally [image], a base64
+     * data URL, plus its file [name]); the server stamps [by] (the sender's
+     * Hello name — never trusted from the client) and [ts] before relaying
+     * to everyone, and keeps a short buffer for late joiners.
      */
     @Serializable
     @SerialName("chat")
@@ -112,7 +113,16 @@ sealed class WtMessage {
         val text: String = "",
         val by: String = "",
         val ts: Long = 0L,
+        /** Optional attached image as a `data:` URL (PNG/GIF/JPEG). */
+        val image: String = "",
+        /** Original file name of the attached image. */
+        val name: String = "",
     ) : WtMessage()
+
+    companion object {
+        /** Largest image chat payload, in base64 characters (~2 MB decoded). */
+        const val MAX_CHAT_IMAGE_BASE64 = 3_000_000
+    }
 }
 
 /** JSON codec shared by the server, the app client and the browser join page. */
@@ -123,6 +133,29 @@ object WtProtocol {
 
     fun decode(text: String): WtMessage? =
         runCatching { json.decodeFromString<WtMessage>(text) }.getOrNull()
+}
+
+/**
+ * Builds a `data:` URL for [file] so it can travel over the room websocket
+ * (screenshots and GIF clips from the player). Returns null when the file is
+ * unreadable or larger than [WtMessage.MAX_CHAT_IMAGE_BASE64] (≈2 MB decoded).
+ */
+fun wtImageDataUrl(file: java.io.File): String? {
+    return try {
+        if (!file.isFile || file.length() > 2_200_000L) return null
+        val mime = when (file.extension.lowercase()) {
+            "png" -> "image/png"
+            "jpg", "jpeg" -> "image/jpeg"
+            "gif" -> "image/gif"
+            "webp" -> "image/webp"
+            else -> "application/octet-stream"
+        }
+        val base64 = java.util.Base64.getEncoder().encodeToString(file.readBytes())
+        if (base64.length > WtMessage.MAX_CHAT_IMAGE_BASE64) return null
+        "data:$mime;base64,$base64"
+    } catch (_: Exception) {
+        null
+    }
 }
 
 /** Room code alphabet — unambiguous (no I/O/0/1). */

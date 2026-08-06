@@ -79,6 +79,35 @@ object MacOSShareUtil {
     }
 
     /**
+     * Copies [file] to the system clipboard as a file reference, so it can be
+     * pasted straight into Messages, WhatsApp Web, Notes, a Finder window…
+     *
+     * @return true if the copy succeeded
+     */
+    fun copyFileToClipboard(file: File): Boolean {
+        if (!file.exists() || !file.isFile) return false
+        return try {
+            val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+            clipboard.setContents(
+                object : java.awt.datatransfer.Transferable {
+                    override fun getTransferDataFlavors() =
+                        arrayOf(java.awt.datatransfer.DataFlavor.javaFileListFlavor)
+
+                    override fun isDataFlavorSupported(flavor: java.awt.datatransfer.DataFlavor?) =
+                        flavor == java.awt.datatransfer.DataFlavor.javaFileListFlavor
+
+                    override fun getTransferData(flavor: java.awt.datatransfer.DataFlavor?) =
+                        listOf(file)
+                },
+                null,
+            )
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
      * Opens the macOS native Share Menu for a file.
      *
      * This launches the system share sheet (AirDrop, Mail, Messages,

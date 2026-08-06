@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.12.0] — 2026-08-06
+
+### Watch Together chat: permanent, richer, and shareable
+
+- **Fixed: host chat panel never rendered** — the chat overlay was nested
+  inside the audio-track panel's visibility scope, so clicking the 💬 icon
+  on the hosting Mac only dimmed the video. All player overlays (chat, audio
+  device) are now sibling panels and open independently.
+- **Chat is always in the player** — the 💬 icon no longer waits for a room;
+  it's permanent in the control bar. The panel opens anywhere; until a room
+  has at least one other person it's view-only ("Start or join a room to
+  chat"), and the moment someone joins you can type right away.
+- **Timestamps** — every message shows its HH:mm wall-clock time, in the app
+  and on the browser join page.
+- **Emoji picker** — a 🙂 button in the chat input (app + join page) opens a
+  32-emoji palette; tap an emoji to append it to your message.
+- **Screenshots & GIFs in chat** — attach your last screenshot or GIF clip
+  straight from the chat panel (📎), or send it from the capture dialog.
+  Images travel over the room websocket and render inline for every member,
+  including phone/tablet/desktop browser guests; payloads over ~2 MB are
+  refused with a note.
+- **Share captures out of the app** — the post-capture dialog (now shown for
+  screenshots too, not just GIF clips) offers Open, **Copy** (file lands on
+  the clipboard, paste it anywhere), **Share…** (the macOS share sheet —
+  AirDrop, Messages, Mail, Notes…) and **Send to chat** when a room is live.
+
+### Window close hardening
+
+- **X button can no longer wedge the app** — a stalled Watch Together socket
+  (slow tunnel write) used to be able to block the synchronous shutdown on
+  the UI thread, making the X button feel dead. Teardown now runs on a
+  background thread, the window closes instantly, and a watchdog force-exits
+  the process (after killing TorrServer/Chrome/cloudflared) if teardown ever
+  exceeds its budget.
+
 ## [1.11.0] — 2026-08-06
 
 ### Watch Together chat is its own thing

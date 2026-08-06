@@ -119,6 +119,14 @@ class TorrentServerBridge(
         _serverStatus.value = ServerStatus.STOPPED
     }
 
+    /**
+     * Emergency kill without waiting or locking — used by the shutdown
+     * watchdog when a normal [stop] is wedged.
+     */
+    fun forceKill() {
+        serverProcess?.let { runCatching { it.destroyForcibly() } }
+    }
+
     suspend fun restart(timeoutSeconds: Int = 15): Boolean {
         stop()
         return start(timeoutSeconds)

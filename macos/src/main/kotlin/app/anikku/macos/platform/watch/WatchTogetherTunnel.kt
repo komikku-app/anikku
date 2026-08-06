@@ -129,6 +129,14 @@ class WatchTogetherTunnel(
         _status.value = Status.STOPPED
     }
 
+    /**
+     * Emergency kill without waiting or locking — used by the shutdown
+     * watchdog when a normal [stop] is wedged.
+     */
+    fun forceKill() {
+        tunnelProcess?.let { runCatching { it.destroyForcibly() } }
+    }
+
     override fun close() {
         stop()
         scope.cancel()

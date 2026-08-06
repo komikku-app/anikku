@@ -141,6 +141,44 @@ class WatchTogetherServerTest {
     }
 
     @Test
+    fun `chat images are relayed with the server stamp and blank messages are dropped`() {
+        val info = server.createRoom(episode(), null)!!
+        val host = connect(info.code)
+        host.awaitOpen()
+        host.awaitMembers(1)
+        assertEquals(episode(), host.awaitMessage())
+        host.send(WtProtocol.encode(WtMessage.Hello("Ernest")))
+        Thread.sleep(150)
+
+        // An image-only chat line (screenshot/GIF from the player) is relayed
+        // with the sender stamped by the server, image payload intact.
+        host.send(
+            WtProtocol.encode(
+                WtMessage.Chat(text = "", image = "data:image/png;base64,iVBORw0KGgo=", name = "shot.png"),
+            ),
+        )
+        val stamped = host.awaitMessage() as WtMessage.Chat
+        assertEquals("data:image/png;base64,iVBORw0KGgo=", stamped.image)
+        assertEquals("shot.png", stamped.name)
+        assertEquals("Ernest", stamped.by)
+        assertTrue(stamped.ts > 0)
+
+        // Whitespace-only text with no image is dropped entirely.
+        host.send(WtProtocol.encode(WtMessage.Chat(text = "   ")))
+        assertEquals(null, host.pollMessage(300))
+
+        // An image larger than the wire cap is refused.
+        host.send(
+            WtProtocol.encode(
+                WtMessage.Chat(text = "hi", image = "x".repeat(WtMessage.MAX_CHAT_IMAGE_BASE64 + 1)),
+            ),
+        )
+        val refused = host.awaitMessage() as WtMessage.Chat
+        assertEquals("", refused.image)
+        assertEquals("hi", refused.text)
+    }
+
+    @Test
     fun `browser join page is served for existing rooms only`() {
         val info = server.createRoom(episode(), null)!!
         val ok = get("http://127.0.0.1:${server.actualPort}/room/${info.code}")

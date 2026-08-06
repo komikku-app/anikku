@@ -1,9 +1,11 @@
 package app.anikku.macos.platform.watch
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.io.File
 
 class WatchTogetherProtocolTest {
 
@@ -41,6 +43,40 @@ class WatchTogetherProtocolTest {
 
         assertNull(WtProtocol.decode("not json at all"))
         assertNull(WtProtocol.decode("""{"type":"nope"}"""))
+    }
+
+    @Test
+    fun `chat with an attached image round-trips`() {
+        val message = WtMessage.Chat(
+            text = "check this",
+            by = "Ernest",
+            ts = 999L,
+            image = "data:image/png;base64,iVBORw0KGgo=",
+            name = "shot.png",
+        )
+        assertEquals(message, WtProtocol.decode(WtProtocol.encode(message)))
+    }
+
+    @Test
+    fun `wtImageDataUrl builds a data url for a real image and refuses oversize or missing files`() {
+        val dir = java.nio.file.Files.createTempDirectory("wtimg").toFile()
+        try {
+            val png = File(dir, "shot.png").apply { writeBytes(ByteArray(64) { it.toByte() }) }
+            val url = wtImageDataUrl(png)
+            assertNotNull(url)
+            assertTrue(url!!.startsWith("data:image/png;base64,"))
+
+            val gif = File(dir, "clip.gif").apply { writeBytes(ByteArray(64) { 1 }) }
+            assertTrue(wtImageDataUrl(gif)!!.startsWith("data:image/gif;base64,"))
+
+            // Files over the decoded-size budget (~2 MB) are refused.
+            val big = File(dir, "big.png").apply { writeBytes(ByteArray(2_300_000)) }
+            assertNull(wtImageDataUrl(big))
+
+            assertNull(wtImageDataUrl(File(dir, "missing.png")))
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     @Test
