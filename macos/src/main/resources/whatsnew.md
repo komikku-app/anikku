@@ -1,3 +1,14 @@
+## v1.13.0 — chat keys stay in chat, attach anything
+
+- Fixed: typing in the chat no longer triggers player shortcuts — space
+  types, S doesn't screenshot, arrows don't seek. The chat owns the keyboard
+  while you're in the input
+- The cursor lands in the chat input the moment the panel opens (or the
+  second someone joins) and returns after you send
+- 📎 attach gallery: every screenshot and GIF clip you've taken, split into
+  GIF clips / Screenshots sections with thumbnails — click any to send
+- Chat image limit raised to 10 MB
+
 ## v1.12.0 — chat is home, images included
 
 - Chat is now permanent in the player — the 💬 icon is always there. Until

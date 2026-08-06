@@ -23,13 +23,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -55,7 +55,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -293,18 +297,20 @@ fun PlayerChatPanel(
     yourName: String = "",
     memberCount: Int = 0,
     enabled: Boolean = false,
-    screenshotFile: java.io.File? = null,
-    clipFile: java.io.File? = null,
+    screenshotDir: java.io.File? = null,
+    chatInputFocused: Boolean = false,
+    onChatInputFocusChange: (Boolean) -> Unit = {},
     onSend: (String) -> Unit,
     onSendImage: (String, String) -> Unit = { _, _ -> },
     onDismiss: () -> Unit,
 ) {
     var input by remember { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
-    var showAttachMenu by remember { mutableStateOf(false) }
+    var showAttachArea by remember { mutableStateOf(false) }
     var attachError by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val inputFocusRequester = remember { FocusRequester() }
 
     // Follow the conversation — scroll to the newest line.
     LaunchedEffect(messages.size) {
@@ -313,13 +319,22 @@ fun PlayerChatPanel(
         }
     }
 
+    // Opening the panel (while writable) lands the cursor in the input so
+    // typing works immediately; the player's shortcuts are suspended while
+    // the input is focused.
+    LaunchedEffect(enabled) {
+        if (enabled) {
+            inputFocusRequester.requestFocus()
+        }
+    }
+
     // Attach a capture (screenshot / GIF clip) off the UI thread; images over
-    // ~2 MB are refused with an inline note.
+    // ~10 MB are refused with an inline note.
     fun sendImage(file: java.io.File) {
         scope.launch {
             val dataUrl = withContext(Dispatchers.IO) { wtImageDataUrl(file) }
             if (dataUrl == null) {
-                attachError = "That file is too large for chat (max ~2 MB)"
+                attachError = "That file is too large for chat (max 10 MB)"
             } else {
                 attachError = null
                 onSendImage(dataUrl, file.name)
@@ -476,45 +491,64 @@ fun PlayerChatPanel(
 
             Spacer(Modifier.height(12.dp))
 
+            // Attach gallery — every screenshot and GIF clip in the captures
+            // folder, newest first, split into sections.
+            if (showAttachArea && enabled) {
+                val captures = remember(screenshotDir, showAttachArea) { listChatCaptures(screenshotDir) }
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = 300.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        if (captures.gifs.isEmpty() && captures.screenshots.isEmpty()) {
+                            Text(
+                                "No captures yet — take a screenshot (S) or save a GIF clip (G) first",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(6.dp),
+                            )
+                        }
+                        ChatAttachSection("GIF clips", captures.gifs, onSend = { sendImage(it) })
+                        ChatAttachSection("Screenshots", captures.screenshots, onSend = { sendImage(it) })
+                    }
+                }
+            }
+
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { showEmojiPicker = !showEmojiPicker }, enabled = enabled) {
+                IconButton(onClick = {
+                    showEmojiPicker = !showEmojiPicker
+                    showAttachArea = false
+                }, enabled = enabled) {
                     Icon(
                         Icons.Outlined.SentimentSatisfied,
                         contentDescription = "Emoji",
                         modifier = Modifier.size(20.dp),
                     )
                 }
-                Box {
-                    IconButton(onClick = { showAttachMenu = true }, enabled = enabled) {
-                        Icon(
-                            Icons.Outlined.AttachFile,
-                            contentDescription = "Attach screenshot or GIF",
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    DropdownMenu(expanded = showAttachMenu, onDismissRequest = { showAttachMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Send last screenshot") },
-                            enabled = screenshotFile != null,
-                            onClick = {
-                                showAttachMenu = false
-                                screenshotFile?.let { sendImage(it) }
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Send last GIF clip") },
-                            enabled = clipFile != null,
-                            onClick = {
-                                showAttachMenu = false
-                                clipFile?.let { sendImage(it) }
-                            },
-                        )
-                    }
+                IconButton(onClick = {
+                    showAttachArea = !showAttachArea
+                    showEmojiPicker = false
+                }, enabled = enabled) {
+                    Icon(
+                        Icons.Outlined.AttachFile,
+                        contentDescription = "Attach screenshot or GIF",
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(inputFocusRequester)
+                        .onFocusChanged { onChatInputFocusChange(it.isFocused) },
                     placeholder = {
                         Text(if (enabled) "Message…" else "Join a room to start chatting…")
                     },
@@ -529,6 +563,7 @@ fun PlayerChatPanel(
                         if (body.isNotEmpty()) {
                             onSend(body)
                             input = ""
+                            inputFocusRequester.requestFocus()
                         }
                     },
                     enabled = enabled && input.isNotBlank(),
@@ -538,6 +573,118 @@ fun PlayerChatPanel(
             }
         }
     }
+}
+
+/** Everything attachable from the captures folder, newest first. */
+private data class ChatCaptures(val gifs: List<java.io.File>, val screenshots: List<java.io.File>)
+
+private fun listChatCaptures(dir: java.io.File?): ChatCaptures {
+    if (dir == null || !dir.isDirectory) return ChatCaptures(emptyList(), emptyList())
+    val files = dir.listFiles()
+        ?.filter { it.isFile }
+        ?.sortedByDescending { it.lastModified() }
+        .orEmpty()
+    return ChatCaptures(
+        gifs = files.filter { it.extension.equals("gif", ignoreCase = true) }.take(40),
+        screenshots = files.filter { it.extension.lowercase() in SCREENSHOT_EXTENSIONS }.take(40),
+    )
+}
+
+private val SCREENSHOT_EXTENSIONS = setOf("png", "jpg", "jpeg", "webp")
+
+/** One titled group of attachable captures; rows are thumbnails, click to send. */
+@Composable
+private fun ChatAttachSection(
+    title: String,
+    files: List<java.io.File>,
+    onSend: (java.io.File) -> Unit,
+) {
+    if (files.isEmpty()) return
+    Text(
+        text = "$title (${files.size})",
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+    )
+    files.forEach { file ->
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onSend(file) }
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        ) {
+            ChatFileThumb(file, Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    file.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    captureMeta(file),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+            }
+            Icon(
+                Icons.Outlined.Send,
+                contentDescription = "Send ${file.name}",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+/** Small async thumbnail of a capture file (GIFs decode to their first frame). */
+@Composable
+private fun ChatFileThumb(file: java.io.File, modifier: Modifier = Modifier) {
+    var bitmap by remember(file) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(file) {
+        bitmap = withContext(Dispatchers.IO) {
+            runCatching {
+                org.jetbrains.skia.Image.makeFromEncoded(file.readBytes()).toComposeImageBitmap()
+            }.getOrNull()
+        }
+    }
+    val bmp = bitmap
+    if (bmp != null) {
+        Image(
+            bitmap = bmp,
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = ContentScale.Crop,
+        )
+    } else {
+        Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+            Icon(
+                Icons.Outlined.Image,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+        }
+    }
+}
+
+/** "2.4 MB · Aug 6, 20:14" style size + date line for a capture. */
+private fun captureMeta(file: java.io.File): String {
+    val size = when {
+        file.length() >= 1_000_000 -> String.format("%.1f MB", file.length() / 1_000_000.0)
+        file.length() >= 1_000 -> String.format("%.0f KB", file.length() / 1_000.0)
+        else -> "${file.length()} B"
+    }
+    val date = runCatching {
+        java.time.Instant.ofEpochMilli(file.lastModified())
+            .atZone(java.time.ZoneId.systemDefault())
+            .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, HH:mm"))
+    }.getOrDefault("")
+    return "$size · $date"
 }
 
 /** HH:mm wall-clock for a chat timestamp. */

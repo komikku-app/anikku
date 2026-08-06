@@ -47,6 +47,9 @@ class WatchTogetherSession(
          */
         private fun defaultHttpClient(): OkHttpClient =
             OkHttpClient.Builder().pingInterval(15, java.util.concurrent.TimeUnit.SECONDS).build()
+
+        /** ~40 MB of decoded chat images is plenty for any watch session. */
+        private const val MAX_CLIENT_IMAGE_CHARS = 53_600_000L
     }
 
     private val httpClient: OkHttpClient = httpClient
@@ -378,6 +381,26 @@ class WatchTogetherSession(
         sendRaw(WtMessage.Chat(text = "", image = dataUrl, name = name.take(80)))
     }
 
+    /**
+     * Client-side mirror of the server's chat buffer guard: keep the newest
+     * lines, but never hold more than ~40 MB of image payload in memory.
+     */
+    private fun appendChatBounded(
+        current: List<WtMessage.Chat>,
+        message: WtMessage.Chat,
+    ): List<WtMessage.Chat> {
+        var next = current + message
+        if (message.image.isNotEmpty()) {
+            var imageChars = next.sumOf { it.image.length }
+            while (imageChars > MAX_CLIENT_IMAGE_CHARS && next.size > 1) {
+                val oldest = next.first()
+                next = next.drop(1)
+                if (oldest.image.isNotEmpty()) imageChars -= oldest.image.length
+            }
+        }
+        return next.takeLast(200)
+    }
+
     /** Internal send — the host's periodic Sync must NOT count as a local action. */
     private fun sendRaw(message: WtMessage) {
         val socket = webSocket ?: return
@@ -485,7 +508,7 @@ class WatchTogetherSession(
                 }
                 is WtMessage.Hello -> Unit // reserved for a future member list
                 is WtMessage.Chat -> {
-                    chatMessages.value = (chatMessages.value + message).takeLast(200)
+                    chatMessages.value = appendChatBounded(chatMessages.value, message)
                 }
                 else -> message?.let { onControl?.invoke(it) }
             }

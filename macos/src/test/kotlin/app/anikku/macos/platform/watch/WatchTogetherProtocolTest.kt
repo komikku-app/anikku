@@ -69,8 +69,12 @@ class WatchTogetherProtocolTest {
             val gif = File(dir, "clip.gif").apply { writeBytes(ByteArray(64) { 1 }) }
             assertTrue(wtImageDataUrl(gif)!!.startsWith("data:image/gif;base64,"))
 
-            // Files over the decoded-size budget (~2 MB) are refused.
-            val big = File(dir, "big.png").apply { writeBytes(ByteArray(2_300_000)) }
+            // A ~5 MB capture fits the 10 MB chat budget.
+            val medium = File(dir, "bigish.png").apply { writeBytes(ByteArray(5_000_000)) }
+            assertNotNull(wtImageDataUrl(medium))
+
+            // Files over the decoded-size budget (~10 MB) are refused.
+            val big = File(dir, "huge.png").apply { writeBytes(ByteArray(11_000_000)) }
             assertNull(wtImageDataUrl(big))
 
             assertNull(wtImageDataUrl(File(dir, "missing.png")))

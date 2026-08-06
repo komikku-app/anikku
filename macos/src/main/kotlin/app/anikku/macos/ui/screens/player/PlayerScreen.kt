@@ -700,6 +700,16 @@ data class PlayerScreen(
         var clipSavedFile by remember { mutableStateOf<File?>(null) }
         var lastScreenshotFile by remember { mutableStateOf<File?>(null) }
         var screenshotSavedFile by remember { mutableStateOf<File?>(null) }
+        // The app's captures folder — the chat attach gallery browses it.
+        val chatScreenshotDir = remember(settings.screenshotDirectory) {
+            val configured = settings.screenshotDirectory.trim()
+            val dir = if (configured.isNotEmpty()) {
+                File(configured)
+            } else {
+                File(System.getProperty("user.home"), "Pictures/Anikku")
+            }
+            dir.takeIf { it.isDirectory }
+        }
 
         // Create and manage the local HTTP server for serving downloaded files
         // Derive the downloads directory from the first completed download's parent dir,
@@ -2058,8 +2068,7 @@ data class PlayerScreen(
             chatYourName = yourName,
             chatMemberCount = roomMemberCount,
             chatEnabled = roomRole != WatchTogetherSession.Role.NONE && roomMemberCount > 1,
-            chatScreenshotFile = lastScreenshotFile,
-            chatClipFile = clipSavedFile,
+            chatScreenshotDir = chatScreenshotDir,
             onSendChat = { text -> watchSession.sendChat(text) },
             onSendChatImage = { dataUrl, name -> watchSession.sendChatImage(dataUrl, name) },
             roomStatus = roomCode?.let { "● $it · $roomMemberCount" },
@@ -2231,10 +2240,8 @@ internal fun PlayerContent(
     chatMemberCount: Int = 0,
     /** True when a room exists AND at least one other person is in it (chat becomes writable). */
     chatEnabled: Boolean = false,
-    /** Last screenshot taken in this player session (for attaching to chat). */
-    chatScreenshotFile: java.io.File? = null,
-    /** Last GIF clip saved in this player session (for attaching to chat). */
-    chatClipFile: java.io.File? = null,
+    /** Directory holding the app's screenshots and GIF clips (attach gallery). */
+    chatScreenshotDir: java.io.File? = null,
     onSendChat: (String) -> Unit = {},
     /** Send an image (data URL + file name) to the room chat. */
     onSendChatImage: (String, String) -> Unit = { _, _ -> },
@@ -2345,6 +2352,9 @@ internal fun PlayerContent(
     val canSeek = !isLive
     val focusRequester = remember { FocusRequester() }
     val errorFocusRequester = remember { FocusRequester() }
+    // While the chat input is focused, player shortcuts (space/S/G/arrows…)
+    // must not fire — typing in the chat is typing, not playback control.
+    var chatInputFocused by remember { mutableStateOf(false) }
     // Loading overlay (shown on top of video surface while buffering)
     // Mid-playback buffering (paused-for-cache) shows a spinner too — a
     // frozen frame with no feedback reads as a hang.
@@ -2716,6 +2726,8 @@ internal fun PlayerContent(
             // leaking out of a text field placed over the player in the future.
             .onKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                // The chat owns the keyboard while its input is focused.
+                if (chatInputFocused) return@onKeyEvent false
                 when {
                     event.key == Key.Spacebar -> {
                         onTogglePlay()
@@ -3182,8 +3194,9 @@ internal fun PlayerContent(
                 yourName = chatYourName,
                 memberCount = chatMemberCount,
                 enabled = chatEnabled,
-                screenshotFile = chatScreenshotFile,
-                clipFile = chatClipFile,
+                screenshotDir = chatScreenshotDir,
+                chatInputFocused = chatInputFocused,
+                onChatInputFocusChange = { chatInputFocused = it },
                 onSend = { text -> onSendChat(text) },
                 onSendImage = { dataUrl, name -> onSendChatImage(dataUrl, name) },
                 onDismiss = { showChatPanel = false },
@@ -3553,7 +3566,7 @@ private fun CaptureSavedDialog(
                         val dataUrl = wtImageDataUrl(file)
                         if (dataUrl == null) {
                             toastHost.show(
-                                text = "Too large for chat (max ~2 MB)",
+                                text = "Too large for chat (max 10 MB)",
                                 duration = ToastDuration.SHORT,
                                 isError = true,
                                 location = "PlayerScreen.CaptureSavedDialog",

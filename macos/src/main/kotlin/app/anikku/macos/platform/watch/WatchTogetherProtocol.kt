@@ -120,8 +120,8 @@ sealed class WtMessage {
     ) : WtMessage()
 
     companion object {
-        /** Largest image chat payload, in base64 characters (~2 MB decoded). */
-        const val MAX_CHAT_IMAGE_BASE64 = 3_000_000
+        /** Largest image chat payload, in base64 characters (~10 MB decoded). */
+        const val MAX_CHAT_IMAGE_BASE64 = 13_400_000
     }
 }
 
@@ -138,11 +138,11 @@ object WtProtocol {
 /**
  * Builds a `data:` URL for [file] so it can travel over the room websocket
  * (screenshots and GIF clips from the player). Returns null when the file is
- * unreadable or larger than [WtMessage.MAX_CHAT_IMAGE_BASE64] (≈2 MB decoded).
+ * unreadable or larger than [WtMessage.MAX_CHAT_IMAGE_BASE64] (~10 MB decoded).
  */
 fun wtImageDataUrl(file: java.io.File): String? {
     return try {
-        if (!file.isFile || file.length() > 2_200_000L) return null
+        if (!file.isFile || file.length() > 10_000_000L) return null
         val mime = when (file.extension.lowercase()) {
             "png" -> "image/png"
             "jpg", "jpeg" -> "image/jpeg"

@@ -39,8 +39,9 @@ A native macOS desktop port is in development! Built with [Compose Multiplatform
 - **Watch Together** — synced watch parties with friends across the internet
   via a bundled Cloudflare tunnel (no accounts, no servers); browser guests
   get fullscreen + HLS playback, and rooms have live **chat** from any device
-  (permanent chat panel in the player with timestamps, emoji picker and
-  screenshots/GIF attachments; mobile-friendly chat on the browser page)
+  (permanent chat panel in the player with timestamps, emoji picker, a
+  categorized screenshot/GIF attach gallery, and keyboard focus that never
+  leaks into playback; mobile-friendly chat on the browser page)
 - **Tracker synchronization** — MAL, AniList, Kitsu via OAuth
 - **Discord Rich Presence**
 - **Touch ID / PIN Lock**

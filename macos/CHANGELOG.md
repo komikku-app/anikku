@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.13.0] — 2026-08-06
+
+### Chat input owns the keyboard + a real attach gallery
+
+- **No more key bleed** — while the chat input is focused, player shortcuts
+  are suspended: space types a space instead of pausing, S/G no longer
+  screenshot/clip mid-message, arrows don't seek. Opening the chat (or the
+  moment a second person joins) lands the cursor in the input automatically;
+  after sending, focus returns to the input.
+- **Attach gallery** — the 📎 button now browses your whole captures folder
+  instead of just the last capture: two sections — **GIF clips** and
+  **Screenshots** — newest first, each with a thumbnail, file name and
+  size/date. Click any row to send it to the room.
+- **10 MB image limit** (up from ~2 MB) for chat attachments, everywhere:
+  the wire cap, the attach gallery, the capture dialog, and the server —
+  replay buffers stay memory-safe with byte-budgeted eviction on both the
+  server and client sides.
+
 ## [1.12.0] — 2026-08-06
 
 ### Watch Together chat: permanent, richer, and shareable

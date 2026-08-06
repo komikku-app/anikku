@@ -78,6 +78,27 @@ class WatchTogetherServer(
          * to late joiners so they land in an ongoing conversation.
          */
         val messages = CopyOnWriteArrayList<WtMessage.Chat>()
+
+        /** Total base64 chars of [messages] that carry images (memory guard). */
+        @Volatile
+        var bufferedImageChars: Long = 0L
+
+        /**
+         * Append a stamped chat line, evicting oldest entries when the line
+         * count OR the total image payload exceeds its budget (10 MB images
+         * make a pure count cap too heavy).
+         */
+        fun addChat(chat: WtMessage.Chat) {
+            messages.add(chat)
+            if (chat.image.isNotEmpty()) bufferedImageChars += chat.image.length
+            while (
+                (messages.size > MAX_CHAT_BUFFER || bufferedImageChars > MAX_BUFFERED_IMAGE_CHARS) &&
+                messages.isNotEmpty()
+            ) {
+                val oldest = messages.removeAt(0)
+                if (oldest.image.isNotEmpty()) bufferedImageChars -= oldest.image.length
+            }
+        }
     }
 
     private val rooms = ConcurrentHashMap<String, Room>()
@@ -365,10 +386,7 @@ class WatchTogetherServer(
                         image = image,
                         name = message.name.trim().take(80),
                     )
-                    room.messages.add(chat)
-                    while (room.messages.size > MAX_CHAT_BUFFER) {
-                        room.messages.removeAt(0)
-                    }
+                    room.addChat(chat)
                     val encoded = WtProtocol.encode(chat)
                     room.members.forEach { member ->
                         runCatching { member.send(encoded) }
@@ -714,6 +732,8 @@ class WatchTogetherServer(
     companion object {
         /** How many chat lines a room keeps for late joiners. */
         private const val MAX_CHAT_BUFFER = 100
+        /** ~30 MB of base64 image payload across the replay buffer. */
+        private const val MAX_BUFFERED_IMAGE_CHARS = 40_000_000L
         const val DEFAULT_PORT = 18234
 
         /** HLS playlist content type (m3u8). */

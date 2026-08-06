@@ -58,11 +58,13 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
   its HH:mm timestamp; a 🙂 emoji picker is built into the input. Guests on
   any device — Android, iPhone, macOS, Windows, Linux — chat from the
   browser join page (phone-adapted, unread badge on the 💬 button, emoji
-  strip). Screenshots and GIF clips from the player attach straight into the
-  chat (📎 in the panel, or Send to chat from the capture dialog) and render
-  inline for every member; captures also leave the app via **Copy** (file on
-  the clipboard) or the macOS **Share…** sheet (AirDrop, Messages, Mail,
-  Notes). Messages are stamped server-side and late joiners see recent ones.
+  strip). While the chat input has focus, player shortcuts (space/S/G/
+  arrows) are suspended — typing in chat never touches playback. The 📎
+  attach gallery browses every screenshot and GIF clip you've taken, split
+  into **GIF clips** and **Screenshots** sections with thumbnails (up to
+  10 MB each); captures also leave the app via **Copy** (file on the
+  clipboard) or the macOS **Share…** sheet (AirDrop, Messages, Mail, Notes).
+  Messages are stamped server-side and late joiners see recent ones.
 - **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth; **AniList 2-way
   library sync** (import your lists into the Library + auto-scrobble progress
   back; optional 12h/daily/weekly background sync)
