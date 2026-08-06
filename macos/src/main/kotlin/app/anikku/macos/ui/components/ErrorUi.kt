@@ -187,6 +187,8 @@ fun ErrorBanner(
     onDismiss: (() -> Unit)? = null,
     source: String? = null,
     location: String? = null,
+    title: String? = null,
+    message: String? = null,
 ) {
     // Log the error to the terminal as soon as the banner is composed.
     LaunchedEffect(errorType) {
@@ -208,12 +210,12 @@ fun ErrorBanner(
         },
         title = {
             Text(
-                text = errorType.title,
+                text = title ?: errorType.title,
                 fontWeight = FontWeight.Bold,
             )
         },
         text = {
-            Text(text = errorType.message)
+            Text(text = message ?: errorType.message)
         },
         confirmButton = {
             if (onDismiss != null) {

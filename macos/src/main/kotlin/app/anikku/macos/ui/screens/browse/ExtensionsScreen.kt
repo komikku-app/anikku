@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Extension
@@ -45,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.extension.MacOSExtensionManager
@@ -83,6 +85,7 @@ data class ExtensionsScreen(
         val installedExtensions by (extensionManager?.installedExtensionsFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
         val availableExtensions by (extensionManager?.availableExtensionsFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
         val untrustedExtensions by (extensionManager?.untrustedExtensionsFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
+        val fetchError by (extensionManager?.availableFetchError?.collectAsState() ?: remember { mutableStateOf<String?>(null) })
 
         var selectedTab by remember { mutableStateOf(0) } // 0=Installed, 1=Available, 2=Repos, 3=Untrusted
         // Default repo — pre-converted JAR extensions for macOS.
@@ -225,7 +228,46 @@ data class ExtensionsScreen(
                         }
                     }
 
-                    if (availableExtensions.isEmpty() && !isFetching) {
+                    if (availableExtensions.isEmpty() && !isFetching && fetchError != null) {
+                        item {
+                            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Outlined.CloudOff,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(48.dp),
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(
+                                        "Couldn't load extensions",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        fetchError.orEmpty(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    OutlinedButton(
+                                        onClick = {
+                                            scope.launch {
+                                                isFetching = true
+                                                extensionManager?.findAvailableExtensions(repoUrl, force = false)
+                                                isFetching = false
+                                            }
+                                        },
+                                        enabled = !isFetching,
+                                    ) {
+                                        Text("Retry")
+                                    }
+                                }
+                            }
+                        }
+                    } else if (availableExtensions.isEmpty() && !isFetching) {
                         item {
                             Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

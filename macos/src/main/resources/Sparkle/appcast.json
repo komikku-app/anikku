@@ -1,8 +1,8 @@
 {
-  "version": "1.8.4",
-  "downloadUrl": "https://github.com/ErnestHysa/anikku/releases/download/v1.8.4/Anikku-1.8.4.dmg",
-  "releaseNotesUrl": "https://github.com/ErnestHysa/anikku/releases/tag/v1.8.4",
-  "signature": "JTCI+ozmCKHqaMHBqGm3ii6rZYXksYlCyzjKbWvvqEqx5hQSSyYTZCXGcQ/cl6Ab8/9pe6vCGOnhz1S1AVJ6DQ==",
-  "dmgSize": 235441097,
-  "pubDate": "Wed, 05 Aug 2026 23:58:19 +0000"
+  "version": "1.8.5",
+  "downloadUrl": "https://github.com/ErnestHysa/anikku/releases/download/v1.8.5/Anikku-1.8.5.dmg",
+  "releaseNotesUrl": "https://github.com/ErnestHysa/anikku/releases/tag/v1.8.5",
+  "signature": "2qdLd/tIZ6c/Vfqo0dywXkinVNtxaeHAtsZ0TZVmIkwPOl2Q87bPUzt2wC6qRMvtIvvKfAxzHRYUNuJGGeluDw==",
+  "dmgSize": 235533011,
+  "pubDate": "Thu, 06 Aug 2026 10:12:52 +0000"
 }

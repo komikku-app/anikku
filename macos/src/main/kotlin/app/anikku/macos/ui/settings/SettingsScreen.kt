@@ -262,7 +262,7 @@ fun SettingsScreen() {
         SettingsSection(
             title = "Downloads",
             searchQuery = searchQuery,
-            searchLabels = listOf("Simultaneous downloads", "Download on Wi-Fi only", "View Downloads"),
+            searchLabels = listOf("Simultaneous downloads", "View Downloads"),
         ) {
 
         var simultaneousDownloads by remember { mutableStateOf(settings.simultaneousDownloads) }
@@ -274,17 +274,6 @@ fun SettingsScreen() {
                 simultaneousDownloads = it + 1
                 settings.simultaneousDownloads = simultaneousDownloads
                 toastHost.show("Downloads: ${simultaneousDownloads} simultaneous", ToastDuration.SHORT)
-            },
-        )
-
-        var wifiOnly by remember { mutableStateOf(settings.downloadOnWifiOnly) }
-        CheckboxItem(
-            label = "Download on Wi-Fi only",
-            checked = wifiOnly,
-            onClick = {
-                wifiOnly = !wifiOnly
-                settings.downloadOnWifiOnly = wifiOnly
-                toastHost.show("Wi-Fi only: ${if (wifiOnly) "on" else "off"}", ToastDuration.SHORT)
             },
         )
 

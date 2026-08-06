@@ -43,8 +43,8 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 /**
  * Main application window composable.
  *
- * Sets up the Voyager TabNavigator with 5 primary tabs:
- * Library, Updates, History, Browse, More
+ * Sets up the Voyager TabNavigator with 9 tabs:
+ * Library, Updates, History, Stats, Browse, Torrents, Downloads, Discover, More
  *
  * Uses a Material 3 NavigationRail (side navigation) for desktop layout,
  * matching macOS conventions where horizontal space is abundant.

@@ -74,6 +74,14 @@ class MacOSExtensionManager(
         .map { it.values.toList() }
         .stateIn(scope, SharingStarted.Lazily, emptyList())
 
+    /**
+     * Last repo fetch error, or null when the most recent fetch succeeded.
+     * Lets the UI distinguish "repo unreachable / malformed" from a genuinely
+     * empty repository instead of showing a misleading empty state.
+     */
+    private val _availableFetchError = MutableStateFlow<String?>(null)
+    val availableFetchError: StateFlow<String?> = _availableFetchError.asStateFlow()
+
     private val untrustedExtensionsMapFlow = MutableStateFlow(emptyMap<String, Extension.Untrusted>())
     val untrustedExtensionsFlow: StateFlow<List<Extension.Untrusted>> = untrustedExtensionsMapFlow
         .map { it.values.toList() }
@@ -222,10 +230,14 @@ class MacOSExtensionManager(
             availableExtensionsMapFlow.value = extensions.associateBy { it.pkgName }
             updateInstalledStatuses(extensions)
             lastExtensionCheck = now
+            _availableFetchError.value = null
 
             extensions
         } catch (e: Exception) {
             logger.error(e) { "Failed to fetch extensions from $repoBaseUrl" }
+            _availableFetchError.value =
+                "Couldn't reach the repository${repoBaseUrl.takeIf { it.isNotBlank() }?.let { " at $it" } ?: ""}: " +
+                    (e.message?.take(120) ?: e.javaClass.simpleName)
             emptyList()
         }
     }

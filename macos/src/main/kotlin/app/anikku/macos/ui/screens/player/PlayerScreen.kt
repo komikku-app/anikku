@@ -642,9 +642,14 @@ data class PlayerScreen(
             }.getOrNull()
         }
 
-        // Initialize the player view model (Phase 6)
+        // Initialize the player view model (Phase 6). Volume starts at the
+        // persisted last-used value and every change is written back.
         val playerViewModel = remember {
-            PlayerViewModel(clipSeconds = settings.clipCaptureSeconds)
+            PlayerViewModel(
+                clipSeconds = settings.clipCaptureSeconds,
+                initialVolume = settings.volume,
+                onVolumeChanged = { settings.volume = it },
+            )
         }
 
         // Watch Together — LAN sync room. Player-scoped: the session (and any
@@ -1871,7 +1876,14 @@ data class PlayerScreen(
                 val base = presets.withIndex().minByOrNull { kotlin.math.abs(it.value - current) }?.index ?: 2
                 val target = presets[(base + dir).coerceIn(0, presets.lastIndex)]
                 playerViewModel.setSpeed(target)
+                // Persist so the next session starts at this speed.
+                settings.defaultPlaybackSpeed = target.toFloat()
                 toastHost.show("Speed ${target}x", ToastDuration.SHORT)
+            },
+            onSpeedChange = { speed ->
+                playerViewModel?.setSpeed(speed.toDouble())
+                // Persist so the next session starts at this speed.
+                settings.defaultPlaybackSpeed = speed
             },
             onSubtitleDelayNudge = { delta ->
                 playerViewModel.setSubtitleDelayForAnime(animeId, subtitleDelay + delta)
@@ -2116,6 +2128,7 @@ internal fun PlayerContent(
     nextSourceName: String? = null,
     onTryNextSource: () -> Unit = {},
     onSpeedStep: (Int) -> Unit = {},
+    onSpeedChange: (Float) -> Unit = {},
     onSubtitleDelayNudge: (Double) -> Unit = {},
     onLinkToTracker: () -> Unit = {},
     onBack: () -> Unit,
@@ -3003,7 +3016,11 @@ internal fun PlayerContent(
         }
 
         AnimatedVisibility(visible = showSpeedPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
-            PlayerSpeedPanel(currentSpeed = playbackSpeed.toFloat(), onSpeedChange = { playerViewModel?.setSpeed(it.toDouble()) }, onDismiss = { showSpeedPanel = false })
+            PlayerSpeedPanel(
+                currentSpeed = playbackSpeed.toFloat(),
+                onSpeedChange = onSpeedChange,
+                onDismiss = { showSpeedPanel = false },
+            )
         }
         AnimatedVisibility(visible = showAudioPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             PlayerAudioTrackPanel(tracks = audioTracks, currentTrackIndex = selectedAudioTrack, audioDelay = audioDelay, onTrackSelected = { playerViewModel?.selectAudioTrack(it) }, onDelayChange = { playerViewModel?.setAudioDelay(it) }, onDismiss = { showAudioPanel = false })

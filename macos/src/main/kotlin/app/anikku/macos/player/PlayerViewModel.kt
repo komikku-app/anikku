@@ -32,8 +32,13 @@ private val logger = KotlinLogging.logger {}
  */
 class PlayerViewModel(
     private val torrentStreamer: TorrentStreamingCoordinator = TorrentStreamingCoordinator(),
-    /** GIF clip length in seconds (from Settings when constructed by the player). */
+    // GIF clip length in seconds (from Settings when constructed by the player).
     clipSeconds: Int = 5,
+    // Volume (0-200) to apply at player start — the persisted last-used volume.
+    private val initialVolume: Int = 100,
+    // Called whenever the user changes volume, so the caller can persist it.
+    // (private val: plain ctor params are not visible inside member functions.)
+    private val onVolumeChanged: ((Int) -> Unit)? = null,
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -128,7 +133,7 @@ class PlayerViewModel(
     private val _duration = MutableStateFlow(0.0)
     val duration: StateFlow<Double> = _duration.asStateFlow()
 
-    private val _volume = MutableStateFlow(100)
+    private val _volume = MutableStateFlow(initialVolume.coerceIn(0, 200))
     val volume: StateFlow<Int> = _volume.asStateFlow()
 
     private val _isPaused = MutableStateFlow(true)
@@ -236,6 +241,9 @@ class PlayerViewModel(
                 return false
             }
             logger.info { "🚀 MPV_CORE: mpv initialized successfully (vo=libmpv, hwdec=auto-copy-safe)" }
+
+            // Apply the persisted last-used volume (mpv defaults to 100).
+            setVolume(initialVolume)
 
             // Create software render context
             val renderer = MPVSoftwareRenderer(handle)
@@ -972,6 +980,7 @@ class PlayerViewModel(
                 logger.warn(e) { "Failed to set volume on mpv" }
             }
         }
+        onVolumeChanged?.invoke(clamped)
     }
 
     /**

@@ -300,6 +300,12 @@ fun main() = application {
         }
         val toastHostState = remember { ToastHostState() }
 
+        // Apply the persisted "simultaneous downloads" limit to the manager at
+        // startup and keep it in sync when the user changes the setting.
+        LaunchedEffect(downloadManager, settingsState.simultaneousDownloads) {
+            downloadManager?.maxConcurrentDownloads = settingsState.simultaneousDownloads
+        }
+
         var showAboutDialog by remember { mutableStateOf(false) }
 
         // Phase 5.12: Check if onboarding has been completed

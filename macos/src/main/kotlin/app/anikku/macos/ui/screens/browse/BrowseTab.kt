@@ -92,7 +92,7 @@ object BrowseTab : AnikkuScreen(), Tab {
     override val options: TabOptions
         @Composable
         get() = TabOptions(
-            index = 3u,
+            index = 4u,
             title = "Browse",
             icon = rememberVectorPainter(Icons.Outlined.Explore),
         )

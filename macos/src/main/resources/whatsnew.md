@@ -1,3 +1,12 @@
+## v1.8.5 — trust fixes
+
+- Volume and playback speed now persist between sessions
+- "Simultaneous downloads" actually limits concurrent downloads now
+- Extension repo failures show a real error with Retry, not a fake empty list
+- Global search tells you when every source failed and why
+- Updates tab shows real progress — no more phantom "Checking…" state
+- Corrupted databases are detected and repaired at startup, with a backup
+
 ## v1.8.4 — settings layout fixed
 
 - The settings screen was rendering its rows on top of each other — squashed,

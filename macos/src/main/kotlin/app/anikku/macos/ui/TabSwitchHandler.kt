@@ -1,7 +1,7 @@
 package app.anikku.macos.ui
 
 /**
- * Bridges AWT menu bar View shortcuts (⌘1-4) to the Voyager TabNavigator.
+ * Bridges AWT menu bar View shortcuts (⌘1-9) to the Voyager TabNavigator.
  *
  * Since the menu bar is set up via java.awt in AnikkuApp.kt (outside the
  * Compose tree), and the Voyager TabNavigator lives inside MainWindow.kt
@@ -13,10 +13,10 @@ package app.anikku.macos.ui
  */
 object TabSwitchHandler {
 
-    /** Maps tab index (0-4) to the Voyager tab switching action. */
+    /** Maps tab index (0-8) to the Voyager tab switching action. */
     var onSwitchTab: ((Int) -> Unit)? = null
 
-    /** Convenience: switch to a tab by its index (0=Library, 1=Updates, 2=History, 3=Browse, 4=More). */
+    /** Convenience: switch to a tab by its index (0=Library, 1=Updates, 2=History, 3=Stats, 4=Browse, 5=Torrents, 6=Downloads, 7=Discover, 8=More). */
     fun switchTo(index: Int) {
         onSwitchTab?.invoke(index)
     }

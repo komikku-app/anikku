@@ -15,7 +15,7 @@ package app.anikku.macos.ui
  * | ⌘N | New / Browse source |
  * | ⌘W | Close window |
  * | ⌘Q | Quit |
- * | ⌘1–⌘5 | Switch tabs (Library, Updates, History, Browse, More) |
+ * | ⌘1–⌘9 | Switch tabs (Library, Updates, History, Stats, Browse, Torrents, Downloads, Discover, More) |
  * | Space | Play/Pause (when player focused) |
  * | ← → | Seek backward/forward |
  * | ↑ ↓ | Volume up/down |

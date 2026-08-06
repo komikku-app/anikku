@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
@@ -50,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.extension.MacOSExtensionManager
@@ -353,6 +355,50 @@ data class GlobalSearchScreen(
 
                 // No results state (after search completed)
                 if (hasSearched && sourceResults.all { !it.isLoading && it.anime.isEmpty() }) {
+                    val erroredSources = sourceResults.filter { it.error != null }
+                    if (erroredSources.isNotEmpty()) {
+                        // Every source failed — surface the failures instead of
+                        // a bare "no results", so the user knows the search
+                        // didn't actually run anywhere.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Outlined.CloudOff,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "Search failed for all ${erroredSources.size} source${if (erroredSources.size != 1) "s" else ""}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.height(12.dp))
+                                erroredSources.forEach { result ->
+                                    Text(
+                                        text = "${result.sourceName}: ${result.error}",
+                                        modifier = Modifier.padding(vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                                Spacer(Modifier.height(12.dp))
+                                Text(
+                                    "The sources may be down or blocking requests — try again in a moment.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                )
+                            }
+                        }
+                        return@Column
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

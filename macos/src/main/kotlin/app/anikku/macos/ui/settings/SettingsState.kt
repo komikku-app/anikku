@@ -67,6 +67,7 @@ class SettingsState(
         private const val KEY_RESUME_FROM_LAST = "resume_from_last"
         private const val KEY_SKIP_INTRO = "skip_intro"
         private const val KEY_DEFAULT_SPEED = "default_playback_speed"
+        private const val KEY_VOLUME = "player_volume"
         private const val KEY_SUBTITLE_FONT_SIZE = "subtitle_font_size"
         private const val KEY_SUBTITLE_POSITION = "subtitle_position"
         private const val KEY_CLIP_CAPTURE_SECONDS = "player_clip_capture_seconds"
@@ -80,7 +81,6 @@ class SettingsState(
         private const val KEY_KITSU_LAST_SYNC_AT = "kitsu_last_sync_at"
 
         // Download settings
-        private const val KEY_DOWNLOAD_WIFI_ONLY = "download_wifi_only"
         private const val KEY_SIMULTANEOUS_DOWNLOADS = "simultaneous_downloads"
 
         // Network settings
@@ -281,6 +281,21 @@ class SettingsState(
             defaultSpeedPref?.set(sanitized)
         }
 
+    private val volumePref = preferenceStore?.getInt(KEY_VOLUME, 100)
+    private val _volume = mutableStateOf((volumePref?.get() ?: 100).coerceIn(0, 200))
+
+    /**
+     * Last used volume (0-200, mpv scale). Saved whenever the player volume
+     * changes so the next session starts where the user left it.
+     */
+    var volume: Int
+        get() = _volume.value
+        set(value) {
+            val clamped = value.coerceIn(0, 200)
+            _volume.value = clamped
+            volumePref?.set(clamped)
+        }
+
     private val subtitleFontSizePref = preferenceStore?.getFloat(KEY_SUBTITLE_FONT_SIZE, 55f)
     private val _subtitleFontSize = mutableStateOf(
         (subtitleFontSizePref?.get() ?: 55f).coerceIn(20f, 160f),
@@ -400,17 +415,6 @@ class SettingsState(
     // -------------------------------------------------------------------------
     // Download settings
     // -------------------------------------------------------------------------
-
-    private val wifiOnlyPref = preferenceStore?.getBoolean(KEY_DOWNLOAD_WIFI_ONLY, true)
-    private val _downloadWifiOnly = mutableStateOf(wifiOnlyPref?.get() ?: true)
-
-    /** Whether downloads should only run on Wi-Fi. */
-    var downloadOnWifiOnly: Boolean
-        get() = _downloadWifiOnly.value
-        set(value) {
-            _downloadWifiOnly.value = value
-            wifiOnlyPref?.set(value)
-        }
 
     private val simultaneousPref = preferenceStore?.getInt(KEY_SIMULTANEOUS_DOWNLOADS, 3)
     private val _simultaneousDownloads = mutableStateOf(

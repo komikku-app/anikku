@@ -46,6 +46,8 @@ import app.anikku.macos.platform.LocalBackgroundJobs
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
+import app.anikku.macos.ui.components.ErrorBanner
+import app.anikku.macos.ui.components.ErrorType
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
@@ -133,6 +135,7 @@ object UpdatesTab : AnikkuScreen(), Tab {
             libraryCount = libraryEntries.size,
             isRefreshing = backgroundStatus?.runningTask == "Library update",
             statusMessage = backgroundStatus?.message,
+            lastError = backgroundStatus?.lastError,
             onRefresh = { backgroundJobs?.updateLibraryNow() },
             onUpdateClick = { update ->
                 val libraryEntry = libraryEntries.find { it.animeId == update.animeId }
@@ -192,9 +195,25 @@ private fun UpdatesContent(
     libraryCount: Int = 0,
     isRefreshing: Boolean = false,
     statusMessage: String? = null,
+    lastError: String? = null,
     onRefresh: () -> Unit = {},
     onUpdateClick: (UpdateItemData) -> Unit = {},
 ) {
+    // Dismissible error banner for failed background library checks. Re-shows
+    // whenever a fresh error arrives; cleared on the next successful run.
+    var errorDismissed by remember(lastError) { mutableStateOf(lastError == null) }
+    val lastErrorText = lastError?.takeIf(String::isNotBlank)
+    if (lastErrorText != null && !errorDismissed) {
+        ErrorBanner(
+            errorType = ErrorType.GENERIC_ERROR,
+            title = "Library update failed",
+            message = lastErrorText,
+            onDismiss = { errorDismissed = true },
+            source = "Library update",
+            location = "UpdatesTab.UpdatesContent",
+        )
+    }
+
     if (updates.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -209,7 +228,7 @@ private fun UpdatesContent(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    if (libraryCount > 0) "Checking for updates..." else "No recent updates",
+                    "No recent updates",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -230,7 +249,7 @@ private fun UpdatesContent(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (libraryCount > 0) "Add anime and watch episodes to see updates" else "Add anime to your library to track updates",
+                    if (libraryCount > 0) "New episodes of your anime will show up here" else "Add anime to your library to track updates",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
@@ -264,7 +283,6 @@ private fun UpdatesContent(
                 // Live progress while the background library check runs.
                 if (isRefreshing) {
                     LinearProgressIndicator(
-                        progress = { 0.5f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(2.dp)

@@ -14,6 +14,7 @@ import app.anikku.macos.platform.data.HistoryRepository
 import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
 import app.anikku.macos.platform.database.MacOSDatabaseDriver
+import app.anikku.macos.platform.database.MacOSDatabaseRepairHandler
 import app.anikku.macos.platform.discord.DiscordRPC
 import app.anikku.macos.platform.extension.MacOSExtensionLoader
 import app.anikku.macos.platform.extension.MacOSExtensionManager
@@ -109,6 +110,11 @@ class AnikkuApplication {
     val syncYomiService: MacOSSyncYomiService
     val backgroundJobs: MacOSBackgroundJobs
     val notificationManager: MacOSNotificationManager
+
+    /** Set when startup DB integrity repair ran; surfaced to the user via notification. */
+    @Volatile
+    var startupDatabaseRepairNote: String? = null
+
     val biometricAuth: MacOSBiometricAuth
     val appUpdateChecker: AppUpdateChecker
     val sparkleUpdater: SparkleUpdater
@@ -159,7 +165,38 @@ class AnikkuApplication {
             }
         }
 
-        // 5. Initialize database driver
+        // 5. Initialize database driver. Run a startup integrity check first —
+        // a corrupted SQLite file silently degrades into data loss if the app
+        // just keeps writing. The repair handler backs up the broken file and
+        // either VACUUM-repairs it or resets to a fresh database.
+        runCatching {
+            val repairHandler = MacOSDatabaseRepairHandler(storageProvider)
+            when (repairHandler.checkDatabaseIntegrity()) {
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.OK,
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.NOT_FOUND,
+                -> Unit
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.CORRUPT -> {
+                    when (val result = repairHandler.repairOrReset()) {
+                        is MacOSDatabaseRepairHandler.RepairResult.Repaired ->
+                            startupDatabaseRepairNote =
+                                "The anime database was corrupted and has been repaired. " +
+                                    "A backup of the old file is in db_backups."
+                        is MacOSDatabaseRepairHandler.RepairResult.Reset ->
+                            startupDatabaseRepairNote =
+                                "The anime database was corrupted beyond repair and was reset. " +
+                                    "A backup of the old file is in db_backups — your library may need re-adding."
+                        is MacOSDatabaseRepairHandler.RepairResult.Failed ->
+                            startupDatabaseRepairNote =
+                                "The anime database is corrupted and automatic repair failed " +
+                                    "(${result.reason}). See the crash log for details."
+                    }
+                }
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.ACCESS_DENIED -> Unit
+            }
+        }.onFailure { e ->
+            MacOSLogger.getLogger<AnikkuApplication>()
+                .warn("Startup database integrity check failed — continuing", e)
+        }
         databaseDriver = MacOSDatabaseDriver(storageProvider)
 
         // 5. Initialize networking (Phase 3.1-3.2)
@@ -281,6 +318,14 @@ class AnikkuApplication {
         // 9b. macOS Notifications
         notificationManager = MacOSNotificationManager()
         notificationManager.initialize()
+
+        // Surface a startup DB repair (if any) after the notifier is ready.
+        startupDatabaseRepairNote?.let { note ->
+            notificationManager.showNotification(
+                title = "Anikku database recovered",
+                message = note,
+            )
+        }
 
         backgroundJobs = MacOSBackgroundJobs(
             scheduler = backgroundScheduler,

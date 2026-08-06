@@ -72,11 +72,14 @@ open class MacOSDownloadManager(
     private val _downloads = MutableStateFlow(repository.getAll())
     open val downloads: StateFlow<List<DownloadRepository.DownloadEntry>> = _downloads.asStateFlow()
 
+    /**
+     * Maximum number of downloads that run in parallel (1-10). Backed by the
+     * user's "Simultaneous downloads" setting — each download builds a fresh
+     * [limitedParallelism] dispatcher, so changes apply live to new starts.
+     */
     var maxConcurrentDownloads: Int = MAX_CONCURRENT_DOWNLOADS
         set(value) {
             field = value.coerceIn(1, 10)
-            // The fixed safety limit is intentionally retained for this manager;
-            // changing it cannot safely resize permits held by active jobs.
         }
 
     init {

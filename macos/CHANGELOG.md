@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.8.5] — 2026-08-06
+
+### Fixes — trust & honesty
+
+- **"Download on Wi-Fi only" removed** — it was stored but never enforced (a
+  phone-era concept on a desktop app). "Simultaneous downloads" is now
+  actually enforced by the download manager (was hardcoded to 3).
+- **Volume and playback speed persist across sessions** — the player starts at
+  your last-used volume, and in-player speed changes become the new default.
+- **Extension fetch failures are now shown** — a repo that's down or malformed
+  shows an error with Retry instead of a misleading "No extensions available".
+- **Global search shows source failures** — when every source errors you see
+  why, instead of a bare "No results".
+- **Updates tab is honest** — real (indeterminate) progress only while the
+  library check actually runs, no more fake half-filled bar or phantom
+  "Checking for updates…" state; failed checks surface a dismissible banner.
+- **Database corruption is detected at startup** — a corrupted library DB is
+  backed up and repaired (or reset) before data is written, with a
+  notification explaining what happened.
+- Fixed duplicate tab indices (Stats/Browse both claimed 3) and stale
+  "5 tabs" documentation — the rail has 9 tabs.
+
 ## [1.8.4] — 2026-08-06
 
 ### Fixes — Settings screen layout
