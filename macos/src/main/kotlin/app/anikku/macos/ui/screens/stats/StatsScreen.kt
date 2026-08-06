@@ -24,13 +24,9 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,8 +45,11 @@ import app.anikku.macos.platform.stats.WatchStats
 import app.anikku.macos.platform.stats.WatchStatsCalculator
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.EmptyState
+import app.anikku.macos.ui.components.ScreenScaffold
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import java.text.SimpleDateFormat
@@ -70,12 +69,13 @@ class StatsScreen : AnikkuScreen() {
 
     @Composable
     override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
         val historyRepo = LocalHistoryRepository.current
         val historyRevision = historyRepo?.revision?.collectAsState()?.value ?: 0L
         val history = remember(historyRevision) { historyRepo?.getAll().orEmpty() }
         val stats = remember(history) { WatchStatsCalculator.computeStats(history) }
 
-        StatsDashboard(stats = stats)
+        StatsDashboard(stats = stats, onBack = { navigator.pop() })
     }
 }
 
@@ -103,18 +103,14 @@ object StatsTab : AnikkuScreen(), Tab {
         )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StatsDashboard(stats: WatchStats) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Watch Stats") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
-            )
-        },
+private fun StatsDashboard(
+    stats: WatchStats,
+    onBack: (() -> Unit)? = null,
+) {
+    ScreenScaffold(
+        title = "Watch Stats",
+        onBack = onBack,
     ) { padding ->
         if (stats.totalEpisodes == 0 && stats.totalWatchSeconds == 0L) {
             EmptyState(

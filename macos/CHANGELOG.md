@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.9.2] — 2026-08-06
+
+### Consistency polish
+
+- **Stats back button** — opening Watch Stats from Settings now shows a back
+  arrow in its top bar (the Stats tab itself stays a root, no arrow).
+- **Backup & Restore uses the standard screen chrome** — same top-bar title +
+  back arrow as every other pushed screen, replacing its old in-page header.
+- **Onboarding matches the rest of the app** — the flow now uses the standard
+  top bar: the current step's title sits in the title bar and Skip moved to
+  the top-right action slot, so each screen (and the skip affordance) looks
+  like everywhere else in Anikku.
+
 ## [1.9.1] — 2026-08-06
 
 ### Fixes

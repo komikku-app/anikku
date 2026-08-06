@@ -1,3 +1,11 @@
+## v1.9.2 — one consistent look
+
+- Watch Stats opened from Settings has a back arrow now
+- Backup & Restore uses the standard top bar (title + back) like every other
+  screen
+- Onboarding got the app's usual top bar: the step's title is in the title
+  bar and Skip moved to the top-right corner
+
 ## v1.9.1 — crash fix + back navigation
 
 - Fixed the crash when starting playback from an anime page (Now Playing

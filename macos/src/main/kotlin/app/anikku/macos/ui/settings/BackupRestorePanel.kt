@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CloudUpload
@@ -66,8 +65,6 @@ import app.anikku.macos.platform.sync.LocalGoogleDriveService
 import app.anikku.macos.ui.components.HeadingItem
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -107,8 +104,8 @@ private data class BackupEntry(
 fun BackupRestorePanel(
     backupManager: MacOSBackupManager,
     backupsDir: File,
+    modifier: Modifier = Modifier,
 ) {
-    val navigator = LocalNavigator.currentOrThrow
     val toastHost = LocalToastHost.current
     val scope = rememberCoroutineScope()
 
@@ -291,31 +288,11 @@ fun BackupRestorePanel(
     // Main UI
     // =========================================================================
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(bottom = 80.dp),
     ) {
-        // ---- Header with back button ----
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = { navigator.pop() }) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                "Backup & Restore",
-                style = MaterialTheme.typography.headlineMedium,
-            )
-        }
-
         HorizontalDivider()
 
         // ---- Create Backup button ----

@@ -28,8 +28,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,11 +39,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.ScreenScaffold
 import app.anikku.macos.ui.settings.LocalSettingsState
 import app.anikku.macos.ui.settings.SettingsState
 import app.anikku.macos.ui.settings.ThemeMode
@@ -76,27 +74,32 @@ class OnboardingScreen(
         var currentStep by remember { mutableIntStateOf(initialStep.coerceIn(0, 4)) }
         val totalSteps = 5
         val settings = LocalSettingsState.current
+        val stepTitles = listOf(
+            "Welcome to Anikku",
+            "Choose Your Look",
+            "Add Sources",
+            "Quick Tips",
+            "You're All Set!",
+        )
 
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize()) {
+        ScreenScaffold(
+            title = stepTitles[currentStep],
+            actions = {
                 // Skip — the app is fully usable without onboarding; never
                 // force a new user through five informational screens.
-                TextButton(
-                    onClick = onComplete,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp),
-                ) {
+                TextButton(onClick = onComplete) {
                     Text("Skip")
                 }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
                 // Step indicator dots
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -193,7 +196,6 @@ class OnboardingScreen(
                         }
                     }
                 }
-                }
             }
         }
     }
@@ -208,13 +210,6 @@ private fun StepWelcome() {
         tint = MaterialTheme.colorScheme.primary,
     )
     Spacer(Modifier.height(24.dp))
-    Text(
-        text = "Welcome to Anikku",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-    )
-    Spacer(Modifier.height(12.dp))
     Text(
         text = "Your ultimate anime watching companion for macOS.\nBrowse sources, track your progress, and enjoy smooth playback with hardware-accelerated video.",
         style = MaterialTheme.typography.bodyLarge,
@@ -232,13 +227,6 @@ private fun StepAppearance(settings: SettingsState) {
         tint = MaterialTheme.colorScheme.primary,
     )
     Spacer(Modifier.height(24.dp))
-    Text(
-        text = "Choose Your Look",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-    )
-    Spacer(Modifier.height(12.dp))
     Text(
         text = "Pick a color scheme and whether Anikku follows your macOS appearance. You can change all of this anytime from Settings.",
         style = MaterialTheme.typography.bodyLarge,
@@ -318,13 +306,6 @@ private fun StepSources(onBrowseSources: () -> Unit) {
     )
     Spacer(Modifier.height(24.dp))
     Text(
-        text = "Add Sources",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-    )
-    Spacer(Modifier.height(12.dp))
-    Text(
         text = "Anime comes from extensions (sources) you install from the Browse tab — like streaming sites and torrent trackers.\n\nDownloads are saved automatically to Anikku's data folder, so you can watch offline anytime.",
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -359,13 +340,6 @@ private fun StepTips() {
         tint = MaterialTheme.colorScheme.primary,
     )
     Spacer(Modifier.height(24.dp))
-    Text(
-        text = "Quick Tips",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-    )
-    Spacer(Modifier.height(16.dp))
 
     val tips = listOf(
         "⌘1–⌘9 — Switch tabs",
@@ -397,13 +371,6 @@ private fun StepReady() {
         tint = MaterialTheme.colorScheme.primary,
     )
     Spacer(Modifier.height(24.dp))
-    Text(
-        text = "You're All Set!",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-    )
-    Spacer(Modifier.height(12.dp))
     Text(
         text = "Start by adding sources from the Browse tab,\nthen find your favorite anime and begin watching.\n\nYour library, history, and preferences will be\nsaved automatically.",
         style = MaterialTheme.typography.bodyLarge,
