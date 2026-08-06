@@ -36,6 +36,7 @@ import app.anikku.macos.platform.update.AppInfo
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.watch.LocalWatchTogetherServer
+import app.anikku.macos.platform.torrent.LocalTorrentServerBridge
 import app.anikku.macos.platform.watch.LocalWatchTogetherTunnel
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.download.MacOSDownloadManager
@@ -130,10 +131,7 @@ private suspend fun periodicTrackerSync(
 val LocalAppWindow = compositionLocalOf<Frame?> { null }
 
 internal fun imageDiskCacheDirectory(userHome: String = System.getProperty("user.home")): java.io.File =
-    java.io.File(
-        userHome,
-        "Library${java.io.File.separator}Application Support${java.io.File.separator}Anikku${java.io.File.separator}cache${java.io.File.separator}images",
-    )
+    java.io.File(app.anikku.macos.platform.storage.MacOSStorageProvider.baseDirectoryFor(userHome), "cache${java.io.File.separator}images")
 
 /**
  * Anikku macOS — Entry Point.
@@ -304,6 +302,11 @@ fun main() = application {
         // startup and keep it in sync when the user changes the setting.
         LaunchedEffect(downloadManager, settingsState.simultaneousDownloads) {
             downloadManager?.maxConcurrentDownloads = settingsState.simultaneousDownloads
+        }
+
+        // Apply the persisted downloads folder (new downloads only).
+        LaunchedEffect(downloadManager, settingsState.downloadDirectory) {
+            downloadManager?.setDownloadsDirectory(settingsState.downloadDirectory)
         }
 
         var showAboutDialog by remember { mutableStateOf(false) }
@@ -563,6 +566,7 @@ fun main() = application {
             LocalBackgroundJobs provides app.backgroundJobs,
             LocalWatchTogetherServer provides app.watchTogetherServer,
             LocalWatchTogetherTunnel provides app.watchTogetherTunnel,
+            LocalTorrentServerBridge provides app.torrentServerBridge,
         ) {
             AnikkuTheme(
                 theme = settingsState.theme,

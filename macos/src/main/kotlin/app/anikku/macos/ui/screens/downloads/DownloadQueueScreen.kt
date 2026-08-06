@@ -64,6 +64,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.LocalNavigator
 import app.anikku.macos.ui.screens.player.PlayerScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OfflineBadge
 import app.anikku.macos.ui.components.ToastDuration
@@ -272,38 +273,17 @@ internal fun DownloadQueueContent(
 
         if (downloads.isEmpty()) {
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.CloudDownload,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            "No downloads",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            if (data.manager == null) "Download manager not initialized"
-                            else "Click the download button on any episode to save it for offline viewing",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        )
-                        if (onBrowse != null) {
-                            Spacer(Modifier.height(16.dp))
-                            Button(onClick = onBrowse) { Text("Find something to watch") }
-                        }
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Outlined.CloudDownload,
+                    title = "No downloads",
+                    hint = if (data.manager == null) {
+                        "Download manager not initialized"
+                    } else {
+                        "Click the download button on any episode to save it for offline viewing"
+                    },
+                    actionLabel = if (onBrowse != null) "Find something to watch" else null,
+                    onAction = onBrowse,
+                )
             }
         } else {
             items(

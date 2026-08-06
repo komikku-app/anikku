@@ -7,7 +7,9 @@ import app.anikku.macos.platform.BackgroundTaskScheduler
 import app.anikku.macos.platform.MacOSBackgroundJobs
 import app.anikku.macos.platform.backup.MacOSBackupManager
 import app.anikku.macos.platform.data.LibraryRepository
+import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.local.LocalLibraryRepository
+import app.anikku.macos.platform.torrent.TorrentServerBridge
 import app.anikku.macos.platform.watch.WatchTogetherServer
 import app.anikku.macos.platform.watch.WatchTogetherTunnel
 import app.anikku.macos.platform.data.HistoryRepository
@@ -15,6 +17,7 @@ import app.anikku.macos.platform.data.DownloadRepository
 import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
 import app.anikku.macos.platform.database.MacOSDatabaseDriver
 import app.anikku.macos.platform.database.MacOSDatabaseRepairHandler
+import app.anikku.macos.platform.MacOSDeepLinkHandler
 import app.anikku.macos.platform.discord.DiscordRPC
 import app.anikku.macos.platform.extension.MacOSExtensionLoader
 import app.anikku.macos.platform.extension.MacOSExtensionManager
@@ -127,6 +130,13 @@ class AnikkuApplication {
      * the first room, stopped at shutdown. Null URL means LAN-only rooms.
      */
     val watchTogetherTunnel: WatchTogetherTunnel = WatchTogetherTunnel()
+
+    /**
+     * App-scoped TorrServer bridge — the player streams through it, and the
+     * Torrents tab polls it for live progress (active torrents list). Stopped
+     * at shutdown.
+     */
+    val torrentServerBridge: TorrentServerBridge = TorrentServerBridge.createDefault()
 
     private val shutdownStarted = AtomicBoolean(false)
 
@@ -327,6 +337,10 @@ class AnikkuApplication {
             )
         }
 
+        // Register the anikku:// URL scheme delegate (Watch Together
+        // deep links open episodes straight into the player).
+        MacOSDeepLinkHandler.install()
+
         backgroundJobs = MacOSBackgroundJobs(
             scheduler = backgroundScheduler,
             backupManager = backupManager,
@@ -343,6 +357,11 @@ class AnikkuApplication {
                     true,
                 ).get()
             },
+            // Resolved here (not injected) because the manager needs Koin up
+            // first; auto-download of new episodes is best-effort.
+            downloadManager = runCatching {
+                org.koin.core.context.GlobalContext.get().get<MacOSDownloadManager>()
+            }.getOrNull(),
         )
 
         // 9c. Biometric Authentication (Touch ID + PIN fallback)
@@ -367,7 +386,11 @@ class AnikkuApplication {
         // Sparkle reads SUFeedURL from Info.plist (injected by patchInfoPlist).
         // If Sparkle framework is not bundled (dev builds), this is a no-op
         // and the AppUpdateChecker fallback handles update checks.
-        sparkleUpdater.initialize()
+        // The update channel (Settings > About > Updates) selects the feed:
+        // stable = appcast.xml from Info.plist, beta = the beta appcast.
+        val updateChannel = preferenceStore.getString("update_channel", "stable").get()
+        val betaFeed = "https://raw.githubusercontent.com/ErnestHysa/anikku/master/macos/src/main/resources/Sparkle/appcast-beta.xml"
+        sparkleUpdater.initialize(if (updateChannel == "beta") betaFeed else null)
 
         // Schedule silent background update check 30 seconds after startup
         backgroundScheduler.runOnce("startup-update-check") {
@@ -503,6 +526,8 @@ class AnikkuApplication {
         // internet tunnel dies with the process.
         watchTogetherServer.stopServer()
         watchTogetherTunnel.stop()
+        // TorrServer — stop the process and release the port.
+        torrentServerBridge.stop()
 
         storageManager.close()
         applicationScope.cancel()

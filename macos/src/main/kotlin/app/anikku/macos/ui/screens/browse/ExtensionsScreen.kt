@@ -54,6 +54,7 @@ import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.settings.LocalSettingsState
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -427,86 +428,116 @@ data class ExtensionsScreen(
                         Spacer(Modifier.height(12.dp))
                     }
 
-                    // Pre-configured repos — macOS-optimized JARs first, legacy APK repo last
-                    val repoInfo = listOf(
-                        Triple(
-                            defaultRepoUrl,
-                            "Anikku macOS Extensions",
-                            "Pre-converted JVM JARs for macOS — recommended, no conversion needed"
-                        ),
-                        Triple(
-                            "https://raw.githubusercontent.com/keiyoushi/extensions/repo/",
-                            "keiyoushi/extensions (Legacy APK)",
-                            "Requires jadx to convert APKs on macOS — slow and unreliable"
-                        ),
-                    )
-
-                    items(repoInfo.size) { index ->
-                        val (url, name, desc) = repoInfo[index]
-                        val isActive = url == repoUrl
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isActive)
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                                else
-                                    MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            onClick = {
-                                repoUrl = url
-                                scope.launch {
-                                    isFetching = true
-                                    extensionManager?.findAvailableExtensions(url, force = true)
-                                    isFetching = false
+                    // Saved repos — persisted across launches (seeded with the
+                    // defaults on first run). Selecting one fetches it.
+                    item {
+                        val settings = LocalSettingsState.current
+                        val savedRepos = remember(settings.extensionRepos) {
+                            settings.extensionRepos.sortedBy { it != defaultRepoUrl.trimEnd('/') }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            savedRepos.forEach { url ->
+                                val isActive = url == repoUrl.trimEnd('/')
+                                val name = if (url == defaultRepoUrl.trimEnd('/')) {
+                                    "Anikku macOS Extensions"
+                                } else {
+                                    url.removePrefix("https://").removePrefix("http://")
+                                        .substringBefore('/').substringBefore(':')
                                 }
-                            },
-                        ) {
-                            Row(
-                                Modifier.fillMaxWidth().padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(name, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        desc,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
+                                val desc = if (url == defaultRepoUrl.trimEnd('/')) {
+                                    "Pre-converted JVM JARs for macOS — recommended, no conversion needed"
+                                } else {
+                                    "Custom extension repository"
                                 }
-                                if (isActive) {
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        "Active",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold,
-                                    )
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isActive)
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                        else
+                                            MaterialTheme.colorScheme.surfaceContainerHigh
+                                    ),
+                                    onClick = {
+                                        repoUrl = url
+                                        scope.launch {
+                                            isFetching = true
+                                            extensionManager?.findAvailableExtensions(url, force = true)
+                                            isFetching = false
+                                        }
+                                    },
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(name, fontWeight = FontWeight.Medium)
+                                            Text(
+                                                desc,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
+                                        if (isActive) {
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Active",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        }
+                                        if (url != defaultRepoUrl.trimEnd('/')) {
+                                            Spacer(Modifier.width(8.dp))
+                                            IconButton(onClick = { settings.removeExtensionRepo(url) }) {
+                                                Icon(
+                                                    Icons.Outlined.Delete,
+                                                    contentDescription = "Remove repo",
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
 
-                    item {
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = repoUrl,
-                            onValueChange = { repoUrl = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("Custom repo URL") },
-                            placeholder = { Text("Paste a repo index URL...") },
-                            shape = RoundedCornerShape(8.dp),
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Enter a URL pointing to an index.min.json file",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                            Spacer(Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = repoUrl,
+                                    onValueChange = { repoUrl = it },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    label = { Text("Custom repo URL") },
+                                    placeholder = { Text("Paste a repo index URL...") },
+                                    shape = RoundedCornerShape(8.dp),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        settings.addExtensionRepo(repoUrl)
+                                        scope.launch {
+                                            isFetching = true
+                                            extensionManager?.findAvailableExtensions(repoUrl, force = true)
+                                            isFetching = false
+                                        }
+                                    },
+                                    enabled = repoUrl.isNotBlank() && !isFetching,
+                                ) {
+                                    Text("Add")
+                                }
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Saved repos persist — add a URL pointing to an index.min.json file",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

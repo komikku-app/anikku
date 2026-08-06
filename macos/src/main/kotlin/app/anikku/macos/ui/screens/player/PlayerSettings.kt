@@ -167,6 +167,88 @@ fun PlayerSpeedPanel(
 }
 
 /**
+ * Video quality selector panel.
+ * Lists every quality the source offered; picking one re-resolves the video
+ * at that candidate and remembers the choice for future loads.
+ */
+@Composable
+fun PlayerQualityPanel(
+    candidates: List<PlayerScreen.VideoCandidate> = emptyList(),
+    currentLabel: String? = null,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Text(
+                text = "Quality",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            if (candidates.isEmpty()) {
+                Text(
+                    text = "No alternate qualities available for this episode",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                candidates.forEachIndexed { index, candidate ->
+                    val label = candidate.label?.takeIf { it.isNotBlank() }
+                        ?: "Quality ${index + 1}"
+                    val isSelected = candidate.label?.isNotBlank() == true &&
+                        candidate.label == currentLabel
+                    OutlinedButton(
+                        onClick = {
+                            onSelect(index)
+                            onDismiss()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                        ),
+                    ) {
+                        Text(
+                            text = label,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Done")
+            }
+        }
+    }
+}
+
+/**
  * Audio track selector panel.
  * Allows switching between available audio tracks.
  */

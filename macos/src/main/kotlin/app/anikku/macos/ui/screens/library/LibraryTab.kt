@@ -88,6 +88,7 @@ import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
 import app.anikku.macos.ui.components.AnimeGrid
 import app.anikku.macos.ui.components.AnimeList
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OverflowItem
 import app.anikku.macos.ui.components.OverflowMenu
@@ -708,35 +709,13 @@ internal fun LibraryContent(
             }
 
             if (libraryAnime.isEmpty() && searchQuery.isBlank()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.Book,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            "Your library is empty",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Browse sources and add anime to get started",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = { app.anikku.macos.ui.TabSwitchHandler.switchTo(4) }) {
-                            Text("Browse sources")
-                        }
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Outlined.Book,
+                    title = "Your library is empty",
+                    hint = "Browse sources and add anime to get started",
+                    actionLabel = "Browse sources",
+                    onAction = { app.anikku.macos.ui.TabSwitchHandler.switchTo(4) },
+                )
             } else if (libraryAnime.isEmpty() && searchQuery.isNotBlank()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),

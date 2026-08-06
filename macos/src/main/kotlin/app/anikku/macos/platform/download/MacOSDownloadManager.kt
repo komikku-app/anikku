@@ -243,6 +243,14 @@ open class MacOSDownloadManager(
     /** The managed downloads directory (may not exist yet). */
     fun downloadsDirectory(): File = File(storageProvider.downloadsDirectory, "videos")
 
+    /**
+     * Change where NEW downloads are stored (Settings > Download location).
+     * Existing files stay where they are.
+     */
+    fun setDownloadsDirectory(path: String) {
+        storageProvider.customDownloadsDirectory = path.trim().takeIf { it.isNotEmpty() }
+    }
+
     fun isDownloading(animeId: Long, episodeNumber: Double): Boolean = repository.getAll().any {
         it.animeId == animeId && it.episodeNumber == episodeNumber && it.isActive
     }

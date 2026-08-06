@@ -54,6 +54,7 @@ import app.anikku.macos.platform.anilist.LocalAniListSearchClient
 import app.anikku.macos.platform.auth.TrackerTokenStore
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
@@ -195,31 +196,13 @@ object DiscoverTab : AnikkuScreen(), Tab {
                     }
 
                     schedule.isEmpty() && trending.isEmpty() && seasonalList.isEmpty() && recommendations.isEmpty() -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Outlined.Explore,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                Text(
-                                    "Nothing airing right now",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                Text(
-                                    "Discover pulls what's airing this week, trending shows and seasonal picks — try again in a bit.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    modifier = Modifier.padding(horizontal = 48.dp),
-                                )
-                                Spacer(Modifier.height(14.dp))
-                                Button(onClick = { retryToken++ }) { Text("Refresh") }
-                            }
-                        }
+                        EmptyState(
+                            icon = Icons.Outlined.Explore,
+                            title = "Nothing airing right now",
+                            hint = "Discover pulls what's airing this week, trending shows and seasonal picks — try again in a bit.",
+                            actionLabel = "Refresh",
+                            onAction = { retryToken++ },
+                        )
                     }
 
                     else -> {

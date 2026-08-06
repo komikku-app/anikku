@@ -10,6 +10,12 @@ import app.anikku.macos.ui.theme.AnikkuTheme
 /** Preference key for the "New episode notifications" toggle (shared with background jobs). */
 const val KEY_NEW_EPISODE_NOTIFICATIONS = "new_episode_notifications_enabled"
 
+/** Preference key for the auto-download master switch (shared with background jobs). */
+const val KEY_AUTO_DOWNLOAD_NEW_EPISODES = "auto_download_new_episodes"
+
+/** Preference key for per-anime auto-download opt-ins (string set of anime ids). */
+const val KEY_AUTO_DOWNLOAD_ANIME = "auto_download_anime"
+
 /**
  * Mutable settings state accessible throughout the Compose tree via CompositionLocal.
  *
@@ -46,6 +52,7 @@ class SettingsState(
         private const val KEY_THEME = "theme"
         private const val KEY_AMOLED_OLED = "amoled_oled"
         private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_EXTENSION_REPOS = "extension_repos"
 
         // Security settings. The PIN hash itself is stored only in Keychain by
         // MacOSBiometricAuth; preferences contain non-secret behavior flags.
@@ -55,6 +62,10 @@ class SettingsState(
 
         // Connections settings
         private const val KEY_DISCORD_RICH_PRESENCE = "discord_rich_presence"
+
+        // UI settings
+        private const val KEY_SIDEBAR_VISIBLE = "sidebar_visible"
+        private const val KEY_UPDATE_CHANNEL = "update_channel"
 
         // Background jobs (0 disables the corresponding job).
         private const val KEY_AUTO_BACKUP_INTERVAL_HOURS = "auto_backup_interval_hours"
@@ -68,6 +79,10 @@ class SettingsState(
         private const val KEY_SKIP_INTRO = "skip_intro"
         private const val KEY_DEFAULT_SPEED = "default_playback_speed"
         private const val KEY_VOLUME = "player_volume"
+        private const val KEY_PREFERRED_QUALITY = "preferred_quality"
+        private const val KEY_SEEK_INCREMENT_SECONDS = "seek_increment_seconds"
+        private const val KEY_SCREENSHOT_FORMAT = "screenshot_format"
+        private const val KEY_SCREENSHOT_DIRECTORY = "screenshot_directory"
         private const val KEY_SUBTITLE_FONT_SIZE = "subtitle_font_size"
         private const val KEY_SUBTITLE_POSITION = "subtitle_position"
         private const val KEY_CLIP_CAPTURE_SECONDS = "player_clip_capture_seconds"
@@ -82,6 +97,7 @@ class SettingsState(
 
         // Download settings
         private const val KEY_SIMULTANEOUS_DOWNLOADS = "simultaneous_downloads"
+        private const val KEY_DOWNLOAD_DIRECTORY = "download_directory"
 
         // Network settings
         private const val KEY_PROXY_TYPE = "proxy_type"
@@ -91,11 +107,41 @@ class SettingsState(
         private const val KEY_PROXY_PASSWORD = "proxy_password"
         private const val KEY_CHROME_PATH = "chrome_path"
         private const val KEY_CDP_DEBUG_MODE = "cdp_debug_mode"
+
+        /** Known-good extension repos seeded on first launch (macOS JARs first). */
+        val DEFAULT_EXTENSION_REPOS: Set<String> = setOf(
+            "https://raw.githubusercontent.com/ErnestHysa/anikku-extensions-jar/main",
+            "https://raw.githubusercontent.com/keiyoushi/extensions/repo",
+        )
     }
 
     private val themePref = preferenceStore?.getString(KEY_THEME, AnikkuTheme.Theme.DEFAULT.name)
     private val amoledPref = preferenceStore?.getBoolean(KEY_AMOLED_OLED, false)
     private val themeModePref = preferenceStore?.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
+
+    // Extension repos — seeded with the known-good defaults on first launch.
+    private val extensionReposPref = preferenceStore?.getStringSet(KEY_EXTENSION_REPOS, DEFAULT_EXTENSION_REPOS)
+    private val _extensionRepos = mutableStateOf(extensionReposPref?.get() ?: DEFAULT_EXTENSION_REPOS)
+
+    /** Saved extension repo URLs (persisted; survives restarts). */
+    var extensionRepos: Set<String>
+        get() = _extensionRepos.value
+        set(value) {
+            _extensionRepos.value = value
+            extensionReposPref?.set(value)
+        }
+
+    /** Add a repo URL (deduped, trailing slash normalized). */
+    fun addExtensionRepo(url: String) {
+        val clean = url.trim().trimEnd('/')
+        if (clean.isBlank()) return
+        extensionRepos = extensionRepos + clean
+    }
+
+    /** Remove a saved repo URL. */
+    fun removeExtensionRepo(url: String) {
+        extensionRepos = extensionRepos - url
+    }
 
     /** Backing state for the current theme. Loaded from preferences when store is available. */
     private val _theme = mutableStateOf(loadTheme())
@@ -172,12 +218,35 @@ class SettingsState(
     private val discordRichPresencePref = preferenceStore?.getBoolean(KEY_DISCORD_RICH_PRESENCE, false)
     private val _discordRichPresenceEnabled = mutableStateOf(discordRichPresencePref?.get() ?: false)
 
-    /** Whether playback metadata may be published to the local Discord client. */
+    /** Whether the main window's side navigation rail is visible (⌘S toggle). */
     var discordRichPresenceEnabled: Boolean
         get() = _discordRichPresenceEnabled.value
         set(value) {
             _discordRichPresenceEnabled.value = value
             discordRichPresencePref?.set(value)
+        }
+
+    private val sidebarVisiblePref = preferenceStore?.getBoolean(KEY_SIDEBAR_VISIBLE, true)
+    private val _sidebarVisible = mutableStateOf(sidebarVisiblePref?.get() ?: true)
+
+    /** Whether the side navigation rail is visible. Persisted across launches. */
+    var sidebarVisible: Boolean
+        get() = _sidebarVisible.value
+        set(value) {
+            _sidebarVisible.value = value
+            sidebarVisiblePref?.set(value)
+        }
+
+    private val updateChannelPref = preferenceStore?.getString(KEY_UPDATE_CHANNEL, "stable")
+    private val _updateChannel = mutableStateOf(updateChannelPref?.get() ?: "stable")
+
+    /** Update channel: "stable" or "beta". Applied on the next launch. */
+    var updateChannel: String
+        get() = _updateChannel.value
+        set(value) {
+            val sanitized = if (value == "beta") "beta" else "stable"
+            _updateChannel.value = sanitized
+            updateChannelPref?.set(sanitized)
         }
 
     private val autoBackupIntervalPref = preferenceStore?.getInt(KEY_AUTO_BACKUP_INTERVAL_HOURS, 12)
@@ -294,6 +363,56 @@ class SettingsState(
             val clamped = value.coerceIn(0, 200)
             _volume.value = clamped
             volumePref?.set(clamped)
+        }
+
+    private val preferredQualityPref = preferenceStore?.getString(KEY_PREFERRED_QUALITY, "")
+    private val _preferredQualityLabel = mutableStateOf(preferredQualityPref?.get() ?: "")
+
+    /**
+     * Quality label the user last picked in the player (e.g. "1080p"). When a
+     * matching candidate exists on the next load, it's picked over the
+     * source-preferred one. Empty = always use the source default.
+     */
+    var preferredQualityLabel: String
+        get() = _preferredQualityLabel.value
+        set(value) {
+            _preferredQualityLabel.value = value
+            preferredQualityPref?.set(value)
+        }
+
+    private val seekIncrementPref = preferenceStore?.getInt(KEY_SEEK_INCREMENT_SECONDS, 10)
+    private val _seekIncrementSeconds = mutableStateOf((seekIncrementPref?.get() ?: 10).coerceIn(5, 60))
+
+    /** Arrow / J-L seek distance in seconds (5-60). */
+    var seekIncrementSeconds: Int
+        get() = _seekIncrementSeconds.value
+        set(value) {
+            val clamped = value.coerceIn(5, 60)
+            _seekIncrementSeconds.value = clamped
+            seekIncrementPref?.set(clamped)
+        }
+
+    private val screenshotFormatPref = preferenceStore?.getString(KEY_SCREENSHOT_FORMAT, "png")
+    private val _screenshotFormat = mutableStateOf(screenshotFormatPref?.get() ?: "png")
+
+    /** Screenshot file format: "png" or "jpg". */
+    var screenshotFormat: String
+        get() = _screenshotFormat.value
+        set(value) {
+            val sanitized = if (value == "jpg" || value == "jpeg") "jpg" else "png"
+            _screenshotFormat.value = sanitized
+            screenshotFormatPref?.set(sanitized)
+        }
+
+    private val screenshotDirectoryPref = preferenceStore?.getString(KEY_SCREENSHOT_DIRECTORY, "")
+    private val _screenshotDirectory = mutableStateOf(screenshotDirectoryPref?.get() ?: "")
+
+    /** Custom screenshot/GIF-clip directory. Empty = default ~/Pictures/Anikku. */
+    var screenshotDirectory: String
+        get() = _screenshotDirectory.value
+        set(value) {
+            _screenshotDirectory.value = value
+            screenshotDirectoryPref?.set(value)
         }
 
     private val subtitleFontSizePref = preferenceStore?.getFloat(KEY_SUBTITLE_FONT_SIZE, 55f)
@@ -428,6 +547,57 @@ class SettingsState(
             val clamped = value.coerceIn(1, 10)
             _simultaneousDownloads.value = clamped
             simultaneousPref?.set(clamped)
+        }
+
+    private val autoDownloadNewEpisodesPref = preferenceStore?.getBoolean(KEY_AUTO_DOWNLOAD_NEW_EPISODES, false)
+    private val _autoDownloadNewEpisodes = mutableStateOf(autoDownloadNewEpisodesPref?.get() ?: false)
+
+    /**
+     * Master switch for auto-downloading newly discovered episodes. Per-anime
+     * opt-in is tracked separately via [autoDownloadAnime].
+     */
+    var autoDownloadNewEpisodes: Boolean
+        get() = _autoDownloadNewEpisodes.value
+        set(value) {
+            _autoDownloadNewEpisodes.value = value
+            autoDownloadNewEpisodesPref?.set(value)
+        }
+
+    private val autoDownloadAnimePref = preferenceStore?.getStringSet(KEY_AUTO_DOWNLOAD_ANIME, emptySet())
+    private val _autoDownloadAnime = mutableStateOf(autoDownloadAnimePref?.get() ?: emptySet())
+
+    /** Anime ids (as strings) opted into auto-downloading new episodes. */
+    var autoDownloadAnime: Set<String>
+        get() = _autoDownloadAnime.value
+        set(value) {
+            _autoDownloadAnime.value = value
+            autoDownloadAnimePref?.set(value)
+        }
+
+    /** Whether new episodes of [animeId] should download automatically. */
+    fun isAutoDownloadEnabled(animeId: Long): Boolean =
+        autoDownloadNewEpisodes && animeId.toString() in autoDownloadAnime
+
+    /** Opt [animeId] in/out of auto-downloading new episodes. */
+    fun setAutoDownload(animeId: Long, enabled: Boolean) {
+        val updated = autoDownloadAnime.toMutableSet().apply {
+            if (enabled) add(animeId.toString()) else remove(animeId.toString())
+        }
+        autoDownloadAnime = updated
+    }
+
+    private val downloadDirectoryPref = preferenceStore?.getString(KEY_DOWNLOAD_DIRECTORY, "")
+    private val _downloadDirectory = mutableStateOf(downloadDirectoryPref?.get() ?: "")
+
+    /**
+     * Custom downloads folder. Empty = the default Application Support/Anikku
+     * downloads directory. Only new downloads use it.
+     */
+    var downloadDirectory: String
+        get() = _downloadDirectory.value
+        set(value) {
+            _downloadDirectory.value = value
+            downloadDirectoryPref?.set(value)
         }
 
     // -------------------------------------------------------------------------

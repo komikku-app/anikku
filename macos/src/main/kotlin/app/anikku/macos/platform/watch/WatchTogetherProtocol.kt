@@ -52,6 +52,21 @@ sealed class WtMessage {
         val duration: Double = -1.0,
     ) : WtMessage()
 
+    /** Host: lock/unlock room controls. While locked only the host can control playback. */
+    @Serializable
+    @SerialName("lock")
+    data class Lock(val locked: Boolean, val by: String = "") : WtMessage()
+
+    /** Host: remove a member by name. The kicked member's socket is closed. */
+    @Serializable
+    @SerialName("kick")
+    data class Kick(val name: String, val by: String = "") : WtMessage()
+
+    /** Any member: change playback speed for the whole room. */
+    @Serializable
+    @SerialName("speed")
+    data class Speed(val rate: Double, val by: String = "") : WtMessage()
+
     /** Current media identity. Host sends it; the server keeps the latest for late joiners. */
     @Serializable
     @SerialName("episode")
@@ -64,12 +79,22 @@ sealed class WtMessage {
         /** direct = plain http(s) media, proxy = proxied through the room server, magnet = resolve yourself. */
         val kind: String = "direct",
         val duration: Double = 0.0,
+        /**
+         * anikku:// deep link that opens this episode in the app. Set for
+         * magnet rooms (which browsers can't stream) so the join page can
+         * offer "Open in Anikku" instead of a dead end.
+         */
+        val appDeepLink: String? = null,
     ) : WtMessage()
 
-    /** Member count + names after join/leave; sent by the server. */
+    /** Member count + names + host after join/leave; sent by the server. */
     @Serializable
     @SerialName("members")
-    data class Members(val count: Int, val names: List<String> = emptyList()) : WtMessage()
+    data class Members(
+        val count: Int,
+        val names: List<String> = emptyList(),
+        val hostName: String? = null,
+    ) : WtMessage()
 
     /** Sent by the server just before a room closes (host left / app shutdown). */
     @Serializable

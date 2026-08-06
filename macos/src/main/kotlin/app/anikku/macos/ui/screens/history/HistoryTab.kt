@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,16 +47,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.platform.data.HistoryRepository
+import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.platform.data.LocalHistoryRepository
 import app.anikku.macos.platform.data.LocalLibraryRepository
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.AnikkuScreen
 import app.anikku.macos.ui.components.AnimeCoverImage
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OverflowItem
 import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
 import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
+import app.anikku.macos.ui.screens.player.PlayerScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -83,6 +87,7 @@ object HistoryTab : AnikkuScreen(), Tab {
         val libraryRepo = LocalLibraryRepository.current
         val historyRepo = LocalHistoryRepository.current
         val extensionManager = LocalExtensionManager.current
+        val downloadManager = LocalDownloadManager.current
         // Revision-driven like Library/Stats: the repo bumps a revision on every
         // mutation, so history stays live even though this tab is keep-alive.
         val historyRevision by historyRepo.revision.collectAsState()
@@ -103,6 +108,7 @@ object HistoryTab : AnikkuScreen(), Tab {
                 seenAt = entry.seenAt,
                 sourceId = entry.sourceId,
                 animeUrl = entry.animeUrl,
+                episodeUrl = entry.episodeUrl,
                 coverUrl = entry.coverUrl,
             )
         }
@@ -168,6 +174,35 @@ object HistoryTab : AnikkuScreen(), Tab {
                     )
                 }
             },
+            onResumePlay = { item ->
+                // Resume straight into the player — it reads the last watched
+                // position from history itself.
+                if (item.sourceId != 0L && !item.episodeUrl.isNullOrBlank()) {
+                    navigator.push(
+                        PlayerScreen(
+                            animeId = item.animeId,
+                            episodeId = item.id,
+                            sourceId = item.sourceId,
+                            episodeUrl = item.episodeUrl,
+                            animeUrl = item.animeUrl,
+                            animeTitle = item.animeTitle,
+                            extensionManager = extensionManager,
+                            downloadManager = downloadManager,
+                            episodeNumber = item.episodeNumber,
+                            episodeName = item.episodeName,
+                            coverUrl = item.coverUrl,
+                        )
+                    )
+                } else {
+                    toastHost.show(
+                        text = "Cannot resume — source information missing",
+                        duration = ToastDuration.SHORT,
+                        isError = true,
+                        source = null,
+                        location = "HistoryTab.onResumePlay",
+                    )
+                }
+            },
             onDeleteEntry = { item ->
                 historyRepo.removeForEpisode(item.animeId, item.id)
                 toastHost.show("Removed from history", ToastDuration.SHORT)
@@ -201,6 +236,7 @@ data class HistoryItemData(
     val seenAt: Long,
     val sourceId: Long = 0L,
     val animeUrl: String? = null,
+    val episodeUrl: String? = null,
     val coverUrl: String? = null,
 )
 
@@ -217,35 +253,16 @@ private fun HistoryContent(
     onDismissSortMenu: () -> Unit = {},
     onClearAll: () -> Unit = {},
     onAnimeClick: (HistoryItemData) -> Unit = {},
+    onResumePlay: (HistoryItemData) -> Unit = {},
     onDeleteEntry: (HistoryItemData) -> Unit = {},
     onRemoveFromLibrary: (HistoryItemData) -> Unit = {},
 ) {
     if (history.isEmpty() && searchQuery.isBlank()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Outlined.History,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "No watch history",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Episodes you watch will appear here",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-            }
-        }
+        EmptyState(
+            icon = Icons.Outlined.History,
+            title = "No watch history",
+            hint = "Episodes you watch will appear here",
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -370,6 +387,7 @@ private fun HistoryContent(
                     HistoryItem(
                         entry = entry,
                         onClick = { onAnimeClick(entry) },
+                        onPlay = { onResumePlay(entry) },
                         overflowItems = listOf(
                             OverflowItem(
                                 "Delete from history",
@@ -393,6 +411,7 @@ private fun HistoryContent(
 private fun HistoryItem(
     entry: HistoryItemData,
     onClick: () -> Unit = {},
+    onPlay: (() -> Unit)? = null,
     overflowItems: List<OverflowItem>? = null,
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy 'at' HH:mm", Locale.getDefault()) }
@@ -441,6 +460,17 @@ private fun HistoryItem(
                         text = dateFormat.format(Date(entry.seenAt)),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                }
+            }
+
+            // Quick resume straight into the player at the last position.
+            if (onPlay != null) {
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        Icons.Outlined.PlayArrow,
+                        contentDescription = "Resume playback",
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }

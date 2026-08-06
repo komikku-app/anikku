@@ -173,13 +173,25 @@ class TorrentServerBridge(
     }
 
     fun listTorrents(): List<TorrentInfo> {
-        if (!isRunning) return emptyList()
+        if (!isRunning) {
+            _torrents.value = emptyList()
+            return emptyList()
+        }
         val response = postTorrentAction(
             JSONObject().put("action", "list"),
             expectArray = true,
         ) ?: return emptyList()
-        return parseTorrentList(response.optJSONArray("items"))
+        val parsed = parseTorrentList(response.optJSONArray("items"))
+        _torrents.value = parsed
+        return parsed
     }
+
+    /**
+     * Latest snapshot of active torrents (progress/seeders). Updated by
+     * [listTorrents]; the Torrents tab polls it while a stream is active.
+     */
+    private val _torrents = MutableStateFlow<List<TorrentInfo>>(emptyList())
+    val torrents: StateFlow<List<TorrentInfo>> = _torrents.asStateFlow()
 
     val isBinaryAvailable: Boolean get() = findServerBinary() != null
 
@@ -341,3 +353,9 @@ data class TorrentInfo(
     val status: String = "unknown",
     val seeders: Int = 0,
 )
+
+/**
+ * CompositionLocal for the app-scoped TorrServer bridge (player streams +
+ * Torrents-tab activity). Null when unavailable (failure-safe).
+ */
+val LocalTorrentServerBridge = androidx.compose.runtime.compositionLocalOf<TorrentServerBridge?> { null }

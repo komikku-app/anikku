@@ -48,6 +48,7 @@ import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.extension.MacOSExtensionManager
 import app.anikku.macos.platform.preference.MacOSPreferenceStore
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.screens.browse.ExtensionsScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -198,36 +199,14 @@ object BrowseTab : AnikkuScreen(), Tab {
 
             if (sources.isEmpty()) {
                 item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Outlined.Extension,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                "No sources installed",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "Install extensions from the Extensions tab to browse anime",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            )
-                            Spacer(Modifier.height(14.dp))
-                            val navigator = LocalNavigator.currentOrThrow
-                            Button(onClick = { navigator.push(ExtensionsScreen()) }) {
-                                Text("Open Extensions")
-                            }
-                        }
-                    }
+                    val browseNavigator = LocalNavigator.currentOrThrow
+                    EmptyState(
+                        icon = Icons.Outlined.Extension,
+                        title = "No sources installed",
+                        hint = "Install extensions from the Extensions tab to browse anime",
+                        actionLabel = "Open Extensions",
+                        onAction = { browseNavigator.push(ExtensionsScreen()) },
+                    )
                 }
             } else {
                 item {

@@ -1,4 +1,5 @@
 package app.anikku.macos.ui.components
+import app.anikku.macos.ui.theme.AnikkuStatusColors
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -102,7 +103,7 @@ fun OfflineCheckmarkAnimation(
         // Green checkmark circle with "Offline" label
         Surface(
             shape = RoundedCornerShape(8.dp),
-            color = Color(0xFF4CAF50).copy(alpha = 0.95f),
+            color = AnikkuStatusColors.success().copy(alpha = 0.95f),
             shadowElevation = 4.dp,
         ) {
             Row(

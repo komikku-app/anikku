@@ -39,6 +39,10 @@ class PlayerViewModel(
     // Called whenever the user changes volume, so the caller can persist it.
     // (private val: plain ctor params are not visible inside member functions.)
     private val onVolumeChanged: ((Int) -> Unit)? = null,
+    // Screenshot/GIF-clip output directory; empty = default ~/Pictures/Anikku.
+    private val screenshotDirectory: String = "",
+    // Screenshot file format: "png" or "jpg".
+    private val screenshotFormat: String = "png",
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -517,7 +521,7 @@ class PlayerViewModel(
             // Use keep-open=no to prevent mpv from staying on the last frame and
             // instead allow proper cleanup and state transitions.
             "keep-open" to "no",
-            "screenshot-format" to "png",
+            "screenshot-format" to screenshotFormat,
             "screenshot-template" to "anikku-screenshot-%n",
             // Verbose logging for video/render modules to capture render API errors.
             // Targets vo (output), libmpv (render context), video (decoding) at verbose level.
@@ -1021,11 +1025,11 @@ class PlayerViewModel(
     fun takeScreenshot(): String? {
         val handle = mpvHandle ?: return null
         return try {
-            val dir = java.io.File(System.getProperty("user.home"), "Pictures/Anikku")
+            val dir = screenshotsDir()
             runCatching { if (!dir.exists()) dir.mkdirs() }
             val stamp = java.text.SimpleDateFormat("yyyy-MM-dd-HHmmss", java.util.Locale.getDefault())
                 .format(java.util.Date())
-            val file = java.io.File(dir, "Anikku-$stamp.png")
+            val file = java.io.File(dir, "Anikku-$stamp.$screenshotFormat")
             // "subtitles" mode captures video + rendered subtitles. The file is
             // written synchronously, so reporting the real path is safe.
             val result = MPVLib.command(handle, "screenshot-to-file", file.absolutePath, "subtitles")
@@ -1033,6 +1037,16 @@ class PlayerViewModel(
         } catch (e: Exception) {
             logger.warn(e) { "Failed to take screenshot" }
             null
+        }
+    }
+
+    /** Screenshot/GIF-clip output directory (custom setting or default). */
+    private fun screenshotsDir(): java.io.File {
+        val custom = screenshotDirectory.trim()
+        return if (custom.isNotEmpty()) {
+            java.io.File(custom)
+        } else {
+            java.io.File(System.getProperty("user.home"), "Pictures/Anikku")
         }
     }
 
@@ -1083,7 +1097,7 @@ class PlayerViewModel(
                 return@launch
             }
             try {
-                val dir = java.io.File(System.getProperty("user.home"), "Pictures/Anikku")
+                val dir = screenshotsDir()
                 runCatching { if (!dir.exists()) dir.mkdirs() }
                 val stamp = java.text.SimpleDateFormat("yyyy-MM-dd-HHmmss", java.util.Locale.getDefault())
                     .format(java.util.Date())

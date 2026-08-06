@@ -759,6 +759,17 @@ compose.desktop {
                         <string>$publicKey</string>
                         <key>NSFaceIDUsageDescription</key>
                         <string>Use biometric authentication to unlock Anikku.</string>
+                        <key>CFBundleURLTypes</key>
+                        <array>
+                            <dict>
+                                <key>CFBundleURLName</key>
+                                <string>app.anikku.macos.watch</string>
+                                <key>CFBundleURLSchemes</key>
+                                <array>
+                                    <string>anikku</string>
+                                </array>
+                            </dict>
+                        </array>
                     """.trimIndent()
                 }
 

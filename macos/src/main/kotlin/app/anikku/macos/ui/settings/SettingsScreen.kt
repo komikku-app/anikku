@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,10 +45,12 @@ import app.anikku.macos.platform.discord.LocalDiscordRPC
 import app.anikku.macos.platform.web.BrowserLauncher
 import app.anikku.macos.ui.components.CheckboxItem
 import app.anikku.macos.ui.components.HeadingItem
+import app.anikku.macos.ui.components.IconItem
 import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.SelectItem
 import app.anikku.macos.ui.components.SliderItem
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.platform.data.LocalDownloadManager
 import app.anikku.macos.ui.screens.crashlog.CrashLogViewerScreen
 import app.anikku.macos.ui.screens.downloads.DownloadQueueScreen
 import app.anikku.macos.ui.screens.stats.StatsScreen
@@ -106,8 +109,21 @@ fun SettingsScreen() {
         SettingsSection(
             title = "Appearance",
             searchQuery = searchQuery,
-            searchLabels = listOf("Theme", "AMOLED black"),
+            searchLabels = listOf("Theme", "Theme mode", "Light", "Dark", "System", "AMOLED black"),
         ) {
+
+        // Theme mode (System / Light / Dark) — was previously only reachable
+        // during onboarding; lives here so it can be changed any time.
+        val themeModeLabels = arrayOf("Follow system", "Light", "Dark")
+        SelectItem(
+            label = "Theme mode",
+            options = themeModeLabels,
+            selectedIndex = ThemeMode.entries.indexOf(settings.themeMode).coerceAtLeast(0),
+            onSelect = { index ->
+                settings.themeMode = ThemeMode.entries[index]
+                toastHost.show("Theme mode: ${themeModeLabels[index]}", ToastDuration.SHORT)
+            },
+        )
 
         // Theme selector
         val themeNames = remember { AnikkuTheme.allThemes.map { it.displayName }.toTypedArray() }
@@ -146,7 +162,7 @@ fun SettingsScreen() {
         SettingsSection(
             title = "Library",
             searchQuery = searchQuery,
-            searchLabels = listOf("Library update schedule"),
+            searchLabels = listOf("Library update schedule", "Auto-download new episodes"),
         ) {
 
         val updateIntervals = intArrayOf(0, 1, 2, 4, 6, 12, 24)
@@ -156,6 +172,23 @@ fun SettingsScreen() {
             options = updateIntervalLabels,
             selectedIndex = updateIntervals.indexOf(settings.libraryUpdateIntervalHours).coerceAtLeast(0),
             onSelect = { settings.libraryUpdateIntervalHours = updateIntervals[it] },
+        )
+
+        // Auto-download newly discovered episodes for opted-in anime. The
+        // per-anime switch lives on each anime's detail page; without the
+        // master switch here nothing downloads.
+        var autoDownloadNew by remember { mutableStateOf(settings.autoDownloadNewEpisodes) }
+        CheckboxItem(
+            label = "Auto-download new episodes",
+            checked = autoDownloadNew,
+            onClick = {
+                autoDownloadNew = !autoDownloadNew
+                settings.autoDownloadNewEpisodes = autoDownloadNew
+                toastHost.show(
+                    "Auto-download: ${if (autoDownloadNew) "on — pick anime on their detail pages" else "off"}",
+                    ToastDuration.SHORT,
+                )
+            },
         )
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
@@ -257,6 +290,79 @@ fun SettingsScreen() {
 
         }
         // =====================================================================
+        // Playback
+        // =====================================================================
+        SettingsSection(
+            title = "Playback",
+            searchQuery = searchQuery,
+            searchLabels = listOf("Seek increment", "GIF clip length", "Screenshot format", "Screenshot folder"),
+        ) {
+
+        var seekIncrement by remember { mutableStateOf(settings.seekIncrementSeconds) }
+        val seekOptions = intArrayOf(5, 10, 15, 30, 60)
+        SelectItem(
+            label = "Seek increment",
+            options = arrayOf("5 seconds", "10 seconds", "15 seconds", "30 seconds", "60 seconds"),
+            selectedIndex = seekOptions.indexOf(seekIncrement).coerceAtLeast(0),
+            onSelect = {
+                seekIncrement = seekOptions[it]
+                settings.seekIncrementSeconds = seekIncrement
+                toastHost.show("Seek increment: ${seekIncrement}s", ToastDuration.SHORT)
+            },
+        )
+
+        var clipSeconds by remember { mutableStateOf(settings.clipCaptureSeconds) }
+        SliderItem(
+            label = "GIF clip length",
+            value = clipSeconds,
+            valueText = "${clipSeconds}s",
+            onChange = {
+                clipSeconds = it
+                settings.clipCaptureSeconds = it
+            },
+            max = 10,
+            min = 3,
+        )
+
+        SelectItem(
+            label = "Screenshot format",
+            options = arrayOf("PNG", "JPG"),
+            selectedIndex = if (settings.screenshotFormat == "jpg") 1 else 0,
+            onSelect = {
+                settings.screenshotFormat = if (it == 0) "png" else "jpg"
+                toastHost.show("Screenshot format: ${settings.screenshotFormat.uppercase()}", ToastDuration.SHORT)
+            },
+        )
+
+        // Screenshot / GIF-clip folder. Empty = default ~/Pictures/Anikku.
+        IconItem(
+            label = if (settings.screenshotDirectory.isBlank()) {
+                "Screenshot folder: Pictures/Anikku (default)"
+            } else {
+                "Screenshot folder: ${settings.screenshotDirectory}"
+            },
+            icon = Icons.Outlined.Folder,
+            onClick = {
+                val picker = runCatching {
+                    org.koin.core.context.GlobalContext.get()
+                        .get<app.anikku.macos.platform.storage.MacOSFilePicker>()
+                }.getOrNull()
+                if (picker == null) {
+                    toastHost.show("Folder picker unavailable", ToastDuration.SHORT, isError = true)
+                } else {
+                    val folder = picker.openDirectory(title = "Choose screenshot folder")
+                    if (folder != null) {
+                        settings.screenshotDirectory = folder.absolutePath
+                        toastHost.show("Screenshots will be saved to ${folder.absolutePath}", ToastDuration.SHORT)
+                    }
+                }
+            },
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+
+        }
+        // =====================================================================
         // Downloads
         // =====================================================================
         SettingsSection(
@@ -274,6 +380,33 @@ fun SettingsScreen() {
                 simultaneousDownloads = it + 1
                 settings.simultaneousDownloads = simultaneousDownloads
                 toastHost.show("Downloads: ${simultaneousDownloads} simultaneous", ToastDuration.SHORT)
+            },
+        )
+
+        // Download location — only new downloads use it; existing files stay.
+        val downloadManagerForFolder = LocalDownloadManager.current
+        IconItem(
+            label = if (settings.downloadDirectory.isBlank()) {
+                "Download location: Anikku data folder (default)"
+            } else {
+                "Download location: ${settings.downloadDirectory}"
+            },
+            icon = Icons.Outlined.Folder,
+            onClick = {
+                val picker = runCatching {
+                    org.koin.core.context.GlobalContext.get()
+                        .get<app.anikku.macos.platform.storage.MacOSFilePicker>()
+                }.getOrNull()
+                if (picker == null) {
+                    toastHost.show("Folder picker unavailable", ToastDuration.SHORT, isError = true)
+                } else {
+                    val folder = picker.openDirectory(title = "Choose download folder")
+                    if (folder != null) {
+                        settings.downloadDirectory = folder.absolutePath
+                        downloadManagerForFolder?.setDownloadsDirectory(folder.absolutePath)
+                        toastHost.show("New downloads will be saved to ${folder.absolutePath}", ToastDuration.SHORT)
+                    }
+                }
             },
         )
 
@@ -359,8 +492,8 @@ fun SettingsScreen() {
                         BackupRestoreScreen(
                             backupManager = backupManager,
                             backupsDir = java.io.File(
-                                System.getProperty("user.home"),
-                                "Library/Application Support/Anikku/backups",
+                                app.anikku.macos.platform.storage.MacOSStorageProvider.baseDirectory,
+                                "backups",
                             ),
                         ),
                     )

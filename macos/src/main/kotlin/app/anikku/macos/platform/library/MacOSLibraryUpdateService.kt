@@ -34,6 +34,13 @@ data class LibraryUpdateResult(
  * and whose latest episode number increased — a first-ever scan establishes a
  * baseline and is not reported as a discovery.
  */
+/** A single newly discovered episode (used by auto-download). */
+data class NewEpisode(
+    val url: String,
+    val name: String = "",
+    val number: Double = 0.0,
+)
+
 data class NewEpisodeInfo(
     val animeId: Long,
     val title: String,
@@ -43,6 +50,8 @@ data class NewEpisodeInfo(
     val latestEpisodeNumber: Double = 0.0,
     val latestEpisodeName: String? = null,
     val episodeCount: Int = 0,
+    /** The newly discovered episodes themselves (URLs for auto-download). */
+    val newEpisodes: List<NewEpisode> = emptyList(),
 )
 
 /** Resolves saved library entries through installed extensions. */
@@ -107,7 +116,8 @@ class MacOSLibraryUpdateService(
                     // past it. A first-ever scan establishes the baseline and
                     // must not flood the New Episodes feed.
                     if (previousKnown > 0.0 && latestNumber > previousKnown) {
-                        val feedCount = distinctEpisodes.count { it.episode_number.toDouble() > previousKnown }
+                        val feedEpisodes = distinctEpisodes.filter { it.episode_number.toDouble() > previousKnown }
+                        val feedCount = feedEpisodes.size
                         if (feedCount > 0) {
                             newlyDiscoveredInfo += NewEpisodeInfo(
                                 animeId = entry.animeId,
@@ -118,6 +128,13 @@ class MacOSLibraryUpdateService(
                                 latestEpisodeNumber = latestNumber,
                                 latestEpisodeName = latest?.let { runCatching { it.name }.getOrNull() },
                                 episodeCount = feedCount,
+                                newEpisodes = feedEpisodes.map { episode ->
+                                    NewEpisode(
+                                        url = runCatching { episode.url }.getOrDefault(""),
+                                        name = runCatching { episode.name }.getOrDefault(""),
+                                        number = episode.episode_number.toDouble(),
+                                    )
+                                }.filter { it.url.isNotBlank() },
                             )
                         }
                     }

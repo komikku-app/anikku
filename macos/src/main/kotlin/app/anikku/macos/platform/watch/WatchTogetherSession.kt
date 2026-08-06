@@ -65,6 +65,14 @@ class WatchTogetherSession(
     val memberCount = MutableStateFlow(0)
     /** Member display names, in join order (best-effort; empty when unknown). */
     val memberNames = MutableStateFlow<List<String>>(emptyList())
+    /** The host's display name (null until the server announces it). */
+    val hostName = MutableStateFlow<String?>(null)
+    /**
+     * Whether the host has locked room controls. While locked, play/pause/seek
+     * from anyone but the host are dropped server-side; the UI shows a badge
+     * and disables transport for guests.
+     */
+    val controlsLocked = MutableStateFlow(false)
     /**
      * Browser-join URL shown in the room dialog: the public tunnel link when
      * the room is hosted over the internet, the LAN URL otherwise.
@@ -315,6 +323,8 @@ class WatchTogetherSession(
         roomCode.value = null
         memberCount.value = 0
         memberNames.value = emptyList()
+        hostName.value = null
+        controlsLocked.value = false
         joinUrl.value = null
         roomClosedNotified = false
     }
@@ -329,6 +339,25 @@ class WatchTogetherSession(
             lastLocalActionNanos = System.nanoTime()
         }
         sendRaw(message)
+    }
+
+    /** Host: lock or unlock room controls (guests become watch-only). */
+    fun lockControls(locked: Boolean) {
+        if (role.value != Role.HOST) return
+        controlsLocked.value = locked
+        sendRaw(WtMessage.Lock(locked = locked, by = sessionName))
+    }
+
+    /** Host: remove a member from the room by display name. */
+    fun kickMember(name: String) {
+        if (role.value != Role.HOST) return
+        sendRaw(WtMessage.Kick(name = name, by = sessionName))
+    }
+
+    /** Any member: change the room's playback speed (applies to everyone). */
+    fun setRoomSpeed(rate: Double) {
+        if (role.value == Role.NONE) return
+        sendRaw(WtMessage.Speed(rate = rate.coerceIn(0.25, 4.0), by = sessionName))
     }
 
     /** Internal send — the host's periodic Sync must NOT count as a local action. */
@@ -395,6 +424,11 @@ class WatchTogetherSession(
                 is WtMessage.Members -> {
                     memberCount.value = message.count
                     memberNames.value = message.names
+                    hostName.value = message.hostName
+                }
+                is WtMessage.Lock -> {
+                    controlsLocked.value = message.locked
+                    onControl?.invoke(message)
                 }
                 is WtMessage.Sync -> {
                     if (role.value == Role.NONE) return@onMessage
@@ -424,6 +458,8 @@ class WatchTogetherSession(
                         roomCode.value = null
                         memberCount.value = 0
                         memberNames.value = emptyList()
+                        hostName.value = null
+                        controlsLocked.value = false
                         joinUrl.value = null
                         this@WatchTogetherSession.webSocket = null
                     }
@@ -445,6 +481,8 @@ class WatchTogetherSession(
                 roomCode.value = null
                 memberCount.value = 0
                 memberNames.value = emptyList()
+                hostName.value = null
+                controlsLocked.value = false
                 joinUrl.value = null
                 beacon?.shutdown()
                 beacon = null
@@ -457,6 +495,8 @@ class WatchTogetherSession(
                 roomCode.value = null
                 memberCount.value = 0
                 memberNames.value = emptyList()
+                hostName.value = null
+                controlsLocked.value = false
                 joinUrl.value = null
             }
         }

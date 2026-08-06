@@ -59,6 +59,14 @@ class WatchTogetherServer(
         @Volatile
         var media: MediaHandle? = null
         /**
+         * The first member to join is the host. The host can lock room controls
+         * (dropping play/pause/seek/speed from everyone else) and kick members.
+         */
+        @Volatile
+        var hostSocket: RoomSocket? = null
+        @Volatile
+        var locked: Boolean = false
+        /**
          * The most recent host [WtMessage.Sync] seen in this room. Replayed to
          * late joiners (before the episode) so they start exactly where the
          * host is instead of at 0:00 until the next 1 Hz tick.
@@ -258,6 +266,10 @@ class WatchTogetherServer(
 
         override fun onOpen() {
             room.members.add(this)
+            // First member to join is the room's host.
+            if (room.hostSocket == null) {
+                room.hostSocket = this
+            }
             // Late joiners first get the current position/play state, THEN the
             // media — so the guest's player can jump straight to the host's
             // spot once the file loads instead of flashing from 0:00.
@@ -268,11 +280,18 @@ class WatchTogetherServer(
             room.episode?.let { episode ->
                 runCatching { send(WtProtocol.encode(episode)) }
             }
+            // Late joiners need the current lock state too.
+            if (room.locked) {
+                runCatching { send(WtProtocol.encode(WtMessage.Lock(locked = true))) }
+            }
             broadcastMembers()
         }
 
         override fun onClose(code: CloseCode, reason: String?, initiatedByRemote: Boolean) {
             room.members.remove(this)
+            if (room.hostSocket === this) {
+                room.hostSocket = null
+            }
             broadcastMembers()
         }
 
@@ -293,6 +312,31 @@ class WatchTogetherServer(
                 }
                 is WtMessage.Sync -> {
                     room.lastSync = message // replay to late joiners on open
+                    relay(text)
+                }
+                is WtMessage.Lock -> {
+                    // Host-only. The relayed Lock keeps everyone's lock badge
+                    // in sync; guests' lock messages are ignored.
+                    if (this === room.hostSocket) {
+                        room.locked = message.locked
+                        relay(text)
+                    }
+                }
+                is WtMessage.Kick -> {
+                    // Host-only: close the named member's socket. The target
+                    // gets a RoomClosed so they know it wasn't a glitch.
+                    if (this === room.hostSocket) {
+                        val target = room.members.firstOrNull { it.memberName == message.name && it !== this }
+                        if (target != null) {
+                            val notice = WtProtocol.encode(WtMessage.RoomClosed("You were removed by the host"))
+                            runCatching { target.send(notice) }
+                            runCatching { target.close(CloseCode.NormalClosure, "removed by host", false) }
+                        }
+                    }
+                }
+                is WtMessage.Play, is WtMessage.Pause, is WtMessage.Seek, is WtMessage.Speed -> {
+                    // While locked, only the host may control playback.
+                    if (room.locked && this !== room.hostSocket) return
                     relay(text)
                 }
                 else -> relay(text)
@@ -316,7 +360,8 @@ class WatchTogetherServer(
 
         private fun broadcastMembers() {
             val names = room.members.map { it.memberName }.filter { it.isNotBlank() }
-            val message = WtProtocol.encode(WtMessage.Members(room.members.size, names))
+            val hostName = room.hostSocket?.memberName?.takeIf { it.isNotBlank() }
+            val message = WtProtocol.encode(WtMessage.Members(room.members.size, names, hostName))
             room.members.forEach { member ->
                 runCatching { member.send(message) }
             }
@@ -669,6 +714,11 @@ private val JOIN_PAGE = """
   #bar button{background:#1c1c1e;color:#eee;border:1px solid #3a3a3c;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px;min-width:44px;white-space:nowrap}
   #bar button:hover{background:#2c2c2e}
   #playBtn{min-width:56px}
+  #bar button:disabled{opacity:.35;cursor:default;background:#1c1c1e}
+  #speedBtn{font-variant-numeric:tabular-nums}
+  #deepLinkBtn{display:none;background:#6c5ce7;border-color:#6c5ce7}
+  #deepLinkBtn:hover{background:#7b6df0}
+  #lockBadge{display:none;background:#8a2f2f;border-color:#b35454}
   #scrub{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
   input[type=range]{flex:1;accent-color:#6c5ce7;height:26px;min-width:0;margin:0}
   #time{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;opacity:.8}
@@ -688,6 +738,7 @@ private val JOIN_PAGE = """
 <div id="stage">
   <video id="v" playsinline webkit-playsinline preload="auto"></video>
   <div id="bar">
+    <button id="lockBadge" disabled title="The host locked playback controls">&#128274;</button>
     <button id="playBtn" onclick="togglePlay()">&#9654;</button>
     <button onclick="skip(-10)">-10</button>
     <button onclick="skip(10)">+10</button>
@@ -695,6 +746,8 @@ private val JOIN_PAGE = """
       <input type="range" id="seekBar" min="0" max="1" step="0.1" value="0" disabled oninput="onScrub()" onchange="onScrubEnd()">
       <span id="time">0:00</span>
     </div>
+    <button id="speedBtn" onclick="cycleSpeed()" title="Playback speed">1.0x</button>
+    <button id="deepLinkBtn" onclick="openInApp()">Open in Anikku</button>
     <button id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">&#x26F6;</button>
   </div>
   <div id="info">Connecting&#8230;</div>
@@ -722,6 +775,39 @@ var seekBar = document.getElementById('seekBar');
 var timeEl = document.getElementById('time');
 var playBtn = document.getElementById('playBtn');
 var fsBtn = document.getElementById('fsBtn');
+var speedBtn = document.getElementById('speedBtn');
+var deepLinkBtn = document.getElementById('deepLinkBtn');
+var lockBadge = document.getElementById('lockBadge');
+var locked = false;            // host locked controls — guests are watch-only
+var pendingDeepLink = null;    // anikku:// link offered when a magnet episode can't stream here
+
+// Playback speed for the whole room — cycles through presets, broadcast to all.
+var SPEEDS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+var speedIdx = SPEEDS.indexOf(1.0);
+function setSpeed(rate) {
+  for (var i = 0; i < SPEEDS.length; i++) { if (Math.abs(SPEEDS[i] - rate) < 0.01) speedIdx = i; }
+  v.playbackRate = rate;
+  speedBtn.textContent = rate.toFixed(2).replace(/\.?0+$/, '') + 'x';
+}
+function cycleSpeed() {
+  if (locked) return;
+  speedIdx = (speedIdx + 1) % SPEEDS.length;
+  var rate = SPEEDS[speedIdx];
+  userAction();
+  setSpeed(rate);
+  send({type: 'speed', rate: rate});
+}
+
+// Host lock: hide transport when the host locked controls.
+function applyLock() {
+  playBtn.disabled = locked;
+  seekBar.disabled = locked;
+  lockBadge.style.display = locked ? 'block' : 'none';
+}
+
+function openInApp() {
+  if (pendingDeepLink) location.href = pendingDeepLink;
+}
 
 // Random name assigned immediately on load; the prompt offers to replace it.
 var NAMES = ['Sakura','Neko','Senpai','Kami','Kaze','Hoshi','Tama','Rin','Yuki','Momo','Kuro','Aki','Kira','Sora','Hana'];
@@ -911,7 +997,11 @@ ws.onmessage = function (e) {
     currentMedia = m.mediaUrl;
     setVideoSource(m.mediaUrl, m.kind);
   } else if (m.type === 'episode' && !m.mediaUrl) {
-    flashStatus('The host is playing a torrent — no stream to join here');
+    // Magnet room — the browser can't stream torrent media, but the host can
+    // deep-link us into the app where this episode plays locally.
+    pendingDeepLink = m.appDeepLink || null;
+    deepLinkBtn.style.display = pendingDeepLink ? 'block' : 'none';
+    flashStatus('The host is playing a torrent — open it in Anikku to watch');
   }
   if (m.type === 'sync') {
     if (m.duration > 0) fallbackDuration = m.duration;
@@ -922,13 +1012,18 @@ ws.onmessage = function (e) {
     if (Math.abs((v.currentTime || 0) - m.pos) > 0.75) applySeek(m.pos);
     if (m.playing && v.paused) v.play().catch(function () {});
     if (!m.playing && !v.paused) v.pause();
+    if (m.rate && Math.abs((v.playbackRate || 1) - m.rate) > 0.01) setSpeed(m.rate);
     syncSeekBar();
   }
-  if (m.type === 'play') { userAction(); v.play().catch(function () {}); }
-  if (m.type === 'pause') { userAction(); v.pause(); }
-  if (m.type === 'seek') { userAction(); applySeek(m.pos); }
+  if (m.type === 'play' && !locked) { userAction(); v.play().catch(function () {}); }
+  if (m.type === 'pause' && !locked) { userAction(); v.pause(); }
+  if (m.type === 'seek' && !locked) { userAction(); applySeek(m.pos); }
+  if (m.type === 'speed') { userAction(); setSpeed(m.rate); }
+  if (m.type === 'lock') { locked = m.locked; applyLock(); }
   if (m.type === 'members') {
-    info.textContent = (m.names && m.names.length ? m.names.join(', ') + ' \u00b7 ' : '') + m.count + ' watching \u00b7 room ' + code;
+    var line = (m.names && m.names.length ? m.names.join(', ') + ' \u00b7 ' : '') + m.count + ' watching \u00b7 room ' + code;
+    if (m.hostName) line += ' \u00b7 host: ' + m.hostName;
+    info.textContent = line;
   }
   if (m.type === 'room_closed') flashStatus(m.reason || 'The host closed the room');
 };

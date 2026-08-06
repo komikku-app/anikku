@@ -2,6 +2,7 @@ package app.anikku.macos.platform
 
 import androidx.compose.runtime.compositionLocalOf
 import app.anikku.macos.platform.backup.MacOSBackupManager
+import app.anikku.macos.platform.download.MacOSDownloadManager
 import app.anikku.macos.platform.library.MacOSLibraryUpdateService
 import app.anikku.macos.platform.library.NewEpisodeRepository
 import app.anikku.macos.platform.library.toFeedEntries
@@ -48,6 +49,7 @@ class MacOSBackgroundJobs(
     private val syncYomiService: MacOSSyncYomiService? = null,
     private val newEpisodeRepository: NewEpisodeRepository? = null,
     private val newEpisodeNotificationsEnabled: () -> Boolean = { true },
+    private val downloadManager: MacOSDownloadManager? = null,
     private val clockMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val backupMutex = Mutex()
@@ -163,11 +165,46 @@ class MacOSBackgroundJobs(
                 // single aggregate notification.
                 notificationManager.showLibraryUpdate(result.newlyDiscoveredEpisodes)
             }
+
+            // Auto-download: when enabled globally AND the anime is opted in,
+            // enqueue every newly discovered episode (dedup handled by the
+            // download manager — already-queued episodes are skipped).
+            val autoDownloadOn = preferenceStore.getBoolean(
+                app.anikku.macos.ui.settings.KEY_AUTO_DOWNLOAD_NEW_EPISODES,
+                false,
+            ).get()
+            if (autoDownloadOn && downloadManager != null && result.newlyDiscovered.isNotEmpty()) {
+                val optedIn = preferenceStore.getStringSet(
+                    app.anikku.macos.ui.settings.KEY_AUTO_DOWNLOAD_ANIME,
+                    emptySet(),
+                ).get()
+                result.newlyDiscovered.forEach { info ->
+                    if (info.animeId.toString() in optedIn && info.sourceId != 0L) {
+                        info.newEpisodes.forEach { episode ->
+                            downloadManager.enqueue(
+                                animeId = info.animeId,
+                                sourceId = info.sourceId,
+                                animeTitle = info.title,
+                                episodeName = episode.name.ifBlank {
+                                    "Episode ${formatAutoDownloadNumber(episode.number)}"
+                                },
+                                episodeNumber = episode.number,
+                                episodeUrl = episode.url,
+                                coverUrl = info.thumbnailUrl,
+                            )
+                        }
+                    }
+                }
+            }
+
             markSuccess(LAST_LIBRARY_UPDATE)
             "Updated ${result.updated}/${result.scanned} titles" +
                 if (result.failures.isNotEmpty()) " (${result.failures.size} failed)" else ""
         }
     }
+
+    private fun formatAutoDownloadNumber(number: Double): String =
+        if (number % 1.0 == 0.0) number.toLong().toString() else number.toString()
 
     private suspend fun syncGoogleDrive() {
         if (!googleDriveService.isConnected) {

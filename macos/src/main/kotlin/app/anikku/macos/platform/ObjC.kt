@@ -49,6 +49,29 @@ object ObjC {
     }
 
     // -----------------------------------------------------------------------
+    // Runtime class creation (for lightweight NSObject subclasses)
+    // -----------------------------------------------------------------------
+
+    /** objc_allocateClassPair(Class superclass, const char *name, size_t extraBytes) -> Class */
+    fun objc_allocateClassPair(superclass: Pointer, name: String): Pointer {
+        return lib.getFunction("objc_allocateClassPair")
+            .invoke(Pointer::class.java, arrayOf(superclass, name, 0L)) as Pointer
+    }
+
+    /** class_addMethod(Class cls, SEL name, IMP imp, const char *types) -> BOOL */
+    fun class_addMethod(cls: Pointer, name: Pointer, imp: Pointer, types: String): Boolean {
+        val result = lib.getFunction("class_addMethod")
+            .invoke(Int::class.java, arrayOf(cls, name, imp, types)) as Int
+        return result != 0
+    }
+
+    /** objc_registerClassPair(Class cls) */
+    fun objc_registerClassPair(cls: Pointer) {
+        lib.getFunction("objc_registerClassPair")
+            .invoke(arrayOf(cls))
+    }
+
+    // -----------------------------------------------------------------------
     // objc_msgSend — same native symbol, different arity/return-type overloads
     // -----------------------------------------------------------------------
 

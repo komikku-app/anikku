@@ -1,7 +1,6 @@
 package app.anikku.macos.ui.screens.player
 
 import app.anikku.macos.player.PlaybackState
-import app.anikku.macos.player.PlayerPreferences
 import app.anikku.macos.player.PlayerViewModel
 import app.anikku.macos.player.TrackInfo
 import app.anikku.macos.player.formatDuration

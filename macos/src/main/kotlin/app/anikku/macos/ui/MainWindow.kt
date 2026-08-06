@@ -2,6 +2,7 @@ package app.anikku.macos.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.zIndex
@@ -33,8 +42,11 @@ import app.anikku.macos.ui.screens.discover.DiscoverTab
 import app.anikku.macos.ui.screens.downloads.DownloadsTab
 import app.anikku.macos.ui.screens.stats.StatsTab
 import app.anikku.macos.ui.screens.torrent.TorrentTab
+import app.anikku.macos.platform.MacOSDeepLinkHandler
 import app.anikku.macos.platform.extension.LocalExtensionManager
 import app.anikku.macos.ui.screens.browse.GlobalSearchScreen
+import app.anikku.macos.ui.screens.player.PlayerScreen
+import app.anikku.macos.ui.settings.LocalSettingsState
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -51,6 +63,11 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
  *
  * Ported from the Android HomeScreen.kt and MainActivity.kt.
  */
+/** Ordered tab names matching [orderedTabs] (logging, ⌘1-9 shortcuts). */
+internal val TAB_NAMES: List<String> = listOf(
+    "Library", "Updates", "History", "Stats", "Browse", "Torrents", "Downloads", "Discover", "More",
+)
+
 /** Ordered tabs matching the View menu shortcuts (⌘1-9). */
 internal val orderedTabs: List<Tab> = listOf(
     LibraryScreen,
@@ -81,14 +98,18 @@ fun MainWindow(
         // throws ClassCastException when a non-Tab screen like
         // AnimeDetailScreen is on the tab's inner navigator stack.
         var currentTabIndex by remember { mutableStateOf(initialIndex) }
-        var sidebarVisible by remember { mutableStateOf(true) }
+        val settings = LocalSettingsState.current
+        var sidebarVisible by remember { mutableStateOf(settings.sidebarVisible) }
         var searchRequestId by remember { mutableLongStateOf(0L) }
         var handledSearchRequestId by remember { mutableLongStateOf(0L) }
         val extensionManager = LocalExtensionManager.current
 
         // Bridge the native View > Toggle Sidebar action to the Compose rail.
         DisposableEffect(tabNavigator) {
-            val sidebarToggleHandler: () -> Unit = { sidebarVisible = !sidebarVisible }
+            val sidebarToggleHandler: () -> Unit = {
+                sidebarVisible = !sidebarVisible
+                settings.sidebarVisible = sidebarVisible
+            }
             val searchHandler: () -> Unit = {
                 tabNavigator.current = BrowseScreen
                 currentTabIndex = 4
@@ -114,7 +135,7 @@ fun MainWindow(
                     tabNavigator.current = tab
                     currentTabIndex = index
                     onTabIndexChange(index)
-                    val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "Downloads", "Discover", "More")
+                    val tabNames = TAB_NAMES
                     UIActionLogger.logNavigation("MenuShortcut", tabNames.getOrElse(index) { "?" }, "tab=$index")
                 }
             }
@@ -134,7 +155,7 @@ fun MainWindow(
                         currentTabIndex = currentTabIndex,
                         onSelectTab = { index ->
                         orderedTabs.getOrNull(index)?.let { tab ->
-                            val tabNames = listOf("Library", "Updates", "History", "Stats", "Browse", "Torrents", "Downloads", "Discover", "More")
+                            val tabNames = TAB_NAMES
                             UIActionLogger.logNavigation("NavigationRail", tabNames.getOrElse(index) { "?" }, "tab=$index")
                             tabNavigator.current = tab
                             currentTabIndex = index
@@ -150,8 +171,60 @@ fun MainWindow(
                 // startup instead of re-fetching on every switch). The active
                 // tab is visible with a short fade; hidden tabs are kept alive
                 // but inert (alpha 0 + input consumed).
-                Box {
-                    val tabNavigators = remember { mutableMapOf<Int, Navigator>() }
+                val tabNavigators = remember { mutableMapOf<Int, Navigator>() }
+
+                // anikku:// deep links (Watch Together join-page "Open in
+                // Anikku"): push the player for the linked episode onto the
+                // current tab. Delivered on the AWT event thread.
+                DisposableEffect(tabNavigators, extensionManager) {
+                    val deepLinkHandler: (MacOSDeepLinkHandler.WatchTarget) -> Unit = { target ->
+                        val navigator = tabNavigators[currentTabIndex]
+                        if (navigator != null) {
+                            navigator.push(
+                                PlayerScreen(
+                                    animeId = target.animeId,
+                                    episodeId = target.episodeId,
+                                    sourceId = target.sourceId,
+                                    episodeUrl = target.episodeUrl,
+                                    animeTitle = target.animeTitle,
+                                    episodeName = target.episodeName,
+                                    episodeNumber = target.episodeNumber,
+                                    coverUrl = target.coverUrl,
+                                    extensionManager = extensionManager,
+                                )
+                            )
+                            UIActionLogger.logNavigation("DeepLink", "anikku://watch", "episodeId=${target.episodeId}")
+                        }
+                    }
+                    MacOSDeepLinkHandler.onWatchDeepLink = deepLinkHandler
+                    onDispose {
+                        if (MacOSDeepLinkHandler.onWatchDeepLink === deepLinkHandler) {
+                            MacOSDeepLinkHandler.onWatchDeepLink = null
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .focusable()
+                        .onPreviewKeyEvent { event ->
+                            // Desktop back navigation: Escape or ⌘[ pops the
+                            // current tab's pushed screen. The player owns its
+                            // own Escape handling (exit fullscreen / back), so
+                            // pass the event through when it's on top.
+                            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                            val isBack =
+                                (!event.isMetaPressed && !event.isCtrlPressed && !event.isAltPressed && event.key == Key.Escape) ||
+                                    (event.isMetaPressed && event.key == Key.LeftBracket)
+                            if (!isBack) return@onPreviewKeyEvent false
+                            val navigator = tabNavigators[currentTabIndex]
+                            if (navigator == null || !navigator.canPop) return@onPreviewKeyEvent false
+                            if (navigator.lastItemOrNull is PlayerScreen) return@onPreviewKeyEvent false
+                            navigator.pop()
+                            true
+                        },
+                ) {
                     orderedTabs.forEachIndexed { index, tab ->
                         val isCurrent = index == currentTabIndex
                         val alpha by animateFloatAsState(
@@ -198,7 +271,11 @@ fun MainWindow(
                                         searchRequestId > handledSearchRequestId
                                     ) {
                                         handledSearchRequestId = searchRequestId
-                                        navigator.push(GlobalSearchScreen(extensionManager = extensionManager))
+                                        // ⌘F dedup: don't stack a second search
+                                        // screen when one is already open.
+                                        if (tabNavigators[index]?.lastItemOrNull !is GlobalSearchScreen) {
+                                            navigator.push(GlobalSearchScreen(extensionManager = extensionManager))
+                                        }
                                     }
                                 }
                                 CurrentScreen()

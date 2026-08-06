@@ -1,4 +1,5 @@
 package app.anikku.macos.ui.screens.tracker
+import app.anikku.macos.ui.theme.AnikkuStatusColors
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -248,7 +249,7 @@ data class TrackerSearchScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f),
+                                        containerColor = AnikkuStatusColors.success().copy(alpha = 0.1f),
                                     ),
                                 ) {
                                     Row(
@@ -258,7 +259,7 @@ data class TrackerSearchScreen(
                                         Icon(
                                             Icons.Outlined.CheckCircle,
                                             contentDescription = null,
-                                            tint = Color(0xFF4CAF50),
+                                            tint = AnikkuStatusColors.success(),
                                             modifier = Modifier.size(24.dp),
                                         )
                                         Spacer(Modifier.width(10.dp))
@@ -267,12 +268,12 @@ data class TrackerSearchScreen(
                                                 text = "Anime linked!",
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = Color(0xFF4CAF50),
+                                                color = AnikkuStatusColors.success(),
                                             )
                                             Text(
                                                 text = "Future scrobbles will use this mapping.",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = Color(0xFF4CAF50).copy(alpha = 0.7f),
+                                                color = AnikkuStatusColors.success().copy(alpha = 0.7f),
                                             )
                                         }
                                         OutlinedButton(
@@ -451,7 +452,7 @@ private fun TrackerSearchResultCard(
                 Icon(
                     Icons.Outlined.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFF4CAF50),
+                    tint = AnikkuStatusColors.success(),
                     modifier = Modifier.size(24.dp),
                 )
             }

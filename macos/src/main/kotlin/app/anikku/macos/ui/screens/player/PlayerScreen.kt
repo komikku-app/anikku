@@ -87,6 +87,7 @@ import app.anikku.macos.player.MPVVideoSurface
 import app.anikku.macos.player.MacOSPipHandler
 import app.anikku.macos.player.PipWindow
 import app.anikku.macos.player.PlaybackState
+import app.anikku.macos.player.TorrentStreamingCoordinator
 import app.anikku.macos.player.PlayerViewModel
 import app.anikku.macos.platform.auth.LocalTrackerManager
 import app.anikku.macos.platform.data.HistoryRepository
@@ -100,6 +101,8 @@ import app.anikku.macos.platform.library.LocalAnimeSourceMatcher
 import app.anikku.macos.platform.library.SourceMatch
 import app.anikku.macos.platform.logging.UIActionLogger
 import app.anikku.macos.platform.MacOSDockManager
+import app.anikku.macos.platform.torrent.LocalTorrentServerBridge
+import app.anikku.macos.platform.torrent.TorrentServerBridge
 import app.anikku.macos.platform.MacOSNowPlayingHandler
 import app.anikku.macos.platform.MacOSShareUtil
 import app.anikku.macos.platform.media.MacOSHttpServer
@@ -643,12 +646,20 @@ data class PlayerScreen(
         }
 
         // Initialize the player view model (Phase 6). Volume starts at the
-        // persisted last-used value and every change is written back.
+        // persisted last-used value and every change is written back. Torrent
+        // streaming uses the app-scoped TorrServer bridge so the Torrents tab
+        // can show live progress while a magnet is streaming.
+        val appTorrentBridge = LocalTorrentServerBridge.current
         val playerViewModel = remember {
             PlayerViewModel(
+                torrentStreamer = TorrentStreamingCoordinator(
+                    appTorrentBridge ?: TorrentServerBridge.createDefault(),
+                ),
                 clipSeconds = settings.clipCaptureSeconds,
                 initialVolume = settings.volume,
                 onVolumeChanged = { settings.volume = it },
+                screenshotDirectory = settings.screenshotDirectory,
+                screenshotFormat = settings.screenshotFormat,
             )
         }
 
@@ -664,6 +675,8 @@ data class PlayerScreen(
         val roomCode by watchSession.roomCode.collectAsState()
         val roomMemberCount by watchSession.memberCount.collectAsState()
         val roomJoinUrl by watchSession.joinUrl.collectAsState()
+        val roomLocked by watchSession.controlsLocked.collectAsState()
+        val roomHostName by watchSession.hostName.collectAsState()
         val watchStatus by watchSession.status.collectAsState()
         var showWatchDialog by remember { mutableStateOf(false) }
         var joinCodeInput by remember { mutableStateOf("") }
@@ -758,6 +771,7 @@ data class PlayerScreen(
                     is WtMessage.Play -> if (isPaused) playerViewModel.togglePause()
                     is WtMessage.Pause -> if (!isPaused) playerViewModel.togglePause()
                     is WtMessage.Seek -> playerViewModel.seekTo(message.pos)
+                    is WtMessage.Speed -> playerViewModel.setSpeed(message.rate)
                     else -> Unit
                 }
             }
@@ -931,6 +945,23 @@ data class PlayerScreen(
                 number = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0,
                 kind = mediaKind(mediaSpec),
                 duration = duration,
+                // Magnet rooms can't stream to browsers — hand guests a deep
+                // link that opens this exact episode in the app instead.
+                appDeepLink = if (mediaSpec is WatchTogetherSession.MediaSpec.Magnet) {
+                    buildString {
+                        append("anikku://watch?animeId=$animeId&episodeId=$episodeId")
+                        sourceId?.let { append("&sourceId=$it") }
+                        episodeUrl?.let { append("&episodeUrl=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+                        append("&animeTitle=${java.net.URLEncoder.encode(animeTitle, "UTF-8")}")
+                        val epName = allEpisodes.getOrNull(currentEpisodeIndex)?.name.orEmpty()
+                        append("&episodeName=${java.net.URLEncoder.encode(epName, "UTF-8")}")
+                        allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber?.let {
+                            append("&episodeNumber=$it")
+                        }
+                    }
+                } else {
+                    null
+                },
             )
             val tunnel = watchTunnel
             if (tunnel != null && !tunnel.isRunning) {
@@ -1072,6 +1103,76 @@ data class PlayerScreen(
         // recreated each time the player hops to another extension.
         LaunchedEffect(Unit) {
             playerViewModel.initialize()
+        }
+
+        // Shared helper: re-resolve the video URL starting from the given index.
+        // Updates state consistently: error, video candidates, quality, and lastAttemptedIndex.
+        // Declared before the load effect below — the preferred-quality path
+        // inside that effect calls it on the initial resolve.
+        fun resolveAndPlay(startIndex: Int) {
+            scope.launch {
+                videoResolutionError = null
+                videoErrorDiagnostic = null
+                resolvedVideo = null
+                isResolvingVideo = true
+                isLoading = true
+                resolutionStatusText = when {
+                    isAutoRetrying && videoCandidates.size > 1 -> {
+                        "Auto-trying quality ${startIndex + 1}/${videoCandidates.size}..."
+                    }
+                    startIndex > 0 -> "Trying next video quality..."
+                    else -> "Retrying video resolution..."
+                }
+
+                val se = sourceEpisodes.getOrNull(currentEpisodeIndex)
+                val episodeNumber = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0
+                val resolved = resolveVideoUrl(
+                    sEpisode = se,
+                    episodeNumber = episodeNumber,
+                    httpServer = httpServer,
+                    startIndex = startIndex,
+                    resolvingSourceId = activeSourceId,
+                    onCandidateList = { candidates ->
+                        videoCandidates = candidates
+                    },
+                    onError = { msg ->
+                        videoResolutionError = msg
+                        toastHost.show(
+                            text = msg,
+                            duration = ToastDuration.LONG,
+                            isError = true,
+                            source = activeSourceId?.toString(),
+                            location = "PlayerScreen.resolveAndPlay",
+                        )
+                    },
+                    onDiagnostic = { diag ->
+                        videoErrorDiagnostic = diag
+                    },
+                )
+                isResolvingVideo = false
+                isLoading = false
+
+                if (resolved != null) {
+                    resolvedVideo = VideoResolution(
+                    url = resolved.url,
+                    headers = resolved.headers,
+                    subtitleTracks = resolved.subtitleTracks,
+                )
+                    lastAttemptedIndex = resolved.candidateIndex
+                    videoQualityResolution = resolved.qualityResolution
+                    videoQualityLabel = resolved.qualityLabel
+                    // Keep quality progress visible during mpv loading
+                    val qualityLabel = resolved.qualityLabel?.takeIf { it.isNotBlank() }
+                    resolutionStatusText = if (isAutoRetrying && videoCandidates.size > 1) {
+                        val label = qualityLabel ?: "quality ${resolved.candidateIndex + 1}"
+                        "$label loaded — starting playback..."
+                    } else {
+                        "Video resolved — loading into player..."
+                    }
+                } else {
+                    resolutionStatusText = ""
+                }
+            }
         }
 
         // Load episode data for the active source. Re-runs when the cross-source
@@ -1229,6 +1330,18 @@ data class PlayerScreen(
                 downloadManager.isDownloaded(animeId, currentEpisodeNumber)
 
             if (resolved != null) {
+                // Remembered quality preference: if the user previously picked
+                // a quality and the source-preferred pick differs, re-resolve
+                // at that candidate instead (plays it via resolveAndPlay).
+                val preferredLabel = settings.preferredQualityLabel
+                val preferredIndex = preferredLabel
+                    .takeIf { it.isNotBlank() && it != resolved.qualityLabel }
+                    ?.let { p -> videoCandidates.indexOfFirst { it.label == p } }
+                    ?.takeIf { it >= 0 }
+                if (preferredIndex != null) {
+                    resolveAndPlay(preferredIndex)
+                    return@LaunchedEffect
+                }
                 resolvedVideo = VideoResolution(
                     url = resolved.url,
                     headers = resolved.headers,
@@ -1536,74 +1649,6 @@ data class PlayerScreen(
             onDispose { discordRPC?.clearPresence() }
         }
 
-        // Shared helper: re-resolve the video URL starting from the given index.
-        // Updates state consistently: error, video candidates, quality, and lastAttemptedIndex.
-        fun resolveAndPlay(startIndex: Int) {
-            scope.launch {
-                videoResolutionError = null
-                videoErrorDiagnostic = null
-                resolvedVideo = null
-                isResolvingVideo = true
-                isLoading = true
-                resolutionStatusText = when {
-                    isAutoRetrying && videoCandidates.size > 1 -> {
-                        "Auto-trying quality ${startIndex + 1}/${videoCandidates.size}..."
-                    }
-                    startIndex > 0 -> "Trying next video quality..."
-                    else -> "Retrying video resolution..."
-                }
-
-                val se = sourceEpisodes.getOrNull(currentEpisodeIndex)
-                val episodeNumber = allEpisodes.getOrNull(currentEpisodeIndex)?.episodeNumber ?: 0.0
-                val resolved = resolveVideoUrl(
-                    sEpisode = se,
-                    episodeNumber = episodeNumber,
-                    httpServer = httpServer,
-                    startIndex = startIndex,
-                    resolvingSourceId = activeSourceId,
-                    onCandidateList = { candidates ->
-                        videoCandidates = candidates
-                    },
-                    onError = { msg ->
-                        videoResolutionError = msg
-                        toastHost.show(
-                            text = msg,
-                            duration = ToastDuration.LONG,
-                            isError = true,
-                            source = activeSourceId?.toString(),
-                            location = "PlayerScreen.resolveAndPlay",
-                        )
-                    },
-                    onDiagnostic = { diag ->
-                        videoErrorDiagnostic = diag
-                    },
-                )
-                isResolvingVideo = false
-                isLoading = false
-
-                if (resolved != null) {
-                    resolvedVideo = VideoResolution(
-                    url = resolved.url,
-                    headers = resolved.headers,
-                    subtitleTracks = resolved.subtitleTracks,
-                )
-                    lastAttemptedIndex = resolved.candidateIndex
-                    videoQualityResolution = resolved.qualityResolution
-                    videoQualityLabel = resolved.qualityLabel
-                    // Keep quality progress visible during mpv loading
-                    val qualityLabel = resolved.qualityLabel?.takeIf { it.isNotBlank() }
-                    resolutionStatusText = if (isAutoRetrying && videoCandidates.size > 1) {
-                        val label = qualityLabel ?: "quality ${resolved.candidateIndex + 1}"
-                        "$label loaded — starting playback..."
-                    } else {
-                        "Video resolved — loading into player..."
-                    }
-                } else {
-                    resolutionStatusText = ""
-                }
-            }
-        }
-
         // Retry function: re-resolve the video URL for the current episode
         // starting from index 0 (same as initial load, useful after a transient failure).
         fun retryLoad() {
@@ -1858,6 +1903,18 @@ data class PlayerScreen(
             videoErrorDiagnostic = videoErrorDiagnostic,
             videoQualityResolution = videoQualityResolution,
             videoQualityLabel = videoQualityLabel,
+            videoCandidates = videoCandidates,
+            onQualitySelected = { index ->
+                val candidate = videoCandidates.getOrNull(index)
+                if (candidate != null) {
+                    resolveAndPlay(index)
+                    // Remember the pick so future loads prefer this quality.
+                    settings.preferredQualityLabel = candidate.label.orEmpty()
+                    candidate.label?.takeIf { it.isNotBlank() }?.let { label ->
+                        toastHost.show("Quality: $label", ToastDuration.SHORT)
+                    }
+                }
+            },
             isLoading = isLoading,
             onBack = { requestBack() },
             onRetry = { retryLoad() },
@@ -1900,23 +1957,28 @@ data class PlayerScreen(
             onTogglePlay = {
                 // User-initiated transport actions are also broadcast to the
                 // Watch Together room (remote actions call the VM directly).
+                // While the host has controls locked, guests are watch-only.
+                if (roomRole == WatchTogetherSession.Role.GUEST && roomLocked) return@PlayerContent
                 if (roomRole != WatchTogetherSession.Role.NONE) {
                     watchSession.sendControl(if (isPaused) WtMessage.Play() else WtMessage.Pause())
                 }
                 playerViewModel.togglePause()
             },
             onSeekTo = { seconds ->
+                if (roomRole == WatchTogetherSession.Role.GUEST && roomLocked) return@PlayerContent
                 if (roomRole != WatchTogetherSession.Role.NONE) {
                     watchSession.sendControl(WtMessage.Seek(seconds))
                 }
                 playerViewModel.seekTo(seconds)
             },
             onSeekRelative = { offset ->
+                if (roomRole == WatchTogetherSession.Role.GUEST && roomLocked) return@PlayerContent
                 if (roomRole != WatchTogetherSession.Role.NONE) {
                     watchSession.sendControl(WtMessage.Seek((currentPosition + offset).coerceAtLeast(0.0)))
                 }
                 playerViewModel.seekRelative(offset)
             },
+            seekIncrementSeconds = settings.seekIncrementSeconds,
             onSetVolume = { vol -> playerViewModel.setVolume(vol) },
             onToggleFullscreen = {
                 val frame = appWindow
@@ -2028,6 +2090,8 @@ data class PlayerScreen(
                 code = roomCode,
                 memberCount = roomMemberCount,
                 memberNames = watchSession.memberNames.collectAsState().value,
+                hostName = roomHostName,
+                controlsLocked = roomLocked,
                 joinUrl = roomJoinUrl,
                 status = watchStatus,
                 joinCode = joinCodeInput,
@@ -2045,6 +2109,14 @@ data class PlayerScreen(
                 onCopy = { text ->
                     MacOSShareUtil.copyToClipboard(text)
                     toastHost.show("Copied to clipboard", ToastDuration.SHORT)
+                },
+                onLockControls = { locked ->
+                    watchSession.lockControls(locked)
+                    toastHost.show(if (locked) "Controls locked — guests are watch-only" else "Controls unlocked", ToastDuration.SHORT)
+                },
+                onKickMember = { name ->
+                    watchSession.kickMember(name)
+                    toastHost.show("Removed $name from the room", ToastDuration.SHORT)
                 },
                 onLeave = {
                     watchSession.leave()
@@ -2120,6 +2192,8 @@ internal fun PlayerContent(
     isLive: Boolean = false,
     videoQualityResolution: Int? = null,
     videoQualityLabel: String? = null,
+    videoCandidates: List<PlayerScreen.VideoCandidate> = emptyList(),
+    onQualitySelected: (Int) -> Unit = {},
     isLoading: Boolean = true,
     hasNextQuality: Boolean = false,
     nextQualityLabel: String? = null,
@@ -2139,6 +2213,7 @@ internal fun PlayerContent(
     onTogglePlay: () -> Unit = {},
     onSeekTo: (Double) -> Unit = {},
     onSeekRelative: (Double) -> Unit = {},
+    seekIncrementSeconds: Int = 10,
     onSetVolume: (Int) -> Unit = {},
     onToggleFullscreen: () -> Unit = {},
     isPipVisible: Boolean = false,
@@ -2170,6 +2245,7 @@ internal fun PlayerContent(
     var showShortcutsDialog by remember { mutableStateOf(false) }
     var showSettingsMenu by remember { mutableStateOf(false) }
     var showSpeedPanel by remember { mutableStateOf(false) }
+    var showQualityPanel by remember { mutableStateOf(false) }
     var showAudioPanel by remember { mutableStateOf(false) }
     var showSubtitlePanel by remember { mutableStateOf(false) }
     var showEqualizerPanel by remember { mutableStateOf(false) }
@@ -2623,14 +2699,14 @@ internal fun PlayerContent(
                         true
                     }
                     event.key == Key.DirectionLeft && canSeek -> {
-                        onSeekRelative(-10.0)
-                        elapsedSeconds = (elapsedSeconds - 10).coerceAtLeast(0)
+                        onSeekRelative(-seekIncrementSeconds.toDouble())
+                        elapsedSeconds = (elapsedSeconds - seekIncrementSeconds).coerceAtLeast(0)
                         seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
                     event.key == Key.DirectionRight && canSeek -> {
-                        onSeekRelative(10.0)
-                        elapsedSeconds = (elapsedSeconds + 10).coerceAtMost(totalSeconds)
+                        onSeekRelative(seekIncrementSeconds.toDouble())
+                        elapsedSeconds = (elapsedSeconds + seekIncrementSeconds).coerceAtMost(totalSeconds)
                         seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
@@ -2649,14 +2725,14 @@ internal fun PlayerContent(
                         true
                     }
                     event.key == Key.J && canSeek -> {
-                        onSeekRelative(-10.0)
-                        elapsedSeconds = (elapsedSeconds - 10).coerceAtLeast(0)
+                        onSeekRelative(-seekIncrementSeconds.toDouble())
+                        elapsedSeconds = (elapsedSeconds - seekIncrementSeconds).coerceAtLeast(0)
                         seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
                     event.key == Key.L && canSeek -> {
-                        onSeekRelative(10.0)
-                        elapsedSeconds = (elapsedSeconds + 10).coerceAtMost(totalSeconds)
+                        onSeekRelative(seekIncrementSeconds.toDouble())
+                        elapsedSeconds = (elapsedSeconds + seekIncrementSeconds).coerceAtMost(totalSeconds)
                         seekFraction = if (totalSeconds > 0) (elapsedSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f) else 0f
                         true
                     }
@@ -2875,6 +2951,7 @@ internal fun PlayerContent(
                         TransportIconButton(icon = Icons.Outlined.Settings, description = "Settings", onClick = { showSettingsMenu = true })
                         DropdownMenu(expanded = showSettingsMenu, onDismissRequest = { showSettingsMenu = false }) {
                             DropdownMenuItem(text = { Text("Playback Speed") }, onClick = { showSettingsMenu = false; showSpeedPanel = true })
+                            DropdownMenuItem(text = { Text("Quality") }, onClick = { showSettingsMenu = false; showQualityPanel = true })
                             DropdownMenuItem(text = { Text("Audio Track") }, onClick = { showSettingsMenu = false; showAudioPanel = true })
                             DropdownMenuItem(text = { Text("Subtitles") }, onClick = { showSettingsMenu = false; showSubtitlePanel = true })
                             DropdownMenuItem(text = { Text("Equalizer") }, onClick = { showSettingsMenu = false; showEqualizerPanel = true })
@@ -3008,11 +3085,23 @@ internal fun PlayerContent(
         }
 
         // === Settings panel overlays ===
-        val isAnyPanelOpen = showSpeedPanel || showAudioPanel || showSubtitlePanel || showEqualizerPanel || showAspectRatioPanel || showVideoFilterPanel
+        val isAnyPanelOpen = showSpeedPanel || showQualityPanel || showAudioPanel || showSubtitlePanel || showEqualizerPanel || showAspectRatioPanel || showVideoFilterPanel
         if (isAnyPanelOpen) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)).clickable(
                 interactionSource = remember { MutableInteractionSource() }, indication = null,
-            ) { showSpeedPanel = false; showAudioPanel = false; showSubtitlePanel = false; showEqualizerPanel = false; showAspectRatioPanel = false; showVideoFilterPanel = false })
+            ) { showSpeedPanel = false; showQualityPanel = false; showAudioPanel = false; showSubtitlePanel = false; showEqualizerPanel = false; showAspectRatioPanel = false; showVideoFilterPanel = false })
+        }
+
+        AnimatedVisibility(visible = showQualityPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
+            PlayerQualityPanel(
+                candidates = videoCandidates,
+                currentLabel = videoQualityLabel,
+                onSelect = { index ->
+                    onQualitySelected(index)
+                    showQualityPanel = false
+                },
+                onDismiss = { showQualityPanel = false },
+            )
         }
 
         AnimatedVisibility(visible = showSpeedPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
@@ -3182,6 +3271,8 @@ private fun WatchTogetherDialog(
     code: String?,
     memberCount: Int,
     memberNames: List<String>,
+    hostName: String?,
+    controlsLocked: Boolean,
     joinUrl: String?,
     status: String?,
     joinCode: String,
@@ -3191,6 +3282,8 @@ private fun WatchTogetherDialog(
     onStartRoom: () -> Unit,
     onJoin: () -> Unit,
     onCopy: (String) -> Unit,
+    onLockControls: (Boolean) -> Unit,
+    onKickMember: (String) -> Unit,
     onLeave: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -3238,6 +3331,49 @@ private fun WatchTogetherDialog(
                             if (watchers.size > 1) "${watchers.joinToString(", ")} watching" else "Just you watching",
                             style = MaterialTheme.typography.bodyMedium,
                         )
+                        if (controlsLocked) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                if (role == WatchTogetherSession.Role.HOST) {
+                                    "Controls are locked — guests are watch-only"
+                                } else {
+                                    "The host locked playback controls"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        // Member list: host badge + kick (host only).
+                        if (memberNames.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                memberNames.filter { it.isNotBlank() }.distinct().forEach { name ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            buildString {
+                                                append(name)
+                                                if (name == hostName) append("  👑")
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        if (role == WatchTogetherSession.Role.HOST && name != yourName) {
+                                            TextButton(onClick = { onKickMember(name) }) {
+                                                Text("Kick", style = MaterialTheme.typography.labelSmall)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (role == WatchTogetherSession.Role.HOST) {
+                            Spacer(Modifier.height(8.dp))
+                            TextButton(onClick = { onLockControls(!controlsLocked) }) {
+                                Text(if (controlsLocked) "🔓 Unlock controls" else "🔒 Lock controls")
+                            }
+                        }
                         code?.let {
                             Spacer(Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {

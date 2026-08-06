@@ -2,12 +2,14 @@ package app.anikku.macos.ui.screens.torrent
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
@@ -15,6 +17,9 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,11 +44,13 @@ import app.anikku.macos.platform.anilist.AniListAnime
 import app.anikku.macos.platform.anilist.AniListSearchClient
 import app.anikku.macos.platform.anilist.LocalAniListSearchClient
 import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.platform.torrent.LocalTorrentServerBridge
 import app.anikku.macos.platform.torrent.NyaaTorrentParser
 import app.anikku.macos.platform.torrent.TorrentAnimeGrouper
 import app.anikku.macos.platform.torrent.TorrentGroup
 import app.anikku.macos.platform.torrent.TorrentRelease
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.EmptyState
 import app.anikku.macos.ui.components.AnimeGrid
 import app.anikku.macos.ui.screens.models.AnimeModel
 import cafe.adriel.voyager.core.screen.ScreenKey
@@ -233,6 +241,26 @@ object TorrentTab : AnikkuScreen(), Tab {
         }
         val displayModels = grouped.map { it.second }
 
+        // Live torrent activity — the player streams magnets through the
+        // app-scoped TorrServer bridge, so the tab can show progress + removal
+        // while a stream is running.
+        val torrentBridge = LocalTorrentServerBridge.current
+        val activeTorrents by (torrentBridge?.torrents?.collectAsState()
+            ?: remember { mutableStateOf(emptyList<app.anikku.macos.platform.torrent.TorrentInfo>()) })
+        androidx.compose.runtime.LaunchedEffect(torrentBridge) {
+            if (torrentBridge == null) return@LaunchedEffect
+            while (true) {
+                // Poll while something may be downloading; check cheaply
+                // otherwise so a freshly started stream appears quickly.
+                if (torrentBridge.isRunning || torrentBridge.torrents.value.isNotEmpty()) {
+                    torrentBridge.listTorrents()
+                    delay(2_000)
+                } else {
+                    delay(5_000)
+                }
+            }
+        }
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -246,41 +274,68 @@ object TorrentTab : AnikkuScreen(), Tab {
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when {
                     torrentSources.isEmpty() -> {
-                        Column(
-                            Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-                        ) {
-                            Icon(
-                                Icons.Outlined.Download,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                "No torrent source installed",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                "Install a torrent extension (e.g. Nyaa) from the Extensions tab — " +
-                                    "its results stream via the built-in torrent engine.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.padding(horizontal = 32.dp),
-                            )
-                            Spacer(Modifier.height(14.dp))
-                            val navigator = LocalNavigator.currentOrThrow
-                            Button(onClick = { navigator.push(ExtensionsScreen()) }) {
-                                Text("Open Extensions")
-                            }
-                        }
+                        val torrentNavigator = LocalNavigator.currentOrThrow
+                        EmptyState(
+                            icon = Icons.Outlined.Download,
+                            title = "No torrent source installed",
+                            hint = "Install a torrent extension (e.g. Nyaa) from the Extensions tab — " +
+                                "its results stream via the built-in torrent engine.",
+                            actionLabel = "Open Extensions",
+                            onAction = { torrentNavigator.push(ExtensionsScreen()) },
+                        )
                     }
 
                     else -> {
                         Column(Modifier.fillMaxSize()) {
+                            // Active torrents — live progress while the player
+                            // streams a magnet through the bundled engine.
+                            if (activeTorrents.isNotEmpty()) {
+                                Text(
+                                    "Active torrents",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                )
+                                activeTorrents.forEach { torrent ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(
+                                                torrent.title,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                            )
+                                            Spacer(Modifier.height(2.dp))
+                                            LinearProgressIndicator(
+                                                progress = { torrent.progress.coerceIn(0f, 1f) },
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
+                                            Spacer(Modifier.height(2.dp))
+                                            Text(
+                                                "${(torrent.progress * 100).toInt()}% · " +
+                                                    "${torrent.seeders} peers · ${formatTorrentSize(torrent.size)}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        Spacer(Modifier.width(8.dp))
+                                        IconButton(onClick = { torrentBridge?.removeTorrent(torrent.hash) }) {
+                                            Icon(
+                                                Icons.Outlined.Close,
+                                                contentDescription = "Remove torrent",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            }
+
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
@@ -384,4 +439,17 @@ object TorrentTab : AnikkuScreen(), Tab {
             sizeSeeders = description ?: "",
         )
     }
+}
+
+/** Compact byte-size label for torrent rows (e.g. "1.2 GB"). */
+private fun formatTorrentSize(bytes: Long): String {
+    if (bytes <= 0) return "?"
+    val units = listOf("B", "KB", "MB", "GB", "TB")
+    var value = bytes.toDouble()
+    var unit = 0
+    while (value >= 1024 && unit < units.lastIndex) {
+        value /= 1024
+        unit++
+    }
+    return if (unit == 0) "${bytes}B" else "%.1f %s".format(value, units[unit])
 }

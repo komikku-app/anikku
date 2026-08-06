@@ -1,4 +1,5 @@
 package app.anikku.macos.ui.components
+import app.anikku.macos.ui.theme.AnikkuStatusColors
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,7 +31,7 @@ fun OfflineBadge(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(4.dp),
-        color = Color(0xFF4CAF50),
+        color = AnikkuStatusColors.success(),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),

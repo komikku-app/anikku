@@ -31,6 +31,25 @@ class TrackerManager(
     val loginStatuses: StateFlow<List<TrackerTokenStore.TrackerLoginStatus>> =
         _loginStatuses.asStateFlow()
 
+    /**
+     * Trackers whose credentials failed to refresh and need re-authentication.
+     * Filled by [validateAllTokens]; cleared by a successful refresh or a new
+     * login. The settings panel surfaces these so dead tokens don't linger
+     * silently.
+     */
+    private val _authIssues = MutableStateFlow<List<String>>(emptyList())
+    val authIssues: StateFlow<List<String>> = _authIssues.asStateFlow()
+
+    private fun setAuthIssue(tracker: String, hasIssue: Boolean) {
+        val current = _authIssues.value
+        val updated = if (hasIssue) {
+            if (tracker in current) current else current + tracker
+        } else {
+            current - tracker
+        }
+        _authIssues.value = updated
+    }
+
     fun refreshStatus() {
         _loginStatuses.value = tokenStore.getAllStatuses()
     }
@@ -52,6 +71,7 @@ class TrackerManager(
                 if (token != null) {
                     val username = lookupUsername(tracker, token.accessToken)
                     tokenStore.saveTokensWithUsername(tracker, token, username ?: tracker)
+                    setAuthIssue(tracker, hasIssue = false)
                     refreshStatus()
                     logger.info { "OAuth login successful for $tracker (user: $username)" }
                     onResult(true, "Logged in to $tracker${if (username != null) " as $username" else ""}")
@@ -68,7 +88,10 @@ class TrackerManager(
 
     fun logout(tracker: String): Boolean {
         val removed = tokenStore.removeTokens(tracker)
-        if (removed) refreshStatus()
+        if (removed) {
+            setAuthIssue(tracker, hasIssue = false)
+            refreshStatus()
+        }
         return removed
     }
 
@@ -603,11 +626,14 @@ class TrackerManager(
                             )
                             if (refreshed != null) {
                                 tokenStore.saveTokens(status.tracker, refreshed)
+                                setAuthIssue(status.tracker, hasIssue = false)
                                 logger.info { "Token refreshed for ${status.tracker}" }
                             } else {
+                                setAuthIssue(status.tracker, hasIssue = true)
                                 logger.warn { "Token refresh failed for ${status.tracker}" }
                             }
                         } catch (e: Exception) {
+                            setAuthIssue(status.tracker, hasIssue = true)
                             logger.warn(e) { "Token refresh error for ${status.tracker}" }
                         }
                         refreshStatus()

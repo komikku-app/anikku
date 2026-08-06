@@ -15,13 +15,24 @@ open class MacOSStorageProvider : FolderProvider {
 
     override fun path(): String = directory().toURI().toString()
 
-    val downloadsDirectory: File get() = File(directory(), "downloads")
+    /**
+     * User-chosen downloads folder (Settings > Downloads > Download location).
+     * Null = the default Application Support/Anikku/downloads directory. Only
+     * NEW downloads go here; existing files are never moved.
+     */
+    @Volatile
+    var customDownloadsDirectory: String? = null
+
+    val downloadsDirectory: File
+        get() = customDownloadsDirectory?.takeIf { it.isNotBlank() }?.let(::File)
+            ?: File(directory(), "downloads")
     val backupsDirectory: File get() = File(directory(), "backups")
     val extensionsDirectory: File get() = File(directory(), "extensions")
     val logsDirectory: File get() = File(directory(), "logs")
     val coversDirectory: File get() = File(directory(), "covers")
     val dataDirectory: File get() = File(directory(), "data")
     val cacheDirectory: File get() = File(directory(), "cache")
+    val imageCacheDirectory: File get() = File(cacheDirectory, "images")
 
     fun ensureDirectories() {
         listOf(
@@ -44,10 +55,14 @@ open class MacOSStorageProvider : FolderProvider {
 
     companion object {
         val baseDirectory: File by lazy {
+            baseDirectoryFor(System.getProperty("user.home"))
+        }
+
+        /** The app data root for a given home directory (single source of truth). */
+        internal fun baseDirectoryFor(userHome: String): File =
             File(
-                System.getProperty("user.home"),
+                userHome,
                 "Library${File.separator}Application Support${File.separator}Anikku",
             )
-        }
     }
 }

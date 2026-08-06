@@ -1,4 +1,5 @@
 package app.anikku.macos.ui.screens.tracker
+import app.anikku.macos.ui.theme.AnikkuStatusColors
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -239,14 +240,14 @@ data class TrackerDetailScreen(
                             Icon(
                                 Icons.Outlined.CheckCircle,
                                 contentDescription = null,
-                                tint = Color(0xFF4CAF50),
+                                tint = AnikkuStatusColors.success(),
                                 modifier = Modifier.size(20.dp),
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = if (username != null) "Connected as $username" else "Connected",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF4CAF50),
+                                color = AnikkuStatusColors.success(),
                                 fontWeight = FontWeight.Medium,
                             )
                         } else {
@@ -529,7 +530,7 @@ data class TrackerDetailScreen(
                                         Icon(
                                             Icons.Outlined.CheckCircle,
                                             contentDescription = null,
-                                            tint = Color(0xFF4CAF50),
+                                            tint = AnikkuStatusColors.success(),
                                             modifier = Modifier.size(64.dp),
                                         )
                                         Spacer(Modifier.height(16.dp))
@@ -537,7 +538,7 @@ data class TrackerDetailScreen(
                                             text = "Connected Successfully!",
                                             style = MaterialTheme.typography.headlineSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF4CAF50),
+                                            color = AnikkuStatusColors.success(),
                                         )
                                         Spacer(Modifier.height(8.dp))
                                         Text(

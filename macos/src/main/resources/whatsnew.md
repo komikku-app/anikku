@@ -1,3 +1,16 @@
+## v1.9.0 — the big polish update
+
+- Escape / ⌘[ goes back from any screen — no more clicking arrows
+- Quality switcher in the player (your pick is remembered)
+- Resume straight from History with one click
+- Theme mode (System/Light/Dark) in Settings
+- Watch Together: hosts can lock controls and kick members, guests can
+  change playback speed, and magnet rooms deep-link into the app
+- Auto-download new episodes (global switch + per-anime toggle)
+- Choose your download folder; live torrent progress in the Torrents tab
+- Extension repos persist; update channels (Stable/Beta); in-app release notes
+- Tracker sessions that expire now tell you to sign in again
+
 ## v1.8.5 — trust fixes
 
 - Volume and playback speed now persist between sessions

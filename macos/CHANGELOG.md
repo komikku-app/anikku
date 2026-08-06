@@ -6,6 +6,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.9.0] — 2026-08-06
+
+### Native-feel UX
+
+- **Escape / ⌘[ now go back** from any pushed screen (anime detail, source
+  browse, global search, trackers…) — desktop navigation finally feels native.
+- **In-player quality switcher** — the settings menu lists every quality the
+  source offers; your pick is remembered for future episodes.
+- **Resume straight from History** — each entry has a play button that opens
+  the player at your last position.
+- **Theme mode (System / Light / Dark)** is selectable in Settings, not just
+  onboarding.
+- **Sidebar visibility persists** across launches (⌘S).
+
+### Playback polish
+
+- **Volume and playback speed persist** between sessions (volume restored at
+  player start; speed changes become the new default).
+- **Configurable seek increment** (5/10/15/30/60s) for arrows and J/L.
+- **GIF clip length** (3–10s) and **screenshot format + folder** are
+  configurable in Settings → Playback.
+- Dead `PlayerPreferences` class removed (all 19 fields were unused).
+
+### Watch Together upgrades
+
+- **Host authority**: the room host can lock controls (guests become
+  watch-only) and kick members; the member list shows who's hosting.
+- **Playback speed for the whole room** — guests on the web page can change
+  it too.
+- **Magnet rooms deep-link**: browser guests get an "Open in Anikku" button
+  (`anikku://` URL scheme) that opens the episode in the app instead of a
+  dead-end message.
+
+### Downloads & library
+
+- **Auto-download new episodes** — global switch in Settings plus a per-anime
+  toggle on every detail page; newly discovered episodes queue themselves
+  after library checks.
+- **Download folder picker** — choose where new downloads go (Settings →
+  Downloads).
+- **Live torrent activity** — the Torrents tab shows active streams with
+  progress, seeders and a remove button.
+
+### Settings & services
+
+- **Extension repos persist** — saved repos survive restarts, with delete and
+  add-from-URL.
+- **Update channels (Stable/Beta)** and in-app release notes in About.
+- **Tracker re-authentication warnings** — expired tokens surface a clear
+  "sign in again" banner instead of failing silently.
+
+### Consistency
+
+- Shared `EmptyState` component (7 screens unified), theme-aware status
+  colors, dead code removed (AdaptiveSheet, AnimatedTabFade, PlayerPreferences),
+  ⌘F search dedup, onboarding swatches follow the theme list, storage paths
+  consolidated in `MacOSStorageProvider`.
+
 ## [1.8.5] — 2026-08-06
 
 ### Fixes — trust & honesty

@@ -1,19 +1,24 @@
 package app.anikku.macos.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -30,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,6 +47,7 @@ import app.anikku.macos.platform.update.SparkleUpdater
 import app.anikku.macos.platform.update.UpdateCheckResult
 import app.anikku.macos.platform.update.UpdateInfo
 import app.anikku.macos.platform.web.BrowserLauncher
+import app.anikku.macos.ui.settings.LocalSettingsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -183,6 +190,34 @@ fun AboutDialog(
                     is UpdateState.Idle -> {
                         val hasUpdater = sparkleUpdater != null || updateChecker != null
                         if (hasUpdater) {
+                            // Update channel — beta applies from the next launch.
+                            val dialogSettings = LocalSettingsState.current
+                            val isBeta = dialogSettings.updateChannel == "beta"
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "Updates from:",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                listOf("stable" to "Stable", "beta" to "Beta").forEach { (value, label) ->
+                                    FilterChip(
+                                        selected = (value == "beta") == isBeta,
+                                        onClick = {
+                                            dialogSettings.updateChannel = value
+                                        },
+                                        label = { Text(label) },
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                }
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                if (isBeta) "Beta builds — new features early, occasional rough edges." else "Stable builds only.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            )
+                            Spacer(Modifier.height(12.dp))
                             OutlinedButton(
                                 onClick = {
                                     scope.launch {
@@ -257,6 +292,29 @@ fun AboutDialog(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
+                            // Release notes — GitHub markdown rendered as plain
+                            // text (strip the common markdown markers).
+                            if (state.update.releaseBody.isNotBlank()) {
+                                Spacer(Modifier.height(8.dp))
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 140.dp)
+                                        .verticalScroll(rememberScrollState())
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                                        .padding(10.dp),
+                                ) {
+                                    Text(
+                                        text = state.update.releaseBody
+                                            .lineSequence()
+                                            .map { line -> line.trimEnd().removePrefix("## ").removePrefix("# ").removePrefix("### ") }
+                                            .joinToString("\n"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                             Spacer(Modifier.height(8.dp))
                             Button(
                                 onClick = {

@@ -48,6 +48,7 @@ import app.anikku.macos.platform.stats.AnimeWatchSummary
 import app.anikku.macos.platform.stats.WatchStats
 import app.anikku.macos.platform.stats.WatchStatsCalculator
 import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.EmptyState
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -116,28 +117,12 @@ private fun StatsDashboard(stats: WatchStats) {
         },
     ) { padding ->
         if (stats.totalEpisodes == 0 && stats.totalWatchSeconds == 0L) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Outlined.BarChart,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "No watch history yet",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "Watch some episodes and your stats will show up here",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-            }
+            EmptyState(
+                icon = Icons.Outlined.BarChart,
+                title = "No watch history yet",
+                hint = "Watch some episodes and your stats will show up here",
+                modifier = Modifier.padding(padding),
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),

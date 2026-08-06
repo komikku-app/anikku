@@ -1,4 +1,5 @@
 package app.anikku.macos.ui.screens.crashlog
+import app.anikku.macos.ui.theme.AnikkuStatusColors
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -409,7 +410,7 @@ private fun CrashLogsTab(
                     Icons.Outlined.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = Color(0xFF4CAF50).copy(alpha = 0.6f),
+                    tint = AnikkuStatusColors.success().copy(alpha = 0.6f),
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
@@ -500,7 +501,7 @@ private fun UiErrorsTab() {
                     Icons.Outlined.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = Color(0xFF4CAF50).copy(alpha = 0.6f),
+                    tint = AnikkuStatusColors.success().copy(alpha = 0.6f),
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(

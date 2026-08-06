@@ -1,4 +1,5 @@
 package app.anikku.macos.ui.screens.tracker
+import app.anikku.macos.ui.theme.AnikkuStatusColors
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -316,7 +317,7 @@ internal fun TrackerListItem(
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (status.isLoggedIn) {
-                        Color(0xFF4CAF50)
+                        AnikkuStatusColors.success()
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
@@ -332,7 +333,7 @@ internal fun TrackerListItem(
                 Icon(
                     imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFF4CAF50),
+                    tint = AnikkuStatusColors.success(),
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(8.dp))

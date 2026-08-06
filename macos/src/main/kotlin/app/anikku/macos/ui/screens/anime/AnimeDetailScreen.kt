@@ -105,6 +105,7 @@ import app.anikku.macos.ui.components.LocalToastHost
 import app.anikku.macos.ui.components.OverflowItem
 import app.anikku.macos.ui.components.OverflowMenu
 import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.settings.LocalSettingsState
 import app.anikku.macos.ui.screens.models.AnimeModel
 import app.anikku.macos.ui.screens.models.EpisodeModel
 import app.anikku.macos.ui.screens.models.toAnimeModel
@@ -859,6 +860,8 @@ private fun AnimeDetailContent(
 
             item(key = "episodes_header") {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                val detailSettings = LocalSettingsState.current
+                val autoDownloadOn = detailSettings.isAutoDownloadEnabled(anime.id)
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -890,6 +893,27 @@ private fun AnimeDetailContent(
                             Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Download all", style = MaterialTheme.typography.labelSmall)
+                        }
+                        // Per-anime auto-download: new episodes queue themselves
+                        // after library checks (global switch in Settings).
+                        TextButton(
+                            onClick = { detailSettings.setAutoDownload(anime.id, !autoDownloadOn) },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        ) {
+                            Icon(
+                                Icons.Outlined.DoneAll,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = if (autoDownloadOn) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                if (autoDownloadOn) "Auto-download on" else "Auto-download new",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (autoDownloadOn) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                     Text("${episodes.size} total", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

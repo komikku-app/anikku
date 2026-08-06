@@ -247,17 +247,9 @@ private fun StepAppearance(settings: SettingsState) {
     )
     Spacer(Modifier.height(28.dp))
 
-    // Color scheme swatches — tapping one applies it instantly.
-    val presets = listOf(
-        AnikkuTheme.Theme.DEFAULT,
-        AnikkuTheme.Theme.MONET,
-        AnikkuTheme.Theme.SAPPHIRE,
-        AnikkuTheme.Theme.MIDNIGHT_DUSK,
-        AnikkuTheme.Theme.NORD,
-        AnikkuTheme.Theme.MOCHA,
-        AnikkuTheme.Theme.GREEN_APPLE,
-        AnikkuTheme.Theme.LAVENDER,
-    )
+    // Color scheme swatches — tapping one applies it instantly. Derived from
+    // the canonical theme list so new schemes show up here automatically.
+    val presets = AnikkuTheme.allThemes.take(8)
     Row(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier.fillMaxWidth(),

@@ -1,4 +1,5 @@
 package app.anikku.macos.ui.settings
+import app.anikku.macos.ui.theme.AnikkuStatusColors
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -103,6 +105,36 @@ fun TrackerSettingsPanel(
     }.collectAsState(initial = emptyList())
 
     HeadingItem("Tracking")
+
+    // Re-authentication warnings — set when a token refresh failed (the token
+    // is dead but the UI would otherwise keep showing a logged-in state).
+    val authIssues by remember(trackerManager) {
+        trackerManager?.authIssues ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
+    if (authIssues.isNotEmpty()) {
+        Spacer(Modifier.height(8.dp))
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Column(Modifier.fillMaxWidth().padding(10.dp)) {
+                Text(
+                    "Re-authentication required",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                authIssues.forEach { tracker ->
+                    Text(
+                        "• ${tracker.replaceFirstChar { it.uppercase() }} — your session expired. Sign in again below.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
+        }
+    }
 
     statuses.forEach { status ->
         // Load stored credentials from the token store
@@ -522,7 +554,7 @@ private fun TrackerCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = when {
                         isLoggingIn -> MaterialTheme.colorScheme.tertiary
-                        isLoggedIn -> Color(0xFF4CAF50)
+                        isLoggedIn -> AnikkuStatusColors.success()
                         !hasCredentials -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
@@ -535,7 +567,7 @@ private fun TrackerCard(
                 Icon(
                     imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFF4CAF50),
+                    tint = AnikkuStatusColors.success(),
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(8.dp))
