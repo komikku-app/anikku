@@ -1,3 +1,13 @@
+## v1.11.0 — chat, its own thing
+
+- Once a Watch Together room is live, a chat icon appears next to Watch
+  Together in the player — a real chat panel, not buried in the room dialog
+- Unread badge on the icon while the panel is closed; your messages
+  highlighted; auto-scrolls to the newest line
+- Guests on any device (Android, iPhone, Windows, macOS, Linux) get a
+  mobile-friendly chat on the join page — full-width on phones, unread
+  badge on the 💬 button
+
 ## v1.10.0 — sources you can trust
 
 - Browse sorts working sources first, greys out dead ones, and shows a

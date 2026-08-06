@@ -773,6 +773,17 @@ private val JOIN_PAGE = """
   #chatSendBtn{background:#6c5ce7;border:none;color:#fff;border-radius:8px;padding:0 12px;cursor:pointer;font-size:13px}
   #chatSendBtn:disabled{opacity:.4;cursor:default}
   #chatEmpty{opacity:.5;font-size:12px}
+  #chatBtnWrap{position:relative;display:inline-block}
+  #chatBadge{position:absolute;top:-4px;right:-4px;background:#e5484d;color:#fff;border-radius:999px;font-size:10px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;box-sizing:border-box;display:none}
+  @media (max-width:640px){
+    #chatWrap{left:6px;right:6px;width:auto;bottom:60px;max-height:72vh}
+    #chatMsgs{max-height:60vh;font-size:13.5px;line-height:1.5}
+    #chatInput{font-size:16px;padding:9px 10px}
+    #chatSendBtn{font-size:15px;padding:0 16px}
+    #bar{flex-wrap:wrap;height:auto;padding:6px 8px;gap:6px}
+    #bar button{padding:7px 10px;font-size:13px;min-width:38px}
+    #scrub{min-width:100%;order:10}
+  }
   #status{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#1c1c1e;border:1px solid #3a3a3c;padding:6px 14px;border-radius:999px;font-size:12px;z-index:5;display:none;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
@@ -790,7 +801,7 @@ private val JOIN_PAGE = """
     </div>
     <button id="speedBtn" onclick="cycleSpeed()" title="Playback speed">1.0x</button>
     <button id="deepLinkBtn" onclick="openInApp()">Open in Anikku</button>
-    <button id="chatBtn" onclick="toggleChat()" title="Chat">&#128172;</button>
+    <span id="chatBtnWrap"><button id="chatBtn" onclick="toggleChat()" title="Chat">&#128172;</button><span id="chatBadge"></span></span>
     <button id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">&#x26F6;</button>
   </div>
   <div id="info">Connecting&#8230;</div>
@@ -988,11 +999,28 @@ function syncFsBtn() {
 document.addEventListener('fullscreenchange', syncFsBtn);
 document.addEventListener('webkitfullscreenchange', syncFsBtn);
 
+var chatUnread = 0;
+function renderChatBadge() {
+  var b = document.getElementById('chatBadge');
+  if (chatUnread > 0) { b.textContent = chatUnread > 99 ? '99+' : chatUnread; b.style.display = 'block'; }
+  else { b.style.display = 'none'; }
+}
 function toggleChat() {
   var w = document.getElementById('chatWrap');
-  w.style.display = (w.style.display === 'none' || w.style.display === '') ? 'flex' : 'none';
+  var open = (w.style.display === 'none' || w.style.display === '');
+  w.style.display = open ? 'flex' : 'none';
+  if (open) {
+    chatUnread = 0;
+    renderChatBadge();
+    var inp = document.getElementById('chatInput');
+    if (inp) setTimeout(function () { inp.focus(); }, 50);
+  }
 }
 function appendChat(m) {
+  // Unread badge: only count lines while the panel is closed.
+  var w = document.getElementById('chatWrap');
+  var closed = (w.style.display === 'none' || w.style.display === '');
+  if (closed) { chatUnread++; renderChatBadge(); }
   var box = document.getElementById('chatMsgs');
   var empty = document.getElementById('chatEmpty');
   if (empty) empty.remove();

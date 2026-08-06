@@ -2,23 +2,34 @@ package app.anikku.macos.ui.screens.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -26,6 +37,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.anikku.macos.player.AudioDevice
+import app.anikku.macos.platform.watch.WtMessage
 import app.anikku.macos.player.TrackInfo
 
 /**
@@ -254,6 +267,135 @@ fun PlayerQualityPanel(
  * Audio track selector panel.
  * Allows switching between available audio tracks.
  */
+@Composable
+fun PlayerChatPanel(
+    messages: List<WtMessage.Chat> = emptyList(),
+    yourName: String = "",
+    memberCount: Int = 0,
+    onSend: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var input by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+
+    // Follow the conversation — scroll to the newest line.
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 440.dp)
+                .padding(20.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Chat",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                if (memberCount > 1) {
+                    Text(
+                        text = "$memberCount watching",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Outlined.Close,
+                        contentDescription = "Close chat",
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            if (messages.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(80.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "No messages yet — say hi!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
+                        .heightIn(min = 80.dp, max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(messages, key = { "${it.ts}_${it.by}_${it.text.hashCode()}" }) { chat ->
+                        val mine = chat.by == yourName && yourName.isNotBlank()
+                        Column {
+                            Text(
+                                text = buildString {
+                                    append(chat.by.ifBlank { "Guest" })
+                                    if (mine) append("  (you)")
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (mine) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                            Text(
+                                text = chat.text,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Message…") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        val body = input.trim()
+                        if (body.isNotEmpty()) {
+                            onSend(body)
+                            input = ""
+                        }
+                    },
+                    enabled = input.isNotBlank(),
+                ) {
+                    Text("Send")
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun PlayerAudioDevicePanel(
     devices: List<AudioDevice> = emptyList(),

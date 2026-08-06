@@ -38,7 +38,8 @@ A native macOS desktop port is in development! Built with [Compose Multiplatform
 - **Chrome CDP Cloudflare bypass** — Auto-solves WAF challenges for extension sources
 - **Watch Together** — synced watch parties with friends across the internet
   via a bundled Cloudflare tunnel (no accounts, no servers); browser guests
-  get fullscreen + HLS playback
+  get fullscreen + HLS playback, and rooms have live **chat** from any device
+  (app panel with unread badges; mobile-friendly chat on the browser page)
 - **Tracker synchronization** — MAL, AniList, Kitsu via OAuth
 - **Discord Rich Presence**
 - **Touch ID / PIN Lock**

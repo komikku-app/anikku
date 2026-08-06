@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.11.0] — 2026-08-06
+
+### Watch Together chat is its own thing
+
+- **Standalone chat** — once a room is created, a chat icon appears in the
+  player's control bar right next to Watch Together (with Settings,
+  screenshot and GIF). It opens a proper chat panel — message list with
+  auto-scroll, your messages highlighted, an unread badge on the icon while
+  the panel is closed — completely separate from the room controls dialog.
+- **Cross-device chat** — guests joining from any device (Android, iPhone,
+  macOS, Windows, Linux browsers) chat from the join page: full-width panel
+  and a larger input on phones, unread badge on the 💬 button, and the
+  control bar wraps gracefully on small screens.
+
 ## [1.10.0] — 2026-08-06
 
 ### Sources you can trust

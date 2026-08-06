@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Gif
 import androidx.compose.material.icons.outlined.Groups
@@ -83,6 +86,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.anikku.macos.LocalAppWindow
 import app.anikku.macos.player.MPVLib
 import app.anikku.macos.player.MPVSoftwareRenderer
@@ -679,6 +683,7 @@ data class PlayerScreen(
         val roomRole by watchSession.role.collectAsState()
         val roomCode by watchSession.roomCode.collectAsState()
         val roomMemberCount by watchSession.memberCount.collectAsState()
+        val chatMessages by watchSession.chatMessages.collectAsState()
         val roomJoinUrl by watchSession.joinUrl.collectAsState()
         val roomLocked by watchSession.controlsLocked.collectAsState()
         val roomHostName by watchSession.hostName.collectAsState()
@@ -2044,6 +2049,10 @@ data class PlayerScreen(
             },
             onCaptureClip = { playerViewModel.captureClip() },
             onWatchTogether = { showWatchDialog = true },
+            chatMessages = chatMessages,
+            chatYourName = yourName,
+            chatMemberCount = roomMemberCount,
+            onSendChat = { text -> watchSession.sendChat(text) },
             roomStatus = roomCode?.let { "● $it · $roomMemberCount" },
         )
 
@@ -2130,8 +2139,6 @@ data class PlayerScreen(
                     showWatchDialog = false
                 },
                 onDismiss = { showWatchDialog = false },
-                chatMessages = watchSession.chatMessages.collectAsState().value,
-                onSendChat = { text -> watchSession.sendChat(text) },
             )
         }
 
@@ -2237,6 +2244,13 @@ internal fun PlayerContent(
     onWatchTogether: () -> Unit = {},
     /** Active Watch Together room chip text (e.g. "● ANIK-4G7K · 3"), or null when inactive. */
     roomStatus: String? = null,
+    /** Room chat lines (server-stamped) — shown once a Watch Together room exists. */
+    chatMessages: List<WtMessage.Chat> = emptyList(),
+    /** Your display name in the room (for "you" highlighting). */
+    chatYourName: String = "",
+    /** Current room member count. */
+    chatMemberCount: Int = 0,
+    onSendChat: (String) -> Unit = {},
 ) {
     // --- Player state ---
     // mpv's observed pause property is authoritative. Keeping a second
@@ -2261,6 +2275,19 @@ internal fun PlayerContent(
     var showEqualizerPanel by remember { mutableStateOf(false) }
     var showAspectRatioPanel by remember { mutableStateOf(false) }
     var showVideoFilterPanel by remember { mutableStateOf(false) }
+
+    // Standalone room chat: its own icon + panel, only meaningful in a room.
+    var showChatPanel by remember { mutableStateOf(false) }
+    var lastSeenChatCount by remember { mutableIntStateOf(0) }
+    var chatUnread by remember { mutableIntStateOf(0) }
+    LaunchedEffect(chatMessages.size, showChatPanel) {
+        if (showChatPanel) {
+            lastSeenChatCount = chatMessages.size
+            chatUnread = 0
+        } else {
+            chatUnread = (chatMessages.size - lastSeenChatCount).coerceAtLeast(0)
+        }
+    }
 
     // Mute state (M key): remembers the pre-mute volume so unmuting restores it.
     var isMuted by remember { mutableStateOf(false) }
@@ -2957,6 +2984,30 @@ internal fun PlayerContent(
                         Spacer(Modifier.width(6.dp))
                     }
                     TransportIconButton(icon = Icons.Outlined.Groups, description = "Watch Together", onClick = onWatchTogether)
+                    if (chatMessages.isNotEmpty() || chatMemberCount > 0) {
+                        Box {
+                            TransportIconButton(icon = Icons.Outlined.Chat, description = "Chat", onClick = { showChatPanel = !showChatPanel })
+                            if (chatUnread > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .offset(x = 3.dp, y = (-3).dp)
+                                        .size(16.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.error),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        chatUnread.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                        }
+                    }
                     Box {
                         TransportIconButton(icon = Icons.Outlined.Settings, description = "Settings", onClick = { showSettingsMenu = true })
                         DropdownMenu(expanded = showSettingsMenu, onDismissRequest = { showSettingsMenu = false }) {
@@ -3096,11 +3147,11 @@ internal fun PlayerContent(
         }
 
         // === Settings panel overlays ===
-        val isAnyPanelOpen = showSpeedPanel || showQualityPanel || showAudioPanel || showSubtitlePanel || showEqualizerPanel || showAspectRatioPanel || showVideoFilterPanel
+        val isAnyPanelOpen = showSpeedPanel || showQualityPanel || showAudioPanel || showSubtitlePanel || showEqualizerPanel || showAspectRatioPanel || showVideoFilterPanel || showChatPanel
         if (isAnyPanelOpen) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)).clickable(
                 interactionSource = remember { MutableInteractionSource() }, indication = null,
-            ) { showSpeedPanel = false; showQualityPanel = false; showAudioPanel = false; showSubtitlePanel = false; showEqualizerPanel = false; showAspectRatioPanel = false; showVideoFilterPanel = false })
+            ) { showSpeedPanel = false; showQualityPanel = false; showAudioPanel = false; showSubtitlePanel = false; showEqualizerPanel = false; showAspectRatioPanel = false; showVideoFilterPanel = false; showChatPanel = false })
         }
 
         AnimatedVisibility(visible = showQualityPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
@@ -3130,6 +3181,15 @@ internal fun PlayerContent(
                     currentDevice = playerViewModel?.audioDevice?.collectAsState()?.value,
                     onDeviceSelected = { name -> playerViewModel?.setAudioDevice(name) },
                     onDismiss = { showAudioDevicePanel = false },
+                )
+            }
+            AnimatedVisibility(visible = showChatPanel, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
+                PlayerChatPanel(
+                    messages = chatMessages,
+                    yourName = chatYourName,
+                    memberCount = chatMemberCount,
+                    onSend = { text -> onSendChat(text) },
+                    onDismiss = { showChatPanel = false },
                 )
             }
         }
@@ -3305,10 +3365,7 @@ private fun WatchTogetherDialog(
     onKickMember: (String) -> Unit,
     onLeave: () -> Unit,
     onDismiss: () -> Unit,
-    chatMessages: List<WtMessage.Chat> = emptyList(),
-    onSendChat: (String) -> Unit = {},
 ) {
-    var chatInput by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (role == WatchTogetherSession.Role.NONE) "Watch Together" else "Room ${code ?: ""}") },
@@ -3425,68 +3482,6 @@ private fun WatchTogetherDialog(
                             }
                         }
 
-                        // Room chat — everyone in the room sees every line.
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "Chat",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .verticalScroll(rememberScrollState())
-                                .padding(8.dp),
-                        ) {
-                            if (chatMessages.isEmpty()) {
-                                Text(
-                                    "No messages yet — say hi!",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                )
-                            } else {
-                                chatMessages.forEach { chat ->
-                                    Text(
-                                        buildString {
-                                            append(chat.by.ifBlank { "Guest" })
-                                            append(": ")
-                                            append(chat.text)
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        maxLines = 3,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                value = chatInput,
-                                onValueChange = { chatInput = it },
-                                modifier = Modifier.weight(1f),
-                                placeholder = { Text("Message…") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(8.dp),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Button(
-                                onClick = {
-                                    val body = chatInput.trim()
-                                    if (body.isNotEmpty()) {
-                                        onSendChat(body)
-                                        chatInput = ""
-                                    }
-                                },
-                                enabled = chatInput.isNotBlank(),
-                            ) {
-                                Text("Send")
-                            }
-                        }
                     }
                 }
             }

@@ -52,6 +52,12 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
   Cloudflare tunnel (no accounts, no servers, no port forwarding). Each room
   gets its own fresh tunnel link, dropped when the room ends. Browser guests
   get fullscreen, HLS playback, and a live sync bar.
+- **Watch Together Chat** — once a room is live, a chat icon appears next to
+  Watch Together in the player; the panel works like any chat (unread badge,
+  auto-scroll, "you" highlighting). Guests on any device — Android, iPhone,
+  macOS, Windows, Linux — chat from the browser join page, which adapts to
+  phone screens (full-width panel, larger input, unread badge on the 💬
+  button). Messages are stamped server-side and late joiners see recent ones.
 - **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth; **AniList 2-way
   library sync** (import your lists into the Library + auto-scrobble progress
   back; optional 12h/daily/weekly background sync)
