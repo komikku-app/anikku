@@ -20,15 +20,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material3.ButtonDefaults
@@ -48,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,6 +76,7 @@ import app.anikku.macos.platform.watch.WtMessage
 import app.anikku.macos.platform.watch.wtImageDataUrl
 import app.anikku.macos.player.TrackInfo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -329,7 +335,8 @@ fun PlayerChatPanel(
     }
 
     // Attach a capture (screenshot / GIF clip) off the UI thread; images over
-    // ~10 MB are refused with an inline note.
+    // ~10 MB are refused with an inline note. Sending closes the gallery
+    // (Instagram-style) and returns the cursor to the input.
     fun sendImage(file: java.io.File) {
         scope.launch {
             val dataUrl = withContext(Dispatchers.IO) { wtImageDataUrl(file) }
@@ -337,7 +344,9 @@ fun PlayerChatPanel(
                 attachError = "That file is too large for chat (max 10 MB)"
             } else {
                 attachError = null
+                showAttachArea = false
                 onSendImage(dataUrl, file.name)
+                inputFocusRequester.requestFocus()
             }
         }
     }
@@ -492,7 +501,8 @@ fun PlayerChatPanel(
             Spacer(Modifier.height(12.dp))
 
             // Attach gallery — every screenshot and GIF clip in the captures
-            // folder, newest first, split into sections.
+            // folder, newest first, split into sections. Back returns to the
+            // input; sending an item closes the gallery automatically.
             if (showAttachArea && enabled) {
                 val captures = remember(screenshotDir, showAttachArea) { listChatCaptures(screenshotDir) }
                 Surface(
@@ -502,11 +512,29 @@ fun PlayerChatPanel(
                 ) {
                     Column(
                         modifier = Modifier
-                            .heightIn(max = 300.dp)
+                            .heightIn(max = 320.dp)
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {
+                                showAttachArea = false
+                                inputFocusRequester.requestFocus()
+                            }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back to chat",
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                            Text(
+                                "Attach",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                         if (captures.gifs.isEmpty() && captures.screenshots.isEmpty()) {
                             Text(
                                 "No captures yet — take a screenshot (S) or save a GIF clip (G) first",
@@ -694,9 +722,13 @@ private fun chatTime(ts: Long): String = runCatching {
         .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
 }.getOrDefault("")
 
-/** Inline chat image thumbnail (data URL over the room websocket). */
+/** Inline chat image (data URL over the room websocket). GIFs animate with a per-viewer pause. */
 @Composable
 private fun ChatImage(dataUrl: String, name: String) {
+    if (dataUrl.startsWith("data:image/gif", ignoreCase = true)) {
+        AnimatedGifImage(dataUrl, name)
+        return
+    }
     val bitmap = remember(dataUrl) {
         runCatching {
             val encoded = dataUrl.substringAfter(",")
@@ -723,6 +755,98 @@ private fun ChatImage(dataUrl: String, name: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/**
+ * Animated GIF in the chat: every frame is decoded once (off the UI thread)
+ * and played on a timer. Each viewer controls their own playback — the
+ * pause/play button stops the animation locally, never for the room.
+ */
+@Composable
+private fun AnimatedGifImage(dataUrl: String, name: String) {
+    var frames by remember(dataUrl) { mutableStateOf<List<Pair<ImageBitmap, Int>>?>(null) }
+    var frameIndex by remember { mutableIntStateOf(0) }
+    var playing by remember { mutableStateOf(true) }
+
+    LaunchedEffect(dataUrl) {
+        frames = withContext(Dispatchers.IO) { decodeGifFrames(dataUrl) }
+    }
+
+    val decoded = frames
+    LaunchedEffect(decoded?.size, playing) {
+        val list = decoded ?: return@LaunchedEffect
+        if (list.size <= 1 || !playing) return@LaunchedEffect
+        while (true) {
+            val durationMs = list[frameIndex].second
+            delay(durationMs.toLong())
+            frameIndex = (frameIndex + 1) % list.size
+        }
+    }
+
+    val bitmap = decoded?.getOrNull(frameIndex)?.first
+    if (bitmap != null) {
+        Box {
+            Image(
+                bitmap = bitmap,
+                contentDescription = name.ifBlank { "Chat GIF" },
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .widthIn(max = 280.dp)
+                    .heightIn(max = 200.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+                contentScale = ContentScale.Fit,
+            )
+            if (decoded?.size ?: 0 > 1) {
+                // Per-viewer pause/play — stopping a GIF here only affects you.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 8.dp, bottom = 8.dp)
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .clickable { playing = !playing },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                        contentDescription = if (playing) "Pause GIF" else "Play GIF",
+                        modifier = Modifier.size(14.dp),
+                        tint = Color.White,
+                    )
+                }
+            }
+        }
+    } else {
+        Text(
+            text = name.ifBlank { "GIF (failed to decode)" },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Decodes every GIF frame into a bitmap + per-frame duration (ms). */
+private fun decodeGifFrames(dataUrl: String): List<Pair<ImageBitmap, Int>>? {
+    return runCatching {
+        val bytes = java.util.Base64.getDecoder().decode(dataUrl.substringAfter(","))
+        val codec = org.jetbrains.skia.Codec.makeFromData(org.jetbrains.skia.Data.makeFromBytes(bytes))
+        val count = codec.frameCount
+        if (count <= 0) return@runCatching null
+        val info = codec.imageInfo
+        val result = ArrayList<Pair<ImageBitmap, Int>>(count)
+        for (i in 0 until count) {
+            val frameInfo = codec.getFrameInfo(i)
+            val bitmap = org.jetbrains.skia.Bitmap().apply { allocPixels(info) }
+            val prior = if (frameInfo.requiredFrame >= 0) frameInfo.requiredFrame else -1
+            codec.readPixels(bitmap, i, prior)
+            result += Pair(
+                org.jetbrains.skia.Image.makeFromBitmap(bitmap).toComposeImageBitmap(),
+                frameInfo.duration.coerceAtLeast(20),
+            )
+        }
+        result
+    }.getOrNull()
 }
 
 /** Small emoji palette for the chat input. */

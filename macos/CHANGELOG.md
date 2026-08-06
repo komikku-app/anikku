@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.13.1] — 2026-08-06
+
+### GIFs actually play in chat (with a per-viewer pause)
+
+- **Animated GIFs in the app** — chat GIFs were rendering as a still image
+  (only the first frame was decoded). They now decode every frame and play
+  the full animation, at each GIF's own frame timing.
+- **Per-viewer pause/stop** — every GIF in the chat (app and browser join
+  page) has its own ⏸/▶ button: any member can stop a GIF for themselves
+  without affecting anyone else. The app freezes frame-by-frame; the browser
+  snapshots the current frame to a canvas.
+- **Attach gallery polish** — the gallery now has a back button (returns to
+  the input without closing the chat) and auto-closes when you send an
+  attachment, Instagram-style, with the cursor back in the input.
+
 ## [1.13.0] — 2026-08-06
 
 ### Chat input owns the keyboard + a real attach gallery

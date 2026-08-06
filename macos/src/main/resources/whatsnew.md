@@ -1,3 +1,11 @@
+## v1.13.1 — GIFs that play, galleries that behave
+
+- Chat GIFs now actually play — every frame, at the right timing, in the
+  app and on the browser join page
+- ⏸/▶ on each GIF: stop it for yourself, nobody else is affected
+- The attach gallery got a back button and closes itself when you send
+  (like Instagram), landing you right back in the input
+
 ## v1.13.0 — chat keys stay in chat, attach anything
 
 - Fixed: typing in the chat no longer triggers player shortcuts — space

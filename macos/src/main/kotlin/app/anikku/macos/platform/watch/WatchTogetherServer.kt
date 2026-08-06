@@ -800,6 +800,9 @@ private val JOIN_PAGE = """
   #chatEmpty{opacity:.5;font-size:12px}
   #chatMsgs .time{opacity:.4;font-size:10px;margin-left:6px}
   #chatMsgs img{max-width:100%;max-height:220px;border-radius:8px;margin-top:4px;display:block}
+  #chatMsgs .gifWrap{position:relative;display:inline-block;margin-top:4px;max-width:100%}
+  #chatMsgs .gifWrap img,#chatMsgs .gifWrap canvas{display:block;max-width:100%;max-height:220px;border-radius:8px}
+  #chatMsgs .gifPause{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.55);border:none;color:#fff;border-radius:999px;width:26px;height:26px;font-size:12px;cursor:pointer;line-height:1;padding:0}
   #chatEmojiBtn{background:#1c1c1e;border:1px solid #3a3a3c;border-radius:8px;color:#eee;font-size:15px;cursor:pointer;padding:0 9px;flex:0 0 auto}
   #emojiStrip{display:none;flex-wrap:wrap;gap:2px;padding:6px 8px;border-bottom:1px solid #2c2c2e;max-height:120px;overflow-y:auto}
   #emojiStrip button{background:none;border:none;font-size:17px;cursor:pointer;padding:2px 5px;border-radius:6px}
@@ -1068,10 +1071,21 @@ function appendChat(m) {
   tm.textContent = fmtTime(m.ts);
   div.appendChild(tm);
   if (m.image) {
-    var img = document.createElement('img');
-    img.src = m.image;
-    img.alt = m.name || 'image';
-    div.appendChild(img);
+    if (m.image.indexOf('data:image/gif') === 0) {
+      // Animated GIF with a per-viewer pause: freezing snapshots the current
+      // frame to a canvas, so stopping it never affects anyone else.
+      var wrap = document.createElement('span'); wrap.className = 'gifWrap';
+      var gifImg = document.createElement('img'); gifImg.src = m.image; gifImg.alt = m.name || 'gif';
+      var pauseBtn = document.createElement('button'); pauseBtn.className = 'gifPause'; pauseBtn.textContent = '\u23F8';
+      pauseBtn.onclick = function () { toggleGifPause(wrap, gifImg, pauseBtn); };
+      wrap.appendChild(gifImg); wrap.appendChild(pauseBtn);
+      div.appendChild(wrap);
+    } else {
+      var img = document.createElement('img');
+      img.src = m.image;
+      img.alt = m.name || 'image';
+      div.appendChild(img);
+    }
   }
   if (m.text) {
     var tx = document.createElement('span'); tx.textContent = m.text;
@@ -1079,6 +1093,23 @@ function appendChat(m) {
   }
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
+}
+function toggleGifPause(wrap, img, btn) {
+  var canvas = wrap.querySelector('canvas');
+  if (canvas) {
+    // Resume: drop the frozen frame, let the <img> animate again.
+    canvas.remove();
+    img.style.display = 'block';
+    btn.textContent = '\u23F8';
+  } else {
+    var c = document.createElement('canvas');
+    c.width = img.naturalWidth || 320;
+    c.height = img.naturalHeight || 200;
+    c.getContext('2d').drawImage(img, 0, 0);
+    wrap.appendChild(c);
+    img.style.display = 'none';
+    btn.textContent = '\u25B6';
+  }
 }
 function fmtTime(ts) {
   try {

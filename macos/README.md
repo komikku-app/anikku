@@ -62,9 +62,11 @@ A native macOS anime watching application — a desktop port of the [Anikku](htt
   arrows) are suspended — typing in chat never touches playback. The 📎
   attach gallery browses every screenshot and GIF clip you've taken, split
   into **GIF clips** and **Screenshots** sections with thumbnails (up to
-  10 MB each); captures also leave the app via **Copy** (file on the
-  clipboard) or the macOS **Share…** sheet (AirDrop, Messages, Mail, Notes).
-  Messages are stamped server-side and late joiners see recent ones.
+  10 MB each). GIFs animate in chat with a per-viewer ⏸/▶ — anyone can stop
+  one for themselves — and the gallery has a back button and closes itself
+  on send. Captures also leave the app via **Copy** (file on the clipboard)
+  or the macOS **Share…** sheet (AirDrop, Messages, Mail, Notes). Messages
+  are stamped server-side and late joiners see recent ones.
 - **Tracker Sync** — MAL, AniList, Kitsu, and more via OAuth; **AniList 2-way
   library sync** (import your lists into the Library + auto-scrobble progress
   back; optional 12h/daily/weekly background sync)
