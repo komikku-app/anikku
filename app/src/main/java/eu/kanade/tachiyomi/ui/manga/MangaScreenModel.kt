@@ -202,7 +202,6 @@ class MangaScreenModel(
     // KMK -->
     private val uiPreferences: UiPreferences = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val refreshTracks: RefreshTracks = Injekt.get(),
     private val downloadProvider: DownloadProvider = Injekt.get(),
     // KMK <--
     private val trackerManager: TrackerManager = Injekt.get(),
@@ -617,23 +616,7 @@ class MangaScreenModel(
 
     private suspend fun syncTrackers() {
         if (!trackPreferences.autoSyncProgressFromTrackers().get()) return
-
-        refreshTracks.await(mangaId, enhancedTrackersOnly = false)
-            .filter { it.first != null }
-            .forEach { (track, e) ->
-                logcat(LogPriority.ERROR, e) {
-                    "Failed to refresh track data mangaId=$mangaId for service ${track!!.id}"
-                }
-                withUIContext {
-                    context.toast(
-                        context.stringResource(
-                            MR.strings.track_error,
-                            track!!.name,
-                            e.message ?: "",
-                        ),
-                    )
-                }
-            }
+        refreshTrackers(enhancedTrackersOnly = false)
     }
     // KMK <--
 
@@ -1581,9 +1564,14 @@ class MangaScreenModel(
     }
 
     private suspend fun refreshTrackers(
+        // KMK -->
+        enhancedTrackersOnly: Boolean = true,
+        // KMK <--
         refreshTracks: RefreshTracks = Injekt.get(),
     ) {
-        refreshTracks.await(mangaId)
+        // KMK -->
+        refreshTracks.await(mangaId, enhancedTrackersOnly = enhancedTrackersOnly)
+            // KMK <--
             .filter { it.first != null }
             .forEach { (track, e) ->
                 logcat(LogPriority.ERROR, e) {

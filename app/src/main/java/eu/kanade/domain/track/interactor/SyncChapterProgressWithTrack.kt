@@ -17,41 +17,28 @@ class SyncChapterProgressWithTrack(
     private val insertTrack: InsertTrack,
     private val getChaptersByMangaId: GetChaptersByMangaId,
 ) {
-    /**
-     * Sync chapter progress with the [EnhancedTracker]
-     */
+
     suspend fun await(
         mangaId: Long,
         remoteTrack: Track,
         tracker: Tracker,
+        // KMK -->
+        enhancedTrackersOnly: Boolean = true,
+        // KMK <--
     ): Int? {
-        if (tracker !is EnhancedTracker) {
+        if (/* KMK --> */enhancedTrackersOnly && /* KMK <-- */ tracker !is EnhancedTracker) {
             return null
         }
-        // KMK -->
-        return sync(mangaId, remoteTrack, tracker)
-    }
 
-    /**
-     * Sync chapter progress with the all trackers.
-     */
-    suspend fun sync(
-        mangaId: Long,
-        remoteTrack: Track,
-        tracker: Tracker,
-    ): Int? {
-        // KMK <--
         // Current chapters in database, sort by source's order because database's order is a mess
         val dbChapters = getChaptersByMangaId.await(mangaId)
             // KMK -->
             .sortedByDescending { it.sourceOrder }
-            // KMK <--
             .filter { it.isRecognizedNumber }
 
         val sortedChapters = dbChapters
             .sortedBy { it.chapterNumber }
 
-        // KMK -->
         var lastCheckChapter: Double
         var checkingChapter = 0.0
 

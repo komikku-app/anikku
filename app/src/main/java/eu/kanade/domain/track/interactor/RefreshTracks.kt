@@ -46,14 +46,13 @@ class RefreshTracks(
                         return@async try {
                             val updatedTrack = service!!.refresh(track.toDbTrack()).toDomainTrack()!!
                             insertTrack.await(updatedTrack)
-                            // KMK -->
-                            if (!enhancedTrackersOnly) {
-                                syncChapterProgressWithTrack.sync(mangaId, updatedTrack, service)
-                            } else {
-                                // KMK <--
-                                syncChapterProgressWithTrack.await(mangaId, updatedTrack, service)
-                            }
+                            syncChapterProgressWithTrack.await(
+                                mangaId,
+                                updatedTrack,
+                                service,
                                 // KMK -->
+                                enhancedTrackersOnly = enhancedTrackersOnly,
+                            )
                                 ?.let {
                                     val context = Injekt.get<Application>()
                                     withUIContext {
