@@ -129,13 +129,13 @@
     <string name="action_filter_fillermarked">Филлер деп белгіленген</string>
     <string name="action_fillermark_episode">Филлер деп белгілеу</string>
     <string name="action_remove_fillermark_episode">Филлер белгілеуін алып тастау</string>
-    <string name="pref_not_download_fillermarked_items">Филлер бөлімдерін жүктемеу</string>
+    <string name="pref_not_download_fillermarked_items">Филлер бөлімдерді жүктемеу</string>
     <string name="pref_show_downloaded_episode_file_size">Жүктелген бөлімнің файл өлшемін көрсету</string>
     <string name="pref_security">Қауіпсіздің</string>
     <string name="onboarding_permission_crashlytics">Қосымша жұмыс істемей қалғанда техникалық деректерді бөлісу</string>
     <string name="onboarding_permission_crashlytics_description">Әзірлеушілерге анонимді деректер жіберіледі.</string>
     <string name="pref_firebase">Аналитика және апаттық журналдар</string>
-    <string name="firebase_summary">Апаттық журналдар мен аналитикалық деректерді жіберу арқылы біз мәселені анықтап, түзетуге, жұмыс өнімділігін жақсартуға және болашақ жаңартуларды сізге ыңғайлы етуге көмектеседі</string>
+    <string name="firebase_summary">Қателер туралы есептер мен аналитиканы жіберіп, бізге ақауларды анықтап, оларды жоюға, өнімділікті жақсартуға және жаңартуларды қажеттілігіңізге сәйкестендіруге мүмкіндік береді</string>
     <string name="label_auto">Авто</string>
     <string name="pref_library_items_per_row">Бір жолдағы элемент саны</string>
     <string name="pref_library_items_per_screen">Экранда көрсетілетін элемент саны</string>
@@ -228,4 +228,12 @@
     <string name="merged_episode_updates_error">Бөлімдерді жаңарту қателерін қосу</string>
     <string name="fetch_episode_updates">Жаңа бөлімдерді іздеу</string>
     <string name="merged_toggle_download_episodes_error">Жаңа бөлімдерді жүктеу қателерін көрсету</string>
+    <string name="download_merged_anime_entry">Жаңа бөлімдерді жүктеуді қосу/өшіру</string>
+    <string name="download_merged_anime_entry_desc">Мұны ауыстырып-қосу арқылы біріктірілген осы тайтл үшін бөлімдерді жүктеуді өшіруге немесе қосуға болады</string>
+    <string name="discord_download_button_anime">%s көру</string>
+    <string name="discord_app_description_anime">Aniku - аниме көруге арналған қолданба</string>
+    <string name="show_episodes_titles_title">Бөлім атауларын көрсету</string>
+    <string name="show_episodes_titles_subtitle">Көріп жатқан бөлімнің атауын көрсету</string>
+    <string name="pref_discord_show_progress_summary_episode">Ағымдағы бөлімнің барысын көрсету</string>
+    <string name="pref_discord_show_timestamp_summary_episode">Өткен/қалған уақытты көрсету</string>
 </resources>
