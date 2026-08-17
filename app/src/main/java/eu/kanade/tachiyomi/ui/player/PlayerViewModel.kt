@@ -1612,7 +1612,16 @@ class PlayerViewModel @JvmOverloads constructor(
         }
         val newVideo = (hosterState.value[hosterIdx] as HosterState.Ready).videoList[videoIdx]
         viewModelScope.launchIO {
-            loadVideo(source, newVideo, hosterIdx, videoIdx)
+            // ANK -->
+            // loadVideo() can still exhaust every fallback candidate deep in its own
+            // recursion and throw; make sure that surfaces as a graceful close instead
+            // of an uncaught exception in this coroutine.
+            try {
+                loadVideo(source, newVideo, hosterIdx, videoIdx)
+            } catch (e: ExceptionWithStringResource) {
+                eventChannel.send(Event.SetVideoLoadError(e))
+            }
+            // ANK <--
         }
         return true
     }
@@ -2341,6 +2350,9 @@ class PlayerViewModel @JvmOverloads constructor(
         data object CycleRotations : Event()
         data object ToggleKeyboard : Event()
         data class SetKeyboard(val show: Boolean) : Event()
+        // ANK -->
+        data class SetVideoLoadError(val error: Throwable) : Event()
+        // ANK <--
     }
 }
 

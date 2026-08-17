@@ -313,6 +313,11 @@ class PlayerActivity : BaseActivity() {
                     PlayerViewModel.Event.ToggleKeyboard -> {
                         toggleShowSoftwareKeyboard()
                     }
+                    // ANK -->
+                    is PlayerViewModel.Event.SetVideoLoadError -> {
+                        setInitialEpisodeError(event.error)
+                    }
+                    // ANK <--
                 }
             }
             .launchIn(lifecycleScope)
