@@ -493,7 +493,7 @@ class PlayerViewModel @JvmOverloads constructor(
             updateAudioTrackAt(idx) {
                 it.copy(id = track.id, state = TrackState.Loaded)
             }
-            selectAudioById(track.id, false)
+            selectAudioById(track.id)
         }
     }
 
@@ -501,6 +501,23 @@ class PlayerViewModel @JvmOverloads constructor(
      * Called when embedded tracks are first loaded
      */
     private fun onTracksLoaded(tracks: List<TrackNode>) {
+        // ANK -->
+        // Drop whatever selection mpv carried over from the previous file before choosing this
+        // file's tracks, instead of calling `selectAudio`/`selectSub` with a `force` flag:
+        // selectSubById()/selectAudioById() toggle a track off when it is already the selected
+        // one, so a carried-over id would turn the track below off instead of on -- as would the
+        // onTrackAdded() selections that follow each `sub-add`/`audio-add` for this file.
+        //
+        // This has to happen here, on the file whose tracks are being selected, and not before
+        // the `loadfile`: these properties change the `selected` field of the *outgoing* file's
+        // track list, so mpv emits a `track-list` event for it that races the `loadfile`. Losing
+        // that race routes the outgoing file's tracks into this function while hasLoadedTracks is
+        // still false, and the new file's own list then arrives at onTrackAdded() and never gets
+        // a preferred-track selection at all.
+        mpv.setPropertyBoolean("sid", false)
+        mpv.setPropertyBoolean("secondary-sid", false)
+        mpv.setPropertyBoolean("aid", false)
+        // ANK <--
         val embeddedSubs = tracks.filter { it.isSubtitle }
         val embeddedAudio = tracks.filter { it.isAudio }
         val externalSubs = currentVideo.value?.subtitleTracks.orEmpty().distinctBy { it.url }
@@ -524,7 +541,7 @@ class PlayerViewModel @JvmOverloads constructor(
             subtitle = false,
         )
         preferredAudio?.let {
-            selectAudio(it, true)
+            selectAudio(it)
         }
     }
 
@@ -579,7 +596,7 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    fun selectAudio(track: VideoTrack, force: Boolean = false) {
+    fun selectAudio(track: VideoTrack) {
         when (track) {
             is VideoTrack.External -> {
                 if (track.id == null) {
@@ -595,11 +612,11 @@ class PlayerViewModel @JvmOverloads constructor(
                         )
                     }
                 } else {
-                    selectAudioById(track.id, force)
+                    selectAudioById(track.id)
                 }
             }
             is VideoTrack.Internal -> {
-                selectAudioById(track.data.id, force)
+                selectAudioById(track.data.id)
             }
         }
     }
@@ -654,8 +671,9 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    private fun selectAudioById(id: Int, force: Boolean) {
-        if (!force && id == mpv.getPropertyInt("aid")) {
+    private fun selectAudioById(id: Int) {
+        // ANK: `force` was removed since we reset audio ID in `onTracksLoaded()`
+        if (id == mpv.getPropertyInt("aid")) {
             mpv.setPropertyBoolean("aid", false)
         } else {
             mpv.setPropertyInt("aid", id)
