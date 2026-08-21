@@ -104,6 +104,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
@@ -1506,11 +1508,84 @@ class PlayerViewModel @JvmOverloads constructor(
         getHosterVideoLinksJob?.cancel()
     }
 
+    // ANK -->
+    /**
+     * Set when a video selection had to be postponed because every ready candidate was
+     * exhausted while some hosters were still resolving. The selection is retried as
+     * those hosters settle, so playback doesn't stay idle forever.
+     */
+    private val hasPendingVideoFallback = AtomicBoolean(false)
+
+    /**
+     * Serializes the pending fallback attempts, which can be triggered concurrently by
+     * every hoster that finishes resolving.
+     */
+    private val pendingVideoFallbackMutex = Mutex()
+
+    /**
+     * Postpone a video selection until the hosters that are still resolving have settled.
+     *
+     * @return true if the fallback was recorded, false if there is nothing left to wait
+     * for and the caller has to handle the failure itself.
+     */
+    private fun recordPendingVideoFallback(source: AnimeSource?): Boolean {
+        if (_hosterState.value.none { it is HosterState.Loading }) return false
+
+        hasPendingVideoFallback.set(true)
+        // The hoster may have settled between the check above and the flag being set,
+        // so always kick off an attempt instead of relying on a later notification.
+        viewModelScope.launchIO { retryPendingVideoFallback(source) }
+        return true
+    }
+
+    /**
+     * Retry a selection recorded by [recordPendingVideoFallback]. Called whenever a
+     * hoster finishes resolving; once none are left, the failure is surfaced to the
+     * player instead of being postponed again.
+     */
+    private suspend fun retryPendingVideoFallback(source: AnimeSource?) {
+        pendingVideoFallbackMutex.withLock {
+            if (!hasPendingVideoFallback.get()) return
+
+            val (hosterIdx, videoIdx) = HosterLoader.selectBestVideo(hosterState.value)
+            val loaded = if (hosterIdx == -1) {
+                false
+            } else {
+                val video = (hosterState.value[hosterIdx] as HosterState.Ready).videoList[videoIdx]
+                try {
+                    loadVideo(source, video, hosterIdx, videoIdx)
+                } catch (e: ExceptionWithStringResource) {
+                    hasPendingVideoFallback.set(false)
+                    eventChannel.send(Event.SetVideoLoadError(e))
+                    return
+                }
+            }
+
+            when {
+                loaded -> hasPendingVideoFallback.set(false)
+                // Some hosters haven't settled yet, so keep waiting for them
+                _hosterState.value.any { it is HosterState.Loading } -> {}
+                else -> {
+                    hasPendingVideoFallback.set(false)
+                    eventChannel.send(
+                        Event.SetVideoLoadError(
+                            ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+    // ANK <--
+
     /**
      * Set the video list for hosters.
      */
     fun loadHosters(source: AnimeSource, hosterList: List<Hoster>, hosterIndex: Int, videoIndex: Int) {
         val hasFoundPreferredVideo = AtomicBoolean(false)
+        // ANK --> Don't carry a postponed selection over from the previous episode
+        hasPendingVideoFallback.set(false)
+        // ANK <--
 
         _hosterList.update { _ -> hosterList }
         _hosterExpandedList.update { _ ->
@@ -1573,6 +1648,10 @@ class PlayerViewModel @JvmOverloads constructor(
                                     }
                                 }
                             }
+
+                            // ANK --> A postponed selection may be waiting on this hoster
+                            retryPendingVideoFallback(source)
+                            // ANK <--
                         }
                     }.awaitAll()
 
@@ -1586,6 +1665,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
                         loadVideo(source, video, hosterIdx, videoIdx)
                     }
+
+                    // ANK --> Nothing left to wait for; resolve any postponed selection
+                    retryPendingVideoFallback(source)
+                    // ANK <--
                 }
             } catch (e: CancellationException) {
                 _hosterState.update { _ ->
@@ -1624,8 +1707,10 @@ class PlayerViewModel @JvmOverloads constructor(
         if (hosterIdx == -1) {
             // ANK -->
             // A hoster still resolving (Loading) might still produce a usable candidate,
-            // so don't report failure here
-            return _hosterState.value.any { it is HosterState.Loading }
+            // so postpone the selection instead of reporting failure. Returning true
+            // without recording it would leave playback idle forever, since loadHosters()
+            // already made its own selection and won't make another one.
+            return recordPendingVideoFallback(source)
             // ANK <--
         }
         val newVideo = (hosterState.value[hosterIdx] as HosterState.Ready).videoList[videoIdx]
@@ -1635,7 +1720,10 @@ class PlayerViewModel @JvmOverloads constructor(
             // recursion and throw; make sure that surfaces as a graceful close instead
             // of an uncaught exception in this coroutine.
             try {
-                loadVideo(source, newVideo, hosterIdx, videoIdx)
+                if (!loadVideo(source, newVideo, hosterIdx, videoIdx)) {
+                    // loadVideo() bailed out because other hosters are still resolving
+                    recordPendingVideoFallback(source)
+                }
             } catch (e: ExceptionWithStringResource) {
                 eventChannel.send(Event.SetVideoLoadError(e))
             }
@@ -1708,6 +1796,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
         qualityIndex = Pair(hosterIndex, videoIndex)
 
+        // ANK --> Playback resumed, so drop any postponed selection
+        hasPendingVideoFallback.set(false)
+        // ANK <--
+
         eventChannel.send(Event.SetVideo(resolvedVideo))
         return true
     }
@@ -1752,6 +1844,10 @@ class PlayerViewModel @JvmOverloads constructor(
                         force = true,
                     )
                     _hosterState.updateAt(index, hosterState)
+
+                    // ANK --> A postponed selection may be waiting on this hoster
+                    retryPendingVideoFallback(currentSource.value)
+                    // ANK <--
                 }
             }
             is HosterState.Loading, is HosterState.Error -> {}
