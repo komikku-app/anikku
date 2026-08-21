@@ -97,6 +97,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -767,17 +768,20 @@ class PlayerViewModel @JvmOverloads constructor(
      * If external subs/audio tracks was selected, wait until mpv has fetched them.
      */
     fun checkFileLoaded() {
-        if (isLoadingEpisode.value && hasLoadedSubs.value && hasLoadedAudio.value) {
-            _isLoadingEpisode.update { _ -> false }
-            pausedState.value?.let {
-                if (it) {
-                    pause()
-                } else {
-                    unpause()
-                }
-                _pausedState.update { _ -> null }
+        // ANK -->
+        if (!hasLoadedSubs.value || !hasLoadedAudio.value) return
+        // Track-load callbacks arrive on mpv's event thread, so a read-then-write on
+        // isLoadingEpisode would let a subtitle and an audio event both pass the guard and
+        // (un)pause twice. The CAS makes exactly one caller win.
+        if (!_isLoadingEpisode.compareAndSet(expect = true, update = false)) return
+        _pausedState.getAndUpdate { null }?.let {
+            if (it) {
+                pause()
+            } else {
+                unpause()
             }
         }
+        // ANK <--
     }
 
     fun pauseUnpause() = mpv.command("cycle", "pause")
