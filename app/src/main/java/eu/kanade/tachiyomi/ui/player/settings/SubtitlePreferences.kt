@@ -90,14 +90,9 @@ enum class SubtitleAssOverride(
     ;
 
     companion object {
-        fun byValue(value: String): SubtitleAssOverride {
-            return when (value) {
-                "strip" -> Strip
-                "force" -> Force
-                "scale" -> Scale
-                "yes" -> Yes
-                else -> No
-            }
-        }
+        fun byValue(value: String): SubtitleAssOverride =
+            // ANK -->
+            entries.firstOrNull { it.value == value } ?: No
+        // ANK <--
     }
 }

@@ -17,14 +17,21 @@ class SubtitleAssEnumMigration : Migration {
         val preferenceStore = migrationContext.get<PreferenceStore>() ?: return false
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
-        val overrideAss = preferenceStore.getBoolean("pref_override_subtitles_ass", false).get()
+        if (!prefs.contains(OLD_KEY)) return false
+
+        val overrideAss = preferenceStore.getBoolean(OLD_KEY, false).get()
+        preferenceStore.getEnum(NEW_KEY, SubtitleAssOverride.No).set(
+            if (overrideAss) SubtitleAssOverride.Force else SubtitleAssOverride.No,
+        )
         prefs.edit {
-            remove("pref_override_subtitles_ass")
-            preferenceStore.getEnum("pref_override_subtitles_ass_enum", SubtitleAssOverride.No).set(
-                if (overrideAss) SubtitleAssOverride.Force else SubtitleAssOverride.No,
-            )
+            remove(OLD_KEY)
         }
 
         return true
+    }
+
+    companion object {
+        private const val OLD_KEY = "pref_override_subtitles_ass"
+        private const val NEW_KEY = "pref_override_subtitles_ass_enum"
     }
 }

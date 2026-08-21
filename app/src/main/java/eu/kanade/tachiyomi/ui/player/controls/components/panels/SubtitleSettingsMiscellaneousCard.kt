@@ -114,7 +114,12 @@ fun SubtitlesMiscellaneousCard(
                     SubtitleAssOverride.entries.forEach {
                         DropdownMenuItem(
                             text = { Text(stringResource(it.titleRes)) },
-                            onClick = { onOverrideAssSubsChange(it) },
+                            onClick = {
+                                onOverrideAssSubsChange(it)
+                                // ANK -->
+                                selectingOverrideAss = false
+                                // ANK <--
+                            },
                             trailingIcon = {
                                 if (overrideAssSubs == it) {
                                     Icon(

@@ -784,9 +784,6 @@ fun PlayerControls(
                 subtitlePreferences.italicSubtitles().set(it)
             },
             onSubJustifyChange = {
-                // ANK -->
-                viewModel.mpv.setPropertyBoolean("sub-ass-justify", it != SubtitleJustification.Auto)
-                // ANK <--
                 viewModel.mpv.setPropertyString("sub-justify", it.value)
                 subtitlePreferences.subtitleJustification().set(it)
             },
