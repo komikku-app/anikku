@@ -556,6 +556,13 @@ class PlayerViewModel @JvmOverloads constructor(
         } else {
             selectAudio(preferredAudio)
         }
+
+        // ANK -->
+        // Nothing is waiting on an external track when neither branch above started a load, and
+        // `track-list` can arrive after `file-loaded`, so this is the last chance to release the
+        // episode-loading state. No-op while an external sub/audio load is still pending.
+        checkFileLoaded()
+        // ANK <--
     }
 
     fun addAudio(uri: Uri) {
