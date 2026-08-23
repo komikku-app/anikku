@@ -73,8 +73,6 @@ import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.serial
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.PlayerData
-import eu.kanade.tachiyomi.data.download.sanitizeFFmpegKey
-import eu.kanade.tachiyomi.data.download.sanitizeFFmpegValue
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
@@ -190,6 +188,14 @@ class PlayerActivity : BaseActivity() {
         private const val MPV_SCRIPTS_DIR = "scripts"
         private const val MPV_SCRIPTS_OPTS_DIR = "script-opts"
         private const val MPV_SHADERS_DIR = "shaders"
+
+        // ANK -->
+        /** mpv option names start alphanumeric and hold nothing but these; anything else is not one. */
+        private val MPV_OPTION_NAME_REGEX = Regex("^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
+
+        /** A value made up of only these needs none of mpv's escaping mechanisms. */
+        private val MPV_PLAIN_OPTION_VALUE_REGEX = Regex("^[a-zA-Z0-9_.:/+-]*$")
+        // ANK <--
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -1227,27 +1233,14 @@ class PlayerActivity : BaseActivity() {
             launchIO {
                 TorrentServerService.start()
                 TorrentServerService.wait(10)
-                torrentLinkHandler(video.videoUrl, video.videoTitle)
+                // ANK -->
+                torrentLinkHandler(video.videoUrl, video.videoTitle, video.mpvArgs)
+                // ANK <--
             }
         } else {
-            // We handle selecting these in the viewmodel
-            val mpvOpts = listOf(
-                Pair("sid", "no"),
-                Pair("aid", "no"),
-            )
-            val videoOptions = (video.mpvArgs + mpvOpts).joinToString(",") { (option, value) ->
-                val sanitizedOption = sanitizeFFmpegKey(option)
-                val sanitizedValue = sanitizeFFmpegValue(value)
-                "$sanitizedOption=\"${sanitizedValue.replace("\"", "\\\"")}\""
-            }
-
-            mpv.command(
-                "loadfile",
-                parseVideoUrl(video.videoUrl)!!,
-                "replace",
-                "0",
-                videoOptions,
-            )
+            // ANK -->
+            loadFile(parseVideoUrl(video.videoUrl)!!, video.mpvArgs)
+            // ANK <--
         }
 
         // AM (DISCORD) -->
@@ -1255,7 +1248,67 @@ class PlayerActivity : BaseActivity() {
         // <-- AM (DISCORD)
     }
 
-    private fun torrentLinkHandler(videoUrl: String, quality: String) {
+    // ANK -->
+    /**
+     * Issues a `loadfile` for [url], appending the per-file options that have to apply no matter
+     * which branch started the load. Keeping this in one place is what stops the torrent path from
+     * inheriting the previous file's `sid`/`aid`.
+     */
+    private fun loadFile(url: String, mpvArgs: List<Pair<String, String>> = emptyList()) {
+        // We handle selecting these in the viewmodel
+        val forcedOptions = listOf(
+            Pair("sid", "no"),
+            Pair("aid", "no"),
+        )
+
+        mpv.command(
+            "loadfile",
+            url,
+            "replace",
+            "0",
+            formatMpvOptions(mpvArgs + forcedOptions),
+        )
+    }
+
+    /**
+     * Formats [options] for the `options` argument of `loadfile`.
+     *
+     * mpv parses that argument as its own `key=value` list and never hands it to a shell, so the
+     * FFmpeg sanitizers must not be reused here: they reject values mpv accepts (`$`, `(`, `\`, or
+     * anything starting with `-`) and they *throw*, which would tear down the event collector that
+     * calls [setVideo] -- or crash the app outright from [torrentLinkHandler]'s coroutine.
+     *
+     * Any value the list syntax itself would otherwise eat -- one holding a `,`, a quote, or
+     * whitespace -- is emitted with mpv's `%<bytes>%<value>` escaping. Quoting cannot do the job:
+     * mpv's quoted form ends at the first `"` and has no escape for a literal one, so a value
+     * containing a quote used to produce an unparsable list and lose every option in it. Option
+     * names are validated rather than escaped, since a name mpv could not accept is a mistake in
+     * the extension either way.
+     */
+    private fun formatMpvOptions(options: List<Pair<String, String>>): String {
+        val (valid, invalid) = options.partition { (option, _) -> MPV_OPTION_NAME_REGEX.matches(option) }
+
+        invalid.forEach { (option, _) ->
+            logcat(LogPriority.WARN) { "Ignoring mpv option with unusable name: $option" }
+        }
+
+        return valid.joinToString(",") { (option, value) ->
+            if (MPV_PLAIN_OPTION_VALUE_REGEX.matches(value)) {
+                "$option=$value"
+            } else {
+                "$option=%${value.toByteArray().size}%$value"
+            }
+        }
+    }
+    // ANK <--
+
+    private fun torrentLinkHandler(
+        videoUrl: String,
+        quality: String,
+        // ANK -->
+        mpvArgs: List<Pair<String, String>> = emptyList(),
+        // ANK <--
+    ) {
         var index = 0
 
         // check if link is from localSource
@@ -1263,7 +1316,9 @@ class PlayerActivity : BaseActivity() {
             val videoInputStream = applicationContext.contentResolver.openInputStream(videoUrl.toUri())
             val torrent = TorrentServerApi.uploadTorrent(videoInputStream!!, quality, "", "", false)
             val torrentUrl = TorrentServerUtils.getTorrentPlayLink(torrent, 0)
-            mpv.command("loadfile", torrentUrl)
+            // ANK -->
+            loadFile(torrentUrl, mpvArgs)
+            // ANK <--
             return
         }
 
@@ -1280,7 +1335,9 @@ class PlayerActivity : BaseActivity() {
 
         val currentTorrent = TorrentServerApi.addTorrent(videoUrl, quality, "", "", false)
         val videoTorrentUrl = TorrentServerUtils.getTorrentPlayLink(currentTorrent, index)
-        mpv.command("loadfile", videoTorrentUrl)
+        // ANK -->
+        loadFile(videoTorrentUrl, mpvArgs)
+        // ANK <--
     }
 
     /**
