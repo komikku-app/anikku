@@ -179,7 +179,7 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
             }
 
             if (foundAnime.result != true) return@withIOContext null
-            val lastWatched = foundAnime.lastWatched ?: return@withIOContext null
+            val lastWatched = foundAnime.lastWatchedAt ?: return@withIOContext null
             val status = foundAnime.list ?: return@withIOContext null
             val type = track.tracking_url
                 .substringAfter("/")
@@ -193,8 +193,8 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
             val listAnime = with(json) {
                 authClient.newCall(GET(url.toString()))
                     .awaitSuccess()
-                    .parseAs<SimklSyncResult>()
-                    .getFromType(queryType)
+                    .parseAs<SimklSyncResult?>()
+                    ?.getFromType(queryType)
                     ?.firstOrNull { item ->
                         item.getFromType(typeName).ids.simkl == track.remote_id
                     } ?: return@withIOContext null

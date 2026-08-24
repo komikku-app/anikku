@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SimklSyncWatched(
     val result: Boolean?,
-    @SerialName("last_watched")
-    val lastWatched: String?,
+    @SerialName("last_watched_at")
+    val lastWatchedAt: String?,
     val list: String?,
 )
