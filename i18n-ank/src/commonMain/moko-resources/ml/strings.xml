@@ -1,3 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="episode_progress_short">%1$s/%2$s</string>
 </resources>
