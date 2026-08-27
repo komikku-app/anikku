@@ -99,6 +99,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
     @Composable
     private fun getControlsGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
         val allowGestures = playerPreferences.allowGestures()
+        val holdSpeedForward = playerPreferences.holdSpeedForward()
         val showLoading = playerPreferences.showLoadingCircle()
         val showChapter = playerPreferences.showCurrentChapter()
         val rememberPlayerBrightness = playerPreferences.rememberPlayerBrightness()
@@ -110,6 +111,17 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     pref = allowGestures,
                     title = stringResource(MR.strings.pref_controls_allow_gestures_in_panels),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    pref = holdSpeedForward,
+                    title = stringResource(MR.strings.pref_hold_speed_forward),
+                    entries = persistentMapOf(
+                        2.0F to "2x",
+                        3.0F to "3x",
+                        4.0F to "4x",
+                        5.0F to "5x",
+                        6.0F to "6x",
+                    ),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     pref = showLoading,

@@ -85,6 +85,7 @@ fun GestureHandler(
 
     val panelShown by viewModel.panelShown.collectAsState()
     val allowGesturesInPanels by playerPreferences.allowGestures().collectAsState()
+    val holdSpeedForward by playerPreferences.holdSpeedForward().collectAsState()
     val duration by viewModel.duration.collectAsState()
     val position by viewModel.pos.collectAsState()
     val controlsShown by viewModel.controlsShown.collectAsState()
@@ -119,7 +120,7 @@ fun GestureHandler(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeGestures)
             .pointerInput(Unit) {
-                val originalSpeed = viewModel.playbackSpeed.value
+                var originalSpeed = viewModel.playbackSpeed.value
                 detectTapGestures(
                     onTap = {
                         if (controlsShown) viewModel.hideControls() else viewModel.showControls()
@@ -169,7 +170,15 @@ fun GestureHandler(
                     },
                     onLongPress = {
                         if (areControlsLocked) return@detectTapGestures
-                        if (!isLongPressing) {
+                        if (it.x > size.width * 2 / 3 && !isLongPressing && !viewModel.paused.value) {
+                            // Hold right third: 2x forward speed
+                            originalSpeed = viewModel.playbackSpeed.value
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            isLongPressing = true
+                            MPVLib.setPropertyDouble("speed", holdSpeedForward.toDouble())
+                            viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(holdSpeedForward) }
+                        } else if (!isLongPressing) {
+                            // Hold left/center (or right third while paused): screenshot
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             isLongPressing = true
                             viewModel.pause()
