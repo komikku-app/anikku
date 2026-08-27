@@ -65,11 +65,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import eu.kanade.presentation.player.components.PlayerSheet
 import eu.kanade.tachiyomi.ui.player.Decoder
+import eu.kanade.tachiyomi.ui.player.PausedLongPressAction
 import eu.kanade.tachiyomi.ui.player.execute
 import eu.kanade.tachiyomi.ui.player.executeLongPress
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
+import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
@@ -93,6 +95,7 @@ fun MoreSheet(
 ) {
     val advancedPreferences = remember { Injekt.get<AdvancedPlayerPreferences>() }
     val audioPreferences = remember { Injekt.get<AudioPreferences>() }
+    val gesturePreferences = remember { Injekt.get<GesturePreferences>() }
     val statisticsPage by advancedPreferences.playerStatisticsPage().collectAsState()
 
     PlayerSheet(
@@ -255,6 +258,20 @@ fun MoreSheet(
                             MPVLib.setPropertyString(it.property, it.value)
                         },
                         label = { Text(text = stringResource(it.titleRes)) },
+                    )
+                }
+            }
+
+            Text(text = stringResource(MR.strings.paused_long_press_action))
+            val pausedLongPress by gesturePreferences.pausedLongPressGesture().collectAsState()
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+            ) {
+                items(PausedLongPressAction.entries) { action ->
+                    FilterChip(
+                        selected = pausedLongPress == action,
+                        onClick = { gesturePreferences.pausedLongPressGesture().set(action) },
+                        label = { Text(text = stringResource(action.stringRes)) },
                     )
                 }
             }

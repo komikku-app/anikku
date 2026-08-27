@@ -153,6 +153,27 @@ fun PlaybackSpeedSheet(
                 modifier = Modifier
                     .padding(MaterialTheme.padding.medium),
             )
+            val adjustSpeedOnDrag by preferences.adjustSpeedOnDrag().collectAsState()
+            SwitchPreference(
+                value = adjustSpeedOnDrag,
+                onValueChange = {
+                    preferences.adjustSpeedOnDrag().set(it)
+                },
+                content = {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(text = stringResource(MR.strings.pref_adjust_speed_on_drag))
+                        Text(
+                            text = stringResource(MR.strings.pref_adjust_speed_on_drag_summary),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .padding(horizontal = MaterialTheme.padding.medium)
+                    .padding(bottom = MaterialTheme.padding.medium),
+            )
             Row(
                 modifier = Modifier
                     .padding(horizontal = MaterialTheme.padding.medium),
