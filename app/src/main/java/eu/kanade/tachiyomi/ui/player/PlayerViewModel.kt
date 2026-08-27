@@ -427,11 +427,33 @@ class PlayerViewModel @JvmOverloads constructor(
 
     fun clearTracks() {
         hasLoadedTracks.update { _ -> false }
+        // ANK -->
+        clearLoadedTrackStates()
+        // ANK <--
         _externalAudioTracks.update { _ -> emptyList() }
         _externalSubtitleTracks.update { _ -> emptyList() }
     }
 
+    // ANK -->
+    /**
+     * `hasLoadedSubs`/`hasLoadedAudio` only ever move false -> true, so they have to be cleared
+     * whenever a new file starts loading. Otherwise the next file inherits the previous one's
+     * "tracks are ready" state and [checkFileLoaded] releases the pause before this file's
+     * external subs/audio have been fetched.
+     */
+    private fun clearLoadedTrackStates() {
+        hasLoadedSubs.update { _ -> false }
+        hasLoadedAudio.update { _ -> false }
+    }
+    // ANK <--
+
     fun updateIsLoadingEpisode(value: Boolean) {
+        // ANK -->
+        // Clear first, so `isLoadingEpisode` is never true while the flags still describe the
+        // outgoing file -- `loadVideo()` resolves the video over the network before it gets to
+        // `clearTracks()`, which would leave that window wide open.
+        if (value) clearLoadedTrackStates()
+        // ANK <--
         _isLoadingEpisode.update { _ -> value }
     }
 
