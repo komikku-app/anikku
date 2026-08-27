@@ -52,12 +52,12 @@
     <string name="torrentserver_is_running">Torrent-Server läuft</string>
     <string name="pref_torrent_trackers">Torrent-Tracker</string>
     <string name="pref_reset_torrent_trackers_string">Standard-Torrent-Tracker-String zurücksetzen</string>
-    <string name="flare_solver_user_agent_update_success">FlareSolverr funktioniert. User-Agent aktualisiert. Bitte starten Sie die App neu</string>
-    <string name="flare_solver_update_user_agent_failed">FlareSolverr funktioniert nicht. User-Agent wird nicht aktualisiert. Bitte überprüfen Sie Ihre Einstellungen</string>
+    <string name="flare_solver_user_agent_update_success">FlareSolverr funktioniert. User-Agent aktualisiert. Bitte starte die App neu</string>
+    <string name="flare_solver_update_user_agent_failed">FlareSolverr funktioniert nicht. User-Agent wird nicht aktualisiert. Bitte überprüfe deine Einstellungen</string>
     <string name="flare_solver_error">Fehler beim Kontaktieren von FlareSolverr</string>
     <string name="flare_solver_error_webview">Fehler beim Lösen mit WebView</string>
     <string name="pref_enable_flare_solverr">FlareSolverr aktivieren</string>
-    <string name="pref_enable_flare_solverr_summary">Verwenden Sie FlareSolverr, um den Schutz gegen Bot von Cloudflare zu umgehen</string>
+    <string name="pref_enable_flare_solverr_summary">Verwenden Sie FlareSolverr, um Cloudfkares Anti-Bot-Schutz zu umgehen</string>
     <string name="pref_flare_solverr_url">FlareSolverr URL</string>
     <string name="pref_flare_solverr_url_summary">URL der FlareSolverr-Instanz, zum Beispiel http://192.168.1.202:8191/v1</string>
     <string name="pref_test_flare_solverr_and_update_user_agent">FlareSolverr testen und User-Agent aktualisieren</string>

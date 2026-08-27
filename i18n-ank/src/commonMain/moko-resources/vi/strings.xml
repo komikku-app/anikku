@@ -1,3 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pref_app_icon">Biểu tượng ứng dụng</string>
+    <string name="pref_app_icon_toast">Thay đổi biểu tượng ứng dụng thành %s</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
+    <string name="install_amnis">Cần phải cài đặt Amnis Player</string>
+    <string name="pref_category_torrentserver">Tùy chọn máy chủ Torrent</string>
+    <string name="pref_torrentserver_port">Cổng máy chủ Torrent</string>
+    <string name="torrentserver_is_running">Máy chủ Torrent đang hoạt động</string>
+    <string name="pref_torrent_trackers">Trình theo dõi Torrent</string>
+    <string name="pref_reset_torrent_trackers_string">Đặt lại trình theo dõi Torrent mặc định</string>
+    <string name="flare_solver_user_agent_update_success">FlareSolverr đang hoạt động. User agent đã được cập nhật. Vui lòng khởi động lại ứng dụng</string>
+    <string name="flare_solver_update_user_agent_failed">FlareSolverr không hoạt động. User chưa được cập nhật. Vui lòng kiểm tra lại cài đặt của bạn</string>
+    <string name="flare_solver_error">Lỗi kết nối với FlareSolverr</string>
+    <string name="flare_solver_error_webview">Lỗi khi xử lý bằng WebView</string>
+    <string name="pref_enable_flare_solverr">Bật FlareSolverr</string>
+    <string name="pref_enable_flare_solverr_summary">Sử dụng FlareSolverr để vượt qua cơ chế bảo vệ chống bot của Cloudflare</string>
+    <string name="pref_flare_solverr_url">URL FlareSolverr</string>
+    <string name="pref_flare_solverr_url_summary">URL của phiên bản FlareSolverr cần sử dụng, ví dụ: http://192.168.1.202:8191/v1</string>
+    <string name="pref_test_flare_solverr_and_update_user_agent">Kiểm tra FlareSolverr và cập nhật User</string>
+    <string name="pref_test_flare_solverr_and_update_user_agent_summary">Kiểm tra FlareSolverr để cập nhật user. Chỉ cần thực hiện một lần; sau đó bật/tắt khi cần thiết.</string>
+    <string name="media_route_menu_title">Mở rộng</string>
+    <string name="login_failed">Đăng nhập không thành công</string>
 </resources>
