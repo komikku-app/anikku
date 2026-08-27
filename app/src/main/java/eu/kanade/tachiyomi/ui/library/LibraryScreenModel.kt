@@ -440,7 +440,7 @@ class LibraryScreenModel(
         val animelibAnimesFlow = combine(
             getLibraryAnime.subscribe(),
             getAnimelibItemPreferencesFlow(),
-            downloadCache.changes,
+            downloadCache.changes.debounce(500),
         ) { libraryMangaList, prefs, _ ->
             libraryMangaList
                 .map { libraryManga ->

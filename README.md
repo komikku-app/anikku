@@ -4,7 +4,7 @@
     <img src="./.github/assets/icon.png" alt="anikku logo" title="anikku logo" width="80"/>
 </a>
 
-# Anikku [App](#)
+# Anikku [APP](#)
 
 ### Full-featured player, based on Aniyomi.
 Discover and watch anime, cartoons, series, and more – easier than ever on your Android device.
