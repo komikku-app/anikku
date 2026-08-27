@@ -95,12 +95,12 @@
     <string name="cast_media_info">Інформація про медіа</string>
     <string name="cast_previous_video">Попереднє відео</string>
     <string name="cast_next_video">Наступне відео</string>
-    <string name="cast_play">Відтворити</string>
+    <string name="cast_play">Грати</string>
     <string name="cast_pause">Пауза</string>
     <string name="cast_rewind_30s">Перемотати 30-ті роки</string>
     <string name="cast_forward_30s">Переслати 30-ті</string>
     <string name="playback_speed">Швидкість відтворення</string>
-    <string name="cast_volume">Об\'єм</string>
+    <string name="cast_volume">Гучність</string>
     <string name="cast_end_session">Кінцева сесія</string>
     <string name="cast_subtitle_settings">Параметри субтитрів</string>
     <string name="cast_subtitle_font_size">Розмір шрифту</string>
@@ -200,7 +200,7 @@
     <string name="pref_storage_location_info_anime">Використовується для автоматичного завантаження резервних копій, епізод та локального джерела.</string>
     <string name="tracking_info_anime">Одностороння синхронізація для оновлення прогресу епізод у зовнішніх сервісах. Налаштувайте відстеження для окремих записів кнопкою відстеження.</string>
     <string name="pref_create_folder_per_anime">Зберегти скріншоти в окремі папки</string>
-    <string name="pref_app_icon">Іконка додатку</string>
+    <string name="pref_app_icon">Іконка</string>
     <string name="pref_app_icon_toast">Іконку додатку змінено на %s</string>
     <string name="logging_in">Заходимо…</string>
     <string name="storage_failed_to_create_download_directory">Не вдалося створити шлях для завантажень</string>
@@ -211,4 +211,5 @@
     <string name="pref_anime_info">Інформація про аніме</string>
     <string name="action_clear_anime">Очистити аніме</string>
     <string name="episodes_from_database">Епізоди та історія з бази даних</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
 </resources>

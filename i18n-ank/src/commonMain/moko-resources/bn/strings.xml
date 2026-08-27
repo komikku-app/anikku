@@ -1,3 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pref_app_icon">অ্যাপ আইকন</string>
+    <string name="pref_app_icon_toast">অ্যাপ আইকন %s-এ পরিবর্তিত হয়েছে</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
+    <string name="install_amnis">অ্যামনিস প্লেয়ার ইনস্টল করা প্রয়োজন</string>
+    <string name="pref_category_torrentserver">টরেন্ট সার্ভার এর প্রেফারেন্স</string>
+    <string name="pref_torrentserver_port">টরেন্ট সার্ভার পোর্ট</string>
+    <string name="torrentserver_is_running">টরেন্ট সার্ভার চলছে</string>
+    <string name="pref_torrent_trackers">টরেন্ট ট্র্যাকার</string>
+    <string name="pref_reset_torrent_trackers_string">ডিফল্ট টরেন্ট ট্র্যাকার স্ট্রিং রিসেট করুন</string>
+    <string name="flare_solver_user_agent_update_success">FlareSolverr কাজ করছে। ইউজার এজেন্ট আপডেট করা হয়েছে। অনুগ্রহ করে অ্যাপটি রিস্টার্ট করুন</string>
+    <string name="flare_solver_update_user_agent_failed">FlareSolverr কাজ করছে না। ইউজার এজেন্ট আপডেট করা হয়নি। অনুগ্রহ করে আপনার সেটিংস চেক করুন</string>
+    <string name="flare_solver_error">FlareSolverr-এর সাথে যোগাযোগ করতে ত্রুটি হয়েছে</string>
+    <string name="flare_solver_error_webview">WebView-এর সাথে সমস্যা সমাধানে ত্রুটি</string>
+    <string name="pref_enable_flare_solverr">FlareSolverr এনেবেল করুন</string>
+    <string name="pref_enable_flare_solverr_summary">Cloudflare-এর অ্যান্টি-বট সুরক্ষা বাইপাস করতে FlareSolverr ব্যবহার করুন</string>
+    <string name="pref_flare_solverr_url">FlareSolverr ইউআরএল</string>
 </resources>
