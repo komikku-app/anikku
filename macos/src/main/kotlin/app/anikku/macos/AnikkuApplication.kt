@@ -1,0 +1,590 @@
+package app.anikku.macos
+
+import app.anikku.macos.di.appModule
+import app.anikku.macos.di.domainModule
+import app.anikku.macos.di.platformModule
+import app.anikku.macos.platform.BackgroundTaskScheduler
+import app.anikku.macos.platform.MacOSBackgroundJobs
+import app.anikku.macos.platform.backup.MacOSBackupManager
+import app.anikku.macos.platform.data.LibraryRepository
+import app.anikku.macos.platform.download.MacOSDownloadManager
+import app.anikku.macos.platform.local.LocalLibraryRepository
+import app.anikku.macos.platform.torrent.TorrentServerBridge
+import app.anikku.macos.platform.watch.WatchTogetherServer
+import app.anikku.macos.platform.watch.WatchTogetherTunnel
+import app.anikku.macos.platform.data.HistoryRepository
+import app.anikku.macos.platform.data.DownloadRepository
+import app.anikku.macos.platform.data.MacOSCustomAnimeRepository
+import app.anikku.macos.platform.database.MacOSDatabaseDriver
+import app.anikku.macos.platform.database.MacOSDatabaseRepairHandler
+import app.anikku.macos.platform.MacOSDeepLinkHandler
+import app.anikku.macos.platform.discord.DiscordRPC
+import app.anikku.macos.platform.extension.MacOSExtensionLoader
+import app.anikku.macos.platform.extension.MacOSExtensionManager
+import app.anikku.macos.platform.logging.CrashReporter
+import app.anikku.macos.platform.logging.MacOSLogger
+import app.anikku.macos.platform.logging.TerminalErrorLogger
+import app.anikku.macos.platform.logging.UIActionLogger
+import app.anikku.macos.platform.library.AnimeSourceMatcher
+import app.anikku.macos.platform.library.LibraryAutoLinkService
+import app.anikku.macos.platform.library.MacOSLibraryUpdateService
+import app.anikku.macos.platform.library.NewEpisodeRepository
+import app.anikku.macos.platform.migration.MacOSMigrationManager
+import app.anikku.macos.platform.network.ChromeCDPClient
+import app.anikku.macos.platform.network.MacOSCookieJar
+import app.anikku.macos.platform.network.MacOSNetworkHelper
+import app.anikku.macos.platform.notification.MacOSNotificationManager
+import app.anikku.macos.platform.preference.MacOSPreferenceStore
+import app.anikku.macos.platform.security.MacOSBiometricAuth
+import app.anikku.macos.platform.security.MacOSKeychain
+import app.anikku.macos.platform.storage.MacOSStorageManager
+import app.anikku.macos.platform.storage.MacOSStorageProvider
+import app.anikku.macos.platform.subtitle.SubtitleCredentialStore
+import app.anikku.macos.platform.subtitle.SubtitleCredentials
+import app.anikku.macos.platform.subtitle.SubtitleDefaults
+import app.anikku.macos.platform.subtitle.SubtitleFetcher
+import app.anikku.macos.platform.sync.GoogleDriveRestClient
+import app.anikku.macos.platform.sync.MacOSGoogleDriveService
+import app.anikku.macos.platform.sync.MacOSSyncYomiService
+import app.anikku.macos.platform.update.AppInfo
+import app.anikku.macos.platform.update.AppUpdateChecker
+import app.anikku.macos.platform.update.SparkleUpdater
+import eu.kanade.tachiyomi.source.CatalogueSource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.atomic.AtomicBoolean
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import java.io.File
+
+/**
+ * macOS desktop application initialization.
+ * Replaces the Android App.kt Application class lifecycle.
+ *
+ * Responsibilities:
+ * - Initialize logging
+ * - Set up Koin dependency injection
+ * - Configure storage directories
+ * - Initialize database
+ * - Set up background task scheduler
+ *
+ * This is called once at application startup from AnikkuApp.kt.
+ */
+class AnikkuApplication {
+
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    val storageProvider = MacOSStorageProvider()
+    val preferenceStore: MacOSPreferenceStore
+    val migrationManager: MacOSMigrationManager
+    val backgroundScheduler = BackgroundTaskScheduler(applicationScope)
+    val databaseDriver: MacOSDatabaseDriver
+
+    // Phase 2: Storage & Data
+    val storageManager: MacOSStorageManager
+    val customAnimeRepository: MacOSCustomAnimeRepository
+    val libraryRepository: LibraryRepository
+    val historyRepository: HistoryRepository
+    val downloadRepository: DownloadRepository
+    val backupManager: MacOSBackupManager
+    val libraryUpdateService: MacOSLibraryUpdateService
+    val animeSourceMatcher: AnimeSourceMatcher
+    val libraryAutoLinkService: LibraryAutoLinkService
+    val newEpisodeRepository: NewEpisodeRepository
+    val localLibraryRepository: LocalLibraryRepository
+
+    // Phase 3: Networking
+    val networkHelper: MacOSNetworkHelper
+    val cookieJar: MacOSCookieJar
+
+    // Phase 3.5: Subtitle fetching (Jimaku + OpenSubtitles)
+    val subtitleCredentialStore: SubtitleCredentialStore
+    val subtitleFetcher: SubtitleFetcher
+
+    // Phase 3: Extension system
+    val extensionManager: MacOSExtensionManager
+
+    // Phase 7: Advanced Features
+    val discordRPC: DiscordRPC
+    val googleDriveService: MacOSGoogleDriveService
+    val syncYomiService: MacOSSyncYomiService
+    val backgroundJobs: MacOSBackgroundJobs
+    val notificationManager: MacOSNotificationManager
+
+    /** Set when startup DB integrity repair ran; surfaced to the user via notification. */
+    @Volatile
+    var startupDatabaseRepairNote: String? = null
+
+    val biometricAuth: MacOSBiometricAuth
+    val appUpdateChecker: AppUpdateChecker
+    val sparkleUpdater: SparkleUpdater
+
+    /** LAN Watch Together room server — starts on demand, stopped at shutdown. */
+    val watchTogetherServer: WatchTogetherServer = WatchTogetherServer()
+
+    /**
+     * Cloudflare tunnel for internet Watch Together rooms — starts lazily on
+     * the first room, stopped at shutdown. Null URL means LAN-only rooms.
+     */
+    val watchTogetherTunnel: WatchTogetherTunnel = WatchTogetherTunnel()
+
+    /**
+     * App-scoped TorrServer bridge — the player streams through it, and the
+     * Torrents tab polls it for live progress (active torrents list). Stopped
+     * at shutdown.
+     */
+    val torrentServerBridge: TorrentServerBridge = TorrentServerBridge.createDefault()
+
+    private val shutdownStarted = AtomicBoolean(false)
+
+    init {
+        // 1. Ensure storage directories exist
+        storageProvider.ensureDirectories()
+
+        // 2. Initialize logging
+        MacOSLogger.initialize(storageProvider)
+
+        // 3. Deploy bundled extensions on first launch (Phase 3.3)
+        deployBundledExtensions()
+
+        // 3b. Network clients retain the JVM's secure default certificate and
+        // hostname validation. Extension-specific exceptions must be isolated
+        // to the individual client; never mutate JVM-global TLS state.
+
+        // 3c. Initialize UI Action Logger (verbose debugging for development)
+        UIActionLogger.initialize(storageProvider.logsDirectory, verboseLevel = 2)
+
+        // 4. Initialize preferences (JSON file-backed)
+        val prefsFile = File(storageProvider.dataDirectory, "preferences.json")
+        preferenceStore = MacOSPreferenceStore(prefsFile)
+        // Extension preferences (per-source settings) persist through the
+        // android.* stubs via this bridge — see AndroidPrefsBridge.
+        android.content.AndroidPrefsBridge.store = preferenceStore
+
+        // 4b. Run idempotent platform migrations before services read state.
+        migrationManager = MacOSMigrationManager(
+            preferences = preferenceStore,
+            storageProvider = storageProvider,
+            secretStore = MacOSKeychain(service = "anikku", account = "anikku-app"),
+        )
+        runBlocking {
+            val result = migrationManager.migrate()
+            if (!result.success) {
+                MacOSLogger.getLogger<AnikkuApplication>()
+                    .warn("macOS migration deferred at ${result.failedMigration}")
+            }
+        }
+
+        // 5. Initialize database driver. Run a startup integrity check first —
+        // a corrupted SQLite file silently degrades into data loss if the app
+        // just keeps writing. The repair handler backs up the broken file and
+        // either VACUUM-repairs it or resets to a fresh database.
+        runCatching {
+            val repairHandler = MacOSDatabaseRepairHandler(storageProvider)
+            when (repairHandler.checkDatabaseIntegrity()) {
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.OK,
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.NOT_FOUND,
+                -> Unit
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.CORRUPT -> {
+                    when (val result = repairHandler.repairOrReset()) {
+                        is MacOSDatabaseRepairHandler.RepairResult.Repaired ->
+                            startupDatabaseRepairNote =
+                                "The anime database was corrupted and has been repaired. " +
+                                    "A backup of the old file is in db_backups."
+                        is MacOSDatabaseRepairHandler.RepairResult.Reset ->
+                            startupDatabaseRepairNote =
+                                "The anime database was corrupted beyond repair and was reset. " +
+                                    "A backup of the old file is in db_backups — your library may need re-adding."
+                        is MacOSDatabaseRepairHandler.RepairResult.Failed ->
+                            startupDatabaseRepairNote =
+                                "The anime database is corrupted and automatic repair failed " +
+                                    "(${result.reason}). See the crash log for details."
+                    }
+                }
+                MacOSDatabaseRepairHandler.DatabaseIntegrity.ACCESS_DENIED -> Unit
+            }
+        }.onFailure { e ->
+            MacOSLogger.getLogger<AnikkuApplication>()
+                .warn("Startup database integrity check failed — continuing", e)
+        }
+        databaseDriver = MacOSDatabaseDriver(storageProvider)
+
+        // 5. Initialize networking (Phase 3.1-3.2)
+        networkHelper = MacOSNetworkHelper(storageProvider)
+        cookieJar = networkHelper.cookieJar
+
+        // 5.2. Subtitle fetching (Jimaku + OpenSubtitles). Credentials live in
+        // the keychain; baked-in developer defaults are the fallback so end
+        // users don't need to configure anything. Cache under cache/subs/.
+        subtitleCredentialStore = SubtitleCredentialStore(
+            keychain = MacOSKeychain(service = "anikku-subtitles", account = "credentials"),
+            bakedDefaults = SubtitleCredentials(
+                jimakuToken = SubtitleDefaults.JIMAKU_TOKEN,
+                openSubtitlesApiKey = SubtitleDefaults.OPENSUBTITLES_API_KEY,
+                openSubtitlesUsername = SubtitleDefaults.OPENSUBTITLES_USERNAME,
+                openSubtitlesPassword = SubtitleDefaults.OPENSUBTITLES_PASSWORD,
+            ),
+        )
+        subtitleFetcher = SubtitleFetcher(
+            client = networkHelper.client,
+            credentialStore = subtitleCredentialStore,
+            cacheDirectory = File(storageProvider.cacheDirectory, "subs"),
+        )
+
+        // 5.5. Start Koin BEFORE extension loading — extensions use injectLazy (Koin) to
+        // resolve NetworkHelper and other dependencies during construction.
+        startKoin {
+            modules(
+                platformModule(this@AnikkuApplication),
+                domainModule(this@AnikkuApplication),
+                appModule(this@AnikkuApplication),
+            )
+        }
+
+        // 6. Initialize extension system (Phase 3.3)
+        // IMPORTANT: startKoin() must run before this — MacOSExtensionManager.initExtensions()
+        // calls MacOSExtensionLoader.loadExtensions() which instantiates extension source
+        // classes. Those source classes use injectLazy<> delegates from AnimeHttpSource
+        // which resolve via Koin's GlobalContext. Without Koin started first, they throw
+        // "KoinApplication has not been started".
+        extensionManager = MacOSExtensionManager(storageProvider, networkHelper)
+
+        // 7. Initialize storage manager (Phase 2.1)
+        storageManager = MacOSStorageManager(storageProvider)
+
+        // 8. Initialize custom anime repo (Phase 2.2)
+        customAnimeRepository = MacOSCustomAnimeRepository(storageProvider.dataDirectory)
+
+        // 8b. Initialize library and history repos
+        libraryRepository = LibraryRepository(storageProvider.dataDirectory)
+        historyRepository = HistoryRepository(storageProvider.dataDirectory)
+
+        // 8b2. Local video collection (folder-imported files)
+        localLibraryRepository = LocalLibraryRepository(storageProvider.dataDirectory)
+
+        // 8c. Initialize download repository (Phase 5.10)
+        downloadRepository = DownloadRepository(storageProvider.dataDirectory)
+
+        // 8d. Initialize backup manager
+        backupManager = MacOSBackupManager(
+            libraryRepository = libraryRepository,
+            historyRepository = historyRepository,
+            downloadRepository = downloadRepository,
+            preferenceStore = preferenceStore,
+            customAnimeRepository = customAnimeRepository,
+        )
+        libraryUpdateService = MacOSLibraryUpdateService(
+            libraryRepository = libraryRepository,
+            historyRepository = historyRepository,
+            sourceResolver = extensionManager::getSource,
+        )
+
+        // 8e. Source matcher + auto-link service — attach streaming sources to
+        // tracker-imported library entries that have none yet (runs after
+        // AniList sync and on detail-screen open).
+        animeSourceMatcher = AnimeSourceMatcher(
+            sourcesProvider = {
+                extensionManager.installedExtensionsFlow.value
+                    .flatMap { ext -> ext.sources.filterIsInstance<CatalogueSource>() }
+                    .distinctBy { it.id }
+            },
+        )
+        libraryAutoLinkService = LibraryAutoLinkService(
+            libraryRepository = libraryRepository,
+            matcher = animeSourceMatcher,
+        )
+
+        // 8f. New Episodes feed — per-anime discoveries surfaced in the Library
+        // tab, with notifications + dock badge when the background library
+        // check finds new episodes.
+        newEpisodeRepository = NewEpisodeRepository(storageProvider.dataDirectory)
+
+        // 9. Initialize Phase 7: Advanced Features
+        // 9a. Discord Rich Presence
+        discordRPC = DiscordRPC(applicationScope)
+
+        // 9a.2 Google Drive backups. Tokens remain exclusively in Keychain;
+        // session restoration runs off the UI thread below.
+        googleDriveService = MacOSGoogleDriveService(
+            driveClient = GoogleDriveRestClient(networkHelper.client),
+            backupManager = backupManager,
+            backupsDirectory = storageProvider.backupsDirectory,
+            secretStore = MacOSKeychain(service = "anikku-google-drive", account = "oauth"),
+        )
+        backgroundScheduler.runOnce("restore-google-drive-session") {
+            googleDriveService.restoreSession()
+        }
+        syncYomiService = MacOSSyncYomiService(
+            httpClient = networkHelper.client,
+            backupManager = backupManager,
+            cacheDirectory = storageProvider.cacheDirectory,
+            secretStore = MacOSKeychain(service = "anikku-syncyomi", account = "sync"),
+            preferenceStore = preferenceStore,
+        )
+        backgroundScheduler.runOnce("restore-syncyomi-configuration") {
+            syncYomiService.restoreConfiguration()
+        }
+
+        // 9b. macOS Notifications
+        notificationManager = MacOSNotificationManager()
+        notificationManager.initialize()
+
+        // Surface a startup DB repair (if any) after the notifier is ready.
+        startupDatabaseRepairNote?.let { note ->
+            notificationManager.showNotification(
+                title = "Anikku database recovered",
+                message = note,
+            )
+        }
+
+        // Register the anikku:// URL scheme delegate (Watch Together
+        // deep links open episodes straight into the player).
+        MacOSDeepLinkHandler.install()
+
+        backgroundJobs = MacOSBackgroundJobs(
+            scheduler = backgroundScheduler,
+            backupManager = backupManager,
+            automaticBackupsDirectory = File(storageProvider.backupsDirectory, "automatic"),
+            libraryUpdateService = libraryUpdateService,
+            googleDriveService = googleDriveService,
+            notificationManager = notificationManager,
+            preferenceStore = preferenceStore,
+            syncYomiService = syncYomiService,
+            newEpisodeRepository = newEpisodeRepository,
+            newEpisodeNotificationsEnabled = {
+                preferenceStore.getBoolean(
+                    app.anikku.macos.ui.settings.KEY_NEW_EPISODE_NOTIFICATIONS,
+                    true,
+                ).get()
+            },
+            // Resolved here (not injected) because the manager needs Koin up
+            // first; auto-download of new episodes is best-effort.
+            downloadManager = runCatching {
+                org.koin.core.context.GlobalContext.get().get<MacOSDownloadManager>()
+            }.getOrNull(),
+        )
+
+        // 9c. Biometric Authentication (Touch ID + PIN fallback)
+        biometricAuth = MacOSBiometricAuth(
+            secretStore = MacOSKeychain(service = "anikku-security", account = "app-lock"),
+        )
+
+        // 9d. App Update Checker (GitHub API)
+        appUpdateChecker = AppUpdateChecker(
+            currentVersion = AppInfo.VERSION,
+            repoOwner = "ErnestHysa",
+            repoName = "anikku",
+        )
+
+        // 9e. Sparkle Updater (wraps AppUpdateChecker as fallback)
+        sparkleUpdater = SparkleUpdater(
+            appUpdateChecker = appUpdateChecker,
+            notificationManager = notificationManager,
+        )
+
+        // Initialize Sparkle at startup — must call before any check methods.
+        // Sparkle reads SUFeedURL from Info.plist (injected by patchInfoPlist).
+        // If Sparkle framework is not bundled (dev builds), this is a no-op
+        // and the AppUpdateChecker fallback handles update checks.
+        // The update channel (Settings > About > Updates) selects the feed:
+        // stable = appcast.xml from Info.plist, beta = the beta appcast.
+        val updateChannel = preferenceStore.getString("update_channel", "stable").get()
+        val betaFeed = "https://raw.githubusercontent.com/ErnestHysa/anikku/master/macos/src/main/resources/Sparkle/appcast-beta.xml"
+        sparkleUpdater.initialize(if (updateChannel == "beta") betaFeed else null)
+
+        // Schedule silent background update check 30 seconds after startup
+        backgroundScheduler.runOnce("startup-update-check") {
+            kotlinx.coroutines.delay(30_000) // Wait 30s for app to fully initialize
+            sparkleUpdater.checkForUpdatesSilently()
+        }
+
+        // 9f. Crash Reporting
+        CrashReporter.initialize(
+            storageProvider = storageProvider,
+            version = AppInfo.VERSION,
+        )
+
+        // (startKoin moved to step 5.5 — must run before extension loading at step 6)
+
+        MacOSLogger.getLogger<AnikkuApplication>()
+            .info("Anikku macOS application initialized")
+        CrashReporter.logEvent("App initialization complete")
+    }
+
+    /**
+     * Deploy bundled extension JARs from the .app bundle to the user's extensions directory.
+     *
+     * On first launch (or any launch where the extensions directory is empty),
+     * this copies pre-converted extension JARs from the application bundle's
+     * Resources/libs/ directory so users have working extensions immediately.
+     *
+     * To avoid duplicate-source conflicts (which cause "Key already used" crashes
+     * in BrowseTab), this method compares by [pkgName] from each JAR's
+     * `META-INF/extension.json` — NOT by filename. If an extension with the same
+     * [pkgName] already exists in the user's extensions directory (installed from
+     * a repo or another bundle version), the bundled copy is skipped.
+     */
+    private fun deployBundledExtensions() {
+        val bundledLibsDir = File("../Resources/libs")
+        if (!bundledLibsDir.isDirectory) return
+
+        val extensionsDir = storageProvider.extensionsDirectory
+        val jarFiles = bundledLibsDir.listFiles()
+            ?.filter { it.extension == "jar" && it.name.contains("tachiyomi") }
+            ?: emptyList()
+
+        if (jarFiles.isEmpty()) return
+
+        // Collect pkgNames already present in the extensions directory
+        val existingPkgNames = extensionsDir.listFiles()
+            ?.filter { it.extension == "jar" }
+            ?.mapNotNull { jar ->
+                MacOSExtensionLoader.readMetadata(jar)?.pkgName
+            }
+            ?.toSet()
+            ?: emptySet()
+
+        // Copy each bundled JAR whose package name is not already installed
+        var deployed = 0
+        var skipped = 0
+        for (jarFile in jarFiles) {
+            val metadata = MacOSExtensionLoader.readMetadata(jarFile)
+            val pkgName = metadata?.pkgName
+
+            if (pkgName != null && pkgName in existingPkgNames) {
+                // Extension with this package name is already installed — skip
+                skipped++
+                continue
+            }
+
+            val targetFile = File(extensionsDir, jarFile.name)
+            if (!targetFile.exists()) {
+                jarFile.copyTo(targetFile, overwrite = false)
+                deployed++
+            }
+        }
+
+        if (deployed > 0 || skipped > 0) {
+            MacOSLogger.getLogger<AnikkuApplication>()
+                .info("Deployed $deployed, skipped $skipped bundled extension(s) to ${extensionsDir.absolutePath}")
+        }
+    }
+
+    /**
+     * Called when the main window gains focus.
+     * Equivalent to onStart() in Android lifecycle.
+     * Triggers Discord RPC reconnection and sync operations.
+     */
+    fun onAppFocused(enableDiscord: Boolean = true) {
+        // Phase 7.3: Discord Rich Presence — connect on app focus
+        if (enableDiscord && discordRPC.isDiscordInstalled) {
+            discordRPC.start()
+        } else if (!enableDiscord) {
+            discordRPC.stop()
+        }
+        backgroundJobs.onAppFocused()
+    }
+
+    /**
+     * Called when the main window loses focus.
+     * Equivalent to onStop() in Android lifecycle.
+     * Pauses Discord RPC and saves sync state.
+     */
+    fun onAppBlurred() {
+        // Phase 7.3: Discord Rich Presence — stop the background IPC task on
+        // blur. The current activity is retained in memory and restored after
+        // the next successful focus-triggered connection.
+        discordRPC.stop()
+    }
+
+    /**
+     * Called when the application is shutting down.
+     * Cleans up all Phase 7 services and prints a summary of UI errors to the terminal.
+     */
+    @Synchronized
+    fun onShutdown() {
+        if (!shutdownStarted.compareAndSet(false, true)) return
+
+        // Stop new work first, then release resources in dependency order.
+        backgroundScheduler.cancelAll()
+        runCatching {
+            org.koin.core.context.GlobalContext.get().get<app.anikku.macos.platform.download.MacOSDownloadManager>().close()
+        }
+        extensionManager.close()
+
+        // Phase 3: Release Sparkle updater and persistent Chrome resources.
+        sparkleUpdater.shutdown()
+        ChromeCDPClient.shutdown()
+
+        // Phase 7.3: Discord RPC
+        discordRPC.stop()
+
+        // Phase 7.6: Notifications
+        notificationManager.shutdown()
+
+        // Watch Together rooms — drop members and unbind the port; the
+        // internet tunnel dies with the process.
+        watchTogetherServer.stopServer()
+        watchTogetherTunnel.stop()
+        // TorrServer — stop the process and release the port.
+        torrentServerBridge.stop()
+
+        storageManager.close()
+        applicationScope.cancel()
+
+        CrashReporter.logEvent("App shutdown")
+        runCatching { stopKoin() }
+
+        // Print a terminal summary of every UI error captured this session.
+        TerminalErrorLogger.printShutdownSummary()
+    }
+
+    /**
+     * Window-close path for the app's X button.
+     *
+     * A synchronous shutdown can wedge the EDT: a Watch Together member on a
+     * slow tunnel has no socket WRITE timeout, so a stalled `member.close()`
+     * can block `stopServer()` indefinitely and the X button feels dead.
+     * Teardown therefore runs on a background thread while the window closes
+     * instantly; a watchdog force-exits the process if teardown ever exceeds
+     * its budget, so the app can never linger as a windowless zombie.
+     */
+    fun runShutdownAsync() {
+        val done = java.util.concurrent.CountDownLatch(1)
+        Thread({
+            try {
+                onShutdown()
+            } finally {
+                done.countDown()
+            }
+        }, "anikku-shutdown").apply {
+            // Non-daemon: the JVM waits for normal teardown to finish, so
+            // child processes (TorrServer, Chrome, cloudflared) are always
+            // cleaned up in the healthy path.
+            isDaemon = false
+            start()
+        }
+        Thread({
+            if (!done.await(SHUTDOWN_WATCHDOG_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                // Teardown is wedged — kill child processes without waiting
+                // and force-exit so the app is gone no matter what.
+                runCatching { watchTogetherTunnel.forceKill() }
+                runCatching { torrentServerBridge.forceKill() }
+                runCatching { ChromeCDPClient.forceKill() }
+                System.exit(1)
+            }
+        }, "anikku-shutdown-watchdog").apply {
+            isDaemon = true
+            start()
+        }
+    }
+
+    private companion object {
+        /** Hard budget for background teardown before the watchdog force-exits. */
+        const val SHUTDOWN_WATCHDOG_MS = 12_000L
+    }
+
+}

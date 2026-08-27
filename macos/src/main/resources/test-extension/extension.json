@@ -1,0 +1,11 @@
+{
+  "name": "Aniyomi: TestSource",
+  "pkgName": "app.anikku.macos.testextension",
+  "versionName": "1.0.0",
+  "versionCode": 100,
+  "libVersion": 14.0,
+  "lang": "en",
+  "isNsfw": false,
+  "isTorrent": false,
+  "sourceClass": "app.anikku.macos.testextension.TestAnimeSource"
+}

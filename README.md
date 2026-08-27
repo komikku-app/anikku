@@ -25,6 +25,59 @@ Discover and watch anime, cartoons, series, and more – easier than ever on you
 
 *Requires Android 8.0 or higher.*
 
+## macOS Port
+
+A native macOS desktop port is in development! Built with [Compose Multiplatform for Desktop](https://www.jetbrains.com/lp/compose-multiplatform/), the macOS version shares all domain/data logic with the Android app while providing a native macOS experience.
+
+![Platform: macOS 12.0+](https://img.shields.io/badge/platform-macOS%2012.0+-blue)
+
+### Features
+
+- **mpv-based video player** with hardware acceleration (videotoolbox)
+- **Extension source support** — 58 pre-installed extension JARs, 33 verified end-to-end
+- **Chrome CDP Cloudflare bypass** — Auto-solves WAF challenges for extension sources
+- **Watch Together** — synced watch parties with friends across the internet
+  via a bundled Cloudflare tunnel (no accounts, no servers); browser guests
+  get fullscreen + HLS playback, and rooms have live **chat** from any device
+  (permanent chat panel in the player with timestamps, emoji picker, a
+  categorized screenshot/GIF attach gallery, and keyboard focus that never
+  leaks into playback; mobile-friendly chat on the browser page)
+- **Tracker synchronization** — MAL, AniList, Kitsu via OAuth
+- **Discord Rich Presence**
+- **Touch ID / PIN Lock**
+- **Native macOS** — Menu bar, Dock integration, Dark Mode
+- **20 color schemes** — Monet, Nord, Material You, and more
+
+### Status: Active Development — 33/58 Extensions Verified
+
+The app compiles, launches, and streams video. **33 out of 58 extension sources** pass all four stages (Load → Browse → Episodes → Video URL) with real video playback through Chrome CDP Cloudflare bypass. The remaining 25 extensions are being actively fixed.
+
+| Stage | Pass Rate |
+|---|---|
+| Load (JAR loads) | 53/58 (91%) |
+| Browse (getPopularAnime) | 33/58 (57%) |
+| Episodes (getEpisodeList) | 29/58 (50%) |
+| **Video URL (playable)** | **33/58 (57%)** |
+
+See the [macOS README](macos/README.md) and [macOS CHANGELOG](macos/CHANGELOG.md) for details.
+
+### Quick Start
+
+```bash
+# Requires JDK 17
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+./gradlew -p macos run
+```
+
+### Documentation
+
+- [macOS README](macos/README.md) — Overview and status
+- [macOS BUILDING.md](macos/BUILDING.md) — Build instructions
+- [macOS INSTALL.md](macos/INSTALL.md) — Installation guide
+- [macOS CHANGELOG.md](macos/CHANGELOG.md) — Development history
+- [Architecture Rework Plan](architectural_rework_for_macos.md) — Full port roadmap
+- [Extension Development Guide](macos/docs/EXTENSION-DEVELOPMENT.md) — Build extensions for macOS
+
 [![Sponsor me on GitHub](https://custom-icon-badges.demolab.com/badge/-Sponsor-ea4aaa?style=for-the-badge&logo=heart&logoColor=white)](https://github.com/sponsors/cuong-tran "Sponsor me on GitHub")
 
 ## Features

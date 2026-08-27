@@ -1,0 +1,1002 @@
+package app.anikku.macos.ui.screens.library
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.automirrored.outlined.ViewList
+import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import app.anikku.macos.platform.data.CATEGORY_DEFAULT_ID
+import app.anikku.macos.platform.data.CategoryEntry
+import app.anikku.macos.platform.data.HistoryRepository
+import app.anikku.macos.platform.data.LibraryRepository
+import app.anikku.macos.platform.data.LocalDownloadManager
+import app.anikku.macos.platform.data.LocalHistoryRepository
+import app.anikku.macos.platform.data.LocalLibraryRepository
+import app.anikku.macos.platform.extension.LocalExtensionManager
+import app.anikku.macos.platform.library.LocalNewEpisodeRepository
+import app.anikku.macos.platform.local.LocalAnimeGroup
+import app.anikku.macos.platform.local.LocalFolderScanner
+import app.anikku.macos.platform.local.LocalLocalLibraryRepository
+import app.anikku.macos.platform.local.LocalVideoGrouper
+import app.anikku.macos.platform.MacOSDockManager
+import app.anikku.macos.ui.AnikkuScreen
+import app.anikku.macos.ui.components.AnimeCoverImage
+import app.anikku.macos.ui.components.AnimeGrid
+import app.anikku.macos.ui.components.AnimeList
+import app.anikku.macos.ui.components.EmptyState
+import app.anikku.macos.ui.components.LocalToastHost
+import app.anikku.macos.ui.components.OverflowItem
+import app.anikku.macos.ui.components.OverflowMenu
+import app.anikku.macos.ui.components.ToastDuration
+import app.anikku.macos.ui.screens.anime.AnimeDetailScreen
+import app.anikku.macos.ui.screens.local.LocalAnimeScreen
+import app.anikku.macos.ui.screens.models.AnimeModel
+import app.anikku.macos.ui.screens.player.PlayerScreen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.tab.Tab
+import cafe.adriel.voyager.navigator.tab.TabOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * Library screen tab — Phase 5.
+ *
+ * Shows the user's anime library with category filter chips,
+ * search, and sort. Reads entries from [LibraryRepository].
+ */
+object LibraryTab : AnikkuScreen(), Tab {
+
+    enum class DisplayMode { Grid, List }
+
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        val libraryRepo = LocalLibraryRepository.current
+        val historyRepo = LocalHistoryRepository.current
+        val extensionManager = LocalExtensionManager.current
+        val downloadManager = LocalDownloadManager.current
+        val toastHost = LocalToastHost.current
+
+        var displayMode by remember { mutableStateOf(DisplayMode.Grid) }
+        var searchQuery by remember { mutableStateOf("") }
+        var sortMode by remember { mutableStateOf(LibrarySortMode.Title) }
+        var showSortMenu by remember { mutableStateOf(false) }
+        var selectedCategoryId by remember { mutableStateOf<Long?>(null) } // null = All
+        var progressFilter by remember { mutableStateOf(LibraryProgressFilter.All) }
+
+        // Observe repository mutations from favorites, restore, and background
+        // updates instead of retaining a one-time snapshot for the tab's life.
+        val libraryRevision by libraryRepo.revision.collectAsState()
+        // History has no Flow; its revision signal drives last-watched/progress.
+        val historyRevision = historyRepo?.revision?.collectAsState()?.value ?: 0L
+        val libraryEntries = remember(libraryRevision) { libraryRepo.getAll() }
+        val categories = remember(libraryRevision) { libraryRepo.getCategories() }
+
+        val allAnime = remember(libraryEntries) {
+            libraryEntries.map { entry ->
+                AnimeModel(
+                    id = entry.animeId,
+                    title = entry.title,
+                    source = entry.sourceId,
+                    author = entry.author,
+                    artist = entry.artist,
+                    description = entry.description,
+                    genre = entry.genre,
+                    status = entry.status,
+                    thumbnailUrl = entry.thumbnailUrl,
+                    url = entry.url,
+                    favorite = true,
+                    coverLastModified = entry.lastUpdatedAt,
+                )
+            }
+        }
+        val allAnimeById = remember(allAnime) { allAnime.associateBy { it.id } }
+
+        // Latest history entry per anime — drives the Last Watched sort and the
+        // progress filter. Recomputed when either repo changes.
+        val latestByAnime = remember(libraryRevision, historyRevision) {
+            latestHistoryByAnime(historyRepo?.getAll().orEmpty())
+        }
+
+        // Filter by category + search query + progress, then sort (pure helper).
+        val filteredEntries = remember(
+            libraryEntries, searchQuery, selectedCategoryId, sortMode, progressFilter, latestByAnime,
+        ) {
+            filterAndSortLibrary(
+                entries = libraryEntries,
+                query = searchQuery,
+                categoryId = selectedCategoryId,
+                sortMode = sortMode,
+                progressFilter = progressFilter,
+                latestByAnime = latestByAnime,
+            )
+        }
+        val filteredAnime = remember(filteredEntries) {
+            filteredEntries.mapNotNull { allAnimeById[it.animeId] }
+        }
+
+        // In-progress episodes for the "Continue Watching" row, most recent first.
+        val continueWatching = remember(libraryRevision, historyRevision, libraryEntries) {
+            continueWatchingItems(historyRepo, libraryEntries)
+        }
+
+        // New Episodes feed — per-anime discoveries from the background library
+        // check, newest first, grouped by anime.
+        val newEpisodeRepo = LocalNewEpisodeRepository.current
+        val feedRevision = newEpisodeRepo?.revision?.collectAsState()?.value ?: 0L
+        val newEpisodes = remember(feedRevision) {
+            newEpisodeRepo?.getAll()
+                ?.groupBy { it.animeId }
+                ?.map { (animeId, rows) ->
+                    NewEpisodeFeedItem(
+                        animeId = animeId,
+                        title = rows.first().animeTitle,
+                        thumbnailUrl = rows.first().thumbnailUrl,
+                        count = rows.size,
+                        latestEpisodeName = rows.maxByOrNull { it.episodeNumber }?.episodeName,
+                        discoveredAt = rows.maxOf { it.discoveredAt },
+                    )
+                }
+                ?.sortedByDescending { it.discoveredAt }
+                .orEmpty()
+        }
+
+        // Local video collection — folder-imported files grouped by anime.
+        val localLibraryRepo = LocalLocalLibraryRepository.current
+        val localRevision = localLibraryRepo?.revision?.collectAsState()?.value ?: 0L
+        val localGroups = remember(localRevision) {
+            localLibraryRepo?.getAll()?.let { LocalVideoGrouper.group(it) }.orEmpty()
+        }
+        val scope = rememberCoroutineScope()
+
+        // Active folder scan — live progress + cancel.
+        var scanningFolderName by remember { mutableStateOf<String?>(null) }
+        var scanProgress by remember { mutableStateOf(0) }
+        var scanCancelled by remember { mutableStateOf(false) }
+
+        LibraryContent(
+            libraryAnime = filteredAnime,
+            continueWatching = continueWatching,
+            newEpisodes = newEpisodes,
+            localGroups = localGroups,
+            categories = categories,
+            selectedCategoryId = selectedCategoryId,
+            progressFilter = progressFilter,
+            libraryCount = libraryRepo.count(),
+            displayMode = displayMode,
+            searchQuery = searchQuery,
+            sortMode = sortMode,
+            showSortMenu = showSortMenu,
+            onSearchQueryChange = { searchQuery = it },
+            onToggleDisplayMode = {
+                displayMode = if (displayMode == DisplayMode.Grid) DisplayMode.List else DisplayMode.Grid
+            },
+            onSortModeChange = { sortMode = it },
+            onToggleSortMenu = { showSortMenu = !showSortMenu },
+            onDismissSortMenu = { showSortMenu = false },
+            onCategorySelect = { selectedCategoryId = it },
+            onProgressFilterChange = { progressFilter = it },
+            onNewEpisodeClick = { item ->
+                navigator.push(AnimeDetailScreen(
+                    animeId = item.animeId,
+                    sourceId = null,
+                    animeUrl = null,
+                    animeTitle = item.title,
+                    extensionManager = extensionManager,
+                ))
+            },
+            onAddLocalFolder = {
+                val picker = runCatching {
+                    org.koin.core.context.GlobalContext.get()
+                        .get<app.anikku.macos.platform.storage.MacOSFilePicker>()
+                }.getOrNull()
+                if (picker == null) {
+                    toastHost.show("Folder picker unavailable", ToastDuration.SHORT, isError = true)
+                    return@LibraryContent
+                }
+                val folder = picker.openDirectory(title = "Add video folder")
+                if (folder != null) {
+                    if (scanningFolderName != null) {
+                        toastHost.show("A scan is already running", ToastDuration.SHORT)
+                    } else {
+                        scanningFolderName = folder.name
+                        scanProgress = 0
+                        scanCancelled = false
+                        scope.launch(Dispatchers.IO) {
+                            val scanned = LocalFolderScanner.scan(
+                                folder,
+                                onProgress = { found -> scanProgress = found },
+                                isCancelled = { scanCancelled },
+                            )
+                            val wasCancelled = scanCancelled
+                            localLibraryRepo?.add(scanned)
+                            withContext(Dispatchers.Main) {
+                                scanningFolderName = null
+                                toastHost.show(
+                                    when {
+                                        wasCancelled -> "Scan cancelled — added ${scanned.size} so far"
+                                        scanned.isNotEmpty() ->
+                                            "Added ${scanned.size} episode${if (scanned.size == 1) "" else "s"} from ${folder.name}"
+                                        else -> "No videos found in \"${folder.name}\""
+                                    },
+                                    ToastDuration.LONG,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            scanningFolderName = scanningFolderName,
+            scanProgress = scanProgress,
+            onCancelScan = { scanCancelled = true },
+            onLocalGroupClick = { group ->
+                navigator.push(
+                    LocalAnimeScreen(
+                        displayTitle = group.displayTitle,
+                        group = group,
+                        onRemoveAnime = { localLibraryRepo?.removeAnime(group.normalizedKey.hashCode().toLong()) },
+                    ),
+                )
+            },
+            onRemoveNewEpisode = { animeId ->
+                newEpisodeRepo?.removeForAnime(animeId)
+                if (newEpisodeRepo?.count() == 0) {
+                    MacOSDockManager.setBadgeCount(0)
+                } else {
+                    newEpisodeRepo?.count()?.let { MacOSDockManager.setBadgeCount(it) }
+                }
+                toastHost.show("Removed from new episodes", ToastDuration.SHORT)
+            },
+            onAnimeClick = { anime ->
+                if (anime.source == 0L && anime.url == null) {
+                    // Entry imported from AniList has no streaming source — the
+                    // detail screen auto-matches one; if none is found, it offers
+                    // the manual LinkSourceScreen flow from its error state.
+                    navigator.push(AnimeDetailScreen(
+                        animeId = anime.id,
+                        sourceId = null,
+                        animeUrl = null,
+                        animeTitle = anime.title,
+                        extensionManager = extensionManager,
+                    ))
+                } else {
+                    navigator.push(AnimeDetailScreen(
+                        animeId = anime.id,
+                        sourceId = anime.source.takeIf { it != 0L },
+                        animeUrl = anime.url,
+                        animeTitle = anime.title,
+                        extensionManager = extensionManager,
+                    ))
+                }
+            },
+            onRemoveFromLibrary = { animeId ->
+                libraryRepo.remove(animeId)
+                toastHost.show("Removed from library", ToastDuration.SHORT)
+            },
+            onRemoveFromContinueWatching = { animeId ->
+                historyRepo?.removeForAnime(animeId)
+                toastHost.show("Removed from continue watching", ToastDuration.SHORT)
+            },
+            onContinueWatchingClick = { item ->
+                val entry = item.entry
+                if (entry.sourceId == 0L || entry.episodeUrl == null) {
+                    navigator.push(AnimeDetailScreen(
+                        animeId = entry.animeId,
+                        sourceId = null,
+                        animeUrl = null,
+                        animeTitle = entry.animeTitle,
+                        extensionManager = extensionManager,
+                    ))
+                } else {
+                    navigator.push(PlayerScreen(
+                        animeId = entry.animeId,
+                        episodeId = entry.episodeId,
+                        sourceId = entry.sourceId.takeIf { it != 0L },
+                        episodeUrl = entry.episodeUrl,
+                        animeUrl = entry.animeUrl,
+                        animeTitle = entry.animeTitle,
+                        extensionManager = extensionManager,
+                        downloadManager = downloadManager,
+                    ))
+                }
+            },
+        )
+    }
+
+    // In-progress episodes for the "Continue Watching" row, most recent first.
+    // Recomputed on library revision changes; history is small and read cheaply.
+    private fun continueWatchingItems(
+        historyRepo: HistoryRepository?,
+        libraryEntries: List<LibraryRepository.LibraryEntry>,
+    ): List<ContinueWatchingItem> {
+        val covers = libraryEntries.associate { it.animeId to it.thumbnailUrl }
+        return historyRepo?.getContinueWatching(limit = 12).orEmpty().map { entry ->
+            ContinueWatchingItem(
+                entry = entry,
+                thumbnailUrl = covers[entry.animeId],
+            )
+        }
+    }
+
+    override val options: TabOptions
+        @Composable
+        get() = TabOptions(
+            index = 0u,
+            title = "Library",
+            icon = rememberVectorPainter(Icons.Outlined.Book),
+        )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun LibraryContent(
+    libraryAnime: List<AnimeModel>,
+    continueWatching: List<ContinueWatchingItem> = emptyList(),
+    newEpisodes: List<NewEpisodeFeedItem> = emptyList(),
+    localGroups: List<LocalAnimeGroup> = emptyList(),
+    categories: List<CategoryEntry> = emptyList(),
+    selectedCategoryId: Long? = null,
+    progressFilter: LibraryProgressFilter = LibraryProgressFilter.All,
+    libraryCount: Int = 0,
+    displayMode: LibraryTab.DisplayMode,
+    searchQuery: String,
+    sortMode: LibrarySortMode,
+    showSortMenu: Boolean,
+    onSearchQueryChange: (String) -> Unit,
+    onToggleDisplayMode: () -> Unit,
+    onSortModeChange: (LibrarySortMode) -> Unit,
+    onToggleSortMenu: () -> Unit,
+    onDismissSortMenu: () -> Unit,
+    onCategorySelect: (Long?) -> Unit,
+    onProgressFilterChange: (LibraryProgressFilter) -> Unit = {},
+    onNewEpisodeClick: (NewEpisodeFeedItem) -> Unit = {},
+    onRemoveNewEpisode: (Long) -> Unit = {},
+    onAddLocalFolder: () -> Unit = {},
+    scanningFolderName: String? = null,
+    scanProgress: Int = 0,
+    onCancelScan: () -> Unit = {},
+    onLocalGroupClick: (LocalAnimeGroup) -> Unit = {},
+    onAnimeClick: (AnimeModel) -> Unit,
+    onRemoveFromLibrary: (Long) -> Unit = {},
+    onRemoveFromContinueWatching: (Long) -> Unit = {},
+    onContinueWatchingClick: (ContinueWatchingItem) -> Unit = {},
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Library")
+                },
+                actions = {
+                    // Import a folder of video files into the local collection.
+                    IconButton(onClick = onAddLocalFolder) {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = "Add local video folder",
+                        )
+                    }
+
+                    Box {
+                        IconButton(onClick = onToggleSortMenu) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Sort,
+                                contentDescription = "Sort",
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = onDismissSortMenu,
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Title") },
+                                onClick = { onSortModeChange(LibrarySortMode.Title); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.Title)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Status") },
+                                onClick = { onSortModeChange(LibrarySortMode.Status); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.Status)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Last Updated") },
+                                onClick = { onSortModeChange(LibrarySortMode.LastUpdated); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.LastUpdated)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Last Watched") },
+                                onClick = { onSortModeChange(LibrarySortMode.LastWatched); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.LastWatched)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Date Added") },
+                                onClick = { onSortModeChange(LibrarySortMode.DateAdded); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.DateAdded)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Progress") },
+                                onClick = { onSortModeChange(LibrarySortMode.Progress); onDismissSortMenu() },
+                                leadingIcon = {
+                                    if (sortMode == LibrarySortMode.Progress)
+                                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                            )
+                        }
+                    }
+
+                    IconButton(onClick = onToggleDisplayMode) {
+                        Icon(
+                            imageVector = if (displayMode == LibraryTab.DisplayMode.Grid)
+                                Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
+                            contentDescription = if (displayMode == LibraryTab.DisplayMode.Grid)
+                                "Switch to list" else "Switch to grid",
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Category filter chips
+            if (categories.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    FilterChip(
+                        selected = selectedCategoryId == null,
+                        onClick = { onCategorySelect(null) },
+                        label = { Text("All") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        ),
+                    )
+                    categories.forEach { category ->
+                        if (!category.hidden) {
+                            FilterChip(
+                                selected = selectedCategoryId == category.id,
+                                onClick = { onCategorySelect(category.id) },
+                                label = { Text(category.name) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Watch-progress filter chips
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                LibraryProgressFilter.entries.forEach { filter ->
+                    FilterChip(
+                        selected = progressFilter == filter,
+                        onClick = { onProgressFilterChange(filter) },
+                        label = {
+                            Text(
+                                when (filter) {
+                                    LibraryProgressFilter.All -> "All"
+                                    LibraryProgressFilter.InProgress -> "In progress"
+                                    LibraryProgressFilter.NotStarted -> "Not started"
+                                    LibraryProgressFilter.Finished -> "Finished"
+                                },
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        ),
+                    )
+                }
+            }
+
+            // Active folder scan — live progress + cancel instead of a silent toast.
+            if (scanningFolderName != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Scanning \"$scanningFolderName\"…",
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        if (scanProgress > 0) {
+                            Text(
+                                "$scanProgress episode${if (scanProgress == 1) "" else "s"} found",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    TextButton(onClick = onCancelScan) { Text("Cancel") }
+                }
+            }
+
+            if (libraryAnime.isNotEmpty() || searchQuery.isNotEmpty()) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    placeholder = { Text("Search library...") },
+                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                )
+            }
+
+            // New Episodes row — freshly discovered episodes from the background
+            // library check, most recent first.
+            if (newEpisodes.isNotEmpty()) {
+                Text(
+                    text = "New Episodes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(newEpisodes, key = { it.animeId }) { item ->
+                        NewEpisodeCard(
+                            item = item,
+                            onClick = { onNewEpisodeClick(item) },
+                            overflowItems = listOf(
+                                OverflowItem(
+                                    "Remove from new episodes",
+                                    Icons.Outlined.Delete,
+                                    { onRemoveNewEpisode(item.animeId) },
+                                ),
+                            ),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Local videos row — folder-imported files, grouped by anime.
+            if (localGroups.isNotEmpty()) {
+                Text(
+                    text = "Local Videos",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(localGroups, key = { it.normalizedKey }) { group ->
+                        LocalAnimeCard(group = group, onClick = { onLocalGroupClick(group) })
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Continue Watching row — in-progress episodes, most recent first
+            if (continueWatching.isNotEmpty()) {
+                Text(
+                    text = "Continue Watching",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // Episode IDs are URL hashes that can collide across anime,
+                    // so key on the unique (animeId, episodeId) pair.
+                    items(continueWatching, key = { it.entry.animeId to it.entry.episodeId }) { item ->
+                        ContinueWatchingCard(
+                            item = item,
+                            onClick = { onContinueWatchingClick(item) },
+                            overflowItems = listOf(
+                                OverflowItem(
+                                    "Remove from continue watching",
+                                    Icons.Outlined.History,
+                                    { onRemoveFromContinueWatching(item.entry.animeId) },
+                                ),
+                                OverflowItem(
+                                    "Remove from library",
+                                    Icons.Outlined.Delete,
+                                    { onRemoveFromLibrary(item.entry.animeId) },
+                                ),
+                            ),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            if (libraryAnime.isEmpty() && searchQuery.isBlank()) {
+                EmptyState(
+                    icon = Icons.Outlined.Book,
+                    title = "Your library is empty",
+                    hint = "Browse sources and add anime to get started",
+                    actionLabel = "Browse sources",
+                    onAction = { app.anikku.macos.ui.TabSwitchHandler.switchTo(4) },
+                )
+            } else if (libraryAnime.isEmpty() && searchQuery.isNotBlank()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "No results for \"$searchQuery\"",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                AnimatedContent(
+                    targetState = displayMode,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "library_display",
+                    modifier = Modifier.fillMaxSize(),
+                ) { mode ->
+                    when (mode) {
+                        LibraryTab.DisplayMode.Grid -> {
+                            AnimeGrid(
+                                items = libraryAnime,
+                                onClick = onAnimeClick,
+                                modifier = Modifier.testTag("library_grid"),
+                                getSubtitle = { anime ->
+                                    when (anime.status) {
+                                        1 -> "Ongoing"
+                                        2 -> "Completed"
+                                        3 -> "Licensed"
+                                        4 -> "Finished"
+                                        5 -> "Cancelled"
+                                        6 -> "On Hiatus"
+                                        else -> "Unknown"
+                                    }
+                                },
+                                getOverflow = { anime ->
+                                    listOf(
+                                        OverflowItem(
+                                            "Remove from library",
+                                            Icons.Outlined.Delete,
+                                            { onRemoveFromLibrary(anime.id) },
+                                        ),
+                                        OverflowItem(
+                                            "Remove from continue watching",
+                                            Icons.Outlined.History,
+                                            { onRemoveFromContinueWatching(anime.id) },
+                                        ),
+                                    )
+                                },
+                            )
+                        }
+                        LibraryTab.DisplayMode.List -> {
+                            AnimeList(
+                                items = libraryAnime,
+                                onClick = onAnimeClick,
+                                modifier = Modifier.testTag("library_list"),
+                                getSubtitle = { anime ->
+                                    when (anime.status) {
+                                        1 -> "Ongoing"
+                                        2 -> "Completed"
+                                        else -> null
+                                    }
+                                },
+                                getOverflow = { anime ->
+                                    listOf(
+                                        OverflowItem(
+                                            "Remove from library",
+                                            Icons.Outlined.Delete,
+                                            { onRemoveFromLibrary(anime.id) },
+                                        ),
+                                        OverflowItem(
+                                            "Remove from continue watching",
+                                            Icons.Outlined.History,
+                                            { onRemoveFromContinueWatching(anime.id) },
+                                        ),
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A single entry in the Continue Watching row: the in-progress episode plus
+ * the anime's cover (resolved from the library so it works without a source).
+ */
+data class ContinueWatchingItem(
+    val entry: HistoryRepository.HistoryEntry,
+    val thumbnailUrl: String?,
+)
+
+/**
+ * A single anime in the New Episodes row, grouped from [NewEpisodeEntry] rows.
+ */
+data class NewEpisodeFeedItem(
+    val animeId: Long,
+    val title: String,
+    val thumbnailUrl: String?,
+    val count: Int,
+    val latestEpisodeName: String?,
+    val discoveredAt: Long,
+)
+
+@Composable
+private fun NewEpisodeCard(
+    item: NewEpisodeFeedItem,
+    onClick: () -> Unit,
+    overflowItems: List<OverflowItem>? = null,
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.width(110.dp),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column {
+            Box {
+                AnimeCoverImage(
+                    thumbnailUrl = item.thumbnailUrl,
+                    contentDescription = item.title,
+                    title = item.title,
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                )
+                if (overflowItems != null) {
+                    OverflowMenu(
+                        items = overflowItems,
+                        tint = Color.White, // over the cover image scrim
+                        modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                    )
+                }
+                // New-episode count badge, top-left.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        "+${item.count}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(6.dp)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = item.latestEpisodeName
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "${item.count} new episode${if (item.count == 1) "" else "s"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContinueWatchingCard(
+    item: ContinueWatchingItem,
+    onClick: () -> Unit,
+    overflowItems: List<OverflowItem>? = null,
+) {
+    val entry = item.entry
+    val fraction = if (entry.totalSeconds > 0) {
+        (entry.lastSecondSeen.toFloat() / entry.totalSeconds).coerceIn(0f, 1f)
+    } else 0f
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier.width(110.dp),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column {
+            Box {
+                AnimeCoverImage(
+                    thumbnailUrl = item.thumbnailUrl,
+                    contentDescription = entry.animeTitle,
+                    title = entry.animeTitle,
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                )
+                if (overflowItems != null) {
+                    OverflowMenu(
+                        items = overflowItems,
+                        tint = Color.White, // over the cover image scrim
+                        modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(6.dp)) {
+                Text(
+                    text = entry.animeTitle.ifBlank { entry.episodeName.ifBlank { "Episode ${entry.episodeNumber}" } },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = entry.episodeName.ifBlank { "Episode ${entry.episodeNumber}" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { fraction },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Card for a folder-imported anime in the Library's "Local Videos" row.
+ * Cover falls back to the title initials (local files have no art).
+ */
+@Composable
+private fun LocalAnimeCard(group: LocalAnimeGroup, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(150.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+    ) {
+        AnimeCoverImage(
+            thumbnailUrl = null,
+            contentDescription = group.displayTitle,
+            title = group.displayTitle,
+            modifier = Modifier
+                .width(150.dp)
+                .aspectRatio(3f / 4f)
+                .clip(RoundedCornerShape(8.dp)),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = group.displayTitle,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = buildString {
+                append("${group.episodeCount} episodes")
+                if (group.seasonCount > 1) append(" · ${group.seasonCount} seasons")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}

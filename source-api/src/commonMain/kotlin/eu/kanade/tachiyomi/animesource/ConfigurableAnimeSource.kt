@@ -6,7 +6,13 @@ import android.content.SharedPreferences
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-interface ConfigurableAnimeSource : AnimeSource {
+interface ConfigurableAnimeSource {
+
+    /**
+     * ID for the source. Must be unique.
+     * Required for scoping preferences to a specific source.
+     */
+    val id: Long
 
     /**
      * Gets instance of [SharedPreferences] scoped to the specific source.
@@ -16,7 +22,7 @@ interface ConfigurableAnimeSource : AnimeSource {
     fun getSourcePreferences(): SharedPreferences =
         Injekt.get<Application>().getSharedPreferences(preferenceKey(), Context.MODE_PRIVATE)
 
-    fun setupPreferenceScreen(screen: PreferenceScreen)
+    fun setupPreferenceScreen(screen: PreferenceScreen) {}
 }
 
 fun ConfigurableAnimeSource.preferenceKey(): String = "source_$id"

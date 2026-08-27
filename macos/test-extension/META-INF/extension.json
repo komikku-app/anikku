@@ -1,0 +1,14 @@
+{
+  "name": "Aniyomi: TestSource (macOS)",
+  "pkgName": "com.anikku.test",
+  "versionName": "15.1",
+  "versionCode": 151,
+  "libVersion": 15.0,
+  "lang": "en",
+  "isNsfw": false,
+  "isTorrent": false,
+  "sourceClass": "com.anikku.test.TestSource",
+  "pkgFactory": null,
+  "hasReadme": false,
+  "hasChangelog": false
+}

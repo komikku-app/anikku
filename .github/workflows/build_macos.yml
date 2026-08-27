@@ -1,0 +1,101 @@
+name: macOS CI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'macos/**'
+      - 'source-api/**'
+      - 'core/common/**'
+      - '.github/workflows/build_macos.yml'
+  pull_request:
+    paths:
+      - 'macos/**'
+      - 'source-api/**'
+      - 'core/common/**'
+      - '.github/workflows/build_macos.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build macOS app + test extension
+    runs-on: 'macos-14'
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+
+      - name: Install mpv (required for JNA libmpv bindings in tests)
+        run: brew install mpv
+
+      - name: Rebuild source-api JARs
+        run: |
+          ./gradlew :source-api:jvmJar :core:common:jvmJar --no-daemon -q
+          cp $(ls source-api/build/libs/source-api-jvm-*.jar | grep -v -- -sources | head -1) macos/libs/source-api-jvm.jar
+          cp $(ls core/common/build/libs/common-jvm-*.jar | grep -v -- -sources | head -1) macos/libs/common-jvm.jar
+
+      - name: Compile macOS app
+        run: ./macos/gradlew -p macos compileKotlin -x rebuildSourceApiJars --no-daemon
+
+      - name: Build test extension JAR
+        run: ./macos/gradlew -p macos buildTestExtensionJar --no-daemon
+
+      - name: Deploy test extension to extensions directory
+        run: |
+          mkdir -p "$HOME/Library/Application Support/Anikku/extensions"
+          cp macos/build/libs/test-extension-1.0.0.jar \
+             "$HOME/Library/Application Support/Anikku/extensions/app.anikku.macos.testextension.jar"
+
+      - name: Verify test extension JAR is valid
+        run: |
+          jar tf "$HOME/Library/Application Support/Anikku/extensions/app.anikku.macos.testextension.jar"
+          echo "---"
+          echo "JAR size: $(wc -c < "$HOME/Library/Application Support/Anikku/extensions/app.anikku.macos.testextension.jar") bytes"
+
+      - name: Run macOS verification
+        run: |
+          ./macos/gradlew -p macos quickCheck --no-daemon
+          ./macos/gradlew -p macos test --no-daemon \
+            --tests 'app.anikku.macos.platform.extension.ExtensionRepoIntegrationTest' \
+            --tests 'app.anikku.macos.player.MPVPlaybackTest' \
+            --tests 'app.anikku.macos.player.MPVRenderExperiment'
+
+      - name: Upload macOS test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-test-reports
+          path: |
+            macos/build/reports/tests/
+            macos/build/test-results/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload test extension JAR as artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-extension-jar
+          path: macos/build/libs/test-extension-1.0.0.jar
+          retention-days: 7

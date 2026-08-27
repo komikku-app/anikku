@@ -1,0 +1,16 @@
+# Gradle build output
+build/
+.gradle/
+
+# IDE files
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+
+# Gradle wrapper JAR (keep the wrapper scripts and properties)
+gradle/wrapper/gradle-wrapper.jar
+
+# Local properties
+local.properties

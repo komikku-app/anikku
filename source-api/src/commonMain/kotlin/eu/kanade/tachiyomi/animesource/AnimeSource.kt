@@ -4,7 +4,6 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.util.awaitSingle
 import rx.Observable
 
 /**
@@ -32,10 +31,7 @@ interface AnimeSource {
      * @param anime the anime to update.
      * @return the updated anime.
      */
-    @Suppress("DEPRECATION")
-    suspend fun getAnimeDetails(anime: SAnime): SAnime {
-        return fetchAnimeDetails(anime).awaitSingle()
-    }
+    suspend fun getAnimeDetails(anime: SAnime): SAnime
 
     /**
      * Get all the available episodes for a anime.
@@ -44,10 +40,7 @@ interface AnimeSource {
      * @param anime the anime to update.
      * @return the episodes for the anime.
      */
-    @Suppress("DEPRECATION")
-    suspend fun getEpisodeList(anime: SAnime): List<SEpisode> {
-        return fetchEpisodeList(anime).awaitSingle()
-    }
+    suspend fun getEpisodeList(anime: SAnime): List<SEpisode>
 
     /**
      * Get the list of hoster for an episode. The first hoster in the list should
@@ -76,10 +69,7 @@ interface AnimeSource {
      * @param episode the episode.
      * @return the videos for the episode.
      */
-    @Suppress("DEPRECATION")
-    suspend fun getVideoList(episode: SEpisode): List<Video> {
-        return fetchVideoList(episode).awaitSingle()
-    }
+    suspend fun getVideoList(episode: SEpisode): List<Video>
 
     @Deprecated(
         "Use the non-RxJava API instead",
@@ -101,6 +91,15 @@ interface AnimeSource {
     )
     fun fetchVideoList(episode: SEpisode): Observable<List<Video>> =
         throw IllegalStateException("Not used")
+
+    /**
+     * Whether this source supports related animes.
+     *
+     * Extensions override this to return true if they implement
+     * related anime support via getRelatedAnimeList().
+     */
+    val supportsRelatedAnimes: Boolean
+        get() = false
 
     // KMK -->
     /**

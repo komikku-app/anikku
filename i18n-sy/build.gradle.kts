@@ -7,6 +7,7 @@ plugins {
 
 kotlin {
     androidTarget()
+    jvm()
 
     applyDefaultHierarchyTemplate()
 

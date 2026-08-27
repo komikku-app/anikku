@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Network access: source browsing, streaming, tracker sync -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- Local HTTP server: video streaming to mpv (Phase 6.6) -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+
+    <!-- File access: downloads, backups, extensions via user-selected picker -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- App data directory access -->
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+
+    <!-- JNA loads libmpv.dylib at runtime — disable library validation -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- JNA requires executable memory for JNI trampolines -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!-- JVM JIT compilation -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <!-- Debugging: allow attaching tools for crash reporting -->
+    <!-- NOTE: Set to true for development builds to allow debugger attachment.
+         Must be false for release/notarized builds. -->
+    <key>com.apple.security.get-task-allow</key>
+    <false/>
+
+    <!-- Device access: camera/mic not required for v1 -->
+    <key>com.apple.security.device.camera</key>
+    <false/>
+    <key>com.apple.security.device.microphone</key>
+    <false/>
+</dict>
+</plist>

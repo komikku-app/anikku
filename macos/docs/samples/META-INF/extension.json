@@ -1,0 +1,50 @@
+{
+  "$schema": "https://anikku.app/schemas/extension-metadata.json",
+  "$comment": "============================================================================",
+  "$comment": " Anikku macOS Extension Metadata",
+  "$comment": "============================================================================",
+  "$comment": " This file MUST be placed at: META-INF/extension.json inside your JAR.",
+  "$comment": "",
+  "$comment": " QUICK START:",
+  "$comment": "   1. Copy this template",
+  "$comment": "   2. Replace ALL values with your extension's details",
+  "$comment": "   3. Remove all $comment fields before packaging",
+  "$comment": "   4. Add to JAR: jar uf my-extension.jar META-INF/extension.json",
+  "$comment": "============================================================================",
+
+  "name": "Aniyomi: My Anime Extension",
+  "$comment_name": "Human-readable name. Prefix with 'Aniyomi: ' (the app strips this).",
+
+  "pkgName": "com.example.animeextension",
+  "$comment_pkgName": "Unique Java package name. Also used as the JAR filename (pkgName.jar).",
+
+  "versionName": "1.2.3",
+  "$comment_versionName": "SemVer-like string. The part before the last '.' is the libVersion. Example: '15.4' → libVersion = 15.0",
+
+  "versionCode": 123,
+  "$comment_versionCode": "Monotonically increasing integer. Higher = newer. Used for update detection.",
+
+  "libVersion": 15.0,
+  "$comment_libVersion": "Minimum Aniyomi extensions-lib version required. Parsed from versionName. Currently supported: 12.0 – 15.0.",
+
+  "lang": "en",
+  "$comment_lang": "ISO 639-1 language code of the source content. Used for filtering. Can be empty string if the source handles multiple languages.",
+
+  "isNsfw": false,
+  "$comment_isNsfw": "Whether this extension contains adult/NSFW content. true → hidden unless user enables NSFW sources in Preferences.",
+
+  "isTorrent": false,
+  "$comment_isTorrent": "Whether this extension provides torrent-based sources. true → shows torrent-specific UI elements.",
+
+  "sourceClass": "com.example.animeextension.MySource;com.example.animeextension.MyOtherSource",
+  "$comment_sourceClass": "Semicolon-delimited list of fully qualified source class names. Each class must implement eu.kanade.tachiyomi.source.Source, eu.kanade.tachiyomi.source.SourceFactory, or eu.kanade.tachiyomi.animesource.AnimeSource. If a class name starts with '.', it is resolved relative to pkgName (e.g., '.MySource' → 'com.example.animeextension.MySource').",
+
+  "pkgFactory": "com.example.animeextension.MySourceFactory",
+  "$comment_pkgFactory": "Optional. Fully qualified class name of a SourceFactory. If set, this factory's createSources() is called to create source instances. Can be null if sources are created directly from sourceClass entries.",
+
+  "hasReadme": false,
+  "$comment_hasReadme": "Whether the extension includes a README or documentation. Displayed in the extension details UI.",
+
+  "hasChangelog": false
+  "$comment_hasChangelog": "Whether the extension includes a changelog. Displayed in the extension update UI."
+}

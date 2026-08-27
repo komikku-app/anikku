@@ -1,0 +1,14 @@
+{
+  "name": "Aniyomi: SampleSource",
+  "pkgName": "com.example.animeextension",
+  "versionName": "1.0.0",
+  "versionCode": 100,
+  "libVersion": 14.0,
+  "lang": "en",
+  "isNsfw": false,
+  "isTorrent": false,
+  "sourceClass": "com.example.animeextension.SampleAnimeSource",
+  "pkgFactory": null,
+  "hasReadme": false,
+  "hasChangelog": false
+}

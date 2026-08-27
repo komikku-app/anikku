@@ -1,0 +1,1071 @@
+#!/usr/bin/env bash
+#
+# build-keiyoushi-from-source.sh
+# =================================
+# Builds a yuzono/anime-extensions extension from source as a JVM JAR for macOS.
+#
+# Uses git sparse-checkout to download the extension directory PLUS all
+# shared library modules (lib-*) from the yuzono/anime-extensions repo,
+# then compiles everything against the source-api JARs and Gradle-cached
+# dependency JARs.
+#
+# This avoids android.* references that plague dex2jar-converted APKs.
+#
+# Usage:
+#   ./build-keiyoushi-from-source.sh --pkg miruro --lang en
+#
+# Options:
+#   --pkg <name>    Extension directory name (e.g., miruro, anikage, aniwave)
+#   --lang <code>   Language code (default: en)
+#   --keep-temp     Keep temporary files for debugging
+#   --repo <url>    Git repo URL (default: https://github.com/yuzono/anime-extensions.git)
+#   --help          Show this help
+#
+# Requirements:
+#   - JDK 17+ with kotlinc (brew install kotlin)
+#   - git, curl, python3
+#   - Anikku source-api JARs (built by Gradle task rebuildSourceApiJars)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+EXTENSIONS_DIR="${HOME}/Library/Application Support/Anikku/extensions"
+TEMP_DIR="/tmp/anikku-source-build"
+GIT_CLONE_DIR="${TEMP_DIR}/extensions-source"
+
+# Default: yuzono/anime-extensions (contains actual anime extension sources)
+# Keiyoushi/extensions-source contains ONLY manga extensions (HttpSource, not AnimeHttpSource)
+REPO_URL="${REPO_URL:-https://github.com/yuzono/anime-extensions.git}"
+
+SOURCE_API_JAR="${PROJECT_DIR}/libs/source-api-jvm.jar"
+COMMON_JVM_JAR="${PROJECT_DIR}/libs/common-jvm.jar"
+
+# Auto-detect JAVA_HOME
+detect_java_home() {
+    # Try common JDK locations
+    for candidate in \
+        "${JAVA_HOME:-}" \
+        "/opt/homebrew/opt/openjdk@17" \
+        "/opt/homebrew/opt/openjdk@21" \
+        "/opt/homebrew/opt/openjdk" \
+        "/usr/local/opt/openjdk@17" \
+        "/usr/local/opt/openjdk" \
+        "$(/usr/libexec/java_home 2>/dev/null || true)"; do
+        if [ -n "$candidate" ] && [ -f "${candidate}/bin/javac" ]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    echo ""
+    return 1
+}
+
+JAVA_HOME="$(detect_java_home)"
+JAVA_CMD="${JAVA_HOME}/bin/java"
+JAVAC_CMD="${JAVA_HOME}/bin/javac"
+JAR_CMD="${JAVA_HOME}/bin/jar"
+
+log() { echo "[*] $*"; }
+err() { echo "[!] $*" >&2; }
+
+require_command() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        err "Required command not found: $1"
+        exit 1
+    fi
+}
+
+cleanup() {
+    if [ "${KEEP_TEMP:-false}" != "true" ]; then
+        # Refuse to recursively remove an unexpected or dangerously broad path.
+        case "$TEMP_DIR" in
+            /tmp/anikku-source-build) ;;
+            *) err "Refusing to clean unexpected temporary directory: ${TEMP_DIR}"; return 1 ;;
+        esac
+        log "Cleaning up temporary files..."
+        rm -rf "$TEMP_DIR"
+    else
+        log "Keeping temporary files at: ${TEMP_DIR}"
+    fi
+}
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") --pkg <name> [OPTIONS]
+
+Build a keiyoushi anime extension from source as a JVM JAR.
+
+Required:
+  --pkg <name>     Extension directory name (e.g., miruro, anikage, aniwave)
+
+Options:
+  --lang <code>    Language code (default: en)
+  --keep-temp      Keep temporary files for debugging
+  --repo <url>     Git repo URL (default: https://github.com/yuzono/anime-extensions.git)
+  --help           Show this help
+EOF
+    exit 0
+}
+
+# Parse arguments
+PKG_NAME=""
+LANG="en"
+KEEP_TEMP=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --pkg)
+            [ "$#" -ge 2 ] || { err "Error: --pkg requires a value"; exit 1; }
+            PKG_NAME="$2"
+            shift 2
+            ;;
+        --lang)
+            [ "$#" -ge 2 ] || { err "Error: --lang requires a value"; exit 1; }
+            LANG="$2"
+            shift 2
+            ;;
+        --keep-temp) KEEP_TEMP=true; shift ;;
+        --repo)
+            [ "$#" -ge 2 ] || { err "Error: --repo requires a value"; exit 1; }
+            REPO_URL="$2"
+            shift 2
+            ;;
+        --help|-h) usage ;;
+        *) err "Unknown option: $1"; usage ;;
+    esac
+done
+
+# Validate the external tools used by the build before any source or temp
+# directory mutation occurs. brew remains optional because its result has a
+# portable fallback below. Help exits from the parser above before this check.
+for required_command in git python3 kotlinc sed grep find sort head awk cut wc tail cp mkdir rm tr xargs dirname basename cat mktemp ls stat which; do
+    require_command "$required_command"
+done
+
+if [ -z "$PKG_NAME" ]; then
+    err "Error: --pkg is required"
+    usage
+fi
+
+# Install cleanup only after argument parsing has accepted a build request;
+# --help and malformed invocations must not remove an existing temp tree.
+trap cleanup EXIT
+
+# Validate prerequisites
+if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_CMD" ]; then
+    err "JDK 17+ not found. Install: brew install openjdk@17"
+    err "  Then: export JAVA_HOME=/opt/homebrew/opt/openjdk@17"
+    exit 1
+fi
+if [ ! -x "$JAR_CMD" ]; then
+    err "jar command not found at $JAR_CMD"
+    exit 1
+fi
+# Verify jar actually runs (not just exists on disk)
+if ! "$JAR_CMD" --version >/dev/null 2>&1; then
+    err "jar command at $JAR_CMD fails to run. Check JDK installation."
+    err "  Try: brew reinstall openjdk@17"
+    exit 1
+fi
+log "jar: $("$JAR_CMD" --version 2>&1 | head -1)"
+if [ ! -f "$SOURCE_API_JAR" ] || [ ! -f "$COMMON_JVM_JAR" ]; then
+    err "source-api JARs not found at ${PROJECT_DIR}/libs/"
+    err "Build them first: cd ${PROJECT_DIR} && ./gradlew rebuildSourceApiJars"
+    exit 1
+fi
+if ! command -v kotlinc &>/dev/null; then
+    err "kotlinc not found. Install: brew install kotlin"
+    exit 1
+fi
+
+log "JAVA_HOME: ${JAVA_HOME}"
+log "kotlinc: $(which kotlinc)"
+
+log "Repo: ${REPO_URL}"
+
+# ---------------------------------------------------------------------------
+# Step 1: Download extension + shared lib source
+# ---------------------------------------------------------------------------
+log ""
+log "╔══════════════════════════════════════════════════════════════╗"
+log "║  BUILD: ${PKG_NAME} (lang: ${LANG})"
+log "╚══════════════════════════════════════════════════════════════╝"
+log ""
+
+mkdir -p "${TEMP_DIR}"
+if [ -d "${GIT_CLONE_DIR}" ]; then
+    rm -rf "${GIT_CLONE_DIR}"
+fi
+
+log "Step 1: Downloading source via git sparse-checkout..."
+git clone --depth 1 --filter=blob:none --no-checkout \
+    "${REPO_URL}" "${GIT_CLONE_DIR}" 2>&1 | tail -2 || {
+    err "Failed to clone ${REPO_URL}"
+    err "Check that the URL is accessible"
+    exit 1
+}
+
+cd "${GIT_CLONE_DIR}"
+
+# Checkout extension directory and all shared libs. Keep each sparse path as
+# its own array element so paths containing spaces are preserved.
+SPARSE_PATTERNS=("src/${LANG}/${PKG_NAME}")
+while IFS= read -r lib; do
+    [ -n "$lib" ] && SPARSE_PATTERNS+=("$lib")
+done < <(git ls-tree --name-only HEAD 2>/dev/null | grep -E '^(lib|core|common)' || true)
+# Also get gradle version catalog
+SPARSE_PATTERNS+=("gradle")
+
+git sparse-checkout set "${SPARSE_PATTERNS[@]}" 2>&1
+git checkout 2>&1 | tail -2
+
+SRC_DIR="${GIT_CLONE_DIR}/src/${LANG}/${PKG_NAME}"
+SRC_COUNT=$(find "${SRC_DIR}" -name "*.kt" -o -name "*.java" 2>/dev/null | wc -l)
+SHARED_COUNT=$(ls -d "${GIT_CLONE_DIR}"/lib-*/ "${GIT_CLONE_DIR}"/lib-multisrc/*/ 2>/dev/null | wc -l)
+
+log "Downloaded ${SRC_COUNT} source files, ${SHARED_COUNT} shared lib(s)"
+for lib in "${GIT_CLONE_DIR}/lib-"*/ "${GIT_CLONE_DIR}/lib-multisrc/"*/; do
+    [ -d "$lib" ] && log "  lib: $(basename "$lib") ($(find "$lib" -name '*.kt' | wc -l) files)"
+done
+
+if [ "$SRC_COUNT" -eq 0 ]; then
+    err "No source files found for ${PKG_NAME} in language ${LANG}"
+    err "Check available extensions: ls src/${LANG}/"
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Step 2: Parse extension metadata
+# ---------------------------------------------------------------------------
+log ""
+log "Step 2: Parsing extension metadata..."
+
+BUILD_FILE=""
+for candidate in "${SRC_DIR}/build.gradle.kts" "${SRC_DIR}/build.gradle" "${GIT_CLONE_DIR}/build.gradle.kts"; do
+    if [ -f "$candidate" ]; then
+        BUILD_FILE="$candidate"
+        break
+    fi
+done
+
+# Determine package name from source files
+# IMPORTANT: Sort alphabetically, then EXCLUDE subpackages (dto, data, model, extractors)
+# to avoid picking up ...animepahe.dto instead of ...animepahe (correct base package).
+# The longest matching prefix wins to handle nested packages like ...en.animepahe.subpackage.
+ACTUAL_PKG=$(
+    grep -rh '^package ' "${SRC_DIR}/src" 2>/dev/null | \
+    sed 's/package //' | \
+    sed 's/[[:space:]]*$//' | \
+    sort | \
+    while IFS= read -r pkg; do
+        # Count dots — base package has fewest
+        echo "${pkg}" | awk -F. '{print NF, $0}'
+    done | \
+    sort -n | \
+    head -1 | \
+    cut -d' ' -f2-
+)
+if [ -z "$ACTUAL_PKG" ]; then
+    # Try source files directly in extension directory
+    ACTUAL_PKG=$(find "${SRC_DIR}" -name "*.kt" -exec grep -l '^package ' {} \; 2>/dev/null | head -1 | xargs grep '^package ' | head -1 | sed 's/.*package //' | sed 's/[[:space:]]*$//' || echo "")
+fi
+if [ -z "$ACTUAL_PKG" ]; then
+    ACTUAL_PKG="eu.kanade.tachiyomi.animeextension.${LANG}.${PKG_NAME}"
+fi
+JAR_NAME="${ACTUAL_PKG}.jar"
+
+# Find main source class (the one that extends AnimeHttpSource or implements CatalogueSource/AnimeSource)
+MAIN_SOURCE=$(find "${SRC_DIR}" -name "*.kt" -exec grep -l 'AnimeHttpSource\|AnimeCatalogueSource\|CatalogueSource' {} \; 2>/dev/null | head -1 || echo "")
+if [ -z "$MAIN_SOURCE" ]; then
+    # Try any class that has getVideoList or getEpisodeList (core source methods)
+    MAIN_SOURCE=$(find "${SRC_DIR}" -name "*.kt" -exec grep -l 'getVideoList\|getEpisodeList\|getPopularAnime' {} \; 2>/dev/null | head -1 || echo "")
+fi
+if [ -z "$MAIN_SOURCE" ]; then
+    # Fallback: largest file
+    MAIN_SOURCE=$(find "${SRC_DIR}" -name "*.kt" -exec wc -l {} \; 2>/dev/null | sort -rn | head -1 | awk '{print $2}')
+fi
+
+if [ -n "$MAIN_SOURCE" ] && [ -f "$MAIN_SOURCE" ]; then
+    CLASS_NAME=$(basename "$MAIN_SOURCE" .kt)
+    FULL_CLASS_NAME="${ACTUAL_PKG}.${CLASS_NAME}"
+else
+    FULL_CLASS_NAME="${ACTUAL_PKG}.${PKG_NAME^}"
+fi
+
+log "  Package: ${ACTUAL_PKG}"
+log "  Source class: ${FULL_CLASS_NAME}"
+
+# Try to get version from build.gradle.kts if available
+VERSION_CODE="100"
+LIB_VERSION="15.0"
+EXT_NAME="${PKG_NAME}"
+NSFW="false"
+
+if [ -n "$BUILD_FILE" ] && [ -f "$BUILD_FILE" ]; then
+    # Write Python output to a temp file to avoid bash subshell variable scoping
+    python3 -c "
+import re, sys
+with open('${BUILD_FILE}') as f:
+    content = f.read()
+m = re.search(r'keiyoushi\\s*\\{([^}]+)\\}', content, re.DOTALL)
+if m:
+    block = m.group(1)
+    name_m = re.search(r'name\\s*=\\s*\"([^\"]+)\"', block)
+    print(f'EXT_NAME={name_m.group(1) if name_m else \"${PKG_NAME}\"}')
+    vc_m = re.search(r'versionCode\\s*=\\s*(\\d+)', block)
+    print(f'VERSION_CODE={vc_m.group(1) if vc_m else \"100\"}')
+    lib_m = re.search(r'libVersion\\s*=\\s*\"([^\"]+)\"', block)
+    print(f'LIB_VERSION={lib_m.group(1) if lib_m else \"15.0\"}')
+    nsfw = 'NSFW' in block.upper() or 'MIXED' in block.upper()
+    print(f'NSFW={\"true\" if nsfw else \"false\"}')
+else:
+    print('EXT_NAME=${PKG_NAME}')
+    print('VERSION_CODE=100')
+    print('LIB_VERSION=15.0')
+    print('NSFW=false')
+" > "${TEMP_DIR}/extension-metadata.txt" 2>/dev/null || true
+
+    # Read temp file into variables (avoids subshell scoping issue)
+    while IFS='=' read -r key value; do
+        case "$key" in
+            EXT_NAME) EXT_NAME="$value" ;;
+            VERSION_CODE) VERSION_CODE="$value" ;;
+            LIB_VERSION) LIB_VERSION="$value" ;;
+            NSFW) NSFW="$value" ;;
+        esac
+    done < "${TEMP_DIR}/extension-metadata.txt"
+fi
+
+log "  Name: ${EXT_NAME}"
+log "  Version code: ${VERSION_CODE}"
+
+# ---------------------------------------------------------------------------
+# Step 3: Build classpath from Gradle cache
+# ---------------------------------------------------------------------------
+log ""
+log "Step 3: Building classpath..."
+
+CLASSPATH="${SOURCE_API_JAR}:${COMMON_JVM_JAR}"
+GRADLE_CACHE="${HOME}/.gradle/caches/modules-2/files-2.1"
+
+add_to_cp() {
+    local item="$1"
+    if [ -z "$item" ]; then return; fi
+    if [ ! -e "$item" ]; then return; fi
+    if echo "$CLASSPATH" | tr ':' '\n' | grep -Fxq "$item"; then
+        return
+    fi
+    CLASSPATH="${CLASSPATH}:${item}"
+}
+
+# Prepend macOS Android stubs FIRST so they override any stale stubs in JARs
+MACOS_CLASSES_DIR="${PROJECT_DIR}/build/classes/kotlin/main"
+if [ -d "$MACOS_CLASSES_DIR" ]; then
+    CLASSPATH="${MACOS_CLASSES_DIR}:${CLASSPATH}"
+    log "  Android stubs (priority): ${MACOS_CLASSES_DIR} ✓"
+fi
+
+find_dep() {
+    local group="$1"
+    local artifact="$2"
+    local found
+    found=$(find "$GRADLE_CACHE" -path "*/${group}/${artifact}/*" -name "${artifact}*.jar" ! -name '*sources*' ! -name '*javadoc*' 2>/dev/null | sort -V | tail -1)
+    if [ -n "$found" ] && [ -f "$found" ]; then
+        add_to_cp "$found"
+        return 0
+    fi
+    return 1
+}
+
+# Also scan macos/libs/ for shared JARs
+if [ -d "${PROJECT_DIR}/libs" ]; then
+    for j in "${PROJECT_DIR}"/libs/*.jar; do
+        [ -f "$j" ] && add_to_cp "$j"
+    done
+fi
+
+# Add compiled macOS module classes (Android stubs: android.*, androidx.*)
+# Already prepended to CLASSPATH above for priority over JAR stubs.
+# This fallback exists for builds where the macOS module wasn't pre-compiled.
+if [ -d "$MACOS_CLASSES_DIR" ]; then
+    if ! echo "$CLASSPATH" | tr ':' '\n' | grep -Fxq "$MACOS_CLASSES_DIR"; then
+        add_to_cp "$MACOS_CLASSES_DIR"
+        log "  Android stubs: ${MACOS_CLASSES_DIR} ✓"
+    fi
+fi
+
+# Kotlin stdlib from brew
+KOTLIN_LIB=$(brew --prefix kotlin 2>/dev/null || echo "/opt/homebrew/opt/kotlin")
+if [ -d "$KOTLIN_LIB/libexec/lib" ]; then
+    for j in "$KOTLIN_LIB"/libexec/lib/*.jar; do
+        add_to_cp "$j"
+    done
+    log "  Kotlin stdlib: $(ls "$KOTLIN_LIB"/libexec/lib/*.jar 2>/dev/null | wc -l) JARs"
+elif [ -d "$KOTLIN_LIB/libexec/libexec" ]; then
+    # Some kotlin installations use different paths
+    for j in "$KOTLIN_LIB"/libexec/libexec/*.jar; do
+        add_to_cp "$j"
+    done
+    log "  Kotlin stdlib: found in alternative location"
+fi
+
+# Also check Gradle wrapper kotlin distribution
+KOTLIN_PROJECT_DIR="${PROJECT_DIR}/.gradle"
+if [ -d "$KOTLIN_PROJECT_DIR" ]; then
+    while IFS= read -r j; do
+        [ -n "$j" ] && add_to_cp "$j"
+    done < <(find "$KOTLIN_PROJECT_DIR" -name 'kotlin-stdlib-*.jar' -print 2>/dev/null | head -5)
+fi
+
+# Common extension dependencies (from Gradle cache)
+log "  Resolving dependencies..."
+find_dep "org.jetbrains.kotlinx" "kotlinx-coroutines-core-jvm" && log "    coroutines ✓"
+find_dep "org.jetbrains.kotlinx" "kotlinx-serialization-json-jvm" && log "    serialization ✓"
+find_dep "org.jetbrains.kotlinx" "kotlinx-serialization-core-jvm" && log "    serialization-core ✓"
+find_dep "org.jetbrains.kotlinx" "kotlinx-serialization-protobuf-jvm" && log "    serialization-protobuf ✓" || true
+find_dep "com.squareup.okhttp3" "okhttp-jvm" || find_dep "com.squareup.okhttp3" "okhttp" && log "    okhttp ✓"
+find_dep "com.squareup.okio" "okio-jvm" && log "    okio ✓"
+find_dep "org.jsoup" "jsoup" && log "    jsoup ✓"
+find_dep "io.reactivex" "rxjava" && log "    rxjava ✓"
+find_dep "com.github.mihonapp" "injekt" && log "    injekt ✓"
+find_dep "uy.kohesive.injekt" "injekt-api" && log "    injekt-api ✓"
+find_dep "uy.kohesive.injekt" "injekt-core" && log "    injekt-core ✓"
+find_dep "com.fasterxml.jackson.core" "jackson-core" && log "    jackson-core ✓"
+find_dep "com.fasterxml.jackson.core" "jackson-databind" && log "    jackson-databind ✓"
+find_dep "com.google.code.gson" "gson" && log "    gson ✓"
+find_dep "org.jetbrains" "kotlin-reflect" && log "    kotlin-reflect ✓" || true
+find_dep "com.squareup.okhttp3" "logging-interceptor" && log "    okhttp-logging ✓" || true
+find_dep "com.squareup.okhttp3" "okhttp-brotli" && log "    okhttp-brotli ✓" || true
+find_dep "app.cash.quickjs" "quickjs-jvm" && log "    quickjs-jvm ✓" || true
+
+# Kotlinx-serialization compiler plugin (required for @Serializable .serializer() methods)
+SERIALIZATION_PLUGIN="${KOTLIN_LIB}/libexec/lib/kotlinx-serialization-compiler-plugin.jar"
+if [ ! -f "$SERIALIZATION_PLUGIN" ]; then
+    SERIALIZATION_PLUGIN=$(find "$KOTLIN_LIB" -name 'kotlinx-serialization-compiler-plugin*.jar' 2>/dev/null | head -1)
+fi
+KOTLINC_OPTS=""
+if [ -f "$SERIALIZATION_PLUGIN" ]; then
+    KOTLINC_OPTS="-Xplugin=$SERIALIZATION_PLUGIN"
+    log "  serialization plugin: $(basename $SERIALIZATION_PLUGIN) ✓"
+else
+    log "  WARNING: kotlinx-serialization plugin not found"
+fi
+
+log "  Classpath: $(echo "$CLASSPATH" | tr ':' '\n' | wc -l) entries"
+
+# ---------------------------------------------------------------------------
+# Step 3b: Compile shared library modules (in dependency order)
+# ---------------------------------------------------------------------------
+log ""
+SHARED_LIBS_DIR="${TEMP_DIR}/shared-libs-classes"
+
+# Step 3b-i: Compile keiyoushi-utils FIRST (provides keiyoushi.utils.* needed by lib/extractors)
+KEIYOUSHI_UTILS_DIR="${PROJECT_DIR}/keiyoushi-utils/src/main/kotlin"
+if [ -d "$KEIYOUSHI_UTILS_DIR" ]; then
+    UTILS_NAME="keiyoushi-utils"
+    UTILS_CLASSES="${SHARED_LIBS_DIR}/${UTILS_NAME}"
+    if [ -d "$UTILS_CLASSES" ]; then
+        cached_classes=$(find "$UTILS_CLASSES" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+        [ "$cached_classes" -gt 0 ] && compiled_ok=true || { rm -rf "$UTILS_CLASSES"; compiled_ok=false; }
+    else
+        compiled_ok=false
+    fi
+
+    if [ "$compiled_ok" != true ]; then
+        find "$KEIYOUSHI_UTILS_DIR" -name "*.kt" > "${TEMP_DIR}/${UTILS_NAME}-sources.txt" 2>/dev/null || true
+        utils_src_count=$(wc -l < "${TEMP_DIR}/${UTILS_NAME}-sources.txt" 2>/dev/null || echo 0)
+        if [ "$utils_src_count" -gt 0 ]; then
+            log "Compiling: ${UTILS_NAME} (${utils_src_count} files, pure JVM port)..."
+            mkdir -p "$UTILS_CLASSES"
+            set +e
+            kotlinc -cp "${CLASSPATH}" -d "$UTILS_CLASSES" -jvm-target 17 ${KOTLINC_OPTS} @"${TEMP_DIR}/${UTILS_NAME}-sources.txt" 2>"${TEMP_DIR}/${UTILS_NAME}-compile.log"
+            utils_exit=$?
+            set -e
+            utils_class_count=$(find "$UTILS_CLASSES" -name "*.class" 2>/dev/null | wc -l)
+            if [ "$utils_class_count" -gt 0 ]; then
+                add_to_cp "$UTILS_CLASSES"
+                log "  -> ${utils_class_count} classes ✓"
+            else
+                log "  -> FAILED: $(head -3 "${TEMP_DIR}/${UTILS_NAME}-compile.log" 2>/dev/null)"
+            fi
+        fi
+    else
+        add_to_cp "$UTILS_CLASSES"
+        cached_count=$(find "$UTILS_CLASSES" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+        log "${UTILS_NAME} already compiled (${cached_count} cached classes) ✓"
+    fi
+fi
+
+# Step 3b-i-b: Patch lib/extractor source files BEFORE compilation
+# ===================================================================
+# The cloned repo's extractors use nullable params (WebView?, String?) in
+# WebViewClient overrides (onPageFinished, shouldInterceptRequest), but our
+# macOS WebViewClient stub has non-null (WebView, String). We apply broad
+# sed patterns across ALL lib/ source files to strip nullability markers
+# from these overrides, fixing them all at once.
+
+# Fix: strip ? from onPageFinished(view: WebView?, url/pageUrl: String?) in all lib/ files
+while IFS= read -r f; do
+    sed -i '' 's/override fun onPageFinished(view: WebView?, url: String?)/override fun onPageFinished(view: WebView, url: String)/g' "$f" 2>/dev/null || true
+    sed -i '' 's/override fun onPageFinished(view: WebView?, pageUrl: String?)/override fun onPageFinished(view: WebView, pageUrl: String)/g' "$f" 2>/dev/null || true
+    log "  Patched: $(basename $f) — non-null onPageFinished"
+done < <(grep -rln 'override fun onPageFinished.*WebView?' "${GIT_CLONE_DIR}/lib/" 2>/dev/null || true)
+
+# Fix: strip ? from shouldInterceptRequest(view: WebView?, request: WebResourceRequest?) in all lib/ files
+while IFS= read -r f; do
+    sed -i '' 's/override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?)/override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest)/g' "$f" 2>/dev/null || true
+    # Also handle the url: String overload (Android has two shouldInterceptRequest signatures)
+    sed -i '' 's/override fun shouldInterceptRequest(view: WebView?, url: String?)/override fun shouldInterceptRequest(view: WebView, url: String)/g' "$f" 2>/dev/null || true
+    log "  Patched: $(basename $f) — non-null shouldInterceptRequest"
+done < <(grep -rln 'override fun shouldInterceptRequest.*WebView?' "${GIT_CLONE_DIR}/lib/" 2>/dev/null || true)
+
+# Fix: resolve PlaylistUtils.extractFromDash/extractFromHls overload ambiguity in
+# OkruExtractor. kotlinc 2.4.0 mis-resolves the named-arg lambda against the
+# (String, String) videoNameGen overload. Rewrite the calls to positional form
+# with a typed intermediate value, which binds uniquely to the (String) -> String
+# overload (the same text pattern is used for both Hls and Dash).
+OKRU_FILE="${GIT_CLONE_DIR}/lib/okruextractor/src/aniyomi/lib/okruextractor/OkruExtractor.kt"
+if [ -f "$OKRU_FILE" ]; then
+    OKRU_FILE="$OKRU_FILE" python3 - <<'PYEOF'
+import os, pathlib
+p = pathlib.Path(os.environ["OKRU_FILE"])
+s = p.read_text()
+hls_old = 'playlistUtils.extractFromHls(playlistUrl, videoNameGen = { "Okru:$it".addPrefix(prefix) })'
+hls_new = 'playlistUtils.extractFromHls(playlistUrl, videoNameGen = { u: String -> "Okru:$u".addPrefix(prefix) })'
+dash_old = 'playlistUtils.extractFromDash(playlistUrl, videoNameGen = { "Okru:$it".addPrefix(prefix) })'
+# (String,String) overload receives (videoRes, bandwidth); first param is the
+# video name (same input the (String)->String overload passes to videoNameGen).
+dash_new = 'playlistUtils.extractFromDash(playlistUrl, videoNameGen = { videoRes: String, _: String -> "Okru:$videoRes".addPrefix(prefix) })'
+n = 0
+if hls_old in s:
+    s = s.replace(hls_old, hls_new); n += 1
+if dash_old in s:
+    s = s.replace(dash_old, dash_new); n += 1
+p.write_text(s)
+print(f"patched okru callsites: {n}")
+PYEOF
+    log "  Patched: OkruExtractor.kt — overload-unambiguous videoNameGen lambdas"
+fi
+
+# ===================================================================
+# Step 3b-ii: Compile lib/*/ extractor modules (aniyomi.lib.* package)
+# Must compile AFTER keiyoushi-utils since several extractors import keiyoushi.utils.*
+EXTRACTORS_DIR="${GIT_CLONE_DIR}/lib"
+EXTRACTORS_OUT="${SHARED_LIBS_DIR}/lib-extractors"
+if [ -d "$EXTRACTORS_DIR" ]; then
+    # Always run the per-extractor multi-pass batch. The per-extractor
+    # `existing` check inside skips already-compiled modules, so a binary
+    # "any classes present" shortcut would permanently skip extractors that
+    # failed on an earlier run (e.g. okruextractor) and never retry them.
+    extractors_compiled=false
+
+    if [ "${extractors_compiled:-false}" != true ]; then
+        # Compile each extractor individually into shared output dir.
+        # This avoids a single problematic extractor (e.g. m3u8server needing nanohttpd)
+        # from blocking all others. WebView override patches are applied in Step 3b-i-b
+        # BEFORE this step, so CloudflareInterceptor etc. compile correctly.
+        #
+        # MULTI-PASS: extractors may depend on each other (e.g. mixdropextractor → unpacker).
+        # Running 3 passes ensures dependent extractors can resolve their cross-extractor
+        # dependencies once the providing extractor compiles in an earlier pass.
+        mkdir -p "$EXTRACTORS_OUT"
+        add_to_cp "$EXTRACTORS_OUT"
+        for pass in 1 2 3; do
+            EXTRACTOR_COUNT=0
+            for ext_dir in "$EXTRACTORS_DIR"/*/; do
+                [ ! -d "$ext_dir" ] && continue
+                ext_name=$(basename "$ext_dir")
+                # Count already-compiled classes for this extractor
+                existing=$(find "$EXTRACTORS_OUT" -path "*/${ext_name}/*" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+                [ "$existing" -gt 0 ] && continue
+                ext_srcs=$(mktemp)
+                find "$ext_dir" -name '*.kt' -path '*/src/*' 2>/dev/null > "$ext_srcs" || true
+                src_count=$(wc -l < "$ext_srcs" 2>/dev/null || echo 0)
+                if [ "$src_count" -eq 0 ]; then
+                    rm -f "$ext_srcs"
+                    continue
+                fi
+                set +e
+                kotlinc -module-name "$ext_name" -cp "${CLASSPATH}" -d "$EXTRACTORS_OUT" -jvm-target 17 ${KOTLINC_OPTS} @"$ext_srcs" 2>>"${TEMP_DIR}/lib-extractors-compile.log"
+                local_exit=$?
+                set -e
+                if [ "$local_exit" -eq 0 ]; then
+                    EXTRACTOR_COUNT=$((EXTRACTOR_COUNT + 1))
+                fi
+                rm -f "$ext_srcs"
+            done
+            total_after=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
+            log "  Pass ${pass}: ${EXTRACTOR_COUNT} new extractors (${total_after} total classes)"
+            [ "$EXTRACTOR_COUNT" -eq 0 ] && break
+        done
+        extractor_class_count=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l)
+        if [ "$extractor_class_count" -gt 0 ]; then
+            log "  lib/extractors: ${extractor_class_count} classes from multiple passes ✓"
+        else
+            log "  WARNING: no extractor classes compiled — check ${TEMP_DIR}/lib-extractors-compile.log for details"
+        fi
+    else
+        add_to_cp "$EXTRACTORS_OUT"
+        cached_count=$(find "$EXTRACTORS_OUT" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+        log "lib/extractors already compiled (${cached_count} cached classes) ✓"
+    fi
+fi
+
+# Step 3b-iii: Patch core module source files for JVM compatibility
+# ===================================================================
+# The cloned repo's core/ module has Preferences.kt with Android-specific
+# calls (setDefaultValue, setEnabled) and Coroutines.kt with overload
+# ambiguity that conflict with the macOS keiyoushi-utils.
+
+# Patch Coroutines.kt: fix parallelMapNotNull overload ambiguity
+# Kotlin compiler generates a synthetic non-inline overload for inline suspend
+# fns with generic params, causing ambiguity between macOS keiyoushi-utils
+# version and the cloned repo's version.
+CORE_COROUTINES="${GIT_CLONE_DIR}/core/src/main/kotlin/keiyoushi/utils/Coroutines.kt"
+if [ -f "$CORE_COROUTINES" ] && grep -q 'suspend inline fun.*parallelMapNotNull' "$CORE_COROUTINES" 2>/dev/null; then
+    # Remove inline+crossinline from parallelMapNotNull
+    sed -i '' '/parallelMapNotNull(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNull(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNull(f:/s/<A, B>/<A, B : Any>/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelMapNotNull — removed inline+crossinline, added B : Any"
+
+    # Patch parallelMapNotNullBlocking: remove inline+crossinline
+    sed -i '' '/parallelMapNotNullBlocking(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNullBlocking(crossinline/s/^inline //' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelMapNotNullBlocking(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelMapNotNullBlocking — removed inline+crossinline"
+
+    # Patch parallelCatchingFlatMap: remove inline+crossinline
+    sed -i '' '/parallelCatchingFlatMap(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelCatchingFlatMap(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelCatchingFlatMap — removed inline+crossinline"
+
+    # Patch parallelCatchingFlatMapBlocking: remove inline+crossinline
+    sed -i '' '/parallelCatchingFlatMapBlocking(crossinline/s/ inline / /' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelCatchingFlatMapBlocking(crossinline/s/^inline //' "$CORE_COROUTINES" 2>/dev/null || true
+    sed -i '' '/parallelCatchingFlatMapBlocking(crossinline/s/(crossinline /(/' "$CORE_COROUTINES" 2>/dev/null || true
+    log "  Patched: parallelCatchingFlatMapBlocking — removed inline+crossinline"
+fi
+
+# Patch Preferences.kt: fix JVM compatibility
+# setDefaultValue() and setEnabled() are now both available in the base Preference
+# stub (inherited by all subclasses), so these calls compile without issues.
+# Only Context? nullability needs fixing (Context is nullable in our stubs).
+CORE_PREFS="${GIT_CLONE_DIR}/core/src/main/kotlin/keiyoushi/utils/Preferences.kt"
+if [ -f "$CORE_PREFS" ]; then
+    # Fix Context? nullability in Toast.makeText
+    sed -i '' 's/Toast\.makeText(context,/Toast.makeText(context!!,/g' "$CORE_PREFS" 2>/dev/null || true
+    log "  Patched: Preferences.kt — fixed context!! nullability (stubs provide setDefaultValue + setEnabled)"
+fi
+
+# Patch DataLifeEngine: fix entryValues null safety
+DATA_LIFE_ENGINE="${GIT_CLONE_DIR}/lib-multisrc/datalifeengine/src/eu/kanade/tachiyomi/multisrc/datalifeengine/DataLifeEngine.kt"
+if [ -f "$DATA_LIFE_ENGINE" ] && grep -q 'putString(key' "$DATA_LIFE_ENGINE" 2>/dev/null; then
+    sed -i '' 's/putString(key, entry)/putString(key!!, entry!!)/g' "$DATA_LIFE_ENGINE"
+    log "  Patched: DataLifeEngine.kt — key!! and entry!! in putString"
+fi
+
+# Patch DooPlay: fix entryValues null safety
+DOO_PLAY="${GIT_CLONE_DIR}/lib-multisrc/dooplay/src/eu/kanade/tachiyomi/multisrc/dooplay/DooPlay.kt"
+if [ -f "$DOO_PLAY" ] && grep -q 'putString(key' "$DOO_PLAY" 2>/dev/null; then
+    sed -i '' 's/putString(key, entry)/putString(key!!, entry!!)/g' "$DOO_PLAY"
+    log "  Patched: DooPlay.kt — key!! and entry!! in putString"
+fi
+
+# Patch DopeFlix: MutableSet property delegate type mismatch
+DOPE_FLIX="${GIT_CLONE_DIR}/lib-multisrc/dopeflix/src/eu/kanade/tachiyomi/multisrc/dopeflix/DopeFlix.kt"
+if [ -f "$DOPE_FLIX" ] && grep -q 'hosterNames.toSet())!!' "$DOPE_FLIX" 2>/dev/null; then
+    sed -i '' '/hosterNames.toSet())!!/s/!! }/!!.toMutableSet() }/' "$DOPE_FLIX"
+    log "  Patched: DopeFlix.kt — MutableSet<String> via .toMutableSet()"
+fi
+
+# ===================================================================
+# Step 3b-iv: Compile shared library modules (lib-multisrc/*, common, core) in dependency order
+# NOTE: lib-*/ is NOT used — it incorrectly matches lib-multisrc/ as a single blob.
+# lib/ extractors are compiled individually in Step 3b-ii.
+# lib-multisrc/*/ compiles each multisrc theme individually.
+for lib_dir in "${GIT_CLONE_DIR}"/lib-multisrc/*/ "${GIT_CLONE_DIR}/common/" "${GIT_CLONE_DIR}/core/"; do
+    [ ! -d "$lib_dir" ] && continue
+    lib_name=$(basename "$lib_dir")
+    lib_classes="${SHARED_LIBS_DIR}/${lib_name}"
+    # Skip only if directory has actual class files (retry if cached empty/broken)
+    if [ -d "$lib_classes" ]; then
+        cached_classes=$(find "$lib_classes" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+        [ "$cached_classes" -gt 0 ] && continue
+        rm -rf "$lib_classes"
+    fi
+
+    # Exclude test files AND Android-specific Activity files (UrlActivity) —
+    # UrlActivities subclass android.app.Activity and have no purpose on macOS/JVM.
+    find "$lib_dir" -name "*.kt" ! -path '*/test/*' ! -name '*UrlActivity*' > "${TEMP_DIR}/${lib_name}-sources.txt" 2>/dev/null || true
+    src_count=$(wc -l < "${TEMP_DIR}/${lib_name}-sources.txt" 2>/dev/null || echo 0)
+    [ "$src_count" -eq 0 ] && continue
+
+    log "Compiling shared lib: ${lib_name}..."
+    mkdir -p "$lib_classes"
+
+    set +e
+    kotlinc -cp "${CLASSPATH}" -d "$lib_classes" -jvm-target 17 ${KOTLINC_OPTS} @"${TEMP_DIR}/${lib_name}-sources.txt" 2>"${TEMP_DIR}/${lib_name}-compile.log"
+    local_exit=$?
+    set -e
+
+    class_count=$(find "$lib_classes" -name "*.class" 2>/dev/null | wc -l)
+
+    if [ "$class_count" -gt 0 ]; then
+        add_to_cp "$lib_classes"
+        log "  -> ${class_count} classes ✓"
+    elif [ "$local_exit" -ne 0 ]; then
+        log "  -> WARNING: compilation failed (${local_exit}) - $(head -1 "${TEMP_DIR}/${lib_name}-compile.log" 2>/dev/null)"
+    fi
+done
+
+log "Step 3b-iv shared libraries complete — applying extension-specific patches..."
+
+# ---------------------------------------------------------------------------
+# Step 3b-v: Apply source patches for specific extensions
+# ---------------------------------------------------------------------------
+
+# Patch: anidb — fix extension function hiding supertype member
+ANIDB_SRC=$(find "${SRC_DIR}" -name "AniDB.kt" 2>/dev/null | head -1)
+if [ -n "$ANIDB_SRC" ] && [ -f "$ANIDB_SRC" ]; then
+    # 1. sortVideos extension function conflicts with supertype member.
+    #    Remove 'private' so it can be marked 'override' (private+override invalid)
+    sed -i '' 's/private fun List<Video>.sortVideos/override fun List<Video>.sortVideos/' "$ANIDB_SRC" 2>/dev/null || true
+    # 1b. Remove 'override' from disableRelatedAnimesBySearch (not in our JVM stubs)
+    sed -i '' 's/override val disableRelatedAnimesBySearch/val disableRelatedAnimesBySearch/' "$ANIDB_SRC" 2>/dev/null || true
+    # 2. setDefaultValue() is now available via base Preference stub — no removal needed
+    log "Patched: AniDB.kt — sortVideos override (setDefaultValue preserved)"
+fi
+
+# Patch: miruro — keep AniLib import (anilib extractor is on classpath)
+# The anilib extractor is compiled in Step 3b-ii and provides AniLib class
+# on the classpath. Removing the import causes unresolved reference errors
+# (27 AniLib references throughout Miruro.kt). The import stays intact.
+# Also runs patch-miruro-sources.py to remove unavailable extractor deps.
+MIRURO_SRC=$(find "${SRC_DIR}" -name "Miruro.kt" 2>/dev/null | head -1)
+MIRURO_EXTRACTOR_SRC=$(find "${SRC_DIR}" -name "MiruroExtractor.kt" 2>/dev/null | head -1)
+if [ -n "$MIRURO_SRC" ] && [ -f "$MIRURO_SRC" ]; then
+    log "  NOTE: Miruro.kt uses AniLib via import — anilib extractor is on classpath ✓"
+    MIRURO_PATCH_SCRIPT="${SCRIPT_DIR}/patch-miruro-sources.py"
+    if [ ! -f "$MIRURO_PATCH_SCRIPT" ]; then
+        err "Required Miruro patch script not found: ${MIRURO_PATCH_SCRIPT}"
+        exit 1
+    fi
+    if [ -z "$MIRURO_EXTRACTOR_SRC" ] || [ ! -f "$MIRURO_EXTRACTOR_SRC" ]; then
+        err "Expected Miruro extractor source not found"
+        exit 1
+    fi
+    GIT_ROOT="$(cd "${SRC_DIR}/../../.." && pwd)"
+    python3 "$MIRURO_PATCH_SCRIPT" "$GIT_ROOT" 2>&1 | sed 's/^/  /'
+    if ! grep -q '\[patched\]' "$MIRURO_EXTRACTOR_SRC" && ! grep -q 'm3u8 proxying unavailable on JVM' "$MIRURO_EXTRACTOR_SRC"; then
+        err "Miruro patch verification failed: ${MIRURO_EXTRACTOR_SRC}"
+        exit 1
+    fi
+fi
+
+# Patch: wcotheme — make iframeParse content-based (not domain-whitelisted)
+# Runs for the shared theme only when that source is present in the sparse checkout.
+WCO_VIDEO_PATCH="${SCRIPT_DIR}/patch-wco-video-extraction.py"
+WCO_THEME_FILE="${GIT_CLONE_DIR}/lib-multisrc/wcotheme/src/eu/kanade/tachiyomi/multisrc/wcotheme/WcoTheme.kt"
+if [ -f "$WCO_THEME_FILE" ]; then
+    if [ ! -f "$WCO_VIDEO_PATCH" ]; then
+        err "Required WCO patch script not found: ${WCO_VIDEO_PATCH}"
+        exit 1
+    fi
+    GIT_ROOT="$(cd "${SRC_DIR}/../../.." && pwd)"
+    python3 "$WCO_VIDEO_PATCH" "$GIT_ROOT" 2>&1 | sed 's/^/  /'
+    if ! grep -q 'Domain-agnostic extraction' "$WCO_THEME_FILE"; then
+        err "WCO patch verification failed: ${WCO_THEME_FILE}"
+        exit 1
+    fi
+fi
+
+# Patch: superstream — add CloudflareInterceptor to custom OkHttpClient
+# The extension creates its own OkHttpClient (configureToIgnoreCertificate) without
+# CloudflareInterceptor, causing Cloudflare 403 blocks → JsonDecodingException.
+# NOTE: find can return exit 1 on non-existent paths (when building other extensions).
+# || true ensures set -e doesn't abort the script.
+SUPERSTREAM_API_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStreamAPI.kt" 2>/dev/null | head -1) || true
+if [ -n "$SUPERSTREAM_API_SRC" ] && [ -f "$SUPERSTREAM_API_SRC" ]; then
+    sed -i '' '/^import okhttp3\.OkHttpClient$/a\
+import app.anikku.macos.platform.network.CloudflareInterceptor\
+import app.anikku.macos.platform.network.MacOSCookieJar\
+' "$SUPERSTREAM_API_SRC" 2>/dev/null || true
+    sed -i '' '/\.readTimeout(70, TimeUnit\.SECONDS)/a\
+            .addInterceptor(CloudflareInterceptor(MacOSCookieJar(java.io.File.createTempFile("cf_", "jar"))) { "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" })\
+' "$SUPERSTREAM_API_SRC" 2>/dev/null || true
+    log "Patched: SuperStreamAPI.kt — added CloudflareInterceptor to custom OkHttpClient"
+fi
+
+# Patch: superstream — JVM compatibility (setDefaultValue + null-safe context)
+SUPERSTREAM_SRC=$(find "${GIT_CLONE_DIR}/src/en/superstream" -name "SuperStream.kt" 2>/dev/null | head -1) || true
+if [ -n "$SUPERSTREAM_SRC" ] && [ -f "$SUPERSTREAM_SRC" ]; then
+    # setDefaultValue() is now available via base Preference stub — no removal needed
+    # screen.context is Context? in JVM stubs but used as Context — add !!
+    sed -i '' 's/screen\.context)/screen.context!!)/g' "$SUPERSTREAM_SRC" 2>/dev/null || true
+    sed -i '' 's/\.makeText(screen\.context,/.makeText(screen.context!!,/g' "$SUPERSTREAM_SRC" 2>/dev/null || true
+    log "Patched: SuperStream.kt — added context!! null-safety (setDefaultValue preserved)"
+fi
+
+# Patch: streamingcommunity — screen.context is Context? in JVM stubs but
+# Toast.makeText expects Context.
+STREAMCOMM_SRC=$(find "${GIT_CLONE_DIR}/src/all/streamingcommunity" -name "*.kt" 2>/dev/null | head -1) || true
+if [ -n "$STREAMCOMM_SRC" ] && [ -f "$STREAMCOMM_SRC" ]; then
+    sed -i '' 's/\.makeText(screen\.context,/.makeText(screen.context!!,/g' "$STREAMCOMM_SRC" 2>/dev/null || true
+    log "Patched: StreamingCommunity.kt — added context!! null-safety"
+fi
+
+# Patch: strip source-api overrides the macOS source-api jar does not declare.
+# Newer extensions override fetchRelatedAnimeList / disableRelatedAnimesBySearch
+# (and touch the nullable Activity.intent in UrlActivity files); the macOS app
+# uses getRelatedAnimeList() instead, so stripping these overrides is safe and
+# lets the extension fall back to the interface default.
+SRC_DIR="$SRC_DIR" python3 - <<'PYEOF'
+import os, re, pathlib
+root = pathlib.Path(os.environ["SRC_DIR"])
+for f in root.rglob("*.kt"):
+    s = f.read_text()
+    orig = s
+    # 1) override val disableRelatedAnimesBySearch = true/false
+    s = re.sub(r'override\s+val\s+disableRelatedAnimesBySearch\s*=\s*(true|false)\s*\n',
+               '// disableRelatedAnimesBySearch removed — not in macOS source-api\n', s)
+    # 2) override suspend fun fetchRelatedAnimeList(...) { ... } — brace-balanced
+    #    with string/comment awareness so braces inside JSON/strings don't
+    #    skew the count.
+    def _skip_string(s, i):
+        q = s[i]; i += 1
+        if s[i:i+1] == q and s[i+1:i+2] == q:  # """ raw string
+            i += 1
+            while i < len(s):
+                if s[i:i+3] == q*3: return i + 3
+                i += 1
+            return i
+        while i < len(s):
+            if s[i] == '\\': i += 2; continue
+            if s[i] == q: return i + 1
+            i += 1
+        return i
+    def _skip_comment(s, i):
+        if s[i:i+2] == '//':
+            while i < len(s) and s[i] != '\n': i += 1
+            return i
+        if s[i:i+2] == '/*':
+            i += 2
+            while i < len(s) and s[i:i+2] != '*/': i += 1
+            return min(i + 2, len(s))
+        return i
+    def _match_brace(s, brace_idx):
+        depth = 0; i = brace_idx
+        while i < len(s):
+            c = s[i]
+            if c == '"' or c == "'":
+                i = _skip_string(s, i); continue
+            if c == '/' and i + 1 < len(s) and s[i+1] in ('/', '*'):
+                i = _skip_comment(s, i); continue
+            if c == '{': depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0: return i + 1
+            i += 1
+        return i
+    pat = re.compile(r'^(\s*)override\s+suspend\s+fun\s+fetchRelatedAnimeList\([^\n]*\n', re.M)
+    parts = []
+    idx = 0
+    for m in pat.finditer(s):
+        parts.append(s[idx:m.start()])
+        # start from the signature's own '{' (regex [^\n]* already consumed it,
+        # so use m.start(), NOT m.end()-1, or the matcher starts at a nested brace)
+        brace = s.find('{', m.start())
+        if brace == -1:
+            parts.append(s[m.start():m.end()]); idx = m.end(); continue
+        end = _match_brace(s, brace)
+        if end < len(s) and s[end] == '\n': end += 1
+        idx = end
+    parts.append(s[idx:])
+    s = ''.join(parts)
+    # 3) nullable Activity.intent in UrlActivity files
+    if f.name.endswith("UrlActivity.kt"):
+        s = s.replace('intent.data.toString()', 'intent?.data?.toString()')
+    if s != orig:
+        f.write_text(s)
+        print(f"  [patch] {f.name} — stripped unsupported source-api overrides")
+PYEOF
+log "Patched: stripped unsupported source-api overrides (fetchRelatedAnimeList / disableRelatedAnimesBySearch / UrlActivity intent)"
+
+# ---------------------------------------------------------------------------
+# Step 4: Compile the extension
+# ---------------------------------------------------------------------------
+log ""
+# Ensure ALL cached shared-lib modules are on the compile classpath.
+# Cached modules skip recompilation (their `continue` skips add_to_cp),
+# which otherwise leaves them off -cp and breaks dependent extensions.
+if [ -d "$SHARED_LIBS_DIR" ]; then
+    for mod in "$SHARED_LIBS_DIR"/*/; do
+        [ -d "$mod" ] && add_to_cp "$mod"
+    done
+fi
+
+log "Step 4: Compiling extension..."
+
+CLASSES_DIR="${TEMP_DIR}/classes"
+mkdir -p "$CLASSES_DIR"
+
+# Find all source files (extension source + any shared libs not separately compiled)
+find "${SRC_DIR}" -name "*.kt" > "${TEMP_DIR}/kotlin-sources.txt" 2>/dev/null
+find "${SRC_DIR}" -name "*.java" >> "${TEMP_DIR}/kotlin-sources.txt" 2>/dev/null
+KT_COUNT=$(wc -l < "${TEMP_DIR}/kotlin-sources.txt" 2>/dev/null || echo 0)
+log "Sources: ${KT_COUNT} Kotlin/Java files"
+
+# Create META-INF/extension.json
+mkdir -p "${CLASSES_DIR}/META-INF"
+cat > "${CLASSES_DIR}/META-INF/extension.json" << JSONEOF
+{
+  "name": "Aniyomi: ${EXT_NAME}",
+  "pkgName": "${ACTUAL_PKG}",
+  "versionName": "1.0.0",
+  "versionCode": ${VERSION_CODE},
+  "libVersion": ${LIB_VERSION:-15.0},
+  "lang": "${LANG}",
+  "isNsfw": ${NSFW:-false},
+  "isTorrent": false,
+  "sourceClass": "${FULL_CLASS_NAME}",
+  "pkgFactory": null,
+  "hasReadme": false,
+  "hasChangelog": false
+}
+JSONEOF
+
+set +e
+kotlinc -cp "${CLASSPATH}" -d "${CLASSES_DIR}" -jvm-target 17 ${KOTLINC_OPTS} @"${TEMP_DIR}/kotlin-sources.txt" 2>"${TEMP_DIR}/compile-err.log"
+COMPILE_EXIT=$?
+set -e
+
+CLASS_COUNT=$(find "$CLASSES_DIR" -name "*.class" 2>/dev/null | wc -l)
+log "Compile exit: ${COMPILE_EXIT}, classes: ${CLASS_COUNT}"
+
+if [ "$CLASS_COUNT" -eq 0 ]; then
+    err "Compilation failed!"
+    err "Check ${TEMP_DIR}/compile-err.log for details."
+    sed 's/^/  /' "${TEMP_DIR}/compile-err.log" 2>/dev/null | head -30
+    KEEP_TEMP=true
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Step 5: Package as JAR
+# ---------------------------------------------------------------------------
+log ""
+log "Step 5: Packaging JAR..."
+
+JAR_PATH="${TEMP_DIR}/${JAR_NAME}"
+
+# Merge only extension-specific shared libraries (NOT keiyoushi-utils which
+# the app already provides). Only include successfully compiled modules.
+if [ -d "$SHARED_LIBS_DIR" ]; then
+    MERGED=0
+    for mod in "$SHARED_LIBS_DIR"/*/; do
+        [ ! -d "$mod" ] && continue
+        mod_name=$(basename "$mod")
+        # Skip app-provided modules (keiyoushi-utils) and failed/empty modules
+        case "$mod_name" in
+            "keiyoushi-utils"|"lib-extractors") continue ;;
+        esac
+        class_cnt=$(find "$mod" -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$class_cnt" -gt 0 ]; then
+            cp -r "$mod"/* "$CLASSES_DIR/" 2>/dev/null || true
+            MERGED=$((MERGED + class_cnt))
+        fi
+    done
+    log "Merged shared libs: ${MERGED} classes"
+fi
+
+# Also include CloudflareInterceptor and MacOSCookieJar from the macOS module.
+# These provide CDP-based Cloudflare bypass for extensions like superstream
+# that create their own OkHttpClient (bypassing the app's CloudflareInterceptor).
+if [ -d "$MACOS_CLASSES_DIR" ]; then
+    for macos_class in CloudflareInterceptor MacOSCookieJar ChromeCDPClient FallbackDns; do
+        find "$MACOS_CLASSES_DIR" -path "*/app/anikku/macos/platform/network/${macos_class}*" -name '*.class' 2>/dev/null | while IFS= read -r f; do
+            rel="${f#$MACOS_CLASSES_DIR/}"
+            mkdir -p "$CLASSES_DIR/$(dirname "$rel")"
+            cp "$f" "$CLASSES_DIR/$rel"
+        done
+    done
+    log "Included: CloudflareInterceptor + MacOSCookieJar + ChromeCDPClient + FallbackDns from macOS module ✓"
+fi
+
+cd "$CLASSES_DIR"
+
+# Verify extension.json exists
+if [ ! -f "META-INF/extension.json" ]; then
+    err "META-INF/extension.json missing!"
+    exit 1
+fi
+
+# Count classes and package with $JAVA_HOME/bin/jar explicitly.
+# Primary: JDK 9+ @filelist (reads arguments from file -- no command-line limit).
+# Fallback: macOS xargs pipe (find -print0 | xargs -0) if @filelist somehow fails.
+CLASS_COUNT=$(find . -name '*.class' 2>/dev/null | wc -l | tr -d ' ')
+log "Packaging ${CLASS_COUNT} classes with ${JAR_CMD}..."
+
+# Build file list: META-INF/extension.json first, then all .class files
+{
+    echo "META-INF/extension.json"
+    find . -name '*.class' -print
+} > "${TEMP_DIR}/jar-classes.txt"
+
+set +e
+# --- Primary: @filelist (JDK 9+). Handles unlimited files without shell limits. ---
+"${JAR_CMD}" cf "${JAR_PATH}" @"${TEMP_DIR}/jar-classes.txt" 2>"${TEMP_DIR}/jar-err.log"
+JAR_EXIT=$?
+
+# --- Fallback: macOS xargs pipe (if @filelist fails for any reason) ---
+if [ "$JAR_EXIT" -ne 0 ]; then
+    log "@filelist failed (exit ${JAR_EXIT}), retrying with xargs pipe..."
+    # ⚠ If xargs splits into multiple jar cf invocations, only the last batch
+    # survives (each cf overwrites the JAR). For <1000 files this won't trigger
+    # (~60KB paths vs 256KB ARG_MAX). Safe as fallback; @filelist always works on JDK 17+.
+    find . -name '*.class' -print0 | xargs -0 "${JAR_CMD}" cf "${JAR_PATH}" 2>>"${TEMP_DIR}/jar-err.log"
+    JAR_EXIT=$?
+fi
+set -e
+
+if [ "$JAR_EXIT" -ne 0 ]; then
+    err "jar packaging failed (exit ${JAR_EXIT}): $(cat "${TEMP_DIR}/jar-err.log" 2>/dev/null | head -5)"
+    err "  JAR_CMD=${JAR_CMD}"
+    err "  JAVA_HOME=${JAVA_HOME}"
+    err "  Classes: ${CLASS_COUNT}"
+    err "  File list: $(wc -l < "${TEMP_DIR}/jar-classes.txt") entries"
+    exit 1
+fi
+
+JAR_SIZE=$(stat -f%z "${JAR_PATH}" 2>/dev/null || echo "0")
+log "JAR: ${JAR_PATH} (${JAR_SIZE} bytes, ${CLASS_COUNT} classes)"
+
+# Verify JAR contains extension.json
+if ! "${JAR_CMD}" tf "${JAR_PATH}" 2>/dev/null | grep -q 'extension.json'; then
+    err "JAR is missing META-INF/extension.json!"
+    err "  JAR_CMD=${JAR_CMD}"
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Step 6: Install
+# ---------------------------------------------------------------------------
+log ""
+log "Step 6: Installing..."
+
+mkdir -p "${EXTENSIONS_DIR}"
+cp "${JAR_PATH}" "${EXTENSIONS_DIR}/${JAR_NAME}"
+log "Installed: ${EXTENSIONS_DIR}/${JAR_NAME}"
+
+# ---------------------------------------------------------------------------
+log ""
+log "╔══════════════════════════════════════════════════════════════╗"
+log "║  BUILD COMPLETE!"
+log "║  ${EXT_NAME} (${ACTUAL_PKG})"
+log "║  ${CLASS_COUNT} classes, ${JAR_SIZE} bytes"
+log "║  Source class: ${FULL_CLASS_NAME}"
+log "╚══════════════════════════════════════════════════════════════╝"
+log ""
+log "  Restart Anikku or use Browse → Extensions to see it."
+log "  Trust the extension on first use."

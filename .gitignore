@@ -21,3 +21,19 @@ local.properties
 /app/google-services.json
 *.jks
 app/standard/preview/*
+
+# Sparkle Ed25519 private signing key — DO NOT COMMIT!
+# Keep this file secure. Generate via:
+#   openssl genpkey -algorithm ed25519 -out macos/ed25519-key.pem
+*.key.pem
+ed25519-key.pem
+
+# Sparkle release keys kept next to the macOS project — DO NOT COMMIT!
+# Private key lives here and in ~/.anikku-release-keys/
+sparkle-key/
+
+# Downloaded test video files
+*.mkv
+*.mp4
+*.webm
+macos/libs/*.bak

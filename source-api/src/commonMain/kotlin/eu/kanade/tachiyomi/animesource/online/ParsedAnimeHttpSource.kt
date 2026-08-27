@@ -16,22 +16,40 @@ import org.jsoup.nodes.Element
 @Suppress("unused")
 abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
 
+    // ------------------------------------------------------------------
+    // Related anime
+    // ------------------------------------------------------------------
+
+    /**
+     * Returns the Jsoup selector for the related anime list.
+     */
+    protected open fun relatedAnimeListSelector(): String = ""
+
+    /**
+     * Returns an [SAnime] from the given element in the related anime list.
+     */
+    protected open fun relatedAnimeFromElement(element: Element): SAnime = SAnime.create()
+
+    /**
+     * Parses the response from the site and returns the list of related anime.
+     */
+    override open fun relatedAnimeListParse(response: Response): List<SAnime> = emptyList()
+
+    // ------------------------------------------------------------------
+    // Popular anime
+    // ------------------------------------------------------------------
+
     /**
      * Parses the response from the site and returns a [AnimesPage] object.
-     *
-     * @param response the response from the site.
      */
     override fun popularAnimeParse(response: Response): AnimesPage {
         val document = response.asJsoup()
-
         val animes = document.select(popularAnimeSelector()).map { element ->
             popularAnimeFromElement(element)
         }
-
         val hasNextPage = popularAnimeNextPageSelector()?.let { selector ->
             document.select(selector).first()
         } != null
-
         return AnimesPage(animes, hasNextPage)
     }
 
@@ -41,10 +59,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
     protected abstract fun popularAnimeSelector(): String
 
     /**
-     * Returns an anime from the given [element]. Most sites only show the title and the url, it's
-     * totally fine to fill only those two values.
-     *
-     * @param element an element obtained from [popularAnimeSelector].
+     * Returns an anime from the given [element].
      */
     protected abstract fun popularAnimeFromElement(element: Element): SAnime
 
@@ -54,22 +69,21 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      */
     protected abstract fun popularAnimeNextPageSelector(): String?
 
+    // ------------------------------------------------------------------
+    // Search anime
+    // ------------------------------------------------------------------
+
     /**
      * Parses the response from the site and returns a [AnimesPage] object.
-     *
-     * @param response the response from the site.
      */
     override fun searchAnimeParse(response: Response): AnimesPage {
         val document = response.asJsoup()
-
         val animes = document.select(searchAnimeSelector()).map { element ->
             searchAnimeFromElement(element)
         }
-
         val hasNextPage = searchAnimeNextPageSelector()?.let { selector ->
             document.select(selector).first()
         } != null
-
         return AnimesPage(animes, hasNextPage)
     }
 
@@ -79,10 +93,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
     protected abstract fun searchAnimeSelector(): String
 
     /**
-     * Returns an anime from the given [element]. Most sites only show the title and the url, it's
-     * totally fine to fill only those two values.
-     *
-     * @param element an element obtained from [searchAnimeSelector].
+     * Returns an anime from the given [element].
      */
     protected abstract fun searchAnimeFromElement(element: Element): SAnime
 
@@ -92,22 +103,21 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      */
     protected abstract fun searchAnimeNextPageSelector(): String?
 
+    // ------------------------------------------------------------------
+    // Latest updates
+    // ------------------------------------------------------------------
+
     /**
      * Parses the response from the site and returns a [AnimesPage] object.
-     *
-     * @param response the response from the site.
      */
     override fun latestUpdatesParse(response: Response): AnimesPage {
         val document = response.asJsoup()
-
         val animes = document.select(latestUpdatesSelector()).map { element ->
             latestUpdatesFromElement(element)
         }
-
         val hasNextPage = latestUpdatesNextPageSelector()?.let { selector ->
             document.select(selector).first()
         } != null
-
         return AnimesPage(animes, hasNextPage)
     }
 
@@ -117,10 +127,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
     protected abstract fun latestUpdatesSelector(): String
 
     /**
-     * Returns an anime from the given [element]. Most sites only show the title and the url, it's
-     * totally fine to fill only those two values.
-     *
-     * @param element an element obtained from [latestUpdatesSelector].
+     * Returns an anime from the given [element].
      */
     protected abstract fun latestUpdatesFromElement(element: Element): SAnime
 
@@ -130,10 +137,12 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      */
     protected abstract fun latestUpdatesNextPageSelector(): String?
 
+    // ------------------------------------------------------------------
+    // Anime details
+    // ------------------------------------------------------------------
+
     /**
      * Parses the response from the site and returns the details of an anime.
-     *
-     * @param response the response from the site.
      */
     override fun animeDetailsParse(response: Response): SAnime {
         return animeDetailsParse(response.asJsoup())
@@ -141,15 +150,15 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
 
     /**
      * Returns the details of the anime from the given [document].
-     *
-     * @param document the parsed document.
      */
     protected abstract fun animeDetailsParse(document: Document): SAnime
 
+    // ------------------------------------------------------------------
+    // Episode list
+    // ------------------------------------------------------------------
+
     /**
      * Parses the response from the site and returns a list of episodes.
-     *
-     * @param response the response from the site.
      */
     override fun episodeListParse(response: Response): List<SEpisode> {
         val document = response.asJsoup()
@@ -163,17 +172,15 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
 
     /**
      * Returns an episode from the given element.
-     *
-     * @param element an element obtained from [episodeListSelector].
      */
     protected abstract fun episodeFromElement(element: Element): SEpisode
 
+    // ------------------------------------------------------------------
+    // Hoster list
+    // ------------------------------------------------------------------
+
     /**
      * Parses the response from the site and returns the hoster list.
-     *
-     * @since extensions-lib 16
-     * @param response the response from the site.
-     * @return the list of hosters.
      */
     override fun hosterListParse(response: Response): List<Hoster> {
         val document = response.asJsoup()
@@ -182,23 +189,22 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
 
     /**
      * Returns the Jsoup selector that returns a list of [Element] corresponding to each hoster.
-     *
-     * @since extensions-lib 16
      */
-    protected abstract fun hosterListSelector(): String
+    protected open fun hosterListSelector(): String =
+        throw UnsupportedOperationException("hosterListSelector not implemented — extension uses custom video extraction")
 
     /**
      * Returns a hoster from the given element.
-     *
-     * @since extensions-lib 16
-     * @param element an element obtained from [hosterListSelector].
      */
-    protected abstract fun hosterFromElement(element: Element): Hoster
+    protected open fun hosterFromElement(element: Element): Hoster =
+        throw UnsupportedOperationException("hosterFromElement not implemented — extension uses custom video extraction")
+
+    // ------------------------------------------------------------------
+    // Video list
+    // ------------------------------------------------------------------
 
     /**
      * Parses the response from the site and returns the page list.
-     *
-     * @param response the response from the site.
      */
     override fun videoListParse(response: Response): List<Video> {
         val document = response.asJsoup()
@@ -212,15 +218,11 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
 
     /**
      * Returns a video from the given element.
-     *
-     * @param element an element obtained from [videoListSelector].
      */
     protected abstract fun videoFromElement(element: Element): Video
 
     /**
      * Parse the response from the site and returns the absolute url to the source video.
-     *
-     * @param response the response from the site.
      */
     override fun videoUrlParse(response: Response): String {
         return videoUrlParse(response.asJsoup())
@@ -228,8 +230,6 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
 
     /**
      * Returns the absolute url to the source image from the document.
-     *
-     * @param document the parsed document.
      */
     protected abstract fun videoUrlParse(document: Document): String
 }

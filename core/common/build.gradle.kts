@@ -1,6 +1,7 @@
 plugins {
     id("mihon.library")
-    kotlin("android")
+    kotlin("multiplatform")
+    id("com.android.library")
     kotlin("plugin.serialization")
     id("com.github.ben-manes.versions")
 }
@@ -10,64 +11,114 @@ android {
 }
 
 kotlin {
+    androidTarget()
+    jvm()
+
     compilerOptions {
         freeCompilerArgs.addAll(
             "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
             "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
         )
     }
-}
 
-dependencies {
-    implementation(projects.i18n)
-    // SY -->
-    implementation(projects.i18nSy)
-    // SY <--
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(projects.i18n)
+                // SY -->
+                implementation(projects.i18nSy)
+                // SY <--
 
-    api(libs.logcat)
+                api(libs.rxjava)
 
-    api(libs.rxjava)
+                api(libs.okhttp.core)
+                api(libs.okhttp.logging)
+                api(libs.okhttp.brotli)
+                api(libs.okhttp.dnsoverhttps)
+                api(libs.okio)
 
-    api(libs.okhttp.core)
-    api(libs.okhttp.logging)
-    api(libs.okhttp.brotli)
-    api(libs.okhttp.dnsoverhttps)
-    api(libs.okio)
+                implementation(libs.jsoup)
 
-    implementation(libs.image.decoder)
+                // Sort
+                implementation(libs.natural.comparator)
 
-    implementation(libs.unifile)
-    implementation(libs.libarchive)
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                api(kotlinx.serialization.json)
+                api(kotlinx.serialization.json.okio)
+            }
+        }
 
-    api(kotlinx.coroutines.core)
-    api(kotlinx.serialization.json)
-    api(kotlinx.serialization.json.okio)
+        androidMain {
+            dependencies {
+                implementation(projects.i18n)
+                // SY -->
+                implementation(projects.i18nSy)
+                // SY <--
 
-    api(libs.preferencektx)
+                api(libs.logcat)
+                api(libs.rxjava)
 
-    implementation(libs.jsoup)
+                api(libs.okhttp.core)
+                api(libs.okhttp.logging)
+                api(libs.okhttp.brotli)
+                api(libs.okhttp.dnsoverhttps)
+                api(libs.okio)
 
-    // Sort
-    implementation(libs.natural.comparator)
+                implementation(libs.image.decoder)
 
-    // JavaScript engine
-    implementation(libs.bundles.js.engine)
+                implementation(libs.unifile)
+                implementation(libs.libarchive)
 
-    // FFmpeg-kit
-    implementation(aniyomilibs.ffmpeg.kit)
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                api(kotlinx.serialization.json)
+                api(kotlinx.serialization.json.okio)
 
-    // Tests
-    testImplementation(libs.bundles.test)
-    testRuntimeOnly(libs.junit.platform.launcher)
+                api(libs.preferencektx)
 
-    // SY -->
-    implementation(sylibs.xlog)
-    implementation(sylibs.exifinterface)
-    // SY <--
+                implementation(libs.jsoup)
 
-    implementation(libs.injekt)
-    implementation(aniyomilibs.torrentserver)
+                implementation(libs.natural.comparator)
 
-    // Tests
-    testImplementation(libs.bundles.test)
+                // JavaScript engine
+                implementation(libs.bundles.js.engine)
+
+                // FFmpeg-kit
+                implementation(aniyomilibs.ffmpeg.kit)
+
+                // SY -->
+                implementation(sylibs.xlog)
+                implementation(sylibs.exifinterface)
+                // SY <--
+
+                implementation(libs.injekt)
+                implementation(aniyomilibs.torrentserver)
+            }
+        }
+
+        jvmMain {
+            dependencies {
+                implementation(projects.i18n)
+                // SY -->
+                implementation(projects.i18nSy)
+                // SY <--
+
+                api(libs.logcat)
+                api(libs.rxjava)
+
+                api(libs.okhttp.core)
+                api(libs.okhttp.logging)
+                api(libs.okhttp.brotli)
+                api(libs.okhttp.dnsoverhttps)
+                api(libs.okio)
+
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                api(kotlinx.serialization.json)
+                api(kotlinx.serialization.json.okio)
+
+                implementation(libs.injekt)
+                implementation(libs.jsoup)
+                implementation(libs.natural.comparator)
+            }
+        }
+    }
 }

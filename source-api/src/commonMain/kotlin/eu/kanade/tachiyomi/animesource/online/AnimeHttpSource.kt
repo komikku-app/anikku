@@ -291,10 +291,13 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
 
     /**
      * Parses the response from the site and returns a SEpisode Object.
+     * Override to provide episode video parsing support.
      *
      * @param response the response from the site.
      */
-    protected abstract fun episodeVideoParse(response: Response): SEpisode
+    protected open fun episodeVideoParse(response: Response): SEpisode {
+        throw UnsupportedOperationException("episodeVideoParse not implemented")
+    }
 
     /**
      * Get the list of hoster for an episode. The first hoster in the list should
@@ -326,12 +329,15 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
 
     /**
      * Parses the response from the site and returns a list of hosters.
+     * Override to provide hoster parsing support.
      *
      * @since extensions-lib 16
      * @param response the response from the site.
      * @return the list of hosters.
      */
-    protected abstract fun hosterListParse(response: Response): List<Hoster>
+    protected open fun hosterListParse(response: Response): List<Hoster> {
+        throw UnsupportedOperationException("hosterListParse not implemented")
+    }
 
     /**
      * Get the list of videos for a hoster.
@@ -362,13 +368,16 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
 
     /**
      * Parses the response from the hoster and returns a list of videos.
+     * Override to provide hoster-based video list parsing.
      *
      * @since extensions-lib 16
      * @param response the response from the hoster.
      * @param hoster the hoster.
      * @return the list of videos.
      */
-    protected abstract fun videoListParse(response: Response, hoster: Hoster): List<Video>
+    protected open fun videoListParse(response: Response, hoster: Hoster): List<Video> {
+        throw UnsupportedOperationException("videoListParse(response, hoster) not implemented")
+    }
 
     /**
      * Returns the resolved video of the episode link. Override only if it's needed to resolve
@@ -416,10 +425,13 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
 
     /**
      * Parses the response from the site and returns a list of pages.
+     * Override to provide video list parsing support.
      *
      * @param response the response from the site.
      */
-    protected abstract fun videoListParse(response: Response): List<Video>
+    protected open fun videoListParse(response: Response): List<Video> {
+        throw UnsupportedOperationException("videoListParse not implemented")
+    }
 
     /**
      * Sorts the hoster list. Override this according to the user's preference.
@@ -478,10 +490,13 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
 
     /**
      * Parses the response from the site and returns the absolute url to the source image.
+     * Override to provide video URL parsing support.
      *
      * @param response the response from the site.
      */
-    protected abstract fun videoUrlParse(response: Response): String
+    protected open fun videoUrlParse(response: Response): String {
+        throw UnsupportedOperationException("videoUrlParse not implemented")
+    }
 
     /**
      * Returns the response of the source video.
@@ -636,6 +651,61 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * Returns the list of filters for the source.
      */
     override fun getFilterList() = AnimeFilterList()
+
+    // KMK: Related anime support -->
+    /**
+     * Whether this source supports related animes.
+     * Override to return true and implement related anime list support.
+     */
+    override val supportsRelatedAnimes: Boolean
+        get() = false
+
+    /**
+     * Returns the request for getting related anime list.
+     * Override to provide related anime list request support.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param anime the anime to get related animes for.
+     */
+    protected open fun relatedAnimeListRequest(anime: SAnime): Request {
+        throw UnsupportedOperationException("relatedAnimeListRequest not implemented")
+    }
+
+    /**
+     * Parses the response from the site and returns a list of related animes.
+     * Override to provide related anime list parsing support.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param response the response from the site.
+     */
+    protected open fun relatedAnimeListParse(response: Response): List<SAnime> {
+        throw UnsupportedOperationException("relatedAnimeListParse not implemented")
+    }
+
+    /**
+     * Get the related animes for an anime.
+     * Override only if it's needed to change the behavior.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param anime the anime to get related animes for.
+     * @param exceptionHandler the handler for exceptions.
+     * @param pushResults the callback for pushing results.
+     */
+    override suspend fun getRelatedAnimeList(
+        anime: SAnime,
+        exceptionHandler: (Throwable) -> Unit,
+        pushResults: suspend (relatedAnime: Pair<String, List<SAnime>>, completed: Boolean) -> Unit,
+    ) {
+        try {
+            val request = relatedAnimeListRequest(anime)
+            val response = client.newCall(request).awaitSuccess()
+            val relatedAnimes = relatedAnimeListParse(response)
+            pushResults(Pair("Related", relatedAnimes), true)
+        } catch (e: Exception) {
+            exceptionHandler(e)
+        }
+    }
+    // KMK <--
 
     // EXH -->
     private var delegate: DelegatedHttpSource? = null

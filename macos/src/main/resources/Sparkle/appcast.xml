@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Anikku macOS Appcast</title>
+    <description>Most recent changes to Anikku macOS — Sparkle-compatible auto-update feed</description>
+    <language>en</language>
+    <lastBuildDate>Sun, 02 Aug 2026 21:15:28 +0100</lastBuildDate>
+
+    <!--
+      Signed release items are added with macos/scripts/generate-appcast.sh.
+      The feed is served from this file via raw.githubusercontent.com and is
+      referenced by SUFeedURL in build.gradle.kts.
+      Never commit a placeholder signature or zero-length artifact.
+    -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <item>
+      <title>Version 1.13.1</title>
+      <sparkle:version>1.13.1</sparkle:version>
+      <sparkle:shortVersionString>1.13.1</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 22:58:12 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.13.1/Anikku-1.13.1.dmg"
+        sparkle:edSignature="5uVQHlUGu7LpbUMOOzGCVG1BbJNxgPrF0ePV/LFQPY3OOtxwOc3Zh4zWE/llgLtPfNepQGzegkNMHS42LWF+BA=="
+        length="235897077"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.13.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.13.0</title>
+      <sparkle:version>1.13.0</sparkle:version>
+      <sparkle:shortVersionString>1.13.0</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 22:58:11 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.13.0/Anikku-1.13.0.dmg"
+        sparkle:edSignature="e1YYFpqVhMTrfcgQSq2y8g5zWXFcoQA11tJg04tkdvLM69c8pAILx1diV2RwqayC8/vwRjG7K7yPCn1mt89gBg=="
+        length="235798385"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.13.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.12.0</title>
+      <sparkle:version>1.12.0</sparkle:version>
+      <sparkle:shortVersionString>1.12.0</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 22:58:10 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.12.0/Anikku-1.12.0.dmg"
+        sparkle:edSignature="0rl59woi7qoV8meLRMIvX7aLirn3gFGjQ5L2Ustf9jCidVFaTUPI4lCMbd/wn0NdspUrv5AvCS8kAsfSD4vkAA=="
+        length="235775553"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.12.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.11.0</title>
+      <sparkle:version>1.11.0</sparkle:version>
+      <sparkle:shortVersionString>1.11.0</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 22:58:09 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.11.0/Anikku-1.11.0.dmg"
+        sparkle:edSignature="KTaDwK78Z6ef5gD0KybI94sOYPdLmgzKq5vBpYK6iUg+lzExgrJrMLvcZuaDXqCMqGAk/g8FXZ6IFKtlxMOACA=="
+        length="235719064"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.11.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.10.0</title>
+      <sparkle:version>1.10.0</sparkle:version>
+      <sparkle:shortVersionString>1.10.0</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 22:58:08 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.10.0/Anikku-1.10.0.dmg"
+        sparkle:edSignature="i3c+WK12vX9icWN9gqeqq089MoNdN+2jbtJ+lvUEACsg1QR4Y1ll6TfbZPvJaEvN7vPgbY2DEbLG6BcWCbXxAw=="
+        length="235778180"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.10.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.9.2</title>
+      <sparkle:version>1.9.2</sparkle:version>
+      <sparkle:shortVersionString>1.9.2</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 16:14:56 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.9.2/Anikku-1.9.2.dmg"
+        sparkle:edSignature="2yysWzQEy05EMg2igshcLb/RIDZSpMOL8WxOwsHIVyBWjK5qdySTHpkpOu1tuNKudc+ZneRqEHAhLdcfd2xiAQ=="
+        length="235659604"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.9.2
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.9.1</title>
+      <sparkle:version>1.9.1</sparkle:version>
+      <sparkle:shortVersionString>1.9.1</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 11:50:36 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.9.1/Anikku-1.9.1.dmg"
+        sparkle:edSignature="FQIvuGp/iU2hFUYIuuENpUykHr80yfBrhnBiWS7UV+5yEUjgWnt2CL2vDNWo3HfybQYFn8SGXyBheLK7MOBsCA=="
+        length="235608330"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.9.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.9.0</title>
+      <sparkle:version>1.9.0</sparkle:version>
+      <sparkle:shortVersionString>1.9.0</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 11:14:59 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.9.0/Anikku-1.9.0.dmg"
+        sparkle:edSignature="XKS2rDQKG4/rOqOfV9hy4lRQdX6EyoHlboNsNoqY9DGmn+fL0G1marbGFPy2bmx18YQjkeYgfpCbV+JcU8ZBCw=="
+        length="235614026"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.9.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.8.5</title>
+      <sparkle:version>1.8.5</sparkle:version>
+      <sparkle:shortVersionString>1.8.5</sparkle:shortVersionString>
+      <pubDate>Thu, 06 Aug 2026 10:12:52 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.8.5/Anikku-1.8.5.dmg"
+        sparkle:edSignature="2qdLd/tIZ6c/Vfqo0dywXkinVNtxaeHAtsZ0TZVmIkwPOl2Q87bPUzt2wC6qRMvtIvvKfAxzHRYUNuJGGeluDw=="
+        length="235533011"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.8.5
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.8.4</title>
+      <sparkle:version>1.8.4</sparkle:version>
+      <sparkle:shortVersionString>1.8.4</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 23:58:19 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.8.4/Anikku-1.8.4.dmg"
+        sparkle:edSignature="JTCI+ozmCKHqaMHBqGm3ii6rZYXksYlCyzjKbWvvqEqx5hQSSyYTZCXGcQ/cl6Ab8/9pe6vCGOnhz1S1AVJ6DQ=="
+        length="235441097"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.8.4
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.8.3</title>
+      <sparkle:version>1.8.3</sparkle:version>
+      <sparkle:shortVersionString>1.8.3</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 22:34:12 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.8.3/Anikku-1.8.3.dmg"
+        sparkle:edSignature="8sbLG50ZoN8BXMNRughTyMyRtaFdyVuPuSKHYLUTHpt8XbQLhIWBsKgahM1LFFQcGFPCh6kdTPTRzg+bF+69AA=="
+        length="235491500"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.8.3
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.8.2</title>
+      <sparkle:version>1.8.2</sparkle:version>
+      <sparkle:shortVersionString>1.8.2</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 22:14:12 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.8.2/Anikku-1.8.2.dmg"
+        sparkle:edSignature="/TNwIchohm0cytEINVmdacPf5Lz4ThM1xQcvZa1w+17Xh9vqnf7fWQbc/j6ML/rTAkIvTgZ5hME6WH6cSwQ8AQ=="
+        length="235518449"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.8.2
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.8.1</title>
+      <sparkle:version>1.8.1</sparkle:version>
+      <sparkle:shortVersionString>1.8.1</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 21:22:56 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.8.1/Anikku-1.8.1.dmg"
+        sparkle:edSignature="gX6Tm7gr7IrUnJ08ZhlQ0qRfFVcP2uzmW3lOgwAhl7a+byHi051qW6fGXi5rm71rjwN+dzddHqXr3YjvhcQpBA=="
+        length="235400601"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.8.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.8.0</title>
+      <sparkle:version>1.8.0</sparkle:version>
+      <sparkle:shortVersionString>1.8.0</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 17:17:49 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.8.0/Anikku-1.8.0.dmg"
+        sparkle:edSignature="yU43Ep2FLWUlAcs7wxL64Aj347ZRnmaPDeO+M6KzK7GHAtTQh8ZfUP+gt3k1COJHE4pSe0OYZJjypPNm9UQmAA=="
+        length="235372291"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.8.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.7.0</title>
+      <sparkle:version>1.7.0</sparkle:version>
+      <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 13:37:09 +0000</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.7.0/Anikku-1.7.0.dmg"
+        sparkle:edSignature="QZMJIf/K8GsEGqgcjV5WwyaWKypCHnRpNk+rwKyCEtRdXkoTb88Re0w418OxlhhEztrl8CWIBXTfizNkADkSDA=="
+        length="215320663"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.7.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.6.1</title>
+      <sparkle:version>1.6.1</sparkle:version>
+      <sparkle:shortVersionString>1.6.1</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 12:20:59 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.6.1/Anikku-1.6.1.dmg"
+        sparkle:edSignature="C74GjNOJxpxwasuGay1YpZkEGVQGJXho+wosB3Hg2dA0176KFng1Y1oLRiz0mMxpRj5f53CZBRi7mNaoiZdCBg=="
+        length="215366112"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.6.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.6.0</title>
+      <sparkle:version>1.6.0</sparkle:version>
+      <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 02:49:33 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.6.0/Anikku-1.6.0.dmg"
+        sparkle:edSignature="dPnwiLYvRdFyZL9X0k93AnZ2P5HdfHc+QPUY/i7Phpo2ayyCMi3CpH0eiK4kaQdsmhs8k8yqEQpleCW4iMQeDw=="
+        length="215320866"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.6.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.5.0</title>
+      <sparkle:version>1.5.0</sparkle:version>
+      <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 01:28:52 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.5.0/Anikku-1.5.0.dmg"
+        sparkle:edSignature="5GE+s174D6lcHhh7gtFGNYY5qSq77jXM/xCg2TjRL19u63oOcsi60TnAPfbYVHEGPpLelmbTmhM1l9kx5Sv6DA=="
+        length="215193666"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.5.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.4.3</title>
+      <sparkle:version>1.4.3</sparkle:version>
+      <sparkle:shortVersionString>1.4.3</sparkle:shortVersionString>
+      <pubDate>Wed, 05 Aug 2026 00:34:56 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.4.3/Anikku-1.4.3.dmg"
+        sparkle:edSignature="kscUt9aHVpoxdpB7omCrGAiMo5hS0SdX6pD4OJxOB8sQmK3Yu8qG5TNE62OTb8mA7kBMuenoyVLA64BnY5MXAw=="
+        length="214996265"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.4.3
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.4.2</title>
+      <sparkle:version>1.4.2</sparkle:version>
+      <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 23:18:03 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.4.2/Anikku-1.4.2.dmg"
+        sparkle:edSignature="GTprjd8uiNc6EPKI6A3YTKfHgB5v1XGtDGym2wXIFfeOW8JOjjeq+W3N/E47gKIfyfqiI4VEIlgWfxE0361FDQ=="
+        length="215038599"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.4.2
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.4.1</title>
+      <sparkle:version>1.4.1</sparkle:version>
+      <sparkle:shortVersionString>1.4.1</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 20:19:28 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.4.1/Anikku-1.4.1.dmg"
+        sparkle:edSignature="wYwsdky3XXydDVfzo19I/oNA18FfIzUJt1O0JGxzyZj5KrDCioQf1OiZj+b+v+CHjdWXxvnyWnPbYybyRoK/AA=="
+        length="214980638"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.4.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.4.0</title>
+      <sparkle:version>1.4.0</sparkle:version>
+      <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 18:46:16 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.4.0/Anikku-1.4.0.dmg"
+        sparkle:edSignature="pOYoXkjOvSFf0Ate3fSCTE0Ce5sfv0Lxn327xPj3S+YF7DwMoeE7rbpwp6TBaGOunFcVKlkZNJC6RY8Qayi/Bg=="
+        length="214929734"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.4.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.3.3</title>
+      <sparkle:version>1.3.3</sparkle:version>
+      <sparkle:shortVersionString>1.3.3</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 18:11:02 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.3.3/Anikku-1.3.3.dmg"
+        sparkle:edSignature="DgHCTJ43fbaRJLAtHZk8uu1AoGoWdGAGUGltFDbkma7z2vKoOKrgqFOY0BS37Bmf3Kikrxb9K0NBoVqR9eiEDg=="
+        length="214735535"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.3.3
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.3.2</title>
+      <sparkle:version>1.3.2</sparkle:version>
+      <sparkle:shortVersionString>1.3.2</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 17:14:08 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.3.2/Anikku-1.3.2.dmg"
+        sparkle:edSignature="bpttd6pdO18oUPZig49RZt9891k9yqJx2VdXTmWelqg/Gas+yAI1FJha1JzUuK1Ba3MBmaUvw/5IVSXSro7zCg=="
+        length="214697980"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.3.2
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.3.1</title>
+      <sparkle:version>1.3.1</sparkle:version>
+      <sparkle:shortVersionString>1.3.1</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 16:10:14 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.3.1/Anikku-1.3.1.dmg"
+        sparkle:edSignature="NwQLsnVug2VO8pGExJqGR2w7nhfleWCX3qat7zd6g63/qX78v/yvmDhbkQTHgXbx20Z6hRL1jp5s7uvoNe7pBw=="
+        length="214734293"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.3.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.3.0</title>
+      <sparkle:version>1.3.0</sparkle:version>
+      <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 15:45:09 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.3.0/Anikku-1.3.0.dmg"
+        sparkle:edSignature="ga1iWlskPcEgNiB7hjFqt3wL72mfIWYvUVPDpj5LZ6vEeR+SRRxjsFGHS19GnXTKiioTudh6qOTl2IJb2uzJAw=="
+        length="214716670"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.3.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.2.0</title>
+      <sparkle:version>1.2.0</sparkle:version>
+      <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 15:07:25 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.2.0/Anikku-1.2.0.dmg"
+        sparkle:edSignature="ZOSHBpZOYj8qQtXPfoBKqjJm+TWuNV90CpDYbVb14bA0EM9KX+154owTA2/1NnpwLd0JsVtUN4MX2Y6c7O0yDQ=="
+        length="214544813"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.2.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.1.6</title>
+      <sparkle:version>1.1.6</sparkle:version>
+      <sparkle:shortVersionString>1.1.6</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 14:33:43 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.1.6/Anikku-1.1.6.dmg"
+        sparkle:edSignature="cu/2NfFkLuKKdOCBGSsfL7Xz4d1ZzGwQ52v7mdZpcLcc3+dsFF1G8uJUl2xBOX7ttlM+kyFU62N4CFmmrV6nCA=="
+        length="214478698"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.1.6
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.1.5</title>
+      <sparkle:version>1.1.5</sparkle:version>
+      <sparkle:shortVersionString>1.1.5</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 13:30:32 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.1.5/Anikku-1.1.5.dmg"
+        sparkle:edSignature="zuaHTNeo9Ved4zlYy36NdVWcYnznru8d9xzZw+C4kR+DPf/azsQ7rFqnsVe/f6hPES2/4DJDVr3IRBOkG6cKBw=="
+        length="214330154"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.1.5
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.1.4</title>
+      <sparkle:version>1.1.4</sparkle:version>
+      <sparkle:shortVersionString>1.1.4</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 12:51:45 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.1.4/Anikku-1.1.4.dmg"
+        sparkle:edSignature="SLdvbJBfS6F/Uk8B//9O/hFBXMnQ6VTonXk58iZcivVZRuGxJyx3G10ekqYX/ZkI5PmpxNJcuqf4cZxbXnlwBw=="
+        length="214328469"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.1.4
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.1.3</title>
+      <sparkle:version>1.1.3</sparkle:version>
+      <sparkle:shortVersionString>1.1.3</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 12:40:29 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.1.3/Anikku-1.1.3.dmg"
+        sparkle:edSignature="pvRCvoB75oZ/NTY5T2g5RHtlFr2eV/mLa38gNtH6AxZMh0nhtI/LjMT1ijzDb0tJU53Pc62EhG0GJ+jAtXglDw=="
+        length="214300274"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.1.3
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.1.2</title>
+      <sparkle:version>1.1.2</sparkle:version>
+      <sparkle:shortVersionString>1.1.2</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 12:31:34 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.1.2/Anikku-1.1.2.dmg"
+        sparkle:edSignature="ry0VhnHvmmYfApbEGTEzDyIa37M1PPKUHMymROCShVMUUHL6+QAOVaBHz89+dc9ZPG/UyuMao3B881hYdxYsBg=="
+        length="214340566"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.1.2
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.1.1</title>
+      <sparkle:version>1.1.1</sparkle:version>
+      <sparkle:shortVersionString>1.1.1</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 12:15:59 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.1.1/Anikku-1.1.1.dmg"
+        sparkle:edSignature="gOHa1+Uo3N2P+U+oQmvd5f9mbF6mS6MrwnB510W1whGQew7EbKoJ57D1v+cGUV1HmhC4HFUWvMB4DZlI5Jc0AA=="
+        length="214333396"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.1.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.1.0</title>
+      <sparkle:version>1.1.0</sparkle:version>
+      <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 12:07:46 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.1.0/Anikku-1.1.0.dmg"
+        sparkle:edSignature="oTCB7bT1CIMWxz7gaWAVXsoLfZtmhi0pWaEtHY6rVLT/+AwIwH9DNiNoAAPXP5G8K+Wozg4EuEMpgpgr4XQcBw=="
+        length="214304324"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.1.0
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.0.5</title>
+      <sparkle:version>1.0.5</sparkle:version>
+      <sparkle:shortVersionString>1.0.5</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 01:53:26 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.5/Anikku-1.0.5.dmg"
+        sparkle:edSignature="jmkGc0q6VC19J+ckB/Jck/prMDtV9RnbeEPMLEdlQnPHFdUss5q/zEyGjZm8mU3SoaIqe150p21Qt4WZ+jEZAA=="
+        length="214264093"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.5
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.0.4</title>
+      <sparkle:version>1.0.4</sparkle:version>
+      <sparkle:shortVersionString>1.0.4</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 01:30:24 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.4/Anikku-1.0.4.dmg"
+        sparkle:edSignature="64mUJBJWg2V7OrttLDaUJrtzy/1ym61Ou6kQ7jWBxTnWxhqEA6/OqUK2BRId3InjPqk/Y+OHp/t1ukMWggoCCw=="
+        length="214198845"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.4
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.0.3</title>
+      <sparkle:version>1.0.3</sparkle:version>
+      <sparkle:shortVersionString>1.0.3</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 00:59:32 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.3/Anikku-1.0.3.dmg"
+        sparkle:edSignature="fBrl8r3vWZDsK6Qr9kGRdKpA35EGDULfYEIEdBTp8SmkUg+gmipSGjzm5rgyygnAbw/hm88WSmvCE6UQ8pcRBA=="
+        length="214177280"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.3
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.0.2</title>
+      <sparkle:version>1.0.2</sparkle:version>
+      <sparkle:shortVersionString>1.0.2</sparkle:shortVersionString>
+      <pubDate>Tue, 04 Aug 2026 00:32:52 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.2/Anikku-1.0.2.dmg"
+        sparkle:edSignature="08hTxlHvEOvQH9vcbUch/BMGXzSNag3OEFD6TsOsVLjQx5GSio1g/Yl3mIGbWKG4lh5vZdT3u2E9um69vqJNBQ=="
+        length="214258537"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.2
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.0.1</title>
+      <sparkle:version>1.0.1</sparkle:version>
+      <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+      <pubDate>Mon, 03 Aug 2026 23:07:08 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.1/Anikku-1.0.1.dmg"
+        sparkle:edSignature="J90ioSHV9wMBt5AbSK9bOUS8jBB58nN06rDaUcNx2RNNWngWqanjaUQRPW7xSlsMhwXxRD1rkAZ+su6IvudOCw=="
+        length="214123667"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.1
+      </sparkle:releaseNotesLink>
+    </item><item>
+      <title>Version 1.0.0</title>
+      <sparkle:version>1.0.0</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <pubDate>Sun, 02 Aug 2026 21:15:15 +0100</pubDate>
+      <enclosure
+        url="https://github.com/ErnestHysa/anikku/releases/download/v1.0.0/Anikku-1.0.0.dmg"
+        sparkle:edSignature="xcuRlTxCW1EMKDppNtJDViELhq4nm/0PkdszTcmG7TBfxidEJ5BObb9Z17X5/6aYk16Kcf1X5sj4sw1YKLzyCQ=="
+        length="214066731"
+        type="application/octet-stream" />
+      <sparkle:releaseNotesLink>
+        https://github.com/ErnestHysa/anikku/releases/tag/v1.0.0
+      </sparkle:releaseNotesLink>
+    </item></channel>
+</rss>

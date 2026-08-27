@@ -1,0 +1,163 @@
+# Anikku macOS Extension Repo — Auto-Build Pipeline
+#
+# This workflow runs on a schedule (weekly) and on-demand (workflow_dispatch)
+# to rebuild extension JARs from the latest community APKs.
+#
+# It should be placed in the root of the anikku-extensions repo.
+# The macos/ scripts and this workflow are part of the main Anikku repo.
+#
+# When run:
+# 1. Checks out the anikku-extensions repo (where this workflow lives)
+# 2. Fetches the latest extension APKs from community repos
+# 3. Converts them to JVM JARs using dex2jar
+# 4. Updates index.min.json
+# 5. Commits any changes back to the repo
+
+name: Build Extensions
+
+on:
+  schedule:
+    # Run weekly on Sunday at 06:00 UTC
+    - cron: '0 6 * * 0'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub UI
+    inputs:
+      extension:
+        description: 'Extension keyword to build (empty = build all)'
+        required: false
+        type: string
+      force:
+        description: 'Force rebuild even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # JAVA_HOME is set automatically by actions/setup-java — do not override
+  SCRIPTS_DIR: scripts  # scripts are in macos/scripts/ in main repo, root in extension repo
+
+jobs:
+  build-extensions:
+    runs-on: macos-latest  # macOS runner has JDK pre-installed
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew install dex2jar
+          brew list dex2jar
+
+      - name: Download and convert extensions
+        run: |
+          EXT_FILTER="${{ github.event.inputs.extension || '' }}"
+          # Scripts location: macos/scripts/ in main repo, scripts/ (copied) in extension repo
+          if [ -f "macos/scripts/convert-keiyoushi-extension.sh" ]; then
+            SCRIPT_DIR="macos/scripts"
+          elif [ -f "scripts/convert-keiyoushi-extension.sh" ]; then
+            SCRIPT_DIR="scripts"
+          else
+            echo "ERROR: Conversion scripts not found. This workflow must run in the Anikku main repo or have scripts/ copied."
+            exit 1
+          fi
+
+          if [ -n "$EXT_FILTER" ]; then
+            # Convert a single extension
+            bash "$SCRIPT_DIR/convert-keiyoushi-extension.sh" --pkg "$EXT_FILTER" --keep-temp
+          else
+            # Convert all extensions — use the batch script
+            bash "$SCRIPT_DIR/batch-build-extensions.sh" --keep-temp 2>&1 || true
+          fi
+
+      - name: Copy JARs to repo structure
+        run: |
+          mkdir -p repo/apk
+          SOURCE_DIR="${HOME}/Library/Application Support/Anikku/extensions"
+          
+          # Copy all non-test extension JARs to the repo
+          for jar in "$SOURCE_DIR"/*.jar; do
+            basename=$(basename "$jar")
+            # Skip test extensions
+            case "$basename" in
+              test-*|app.anikku.macos.testextension|com.example.*)
+                echo "  Skipping test JAR: $basename"
+                continue
+                ;;
+            esac
+            cp "$jar" "repo/apk/$basename"
+            echo "  Copied: $basename ($(stat -f%z "$jar") bytes)"
+          done
+
+      - name: Regenerate index.min.json
+        run: |
+          python3 -c "
+import json, os, zipfile
+
+output_dir = 'repo/apk'
+entries = []
+
+if not os.path.isdir(output_dir):
+    print('No apk directory found, skipping index generation')
+    exit(0)
+
+for fname in sorted(os.listdir(output_dir)):
+    if not fname.endswith('.jar'):
+        continue
+    jar_path = os.path.join(output_dir, fname)
+    pkg_name = fname[:-4]
+    try:
+        with zipfile.ZipFile(jar_path) as z:
+            if 'extension.json' in z.namelist():
+                meta = json.loads(z.read('extension.json'))
+                entries.append({
+                    'name': meta.get('name', pkg_name),
+                    'pkg': meta.get('pkgName', pkg_name),
+                    'apk': fname,
+                    'lang': meta.get('lang', 'en'),
+                    'code': meta.get('versionCode', 100),
+                    'version': meta.get('versionName', '1.0.0'),
+                    'nsfw': 1 if meta.get('isNsfw', False) else 0,
+                    'torrent': 1 if meta.get('isTorrent', False) else 0,
+                    'sources': []
+                })
+                print(f'  Indexed: {pkg_name} (v{meta.get(\"versionName\", \"?\")})')
+    except Exception as e:
+        print(f'  WARNING: Could not read {fname}: {e}')
+
+with open('repo/index.min.json', 'w') as f:
+    json.dump(entries, f, separators=(',', ':'))
+
+print(f'Generated index.min.json with {len(entries)} entries')
+"
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git add repo/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            git diff --cached --stat
+          fi
+
+      - name: Commit and push
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
+          git config user.name "Anikku Extension Builder"
+          git config user.email "bot@anikku.app"
+          git commit -m "chore: auto-build extension JARs
+
+          Auto-built by GitHub Actions workflow.
+          Converted latest APKs from community repos to JVM JARs via dex2jar."
+          git push

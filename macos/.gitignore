@@ -1,0 +1,20 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Native libraries (bundled separately)
+libs/*.dylib
+
+# App distributions
+*.dmg
+*.pkg
+
+# Logs
+*.log
+ed25519-key.pem

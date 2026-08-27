@@ -6,6 +6,8 @@ plugins {
 
 kotlin {
     androidTarget()
+    jvm()
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -23,6 +25,7 @@ kotlin {
             }
         }
         val androidMain by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(projects.core.common)
                 api(libs.preferencektx)
@@ -30,6 +33,20 @@ kotlin {
                 // Workaround for https://youtrack.jetbrains.com/issue/KT-57605
                 implementation(kotlinx.coroutines.android)
                 implementation(project.dependencies.platform(kotlinx.coroutines.bom))
+            }
+        }
+        val jvmMain by getting {
+            dependsOn(commonMain)
+            dependencies {
+                implementation(projects.core.common)
+                // JVM needs OKHttp directly (Android gets it transitively via core.common)
+                api(libs.okhttp.core)
+                api(libs.okhttp.logging)
+                api(libs.okhttp.brotli)
+                api(libs.okhttp.dnsoverhttps)
+                implementation(kotlinx.coroutines.core)
+                // RxJava is already in commonMain, bring in okio for Response body
+                api(libs.okio)
             }
         }
     }

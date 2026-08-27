@@ -1,0 +1,485 @@
+package app.anikku.macos.ui.components
+
+/**
+ * macOS-adapted SettingsItems — Material 3 preference composables.
+ *
+ * Ported from presentation-core's SettingsItems.kt. Key changes:
+ * - Replaced `android.view.MotionEvent` + `pointerInteropFilter` with Compose `detectTapGestures(onPress)`
+ * - Removed Android-specific `hapticFeedback` references (kept but nullable-safe)
+ */
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material.icons.outlined.RemoveCircle
+import androidx.compose.material.icons.rounded.CheckBox
+import androidx.compose.material.icons.rounded.CheckBoxOutlineBlank
+import androidx.compose.material.icons.rounded.DisabledByDefault
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+
+/**
+ * Item padding constants.
+ */
+object SettingsItemsPaddings {
+    val Horizontal = 24.dp
+    val Vertical = 10.dp
+}
+
+// Constants for disabled/opacity alpha values
+private const val DISABLED_ALPHA = 0.38f
+
+@Composable
+fun HeadingItem(text: String, onClick: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
+            .padding(
+                horizontal = SettingsItemsPaddings.Horizontal,
+                vertical = SettingsItemsPaddings.Vertical,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            modifier = Modifier.weight(1f),
+        )
+        if (onClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(16.dp),
+            )
+        }
+    }
+}
+
+@Composable
+fun IconItem(label: String, icon: ImageVector, onClick: () -> Unit) {
+    BaseSettingsItem(
+        label = label,
+        widget = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+fun SortItem(label: String, sortDescending: Boolean?, onClick: () -> Unit) {
+    val arrowIcon = when (sortDescending) {
+        true -> Icons.Default.ArrowDownward
+        false -> Icons.Default.ArrowUpward
+        null -> null
+    }
+
+    BaseSortItem(
+        label = label,
+        icon = arrowIcon,
+        onClick = onClick,
+    )
+}
+
+@Composable
+fun BaseSortItem(label: String, icon: ImageVector?, onClick: () -> Unit) {
+    BaseSettingsItem(
+        label = label,
+        widget = {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                Spacer(modifier = Modifier.size(24.dp))
+            }
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+fun CheckboxItem(label: String, checked: Boolean, onClick: () -> Unit) {
+    BaseSettingsItem(
+        label = label,
+        widget = {
+            Checkbox(
+                checked = checked,
+                onCheckedChange = null,
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+fun RadioItem(label: String, selected: Boolean, onClick: () -> Unit) {
+    BaseSettingsItem(
+        label = label,
+        widget = {
+            RadioButton(
+                selected = selected,
+                onClick = null,
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+fun SliderItem(
+    label: String,
+    value: Int,
+    valueText: String,
+    onChange: (Int) -> Unit,
+    max: Int,
+    min: Int = 0,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = SettingsItemsPaddings.Horizontal,
+                vertical = SettingsItemsPaddings.Vertical,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        Column(modifier = Modifier.weight(0.5f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(valueText)
+        }
+
+        // Simple Compose Slider (not the custom M3 extended one)
+        androidx.compose.material3.Slider(
+            modifier = Modifier.weight(1.5f),
+            value = value.toFloat(),
+            onValueChange = {
+                val intValue = it.toInt()
+                if (intValue != value) {
+                    onChange(intValue)
+                }
+            },
+            valueRange = min.toFloat()..max.toFloat(),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> SelectItem(
+    label: String,
+    options: Array<T>,
+    selectedIndex: Int,
+    modifier: Modifier = Modifier,
+    onSelect: (Int) -> Unit,
+    toString: (T) -> String = { it.toString() },
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        modifier = modifier,
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+    ) {
+        OutlinedTextField(
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth()
+                .padding(
+                    horizontal = SettingsItemsPaddings.Horizontal,
+                    vertical = SettingsItemsPaddings.Vertical,
+                ),
+            label = { Text(text = label) },
+            value = toString(options[selectedIndex]),
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(
+                    expanded = expanded,
+                )
+            },
+            colors = ExposedDropdownMenuDefaults.textFieldColors(),
+        )
+
+        ExposedDropdownMenu(
+            modifier = Modifier.exposedDropdownSize(),
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            options.forEachIndexed { index, option ->
+                DropdownMenuItem(
+                    text = { Text(toString(option)) },
+                    onClick = {
+                        onSelect(index)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * macOS-adapted RepeatingIconButton.
+ *
+ * Replaces `android.view.MotionEvent` + `pointerInteropFilter` with Compose's
+ * `detectTapGestures(onPress)` for pointer press/release detection.
+ */
+@Composable
+fun RepeatingIconButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    maxDelayMillis: Long = 750,
+    minDelayMillis: Long = 5,
+    delayDecayFactor: Float = .25f,
+    content: @Composable () -> Unit,
+) {
+    val currentClickListener by rememberUpdatedState(onClick)
+    var pressed by remember { mutableStateOf(false) }
+
+    IconButton(
+        modifier = modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    pressed = true
+                    // Wait for release
+                    tryAwaitRelease()
+                    pressed = false
+                },
+            )
+        },
+        onClick = {},
+        enabled = enabled,
+        interactionSource = interactionSource,
+        content = content,
+    )
+
+    LaunchedEffect(pressed, enabled) {
+        var currentDelayMillis = maxDelayMillis
+
+        while (enabled && pressed) {
+            currentClickListener()
+            kotlinx.coroutines.delay(currentDelayMillis)
+            currentDelayMillis =
+                (currentDelayMillis - (currentDelayMillis * delayDecayFactor))
+                    .toLong().coerceAtLeast(minDelayMillis)
+        }
+    }
+}
+
+@Composable
+fun OutlinedNumericChooser(
+    label: String,
+    placeholder: String,
+    suffix: String,
+    value: Int,
+    step: Int,
+    min: Int? = null,
+    onValueChanged: (Int) -> Unit,
+) {
+    var currentValue = value
+
+    val updateValue: (Boolean) -> Unit = {
+        currentValue += if (it) step else -step
+        if (min != null) currentValue = if (currentValue < min) min else currentValue
+        onValueChanged(currentValue)
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        RepeatingIconButton(
+            onClick = { updateValue(false) },
+        ) { Icon(imageVector = Icons.Outlined.RemoveCircle, contentDescription = null) }
+
+        OutlinedTextField(
+            value = "%d".format(currentValue),
+            modifier = Modifier.widthIn(min = 140.dp),
+            onValueChange = {
+                currentValue = it.trim().replace(Regex("[^-\\d.]"), "").toIntOrNull()
+                    ?: currentValue
+                onValueChanged(currentValue)
+            },
+            label = { Text(text = label) },
+            placeholder = { Text(text = placeholder) },
+            suffix = { Text(text = suffix) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+
+        RepeatingIconButton(
+            onClick = { updateValue(true) },
+        ) { Icon(imageVector = Icons.Outlined.AddCircle, contentDescription = null) }
+    }
+}
+
+@Composable
+fun TextItem(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+    isPassword: Boolean = false,
+) {
+    OutlinedTextField(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SettingsItemsPaddings.Horizontal, vertical = 4.dp),
+        label = { Text(text = label) },
+        value = value,
+        onValueChange = onChange,
+        singleLine = true,
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = if (isPassword) KeyboardOptions(keyboardType = KeyboardType.Password) else KeyboardOptions.Default,
+    )
+}
+
+@Composable
+fun IconItem(
+    label: String,
+    icon: Painter,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    BaseSettingsItem(
+        label = label,
+        widget = {
+            Icon(
+                painter = icon,
+                contentDescription = label,
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+fun SettingsChipRow(label: String, content: @Composable FlowRowScope.() -> Unit) {
+    Column {
+        HeadingItem(label)
+        FlowRow(
+            modifier = Modifier.padding(
+                start = SettingsItemsPaddings.Horizontal,
+                top = 0.dp,
+                end = SettingsItemsPaddings.Horizontal,
+                bottom = SettingsItemsPaddings.Vertical,
+            ),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
+fun SettingsIconGrid(label: String, content: LazyGridScope.() -> Unit) {
+    Column {
+        HeadingItem(label)
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(128.dp),
+            modifier = Modifier.padding(
+                start = SettingsItemsPaddings.Horizontal,
+                end = SettingsItemsPaddings.Horizontal,
+                bottom = SettingsItemsPaddings.Vertical,
+            ),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun BaseSettingsItem(
+    label: String,
+    widget: @Composable RowScope.() -> Unit,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .fillMaxWidth()
+            .padding(
+                horizontal = SettingsItemsPaddings.Horizontal,
+                vertical = SettingsItemsPaddings.Vertical,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        widget(this)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
