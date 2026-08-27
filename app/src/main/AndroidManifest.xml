@@ -82,6 +82,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="anikku" />
+                <data android:scheme="aniyomi" />
                 <data android:host="add-repo" />
             </intent-filter>
 
