@@ -311,6 +311,22 @@
     <string name="pref_player_subtitle_blacklist">Blacklist</string>
     <string name="pref_player_subtitle_blacklist_info">Blacklist for subtitles. If a blacklist is defined, all subtitles that contains a blacklisted word will be filtered out. Multiple values can be delimited by a comma.</string>
 
+    <!-- Player settings - Jimaku -->
+    <string name="pref_jimaku_group">Jimaku</string>
+    <string name="pref_jimaku_enabled">Enable Jimaku subtitles</string>
+    <string name="pref_jimaku_enabled_summary">Fetch Japanese subtitles from jimaku.cc</string>
+    <string name="pref_jimaku_api_key">API key</string>
+    <string name="pref_jimaku_auto_fetch">Auto-fetch subtitles</string>
+    <string name="pref_jimaku_auto_fetch_summary">Automatically fetch subtitles when a video starts</string>
+    <string name="player_jimaku_download_external">Download from external sources</string>
+    <string name="player_jimaku_no_results">No subtitles found</string>
+    <string name="player_jimaku_refresh">Refresh</string>
+    <string name="player_jimaku_showing_all_files">No subtitles found for this episode. Showing all available files.</string>
+    <string name="player_jimaku_error_auth">Invalid API key. Check your Jimaku settings.</string>
+    <string name="player_jimaku_error_rate_limit">Rate limited by Jimaku. Please try again shortly.</string>
+    <string name="player_jimaku_error_network">Network error. Check your connection.</string>
+    <string name="player_jimaku_search_hint">Search anime on Jimaku…</string>
+
     <!-- Player settings - Audio -->
     <string name="pref_player_audio">Audio</string>
     <string name="pref_player_audio_summary">Preferred languages, pitch correction, audio channels</string>

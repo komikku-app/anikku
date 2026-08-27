@@ -72,9 +72,21 @@ import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.JimakuApi
+import eu.kanade.tachiyomi.ui.player.utils.JimakuAuthException
+import eu.kanade.tachiyomi.ui.player.utils.JimakuEntry
+import eu.kanade.tachiyomi.ui.player.utils.JimakuFile
+import eu.kanade.tachiyomi.ui.player.utils.JimakuNetworkException
+import eu.kanade.tachiyomi.ui.player.utils.JimakuRateLimitException
+import eu.kanade.tachiyomi.ui.player.utils.JimakuUiError
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
+import eu.kanade.tachiyomi.ui.player.utils.entryIdCacheKey
+import eu.kanade.tachiyomi.ui.player.utils.entrySearchCacheKey
+import eu.kanade.tachiyomi.ui.player.utils.fileListCacheKey
+import eu.kanade.tachiyomi.ui.player.utils.rankFileFormat
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.episode.filterDownloadedEpisodes
@@ -162,6 +174,8 @@ class PlayerViewModel @JvmOverloads constructor(
     private val basePreferences: BasePreferences = Injekt.get(),
     private val getCustomButtons: GetCustomButtons = Injekt.get(),
     private val trackSelect: TrackSelect = Injekt.get(),
+    internal val subtitlePreferences: SubtitlePreferences = Injekt.get(),
+    private val networkHelper: eu.kanade.tachiyomi.network.NetworkHelper = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
 ) : ViewModel() {
 
@@ -202,6 +216,27 @@ class PlayerViewModel @JvmOverloads constructor(
     val subtitleTracks = _subtitleTracks.asStateFlow()
     private val _selectedSubtitles = MutableStateFlow(Pair(-1, -1))
     val selectedSubtitles = _selectedSubtitles.asStateFlow()
+
+    private val _jimakuFiles = MutableStateFlow<List<JimakuFile>>(emptyList())
+    val jimakuFiles = _jimakuFiles.asStateFlow()
+    private val _jimakuLoading = MutableStateFlow(false)
+    val jimakuLoading = _jimakuLoading.asStateFlow()
+    private val _jimakuError = MutableStateFlow<JimakuUiError?>(null)
+    val jimakuError = _jimakuError.asStateFlow()
+    private val _jimakuSelectedUrl = MutableStateFlow<String?>(null)
+    val jimakuSelectedUrl = _jimakuSelectedUrl.asStateFlow()
+    private val jimakuCachedFiles = mutableMapOf<String, java.io.File>()
+    private val jimakuEntryCache = mutableMapOf<String, List<JimakuEntry>>()
+    private val jimakuFileListCache = mutableMapOf<String, List<JimakuFile>>()
+    private var jimakuSearchJob: Job? = null
+    private var jimakuApiKey: String = ""
+    private var jimakuApi: JimakuApi? = null
+    private val _jimakuAddedUrls = MutableStateFlow<Set<String>>(emptySet())
+    val jimakuAddedUrls = _jimakuAddedUrls.asStateFlow()
+    private val _jimakuEntries = MutableStateFlow<List<JimakuEntry>>(emptyList())
+    val jimakuEntries = _jimakuEntries.asStateFlow()
+    private val _jimakuIsAllFiles = MutableStateFlow(false)
+    val jimakuIsAllFiles = _jimakuIsAllFiles.asStateFlow()
 
     private val _audioTracks = MutableStateFlow<List<VideoTrack>>(emptyList())
     val audioTracks = _audioTracks.asStateFlow()
@@ -533,6 +568,7 @@ class PlayerViewModel @JvmOverloads constructor(
         }
         activity.player.secondarySid = _selectedSubtitles.value.second
         activity.player.sid = _selectedSubtitles.value.first
+        _jimakuSelectedUrl.update { null }
     }
 
     fun updateSubtitle(sid: Int, secondarySid: Int) {
@@ -1910,6 +1946,263 @@ class PlayerViewModel @JvmOverloads constructor(
             }
         }
         return null
+    }
+
+    fun fetchAndAutoSelectJimaku() {
+        viewModelScope.launch {
+            val files = fetchJimakuSubtitles()
+            if (files.isNotEmpty()) {
+                autoSelectBestJimakuSubtitle(files)
+            }
+        }
+    }
+
+    fun fetchJimakuFiles(forceRefresh: Boolean) {
+        viewModelScope.launch { fetchJimakuSubtitles(forceRefresh) }
+    }
+
+    private fun getJimakuApi(): JimakuApi? {
+        val apiKey = subtitlePreferences.jimakuApiKey().get()
+        if (apiKey.isBlank()) {
+            _jimakuError.update { JimakuUiError.AuthError }
+            return null
+        }
+        if (jimakuApiKey != apiKey || jimakuApi == null) {
+            jimakuApiKey = apiKey
+            jimakuApi = JimakuApi(apiKey, activity.cacheDir, networkHelper.client)
+        }
+        return jimakuApi
+    }
+
+    private suspend inline fun getEntriesOrFetch(
+        cacheKey: String,
+        forceRefresh: Boolean,
+        fetch: suspend () -> List<JimakuEntry>,
+    ): List<JimakuEntry> {
+        if (!forceRefresh) {
+            jimakuEntryCache[cacheKey]?.let { return it }
+        }
+        return fetch().also { result ->
+            if (result.isNotEmpty()) {
+                jimakuEntryCache[cacheKey] = result
+            }
+        }
+    }
+
+    private suspend inline fun getFilesOrFetch(
+        cacheKey: String,
+        forceRefresh: Boolean,
+        fetch: suspend () -> List<JimakuFile>,
+    ): List<JimakuFile> {
+        if (!forceRefresh) {
+            jimakuFileListCache[cacheKey]?.let { return it }
+        }
+        return fetch().also { result ->
+            if (result.isNotEmpty()) {
+                jimakuFileListCache[cacheKey] = result
+            }
+        }
+    }
+
+    private suspend fun resolveJimakuEntries(jimakuApi: JimakuApi, forceRefresh: Boolean): List<JimakuEntry> {
+        val animeId = currentAnime.value?.id ?: return emptyList()
+
+        val trackerManager = Injekt.get<TrackerManager>()
+        val tracks = getTracks.await(animeId)
+        var result = emptyList<JimakuEntry>()
+
+        val anilistTrack = tracks.firstOrNull { track ->
+            trackerManager.get(track.trackerId) is Anilist
+        }
+        if (anilistTrack != null) {
+            result = getEntriesOrFetch(
+                cacheKey = entryIdCacheKey(anilistTrack.remoteId),
+                forceRefresh = forceRefresh,
+            ) {
+                jimakuApi.searchByAniListId(anilistTrack.remoteId)
+            }
+        }
+
+        if (result.isEmpty()) {
+            val malTrack = tracks.firstOrNull { track ->
+                trackerManager.get(track.trackerId) is MyAnimeList
+            }
+            if (malTrack != null) {
+                val alId = jimakuApi.getAniListIdFromMal(malTrack.remoteId)
+                if (alId > 0L) {
+                    result = getEntriesOrFetch(
+                        cacheKey = entryIdCacheKey(alId),
+                        forceRefresh = forceRefresh,
+                    ) {
+                        jimakuApi.searchByAniListId(alId)
+                    }
+                }
+            }
+        }
+
+        if (result.isEmpty()) {
+            val anime = currentAnime.value
+            val titlesToSearch = listOfNotNull(
+                anime?.ogTitle?.takeIf { it.isNotBlank() },
+                anime?.title?.takeIf { it.isNotBlank() && it != anime.ogTitle },
+            )
+
+            for (title in titlesToSearch) {
+                result = getEntriesOrFetch(
+                    cacheKey = entrySearchCacheKey(title),
+                    forceRefresh = forceRefresh,
+                ) {
+                    jimakuApi.searchByName(title)
+                }
+                if (result.isNotEmpty()) break
+            }
+        }
+
+        return result
+    }
+
+    private suspend fun fetchFilesForEntry(
+        jimakuApi: JimakuApi,
+        entryId: Long,
+        episodeNumber: Int?,
+        forceRefresh: Boolean,
+    ): List<JimakuFile> {
+        var files = getFilesOrFetch(
+            cacheKey = fileListCacheKey(entryId, episodeNumber),
+            forceRefresh = forceRefresh,
+        ) {
+            jimakuApi.getSubtitleFiles(entryId, episodeNumber)
+        }
+
+        if (files.isEmpty() && episodeNumber != null) {
+            files = getFilesOrFetch(
+                cacheKey = fileListCacheKey(entryId, null),
+                forceRefresh = forceRefresh,
+            ) {
+                jimakuApi.getSubtitleFiles(entryId, null)
+            }
+            _jimakuIsAllFiles.update { true }
+        } else {
+            _jimakuIsAllFiles.update { false }
+        }
+
+        return files
+    }
+
+    suspend fun fetchJimakuSubtitles(forceRefresh: Boolean = false): List<JimakuFile> {
+        jimakuSearchJob?.cancel()
+        if (!subtitlePreferences.jimakuEnabled().get()) return emptyList()
+
+        val jimakuApi = getJimakuApi() ?: return emptyList()
+        val episodeNumber = currentEpisode.value?.episode_number?.toInt()
+
+        _jimakuLoading.update { true }
+        _jimakuError.update { null }
+
+        return try {
+            val entries = resolveJimakuEntries(jimakuApi, forceRefresh)
+            _jimakuEntries.update { entries }
+
+            if (entries.isEmpty()) {
+                _jimakuFiles.update { emptyList() }
+                _jimakuError.update { JimakuUiError.NotFound }
+                return emptyList()
+            }
+
+            val files = fetchFilesForEntry(jimakuApi, entries.first().id, episodeNumber, forceRefresh)
+            _jimakuFiles.update { files }
+            files
+        } catch (e: JimakuAuthException) {
+            _jimakuError.update { JimakuUiError.AuthError }
+            emptyList()
+        } catch (e: JimakuRateLimitException) {
+            _jimakuError.update { JimakuUiError.RateLimited }
+            emptyList()
+        } catch (e: JimakuNetworkException) {
+            _jimakuError.update { JimakuUiError.NetworkError }
+            emptyList()
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR) { "Jimaku fetch failed: ${e.message}" }
+            _jimakuError.update { JimakuUiError.Unknown(e.message ?: "Unknown error") }
+            emptyList()
+        } finally {
+            _jimakuLoading.update { false }
+        }
+    }
+
+    fun searchJimakuByQuery(query: String) {
+        if (query.isBlank()) return
+        jimakuSearchJob?.cancel()
+        jimakuSearchJob = viewModelScope.launch {
+            _jimakuLoading.update { true }
+            _jimakuError.update { null }
+            try {
+                val jimakuApi = getJimakuApi() ?: return@launch
+                val episodeNumber = currentEpisode.value?.episode_number?.toInt()
+
+                val entries = getEntriesOrFetch(
+                    cacheKey = entrySearchCacheKey(query),
+                    forceRefresh = false,
+                ) {
+                    jimakuApi.searchByName(query)
+                }
+
+                _jimakuEntries.update { entries }
+
+                if (entries.isEmpty()) {
+                    _jimakuFiles.update { emptyList() }
+                    _jimakuError.update { JimakuUiError.NotFound }
+                    return@launch
+                }
+
+                val files = fetchFilesForEntry(jimakuApi, entries.first().id, episodeNumber, forceRefresh = false)
+                _jimakuFiles.update { files }
+            } catch (e: JimakuAuthException) {
+                _jimakuError.update { JimakuUiError.AuthError }
+            } catch (e: JimakuRateLimitException) {
+                _jimakuError.update { JimakuUiError.RateLimited }
+            } catch (e: JimakuNetworkException) {
+                _jimakuError.update { JimakuUiError.NetworkError }
+            } catch (e: Exception) {
+                _jimakuError.update { JimakuUiError.Unknown(e.message ?: "Unknown error") }
+            } finally {
+                _jimakuLoading.update { false }
+            }
+        }
+    }
+
+    fun addJimakuSubtitle(file: JimakuFile) {
+        viewModelScope.launch {
+            try {
+                val cachedFile = jimakuCachedFiles[file.url]
+                val localFile = if (cachedFile != null && cachedFile.exists()) {
+                    cachedFile
+                } else {
+                    val jimakuApi = getJimakuApi() ?: return@launch
+                    jimakuApi.downloadSubtitleToCache(file.url, file.name)?.also {
+                        jimakuCachedFiles[file.url] = it
+                    }
+                }
+                if (localFile != null) {
+                    MPVLib.command(arrayOf("sub-add", localFile.absolutePath, "select", file.name))
+                    _jimakuSelectedUrl.update { file.url }
+                    _jimakuAddedUrls.update { it + file.url }
+                    loadTracks()
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR) { "Jimaku subtitle add failed: ${e.message}" }
+            }
+        }
+    }
+
+    fun autoSelectBestJimakuSubtitle(files: List<JimakuFile>) {
+        val ranked = files.sortedWith(
+            compareByDescending<JimakuFile> { rankFileFormat(it.name) }
+                .thenByDescending { it.size }
+                .thenByDescending { it.lastModified ?: "" },
+        )
+        val best = ranked.firstOrNull() ?: return
+        addJimakuSubtitle(best)
     }
 
     val introSkipEnabled = playerPreferences.enableSkipIntro().get()

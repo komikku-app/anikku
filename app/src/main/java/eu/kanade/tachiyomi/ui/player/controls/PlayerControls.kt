@@ -77,6 +77,8 @@ import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
+import eu.kanade.tachiyomi.ui.player.utils.JimakuCallbacks
+import eu.kanade.tachiyomi.ui.player.utils.JimakuState
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
@@ -565,12 +567,31 @@ fun PlayerControls(
         val showFailedHosters by playerPreferences.showFailedHosters().collectAsState()
         val emptyHosters by playerPreferences.showEmptyHosters().collectAsState()
 
+        val jimakuState = JimakuState(
+            files = viewModel.jimakuFiles.collectAsState().value,
+            loading = viewModel.jimakuLoading.collectAsState().value,
+            error = viewModel.jimakuError.collectAsState().value,
+            addedUrls = viewModel.jimakuAddedUrls.collectAsState().value,
+            isAllFiles = viewModel.jimakuIsAllFiles.collectAsState().value,
+            enabled = subtitlePreferences.jimakuEnabled().collectAsState().value,
+        )
+
+        val jimakuCallbacks = remember {
+            JimakuCallbacks(
+                onFetch = viewModel::fetchJimakuFiles,
+                onSearch = viewModel::searchJimakuByQuery,
+                onAddSubtitle = viewModel::addJimakuSubtitle,
+            )
+        }
+
         PlayerSheets(
             sheetShown = sheetShown,
             subtitles = subtitles.toImmutableList(),
             selectedSubtitles = selectedSubtitles.toList().toImmutableList(),
             onAddSubtitle = viewModel::addSubtitle,
             onSelectSubtitle = viewModel::selectSub,
+            jimakuState = jimakuState,
+            jimakuCallbacks = jimakuCallbacks,
             audioTracks = audioTracks.toImmutableList(),
             selectedAudio = selectedAudio,
             onAddAudio = viewModel::addAudio,
