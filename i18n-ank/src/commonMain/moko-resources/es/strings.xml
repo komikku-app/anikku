@@ -233,4 +233,5 @@
     <string name="pref_discord_show_timestamp_summary_episode">Mostrar el tiempo transcurrido/restante</string>
     <string name="action_clear_anime">Limpiar anime</string>
     <string name="episodes_from_database">Episodios e historial de la base de datos</string>
+    <string name="episode_progress_short"></string>
 </resources>
