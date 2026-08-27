@@ -1,7 +1,7 @@
 [versions]
 mpv-lib = "0.1.13"
 arthenica-smartexceptions = "0.2.1"
-constraint-layout = "1.1.1"
+constraint-layout = "1.1.2"
 ffmpeg-kit = "1.18"
 media = "1.7.1"
 seeker = "1.2.2"
