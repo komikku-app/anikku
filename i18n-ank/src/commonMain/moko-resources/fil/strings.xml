@@ -181,4 +181,16 @@
     <string name="skipped_reason_not_started_episode">Nilaktawan dahil walang episode ang napanood</string>
     <string name="action_clear_anime">Linisin ang anime</string>
     <string name="episodes_from_database">Mga episode at Kasaysayan mula sa Database</string>
+    <string name="cast_subtitle_background"></string>
+    <string name="cast_volume"></string>
+    <string name="theme_monochrome"></string>
+    <string name="cast_subtitle_border_drop_shadow"></string>
+    <string name="cast_subtitle_border_drop_shadow_soft"></string>
+    <string name="queue"></string>
+    <string name="cast_subtitle_border_depressed"></string>
+    <string name="pref_category_castserver"></string>
+    <string name="action_filter_fillermarked"></string>
+    <string name="cast_subtitle_border_raised"></string>
+    <string name="episode_progress_short"></string>
+    <string name="cast_subtitle_border_outline"></string>
 </resources>
