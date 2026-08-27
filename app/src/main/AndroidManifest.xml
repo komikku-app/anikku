@@ -21,6 +21,9 @@
     <!-- For background jobs -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Lets the airing-schedule notification bell fire at the exact air time on Android 12+,
+         instead of being deferred by Doze/App Standby batching windows. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -201,6 +204,7 @@
         <activity
             android:name=".ui.setting.track.TrackLoginActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:label="@string/track_activity_name">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -261,6 +265,10 @@
 
         <receiver
             android:name=".data.notification.NotificationReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name="mihon.feature.airingschedule.notification.ScheduleAlarmReceiver"
             android:exported="false" />
 
         <service

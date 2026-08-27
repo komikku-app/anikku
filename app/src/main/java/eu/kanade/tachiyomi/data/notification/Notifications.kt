@@ -102,6 +102,12 @@ object Notifications {
     const val ID_UPDATES_TO_EXTS = -401
     const val ID_EXTENSION_INSTALLER = -402
 
+    /**
+     * Notification channel used for airing schedule episode alerts.
+     */
+    const val CHANNEL_AIRING_SCHEDULE = "airing_schedule_channel"
+    const val ID_AIRING_SCHEDULE_BASE = -1801
+
     private val deprecatedChannels = listOf(
         "downloader_channel",
         "downloader_complete_channel",
@@ -201,6 +207,9 @@ object Notifications {
                 buildNotificationChannel(CHANNEL_EXTENSIONS_UPDATE, IMPORTANCE_DEFAULT) {
                     setGroup(GROUP_APK_UPDATES)
                     setName(context.stringResource(MR.strings.channel_ext_updates))
+                },
+                buildNotificationChannel(CHANNEL_AIRING_SCHEDULE, IMPORTANCE_HIGH) {
+                    setName("Airing schedule alerts")
                 },
             ),
         )

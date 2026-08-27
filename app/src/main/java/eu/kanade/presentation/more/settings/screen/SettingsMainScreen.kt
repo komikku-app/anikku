@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.CollectionsBookmark
 import androidx.compose.material.icons.outlined.Explore
@@ -229,6 +230,12 @@ object SettingsMainScreen : Screen() {
             subtitleRes = MR.strings.pref_advanced_summary,
             icon = Icons.Outlined.Code,
             screen = SettingsAdvancedScreen,
+        ),
+        Item(
+            titleRes = MR.strings.pref_category_schedule,
+            subtitleRes = MR.strings.pref_category_schedule_summary,
+            icon = Icons.Outlined.CalendarMonth,
+            screen = SettingsScheduleScreen,
         ),
         Item(
             titleRes = MR.strings.pref_category_about,

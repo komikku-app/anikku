@@ -2,4 +2,5 @@
 <resources>
     <!-- unpublished -> 4C1B4D71 / published -> F033F567 -->
     <string name="app_cast_id" translatable="false">null</string>
+    <string name="notification_episode_aired">Episode %1$d just aired</string>
 </resources>
