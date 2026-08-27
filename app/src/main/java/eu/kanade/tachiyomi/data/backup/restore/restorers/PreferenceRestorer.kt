@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.data.backup.restore.restorers
 
 import android.content.Context
+import logcat.LogPriority
 import eu.kanade.tachiyomi.data.backup.create.BackupCreateJob
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
@@ -42,37 +43,41 @@ class PreferenceRestorer(
     ) {
         val prefs = preferenceStore.getAll()
         toRestore.forEach { (key, value) ->
-            when (value) {
-                is IntPreferenceValue -> {
-                    if (prefs[key] is Int?) {
-                        preferenceStore.getInt(key).set(value.value)
+            try {
+                when (value) {
+                    is IntPreferenceValue -> {
+                        if (prefs[key] is Int?) {
+                            preferenceStore.getInt(key).set(value.value)
+                        }
+                    }
+                    is LongPreferenceValue -> {
+                        if (prefs[key] is Long?) {
+                            preferenceStore.getLong(key).set(value.value)
+                        }
+                    }
+                    is FloatPreferenceValue -> {
+                        if (prefs[key] is Float?) {
+                            preferenceStore.getFloat(key).set(value.value)
+                        }
+                    }
+                    is StringPreferenceValue -> {
+                        if (prefs[key] is String?) {
+                            preferenceStore.getString(key).set(value.value)
+                        }
+                    }
+                    is BooleanPreferenceValue -> {
+                        if (prefs[key] is Boolean?) {
+                            preferenceStore.getBoolean(key).set(value.value)
+                        }
+                    }
+                    is StringSetPreferenceValue -> {
+                        if (prefs[key] is Set<*>?) {
+                            preferenceStore.getStringSet(key).set(value.value)
+                        }
                     }
                 }
-                is LongPreferenceValue -> {
-                    if (prefs[key] is Long?) {
-                        preferenceStore.getLong(key).set(value.value)
-                    }
-                }
-                is FloatPreferenceValue -> {
-                    if (prefs[key] is Float?) {
-                        preferenceStore.getFloat(key).set(value.value)
-                    }
-                }
-                is StringPreferenceValue -> {
-                    if (prefs[key] is String?) {
-                        preferenceStore.getString(key).set(value.value)
-                    }
-                }
-                is BooleanPreferenceValue -> {
-                    if (prefs[key] is Boolean?) {
-                        preferenceStore.getBoolean(key).set(value.value)
-                    }
-                }
-                is StringSetPreferenceValue -> {
-                    if (prefs[key] is Set<*>?) {
-                        preferenceStore.getStringSet(key).set(value.value)
-                    }
-                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e) { "Failed to restore preference <$key>" }
             }
         }
     }
