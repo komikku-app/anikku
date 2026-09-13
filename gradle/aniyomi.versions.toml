@@ -20,7 +20,7 @@ nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd-versi
 
 torrentserver = "com.github.Diegopyl1209:torrentserver-aniyomi:c18f58e51b"
 media-router = "androidx.mediarouter:mediarouter:1.8.1"
-cast-play-services = "com.google.android.gms:play-services-cast-framework:22.1.0"
+cast-play-services = "com.google.android.gms:play-services-cast-framework:22.3.1"
 
 [bundles]
 cast = ["media-router", "cast-play-services"]
