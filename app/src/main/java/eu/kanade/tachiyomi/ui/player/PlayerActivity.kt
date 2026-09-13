@@ -64,6 +64,8 @@ import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
 import animiru.feature.mpvfiles.MpvConfig
+import animiru.feature.mpvfiles.MpvConfig.Companion.MPV_DIR
+import animiru.feature.mpvfiles.MpvConfig.Companion.MPV_FONTS_DIR
 import com.hippo.unifile.UniFile
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
@@ -184,9 +186,6 @@ class PlayerActivity : BaseActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         }
-
-        internal const val MPV_DIR = "mpv"
-        private const val MPV_FONTS_DIR = "fonts"
 
         // ANK -->
         /** Upper bound on how long player startup blocks on a pending mpv config copy. */

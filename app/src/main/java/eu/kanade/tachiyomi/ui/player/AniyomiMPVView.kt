@@ -23,6 +23,7 @@ import android.os.Environment
 import android.util.AttributeSet
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
+import animiru.feature.mpvfiles.MpvConfig
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.toColorHexString
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
@@ -87,7 +88,7 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         mpv?.setOptionString("idle", "yes")
         mpv?.setOptionString("ytdl", "no")
         setSafeOptionString("tls-verify", "yes")
-        setSafeOptionString("tls-ca-file", "${context.filesDir.path}/${PlayerActivity.MPV_DIR}/cacert.pem")
+        setSafeOptionString("tls-ca-file", "${context.filesDir.path}/${MpvConfig.MPV_DIR}/cacert.pem")
 
         // We handle selecting this in the viewmodel
         mpv?.setOptionString("sid", "no")
