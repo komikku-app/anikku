@@ -112,8 +112,15 @@ class CodeEditScreenModel(
             return
         }
         // AM -->
-        val internalFile = UniFile.fromFile(context.filesDir)!!.createDirectory(MPV_DIR)!!
-            .createFile(filePath)!!
+        val internalFile = UniFile.fromFile(context.filesDir)?.createDirectory(MPV_DIR)
+            // ANK -->
+            ?.createDirectory(filePath.substringBeforeLast('/'))
+            ?.createFile(filePath.substringAfterLast('/'))
+            ?: kotlin.run {
+                context.toast(AYMR.strings.editor_save_error)
+                return
+            }
+        // ANK <--
         // <-- AM
 
         val content = (mutableState.value as? CodeEditScreenState.Success)
