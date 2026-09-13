@@ -5,9 +5,11 @@ import android.content.res.AssetManager
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import logcat.LogPriority
@@ -26,7 +28,17 @@ class MpvConfig(
     private val advancedPlayerPreferences: AdvancedPlayerPreferences,
     private val getCustomButtons: GetCustomButtons,
 ) {
-    private val scope = CoroutineScope(Dispatchers.IO)
+    // ANK -->
+    // A plain CoroutineScope lets any failure reach the default uncaught handler and kill the app,
+    // so the scope swallows and logs instead.
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO +
+            CoroutineExceptionHandler { _, throwable ->
+                logcat(LogPriority.ERROR, throwable) { "Uncaught failure while copying mpv files" }
+            },
+    )
+    // ANK <--
+
     private var copyJob: Job? = null
 
     fun copyFiles() {
