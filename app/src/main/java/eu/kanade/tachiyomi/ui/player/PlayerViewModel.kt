@@ -381,6 +381,19 @@ class PlayerViewModel @JvmOverloads constructor(
             .filterNotNull()
             .onEach { onTrackListChanged(it) }
             .launchIn(viewModelScope)
+
+        // ANK -->
+        // Loaded here rather than from initPlayer(): the buttons are independent of the episode
+        // being opened, so they must survive a needsInit() short-circuit, and a database failure
+        // must cost only the buttons instead of failing playback.
+        viewModelScope.launchIO {
+            try {
+                setCustomButtons(getCustomButtons.getAll())
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e) { "Failed to load custom buttons" }
+            }
+        }
+        // ANK <--
     }
 
     /**
@@ -1446,9 +1459,6 @@ class PlayerViewModel @JvmOverloads constructor(
                 animeTitle.update { _ -> anime.title }
                 sourceManager.isInitialized.first { it }
                 episodeId = initialEpisodeId
-
-                val buttons = getCustomButtons.getAll()
-                setCustomButtons(buttons)
 
                 updateEpisodeList(initEpisodeList(anime))
 
