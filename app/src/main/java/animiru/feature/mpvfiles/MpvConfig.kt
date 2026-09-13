@@ -21,6 +21,8 @@ import tachiyomi.domain.storage.service.StorageManager
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class MpvConfig(
     private val context: Context,
@@ -37,20 +39,64 @@ class MpvConfig(
                 logcat(LogPriority.ERROR, throwable) { "Uncaught failure while copying mpv files" }
             },
     )
+
+    /** Number of live [eu.kanade.tachiyomi.ui.player.PlayerActivity] instances. */
+    private val playerSessions = AtomicInteger(0)
+    private val copyPending = AtomicBoolean(false)
     // ANK <--
 
     private var copyJob: Job? = null
 
     fun copyFiles() {
+        // ANK -->
+        // Copying wipes the scripts/script-opts/shaders/fonts directories first, which must never
+        // happen underneath a running mpv instance. MainActivity stays resumed behind the player in
+        // picture-in-picture and split-screen, so defer until the last player is gone.
+        if (playerSessions.get() > 0) {
+            copyPending.set(true)
+            return
+        }
+        // ANK <--
+
         if (copyJob?.isActive == true) return
 
         copyJob = scope.launchIO {
-            val mpvDir = getMpvDir()
-            copyUserFiles(mpvDir)
-            copyFontsDirectory(mpvDir)
-            copyAssets(mpvDir)
+            // ANK -->
+            copyPending.set(false)
+            try {
+                val mpvDir = getMpvDir()
+                copyUserFiles(mpvDir)
+                copyFontsDirectory(mpvDir)
+                copyAssets(mpvDir)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e) { "Failed to copy mpv files" }
+            }
+            // ANK <--
         }
     }
+
+    // ANK -->
+    /**
+     * Suspends until any in-flight copy has finished, so mpv never initializes against a
+     * directory tree that is still being deleted and rewritten.
+     */
+    suspend fun awaitCopy() {
+        copyJob?.join()
+    }
+
+    fun onPlayerCreated() {
+        playerSessions.incrementAndGet()
+    }
+
+    fun onPlayerDestroyed() {
+        val remaining = playerSessions.updateAndGet { (it - 1).coerceAtLeast(0) }
+        if (remaining == 0 && copyPending.get()) {
+            copyFiles()
+        }
+    }
+    // ANK <--
 
     private fun getMpvDir(): UniFile {
         return UniFile.fromFile(context.filesDir)!!.createDirectory(MPV_DIR)!!
