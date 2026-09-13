@@ -63,6 +63,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
+import animiru.feature.mpvfiles.MpvConfig
 import com.hippo.unifile.UniFile
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
@@ -96,6 +97,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
@@ -112,6 +115,7 @@ import uy.kohesive.injekt.api.get
 import java.util.Calendar
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.time.Duration.Companion.milliseconds
 
 class PlayerActivity : BaseActivity() {
     private val viewModel by viewModels<PlayerViewModel>()
@@ -128,6 +132,10 @@ class PlayerActivity : BaseActivity() {
     private val audioPreferences: AudioPreferences = Injekt.get()
     private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get()
     private val subtitlePreferences: SubtitlePreferences = Injekt.get()
+
+    // ANK -->
+    private val mpvConfig: MpvConfig = Injekt.get()
+    // ANK <--
 
     // Cast -->
     val castManager: CastManager by lazy { CastManager(this, Injekt.get()) }
@@ -179,6 +187,11 @@ class PlayerActivity : BaseActivity() {
 
         internal const val MPV_DIR = "mpv"
         private const val MPV_FONTS_DIR = "fonts"
+
+        // ANK -->
+        /** Upper bound on how long player startup blocks on a pending mpv config copy. */
+        private const val MPV_COPY_AWAIT_TIMEOUT_MS = 5_000L
+        // ANK <--
 
         // ANK -->
         /** mpv option names start alphanumeric and hold nothing but these; anything else is not one. */
@@ -243,6 +256,12 @@ class PlayerActivity : BaseActivity() {
         enableEdgeToEdge()
         registerSecureActivity(this)
         super.onCreate(savedInstanceState)
+
+        // ANK -->
+        // Registers before setupPlayerMPV() so MpvConfig stops wiping the config directory for as
+        // long as this player lives.
+        mpvConfig.onPlayerCreated()
+        // ANK <--
 
         setupPlayerMPV()
         setupPlayerAudio()
@@ -402,6 +421,10 @@ class PlayerActivity : BaseActivity() {
         // ANK <--
         castManager.cleanup()
 
+        // ANK -->
+        mpvConfig.onPlayerDestroyed()
+        // ANK <--
+
         // AM (DISCORD) -->
         updateDiscordRPC(exitingPlayer = true)
         // <-- AM (DISCORD)
@@ -542,6 +565,17 @@ class PlayerActivity : BaseActivity() {
         advancedPlayerPreferences.mpvConf().get().let { mpvConfFile.writeText(it) }
         val mpvInputFile = mpvDir.createFile("input.conf")!!
         advancedPlayerPreferences.mpvInput().get().let { mpvInputFile.writeText(it) }
+
+        // ANK -->
+        // mpv reads scripts/, script-opts/ and shaders/ during init, so it must not start while
+        // MpvConfig is midway through deleting and rewriting them.
+        val copied = runBlocking {
+            withTimeoutOrNull(MPV_COPY_AWAIT_TIMEOUT_MS.milliseconds) { mpvConfig.awaitCopy() } != null
+        }
+        if (!copied) {
+            logcat(LogPriority.WARN) { "Timed out waiting for the mpv config copy; initializing anyway" }
+        }
+        // ANK <--
 
         player.init(mpv)
 
