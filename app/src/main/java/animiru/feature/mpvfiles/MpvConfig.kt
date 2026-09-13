@@ -51,30 +51,36 @@ class MpvConfig(
         // ANK -->
         // Copying wipes the scripts/script-opts/shaders/fonts directories first, which must never
         // happen underneath a running mpv instance. MainActivity stays resumed behind the player in
-        // picture-in-picture and split-screen, so defer until the last player is gone.
-        if (playerSessions.get() > 0) {
+        // picture-in-picture and split-screen, so defer while any player lives.
+        //
+        // A request that arrives mid-copy is deferred too: the copy may already have passed the
+        // directory it concerns, so it is recorded and replayed by the loop below instead of being
+        // dropped.
+        if (playerSessions.get() > 0 || copyJob?.isActive == true) {
             copyPending.set(true)
             return
         }
-        // ANK <--
-
-        if (copyJob?.isActive == true) return
 
         copyJob = scope.launchIO {
-            // ANK -->
-            copyPending.set(false)
-            try {
-                val mpvDir = getMpvDir()
-                copyUserFiles(mpvDir)
-                copyFontsDirectory(mpvDir)
-                copyAssets(mpvDir)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e) { "Failed to copy mpv files" }
-            }
-            // ANK <--
+            do {
+                // Cleared at the start of the pass, so a request racing with it is recorded again
+                // and picked up by the loop condition rather than overwritten.
+                copyPending.set(false)
+                try {
+                    val mpvDir = getMpvDir()
+                    copyUserFiles(mpvDir)
+                    copyFontsDirectory(mpvDir)
+                    copyAssets(mpvDir)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    logcat(LogPriority.ERROR, e) { "Failed to copy mpv files" }
+                }
+                // Bail out if a player started during the pass; onPlayerDestroyed() flushes the
+                // still-pending request once it is safe again.
+            } while (copyPending.get() && playerSessions.get() == 0)
         }
+        // ANK <--
     }
 
     // ANK -->
