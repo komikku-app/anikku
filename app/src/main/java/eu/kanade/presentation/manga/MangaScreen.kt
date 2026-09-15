@@ -79,6 +79,7 @@ import eu.kanade.presentation.browse.RelatedMangaTitle
 import eu.kanade.presentation.components.relativeDateTimeText
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.ChapterHeader
+import eu.kanade.presentation.manga.components.EpisodeSeasonChips
 import eu.kanade.presentation.manga.components.ExpandableMangaDescription
 import eu.kanade.presentation.manga.components.MangaActionRow
 import eu.kanade.presentation.manga.components.MangaBottomActionMenu
@@ -218,6 +219,10 @@ fun MangaScreen(
     onSeasonClicked: (SeasonAnime) -> Unit,
     onContinueWatchingClicked: ((SeasonAnime) -> Unit)?,
     // <-- AY
+
+    // ANK -->
+    onSeasonFilterSelected: (Int?) -> Unit,
+    // ANK <--
 ) {
     val context = LocalContext.current
     val onCopyTagToClipboard: (tag: String) -> Unit = {
@@ -295,6 +300,9 @@ fun MangaScreen(
             onSeasonClicked = onSeasonClicked,
             onClickContinueWatching = onContinueWatchingClicked,
             // <-- AY
+            // ANK -->
+            onSeasonFilterSelected = onSeasonFilterSelected,
+            // ANK <--
         )
     } else {
         MangaScreenLargeImpl(
@@ -365,6 +373,9 @@ fun MangaScreen(
             onSeasonClicked = onSeasonClicked,
             onClickContinueWatching = onContinueWatchingClicked,
             // <-- AY
+            // ANK -->
+            onSeasonFilterSelected = onSeasonFilterSelected,
+            // ANK <--
         )
     }
 }
@@ -454,6 +465,9 @@ private fun MangaScreenSmallImpl(
     onSeasonClicked: (SeasonAnime) -> Unit,
     onClickContinueWatching: ((SeasonAnime) -> Unit)?,
     // <-- AY
+    // ANK -->
+    onSeasonFilterSelected: (Int?) -> Unit,
+    // ANK <--
 ) {
     // AY -->
     val density = LocalDensity.current
@@ -899,6 +913,22 @@ private fun MangaScreenSmallImpl(
                             )
                         }
                         FetchType.Episodes -> {
+                            // ANK -->
+                            if (state.episodeSeasons.isNotEmpty()) {
+                                item(
+                                    key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.SEASON_CHIPS,
+                                    contentType = MangaScreenItem.SEASON_CHIPS,
+                                    span = { GridItemSpan(maxLineSpan) },
+                                ) {
+                                    EpisodeSeasonChips(
+                                        seasons = state.episodeSeasons,
+                                        selectedSeason = state.selectedSeasonFilter,
+                                        onSelectSeason = onSeasonFilterSelected,
+                                        modifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                    )
+                                }
+                            }
+                            // ANK <--
                             if (state.airingTime > 0L) {
                                 item(
                                     // AM -->
@@ -1048,6 +1078,9 @@ private fun MangaScreenLargeImpl(
     onSeasonClicked: (SeasonAnime) -> Unit,
     onClickContinueWatching: ((SeasonAnime) -> Unit)?,
     // <-- AY
+    // ANK -->
+    onSeasonFilterSelected: (Int?) -> Unit,
+    // ANK <--
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
@@ -1444,6 +1477,22 @@ private fun MangaScreenLargeImpl(
                                 }
 
                                 FetchType.Episodes -> {
+                                    // ANK -->
+                                    if (state.episodeSeasons.isNotEmpty()) {
+                                        item(
+                                            key = EXACT_HEIGHT_KEY_PREFIX + MangaScreenItem.SEASON_CHIPS,
+                                            contentType = MangaScreenItem.SEASON_CHIPS,
+                                            span = { GridItemSpan(maxLineSpan) },
+                                        ) {
+                                            EpisodeSeasonChips(
+                                                seasons = state.episodeSeasons,
+                                                selectedSeason = state.selectedSeasonFilter,
+                                                onSelectSeason = onSeasonFilterSelected,
+                                                modifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                            )
+                                        }
+                                    }
+                                    // ANK <--
                                     if (state.airingTime > 0L) {
                                         item(
                                             // AM -->
