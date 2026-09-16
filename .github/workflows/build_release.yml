@@ -94,7 +94,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
-          java-version: 17
+          java-version: 17.0.20+101
           distribution: temurin
 
       - name: Write google-services.json
