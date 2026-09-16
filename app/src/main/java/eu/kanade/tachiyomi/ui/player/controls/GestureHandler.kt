@@ -18,7 +18,6 @@
 package eu.kanade.tachiyomi.ui.player.controls
 
 import androidx.compose.animation.core.animateFloatAsState
-import kotlin.math.abs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -74,6 +73,7 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.math.abs
 
 @Composable
 fun GestureHandler(
@@ -179,23 +179,23 @@ fun GestureHandler(
                         if (!isLongPressing) {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             isLongPressing = true
-                            if (viewModel.paused.value) {
+                            if (viewModel.paused == true) {
                                 when (pausedLongPressAction) {
                                     PausedLongPressAction.Screenshot -> {
                                         viewModel.pause()
                                         viewModel.sheetShown.update { Sheets.Screenshot }
                                     }
                                     PausedLongPressAction.Play2x -> {
-                                        originalSpeed = MPVLib.getPropertyDouble("speed").toFloat()
-                                        MPVLib.setPropertyDouble("speed", 2.0)
+                                        viewModel.mpv.getPropertyDouble("speed")?.toFloat()?.let { originalSpeed = it }
+                                        viewModel.mpv.setPropertyDouble("speed", 2.0)
                                         viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(2.0f, isDragging = false) }
                                         viewModel.unpause()
                                     }
                                     PausedLongPressAction.DoNothing -> {}
                                 }
                             } else {
-                                originalSpeed = MPVLib.getPropertyDouble("speed").toFloat()
-                                MPVLib.setPropertyDouble("speed", 2.0)
+                                viewModel.mpv.getPropertyDouble("speed")?.toFloat()?.let { originalSpeed = it }
+                                viewModel.mpv.setPropertyDouble("speed", 2.0)
                                 viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(2.0f, isDragging = false) }
                             }
                         }
@@ -268,7 +268,7 @@ fun GestureHandler(
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                     lastHapticSpeed = snappedSpeed
                                 }
-                                MPVLib.setPropertyDouble("speed", snappedSpeed.toDouble())
+                                viewModel.mpv.setPropertyDouble("speed", snappedSpeed.toDouble())
                                 viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(snappedSpeed, isDragging = true) }
                             }
                         }

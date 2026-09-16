@@ -29,12 +29,14 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsGesturesScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = PlayerSettingsGesturesScreen
 
     @ReadOnlyComposable
@@ -64,11 +66,11 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
         val adjustSpeedOnDrag = playerPreferences.adjustSpeedOnDrag()
 
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.paused_long_press_action),
+            title = stringResource(AMR.strings.paused_long_press_action),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    pref = pausedLongPress,
-                    title = stringResource(MR.strings.paused_long_press_action),
+                    preference = pausedLongPress,
+                    title = stringResource(AMR.strings.paused_long_press_action),
                     entries = listOf(
                         PausedLongPressAction.DoNothing,
                         PausedLongPressAction.Screenshot,
@@ -76,9 +78,9 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                     ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    pref = adjustSpeedOnDrag,
-                    title = stringResource(MR.strings.pref_adjust_speed_on_drag),
-                    subtitle = stringResource(MR.strings.pref_adjust_speed_on_drag_summary),
+                    preference = adjustSpeedOnDrag,
+                    title = stringResource(AMR.strings.pref_adjust_speed_on_drag),
+                    subtitle = stringResource(AMR.strings.pref_adjust_speed_on_drag_summary),
                 ),
             ),
         )

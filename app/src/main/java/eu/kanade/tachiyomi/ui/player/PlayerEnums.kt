@@ -23,6 +23,7 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.animiru.AMMR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 
 /**
  * Results of the set as cover feature.
@@ -114,9 +115,9 @@ enum class Sheets {
 }
 
 enum class PausedLongPressAction(val stringRes: StringResource) {
-    DoNothing(MR.strings.paused_long_press_action_do_nothing),
-    Screenshot(MR.strings.paused_long_press_action_screenshot),
-    Play2x(MR.strings.paused_long_press_action_play2x),
+    DoNothing(AMR.strings.paused_long_press_action_do_nothing),
+    Screenshot(AMR.strings.paused_long_press_action_screenshot),
+    Play2x(AMR.strings.paused_long_press_action_play2x),
 }
 
 enum class Panels {
