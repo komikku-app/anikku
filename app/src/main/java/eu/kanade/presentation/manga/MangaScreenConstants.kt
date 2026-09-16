@@ -29,4 +29,8 @@ enum class MangaScreenItem {
     // KMK -->
     RELATED_MANGAS,
     // KMK <--
+
+    // ANK -->
+    SEASON_CHIPS,
+    // ANK <--
 }
