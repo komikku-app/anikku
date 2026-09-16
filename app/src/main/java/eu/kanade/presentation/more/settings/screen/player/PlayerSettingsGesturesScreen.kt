@@ -19,20 +19,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
+import eu.kanade.tachiyomi.ui.player.PausedLongPressAction
 import eu.kanade.tachiyomi.ui.player.SingleActionGesture
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
+import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 object PlayerSettingsGesturesScreen : SearchableSettings {
+    @Suppress("unused")
     private fun readResolve(): Any = PlayerSettingsGesturesScreen
 
     @ReadOnlyComposable
@@ -42,12 +46,43 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val gesturePreferences = remember { Injekt.get<GesturePreferences>() }
+        val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
 
         return listOf(
             getSlidersGroup(gesturePreferences = gesturePreferences),
             getSeekingGroup(gesturePreferences = gesturePreferences),
             getDoubleTapGroup(gesturePreferences = gesturePreferences),
             getMediaControlsGroup(gesturePreferences = gesturePreferences),
+            getLongPressGroup(gesturePreferences = gesturePreferences, playerPreferences = playerPreferences),
+        )
+    }
+
+    @Composable
+    private fun getLongPressGroup(
+        gesturePreferences: GesturePreferences,
+        playerPreferences: PlayerPreferences,
+    ): Preference.PreferenceGroup {
+        val pausedLongPress = gesturePreferences.pausedLongPressGesture()
+        val adjustSpeedOnDrag = playerPreferences.adjustSpeedOnDrag()
+
+        return Preference.PreferenceGroup(
+            title = stringResource(AMR.strings.paused_long_press_action),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.ListPreference(
+                    preference = pausedLongPress,
+                    title = stringResource(AMR.strings.paused_long_press_action),
+                    entries = listOf(
+                        PausedLongPressAction.DoNothing,
+                        PausedLongPressAction.Screenshot,
+                        PausedLongPressAction.Play2x,
+                    ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = adjustSpeedOnDrag,
+                    title = stringResource(AMR.strings.pref_adjust_speed_on_drag),
+                    subtitle = stringResource(AMR.strings.pref_adjust_speed_on_drag_summary),
+                ),
+            ),
         )
     }
 

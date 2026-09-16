@@ -39,14 +39,21 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import eu.kanade.presentation.player.components.PlayerSheet
 import eu.kanade.presentation.player.components.SliderItem
 import eu.kanade.presentation.player.components.SwitchPreference
+import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -65,6 +72,7 @@ fun PlaybackSpeedSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val preferences = remember { Injekt.get<PlayerPreferences>() }
     PlayerSheet(onDismissRequest = onDismissRequest) {
         Column(
             modifier
@@ -128,6 +136,27 @@ fun PlaybackSpeedSheet(
                         )
                     }
                 },
+            )
+            val adjustSpeedOnDrag by preferences.adjustSpeedOnDrag().collectAsState()
+            SwitchPreference(
+                value = adjustSpeedOnDrag,
+                onValueChange = {
+                    preferences.adjustSpeedOnDrag().set(it)
+                },
+                content = {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(text = stringResource(AMR.strings.pref_adjust_speed_on_drag))
+                        Text(
+                            text = stringResource(AMR.strings.pref_adjust_speed_on_drag_summary),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .padding(horizontal = MaterialTheme.padding.medium)
+                    .padding(bottom = MaterialTheme.padding.medium),
             )
             Row(
                 modifier = Modifier

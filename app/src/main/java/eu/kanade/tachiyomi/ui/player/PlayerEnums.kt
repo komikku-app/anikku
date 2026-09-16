@@ -23,6 +23,7 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.animiru.AMMR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 
 /**
  * Results of the set as cover feature.
@@ -113,6 +114,12 @@ enum class Sheets {
     Screenshot,
 }
 
+enum class PausedLongPressAction(val stringRes: StringResource) {
+    DoNothing(AMR.strings.paused_long_press_action_do_nothing),
+    Screenshot(AMR.strings.paused_long_press_action_screenshot),
+    Play2x(AMR.strings.paused_long_press_action_play2x),
+}
+
 enum class Panels {
     None,
     SubtitleSettings,
@@ -138,7 +145,7 @@ sealed class Dialogs {
 
 sealed class PlayerUpdates {
     data object None : PlayerUpdates()
-    data object DoubleSpeed : PlayerUpdates()
+    data class DoubleSpeed(val speed: Float, val isDragging: Boolean) : PlayerUpdates()
     data object AspectRatio : PlayerUpdates()
     data class ShowText(val value: String) : PlayerUpdates()
     data class ShowTextResource(val textResource: StringResource) : PlayerUpdates()
