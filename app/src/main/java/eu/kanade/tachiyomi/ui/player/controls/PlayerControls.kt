@@ -95,6 +95,8 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleJustification
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
+import eu.kanade.tachiyomi.ui.player.utils.JimakuCallbacks
+import eu.kanade.tachiyomi.ui.player.utils.JimakuState
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentList
@@ -630,11 +632,34 @@ fun PlayerControls(
 
         val statisticsPage by advancedPreferences.playerStatisticsPage().collectAsState()
 
+        // ANK -->
+        val jimakuState = JimakuState(
+            files = viewModel.jimakuFiles.collectAsState().value,
+            loading = viewModel.jimakuLoading.collectAsState().value,
+            error = viewModel.jimakuError.collectAsState().value,
+            addedUrls = viewModel.jimakuAddedUrls.collectAsState().value,
+            isAllFiles = viewModel.jimakuIsAllFiles.collectAsState().value,
+            enabled = subtitlePreferences.jimakuEnabled().collectAsState().value,
+        )
+
+        val jimakuCallbacks = remember {
+            JimakuCallbacks(
+                onFetch = viewModel::fetchJimakuFiles,
+                onSearch = viewModel::searchJimakuByQuery,
+                onAddSubtitle = viewModel::addJimakuSubtitle,
+            )
+        }
+        // ANK <--
+
         PlayerSheets(
             sheetShown = sheetShown,
             subtitles = subtitles.toImmutableList(),
             onAddSubtitle = viewModel::addSubtitle,
             onSelectSubtitle = viewModel::selectSub,
+            // ANK -->
+            jimakuState = jimakuState,
+            jimakuCallbacks = jimakuCallbacks,
+            // ANK <--
             audioTracks = audioTracks.toImmutableList(),
             onAddAudio = viewModel::addAudio,
             onSelectAudio = viewModel::selectAudio,
