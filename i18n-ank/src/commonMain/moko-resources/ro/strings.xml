@@ -200,4 +200,11 @@
     <string name="pref_storage_location_info_anime">Folosit pentru copii de rezervă automate, descărcări episod și sursă locală.</string>
     <string name="tracking_info_anime">Sincronizare unică pentru a actualiza progresul episodului în serviciile externe de tracker. Configurați urmărirea intrărilor individuale din butonul de urmărire.</string>
     <string name="pref_create_folder_per_anime">Salvează capturile de ecran în dosare separate</string>
+    <string name="pref_app_icon">Pictograma aplicației</string>
+    <string name="pref_app_icon_toast">Pictograma aplicației a fost modificată la %s</string>
+    <string name="episode_progress_short">%1$s/%2$s</string>
+    <string name="seasons">Sezonuri</string>
+    <string name="logging_in">Ne logăm…</string>
+    <string name="storage_failed_to_create_download_directory">Crearea mapei pentru descărcare a eșuat</string>
+    <string name="storage_failed_to_create_directory">Crearea mapei a eșuat: %s</string>
 </resources>
