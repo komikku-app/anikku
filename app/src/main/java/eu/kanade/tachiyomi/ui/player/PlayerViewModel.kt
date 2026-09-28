@@ -387,6 +387,10 @@ class PlayerViewModel @JvmOverloads constructor(
             .onEach { onSubtitleTrackSelectChange() }
             .launchIn(viewModelScope)
 
+        mpv.propFlow<MPVNode>("aid")
+            .onEach { onAudioTrackSelectChange() }
+            .launchIn(viewModelScope)
+
         mpv.propFlow<Long>("user-data/current-anime/intro-length")
             .filterNotNull()
             .onEach(::setAnimeSkipIntroLength)
@@ -740,6 +744,16 @@ class PlayerViewModel @JvmOverloads constructor(
                 hasLoadedAudio.update { _ -> true }
                 checkFileLoaded()
                 selectAudioById(track.data.id)
+            }
+        }
+    }
+
+    private fun onAudioTrackSelectChange() {
+        val id = mpv.getPropertyInt("aid")
+
+        _externalAudioTracks.update { audioTracks ->
+            audioTracks.map {
+                it.copy(mainSelection = if (it.id != null && it.id == id) 0 else -1)
             }
         }
     }
