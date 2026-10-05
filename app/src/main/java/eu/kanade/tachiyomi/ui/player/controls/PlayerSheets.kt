@@ -36,6 +36,8 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
 import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
+import eu.kanade.tachiyomi.ui.player.utils.JimakuCallbacks
+import eu.kanade.tachiyomi.ui.player.utils.JimakuState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
@@ -49,6 +51,12 @@ fun PlayerSheets(
     subtitles: ImmutableList<VideoTrack>,
     onAddSubtitle: (Uri) -> Unit,
     onSelectSubtitle: (VideoTrack) -> Unit,
+
+    // ANK -->
+    // jimaku
+    jimakuState: JimakuState,
+    jimakuCallbacks: JimakuCallbacks,
+    // ANK <--
 
     // audio sheet
     audioTracks: ImmutableList<VideoTrack>,
@@ -127,6 +135,10 @@ fun PlayerSheets(
                 onOpenSubtitleSettings = { onOpenPanel(Panels.SubtitleSettings) },
                 onOpenSubtitleDelay = { onOpenPanel(Panels.SubtitleDelay) },
                 onDismissRequest = onDismissRequest,
+                // ANK -->
+                jimakuState = jimakuState,
+                jimakuCallbacks = jimakuCallbacks,
+                // ANK <--
             )
         }
 
