@@ -1669,6 +1669,9 @@ private fun LazyGridScope.sharedChapterItems(
                     }
                 }
                 // <-- AM (FILE_SIZE)
+                // AM -->
+                val meta = item.aniZipMeta
+                // <-- AM
                 MangaChapterListItem(
                     title = if (manga.displayMode == Manga.EPISODE_DISPLAY_NUMBER) {
                         stringResource(
@@ -1676,12 +1679,11 @@ private fun LazyGridScope.sharedChapterItems(
                             formatChapterNumber(item.chapter.chapterNumber),
                         )
                     } else {
-                        item.chapter.name
+                        meta?.title ?: item.chapter.name
                     },
-                    date = item.chapter.dateUpload
-                        .takeIf { it > 0L }
+                    date = (meta?.airDateMillis?.takeIf { it > 0L } ?: item.chapter.dateUpload.takeIf { it > 0L })
                         ?.let {
-                            relativeDateTimeText(item.chapter.dateUpload)
+                            relativeDateTimeText(it)
                         },
                     readProgress = item.chapter.lastPageRead
                         .takeIf {
@@ -1698,9 +1700,12 @@ private fun LazyGridScope.sharedChapterItems(
                         !it.isNullOrBlank()
                     },
                     // AY -->
-                    summary = item.chapter.summary.takeIf { !it.isNullOrBlank() && showSummaries },
-                    previewUrl = item.chapter.previewUrl.takeIf { !it.isNullOrBlank() && showPreviews },
+                    summary = (meta?.overview ?: item.chapter.summary)?.takeIf { !it.isNullOrBlank() && showSummaries },
+                    previewUrl = (meta?.image ?: item.chapter.previewUrl)?.takeIf { !it.isNullOrBlank() && showPreviews },
                     // <-- AY
+                    // AM -->
+                    rating = meta?.rating,
+                    // <-- AM
                     // SY -->
                     sourceName = item.sourceName,
                     // SY <--

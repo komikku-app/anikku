@@ -32,6 +32,7 @@ import eu.kanade.domain.anime.interactor.SyncSeasonsWithSource
 import eu.kanade.domain.chapter.interactor.GetAvailableScanlators
 import eu.kanade.domain.chapter.interactor.SetReadStatus
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
+import eu.kanade.domain.episode.interactor.EnrichEpisodesWithAniZip
 import eu.kanade.domain.manga.interactor.GetExcludedScanlators
 import eu.kanade.domain.manga.interactor.SetExcludedScanlators
 import eu.kanade.domain.manga.interactor.SmartSearchMerge
@@ -56,6 +57,7 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.data.anizip.model.AniZipEpisodeMeta
 import eu.kanade.tachiyomi.data.coil.getBestColor
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
@@ -97,6 +99,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -264,6 +267,9 @@ class MangaScreenModel(
     // AM (FILE_SIZE) -->
     storagePreferences: StoragePreferences = Injekt.get(),
     // <-- AM (FILE_SIZE)
+    // AM -->
+    private val enrichEpisodesWithAniZip: EnrichEpisodesWithAniZip = Injekt.get(),
+    // <-- AM
 ) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
 
     private val successState: State.Success?
@@ -320,6 +326,9 @@ class MangaScreenModel(
         val seasons: List<SeasonAnime>,
         // <-- AY
         val mergedData: MergedMangaData? = null,
+        // AM -->
+        val aniZipMeta: Map<Long, AniZipEpisodeMeta> = emptyMap(),
+        // <-- AM
     ) {
         constructor(triple: Triple<Manga, List<Chapter> /* AY --> */, List<SeasonAnime>/* <-- AY */>) :
             this(triple.first, triple.second/* AY --> */, triple.third/* <-- AY */)
@@ -329,6 +338,11 @@ class MangaScreenModel(
     // AM (FILE_SIZE) -->
     val showFileSize = storagePreferences.showChapterFileSize().get()
     // <-- AM (FILE_SIZE)
+
+    // AM -->
+    val enableAniZip = trackPreferences.enableAniZip().get()
+    private val aniZipMetaMap = MutableStateFlow<Map<Long, AniZipEpisodeMeta>>(emptyMap())
+    // <-- AM
 
     /**
      * Helper function to update the UI state only if it's currently in success state
@@ -381,9 +395,12 @@ class MangaScreenModel(
                 .combine(downloadCache.changes) { state, _ -> state }
                 .combine(downloadManager.queueState) { state, _ -> state }
                 // SY <--
+                // AM -->
+                .combine(aniZipMetaMap) { state, aniZipMeta -> state.copy(aniZipMeta = aniZipMeta) }
+                // <-- AM
                 .flowWithLifecycle(lifecycle)
-                .collectLatest { (manga, chapters/* AY --> */, seasons/* <-- AY */ /* SY --> */, mergedData /* SY <-- */) ->
-                    val chapterItems = chapters.toChapterListItems(manga /* SY --> */, mergedData /* SY <-- */)
+                .collectLatest { (manga, chapters/* AY --> */, seasons/* <-- AY */ /* SY --> */, mergedData /* SY <-- */ /* AM --> */, aniZipMeta /* <-- AM */) ->
+                    val chapterItems = chapters.toChapterListItems(manga /* SY --> */, mergedData /* SY <-- */ /* AM --> */, aniZipMeta /* <-- AM */)
                     updateSuccessState {
                         it.copy(
                             manga = manga,
@@ -1116,6 +1133,9 @@ class MangaScreenModel(
         // SY -->
         mergedData: MergedMangaData?,
         // SY <--
+        // AM -->
+        aniZipMeta: Map<Long, AniZipEpisodeMeta> = emptyMap(),
+        // <-- AM
     ): List<ChapterList.Item> {
         val isLocal = manga.isLocal()
         return map { chapter ->
@@ -1156,6 +1176,9 @@ class MangaScreenModel(
                 // SY -->
                 sourceName = source?.getNameForMangaInfo(),
                 // SY <--
+                // AM -->
+                aniZipMeta = aniZipMeta[chapter.id],
+                // <-- AM
             )
         }
     }
@@ -1234,6 +1257,12 @@ class MangaScreenModel(
         if (manualFetch) {
             downloadNewChapters(newEpisodes)
         }
+
+        // AM -->
+        if (enableAniZip) {
+            aniZipMetaMap.value = enrichEpisodesWithAniZip.await(anime.id)
+        }
+        // <-- AM
     }
 
     private suspend fun fetchSeasonsFromSource(manualFetch: Boolean = false) {
@@ -2337,6 +2366,20 @@ class MangaScreenModel(
                     updateAiringTime(manga, trackItems, manualFetch = false)
                 }
         }
+
+        // AM -->
+        if (enableAniZip) {
+            screenModelScope.launchIO {
+                getTracks.subscribe(manga.id)
+                    .catch { logcat(LogPriority.ERROR, it) }
+                    .distinctUntilChanged()
+                    .collectLatest { tracks ->
+                        val hasTrack = tracks.any { (it.trackerId == TrackerManager.ANILIST || it.trackerId == TrackerManager.MYANIMELIST) && it.remoteId > 0 }
+                        aniZipMetaMap.value = if (hasTrack) enrichEpisodesWithAniZip.await(manga.id) else emptyMap()
+                    }
+            }
+        }
+        // <-- AM
     }
 
     // AY -->
@@ -2697,6 +2740,9 @@ sealed class ChapterList {
         // SY -->
         val sourceName: String?,
         // SY <--
+        // AM -->
+        val aniZipMeta: AniZipEpisodeMeta? = null,
+        // <-- AM
     ) : ChapterList() {
         val id = chapter.id
         val isDownloaded = downloadState == Download.State.DOWNLOADED

@@ -151,6 +151,11 @@ object SettingsTrackingScreen : SearchableSettings {
                 title = stringResource(AMMR.strings.pref_smart_sync_tracker),
                 subtitle = stringResource(AMMR.strings.pref_smart_sync_tracker_summary),
             ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = trackPreferences.enableAniZip(),
+                title = stringResource(AMMR.strings.pref_enable_anizip),
+                subtitle = stringResource(AMMR.strings.pref_enable_anizip_summary),
+            ),
             // <-- AM
             Preference.PreferenceItem.ListPreference(
                 preference = trackPreferences.autoUpdateTrackOnMarkRead(),

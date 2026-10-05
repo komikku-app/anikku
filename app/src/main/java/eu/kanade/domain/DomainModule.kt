@@ -190,6 +190,10 @@ class DomainModule : InjektModule {
         addFactory { GetAvailableScanlators(get()) }
         addFactory { FilterChaptersForDownload(get(), get(), get(), get()) }
 
+        // AM -->
+        addFactory { eu.kanade.domain.episode.interactor.EnrichEpisodesWithAniZip(get(), get(), get(), get()) }
+        // <-- AM
+
         addSingletonFactory<HistoryRepository> { HistoryRepositoryImpl(get()) }
         addFactory { GetHistory(get()) }
         addFactory { UpsertHistory(get()) }

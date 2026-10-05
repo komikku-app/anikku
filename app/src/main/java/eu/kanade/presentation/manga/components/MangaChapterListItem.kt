@@ -79,6 +79,9 @@ fun MangaChapterListItem(
     summary: String?,
     previewUrl: String?,
     // <-- AY
+    // AM -->
+    rating: String? = null,
+    // <-- AM
     read: Boolean,
     bookmark: Boolean,
     // AY -->
@@ -167,6 +170,9 @@ fun MangaChapterListItem(
                     // SY -->
                     sourceName = sourceName,
                     // SY <--
+                    // AM -->
+                    rating = rating,
+                    // <-- AM
                     seen = read,
                     bookmark = bookmark,
                     downloadIndicatorEnabled = downloadIndicatorEnabled,
@@ -240,6 +246,9 @@ fun MangaChapterListItem(
                         // SY -->
                         sourceName = sourceName,
                         // SY <--
+                        // AM -->
+                        rating = rating,
+                        // <-- AM
                     )
 
                     if (previewUrl != null) {
@@ -272,6 +281,9 @@ private fun RowScope.SimpleEpisodeListItemImpl(
     // SY -->
     sourceName: String?,
     // SY <--
+    // AM -->
+    rating: String? = null,
+    // <-- AM
     seen: Boolean,
     bookmark: Boolean,
     downloadIndicatorEnabled: Boolean,
@@ -302,6 +314,9 @@ private fun RowScope.SimpleEpisodeListItemImpl(
             fillermark = fillermark,
             scanlator = scanlator,
             sourceName = sourceName,
+            // AM -->
+            rating = rating,
+            // <-- AM
         )
     }
 
@@ -503,11 +518,24 @@ private fun EpisodeInformation(
     // SY -->
     sourceName: String?,
     // SY <--
+    // AM -->
+    rating: String? = null,
+    // <-- AM
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val subtitleStyle = MaterialTheme.typography.bodySmall
             .merge(color = LocalContentColor.current.copy(alpha = if (seen) DISABLED_ALPHA else SECONDARY_ALPHA))
         ProvideTextStyle(value = subtitleStyle) {
+            // AM -->
+            if (rating != null) {
+                Text(
+                    text = "★ $rating",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (date != null || watchProgress != null || scanlator != null || sourceName != null) DotSeparatorText()
+            }
+            // <-- AM
             if (fillermark) {
                 // ANK -->
                 var textHeight by remember { mutableIntStateOf(0) }

@@ -161,6 +161,10 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { NetworkHelper(app, get(), isDebugBuildType) }
         addSingletonFactory { JavaScriptEngine(app) }
 
+        // AM -->
+        addSingletonFactory { eu.kanade.tachiyomi.data.anizip.AniZipService(get(), get()) }
+        // <-- AM
+
         addSingletonFactory<SourceManager> { AndroidSourceManager(app, get(), get()) }
         addSingletonFactory { ExtensionManager(app) }
 

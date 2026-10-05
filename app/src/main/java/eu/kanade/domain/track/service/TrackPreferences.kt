@@ -57,4 +57,8 @@ class TrackPreferences(
     // KMK -->
     fun autoSyncProgressFromTrackers() = preferenceStore.getBoolean("pref_auto_sync_progress_from_trackers_key", true)
     // KMK <--
+
+    // AM -->
+    fun enableAniZip() = preferenceStore.getBoolean("enable_anizip", true)
+    // <-- AM
 }
