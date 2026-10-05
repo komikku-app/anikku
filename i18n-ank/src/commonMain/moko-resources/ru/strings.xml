@@ -236,4 +236,12 @@
     <string name="pref_discord_show_progress_summary_episode">Показывать прогресс текущего эпизода</string>
     <string name="pref_discord_show_timestamp_summary_episode">Показывает прошедшее/оставшиеся время</string>
     <string name="pref_display_images_description_anime">Рендеринг изображений в описаниях аниме</string>
+    <string name="seasons">Сезоны</string>
+    <string name="migrationConfigScreen.hideWithoutUpdatesTitle.Episodes">Скрыть тайтлы без новых эпизодов</string>
+    <string name="action_filter_unfinished_anime">Незавершённые аниме</string>
+    <string name="action_filter_unfinished_episode">Незавершённый эпизод</string>
+    <string name="pref_sync_anime_on_add">Синхронизировать аниме при добавлении в библиотеку</string>
+    <string name="pref_sync_anime_on_add_description">Автоматически получает метаданные и список эпизодов нового аниме при добавлении его в библиотеку</string>
+    <string name="migrationConfigScreen.hideWithoutUpdatesSubtitle.Episodes">Показывать запись только если у найденного совпадения есть дополнительные эпизоды</string>
+    <string name="migrationConfigScreen.prioritizeByChaptersTitle.Episodes">Сопоставлять по номеру эпизода</string>
 </resources>

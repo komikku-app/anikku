@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import kotlinx.coroutines.CancellationException
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.anime.model.Anime
 import tachiyomi.domain.episode.model.Episode
 import tachiyomi.domain.manga.model.MergedMangaReference
@@ -119,13 +120,18 @@ class EpisodeLoader {
          */
         private suspend fun getHostersOnHttp(episode: Episode, source: HttpSource): List<Hoster> {
             // TODO(16): Remove else block when dropping support for ext lib <1.6
-            return if (checkHasHosters(source)) {
-                source.getHosterList(episode.toSEpisode())
-                    .let { source.run { it.sortHosters() } }
-            } else {
-                source.getVideoList(episode.toSEpisode())
-                    .let { source.run { it.sortVideos() } }
-                    .toHosterList()
+            // ANK -->
+            val hasHosters = checkHasHosters(source)
+            return withIOContext {
+                if (hasHosters) {
+                    // ANK <--
+                    source.getHosterList(episode.toSEpisode())
+                        .let { source.run { it.sortHosters() } }
+                } else {
+                    source.getVideoList(episode.toSEpisode())
+                        .let { source.run { it.sortVideos() } }
+                        .toHosterList()
+                }
             }
         }
 
@@ -206,17 +212,24 @@ class EpisodeLoader {
          * @param hoster the hoster.
          */
         private suspend fun getVideosOnHttp(source: AnimeHttpSource, hoster: Hoster): List<Video> {
-            return source.getVideoList(hoster)
+            // ANK -->
+            return withIOContext { source.getVideoList(hoster) }
+                // ANK <--
                 .parseVideoUrls(source)
         }
 
         // TODO(16): Remove after ext lib bump
         private suspend fun List<Video>.parseVideoUrls(source: AnimeHttpSource): List<Video> {
-            return this.map { video ->
-                if (video.videoUrl != "null") return@map video
+            // ANK -->
+            return withIOContext {
+                this@parseVideoUrls
+                    // ANK <--
+                    .map { video ->
+                        if (video.videoUrl != "null") return@map video
 
-                val newVideoUrl = source.getVideoUrl(video)
-                video.copy(videoUrl = newVideoUrl)
+                        val newVideoUrl = source.getVideoUrl(video)
+                        video.copy(videoUrl = newVideoUrl)
+                    }
             }
         }
 
