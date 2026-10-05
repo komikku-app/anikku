@@ -19,7 +19,7 @@ package eu.kanade.presentation.player.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenuItem
@@ -35,9 +35,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import kotlinx.collections.immutable.ImmutableList
 
 @Composable
@@ -50,6 +52,10 @@ fun ExposedTextDropDownMenu(
     leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    // ANK -->
+    val density = LocalDensity.current
+    var anchorWidth by remember { mutableStateOf(0.dp) }
+    // ANK <--
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -68,7 +74,10 @@ fun ExposedTextDropDownMenu(
             colors = OutlinedTextFieldDefaults.colors(),
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                // ANK -->
+                .onSizeChanged { anchorWidth = with(density) { it.width.toDp() } },
+            // ANK <--
         )
 
         val sizeOfOneItem by remember {
@@ -86,7 +95,9 @@ fun ExposedTextDropDownMenu(
             LazyColumn(
                 modifier = Modifier
                     // ANK -->
-                    .widthIn(max = 500.dp)
+                    // Fixed width is required: DropdownMenu queries intrinsic width of its content,
+                    // which LazyColumn (SubcomposeLayout) doesn't support and would crash
+                    .width(min(anchorWidth, 500.dp))
                     // ANK <--
                     .height(height),
             ) {
