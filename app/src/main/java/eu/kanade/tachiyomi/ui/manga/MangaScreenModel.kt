@@ -82,6 +82,7 @@ import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.AniChartApi
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
+import eu.kanade.tachiyomi.util.episode.EpisodeSeasonParser
 import eu.kanade.tachiyomi.util.removeCovers
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toast
@@ -2395,6 +2396,12 @@ class MangaScreenModel(
         updateSuccessState { it.copy(dialog = Dialog.DeleteChapters(chapters)) }
     }
 
+    // ANK -->
+    fun setSeasonFilter(season: Int?) {
+        updateSuccessState { it.copy(selectedSeasonFilter = season) }
+    }
+    // ANK <--
+
     fun showSettingsDialog() {
         updateSuccessState {
             // AY -->
@@ -2491,6 +2498,10 @@ class MangaScreenModel(
             val hideMissingChapters: Boolean = false,
             val trackItems: List<TrackItem> = emptyList(),
 
+            // ANK -->
+            val selectedSeasonFilter: Int? = null,
+            // ANK <--
+
             // AY -->
             val nextAiringEpisode: Pair<Int, Long> = Pair(
                 manga.nextEpisodeToAir,
@@ -2538,12 +2549,31 @@ class MangaScreenModel(
             }
             // <-- AY
 
+            // ANK -->
+            /**
+             * Distinct season numbers detected from episode names, sorted ascending.
+             * Empty when fewer than 2 seasons are detected (nothing to group/filter by).
+             */
+            val episodeSeasons: List<Int> by lazy {
+                if (manga.fetchType != FetchType.Episodes) {
+                    return@lazy emptyList()
+                }
+                chapters.map { it.seasonNumber() }.distinct().sorted().takeIf { it.size >= 2 }.orEmpty()
+            }
+            // ANK <--
+
             val processedChapters by lazy {
                 chapters.applyFilters(manga).toList()
                     // KMK -->
                     // safe-guard some edge-cases where chapters are duplicated some how on a merged entry
                     .distinctBy { it.id }
-                // KMK <--
+                    // KMK <--
+                    // ANK -->
+                    .let { list ->
+                        val season = selectedSeasonFilter
+                        if (season == null) list else list.filter { it.seasonNumber() == season }
+                    }
+                // ANK <--
             }
 
             val chapterListItems by lazy {
@@ -2603,6 +2633,15 @@ class MangaScreenModel(
                     FetchType.Seasons -> manga.seasonsFiltered()
                 }
             // <-- AY
+
+            // ANK -->
+            /**
+             * Season number parsed from the episode's name, defaulting to 1 when no
+             * season marker is found (see [EpisodeSeasonParser]).
+             */
+            private fun ChapterList.Item.seasonNumber(): Int =
+                EpisodeSeasonParser.parseSeason(chapter.name) ?: 1
+            // ANK <--
 
             /**
              * Applies the view filters to the list of chapters obtained from the database.

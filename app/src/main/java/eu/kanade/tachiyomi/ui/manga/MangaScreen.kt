@@ -480,6 +480,9 @@ class MangaScreen(
                 }
             },
             // <-- AY
+            // ANK -->
+            onSeasonFilterSelected = screenModel::setSeasonFilter,
+            // ANK <--
         )
 
         var showScanlatorsDialog by remember { mutableStateOf(false) }
