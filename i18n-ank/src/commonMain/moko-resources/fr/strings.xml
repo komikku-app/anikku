@@ -206,4 +206,16 @@
     <string name="pref_anime_info">Infos sur l\'anime</string>
     <string name="only_show_updated_entries_episodes">Afficher uniquement les entrées avec un nouvel épisode</string>
     <string name="pref_app_icon">Icône d\'application</string>
+    <string name="pref_app_icon_toast">L\'icône de l\'application a bien été changé en %s</string>
+    <string name="seasons">Saisons</string>
+    <string name="clear_database_seen_history_warning">Les épisodes visionnés et la progression des entrées hors bibliothèque seront perdus</string>
+    <string name="clear_db_exclude_seen">Conserver les données avec les épisodes visionnés</string>
+    <string name="pref_display_images_description_anime">Afficher les images dans les descriptions d\'animés</string>
+    <string name="pref_library_update_show_tab_badge_unseen">Afficher les mises à jour non lues dans l\'onglet Mises à jour</string>
+    <string name="action_display_unseen_badge">Épisodes non visionnés</string>
+    <string name="pref_update_library_anime_titles">Mettre à jour les titres des animés de la bibliothèque pour correspondre à la source</string>
+    <string name="pref_update_library_anime_titles_summary">Attention : si un animé est renommé, il sera supprimé de la file des téléchargements (s\'il y est)</string>
+    <string name="pref_hide_missing_episode_indicators">Masquer les indicateurs des épisodes manquants</string>
+    <string name="migrationConfigScreen.hideWithoutUpdatesTitle.Episodes">Masquer les entrées sans nouveaux épisodes</string>
+    <string name="migrationConfigScreen.hideWithoutUpdatesSubtitle.Episodes">Ne montrer que les entrées s\'il y a des épisodes supplémentaires</string>
 </resources>
