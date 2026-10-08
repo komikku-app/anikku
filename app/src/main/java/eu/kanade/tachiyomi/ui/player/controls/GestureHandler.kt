@@ -93,6 +93,7 @@ fun GestureHandler(
     val seekAmount by viewModel.doubleTapSeekAmount.collectAsState()
     val isSeekingForwards by viewModel.isSeekingForwards.collectAsState()
     var isDoubleTapSeeking by remember { mutableStateOf(false) }
+    val holdSpeedForward by playerPreferences.holdSpeedForward().collectAsState()
 
     LaunchedEffect(seekAmount) {
         delay(800)
@@ -120,7 +121,7 @@ fun GestureHandler(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeGestures)
             .pointerInput(Unit) {
-                val originalSpeed = viewModel.mpv.getPropertyFloat("speed") ?: 1f
+                var originalSpeed = viewModel.mpv.getPropertyFloat("speed") ?: 1f
                 detectTapGestures(
                     onTap = {
                         if (controlsShown) viewModel.hideControls() else viewModel.showControls()
@@ -170,7 +171,15 @@ fun GestureHandler(
                     },
                     onLongPress = {
                         if (areControlsLocked) return@detectTapGestures
-                        if (!isLongPressing) {
+                        if (it.x > size.width * 2 / 3 && !isLongPressing && viewModel.paused != true) {
+                            // Hold right third: 2x forward speed
+                            originalSpeed = playbackSpeed ?: 1f
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            isLongPressing = true
+                            viewModel.mpv.setPropertyDouble("speed", holdSpeedForward.toDouble())
+                            viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(holdSpeedForward) }
+                        } else if (!isLongPressing) {
+                            // Hold left/center (or right third while paused): screenshot
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             isLongPressing = true
                             viewModel.pause()
