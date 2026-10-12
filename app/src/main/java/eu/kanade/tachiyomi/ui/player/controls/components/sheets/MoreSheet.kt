@@ -65,13 +65,19 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import eu.kanade.presentation.player.components.PlayerSheet
 import eu.kanade.tachiyomi.ui.player.Decoder
+import eu.kanade.tachiyomi.ui.player.PausedLongPressAction
 import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
+import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.ank.AMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 @Composable
 fun MoreSheet(
@@ -90,6 +96,8 @@ fun MoreSheet(
     customButtons: ImmutableList<CustomButton>,
     modifier: Modifier = Modifier,
 ) {
+    val gesturePreferences = remember { Injekt.get<GesturePreferences>() }
+
     PlayerSheet(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
@@ -233,6 +241,20 @@ fun MoreSheet(
                         selected = audioChannels == it,
                         onClick = { onAudioChannelsChange(it) },
                         label = { Text(text = stringResource(it.titleRes)) },
+                    )
+                }
+            }
+
+            Text(text = stringResource(AMR.strings.paused_long_press_action))
+            val pausedLongPress by gesturePreferences.pausedLongPressGesture().collectAsState()
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+            ) {
+                items(PausedLongPressAction.entries) { action ->
+                    FilterChip(
+                        selected = pausedLongPress == action,
+                        onClick = { gesturePreferences.pausedLongPressGesture().set(action) },
+                        label = { Text(text = stringResource(action.stringRes)) },
                     )
                 }
             }
