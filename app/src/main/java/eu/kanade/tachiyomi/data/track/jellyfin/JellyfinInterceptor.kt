@@ -25,7 +25,9 @@ class JellyfinInterceptor : Interceptor {
             .build()
 
         // Check api keys
-        if (originalRequest.url.queryParameter("api_key") != null) {
+        // ANK -->
+        if (originalRequest.url.queryParameter("ApiKey") != null) {
+        // ANK <--
             return chain.proceed(uaRequest)
         }
 
@@ -34,7 +36,9 @@ class JellyfinInterceptor : Interceptor {
             ?: throw IOException("Please log in through the extension")
 
         val authUrl = originalRequest.url.newBuilder()
-            .addQueryParameter("api_key", apiKey)
+            // ANK -->
+            .addQueryParameter("ApiKey", apiKey)
+            // ANK <--
             .build()
 
         val authRequest = uaRequest.newBuilder().url(authUrl).build()
