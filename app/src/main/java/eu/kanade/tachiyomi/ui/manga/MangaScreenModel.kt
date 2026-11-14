@@ -660,7 +660,9 @@ class MangaScreenModel(
                 async { syncTrackers() },
                 // KMK <--
                 async { fetchMangaFromSource(manualFetch) },
-                async { fetchChaptersFromSource(manualFetch) },
+                // ANK -->
+                async { fetchEpisodesAndSeasonsFromSource(manualFetch) },
+                // ANK <--
             )
             fetchFromSourceTasks.awaitAll()
             updateSuccessState { it.copy(isRefreshingData = false) }
