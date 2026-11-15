@@ -120,7 +120,7 @@
     <string name="cast_subtitles">Legendas</string>
     <string name="cast_audio_tracks">Faixas de Áudio</string>
     <string name="cast_no_subtitles">Sem legendas</string>
-    <string name="cast_close">FECHAR</string>
+    <string name="cast_close">Fechar</string>
     <string name="cast_subtitle_font_family">Família de fonte</string>
     <string name="cast_subtitle_border_style">Estilo da Borda</string>
     <string name="cast_subtitle_border_none">Nenhuma</string>
